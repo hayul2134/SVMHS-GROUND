@@ -142,19 +142,13 @@ function renderNext(b, pi) {
   }
   box.innerHTML = h;
 }
-// 전광판: 오늘 정보를 한 줄로 흘려보냄
+// 전광판: 사이트 이름만 반복해서 꽉 채움 (화면 폭이 넓어도 빈틈 없게 넉넉히 반복)
 const TK = { meal: '', up: '' };
-function renderTicker(b, pi) {
-  b = b || bellInfo(now()); pi = pi || periodInfo(b);
-  const rows = S.todayTT, subj = p => { const r = rows && rows.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
-  const items = [`${fmtDay(now())}`, b.state];
-  if (pi.cur && subj(pi.cur)) items.push(`지금 ${pi.cur}교시 ${subj(pi.cur)}`);
-  if (pi.nxt && subj(pi.nxt)) items.push(`다음 ${pi.nxt}교시 ${subj(pi.nxt)}`);
-  if (TK.meal) items.push(`오늘 메인 ${TK.meal}`);
-  if (TK.up) items.push(TK.up);
-  items.push('SVMHS GROUND');
-  const one = items.map(x => `<span>${esc(x)}</span><i>★</i>`).join('');
-  $('#ticker').innerHTML = one + one;   // 두 번 이어 붙여서 끊김 없이 반복
+function renderTicker() {
+  const el = $('#ticker'); if (!el || el.dataset.done) return;
+  const one = '<span>SVMHS GROUND</span><i>★</i>'.repeat(16);
+  el.innerHTML = one + one;   // 두 번 이어 붙여서 끊김 없이 반복
+  el.dataset.done = '1';
 }
 async function loadOffDays() {
   try {
