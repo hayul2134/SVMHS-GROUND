@@ -1,0 +1,18 @@
+# Cloudflare Pages 응답 헤더 (정적 파일에 적용. /api/* 헤더는 functions/api/[[path]].js에서 설정)
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()
+  Cross-Origin-Opener-Policy: same-origin
+  ! Access-Control-Allow-Origin
+
+# 이미지는 하루 캐시 (CSS/JS/HTML은 Pages 기본값: 매번 변경 여부 확인)
+/icons/*
+  Cache-Control: public, max-age=86400
+/og-image.jpg
+  Cache-Control: public, max-age=86400
+/logo*.svg
+  Cache-Control: public, max-age=86400
