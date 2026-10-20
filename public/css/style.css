@@ -147,6 +147,32 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 @media (max-width:560px){.appgrid{gap:14px 10px}.app{padding:14px 2px 12px;font-size:12.5px;border-radius:18px}.ai{width:46px;height:46px;border-radius:13px}.ai svg{width:22px;height:22px}}
 .board{padding:40px 0 0}
 
+/* 시계 오른쪽: 오늘 시간표 스티커 (넓은 화면은 옆, 좁은 화면은 아래) */
+.s-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:clamp(28px,4vw,56px);width:100%}
+.s-row .clock{grid-column:2}
+.s-row .s-tt{grid-column:3;justify-self:start}
+.s-tt{position:relative;flex:none;width:250px;text-align:left;background:var(--card);color:var(--text);border:var(--bd);border-radius:20px;box-shadow:var(--sh);padding:18px 14px 12px;transform:rotate(1.6deg)}
+.s-tt::before{content:"";position:absolute;top:-12px;left:50%;width:84px;height:22px;margin-left:-42px;background:rgba(143,232,207,.85);border-left:2px dashed rgba(0,0,0,.15);border-right:2px dashed rgba(0,0,0,.15);transform:rotate(-5deg)}
+.s-tth{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;font-weight:900;margin:0 2px 10px}
+.s-ttmore{font-size:12px;font-weight:900;text-decoration:none;color:var(--sub);padding:3px 9px;border-radius:999px;background:var(--chip);border:2px solid var(--line)}
+.s-ttmore:hover{color:var(--text);border-color:var(--ink)}
+.s-tt .tt{gap:3px}
+.s-tt .tt li{gap:10px;padding:4px 8px 4px 4px;border-radius:12px}
+.s-tt .tt li .p{width:28px;height:28px;border-radius:8px;font-size:14px}
+.s-tt .tt li .s{font-size:15px;line-height:1.25}
+.s-tt .tt li.now{transform:rotate(-1deg) scale(1.03)}
+.s-tt .empty{font-size:14px;padding:6px 2px 8px}
+.s-tt .note{margin:8px 2px 0}
+@media (min-width:1000px){.s-row .s-big{font-size:clamp(84px,11vw,168px)}}
+@media (max-width:999px){
+  .s-row{display:flex;flex-direction:column;align-items:center;gap:30px}
+  .s-tt{width:min(420px,100%);transform:rotate(-.8deg)}
+  .s-tt .tt{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
+  .s-tt .tt li .s{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .s-tt .tt li.now .s::after{display:none}
+}
+.bento #weekTT{transform:rotate(.3deg);scroll-margin-top:96px}
+.bento #weekTT .ct{flex-wrap:wrap;gap:10px}
 /* ===== 6. 카드 · 그리드 ===== */
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:22px 18px}
 .bento{margin-top:26px}

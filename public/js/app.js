@@ -17,7 +17,7 @@ const myDdays = () => {
 
 /* ===== 상태 ===== */
 let cls = validClass(store.get('class', null));
-const S = { mealDate: today(), ttWeek: mondayOf(today()), calMonth: new Date(today().getFullYear(), today().getMonth(), 1), homeMeal: null };
+const S = { mealDate: today(), ttWeek: mondayOf(today()), calMonth: new Date(today().getFullYear(), today().getMonth(), 1), homeMeal: null, homeWeek: mondayOf(addDays(today(), today().getDay() === 6 ? 2 : today().getDay() === 0 ? 1 : 0)) };
 const startDay = ymd(today());
 
 /* ===== 헤더 · 시계 · 종 시간 ===== */
@@ -92,7 +92,7 @@ function tickClock() {
   const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
   if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
     nextKey = key; renderNext(b, pi); renderTicker(b, pi);
-    $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
+    $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
   }
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
@@ -251,9 +251,10 @@ $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealVie
 const subjName = s => String(s || '').replace(/^[\s*#·-]+/, '').trim();   // 나이스 원문의 '* 영상 CG작업' 같은 기호 제거
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 async function renderHomeTT() {
-  const box = $('#hTT'), d = today();
-  if (!cls) { box.innerHTML = needClass; return; }
-  if (d.getDay() % 6 === 0) { S.todayTT = []; box.innerHTML = empty('오늘은 주말이에요. 푹 쉬어요!'); return; }
+  const box = $('#sTT'), d = today();
+  renderHomeWeek();
+  if (!cls) { S.todayTT = []; box.innerHTML = needClass; nextKey = ''; return; }
+  if (d.getDay() % 6 === 0) { S.todayTT = []; box.innerHTML = empty('오늘은 주말이에요. 푹 쉬어요!'); nextKey = ''; return; }
   try {
     const rows = (await getTimetable(cls, mondayOf(d), addDays(mondayOf(d), 4))).filter(r => r.ALL_TI_YMD === ymd(d)).sort((a, b) => a.PERIO - b.PERIO);
     S.todayTT = rows;
@@ -263,18 +264,16 @@ async function renderHomeTT() {
       ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
       : empty('오늘 시간표 정보가 없어요');
   } catch { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); }
-  nextKey = '';   // 다음 수업 타일 다시 그리기
+  nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
 }
-async function renderTTView() {
-  const mon = S.ttWeek, fri = addDays(mon, 4), box = $('#tWeek');
-  $('#tLbl').textContent = `${mon.getMonth() + 1}/${mon.getDate()} ~ ${fri.getMonth() + 1}/${fri.getDate()}`;
-  $('#ttTitle').textContent = cls ? `${cls.g}학년 ${cls.c}반 시간표` : '주간 시간표';
-  $('#ttNote').textContent = api.hasKey ? '' : '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)';
+// 월~금 시간표 표 (홈 아래쪽 카드와 시간표 화면이 같이 씀)
+const weekLbl = mon => { const fri = addDays(mon, 4); return `${mon.getMonth() + 1}/${mon.getDate()} ~ ${fri.getMonth() + 1}/${fri.getDate()}`; };
+async function fillWeek(box, mon, stale) {
   if (!cls) { box.innerHTML = needClass; return; }
   box.innerHTML = skel(5);
   try {
-    const rows = await getTimetable(cls, mon, fri);
-    if (mon !== S.ttWeek) return;
+    const rows = await getTimetable(cls, mon, addDays(mon, 4));
+    if (stale()) return;
     if (!rows.length) { box.innerHTML = empty('이 주의 시간표 정보가 없어요'); return; }
     const days = [0, 1, 2, 3, 4].map(i => addDays(mon, i)), t = ymd(today());
     const maxP = Math.min(10, Math.max(6, ...rows.map(r => +r.PERIO || 0)));
@@ -283,7 +282,25 @@ async function renderTTView() {
     let h = '<table class="week"><thead><tr><th></th>' + days.map(d => `<th class="${ymd(d) === t ? 'today' : ''}">${DOW[d.getDay()]} ${d.getDate()}</th>`).join('') + '</tr></thead><tbody>';
     for (let p = 1; p <= maxP; p++) h += `<tr><td class="pn">${p}</td>${days.map(d => td(d, p)).join('')}</tr>`;
     box.innerHTML = h + '</tbody></table>';
-  } catch { box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+  } catch { if (!stale()) box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+}
+function renderHomeWeek() {
+  const mon = S.homeWeek;
+  $('#hwLbl').textContent = weekLbl(mon);
+  const w = Math.round(diffDays(mon, mondayOf(today())) / 7), tag = { '-1': '지난주 ', 0: '이번 주 ', 1: '다음 주 ' }[w] || '';
+  $('#hwTitle').textContent = tag + (cls ? `${cls.g}학년 ${cls.c}반 시간표` : '시간표');
+  $('#hwNote').textContent = cls && !api.hasKey ? '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)' : '';
+  fillWeek($('#hWeek'), mon, () => mon !== S.homeWeek);
+}
+$('#hwPrev').onclick = () => { S.homeWeek = addDays(S.homeWeek, -7); renderHomeWeek(); };
+$('#hwNext').onclick = () => { S.homeWeek = addDays(S.homeWeek, 7); renderHomeWeek(); };
+$('#goWeek').onclick = e => { e.preventDefault(); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+async function renderTTView() {
+  const mon = S.ttWeek;
+  $('#tLbl').textContent = weekLbl(mon);
+  $('#ttTitle').textContent = cls ? `${cls.g}학년 ${cls.c}반 시간표` : '주간 시간표';
+  $('#ttNote').textContent = api.hasKey ? '' : '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)';
+  fillWeek($('#tWeek'), mon, () => mon !== S.ttWeek);
 }
 $('#tPrev').onclick = () => { S.ttWeek = addDays(S.ttWeek, -7); renderTTView(); };
 $('#tNext').onclick = () => { S.ttWeek = addDays(S.ttWeek, 7); renderTTView(); };

@@ -79,6 +79,7 @@
     <section class="stage" id="bigclock" aria-label="종 시간">
       <p class="s-greet"><span class="bubble" id="greet">안녕!</span></p>
       <p class="s-what" id="bellLbl">&nbsp;</p>
+      <div class="s-row">
       <div class="clock">
         <b class="s-big" id="bigTime" role="timer">--:--</b>
         <i class="dk tape" aria-hidden="true"></i>
@@ -89,6 +90,11 @@
         <svg class="dk k5" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2Q21 15 34 18Q21 21 18 34Q15 21 2 18Q15 15 18 2Z"/></svg>
         <i class="dk ring" aria-hidden="true"></i>
         <i class="dk dot1" aria-hidden="true"></i>
+      </div>
+      <aside class="s-tt k-tt" aria-labelledby="sTTh">
+        <h2 class="s-tth" id="sTTh"><span id="sTTlbl">오늘 시간표</span><a href="#weekTT" class="s-ttmore" id="goWeek">전체 ▾</a></h2>
+        <div id="sTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+      </aside>
       </div>
       <p class="s-sub" id="nowBox"><span class="s-left"><b>현재 시각</b><b class="s-cnt" id="bellCnt"></b></span></p>
       <p class="s-date" id="todayLbl" aria-live="off"></p>
@@ -117,16 +123,19 @@
     <section class="board" aria-labelledby="boardT">
       <h2 class="sec-t" id="boardT">오늘 한눈에</h2>
       <div class="grid bento">
+        <div class="card c12 k-tt" id="weekTT">
+          <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i><span id="hwTitle">이번 주 시간표</span></h2>
+            <div class="pager"><button id="hwPrev" aria-label="이전 주"><svg viewBox="0 0 24 24"><use href="#i-prev"/></svg></button><span class="lbl" id="hwLbl"></span><button id="hwNext" aria-label="다음 주"><svg viewBox="0 0 24 24"><use href="#i-next"/></svg></button></div>
+          </div>
+          <div class="scrollx" id="hWeek"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+          <p class="note" id="hwNote"></p>
+        </div>
         <div class="card c5 k-meal">
           <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg></i>오늘 급식</h2><a href="#meal" data-go="meal">전체 보기</a></div>
           <div class="mealtabs" id="hMealTabs"></div>
           <div id="hMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
         </div>
-        <div class="card c7 k-tt">
-          <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>오늘 시간표</h2><a href="#tt" data-go="tt">주간 보기</a></div>
-          <div id="hTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
-        </div>
-        <div class="card c12 k-up">
+        <div class="card c7 k-up">
           <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>다가오는 일정</h2><span class="links"><a href="#cal" data-go="cal">학사일정</a><a href="#dday" data-go="dday">D-day 추가</a></span></div>
           <div class="uprow" id="hUp"><div class="skel"></div></div>
         </div>
