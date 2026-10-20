@@ -10,85 +10,104 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
-  --bg:#f4f5f8; --card:#ffffff; --text:#14161c; --sub:#6b7180; --line:#e4e6ec;
-  --accent:#5b5bf7; --accent-soft:#ececfe; --warn:#e5484d; --ok:#12a150;
-  --radius:18px; --shadow:0 1px 2px rgba(16,18,28,.04),0 4px 16px rgba(16,18,28,.05);
+  --bg:#f6f5f2; --card:#ffffff; --text:#191a1f; --sub:#6f727b; --line:#ebe9e4; --chip:#f1f0ec;
+  --accent:#4f46e5; --accent-soft:#eceafd; --warn:#e5484d; --ok:#16a34a;
+  --meal:#ea6a12; --meal-s:#fff0e3; --tt:#2f6fe4; --tt-s:#e7f0ff; --cal:#15965a; --cal-s:#e3f5eb; --dd:#d9447a; --dd-s:#fde7ef;
+  --radius:24px; --shadow:0 1px 2px rgba(20,20,30,.04),0 8px 24px rgba(20,20,30,.06);
 }
 :root[data-theme="dark"]{
-  --bg:#0f1115; --card:#181b22; --text:#eef0f5; --sub:#9198a8; --line:#262a33;
-  --accent:#8b8bff; --accent-soft:#23243d; --shadow:none;
+  --bg:#0f1013; --card:#1a1b20; --text:#f0f1f4; --sub:#9a9eaa; --line:#2a2c33; --chip:#23252b;
+  --accent:#8f88ff; --accent-soft:#25234a;
+  --meal:#ff9a4d; --meal-s:#3a2516; --tt:#6aa0ff; --tt-s:#172744; --cal:#4cc98a; --cal-s:#13301f; --dd:#ff7aa6; --dd-s:#3a1828;
+  --shadow:none;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
+  background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;transition:background .2s,color .2s;word-break:keep-all}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
-.wrap{max-width:1080px;margin:0 auto;padding:0 16px 96px}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:10px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 110px}
 
 /* header */
-header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.hd{max-width:1080px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:12px}
-.logo{font-weight:900;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
-.logo b{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;font-size:13px}
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.hd{max-width:1080px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:8px}
+.logo{font-weight:900;font-size:18px;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
+.logo b{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#6d5efc,#4f46e5);color:#fff;font-size:13px;box-shadow:0 4px 12px rgba(79,70,229,.3)}
 .logo span{color:var(--accent)}
 .hd .sp{flex:1}
-.iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line)}
-.iconbtn:hover{border-color:var(--accent)}
+.iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--sub);transition:.15s}
+.iconbtn:hover{background:var(--chip);color:var(--text)}
 .iconbtn svg{width:20px;height:20px}
 
-/* nav */
-nav{max-width:1080px;margin:0 auto;padding:0 16px 10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+/* nav: 넓은 화면 = 상단 탭, 좁은 화면 = 하단 탭바 */
+nav{position:sticky;top:68px;z-index:19;max-width:1080px;margin:0 auto;padding:4px 16px 10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
 nav::-webkit-scrollbar{display:none}
-nav button{flex:none;display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;font-weight:600;font-size:15px;color:var(--sub);background:var(--card);border:1px solid var(--line)}
-nav button svg{width:17px;height:17px}
+nav button{flex:none;display:flex;align-items:center;gap:7px;padding:10px 16px;border-radius:999px;font-weight:700;font-size:15px;color:var(--sub);background:var(--card);border:1px solid var(--line);transition:.15s}
+nav button:hover{color:var(--text)}
+nav button svg{width:18px;height:18px}
 nav button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+@media (max-width:700px){
+  nav{position:fixed;top:auto;bottom:0;left:0;right:0;max-width:none;margin:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:0;justify-content:space-around;
+    background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  nav button{flex:1;flex-direction:column;gap:3px;padding:7px 2px;border:0;background:none;border-radius:12px;font-size:11.5px}
+  nav button svg{width:22px;height:22px}
+  nav button.on{background:none;color:var(--accent)}
+}
 
 /* hero */
-.hero{padding:18px 2px 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.hero h1{font-size:28px;font-weight:800;letter-spacing:-.03em}
-.hero p{color:var(--sub);font-weight:500}
-.clock{font-variant-numeric:tabular-nums;font-size:34px;font-weight:800;letter-spacing:-.02em}
-.classchip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:14px;margin-top:6px}
+.hero{padding:16px 2px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hero p{color:var(--sub);font-weight:600;font-size:15px}
+.hero h1{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1.25}
+.clock{font-variant-numeric:tabular-nums;font-size:30px;font-weight:800;letter-spacing:-.02em;padding:6px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.classchip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:14px;margin-top:8px}
 
-/* grid & cards */
+/* bento grid & cards */
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0}
+.card{--k:var(--accent);--ks:var(--accent-soft);background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);min-width:0}
+.k-meal{--k:var(--meal);--ks:var(--meal-s)}.k-tt{--k:var(--tt);--ks:var(--tt-s)}.k-cal{--k:var(--cal);--ks:var(--cal-s)}.k-dd{--k:var(--dd);--ks:var(--dd-s)}
 .c4{grid-column:span 4}.c5{grid-column:span 5}.c7{grid-column:span 7}.c8{grid-column:span 8}.c6{grid-column:span 6}.c12{grid-column:span 12}
-@media (max-width:860px){.c4,.c5,.c7,.c8,.c6{grid-column:span 12}}
-.ct{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
-.ct h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
-.ct h2 svg{width:19px;height:19px;color:var(--accent)}
-.ct a,.link{color:var(--sub);font-size:13px;font-weight:600;cursor:pointer}
+@media (max-width:860px){.c5,.c7,.c8,.c12{grid-column:span 12}.c4,.c6{grid-column:span 6}}
+@media (max-width:560px){.c4,.c6{grid-column:span 12}}
+.ct{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.ct h2{font-size:17px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.ct h2 svg{width:34px;height:34px;padding:8px;border-radius:11px;background:var(--ks);color:var(--k);flex:none}
+.ct a,.link{color:var(--sub);font-size:13px;font-weight:700;cursor:pointer;padding:6px 10px;border-radius:999px;background:var(--chip);white-space:nowrap}
+.ct a:hover,.link:hover{color:var(--k,var(--accent))}
 .muted{color:var(--sub)}
 .small{font-size:13px}
 .empty{color:var(--sub);font-size:14px;padding:10px 0}
 
 /* meal */
-.menu{list-style:none;display:flex;flex-direction:column;gap:6px}
-.menu li{font-size:16px;font-weight:500}
-.kcal{margin-top:10px;font-size:13px;color:var(--sub)}
-.mealtabs{display:flex;gap:6px;margin-bottom:12px}
-.mealtabs button{padding:6px 12px;border-radius:10px;font-weight:600;font-size:14px;background:var(--bg);color:var(--sub)}
-.mealtabs button.on{background:var(--accent);color:#fff}
+.menu{list-style:none;display:flex;flex-direction:column;gap:2px}
+.menu li{font-size:17px;font-weight:600;padding:7px 0 7px 18px;position:relative;border-bottom:1px dashed var(--line)}
+.menu li:last-child{border-bottom:0}
+.menu li::before{content:"";position:absolute;left:2px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:var(--k)}
+.kcal{display:inline-block;margin-top:12px;font-size:13px;font-weight:700;color:var(--k);background:var(--ks);padding:4px 10px;border-radius:999px}
+.kcal:empty{display:none}
+.mealtabs{display:inline-flex;gap:2px;padding:4px;margin-bottom:12px;background:var(--chip);border-radius:13px}
+.mealtabs:empty{display:none}
+.mealtabs button{padding:6px 14px;border-radius:10px;font-weight:700;font-size:14px;color:var(--sub);transition:.15s}
+.mealtabs button.on{background:var(--card);color:var(--k);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .mealcols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-@media (max-width:700px){.mealcols{grid-template-columns:1fr}}
-.mealcols .card h3{font-size:15px;margin-bottom:10px;color:var(--accent)}
+@media (max-width:760px){.mealcols{grid-template-columns:1fr}}
+.mealcols .card h3{font-size:15px;font-weight:800;margin-bottom:8px;color:var(--k);display:inline-block;background:var(--ks);padding:4px 12px;border-radius:999px}
 
 /* timetable */
 .tt{list-style:none;display:flex;flex-direction:column;gap:6px}
-.tt li{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:12px;background:var(--bg)}
-.tt li .p{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--card);color:var(--sub);flex:none}
-.tt li .s{font-weight:600}
-.tt li.now{background:var(--accent);color:#fff}
-.tt li.now .p{background:rgba(255,255,255,.2);color:#fff}
+.tt li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--chip)}
+.tt li .p{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--card);color:var(--k);flex:none}
+.tt li .s{font-weight:700;font-size:15.5px}
+.tt li.now{background:var(--k);color:#fff}
+.tt li.now .p{background:rgba(255,255,255,.22);color:#fff}
 .week{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed}
 .week th{font-size:13px;color:var(--sub);font-weight:700;padding:6px 0}
-.week th.today{color:var(--accent)}
-.week td{background:var(--bg);border-radius:10px;padding:10px 6px;text-align:center;font-size:14px;font-weight:600;word-break:keep-all;height:52px}
+.week th.today{color:var(--k)}
+.week td{background:var(--chip);border-radius:11px;padding:10px 6px;text-align:center;font-size:14px;font-weight:600;height:54px}
 .week td.pn{background:none;color:var(--sub);font-weight:800;width:34px}
-.week td.today{background:var(--accent-soft);color:var(--accent)}
+.week td.today{background:var(--ks);color:var(--k);font-weight:800}
 .scrollx{overflow-x:auto}
 .scrollx .week{min-width:560px}
 
@@ -96,53 +115,60 @@ nav button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
 .ev{list-style:none;display:flex;flex-direction:column}
 .ev li{display:flex;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
 .ev li:last-child{border-bottom:0}
-.ev .d{width:52px;flex:none;text-align:center}
-.ev .d b{display:block;font-size:20px;font-weight:800;line-height:1.1}
-.ev .d span{font-size:12px;color:var(--sub);font-weight:600}
-.ev .n{font-weight:600;flex:1;min-width:0}
-.ev .tag{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);flex:none}
+.ev .d{width:50px;height:50px;flex:none;text-align:center;border-radius:14px;background:var(--chip);display:flex;flex-direction:column;justify-content:center}
+.ev .d b{display:block;font-size:19px;font-weight:800;line-height:1.05}
+.ev .d span{font-size:11px;color:var(--sub);font-weight:700}
+.ev .n{font-weight:700;flex:1;min-width:0}
+.ev .tag{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--ks);color:var(--k);flex:none;font-variant-numeric:tabular-nums}
 .ev .tag.off{background:#fde8e8;color:var(--warn)}
 :root[data-theme="dark"] .ev .tag.off{background:#3a1d1f}
 .ev li.past{opacity:.45}
 
 /* dday */
 .dlist{list-style:none;display:flex;flex-direction:column;gap:8px}
-.dlist li{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--bg)}
-.dlist .num{font-weight:900;font-size:18px;color:var(--accent);min-width:64px;font-variant-numeric:tabular-nums}
-.dlist .nm{flex:1;font-weight:600;min-width:0}
-.dlist .dt{font-size:12px;color:var(--sub)}
-.dlist .x{color:var(--sub);width:28px;height:28px;border-radius:8px}
+.dlist li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--chip)}
+.dlist .num{font-weight:900;font-size:15px;color:var(--k);background:var(--ks);padding:6px 10px;border-radius:10px;min-width:70px;text-align:center;font-variant-numeric:tabular-nums}
+.dlist .nm{flex:1;font-weight:700;min-width:0}
+.dlist .dt{font-size:12px;color:var(--sub);font-weight:600}
+.dlist .x{color:var(--sub);width:30px;height:30px;border-radius:9px}
 .dlist .x:hover{background:var(--card);color:var(--warn)}
-.form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.form input{flex:1;min-width:140px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg)}
-.btn{padding:11px 16px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700}
-.btn.ghost{background:var(--bg);color:var(--text);border:1px solid var(--line)}
+.form{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.form input{flex:1;min-width:140px;padding:12px 14px;border-radius:13px;border:1px solid var(--line);background:var(--chip)}
+.btn{padding:12px 18px;border-radius:13px;background:var(--k,var(--accent));color:#fff;font-weight:800;transition:.15s}
+.btn:hover{filter:brightness(1.07)}
+.btn.ghost{background:var(--chip);color:var(--text)}
 
 /* date pager */
-.pager{display:flex;align-items:center;gap:8px}
-.pager button{width:34px;height:34px;border-radius:10px;background:var(--bg);display:grid;place-items:center}
+.pager{display:flex;align-items:center;gap:6px}
+.pager button{width:36px;height:36px;border-radius:11px;background:var(--chip);display:grid;place-items:center}
+.pager button:hover{color:var(--k)}
 .pager button svg{width:16px;height:16px}
-.pager .lbl{font-weight:700;min-width:120px;text-align:center}
+.pager .lbl{font-weight:800;min-width:118px;text-align:center}
+.vhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.vhead h2{font-size:22px;font-weight:800;letter-spacing:-.03em}
 
 /* modal */
-.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,12,18,.55)}
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,12,18,.5)}
 .modal.open{display:flex}
-.sheet{background:var(--card);border-radius:22px;padding:24px;width:100%;max-width:400px;text-align:center}
-.sheet h3{font-size:20px;margin-bottom:4px}
-.qrbox{background:#fff;border-radius:16px;padding:10px;margin:18px auto;width:min(260px,70vw)}
+.sheet{background:var(--card);border-radius:26px;padding:26px;width:100%;max-width:400px;text-align:center;animation:pop .2s ease-out}
+@keyframes pop{from{transform:translateY(10px) scale(.98);opacity:0}}
+.sheet h3{font-size:20px;font-weight:800;margin-bottom:4px}
+.qrbox{background:#fff;border-radius:18px;padding:10px;margin:18px auto;width:min(260px,70vw)}
 .qrbox svg{display:block;width:100%;height:auto}
 .url{font-size:14px;color:var(--sub);word-break:break-all;margin-bottom:16px}
 .sheet .row{display:flex;gap:8px}
 .sheet .row .btn{flex:1}
-.sheet select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);margin-top:8px}
-.sheet label{display:block;text-align:left;font-weight:700;font-size:14px;margin-top:14px}
-.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;opacity:0;transition:.25s;z-index:60;pointer-events:none}
+.sheet select{width:100%;padding:12px;border-radius:13px;border:1px solid var(--line);background:var(--chip);margin-top:8px}
+.sheet label{display:block;text-align:left;font-weight:800;font-size:14px;margin-top:14px}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:14px;font-weight:700;opacity:0;transition:.25s;z-index:60;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--bg),var(--line),var(--bg));background-size:200% 100%;animation:sk 1.2s infinite;margin:8px 0}
+.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--chip),var(--line),var(--chip));background-size:200% 100%;animation:sk 1.2s infinite;margin:10px 0}
 @keyframes sk{to{background-position:-200% 0}}
-footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
-.view{display:none}.view.on{display:block}
+footer{text-align:center;color:var(--sub);font-size:12px;padding:32px 0 0}
+.view{display:none}.view.on{display:block;animation:fade .2s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}}
 .note{font-size:12px;color:var(--sub);margin-top:10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -154,6 +180,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
     <button class="iconbtn" id="btnTheme" title="테마" aria-label="테마 바꾸기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
     <button class="iconbtn" id="btnShare" title="공유하기" aria-label="공유하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></button>
   </div>
+</header>
   <nav id="nav">
     <button data-v="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></svg>홈</button>
     <button data-v="meal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v20M4 2v6a3 3 0 0 0 6 0V2M17 22V2c-2.5 1.5-4 4-4 8h4"/></svg>급식</button>
@@ -161,7 +188,6 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
     <button data-v="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>학사일정</button>
     <button data-v="dday"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>D-day</button>
   </nav>
-</header>
 
 <main class="wrap">
   <section class="hero">
@@ -176,20 +202,20 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
   <!-- HOME -->
   <div class="view on" id="v-home">
     <div class="grid">
-      <div class="card c5">
+      <div class="card c5 k-meal">
         <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v20M4 2v6a3 3 0 0 0 6 0V2M17 22V2c-2.5 1.5-4 4-4 8h4"/></svg><span id="hMealTitle">오늘 급식</span></h2><a data-go="meal">전체 보기</a></div>
         <div class="mealtabs" id="hMealTabs"></div>
         <div id="hMeal"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
       </div>
-      <div class="card c7">
+      <div class="card c7 k-tt">
         <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>오늘 시간표</h2><a data-go="tt">주간 보기</a></div>
         <div id="hTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
       </div>
-      <div class="card c7">
+      <div class="card c7 k-cal">
         <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>다가오는 일정</h2><a data-go="cal">전체 보기</a></div>
         <div id="hCal"><div class="skel"></div><div class="skel"></div></div>
       </div>
-      <div class="card c5">
+      <div class="card c5 k-dd">
         <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>D-day</h2><a data-go="dday">관리</a></div>
         <div id="hDday"></div>
       </div>
@@ -198,17 +224,15 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
 
   <!-- MEAL -->
   <div class="view" id="v-meal">
-    <div class="card c12" style="margin-bottom:14px">
-      <div class="ct" style="margin:0"><h2>급식</h2>
+    <div class="vhead k-meal" style="--k:var(--meal)"><h2>급식</h2>
         <div class="pager"><button id="mPrev" aria-label="이전 날"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button><span class="lbl" id="mLbl"></span><button id="mNext" aria-label="다음 날"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button></div>
-      </div>
     </div>
     <div class="mealcols" id="mCols"></div>
   </div>
 
   <!-- TIMETABLE -->
   <div class="view" id="v-tt">
-    <div class="card">
+    <div class="card k-tt">
       <div class="ct"><h2 id="ttTitle">주간 시간표</h2>
         <div class="pager"><button id="tPrev" aria-label="이전 주"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button><span class="lbl" id="tLbl"></span><button id="tNext" aria-label="다음 주"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button></div>
       </div>
@@ -219,7 +243,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
 
   <!-- CALENDAR -->
   <div class="view" id="v-cal">
-    <div class="card">
+    <div class="card k-cal">
       <div class="ct"><h2>학사일정</h2>
         <div class="pager"><button id="cPrev" aria-label="이전 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button><span class="lbl" id="cLbl"></span><button id="cNext" aria-label="다음 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button></div>
       </div>
@@ -230,7 +254,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
   <!-- DDAY -->
   <div class="view" id="v-dday">
     <div class="grid">
-      <div class="card c6">
+      <div class="card c6 k-dd">
         <div class="ct"><h2>내 D-day</h2></div>
         <div id="dMine"></div>
         <div class="form">
@@ -240,7 +264,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
         </div>
         <p class="note">내 D-day는 이 기기에만 저장돼요.</p>
       </div>
-      <div class="card c6">
+      <div class="card c6 k-cal">
         <div class="ct"><h2>학교 일정 D-day</h2></div>
         <div id="dSchool"></div>
       </div>
@@ -548,13 +572,13 @@ async function renderHomeMeal() {
 async function renderMealView() {
   $('#mLbl').textContent = fmtDay(S.mealDate);
   const cols = $('#mCols');
-  cols.innerHTML = Object.values(MEALS).map(n => `<div class="card"><h3>${n}</h3>${skel(4)}</div>`).join('');
+  cols.innerHTML = Object.values(MEALS).map(n => `<div class="card k-meal"><h3>${n}</h3>${skel(4)}</div>`).join('');
   const d = S.mealDate;
   try {
     const rows = await getMeals(d);
     if (d !== S.mealDate) return;
-    cols.innerHTML = Object.entries(MEALS).map(([c, n]) => `<div class="card"><h3>${n}</h3>${mealHtml(rows.find(r => r.MMEAL_SC_CODE === c))}</div>`).join('');
-  } catch { cols.innerHTML = '<div class="card"><p class="empty">급식 정보를 불러오지 못했어요</p></div>'; }
+    cols.innerHTML = Object.entries(MEALS).map(([c, n]) => `<div class="card k-meal"><h3>${n}</h3>${mealHtml(rows.find(r => r.MMEAL_SC_CODE === c))}</div>`).join('');
+  } catch { cols.innerHTML = '<div class="card k-meal"><p class="empty">급식 정보를 불러오지 못했어요</p></div>'; }
 }
 $('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealView(); };
 $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };
