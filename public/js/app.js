@@ -81,14 +81,14 @@ function tickClock() {
   $('#greet').textContent = sayLine(b);
   $('#bellState').textContent = b.state;
   $('#bellLbl').textContent = b.label;
-  $('#bellCnt').textContent = left != null ? fmtLeft(left) : `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  $('#bellCnt').innerHTML = [...(left != null ? fmtLeft(left) : `${pad(n.getHours())}:${pad(n.getMinutes())}`)].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join('');   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
   const hero = $('#bigclock');
   hero.classList.toggle('soon', left != null && left <= 60);
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
   const pi = periodInfo(b);
   $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
   const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
-  if (key !== nextKey) { nextKey = key; renderNext(b, pi); }
+  if (key !== nextKey) { nextKey = key; renderNext(b, pi); renderTicker(b, pi); }
   const bar = b.from != null && left != null;
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${Math.min(1, (secNow - b.from) / (b.target - b.from)).toFixed(4)})`;
@@ -112,6 +112,20 @@ function renderNext(b, pi) {
     else if (np) h += `<p class="t-sub">${b.state === '등교 전' ? '오늘 첫 수업' : '곧 시작해요'}</p>`;
   }
   box.innerHTML = h;
+}
+// 전광판: 오늘 정보를 한 줄로 흘려보냄
+const TK = { meal: '', up: '' };
+function renderTicker(b, pi) {
+  b = b || bellInfo(new Date()); pi = pi || periodInfo(b);
+  const rows = S.todayTT, subj = p => { const r = rows && rows.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
+  const items = [`${fmtDay(new Date())}`, b.state];
+  if (pi.cur && subj(pi.cur)) items.push(`지금 ${pi.cur}교시 ${subj(pi.cur)}`);
+  if (pi.nxt && subj(pi.nxt)) items.push(`다음 ${pi.nxt}교시 ${subj(pi.nxt)}`);
+  if (TK.meal) items.push(`오늘 메인 ${TK.meal}`);
+  if (TK.up) items.push(TK.up);
+  items.push('SVMHS GROUND');
+  const one = items.map(x => `<span>${esc(x)}</span><i>★</i>`).join('');
+  $('#ticker').innerHTML = one + one;   // 두 번 이어 붙여서 끊김 없이 반복
 }
 async function loadOffDays() {
   try {
@@ -167,6 +181,8 @@ async function renderHomeMeal() {
     const sel = S.homeMeal || (rows.find(r => r.MMEAL_SC_CODE === pref) || rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0]).MMEAL_SC_CODE;
     tabs.innerHTML = rows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
     box.innerHTML = mealHtml(rows.find(r => r.MMEAL_SC_CODE === sel));
+    const lunch = rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0], ll = cleanDish(lunch.DDISH_NM);
+    TK.meal = ll[Math.max(0, ll.findIndex(n => !isSide(n)))] || ''; renderTicker();
   } catch { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); }
 }
 $('#hMealTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.homeMeal = b.dataset.m; renderHomeMeal(); } });
@@ -272,6 +288,7 @@ async function renderHomeDday() {
   } catch { fail = true; }
   const list = mine.concat(school).sort(byDate).slice(0, 10);
   if (!list.length) { box.innerHTML = empty(fail ? '일정을 불러오지 못했어요' : '60일 안에 예정된 일정이 없어요 · <button class="link" data-go="dday">D-day 추가</button>'); return; }
+  { const f = list[0]; TK.up = `${f.name} ${ddayText(diffDays(parseYmd(f.date), t))}`; renderTicker(); }
   box.innerHTML = list.map((x, i) => {
     const d = parseYmd(x.date), n = diffDays(d, t);
     const tag = x.mine ? '<em class="tag me">내 D-day</em>' : x.off ? '<em class="tag off">쉬는 날</em>' : '';
@@ -358,7 +375,7 @@ $('#clearData').onclick = () => {
 /* ===== 테마 (첫 적용은 js/theme.js가 깜빡임 없이 처리) ===== */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
-  $('meta[name=theme-color]').content = t === 'dark' ? '#0a0d18' : '#eef2fb';
+  $('meta[name=theme-color]').content = t === 'dark' ? '#12164a' : '#3157ff';
 }
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };

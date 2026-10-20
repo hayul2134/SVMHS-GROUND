@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SVMHS GROUND · 서울영상고 급식·시간표</title>
 <meta name="description" content="서울영상고 학생들을 위한 급식·시간표·학사일정·D-day 모음. 로그인 없이 바로 써요.">
-<meta name="theme-color" content="#eef2fb">
+<meta name="theme-color" content="#3157ff">
 <meta name="color-scheme" content="light dark">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="canonical" href="https://svmhs-ground.pages.dev/">
@@ -33,6 +33,7 @@
 
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/bagel-fat-one@5/index.css">
 <link rel="stylesheet" href="/css/style.css">
 <script src="/js/theme.js"></script>
 <script type="module" src="/js/app.js"></script>
@@ -75,8 +76,9 @@
 <main class="wrap">
   <noscript><div class="noscript">이 사이트는 자바스크립트가 필요해요. 브라우저 설정에서 자바스크립트를 켜 주세요.</div></noscript>
 
-  <!-- 홈: 벤토 그리드 -->
+  <!-- 홈: 스티커 보드 -->
   <div class="view on" id="v-home">
+    <div class="ticker" aria-hidden="true"><div class="tk" id="ticker"></div></div>
     <div class="grid bento">
       <!-- 메인 타일: 남은 시간이 주인공 -->
       <section class="tile hero c8" id="bigclock" aria-label="종 시간">
@@ -155,7 +157,7 @@
     </div>
   </div>
 
-  <footer>SVMHS GROUND · 서울영상고 학생이 만든 비공식 사이트 · <button id="openInfo">이용 안내</button><br>급식·시간표·학사일정 정보: 나이스 교육정보 개방 포털</footer>
+  <footer>SVMHS GROUND · 우리끼리 쓰는 비공식 사이트 ✌️ · <button id="openInfo">이용 안내</button><br>급식·시간표·학사일정 정보: 나이스 교육정보 개방 포털</footer>
 </main>
 
 <!-- 공유 -->
