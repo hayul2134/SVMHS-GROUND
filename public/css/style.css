@@ -190,7 +190,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
   .s-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"c c" "l r";align-items:start;row-gap:44px}
   .s-row .clock{justify-self:center}
 }
-/* 첫 화면 오른쪽: 지금 급식 (시간표 아래 작은 식판) */
+/* 첫 화면 오른쪽: 오늘 급식 (시간표 아래 작은 식판) */
 .s-tt.s-meal{width:340px;max-width:100%;transform:rotate(-1.4deg)}
 .s-meal::before{background:rgba(255,224,138,.85);left:30%;transform:rotate(4deg)}
 .s-meal .vnote{margin:10px 2px 0;font-size:12.5px}

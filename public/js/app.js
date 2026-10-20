@@ -302,7 +302,7 @@ function paintHeroMeal() {
   const box = $('#sMeal'), lbl = $('#sMealLbl');
   if (!homeRows.length) { lbl.textContent = '오늘 급식'; box.innerHTML = empty(S.mealFail ? '급식 정보를 불러오지 못했어요' : '오늘은 급식이 없어요'); return; }
   const r = pickMeal(homeRows, S.mealSlot);
-  lbl.textContent = `${r.MMEAL_SC_CODE === S.mealSlot ? '지금 급식' : '다음 급식'} · ${MEALS[r.MMEAL_SC_CODE]}`;
+  lbl.textContent = `오늘 급식 · ${MEALS[r.MMEAL_SC_CODE]}`;
   box.innerHTML = mealHtml(r, today(), true);
 }
 function paintHomeMeal() {
