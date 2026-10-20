@@ -220,7 +220,7 @@ const ROUTES = {
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE a = ?1').bind(u.id).first(),
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE b = ?1').bind(u.id).first(),
       db.prepare('SELECT game, MIN(best) AS best FROM scores WHERE uid = ?1 GROUP BY game').bind(u.id).all(),
-      todayCrowns(db, u.id),
+      topCrowns(db, u.id),
     ]);
     return json({
       user: pub(u), me: u.id === me.id, rel: r, counts: { following: fo.n, followers: fb.n },
@@ -362,25 +362,25 @@ const ROUTES = {
     const g = GAMES[game];
     if (!g || !Number.isFinite(v) || v < g.min || v > g.max) return err('기록이 이상해요');
     if (await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
-    const day = kstYmd();
+    const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const prev = await db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first();
     const allPrev = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
     if (!prev || v < prev.best) {
       await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
         ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, game, day, v, Date.now()).run();
     }
-    const best = prev ? Math.min(prev.best, v) : v;
-    const rank = await db.prepare('SELECT COUNT(*) + 1 AS r FROM scores WHERE game = ?1 AND day = ?2 AND best < ?3').bind(game, day, best).first();
-    return json({ ok: true, todayBest: best, newToday: !prev || v < prev.best, newAll: allPrev.b == null || v < allPrev.b, rank: rank.r });
+    const best = allPrev.b == null ? v : Math.min(allPrev.b, v);
+    const rank = await rankOf(db, game, best);
+    return json({ ok: true, best, newBest: allPrev.b == null || v < allPrev.b, rank });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {
-    const game = url.searchParams.get('game'), scope = url.searchParams.get('scope') || 'today';
+    const game = url.searchParams.get('game'), scope = url.searchParams.get('scope') || 'all';
     if (!GAMES[game]) return err('bad game');
-    const day = kstYmd();
     const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen';
-    if (scope === 'class') {   // 반 대항전: 오늘 반마다 상위 3명 평균
-      const rows = (await db.prepare(`SELECT s.best, u.grade, u.cls FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND s.day = ?2 AND u.grade > 0 AND u.cls > 0 ORDER BY s.best`).bind(game, day).all()).results;
+    const BEST = 'SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 GROUP BY uid';
+    if (scope === 'class') {   // 반 대항전: 반마다 최고 기록 상위 3명 평균
+      const rows = (await db.prepare(`SELECT t.best, u.grade, u.cls FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE u.grade > 0 AND u.cls > 0 ORDER BY t.best`).bind(game).all()).results;
       const by = new Map();
       for (const r of rows) { const k = r.grade + '-' + r.cls; const l = by.get(k) || []; l.push(r.best); by.set(k, l); }
       const list = [...by].map(([k, l]) => { const top = l.slice(0, 3); return { grade: +k.split('-')[0], cls: +k.split('-')[1], value: Math.round(top.reduce((a, b) => a + b, 0) / top.length), players: l.length }; })
@@ -388,43 +388,45 @@ const ROUTES = {
       return json({ scope, list, mine: me.grade && me.cls ? { grade: me.grade, cls: me.cls } : null });
     }
     let rows;
-    if (scope === 'all') {
-      rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (SELECT uid, MIN(best) AS best FROM scores WHERE game = ?1 GROUP BY uid) t JOIN users u ON u.id = t.uid ORDER BY t.best LIMIT 50`).bind(game).all()).results;
-    } else if (scope === 'friends') {
+    if (scope === 'friends') {
       const ids = [me.id, ...await friendIds(db, me.id)];
-      rows = (await db.prepare(`SELECT ${U}, s.best AS value, s.uid FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND s.day = ?2 AND s.uid IN (${ids.map(() => '?').join(',')}) ORDER BY s.best LIMIT 50`)
-        .bind(game, day, ...ids).all()).results;
+      rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE t.uid IN (${ids.map((_, i) => '?' + (i + 2)).join(',')}) ORDER BY t.best, t.at LIMIT 50`)
+        .bind(game, ...ids).all()).results;
     } else {
-      rows = (await db.prepare(`SELECT ${U}, s.best AS value, s.uid FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND s.day = ?2 ORDER BY s.best, s.at LIMIT 50`).bind(game, day).all()).results;
+      rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 50`).bind(game).all()).results;
     }
     const list = rows.map(r => ({ ...card(r), grade: r.grade, cls: r.cls, value: r.value, isMe: r.uid === me.id }));
     let mine = list.findIndex(x => x.isMe) + 1 || null;
     let myValue = list.find(x => x.isMe)?.value ?? null;
-    if (!mine && scope === 'today') {
-      const s = await db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first();
-      if (s) { myValue = s.best; mine = (await db.prepare('SELECT COUNT(*) + 1 AS r FROM scores WHERE game = ?1 AND day = ?2 AND best < ?3').bind(game, day, s.best).first()).r; }
+    if (!mine && scope === 'all') {
+      const s = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
+      if (s?.b != null) { myValue = s.b; mine = await rankOf(db, game, s.b); }
     }
     return json({ scope, list, mine, myValue });
   }),
 
-  'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 오늘 1등 · 내 기록
-    const day = kstYmd(), out = {};
+  'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
+    const out = {};
     for (const game of Object.keys(GAMES)) {
-      const [top, mt, ma] = await Promise.all([
-        db.prepare('SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND s.day = ?2 ORDER BY s.best, s.at LIMIT 1').bind(game, day).first(),
-        db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
+      const [top, ma] = await Promise.all([
+        db.prepare('SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 ORDER BY s.best, s.at LIMIT 1').bind(game).first(),
         db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first(),
       ]);
-      out[game] = { top: top ? { ...card(top), value: top.best } : null, today: mt?.best ?? null, best: ma?.b ?? null };
+      const best = ma?.b ?? null;
+      out[game] = { top: top ? { ...card(top), value: top.best } : null, best, rank: best != null ? await rankOf(db, game, best) : null };
     }
     return json({ games: out });
   }),
 };
 
-async function todayCrowns(db, uid) {
-  const day = kstYmd(), out = [];
+async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 사람 수 + 1
+  return (await db.prepare('SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 GROUP BY uid) WHERE b < ?2').bind(game, best).first()).r;
+}
+
+async function topCrowns(db, uid) {   // 역대 1등인 게임 목록
+  const out = [];
   for (const game of Object.keys(GAMES)) {
-    const top = await db.prepare('SELECT uid FROM scores WHERE game = ?1 AND day = ?2 ORDER BY best, at LIMIT 1').bind(game, day).first();
+    const top = await db.prepare('SELECT uid FROM scores WHERE game = ?1 ORDER BY best, at LIMIT 1').bind(game).first();
     if (top?.uid === uid) out.push(game);
   }
   return out;

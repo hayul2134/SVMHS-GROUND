@@ -116,7 +116,7 @@ const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
   const chips = [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
-  const crowns = (d.crowns || []).map(g => `<span class="crown">👑 오늘 ${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
+  const crowns = (d.crowns || []).map(g => `<span class="crown">👑 ${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
@@ -459,19 +459,19 @@ async function renderGame() {
     const x = info?.[k];
     return `<article class="card gcard g-${k}">
       <p class="gem">${g.em}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
-      ${x ? `<div class="gstat"><span>오늘 내 기록<b>${x.today != null ? esc(g.fmt(x.today)) : '-'}</b></span><span>최고 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span></div>
-        <p class="gtop">${x.top ? `👑 오늘 1등 <a href="#u/${esc(x.top.handle)}">${esc(x.top.avatar)} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '👑 오늘 1등 자리가 비어 있어요!'}</p>` : ''}
+      ${x ? `<div class="gstat"><span>내 최고 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
+        <p class="gtop">${x.top ? `👑 1등 <a href="#u/${esc(x.top.handle)}">${esc(x.top.avatar)} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '👑 1등 자리가 비어 있어요!'}</p>` : ''}
       <div class="gbtns"><button class="btn big" data-play="${k}">▶ 플레이</button><button class="btn ghost" data-rank="${k}">🏆 랭킹</button></div>
     </article>`;
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
 }
 
-async function openRank(game, scope = 'today') {
+async function openRank(game, scope = 'all') {
   if (S.enabled === false) { toast('랭킹을 준비하고 있어요'); return; }
   if (!S.me) { toast('랭킹은 로그인하면 볼 수 있어요'); ctx.go('me'); return; }
   const g = GAMES[game];
-  const tabs = [['today', '오늘'], ['friends', '친구'], ['class', '반 대항전'], ['all', '역대']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
+  const tabs = [['all', '전체'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   sheet(`<h3>${g.em} ${g.name} 랭킹</h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
     <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">▶ 도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
@@ -479,12 +479,12 @@ async function openRank(game, scope = 'today') {
     const medal = i => ['🥇', '🥈', '🥉'][i] || i + 1;
     if (scope === 'class') {
       $('#rankList').innerHTML = r.list.length ? r.list.map((c, i) => `<li class="${r.mine && r.mine.grade === c.grade && r.mine.cls === c.cls ? 'me' : ''}"><span class="rk">${medal(i)}</span><span class="pi"><b>${c.grade}학년 ${c.cls}반</b><small>${c.players}명 참가</small></span><b class="rv">${esc(g.fmt(c.value))}</b></li>`).join('')
-        : '<li class="empty">오늘은 아직 아무 반도 기록이 없어요</li>';
-      $('#rankNote').textContent = '반마다 오늘 기록 상위 3명의 평균이에요. 프로필에 학년·반을 적어야 반 점수에 들어가요.';
+        : '<li class="empty">아직 아무 반도 기록이 없어요</li>';
+      $('#rankNote').textContent = '반마다 최고 기록 상위 3명의 평균이에요. 프로필에 학년·반을 적어야 반 점수에 들어가요.';
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>${esc(classTxt(u) || '@' + u.handle)}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'today' ? '매일 밤 12시에 새로 시작해요' : '';
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : '각자 최고 기록으로 순위를 매겨요';
     }
   } catch (e) { $('#rankList').innerHTML = `<li class="empty">${esc(e.message)}</li>`; }
 }
@@ -519,7 +519,7 @@ async function finish(game, value, detail = '') {
   if (!S.me) return;
   try {
     const r = await call('score', { game, value });
-    $('#rMsg').innerHTML = (r.newAll ? '🎉 <b>역대 최고 기록!</b> ' : r.newToday ? '✨ <b>오늘 최고 기록!</b> ' : `오늘 최고 ${esc(g.fmt(r.todayBest))} · `) + `오늘 <b>${r.rank}위</b>` + (r.rank === 1 ? ' 👑' : '');
+    $('#rMsg').innerHTML = (r.newBest ? '🎉 <b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' 👑' : '');
     if ($('#v-game').classList.contains('on')) renderGame();
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
 }
