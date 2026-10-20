@@ -7,19 +7,19 @@
 
 /* ===== 1. 토큰 ===== */
 :root{
-  --bg:#dbe3ff; --dot:rgba(49,87,255,.16);
-  --card:#fffaf0; --chip:#f1ead8; --line:#d9cfb6;
-  --ink:#23233a; --text:#23233a; --sub:#6b6880; --on-bg:#23233a;
-  --accent:#7b93ff; --lime:#ddf5a6; --yellow:#ffe8a6; --pink:#ffc9e4; --red:#ff9aa4; --sky:#cdeaff; --violet:#c4b8ff;
+  --bg:#86c9f2; --dot:rgba(255,255,255,.38);
+  --card:#f6fbff; --chip:#e1f1fb; --line:#bcd9ea;
+  --ink:#173048; --text:#173048; --sub:#5b7186; --on-bg:#173048;
+  --accent:#2f8fe0; --lime:#8fe8cf; --yellow:#ffe08a; --pink:#a9c4ff; --red:#ff8f8f; --sky:#6fc6f4; --violet:#9bb8ff; --hero:#4fb5ef; --next:#a6dcff;
   --bd:2.5px solid var(--ink); --sh:4px 4px 0 var(--ink); --sh-s:3px 3px 0 var(--ink);
   --radius:22px;
   --disp:"Bagel Fat One","Pretendard Variable",Pretendard,sans-serif;
 }
 :root[data-theme="dark"]{
-  --bg:#12164a; --dot:rgba(255,255,255,.08);
-  --card:#1e2358; --chip:#2a3070; --line:#3a4185;
-  --ink:#000; --text:#f6f2e6; --sub:#a9acd6;
-  --accent:#8fa6ff; --on-bg:#f6f2e6;
+  --bg:#0e2236; --dot:rgba(255,255,255,.07);
+  --card:#16304a; --chip:#1f3d5c; --line:#2d5275;
+  --ink:#000; --text:#eef8ff; --sub:#9db8cf;
+  --accent:#4fb5ef; --on-bg:#f6f2e6;
 }
 
 /* ===== 2. 기본 ===== */
@@ -58,7 +58,7 @@ nav::-webkit-scrollbar{display:none}
 nav button{flex:none;display:flex;align-items:center;gap:7px;padding:9px 17px;border-radius:999px;font-weight:800;font-size:14.5px;color:var(--sub);transition:.15s}
 nav button svg{width:17px;height:17px}
 nav button:hover{color:var(--text)}
-nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink);transform:rotate(-2deg)}
+nav button.on{color:var(--ink);background:var(--sky);border:2px solid var(--ink);transform:rotate(-2deg)}
 @media (max-width:700px){
   nav{position:fixed;top:auto;bottom:12px;left:12px;right:12px;width:auto;max-width:none;margin:0;
     padding:6px 6px calc(6px + env(safe-area-inset-bottom)*.5);gap:2px;justify-content:space-around;border-radius:22px;border:3px solid var(--ink);box-shadow:0 6px 0 rgba(0,0,0,.3)}
@@ -67,17 +67,17 @@ nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink
 }
 
 /* ===== 4. 전광판 (오늘 정보가 흘러감) ===== */
-.ticker{margin:22px -40px 4px;background:var(--card);color:var(--ink);border-block:3px solid var(--ink);transform:rotate(-1.6deg);overflow:hidden;white-space:nowrap;
+.ticker{margin:22px -40px 4px;background:#1d4f7c;color:#d6f1ff;border-block:3px solid var(--ink);transform:rotate(-1.6deg);overflow:hidden;white-space:nowrap;
   box-shadow:0 4px 0 rgba(35,35,58,.12)}
 .ticker .tk{display:inline-flex;padding:9px 0;font-family:var(--disp);font-size:17px;letter-spacing:.01em;animation:tk 32s linear infinite}
 .ticker .tk span{padding:0 14px}
-.ticker .tk i{font-style:normal;color:var(--accent)}
+.ticker .tk i{font-style:normal;color:var(--yellow)}
 @keyframes tk{to{transform:translateX(-50%)}}
 
 /* ===== 5. 메인 타일 (남은 시간이 주인공) ===== */
 .tile{border-radius:var(--radius);padding:22px 24px;min-width:0;position:relative;border:var(--bd);box-shadow:var(--sh)}
-.hero{background:var(--lime);color:var(--ink);display:flex;flex-direction:column;gap:6px;min-height:330px;transform:rotate(-.8deg);transition:background .4s}
-.hero.rest{background:var(--yellow)}
+.hero{background:var(--hero);color:var(--ink);display:flex;flex-direction:column;gap:6px;min-height:330px;transform:rotate(-.8deg);transition:background .4s}
+.hero.rest{background:var(--lime)}
 .hero.soon{background:var(--red)}
 .h-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:var(--card);color:var(--ink);border:var(--bd);box-shadow:var(--sh-s);
@@ -99,7 +99,7 @@ nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink
 .hero.soon .h-big b{animation:shake .5s infinite}
 @keyframes shake{25%{transform:translateX(-3px) rotate(-1deg)}75%{transform:translateX(3px) rotate(1deg)}}
 .h-bar{height:20px;border-radius:999px;background:var(--card);border:var(--bd);overflow:hidden;margin-top:16px}
-.h-bar i{display:block;height:100%;width:100%;background:repeating-linear-gradient(-45deg,#9bb0ff 0 12px,#b9c8ff 12px 24px);border-right:3px solid var(--ink);
+.h-bar i{display:block;height:100%;width:100%;background:repeating-linear-gradient(-45deg,#1f73c4 0 12px,#3a8fdc 12px 24px);border-right:3px solid var(--ink);
   transform-origin:left;transform:scaleX(0);transition:transform 1s linear}
 .hero.soon .h-bar i{background:repeating-linear-gradient(-45deg,#ff6b7a 0 12px,#ff8a95 12px 24px)}
 .h-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:15px;font-weight:900}
@@ -108,7 +108,7 @@ nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink
 .classchip{font-size:13px;font-weight:900;padding:5px 12px;border-radius:999px;background:var(--ink);color:var(--card);transform:rotate(-2deg)}
 
 /* 다음 수업 타일 */
-.next{background:var(--pink);color:var(--ink);display:flex;flex-direction:column;gap:4px;min-height:330px;transform:rotate(1.4deg)}
+.next{background:var(--next);color:var(--ink);display:flex;flex-direction:column;gap:4px;min-height:330px;transform:rotate(1.4deg)}
 .next::before{content:"NEXT ▶";position:absolute;right:-12px;top:-16px;font-family:var(--disp);font-size:14px;padding:6px 12px;background:var(--yellow);border:var(--bd);border-radius:10px;transform:rotate(8deg);box-shadow:var(--sh-s)}
 .next .skel{background:rgba(255,255,255,.4)}
 .t-lbl{align-self:flex-start;font-size:13px;font-weight:900;color:var(--card);background:var(--ink);padding:5px 11px;border-radius:9px;transform:rotate(-3deg)}
@@ -123,16 +123,16 @@ nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:22px 18px}
 .bento{margin-top:26px}
 .card{--k:var(--accent);--ks:var(--chip);background:var(--card);border-radius:var(--radius);padding:22px;min-width:0;border:var(--bd);box-shadow:var(--sh);position:relative;transition:transform .2s}
-.k-meal{--k:#3b8fc4;--ks:#e6f5ff}
-.k-up,.k-dd{--k:#7560d6;--ks:#f0ecff}
+.k-meal{--k:#1f7fc9;--ks:#d8efff}
+.k-up,.k-dd{--k:#3f6fd8;--ks:#e2ebff}
 :root[data-theme="dark"] .card{--ks:var(--chip)}
 :root[data-theme="dark"] .k-meal{--k:#6fd0ff}
 :root[data-theme="dark"] .k-up,:root[data-theme="dark"] .k-dd{--k:#b3a1ff}
 /* 마스킹테이프 */
 .bento .card::before,.mealcols .card::before{content:"";position:absolute;top:-13px;left:50%;width:96px;height:24px;margin-left:-48px;
-  background:rgba(255,226,140,.8);border-left:2px dashed rgba(0,0,0,.15);border-right:2px dashed rgba(0,0,0,.15);transform:rotate(-3deg)}
-.bento .k-tt::before{background:rgba(205,240,140,.8);transform:rotate(4deg);left:30%}
-.bento .k-up::before{background:rgba(255,180,220,.8);left:12%}
+  background:rgba(255,224,138,.85);border-left:2px dashed rgba(0,0,0,.15);border-right:2px dashed rgba(0,0,0,.15);transform:rotate(-3deg)}
+.bento .k-tt::before{background:rgba(143,232,207,.85);transform:rotate(4deg);left:30%}
+.bento .k-up::before{background:rgba(169,196,255,.85);left:12%}
 .bento .k-meal{transform:rotate(-1deg)}
 .bento .k-tt{transform:rotate(.7deg)}
 .bento .k-up{transform:rotate(-.4deg)}
@@ -185,7 +185,7 @@ nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink
 .tt li .s{font-weight:800;font-size:16px}
 .tt li.done{opacity:.4}
 .tt li.done .s{text-decoration:line-through 2.5px}
-.tt li.now{background:var(--sky);color:var(--ink);border:var(--bd);box-shadow:var(--sh-s);transform:rotate(-1deg) scale(1.02)}
+.tt li.now{background:var(--hero);color:var(--ink);border:var(--bd);box-shadow:var(--sh-s);transform:rotate(-1deg) scale(1.02)}
 .tt li.now .p{background:var(--lime);color:var(--ink);border-color:var(--ink)}
 .tt li.now .s::after{content:"지금!";margin-left:8px;font-size:11px;font-weight:900;padding:2px 8px;border-radius:7px;background:var(--yellow);color:var(--ink);vertical-align:2px;border:2px solid var(--ink)}
 .scrollx{overflow-x:auto;padding:4px}
@@ -228,7 +228,7 @@ nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink
 .up .tag{position:absolute;top:-12px;right:-8px;font-style:normal;font-size:11px;font-weight:900;padding:4px 9px;border-radius:8px;border:2px solid var(--ink);transform:rotate(6deg)}
 .up .tag.me{background:var(--lime);color:var(--ink)}
 .up .tag.off{background:var(--red);color:var(--ink)}
-.up.first{background:var(--violet);transform:rotate(-2deg)}
+.up.first{background:var(--hero);transform:rotate(-2deg)}
 .up.first .num{font-size:44px;text-shadow:3px 3px 0 #fff}
 .up.first .dt{opacity:.85}
 .up.mine:not(.first){background:var(--lime)}
@@ -257,7 +257,7 @@ nav button.on{color:var(--ink);background:var(--lime);border:2px solid var(--ink
 .pager button:active{transform:scale(.9)}
 .pager button svg{width:16px;height:16px}
 .pager .lbl{font-weight:900;min-width:118px;text-align:center;font-variant-numeric:tabular-nums}
-.btn{padding:12px 18px;border-radius:14px;background:var(--accent);color:var(--ink);font-weight:900;border:var(--bd);box-shadow:var(--sh-s);transition:transform .08s,box-shadow .08s}
+.btn{padding:12px 18px;border-radius:14px;background:var(--accent);color:#fff;font-weight:900;border:var(--bd);box-shadow:var(--sh-s);transition:transform .08s,box-shadow .08s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
 .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .btn.ghost{color:var(--text)}
@@ -310,5 +310,5 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 :root[data-theme="dark"] .ticker{color:var(--text)}
 :root[data-theme="dark"] .logo strong,:root[data-theme="dark"] .vhead h2{text-shadow:3px 3px 0 #000}
 /* 다크에서도 파스텔 타일 안의 스티커는 밝게 */
-:root[data-theme="dark"] .hero,:root[data-theme="dark"] .next{--card:#fffaf0;--ink:#23233a;--text:#23233a}
+:root[data-theme="dark"] .hero,:root[data-theme="dark"] .next{--card:#f6fbff;--ink:#173048;--text:#173048}
 :root[data-theme="dark"] .kcal{background:var(--text);color:#000}

@@ -375,7 +375,7 @@ $('#clearData').onclick = () => {
 /* ===== 테마 (첫 적용은 js/theme.js가 깜빡임 없이 처리) ===== */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
-  $('meta[name=theme-color]').content = t === 'dark' ? '#12164a' : '#dbe3ff';
+  $('meta[name=theme-color]').content = t === 'dark' ? '#0e2236' : '#86c9f2';
 }
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
