@@ -52,7 +52,7 @@ function bellInfo(n) {
 
 function tickClock() {
   const n = new Date(), h = n.getHours();
-  $('#clock').textContent = pad(h) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
+  $('#cH').textContent = pad(h); $('#cM').textContent = pad(n.getMinutes()); $('#cS').textContent = pad(n.getSeconds());
   $('#todayLbl').textContent = `${n.getFullYear()}년 ${fmtDay(n)}`;
   $('#greet').textContent = h < 9 ? '좋은 아침이에요' : h < 12 ? '오늘도 힘내요' : h < 14 ? '점심 맛있게 먹어요' : h < 18 ? '조금만 더 힘내요' : '오늘도 수고했어요';
 

@@ -85,10 +85,10 @@
 
   <!-- 홈 -->
   <div class="view on" id="v-home">
-    <section class="card bigclock" id="bigclock" aria-label="현재 시각과 종 시간">
+    <section class="bigclock" id="bigclock" aria-label="현재 시각과 종 시간">
       <div class="bc-state" id="bellState">&nbsp;</div>
-      <div class="bc-time" id="clock" role="timer" aria-label="현재 시각">--:--:--</div>
-      <div class="bc-next"><span id="bellLbl">&nbsp;</span> <b id="bellCnt"></b></div>
+      <div class="bc-time" role="timer" aria-label="현재 시각"><span id="cH">--</span><span class="col">:</span><span id="cM">--</span><span class="ss" id="cS">--</span></div>
+      <div class="bc-next"><span id="bellLbl">&nbsp;</span><b id="bellCnt"></b></div>
       <div class="bc-bar" id="bellBarBox" hidden><i id="bellBar"></i></div>
     </section>
     <div class="grid">
