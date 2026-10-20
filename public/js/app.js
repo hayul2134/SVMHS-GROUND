@@ -468,8 +468,34 @@ function renderHomeWeek() {
   $('#hwNote').textContent = cls && !api.hasKey ? '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)' : '';
   fillWeek($('#hWeek'), mon, () => mon !== S.homeWeek);
 }
-$('#goMeal').onclick = e => { e.preventDefault(); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
-$('#goWeek').onclick = e => { e.preventDefault(); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+/* ===== 첫 화면 급식판·시간표 넣기/꺼내기/고정 ===== */
+const SIDE = { meal: { el: $('.s-meal'), name: '급식판', dir: 'l' }, tt: { el: $('.k-tt'), name: '시간표', dir: 'r' } };
+function paintPin(k) {
+  const x = SIDE[k], b = x.el.querySelector('.s-pin'), st = x.el.classList.contains('stow');
+  b.textContent = st ? '📌 고정' : x.dir === 'l' ? '◀ 넣기' : '넣기 ▶';
+  b.setAttribute('aria-label', st ? `${x.name}을 화면에 고정하기` : `${x.name}을 옆으로 넣기`);
+  x.el.querySelector('.s-tab').setAttribute('aria-expanded', String(x.el.classList.contains('open')));
+}
+function setStow(k, stow, anim = true) {
+  const el = SIDE[k].el;
+  if (stow && anim && !el.classList.contains('stow')) {   // 제자리에서 꺼낸 상태로 바꾼 뒤 가장자리로 밀어 넣기
+    el.classList.add('stow', 'open', 'noanim'); void el.offsetWidth; el.classList.remove('noanim');
+    requestAnimationFrame(() => { el.classList.remove('open'); paintPin(k); });
+  } else {
+    el.classList.toggle('stow', stow); el.classList.remove('open');
+  }
+  store.set('stow_' + k, stow); paintPin(k);
+}
+function openSide(k, on) { const el = SIDE[k].el; if (!el.classList.contains('stow')) return; el.classList.toggle('open', on); paintPin(k); }
+for (const k in SIDE) {
+  setStow(k, !!store.get('stow_' + k, false), false);
+  SIDE[k].el.querySelector('.s-pin').onclick = e => { e.stopPropagation(); setStow(k, !SIDE[k].el.classList.contains('stow')); };
+  SIDE[k].el.querySelector('.s-tab').onclick = e => { e.stopPropagation(); openSide(k, !SIDE[k].el.classList.contains('open')); };
+}
+document.addEventListener('click', e => { for (const k in SIDE) if (SIDE[k].el.classList.contains('open') && !e.composedPath().includes(SIDE[k].el)) openSide(k, false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') for (const k in SIDE) openSide(k, false); });
+$('#goMeal').onclick = e => { e.preventDefault(); openSide('meal', false); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+$('#goWeek').onclick = e => { e.preventDefault(); openSide('tt', false); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 async function renderTTView() {
   const mon = S.ttWeek;
   $('#tLbl').textContent = weekLbl(mon);

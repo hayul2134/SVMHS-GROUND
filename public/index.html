@@ -90,7 +90,8 @@
       <div class="s-row">
       <div class="s-lside">
       <aside class="s-tt s-meal k-meal" aria-labelledby="sMealh">
-        <h2 class="s-tth" id="sMealh"><span id="sMealLbl">오늘 급식</span><a href="#mealCard" class="s-ttmore" id="goMeal">전체 ▾</a></h2>
+        <button class="s-tab" type="button" data-side="meal" aria-label="급식판 꺼내기"><span aria-hidden="true">🍱</span>급식</button>
+        <h2 class="s-tth" id="sMealh"><span id="sMealLbl">오늘 급식</span><span class="s-acts"><a href="#mealCard" class="s-ttmore" id="goMeal">전체 ▾</a><button class="s-pin" type="button" data-side="meal"></button></span></h2>
         <div id="sMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>
       </aside>
       </div>
@@ -107,7 +108,8 @@
       </div>
       <div class="s-side">
       <aside class="s-tt k-tt" aria-labelledby="sTTh">
-        <h2 class="s-tth" id="sTTh"><span id="sTTlbl">오늘 시간표</span><a href="#weekTT" class="s-ttmore" id="goWeek">전체 ▾</a></h2>
+        <button class="s-tab" type="button" data-side="tt" aria-label="시간표 꺼내기"><span aria-hidden="true">📅</span>시간표</button>
+        <h2 class="s-tth" id="sTTh"><span id="sTTlbl">오늘 시간표</span><span class="s-acts"><a href="#weekTT" class="s-ttmore" id="goWeek">전체 ▾</a><button class="s-pin" type="button" data-side="tt"></button></span></h2>
         <div id="sTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
       </aside>
       </div>

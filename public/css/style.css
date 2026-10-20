@@ -254,6 +254,28 @@ header:not(.away) #btnHome,header.away .logo{display:none}
   .s-tt .tt li .s{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .s-tt .tt li.now .s::after{display:none}
 }
+/* 첫 화면 급식판·시간표: 화면 가장자리로 넣기 / 꺼내기 / 고정 */
+.s-acts{display:flex;align-items:center;gap:5px;flex:none}
+.s-pin{font:inherit;font-size:12px;font-weight:900;color:var(--sub);padding:3px 9px;border-radius:999px;background:var(--chip);border:2px solid var(--line);cursor:pointer;white-space:nowrap}
+.s-pin:hover{color:var(--text);border-color:var(--ink)}
+.s-tt.stow .s-pin{background:var(--yellow);color:#173048;border-color:var(--ink)}
+.s-tab{display:none}
+.s-tt.stow{position:fixed;top:50%;z-index:40;margin:0;max-width:calc(100vw - 64px);transition:transform .38s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
+.s-tt.stow.noanim{transition:none}
+.s-meal.stow{left:0;transform:translate(calc(-100% - 6px),-50%)}
+.s-meal.stow.open{transform:translate(14px,-50%) rotate(-1deg)}
+.k-tt.stow{right:0;transform:translate(calc(100% + 6px),-50%)}
+.k-tt.stow.open{transform:translate(-14px,-50%) rotate(1deg)}
+.s-tt.stow .s-tab{display:flex;align-items:center;gap:6px;position:absolute;top:50%;margin-top:-56px;min-height:112px;padding:14px 7px;writing-mode:vertical-rl;letter-spacing:.08em;
+  font:inherit;font-size:13.5px;font-weight:900;color:#173048;background:var(--yellow);border:var(--bd);box-shadow:var(--sh-s);cursor:pointer}
+.s-tt.stow .s-tab span{writing-mode:horizontal-tb;font-size:17px}
+.s-meal.stow .s-tab{left:100%;margin-left:6px;border-radius:0 14px 14px 0;border-left-width:0}
+.k-tt.stow .s-tab{right:100%;margin-right:6px;border-radius:14px 0 0 14px;border-right-width:0;background:var(--lime)}
+.s-tt.stow:not(.open){box-shadow:none}
+.s-tt.stow:not(.open) > :not(.s-tab){visibility:hidden}
+.s-tt.stow:not(.open)::before{display:none}
+.s-tab:hover{filter:brightness(1.05)}
+:root[data-theme="dark"] .s-tt.stow .s-tab{color:#173048}
 .bento #weekTT{transform:rotate(.3deg);scroll-margin-top:96px}
 .bento #weekTT .ct{flex-wrap:wrap;gap:10px}
 /* ===== 6. 카드 · 그리드 ===== */
