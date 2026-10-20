@@ -541,6 +541,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .segs button.on{background:var(--ink);color:var(--lime)}
 .sform{display:grid;gap:12px;text-align:left}
 .sform label,.sform .lbl{display:grid;gap:6px;font-weight:900;font-size:14px;margin:0}
+.sform .hint{font-weight:700;font-size:12.5px;color:var(--sub);line-height:1.4;margin-top:-2px}
 .lbl{font-weight:900;font-size:14px;text-align:left;margin:16px 0 8px}
 .lbl small{color:var(--sub);font-weight:800}
 .sform input,.sform textarea,.sform select{width:100%;padding:12px 14px;border-radius:14px;border:var(--bd);background:var(--chip);font-weight:700;font-size:16px;resize:none}

@@ -78,8 +78,8 @@ function authHtml(mode = 'login') {
   return `<div class="card authcard">
     <div class="segs" role="tablist"><button data-auth="login" class="${mode === 'login' ? 'on' : ''}">로그인</button><button data-auth="signup" class="${mode === 'signup' ? 'on' : ''}">회원가입</button></div>
     <form class="sform" id="authForm" data-mode="${mode}" autocomplete="on">
-      <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" autocomplete="username" placeholder="영어 소문자·숫자 3~16자"></label>
-      ${mode === 'signup' ? `<label>이름 (닉네임)<input name="name" required maxlength="12" placeholder="친구들에게 보일 이름"></label>` : ''}
+      <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" autocomplete="username" placeholder="영어 소문자·숫자 3~16자">${mode === 'signup' ? '<small class="hint">🔑 로그인할 때 쓰는 이름이에요. 나중에 바꿀 수 없어요.</small>' : ''}</label>
+      ${mode === 'signup' ? `<label>이름 (닉네임)<input name="name" required maxlength="12" placeholder="친구들에게 보일 이름"><small class="hint">👀 친구들 화면에 보이는 이름이에요. 언제든 바꿀 수 있어요.</small></label>` : ''}
       <label>비밀번호<input name="pw" type="password" required minlength="6" maxlength="64" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}" placeholder="6자 이상"></label>
       ${mode === 'signup' ? `
         <div class="two"><label>학년<select name="grade">${grades}</select></label><label>반<select name="cls">${classes}</select></label></div>
@@ -243,7 +243,7 @@ function openEdit() {
   sheet(`<h3>프로필 꾸미기</h3>
     <form class="sform" id="editForm" autocomplete="off">
       <div class="preview c-${esc(u.color)}" id="edPrev">${av({ ...u, online: false }, 'big')}</div>
-      <label>이름 (닉네임)<input name="name" maxlength="12" required value="${esc(u.name)}"></label>
+      <label>이름 (닉네임)<input name="name" maxlength="12" required value="${esc(u.name)}"><small class="hint">친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.</small></label>
       <label>상태 메시지<input name="mood" maxlength="24" placeholder="예: 시험 끝나면 놀자🔥" value="${esc(u.mood)}"></label>
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
       <div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
