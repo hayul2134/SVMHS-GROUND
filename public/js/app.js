@@ -102,8 +102,8 @@ function tickClock() {
   const ap = n.getHours() < 12 ? '오전' : '오후', h12 = n.getHours() % 12 || 12;
   const hm = `${h12}:${pad(n.getMinutes())}`;
   // 큰 숫자 = 남은 시간, 아래 작은 칩 = 현재 시각 (수업 없는 때엔 큰 숫자가 현재 시각)
-  setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : `<span class="ap">${ap}</span>` + dg(hm) + `<span class="sec">${dg(':' + pad(n.getSeconds()))}</span>`);
-  setText('#bellCnt', `${ap} ${hm}:${pad(n.getSeconds())}`);
+  setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : `<span class="ap">${ap}</span>` + dg(hm));
+  setText('#bellCnt', `${ap} ${hm}`);
   $('#nowBox').hidden = left == null;
   const hero = $('#bigclock');
   hero.classList.toggle('soon', left != null && left <= 60);
