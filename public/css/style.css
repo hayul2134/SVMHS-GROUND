@@ -517,7 +517,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .s-date{position:relative;left:clamp(16px,4vw,60px)}
 
 /* ===== 14. 소셜 (프로필 · DM · 게임) ===== */
-@media (max-width:480px){#btnShare,#btnTheme{display:none}}
+@media (max-width:380px){.logo .lt{display:none}}
 .iconbtn{position:relative}
 .hbadge{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font:900 11px/16px var(--num);font-style:normal;border:2px solid var(--ink);display:grid;place-items:center}
 .ai{position:relative}
@@ -702,3 +702,43 @@ body.playing{overflow:hidden}
 .notice:not([hidden]) ~ #v-home .stage{padding-top:20px}
 .notice:not([hidden]) ~ .view:not(#v-home){padding-top:18px}
 @media (max-width:560px){.notice{margin-top:70px;font-size:14px}}
+
+/* ===== 15. 메시지 창 (인스타 PC DM처럼 오른쪽 아래에 떠 있음) ===== */
+.dmdock{position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+body[data-view="dm"] .dmdock,body.playing .dmdock{display:none}
+.dmpill{display:flex;align-items:center;gap:10px;padding:9px 14px 9px 10px;border-radius:999px;background:var(--card);border:var(--bd);box-shadow:var(--sh);font-weight:900;font-size:15px;color:var(--ink);transition:transform .12s,box-shadow .12s}
+:root[data-theme="dark"] .dmpill{color:var(--text)}
+.dmpill:hover{transform:translate(-1px,-2px) rotate(-1.5deg);box-shadow:5px 6px 0 var(--ink)}
+.dmpill:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.dp-ic{position:relative;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--yellow);border:2px solid var(--ink);color:var(--ink)}
+.dp-ic svg{width:18px;height:18px}
+.dp-ic .hbadge{top:-8px;right:-9px}
+.dp-avs{display:flex;padding-left:8px}
+.dp-avs:empty{display:none}
+.dp-avs .av{width:28px;height:28px;font-size:15px;border-width:2px;margin-left:-8px;box-shadow:none}
+.dp-avs .av .dot{width:9px;height:9px;border-width:2px}
+.dmdock.open .dmpill{display:none}
+.dmpanel{width:380px;height:min(580px,calc(100dvh - 130px));display:flex;flex-direction:column;background:var(--card);border:var(--bd);border-radius:var(--radius);box-shadow:6px 6px 0 var(--ink);overflow:hidden;transform-origin:bottom right;animation:dmpIn .18s ease-out}
+@keyframes dmpIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.dmpanel{animation:none}}
+.dmp-top{display:flex;align-items:center;gap:4px;padding:10px 10px 10px 18px;border-bottom:var(--bd);background:var(--yellow);color:var(--ink)}
+.dmp-top b{flex:1;font-family:var(--disp);font-weight:400;font-size:20px}
+.dmp-btn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;font-weight:900;color:var(--ink)}
+.dmp-btn:hover{background:rgba(0,0,0,.08)}
+.dmp-body,.dmp-body.soc{margin:0;max-width:none;gap:0;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column}
+.dmp-body > .card{flex:1;min-height:0;border:0;border-radius:0;box-shadow:none;transform:none;margin:0}
+.dmp-body > .dmcard{padding:14px}
+.dmp-body > .chat{height:auto;min-height:0}
+.dmp-body .chead{padding:8px 10px}
+.dmp-body .chead .back{font-size:28px}
+.dmp-body .soc-gate{display:grid;align-content:center;justify-items:center;text-align:center;gap:8px;padding:24px}
+/* 폰·태블릿 세로: 둥근 버튼만 (누르면 DM 화면) */
+@media (max-width:899px){
+  .dmdock{right:16px;bottom:calc(16px + env(safe-area-inset-bottom))}
+  .dmpill{padding:0;border-radius:50%;width:58px;height:58px;justify-content:center;background:var(--yellow)}
+  .dmpill b,.dp-avs{display:none}
+  .dp-ic{border:0;background:none;width:auto;height:auto}
+  .dp-ic svg{width:24px;height:24px}
+  .dp-ic .hbadge{top:-14px;right:-16px}
+  .dmpanel{display:none}
+}

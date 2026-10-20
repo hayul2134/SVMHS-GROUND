@@ -69,11 +69,11 @@
   <div class="hd">
     <button class="iconbtn" id="btnHome" data-go="home" title="처음으로" aria-label="처음 화면으로"><svg viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
     <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="52" height="52"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
-    <button class="iconbtn" id="btnDm" data-go="dm" title="DM" aria-label="DM"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg><i class="hbadge" data-badge="dm" hidden></i></button>
-    <button class="iconbtn" id="btnMe" data-go="me" title="내 프로필" aria-label="내 프로필"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></button>
+    <!-- 오른쪽 끝에서부터: 프로필 · 테마 · QR · 설정 -->
     <button class="iconbtn" id="btnClass" title="반 설정" aria-label="반 설정"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
     <button class="iconbtn" id="btnShare" title="친구에게 공유" aria-label="친구에게 공유하기"><svg viewBox="0 0 24 24"><use href="#i-qr"/></svg></button>
     <button class="iconbtn" id="btnTheme" title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg viewBox="0 0 24 24"><use href="#i-moon"/></svg></button>
+    <button class="iconbtn" id="btnMe" data-go="me" title="내 프로필" aria-label="내 프로필"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></button>
   </div>
 </header>
 
@@ -230,6 +230,16 @@
 
   <footer>SVMHS GROUND · 우리끼리 쓰는 비공식 사이트 ✌️ · <button id="btnInfo">이용 안내</button><br>급식·시간표·학사일정 정보: 나이스 교육정보 개방 포털</footer>
 </main>
+
+<!-- 메시지 (컴퓨터: 오른쪽 아래 떠 있는 창 · 폰: 둥근 버튼 → DM 화면) -->
+<div class="dmdock" id="dmDock" hidden>
+  <section class="dmpanel" id="dmPanel" role="dialog" aria-label="메시지" hidden>
+    <div class="dmp-top"><b>메시지</b><button class="dmp-btn" data-go="dm" title="크게 보기" aria-label="DM 화면에서 크게 보기">⤢</button><button class="dmp-btn" id="dmPClose" title="닫기" aria-label="메시지 창 닫기">✕</button></div>
+    <div class="dmp-body soc" id="dmPBox"></div>
+  </section>
+  <button class="dmpill" id="dmPill" aria-label="메시지" aria-expanded="false" aria-controls="dmPanel"><span class="dp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg><i class="hbadge" data-badge="dm" hidden></i></span><b>메시지</b><span class="dp-avs" id="dmAvs"></span></button>
+</div>
+
 
 <!-- 공유 -->
 <div class="modal" id="mShare" role="dialog" aria-modal="true" aria-labelledby="shareT">

@@ -15,7 +15,7 @@ const GAMES = {
 /* ===== 상태 ===== */
 const S = { enabled: null, needCode: false, me: null, counts: null, unread: 0 };
 let ctx;   // app.js에서 받은 go · openModal · closeModal · getClass
-let dmTimer = 0, pollTimer = 0, openThread = '';
+let dmTimer = 0, pollTimer = 0, openThread = '', threadIn = '';   // threadIn: 'page'(#dm 화면) | 'panel'(떠 있는 메시지 창)
 
 /* ===== 서버 호출 ===== */
 async function call(path, body) {
@@ -61,12 +61,14 @@ async function refreshMe() {
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null;
   } catch { S.me = null; }
   paintBadges();
+  if (!panelOpen()) loadRecent();
 }
 function startPoll() {
   clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     if (document.hidden || !S.me || openThread) return;
-    try { const r = await call('poll'); if (r.unread > S.unread && !location.hash.startsWith('#dm')) toast('💬 새 메시지가 왔어요'); S.unread = r.unread; paintBadges(); } catch {}
+    try { const r = await call('poll'); const more = r.unread > S.unread; S.unread = r.unread; paintBadges();
+    if (more) { if (panelOpen()) renderDm('', $('#dmPBox'), true); else { if (!location.hash.startsWith('#dm')) toast('💬 새 메시지가 왔어요'); loadRecent(); } } } catch {}
   }, 25000);
 }
 
@@ -224,7 +226,7 @@ document.addEventListener('click', async e => {
   const dm = e.target.closest('[data-dm]');
   if (dm) {
     if (dm.dataset.locked) { toast('서로 팔로우하면 DM할 수 있어요'); return; }
-    ctx.go('dm/' + dm.dataset.dm); return;
+    openPanel(dm.dataset.dm); return;
   }
   const a = e.target.closest('[data-act-s]');
   if (a) ({ edit: openEdit, settings: openSettings, more: () => openMore(a.dataset.h) })[a.dataset.actS]?.();
@@ -303,20 +305,24 @@ function openSettings() {
 }
 
 /* ===== DM (#dm · #dm/아이디) ===== */
-function stopThread() { clearTimeout(dmTimer); openThread = ''; }
-async function renderDm(handle) {
+function stopThread() { clearTimeout(dmTimer); openThread = ''; threadIn = ''; }
+// 링크: #dm 화면은 주소 이동, 메시지 창 안에서는 창 안에서만 바꿈
+const toThread = (h, panel) => panel ? `href="#" data-pdm="${esc(h)}"` : `href="#dm/${esc(h)}"`;
+const toList = panel => panel ? 'href="#" data-pdm=""' : 'href="#dm"';
+async function renderDm(handle, box = $('#dmBox'), panel = false) {
   stopThread();
-  const box = $('#dmBox');
   if (S.enabled === false) { box.innerHTML = offCard(); return; }
   if (!S.me) { box.innerHTML = needLogin('DM을 하려면 로그인해 주세요'); return; }
-  if (handle) return renderThread(handle);
-  box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
+  if (handle) return renderThread(handle, box, panel);
+  if (!box.querySelector('.dmcard')) box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
   try {
     const r = await call('inbox');
-    const threads = r.threads.map(t => `<li class="thread ${t.unread ? 'new' : ''}"><a href="#dm/${esc(t.user.handle)}">${av(t.user)}
+    paintRecent(r.threads);
+    if (openThread) return;
+    const threads = r.threads.map(t => `<li class="thread ${t.unread ? 'new' : ''}"><a ${toThread(t.user.handle, panel)}>${av(t.user)}
       <span class="pi"><b>${esc(t.user.name)}</b><small>${t.mine ? '나: ' : ''}${esc(t.last)}</small></span>
       <span class="tm">${ago(t.at)}${t.unread ? `<i class="nb">${t.unread}</i>` : ''}</span></a></li>`).join('');
-    const friends = r.friends.map(u => `<a class="fchip" href="#dm/${esc(u.handle)}">${av(u)}<small>${esc(u.name)}</small></a>`).join('');
+    const friends = r.friends.map(u => `<a class="fchip" ${toThread(u.handle, panel)}>${av(u)}<small>${esc(u.name)}</small></a>`).join('');
     box.innerHTML = `<div class="card dmcard">
       ${friends ? `<p class="lbl">친구에게 먼저 말 걸기</p><div class="frow">${friends}</div>` : ''}
       <ul class="plist">${threads || '<li class="empty">아직 주고받은 메시지가 없어요</li>'}</ul>
@@ -325,28 +331,65 @@ async function renderDm(handle) {
   } catch (e) { box.innerHTML = `<div class="card"><p class="empty">${esc(e.message)}</p></div>`; }
 }
 
+/* ===== 떠 있는 메시지 창 (컴퓨터) · 둥근 버튼 (폰) ===== */
+const panelOpen = () => !!$('#dmPanel') && !$('#dmPanel').hidden;
+const wide = () => matchMedia('(min-width:900px)').matches;
+function paintRecent(threads = []) {
+  const el = $('#dmAvs'); if (!el) return;
+  el.innerHTML = S.me ? threads.slice(0, 3).map(t => av(t.user)).join('') : '';
+}
+async function loadRecent() {
+  if (!S.me) { paintRecent(); return; }
+  try { paintRecent((await call('inbox')).threads); } catch {}
+}
+function openPanel(handle = '') {
+  if (!wide()) { ctx.go(handle ? 'dm/' + encodeURIComponent(handle) : 'dm'); return; }
+  $('#dmPanel').hidden = false; $('#dmDock').classList.add('open'); $('#dmPill').setAttribute('aria-expanded', 'true');
+  renderDm(handle, $('#dmPBox'), true);
+}
+function closePanel() {
+  if (!panelOpen()) return;
+  if (threadIn === 'panel') stopThread();
+  $('#dmPanel').hidden = true; $('#dmDock').classList.remove('open'); $('#dmPill').setAttribute('aria-expanded', 'false');
+  $('#dmPBox').innerHTML = '';
+  loadRecent();
+}
+function setupDock() {
+  const dock = $('#dmDock'); if (!dock) return;
+  dock.hidden = !S.enabled;
+  $('#dmPill').onclick = () => openPanel();
+  $('#dmPClose').onclick = () => { closePanel(); $('#dmPill').focus(); };
+  dock.addEventListener('click', e => {
+    const t = e.target.closest('[data-pdm]');
+    if (t) { e.preventDefault(); renderDm(t.dataset.pdm, $('#dmPBox'), true); return; }
+    if (e.target.closest('[data-go]')) closePanel();   // '크게 보기'·'로그인' 등 다른 화면으로 가면 창은 닫음
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && panelOpen() && !document.querySelector('.modal.open')) closePanel(); });
+  matchMedia('(min-width:900px)').addEventListener?.('change', m => { if (!m.matches) closePanel(); });
+}
+
 function bubbleHtml(m, next, readUpTo) {
   const gap = !next || next.mine !== m.mine || next.at - m.at > 300e3;
   return `<li class="msg ${m.mine ? 'me' : 'you'} ${m.del ? 'del' : ''}" data-id="${m.id}">
     <span class="bb">${m.del ? '삭제된 메시지' : esc(m.body)}</span>
     ${gap ? `<small class="mt">${m.mine && m.id <= readUpTo ? '읽음 · ' : ''}${hm(m.at)}</small>` : ''}</li>`;
 }
-async function renderThread(handle) {
-  const box = $('#dmBox');
-  openThread = handle;
+async function renderThread(handle, box, panel) {
+  const q = sel => box.querySelector(sel);
+  openThread = handle; threadIn = panel ? 'panel' : 'page';
   box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div></div>';
   let msgs = [], readUpTo = 0, d;
   try { d = await call('dm/' + encodeURIComponent(handle)); }
-  catch (e) { box.innerHTML = `<div class="card soc-gate"><p class="gate-em">🤔</p><p><b>${esc(e.message)}</b></p><button class="btn ghost" data-go="dm">DM 목록</button></div>`; openThread = ''; return; }
+  catch (e) { box.innerHTML = `<div class="card soc-gate"><p class="gate-em">🤔</p><p><b>${esc(e.message)}</b></p><a class="btn ghost" ${toList(panel)}>DM 목록</a></div>`; openThread = ''; threadIn = ''; return; }
   if (openThread !== handle) return;
   msgs = d.messages; readUpTo = d.readUpTo;
   box.innerHTML = `<div class="card chat">
-    <div class="chead"><a href="#dm" class="back" aria-label="DM 목록">‹</a><a href="#u/${esc(d.user.handle)}" class="who">${av(d.user)}<span class="pi"><b>${esc(d.user.name)}</b><small>${d.user.online ? '접속 중' : '@' + esc(d.user.handle)}</small></span></a></div>
+    <div class="chead"><a ${toList(panel)} class="back" aria-label="DM 목록">‹</a><a href="#u/${esc(d.user.handle)}" class="who">${av(d.user)}<span class="pi"><b>${esc(d.user.name)}</b><small>${d.user.online ? '접속 중' : '@' + esc(d.user.handle)}</small></span></a></div>
     <ol class="msgs" id="msgs" aria-live="polite">${msgs.length >= 40 ? '<li class="older"><button id="olderBtn">이전 메시지 보기</button></li>' : ''}</ol>
     ${d.canSend ? `<form class="compose" id="dmForm" autocomplete="off"><textarea id="dmIn" rows="1" maxlength="500" placeholder="메시지 보내기…" aria-label="메시지"></textarea><button class="btn" aria-label="보내기">➤</button></form>`
       : `<p class="note locked">${d.rel.blocked ? '차단한 사람이에요' : '서로 팔로우하면 메시지를 보낼 수 있어요'}</p>`}
   </div>`;
-  const list = $('#msgs');
+  const list = q('#msgs');
   const paint = (keepScroll) => {
     const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     const older = list.querySelector('.older')?.outerHTML || '';
@@ -354,7 +397,7 @@ async function renderThread(handle) {
     if (!keepScroll || atBottom) list.scrollTop = list.scrollHeight;
   };
   paint();
-  $('#olderBtn')?.addEventListener('click', async ev => {
+  q('#olderBtn')?.addEventListener('click', async ev => {
     try {
       const r = await call(`dm/${encodeURIComponent(handle)}?before=${msgs[0].id}`);
       const h0 = list.scrollHeight;
@@ -373,9 +416,9 @@ async function renderThread(handle) {
       sheet(`<h3>메시지</h3><p class="quote">${esc(li.textContent.trim())}</p><div class="col"><button class="btn ghost" data-report="${esc(handle)}" data-msg="${id}">🚨 이 메시지 신고</button><button class="btn ghost" data-close>닫기</button></div>`);
     }
   };
-  const form = $('#dmForm');
+  const form = q('#dmForm');
   if (form) {
-    const inp = $('#dmIn');
+    const inp = q('#dmIn');
     const grow = () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 120) + 'px'; };
     inp.addEventListener('input', grow);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
@@ -573,8 +616,13 @@ function playCut() {
 export async function init(c) {
   ctx = c;
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
-  c.onLeave = v => { if (v !== 'dm') stopThread(); };
+  c.onLeave = v => {
+    document.body.dataset.view = v;
+    if (v === 'dm') closePanel(); else if (threadIn === 'page') stopThread();
+  };
   try { const r = await call('config'); S.enabled = r.enabled !== false; S.needCode = !!r.needCode; } catch { S.enabled = false; }
+  document.body.dataset.view = location.hash.slice(1).split('/')[0] || 'home';
+  setupDock();
   if (S.enabled) await refreshMe(); else paintBadges();
   startPoll();
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) refreshMe(); });
