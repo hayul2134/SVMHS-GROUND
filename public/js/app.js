@@ -62,6 +62,8 @@ function tickClock() {
   $('#bellLbl').textContent = b.label;
   $('#bellCnt').textContent = left != null ? fmtLeft(left) : '';
   $('#bigclock').classList.toggle('soon', left != null && left <= 60);
+  const curP = (b.state.match(/^(\d)교시/) || [])[1];   // 오늘 시간표에서 지금 교시 강조
+  $$('#hTT li').forEach(li => li.classList.toggle('now', li.dataset.p === curP));
   const bar = b.from != null && left != null;
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${Math.min(1, (secNow - b.from) / (b.target - b.from)).toFixed(4)})`;
@@ -131,7 +133,7 @@ async function renderHomeTT() {
     const dep = rows[0] && rows[0].DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${rows.map(r => `<li><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(r.ITRT_CNTNT)}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
+      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(r.ITRT_CNTNT)}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
       : empty('오늘 시간표 정보가 없어요');
   } catch { box.innerHTML = empty('시간표를 불러오지 못했어요'); }
 }
@@ -293,7 +295,7 @@ $('#clearData').onclick = () => {
 /* ===== 테마 (첫 적용은 js/theme.js가 깜빡임 없이 처리) ===== */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
-  $('meta[name=theme-color]').content = t === 'dark' ? '#070c22' : '#eaf1ff';
+  $('meta[name=theme-color]').content = t === 'dark' ? '#0e0f12' : '#f4f5f7';
 }
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
