@@ -186,14 +186,30 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .note{font-size:12px;color:var(--sub);margin-top:10px;font-weight:600}
 
 /* ===== 7. 급식 ===== */
-.dish-main{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:18px;background:var(--ks);border:var(--bd);margin-bottom:14px;box-shadow:var(--sh-s)}
-.dish-main .em{font-size:44px;line-height:1;transform:rotate(-10deg);display:inline-block}
-.dish-main small{display:block;font-size:12px;font-weight:900;color:var(--k)}
-.dish-main b{font-size:21px;font-weight:900;letter-spacing:-.03em;line-height:1.25}
-.dishes{list-style:none;display:flex;flex-wrap:wrap;gap:7px}
-.dishes li{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--card);border:2px solid var(--ink);font-size:14.5px;font-weight:700}
-:root[data-theme="dark"] .dishes li{border-color:var(--line)}
-.dishes li:nth-child(odd){transform:rotate(-1.5deg)}.dishes li:nth-child(3n){transform:rotate(1.5deg)}
+/* 식판 */
+.tray{--t1:#f3f7fa;--t2:#cfdbe5;--c1:#d9e4ec;--c2:#f6f9fb;--cs:rgba(23,48,72,.24);--ch:#fff;
+  position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:9px;padding:11px;border-radius:26px;
+  background:linear-gradient(150deg,var(--t1) 0%,var(--t2) 48%,var(--t1) 70%,var(--t2) 100%);border:var(--bd);box-shadow:var(--sh)}
+.tray::after{content:"";position:absolute;inset:4px;border-radius:21px;pointer-events:none;border:1.5px solid rgba(255,255,255,.7)}
+.tray .cell{grid-column:span 2;position:relative;min-width:0;min-height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:12px 6px 10px;border-radius:15px;text-align:center;background:linear-gradient(160deg,var(--c1),var(--c2));
+  box-shadow:inset 3px 3px 7px var(--cs),inset -2px -2px 4px var(--ch)}
+.tray .big{grid-column:span 3;min-height:118px;border-radius:20px}
+.tray .em{font-size:31px;line-height:1;filter:drop-shadow(0 3px 2px rgba(23,48,72,.25))}
+.tray .big .em{font-size:44px}
+.tray b{font-size:13.5px;font-weight:800;line-height:1.25;letter-spacing:-.03em;overflow-wrap:anywhere}
+.tray .big b{font-size:15px}
+.tray .main{background:linear-gradient(160deg,color-mix(in srgb,var(--ks) 70%,var(--c1)),var(--c2))}
+.tray .main b{color:var(--k)}
+.tray .tag{position:absolute;top:-9px;left:8px;z-index:1;font-style:normal;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:7px;
+  background:var(--yellow);color:#173048;border:2px solid var(--ink);transform:rotate(-7deg)}
+.tray .multi{gap:8px}
+.tray .it{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12.5px;font-weight:800;line-height:1.2;letter-spacing:-.03em;overflow-wrap:anywhere}
+.tray .it span{font-size:19px;line-height:1;filter:drop-shadow(0 2px 1px rgba(23,48,72,.2))}
+.tray .empty{opacity:.6}
+:root[data-theme="dark"] .tray{--t1:#4a627a;--t2:#2a4057;--c1:#1d3247;--c2:#2c445c;--cs:rgba(0,0,0,.5);--ch:rgba(255,255,255,.08)}
+:root[data-theme="dark"] .tray::after{border-color:rgba(255,255,255,.15)}
+@media (max-width:400px){.tray{gap:7px;padding:9px}.tray .cell{min-height:80px}.tray .em{font-size:26px}.tray .big .em{font-size:36px}.tray b{font-size:12.5px}}
 .kcal{display:inline-block;margin-top:14px;font-size:12.5px;font-weight:900;padding:3px 10px;border-radius:8px;background:var(--ink);color:var(--card)}
 .mealtabs{display:inline-flex;gap:4px;padding:4px;margin-bottom:14px;background:var(--chip);border-radius:14px;border:2px solid var(--ink)}
 .mealtabs:empty{display:none}

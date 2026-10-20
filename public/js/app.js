@@ -189,16 +189,36 @@ const EMOJI = [[/우유|요구르트|요거트|주스|에이드|스무디|라떼
   [/샐러드|무침|나물|겉절/, '🥗'], [/빵|파이|케이크|머핀|와플|토스트|도넛|츄러스|쿠키/, '🥐'],
   [/멜론|수박|사과|배|귤|오렌지|포도|딸기|바나나|파인애플|키위|과일|망고|복숭아/, '🍉'], [/아이스|빙수|젤리|푸딩/, '🍨']];
 const dishEmoji = n => (EMOJI.find(([re]) => re.test(n)) || [, '🍽️'])[1];
-// 메인 메뉴: 밥·국·김치·음료를 뺀 첫 반찬 (없으면 첫 메뉴)
-const isSide = n => /^(흑미|잡곡|현미|보리|백미|쌀)?밥$|김치|깍두기|우유|요구르트|주스|국$|탕$|찌개$/.test(n);
+// 식판 칸 나누기: 밥 → 왼쪽 아래, 국 → 오른쪽 아래, 메인 반찬 + 나머지 → 위 3칸
+const isRice = n => /밥$/.test(n);
+const isSoup = n => /(국|탕|찌개|수프|스프|개장)$/.test(n);
+const isExtra = n => /타르트|케이크|쿠키|머핀|마카롱|브라우니|잼|시럽|소스/.test(n) || ['🥬', '🥤', '🥐', '🍉', '🍨'].includes(dishEmoji(n));   // 김치·음료·빵·과일·디저트는 메인 후보에서 뺌
+function splitTray(list) {
+  let rice = list.find(isRice), soup = list.find(n => n !== rice && isSoup(n));
+  const rest = list.filter(n => n !== rice && n !== soup);
+  const mi = rest.findIndex(n => !isExtra(n));
+  if (mi > 0) rest.unshift(rest.splice(mi, 1)[0]);   // 메인을 맨 앞으로
+  if (!rice && rest.length > 3) rice = rest.pop();     // 밥·국이 없는 날은 남는 메뉴로 아래 칸 채움
+  if (!soup && rest.length > 3) soup = rest.pop();
+  // 위 3칸: 메인은 첫 칸에 혼자, 나머지는 2·3번째 칸에 나눠 담기
+  const top = [[], [], []], others = mi >= 0 ? rest.slice(1) : rest.slice();
+  if (mi >= 0) top[0].push(rest[0]);
+  others.forEach((n, i) => top[mi >= 0 ? 1 + (i % 2) : i % 3].push(n));
+  return { main: mi >= 0 ? rest[0] : (rest[0] || rice || ''), top, rice, soup, hasMain: mi >= 0 };
+}
+const cellHtml = (items, cls = '', tag = '', em = '') => {
+  if (!items.length) return `<div class="cell empty ${cls}"></div>`;
+  const t = tag ? `<i class="tag">${tag}</i>` : '';
+  if (items.length === 1) return `<div class="cell ${cls}">${t}<span class="em" aria-hidden="true">${em || dishEmoji(items[0])}</span><b>${esc(items[0])}</b></div>`;
+  return `<div class="cell multi ${cls}">${t}${items.map(x => `<span class="it"><span aria-hidden="true">${dishEmoji(x)}</span>${esc(x)}</span>`).join('')}</div>`;
+};
 const mealHtml = r => {
   if (!r) return empty('급식 정보가 없어요');
-  const list = cleanDish(r.DDISH_NM);
-  const mi = Math.max(0, list.findIndex(n => !isSide(n))), main = list[mi];
-  const rest = list.filter((_, i) => i !== mi);
-  return `<div class="dish-main"><span class="em" aria-hidden="true">${dishEmoji(main)}</span><span><small>오늘의 메인</small><b>${esc(main)}</b></span></div>`
-    + `<ul class="dishes">${rest.map(x => `<li><span aria-hidden="true">${dishEmoji(x)}</span>${esc(x)}</li>`).join('')}</ul>`
-    + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
+  const t = splitTray(cleanDish(r.DDISH_NM));
+  return `<div class="tray" role="list" aria-label="급식 식판">`
+    + t.top.map((c, i) => cellHtml(c, i === 0 && t.hasMain ? 'main' : '', i === 0 && t.hasMain ? '메인' : '')).join('')
+    + cellHtml(t.rice ? [t.rice] : [], 'big') + cellHtml(t.soup ? [t.soup] : [], 'big soup', '', t.soup && isSoup(t.soup) ? '🍲' : '')
+    + `</div>` + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
 };
 async function renderHomeMeal() {
   const box = $('#hMeal'), tabs = $('#hMealTabs');
@@ -210,7 +230,7 @@ async function renderHomeMeal() {
     tabs.innerHTML = rows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
     box.innerHTML = mealHtml(rows.find(r => r.MMEAL_SC_CODE === sel));
     const lunch = rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0], ll = cleanDish(lunch.DDISH_NM);
-    TK.meal = ll[Math.max(0, ll.findIndex(n => !isSide(n)))] || ''; renderTicker();
+    TK.meal = splitTray(ll).main; renderTicker();
   } catch { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); }
 }
 $('#hMealTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.homeMeal = b.dataset.m; renderHomeMeal(); } });
