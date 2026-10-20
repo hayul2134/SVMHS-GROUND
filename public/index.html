@@ -76,9 +76,20 @@
   <!-- 홈: 첫 화면(큰 시계) → 바로가기 → 오늘 보드 -->
   <div class="view on" id="v-home">
     <section class="stage" id="bigclock" aria-label="종 시간">
-      <p class="s-greet"><span class="buddy" aria-hidden="true"><img src="/logo-mark.svg?v=4" alt="" width="46" height="46"></span><span class="bubble" id="greet">안녕!</span></p>
-      <b class="s-big" id="bellCnt" role="timer">--:--</b>
-      <p class="s-sub"><b id="bellLbl">&nbsp;</b><span class="dot">·</span><span id="todayLbl"></span><span class="dot">·</span><span class="h-clock" aria-label="현재 시각"><span id="cH">--</span>:<span id="cM">--</span><span class="ss">:<span id="cS">--</span></span></span><span class="classchip" id="classChip" hidden></span></p>
+      <p class="s-greet"><span class="bubble" id="greet">안녕!</span></p>
+      <div class="clock">
+        <b class="s-big" id="bigTime" role="timer" aria-label="현재 시각">--:--</b>
+        <i class="dk tape" aria-hidden="true"></i>
+        <svg class="dk k1" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2Q21 15 34 18Q21 21 18 34Q15 21 2 18Q15 15 18 2Z"/></svg>
+        <svg class="dk k2" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2Q21 15 34 18Q21 21 18 34Q15 21 2 18Q15 15 18 2Z"/></svg>
+        <svg class="dk k3" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2Q21 15 34 18Q21 21 18 34Q15 21 2 18Q15 15 18 2Z"/></svg>
+        <svg class="dk k4" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2Q21 15 34 18Q21 21 18 34Q15 21 2 18Q15 15 18 2Z"/></svg>
+        <svg class="dk k5" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2Q21 15 34 18Q21 21 18 34Q15 21 2 18Q15 15 18 2Z"/></svg>
+        <i class="dk ring" aria-hidden="true"></i>
+        <i class="dk dot1" aria-hidden="true"></i>
+      </div>
+      <p class="s-sub"><span class="s-left"><b id="bellLbl">&nbsp;</b><b class="s-cnt" id="bellCnt"></b></span></p>
+      <p class="s-date" id="todayLbl"></p>
       <div class="s-cards">
         <div class="mini now"><span class="m-lbl" id="bellState">&nbsp;</span><b class="m-val" id="bellPct">&nbsp;</b><div class="m-bar" id="bellBarBox" hidden><i id="bellBar"></i></div></div>
         <div class="mini nxt" id="hNext" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>

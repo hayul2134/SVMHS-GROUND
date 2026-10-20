@@ -38,13 +38,13 @@ function bellInfo(n) {
     const cur = list[i], prev = list[i - 1];
     if (now >= cur.end) continue;
     if (now >= cur.start) {   // 수업(또는 조회) 중
-      if (cur.p === '조회') return { state: '조회 중', label: '1교시 시작까지', target: list[1].start, from: cur.start };
+      if (cur.p === '조회') return { state: '조회 중', label: '1교시 시작까지', cnt: '수업 시간까지', target: list[1].start, from: cur.start };
       const next = list[i + 1];
-      return { state: `${pName(cur.p)} 수업 중`, label: !next ? '수업 끝까지' : cur.p === 4 ? '점심시간까지' : '쉬는 시간까지', target: cur.end, from: cur.start };
+      return { state: `${pName(cur.p)} 수업 중`, label: !next ? '수업 끝까지' : cur.p === 4 ? '점심시간까지' : '쉬는 시간까지', cnt: !next ? '수업 끝까지' : cur.p === 4 ? '점심시간까지' : '쉬는 시간까지', target: cur.end, from: cur.start };
     }
     // 수업 전 쉬는 시간
     const state = !prev ? '등교 전' : prev.p === 4 ? '점심시간' : '쉬는 시간';
-    return { state, label: `${pName(cur.p)} 시작까지`, target: cur.start, from: prev ? prev.end : null, brk: !!prev };
+    return { state, label: `${pName(cur.p)} 시작까지`, cnt: '수업 시간까지', target: cur.start, from: prev ? prev.end : null, brk: !!prev };
   }
   return { state: '방과 후', label: '오늘 수업이 끝났어요' };
 }
@@ -83,7 +83,6 @@ function tickClock() {
   clearTimeout(tickTimer);
   if (document.hidden) return;   // 안 보일 땐 멈춤 (다시 보이면 visibilitychange에서 재시작)
   const n = new Date();
-  setText('#cH', pad(n.getHours())); setText('#cM', pad(n.getMinutes())); setText('#cS', pad(n.getSeconds()));
   setText('#todayLbl', fmtDay(n));
 
   const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
@@ -97,8 +96,10 @@ function tickClock() {
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
-  setText('#bellLbl', b.label);
-  setHtml('#bellCnt', [...(left != null ? fmtLeft(left) : `${pad(n.getHours())}:${pad(n.getMinutes())}`)].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join(''));   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
+  setText('#bellLbl', b.cnt || b.label);
+  setText('#bellCnt', left != null ? fmtLeft(left) : '');
+  const dg = t => [...t].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join('');   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
+  setHtml('#bigTime', dg(`${pad(n.getHours())}:${pad(n.getMinutes())}`) + `<span class="sec">${dg(':' + pad(n.getSeconds()))}</span>`);
   const hero = $('#bigclock');
   hero.classList.toggle('soon', left != null && left <= 60);
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
@@ -148,6 +149,7 @@ async function loadOffDays() {
 }
 function renderClassChip() {
   const el = $('#classChip');
+  if (!el) return;
   el.hidden = !cls;
   if (cls) el.textContent = `${cls.g}학년 ${cls.c}반${cls.dep ? ' · ' + cls.dep : ''}`;
 }
