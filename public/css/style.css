@@ -7,10 +7,10 @@
 
 /* ===== 1. 토큰 ===== */
 :root{
-  --bg:#86c9f2; --dot:rgba(255,255,255,.38);
-  --card:#f6fbff; --chip:#e1f1fb; --line:#bcd9ea;
+  --bg:#eaf5fd; --dot:rgba(30,110,180,.16);
+  --card:#ffffff; --chip:#e6f3fc; --line:#c4def0;
   --ink:#173048; --text:#173048; --sub:#5b7186; --on-bg:#173048;
-  --accent:#2f8fe0; --lime:#8fe8cf; --yellow:#ffe08a; --pink:#a9c4ff; --red:#ff8f8f; --sky:#6fc6f4; --violet:#9bb8ff; --hero:#4fb5ef; --next:#a6dcff;
+  --accent:#2f8fe0; --lime:#8fe8cf; --yellow:#ffe08a; --pink:#a9c4ff; --red:#ff8f8f; --sky:#6fc6f4; --violet:#9bb8ff; --hero:#38a5ea; --next:#86ccf6;
   --bd:2.5px solid var(--ink); --sh:4px 4px 0 var(--ink); --sh-s:3px 3px 0 var(--ink);
   --radius:22px;
   --disp:"Bagel Fat One","Pretendard Variable",Pretendard,sans-serif;
@@ -45,7 +45,7 @@ header{position:relative;z-index:20}
 .logo:hover img{transform:rotate(6deg) scale(1.05)}
 .logo .lt{display:flex;flex-direction:column;gap:3px}
 .logo small{font-size:10px;font-weight:800;letter-spacing:.35em;opacity:.85}
-.logo strong{font-family:var(--disp);font-weight:400;font-size:24px;letter-spacing:.01em;text-shadow:2px 2px 0 #fff}
+.logo strong{font-family:var(--disp);font-weight:400;font-size:24px;letter-spacing:.01em;text-shadow:2px 2px 0 var(--sky)}
 .iconbtn{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:var(--ink);background:var(--card);border:var(--bd);box-shadow:var(--sh-s);transition:transform .1s,box-shadow .1s}
 :root[data-theme="dark"] .iconbtn{color:var(--text)}
 .iconbtn:hover{transform:translate(-1px,-1px) rotate(-4deg);box-shadow:4px 4px 0 var(--ink)}
@@ -93,7 +93,7 @@ nav button.on{color:var(--ink);background:var(--sky);border:2px solid var(--ink)
 .h-big{margin-top:auto;display:flex;flex-direction:column}
 .h-lbl{font-size:clamp(16px,3.6vw,20px);font-weight:900}
 .h-big b{font-family:var(--disp);font-weight:400;font-size:clamp(84px,21vw,156px);line-height:.9;margin-top:6px;white-space:nowrap;
-  text-shadow:4px 4px 0 rgba(255,255,255,.7)}
+  text-shadow:4px 4px 0 rgba(255,255,255,.35)}
 .h-big b .n{display:inline-block;width:.64em;text-align:center}
 .h-big b .c{display:inline-block;width:.3em;text-align:center}
 .hero.soon .h-big b{animation:shake .5s infinite}
@@ -246,7 +246,7 @@ nav button.on{color:var(--ink);background:var(--sky);border:2px solid var(--ink)
 
 /* ===== 11. 페이저 · 버튼 ===== */
 .vhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:26px 0 14px}
-.vhead h2{font-family:var(--disp);font-weight:400;font-size:34px;color:var(--on-bg);text-shadow:3px 3px 0 #fff;transform:rotate(-2deg)}
+.vhead h2{font-family:var(--disp);font-weight:400;font-size:34px;color:var(--on-bg);text-shadow:3px 3px 0 var(--sky);transform:rotate(-2deg)}
 #v-tt > .card,#v-cal > .card,#v-dday > .grid{margin-top:26px}
 #v-tt > .card{transform:rotate(-.3deg)}#v-cal > .card{transform:rotate(.3deg)}
 .pager{display:flex;align-items:center;gap:8px}
