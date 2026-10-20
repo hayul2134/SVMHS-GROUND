@@ -74,11 +74,14 @@ function periodInfo(b) {
 }
 let nextKey = '', tickTimer = 0, heroVisible = true;
 // 화면 밖으로 스크롤된 전광판·종 시간 타일은 애니메이션을 멈춘다 (스크롤 렉 방지)
+const seen = new Set();   // 지금 화면에 보이는 첫 화면 구역(큰 시계 · 아래 상태 카드)
 const offscreen = new IntersectionObserver(es => es.forEach(e => {
   e.target.classList.toggle('paused', !e.isIntersecting);
-  if (e.target.id === 'bigclock') { const was = heroVisible; heroVisible = e.isIntersecting; if (heroVisible && !was) tickClock(); }
+  if (e.target.classList.contains('ticker')) return;
+  e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
+  const was = heroVisible; heroVisible = seen.size > 0; if (heroVisible && !was) tickClock();
 }));
-document.querySelectorAll('.ticker, #bigclock').forEach(el => offscreen.observe(el));
+document.querySelectorAll('.ticker, #bigclock, #more').forEach(el => offscreen.observe(el));
 const lastVal = new Map();
 const setText = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).textContent = v; } };
 const setHtml = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).innerHTML = v; } };
@@ -183,7 +186,7 @@ function go(v) {
 // 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
-$('#goDown').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth' });
+$('#goDown').onclick = () => $('#more').scrollIntoView({ behavior: 'smooth', block: 'start' });
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
 document.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) $(ACT[a.dataset.act]).click(); });

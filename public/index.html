@@ -86,12 +86,6 @@
         <h2 class="s-tth" id="sMealh"><span id="sMealLbl">지금 급식</span><a href="#mealCard" class="s-ttmore" id="goMeal">전체 ▾</a></h2>
         <div id="sMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>
       </aside>
-      <aside class="s-play" id="play" aria-labelledby="plT" hidden>
-        <h2 class="s-tth"><span id="plT">⚖️ 오늘의 밸런스 게임</span><span class="pl-n" id="plN"></span></h2>
-        <p class="pl-q" id="plQ"></p>
-        <div class="pl-opts" id="plOpts"></div>
-        <p class="pl-note" id="plNote">골라야 결과가 보여요 · 익명</p>
-      </aside>
       </div>
       <div class="clock">
         <b class="s-big" id="bigTime" role="timer">--:--</b>
@@ -111,13 +105,23 @@
       </aside>
       </div>
       </div>
-      <p class="s-sub" id="nowBox"><span class="s-left"><b>현재 시각</b><b class="s-cnt" id="bellCnt"></b></span></p>
-      <p class="s-date" id="todayLbl" aria-live="off"></p>
-      <p class="s-note" id="todayNote" hidden></p>
-      <div class="s-cards">
-        <div class="mini now"><span class="m-lbl" id="bellState">&nbsp;</span><b class="m-val" id="bellPct">&nbsp;</b><div class="m-bar" id="bellBarBox" hidden><i id="bellBar"></i></div></div>
-      </div>
-      <button class="s-down" id="goDown" aria-label="바로가기로 내려가기"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></button>
+      <button class="s-down" id="goDown" aria-label="아래로 내려가기"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></button>
+    </section>
+
+    <!-- 첫 화면 아래: 오늘 날짜 · 지금 상태 (부가 정보) -->
+    <section class="s-more" id="more" aria-label="오늘 상태">
+        <p class="s-sub" id="nowBox"><span class="s-left"><b>현재 시각</b><b class="s-cnt" id="bellCnt"></b></span></p>
+        <p class="s-date" id="todayLbl" aria-live="off"></p>
+        <p class="s-note" id="todayNote" hidden></p>
+        <div class="s-cards">
+          <div class="mini now"><span class="m-lbl" id="bellState">&nbsp;</span><b class="m-val" id="bellPct">&nbsp;</b><div class="m-bar" id="bellBarBox" hidden><i id="bellBar"></i></div></div>
+          <aside class="s-play" id="play" aria-labelledby="plT" hidden>
+            <h2 class="s-tth"><span id="plT">⚖️ 오늘의 밸런스 게임</span><span class="pl-n" id="plN"></span></h2>
+            <p class="pl-q" id="plQ"></p>
+            <div class="pl-opts" id="plOpts"></div>
+            <p class="pl-note" id="plNote">골라야 결과가 보여요 · 익명</p>
+          </aside>
+        </div>
     </section>
 
     <div class="ticker" aria-hidden="true"><div class="tk" id="ticker"></div></div>

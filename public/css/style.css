@@ -67,7 +67,10 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 @keyframes tk{to{transform:translateX(-50%)}}
 
 /* ===== 5. 첫 화면 (남은 시간이 주인공) ===== */
-.stage{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:96px 0 84px;position:relative}
+.stage{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:88px 0 76px;position:relative}
+/* 첫 화면 아래 부가 정보 (날짜 · 오늘 일정 알림 · 지금 상태) */
+.s-more{display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0 64px;scroll-margin-top:80px}
+.s-more .s-sub{margin-top:0}
 .s-greet{display:flex;align-items:center;justify-content:center;padding:0 16px;animation:bob 2.6s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-4px)}}
 .bubble{position:relative;background:var(--card);color:var(--text);font-weight:800;font-size:15px;padding:9px 16px;border-radius:16px;border:var(--bd);box-shadow:var(--sh-s);max-width:100%}
@@ -114,7 +117,10 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .s-date .d-dow.sat{background:var(--sky)}
 .s-date .d-dow.sun{background:#ffb3b3}
 .s-big .ap{font-family:inherit;font-size:.26em;font-weight:900;color:var(--sub);text-shadow:none;margin-right:.18em;vertical-align:.9em}
-.s-cards{display:grid;grid-template-columns:1fr;width:min(420px,100%);margin:34px auto 0}
+.s-cards{display:grid;grid-template-columns:1fr;width:min(420px,100%);margin:30px auto 0;gap:34px 30px;align-items:start}
+.s-cards:has(.s-play:not([hidden])){width:min(780px,100%);grid-template-columns:1fr 1fr}
+.s-cards .s-play{width:auto;transform:rotate(1.2deg)}
+@media (max-width:699px){.s-cards:has(.s-play:not([hidden])){width:min(420px,100%);grid-template-columns:1fr}}
 .mini{background:var(--card);color:var(--text);border:var(--bd);border-radius:20px;box-shadow:var(--sh);padding:16px 20px;text-align:left;display:flex;flex-direction:column;gap:3px;min-height:108px;position:relative;min-width:0}
 .mini.now{transform:rotate(-1.2deg)}
 .mini.nxt{transform:rotate(1.2deg)}
@@ -166,7 +172,20 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .s-tt .tt li.now{transform:rotate(-1deg) scale(1.03)}
 .s-tt .empty{font-size:14px;padding:6px 2px 8px}
 .s-tt .note{margin:8px 2px 0}
-@media (min-width:1280px){.s-row .s-big{font-size:clamp(84px,9vw,150px)}}
+@media (min-width:1280px){
+  .s-row .s-big{font-size:clamp(96px,10.5vw,170px)}
+  .s-row{column-gap:clamp(40px,5vw,84px)}
+  .s-tt{width:232px;padding:16px 12px 10px;box-shadow:var(--sh-s)}
+  .s-tt .tt{gap:1px}
+  .s-tt .tt li{padding:2px 6px 2px 2px}
+  .s-tt .tt li .p{width:24px;height:24px;font-size:12.5px;border-radius:7px}
+  .s-tt .tt li .s{font-size:14px}
+  .s-tth{font-size:14px;margin-bottom:8px}
+  .s-tt.s-meal{width:290px}
+  .tray.mini{grid-template-rows:98px 78px}
+  .tray.mini .em{font-size:26px}.tray.mini .big .em{font-size:29px}
+  .tray.mini b{font-size:12px}.tray.mini .big b{font-size:13px}.tray.mini .half b{font-size:11px}
+}
 @media (min-width:700px) and (max-width:1279px){
   .s-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"c c" "l r";align-items:start;row-gap:44px}
   .s-row .clock{justify-self:center}
