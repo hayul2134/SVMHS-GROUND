@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SVMHS GROUND</title>
+<meta name="description" content="서울영상고 학생들을 위한 급식·시간표·학사일정 모음">
+<meta name="theme-color" content="#111318">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235b5bf7'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='900' font-size='28' text-anchor='middle' fill='white'%3ESG%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --bg:#f4f5f8; --card:#ffffff; --text:#14161c; --sub:#6b7180; --line:#e4e6ec;
+  --accent:#5b5bf7; --accent-soft:#ececfe; --warn:#e5484d; --ok:#12a150;
+  --radius:18px; --shadow:0 1px 2px rgba(16,18,28,.04),0 4px 16px rgba(16,18,28,.05);
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --card:#181b22; --text:#eef0f5; --sub:#9198a8; --line:#262a33;
+  --accent:#8b8bff; --accent-soft:#23243d; --shadow:none;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 96px}
+
+/* header */
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.hd{max-width:1080px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.logo{font-weight:900;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo b{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;font-size:13px}
+.logo span{color:var(--accent)}
+.hd .sp{flex:1}
+.iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line)}
+.iconbtn:hover{border-color:var(--accent)}
+.iconbtn svg{width:20px;height:20px}
+
+/* nav */
+nav{max-width:1080px;margin:0 auto;padding:0 16px 10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;font-weight:600;font-size:15px;color:var(--sub);background:var(--card);border:1px solid var(--line)}
+nav button svg{width:17px;height:17px}
+nav button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* hero */
+.hero{padding:18px 2px 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hero h1{font-size:28px;font-weight:800;letter-spacing:-.03em}
+.hero p{color:var(--sub);font-weight:500}
+.clock{font-variant-numeric:tabular-nums;font-size:34px;font-weight:800;letter-spacing:-.02em}
+.classchip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:14px;margin-top:6px}
+
+/* grid & cards */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0}
+.c4{grid-column:span 4}.c5{grid-column:span 5}.c7{grid-column:span 7}.c8{grid-column:span 8}.c6{grid-column:span 6}.c12{grid-column:span 12}
+@media (max-width:860px){.c4,.c5,.c7,.c8,.c6{grid-column:span 12}}
+.ct{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.ct h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.ct h2 svg{width:19px;height:19px;color:var(--accent)}
+.ct a,.link{color:var(--sub);font-size:13px;font-weight:600;cursor:pointer}
+.muted{color:var(--sub)}
+.small{font-size:13px}
+.empty{color:var(--sub);font-size:14px;padding:10px 0}
+
+/* meal */
+.menu{list-style:none;display:flex;flex-direction:column;gap:6px}
+.menu li{font-size:16px;font-weight:500}
+.kcal{margin-top:10px;font-size:13px;color:var(--sub)}
+.mealtabs{display:flex;gap:6px;margin-bottom:12px}
+.mealtabs button{padding:6px 12px;border-radius:10px;font-weight:600;font-size:14px;background:var(--bg);color:var(--sub)}
+.mealtabs button.on{background:var(--accent);color:#fff}
+.mealcols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:700px){.mealcols{grid-template-columns:1fr}}
+.mealcols .card h3{font-size:15px;margin-bottom:10px;color:var(--accent)}
+
+/* timetable */
+.tt{list-style:none;display:flex;flex-direction:column;gap:6px}
+.tt li{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:12px;background:var(--bg)}
+.tt li .p{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--card);color:var(--sub);flex:none}
+.tt li .s{font-weight:600}
+.tt li.now{background:var(--accent);color:#fff}
+.tt li.now .p{background:rgba(255,255,255,.2);color:#fff}
+.week{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed}
+.week th{font-size:13px;color:var(--sub);font-weight:700;padding:6px 0}
+.week th.today{color:var(--accent)}
+.week td{background:var(--bg);border-radius:10px;padding:10px 6px;text-align:center;font-size:14px;font-weight:600;word-break:keep-all;height:52px}
+.week td.pn{background:none;color:var(--sub);font-weight:800;width:34px}
+.week td.today{background:var(--accent-soft);color:var(--accent)}
+.scrollx{overflow-x:auto}
+.scrollx .week{min-width:560px}
+
+/* schedule */
+.ev{list-style:none;display:flex;flex-direction:column}
+.ev li{display:flex;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.ev li:last-child{border-bottom:0}
+.ev .d{width:52px;flex:none;text-align:center}
+.ev .d b{display:block;font-size:20px;font-weight:800;line-height:1.1}
+.ev .d span{font-size:12px;color:var(--sub);font-weight:600}
+.ev .n{font-weight:600;flex:1;min-width:0}
+.ev .tag{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);flex:none}
+.ev .tag.off{background:#fde8e8;color:var(--warn)}
+:root[data-theme="dark"] .ev .tag.off{background:#3a1d1f}
+.ev li.past{opacity:.45}
+
+/* dday */
+.dlist{list-style:none;display:flex;flex-direction:column;gap:8px}
+.dlist li{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--bg)}
+.dlist .num{font-weight:900;font-size:18px;color:var(--accent);min-width:64px;font-variant-numeric:tabular-nums}
+.dlist .nm{flex:1;font-weight:600;min-width:0}
+.dlist .dt{font-size:12px;color:var(--sub)}
+.dlist .x{color:var(--sub);width:28px;height:28px;border-radius:8px}
+.dlist .x:hover{background:var(--card);color:var(--warn)}
+.form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.form input{flex:1;min-width:140px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg)}
+.btn{padding:11px 16px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700}
+.btn.ghost{background:var(--bg);color:var(--text);border:1px solid var(--line)}
+
+/* date pager */
+.pager{display:flex;align-items:center;gap:8px}
+.pager button{width:34px;height:34px;border-radius:10px;background:var(--bg);display:grid;place-items:center}
+.pager button svg{width:16px;height:16px}
+.pager .lbl{font-weight:700;min-width:120px;text-align:center}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,12,18,.55)}
+.modal.open{display:flex}
+.sheet{background:var(--card);border-radius:22px;padding:24px;width:100%;max-width:400px;text-align:center}
+.sheet h3{font-size:20px;margin-bottom:4px}
+.qrbox{background:#fff;border-radius:16px;padding:10px;margin:18px auto;width:min(260px,70vw)}
+.qrbox svg{display:block;width:100%;height:auto}
+.url{font-size:14px;color:var(--sub);word-break:break-all;margin-bottom:16px}
+.sheet .row{display:flex;gap:8px}
+.sheet .row .btn{flex:1}
+.sheet select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);margin-top:8px}
+.sheet label{display:block;text-align:left;font-weight:700;font-size:14px;margin-top:14px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;opacity:0;transition:.25s;z-index:60;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--bg),var(--line),var(--bg));background-size:200% 100%;animation:sk 1.2s infinite;margin:8px 0}
+@keyframes sk{to{background-position:-200% 0}}
+footer{text-align:center;color:var(--sub);font-size:12px;padding:28px 0 0}
+.view{display:none}.view.on{display:block}
+.note{font-size:12px;color:var(--sub);margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="logo"><b>SG</b>SVMHS <span>GROUND</span></div>
+    <div class="sp"></div>
+    <button class="iconbtn" id="btnClass" title="반 설정" aria-label="반 설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="iconbtn" id="btnTheme" title="테마" aria-label="테마 바꾸기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    <button class="iconbtn" id="btnShare" title="공유하기" aria-label="공유하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></button>
+  </div>
+  <nav id="nav">
+    <button data-v="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></svg>홈</button>
+    <button data-v="meal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v20M4 2v6a3 3 0 0 0 6 0V2M17 22V2c-2.5 1.5-4 4-4 8h4"/></svg>급식</button>
+    <button data-v="tt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>시간표</button>
+    <button data-v="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>학사일정</button>
+    <button data-v="dday"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>D-day</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <p id="todayLbl"></p>
+      <h1 id="greet">안녕하세요</h1>
+      <div class="classchip" id="classChip" hidden></div>
+    </div>
+    <div class="clock" id="clock">--:--</div>
+  </section>
+
+  <!-- HOME -->
+  <div class="view on" id="v-home">
+    <div class="grid">
+      <div class="card c5">
+        <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v20M4 2v6a3 3 0 0 0 6 0V2M17 22V2c-2.5 1.5-4 4-4 8h4"/></svg><span id="hMealTitle">오늘 급식</span></h2><a data-go="meal">전체 보기</a></div>
+        <div class="mealtabs" id="hMealTabs"></div>
+        <div id="hMeal"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+      </div>
+      <div class="card c7">
+        <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>오늘 시간표</h2><a data-go="tt">주간 보기</a></div>
+        <div id="hTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+      </div>
+      <div class="card c7">
+        <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>다가오는 일정</h2><a data-go="cal">전체 보기</a></div>
+        <div id="hCal"><div class="skel"></div><div class="skel"></div></div>
+      </div>
+      <div class="card c5">
+        <div class="ct"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>D-day</h2><a data-go="dday">관리</a></div>
+        <div id="hDday"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEAL -->
+  <div class="view" id="v-meal">
+    <div class="card c12" style="margin-bottom:14px">
+      <div class="ct" style="margin:0"><h2>급식</h2>
+        <div class="pager"><button id="mPrev" aria-label="이전 날"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button><span class="lbl" id="mLbl"></span><button id="mNext" aria-label="다음 날"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button></div>
+      </div>
+    </div>
+    <div class="mealcols" id="mCols"></div>
+  </div>
+
+  <!-- TIMETABLE -->
+  <div class="view" id="v-tt">
+    <div class="card">
+      <div class="ct"><h2 id="ttTitle">주간 시간표</h2>
+        <div class="pager"><button id="tPrev" aria-label="이전 주"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button><span class="lbl" id="tLbl"></span><button id="tNext" aria-label="다음 주"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button></div>
+      </div>
+      <div class="scrollx" id="tWeek"></div>
+      <p class="note" id="ttNote"></p>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="view" id="v-cal">
+    <div class="card">
+      <div class="ct"><h2>학사일정</h2>
+        <div class="pager"><button id="cPrev" aria-label="이전 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button><span class="lbl" id="cLbl"></span><button id="cNext" aria-label="다음 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button></div>
+      </div>
+      <div id="cList"></div>
+    </div>
+  </div>
+
+  <!-- DDAY -->
+  <div class="view" id="v-dday">
+    <div class="grid">
+      <div class="card c6">
+        <div class="ct"><h2>내 D-day</h2></div>
+        <div id="dMine"></div>
+        <div class="form">
+          <input id="dName" placeholder="이름 (예: 기말고사)" maxlength="30">
+          <input id="dDate" type="date">
+          <button class="btn" id="dAdd">추가</button>
+        </div>
+        <p class="note">내 D-day는 이 기기에만 저장돼요.</p>
+      </div>
+      <div class="card c6">
+        <div class="ct"><h2>학교 일정 D-day</h2></div>
+        <div id="dSchool"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>SVMHS GROUND · 서울영상고 학생이 만든 비공식 사이트<br>급식·시간표·학사일정 정보: 나이스 교육정보 개방 포털</footer>
+</main>
+
+<!-- share modal -->
+<div class="modal" id="mShare" role="dialog" aria-modal="true" aria-labelledby="shareT">
+  <div class="sheet">
+    <h3 id="shareT">친구에게 공유하기</h3>
+    <p class="muted small">카메라로 QR을 찍으면 바로 들어와요</p>
+    <div class="qrbox" id="qr"></div>
+    <div class="url" id="shareUrl"></div>
+    <div class="row"><button class="btn" id="copyUrl">주소 복사</button><button class="btn ghost" data-close>닫기</button></div>
+  </div>
+</div>
+
+<!-- class modal -->
+<div class="modal" id="mClass" role="dialog" aria-modal="true" aria-labelledby="classT">
+  <div class="sheet">
+    <h3 id="classT">우리 반 설정</h3>
+    <p class="muted small">시간표를 보려면 학년과 반을 골라 주세요</p>
+    <label for="selG">학년</label>
+    <select id="selG"><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option></select>
+    <label for="selC">반</label>
+    <select id="selC"></select>
+    <div class="row" style="margin-top:18px"><button class="btn" id="saveClass">저장</button><button class="btn ghost" data-close>닫기</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== QR generator (byte mode, ECC M) ===== */
+// Minimal QR Code generator (byte mode, ECC level M, versions 1-40).
+// Algorithm follows the public QR Code specification (ISO/IEC 18004).
+const QR = (() => {
+  const ECC_M = [-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const BLK_M = [-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const FORMAT_M = 0; // format bits for ECC level M
+
+  const rawModules = v => {
+    let r = (16 * v + 128) * v + 64;
+    if (v >= 2) { const n = Math.floor(v / 7) + 2; r -= (25 * n - 10) * n - 55; if (v >= 7) r -= 36; }
+    return r;
+  };
+  const dataCodewords = v => Math.floor(rawModules(v) / 8) - ECC_M[v] * BLK_M[v];
+  const alignPos = v => {
+    if (v === 1) return [];
+    const n = Math.floor(v / 7) + 2;
+    const step = v === 32 ? 26 : Math.ceil((v * 4 + 4) / (n * 2 - 2)) * 2;
+    const r = [6];
+    for (let p = v * 4 + 10; r.length < n; p -= step) r.splice(1, 0, p);
+    return r;
+  };
+  const gfMul = (x, y) => {
+    let z = 0;
+    for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11d); z ^= ((y >>> i) & 1) * x; }
+    return z;
+  };
+  const rsDivisor = deg => {
+    const r = new Array(deg).fill(0); r[deg - 1] = 1; let root = 1;
+    for (let i = 0; i < deg; i++) {
+      for (let j = 0; j < r.length; j++) { r[j] = gfMul(r[j], root); if (j + 1 < r.length) r[j] ^= r[j + 1]; }
+      root = gfMul(root, 2);
+    }
+    return r;
+  };
+  const rsRemainder = (data, div) => {
+    const r = div.map(() => 0);
+    for (const b of data) {
+      const f = b ^ r.shift(); r.push(0);
+      div.forEach((c, i) => { r[i] ^= gfMul(c, f); });
+    }
+    return r;
+  };
+  const bit = (x, i) => ((x >>> i) & 1) !== 0;
+
+  function encode(text) {
+    const bytes = Array.from(new TextEncoder().encode(text));
+    let ver = 1;
+    for (; ver <= 40; ver++) {
+      const ccBits = ver <= 9 ? 8 : 16;
+      if (4 + ccBits + bytes.length * 8 <= dataCodewords(ver) * 8) break;
+    }
+    if (ver > 40) throw new Error('Text too long');
+    const ccBits = ver <= 9 ? 8 : 16;
+    const bb = [];
+    const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bb.push((val >>> i) & 1); };
+    push(4, 4); push(bytes.length, ccBits); bytes.forEach(b => push(b, 8));
+    const cap = dataCodewords(ver) * 8;
+    push(0, Math.min(4, cap - bb.length));
+    push(0, (8 - bb.length % 8) % 8);
+    for (let p = 0xec; bb.length < cap; p ^= 0xec ^ 0x11) push(p, 8);
+    const data = [];
+    for (let i = 0; i < bb.length; i += 8) { let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bb[i + j]; data.push(v); }
+
+    // ECC + interleave
+    const nb = BLK_M[ver], eccLen = ECC_M[ver], raw = Math.floor(rawModules(ver) / 8);
+    const nShort = nb - raw % nb, shortLen = Math.floor(raw / nb), div = rsDivisor(eccLen);
+    const blocks = [];
+    for (let i = 0, k = 0; i < nb; i++) {
+      const d = data.slice(k, k + shortLen - eccLen + (i < nShort ? 0 : 1)); k += d.length;
+      const e = rsRemainder(d, div); if (i < nShort) d.push(0); blocks.push(d.concat(e));
+    }
+    const all = [];
+    for (let i = 0; i < blocks[0].length; i++) blocks.forEach((b, j) => { if (i !== shortLen - eccLen || j >= nShort) all.push(b[i]); });
+
+    const size = ver * 4 + 17;
+    const mod = Array.from({ length: size }, () => new Array(size).fill(false));
+    const fn = Array.from({ length: size }, () => new Array(size).fill(false));
+    const set = (x, y, d) => { mod[y][x] = d; fn[y][x] = true; };
+
+    for (let i = 0; i < size; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+    const finder = (x, y) => {
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const d = Math.max(Math.abs(dx), Math.abs(dy)), xx = x + dx, yy = y + dy;
+        if (xx >= 0 && xx < size && yy >= 0 && yy < size) set(xx, yy, d !== 2 && d !== 4);
+      }
+    };
+    finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+    const ap = alignPos(ver), n = ap.length;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      if ((i === 0 && j === 0) || (i === 0 && j === n - 1) || (i === n - 1 && j === 0)) continue;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) set(ap[i] + dx, ap[j] + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+    }
+    const drawFormat = mask => {
+      const d = (FORMAT_M << 3) | mask; let r = d;
+      for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+      const b = ((d << 10) | r) ^ 0x5412;
+      for (let i = 0; i <= 5; i++) set(8, i, bit(b, i));
+      set(8, 7, bit(b, 6)); set(8, 8, bit(b, 7)); set(7, 8, bit(b, 8));
+      for (let i = 9; i < 15; i++) set(14 - i, 8, bit(b, i));
+      for (let i = 0; i < 8; i++) set(size - 1 - i, 8, bit(b, i));
+      for (let i = 8; i < 15; i++) set(8, size - 15 + i, bit(b, i));
+      set(8, size - 8, true);
+    };
+    drawFormat(0);
+    if (ver >= 7) {
+      let r = ver; for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1f25);
+      const b = (ver << 12) | r;
+      for (let i = 0; i < 18; i++) { const c = bit(b, i), a = size - 11 + i % 3, bb2 = Math.floor(i / 3); set(a, bb2, c); set(bb2, a, c); }
+    }
+    // place codewords
+    let k = 0;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (let v = 0; v < size; v++) for (let j = 0; j < 2; j++) {
+        const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - v : v;
+        if (!fn[y][x] && k < all.length * 8) { mod[y][x] = bit(all[k >>> 3], 7 - (k & 7)); k++; }
+      }
+    }
+    const maskFn = [
+      (x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x) => x % 3 === 0, (x, y) => (x + y) % 3 === 0,
+      (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => (x * y) % 2 + (x * y) % 3 === 0,
+      (x, y) => ((x * y) % 2 + (x * y) % 3) % 2 === 0, (x, y) => (((x + y) % 2) + (x * y) % 3) % 2 === 0,
+    ];
+    const applyMask = m => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && maskFn[m](x, y)) mod[y][x] = !mod[y][x]; };
+    const penalty = () => {
+      let p = 0;
+      for (let y = 0; y < size; y++) { let run = 1; for (let x = 1; x < size; x++) { if (mod[y][x] === mod[y][x - 1]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+      for (let x = 0; x < size; x++) { let run = 1; for (let y = 1; y < size; y++) { if (mod[y][x] === mod[y - 1][x]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+      for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) { const c = mod[y][x]; if (c === mod[y][x + 1] && c === mod[y + 1][x] && c === mod[y + 1][x + 1]) p += 3; }
+      let dark = 0; mod.forEach(r => r.forEach(c => { if (c) dark++; }));
+      p += Math.floor(Math.abs(dark * 20 - size * size * 10) / (size * size)) * 10;
+      return p;
+    };
+    let best = 0, bestP = Infinity;
+    for (let m = 0; m < 8; m++) { applyMask(m); drawFormat(m); const p = penalty(); if (p < bestP) { bestP = p; best = m; } applyMask(m); }
+    applyMask(best); drawFormat(best);
+    return mod;
+  }
+
+  function toSvg(text, color = '#000', bg = '#fff') {
+    const m = encode(text), s = m.length, q = 4, t = s + q * 2;
+    let d = '';
+    for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) if (m[y][x]) d += `M${x + q} ${y + q}h1v1h-1z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}" shape-rendering="crispEdges"><rect width="${t}" height="${t}" fill="${bg}"/><path d="${d}" fill="${color}"/></svg>`;
+  }
+  return { encode, toSvg };
+})();
+
+</script>
+<script>
+(() => {
+'use strict';
+/* ===== 설정 ===== */
+const NEIS_KEY = '';               // 나이스 오픈 API 인증키 (넣으면 시간표 6·7교시와 일정 전체가 표시됨)
+const ATPT = 'B10', SCHUL = '7010795';
+const SITE_URL = 'https://svmhs-ground.pages.dev/';
+const MAX_CLASS = 8;
+
+/* ===== 유틸 ===== */
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+const parseYmd = s => new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const fmtDay = d => `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('sg_' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('sg_' + k, JSON.stringify(v)); } catch {} },
+};
+const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+const mondayOf = d => addDays(d, -((d.getDay() + 6) % 7));
+const diffDays = (a, b) => Math.round((a - b) / 86400000);
+const ddayText = n => n === 0 ? 'D-DAY' : n > 0 ? 'D-' + n : 'D+' + (-n);
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); };
+const skel = n => '<div class="skel"></div>'.repeat(n);
+
+/* ===== 나이스 API ===== */
+const memo = new Map();
+async function neis(svc, params) {
+  const q = new URLSearchParams({ Type: 'json', ATPT_OFCDC_SC_CODE: ATPT, SD_SCHUL_CODE: SCHUL, pSize: NEIS_KEY ? '1000' : '5', ...params });
+  if (NEIS_KEY) q.set('KEY', NEIS_KEY);
+  const url = `https://open.neis.go.kr/hub/${svc}?${q}`;
+  if (memo.has(url)) return memo.get(url);
+  const ck = 'c_' + svc + '_' + q.toString().replace(/KEY=[^&]*&?/, '');
+  const cached = store.get(ck);
+  if (cached && Date.now() - cached.t < 3 * 3600e3) { memo.set(url, Promise.resolve(cached.v)); return cached.v; }
+  const p = fetch(url).then(r => r.json()).then(j => {
+    const rows = j[svc] ? (j[svc][1] && j[svc][1].row) || [] : [];
+    store.set(ck, { t: Date.now(), v: rows });
+    return rows;
+  }).catch(e => { memo.delete(url); throw e; });
+  memo.set(url, p);
+  return p;
+}
+const cleanDish = s => s.split(/<br\s*\/?>/i).map(x => x.replace(/\([\d.\s]*\)/g, '').replace(/[*#]/g, '').trim()).filter(Boolean);
+const MEALS = { '1': '조식', '2': '중식', '3': '석식' };
+async function getMeals(date) {
+  const day = ymd(date);
+  if (NEIS_KEY) return neis('mealServiceDietInfo', { MLSV_YMD: day });
+  const res = await Promise.all(Object.keys(MEALS).map(c => neis('mealServiceDietInfo', { MLSV_YMD: day, MMEAL_SC_CODE: c }).catch(() => [])));
+  return res.flat();
+}
+async function getTT(cls, from, to) {
+  if (NEIS_KEY) return neis('hisTimetable', { GRADE: cls.g, CLASS_NM: cls.c, TI_FROM_YMD: ymd(from), TI_TO_YMD: ymd(to) });
+  const days = []; for (let d = new Date(from); d <= to; d = addDays(d, 1)) if (d.getDay() % 6) days.push(new Date(d));
+  const res = await Promise.all(days.map(d => neis('hisTimetable', { GRADE: cls.g, CLASS_NM: cls.c, ALL_TI_YMD: ymd(d) }).catch(() => [])));
+  return res.flat();
+}
+async function getSchedule(from, to) {
+  if (NEIS_KEY) return neis('SchoolSchedule', { AA_FROM_YMD: ymd(from), AA_TO_YMD: ymd(to) });
+  const parts = []; for (let d = new Date(from); d <= to; d = addDays(d, 4)) { const e = addDays(d, 3); parts.push([d, e > to ? to : e]); }
+  const res = await Promise.all(parts.map(([a, b]) => neis('SchoolSchedule', { AA_FROM_YMD: ymd(a), AA_TO_YMD: ymd(b) }).catch(() => [])));
+  const seen = new Set();
+  return res.flat().filter(r => { const k = r.AA_YMD + r.EVENT_NM; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+const isNoise = r => !r.EVENT_NM || r.EVENT_NM === '토요휴업일';
+
+/* ===== 상태 ===== */
+let cls = store.get('class', null);
+const S = { mealDate: today(), ttWeek: mondayOf(today()), calMonth: new Date(today().getFullYear(), today().getMonth(), 1), homeMeal: null };
+
+/* ===== 헤더 / 시계 ===== */
+function tickClock() {
+  const n = new Date();
+  $('#clock').textContent = pad(n.getHours()) + ':' + pad(n.getMinutes());
+  $('#todayLbl').textContent = `${n.getFullYear()}년 ${fmtDay(n)}`;
+  const h = n.getHours();
+  $('#greet').textContent = h < 9 ? '좋은 아침이에요' : h < 12 ? '오늘도 힘내요' : h < 14 ? '점심 맛있게 먹어요' : h < 18 ? '조금만 더 힘내요' : '오늘도 수고했어요';
+}
+function renderClassChip() {
+  const el = $('#classChip');
+  if (cls) { el.hidden = false; el.textContent = `${cls.g}학년 ${cls.c}반${cls.dep ? ' · ' + cls.dep : ''}`; }
+  else el.hidden = true;
+}
+
+/* ===== 탭 ===== */
+function go(v) {
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
+  if (v === 'meal') renderMealView();
+  if (v === 'tt') renderTTView();
+  if (v === 'cal') renderCalView();
+  if (v === 'dday') renderDdayView();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (location.hash !== '#' + v) history.replaceState(null, '', v === 'home' ? location.pathname : '#' + v);
+}
+$('#nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.v); });
+document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) go(a.dataset.go); });
+
+/* ===== 급식 ===== */
+const mealHtml = r => r ? `<ul class="menu">${cleanDish(r.DDISH_NM).map(x => `<li>${esc(x)}</li>`).join('')}</ul><div class="kcal">${esc(r.CAL_INFO || '')}</div>` : '<p class="empty">급식 정보가 없어요</p>';
+async function renderHomeMeal() {
+  const box = $('#hMeal'), tabs = $('#hMealTabs');
+  try {
+    const rows = await getMeals(today());
+    if (!rows.length) { tabs.innerHTML = ''; box.innerHTML = '<p class="empty">오늘은 급식이 없어요</p>'; return; }
+    rows.sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
+    const h = new Date().getHours();
+    const pref = h < 9 ? '1' : h < 14 ? '2' : '3';
+    const sel = S.homeMeal || (rows.find(r => r.MMEAL_SC_CODE === pref) || rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0]).MMEAL_SC_CODE;
+    tabs.innerHTML = rows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE] || r.MMEAL_SC_NM}</button>`).join('');
+    box.innerHTML = mealHtml(rows.find(r => r.MMEAL_SC_CODE === sel));
+    tabs.onclick = e => { const b = e.target.closest('button'); if (b) { S.homeMeal = b.dataset.m; renderHomeMeal(); } };
+  } catch { box.innerHTML = '<p class="empty">급식 정보를 불러오지 못했어요</p>'; }
+}
+async function renderMealView() {
+  $('#mLbl').textContent = fmtDay(S.mealDate);
+  const cols = $('#mCols');
+  cols.innerHTML = Object.values(MEALS).map(n => `<div class="card"><h3>${n}</h3>${skel(4)}</div>`).join('');
+  const d = S.mealDate;
+  try {
+    const rows = await getMeals(d);
+    if (d !== S.mealDate) return;
+    cols.innerHTML = Object.entries(MEALS).map(([c, n]) => `<div class="card"><h3>${n}</h3>${mealHtml(rows.find(r => r.MMEAL_SC_CODE === c))}</div>`).join('');
+  } catch { cols.innerHTML = '<div class="card"><p class="empty">급식 정보를 불러오지 못했어요</p></div>'; }
+}
+$('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealView(); };
+$('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };
+
+/* ===== 시간표 ===== */
+const needClass = '<p class="empty">반을 설정하면 시간표가 보여요 · <span class="link" data-open-class>설정하기</span></p>';
+async function renderHomeTT() {
+  const box = $('#hTT');
+  if (!cls) { box.innerHTML = needClass; return; }
+  const d = today();
+  if (d.getDay() % 6 === 0) { box.innerHTML = '<p class="empty">오늘은 주말이에요. 푹 쉬어요!</p>'; return; }
+  try {
+    const rows = (await getTT(cls, d, d)).filter(r => r.ALL_TI_YMD === ymd(d)).sort((a, b) => a.PERIO - b.PERIO);
+    if (rows[0] && rows[0].DDDEP_NM && cls.dep !== rows[0].DDDEP_NM) { cls.dep = rows[0].DDDEP_NM; store.set('class', cls); renderClassChip(); }
+    box.innerHTML = rows.length ? `<ul class="tt">${rows.map(r => `<li><span class="p">${r.PERIO}</span><span class="s">${esc(r.ITRT_CNTNT)}</span></li>`).join('')}</ul>` + (NEIS_KEY ? '' : '<p class="note">5교시까지만 표시돼요</p>') : '<p class="empty">오늘 시간표 정보가 없어요</p>';
+  } catch { box.innerHTML = '<p class="empty">시간표를 불러오지 못했어요</p>'; }
+}
+async function renderTTView() {
+  const mon = S.ttWeek, fri = addDays(mon, 4);
+  $('#tLbl').textContent = `${mon.getMonth() + 1}/${mon.getDate()} ~ ${fri.getMonth() + 1}/${fri.getDate()}`;
+  $('#ttTitle').textContent = cls ? `${cls.g}학년 ${cls.c}반 시간표` : '주간 시간표';
+  $('#ttNote').textContent = NEIS_KEY ? '' : '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)';
+  const box = $('#tWeek');
+  if (!cls) { box.innerHTML = needClass; return; }
+  box.innerHTML = skel(5);
+  try {
+    const rows = await getTT(cls, mon, fri);
+    if (mon !== S.ttWeek) return;
+    const days = [0, 1, 2, 3, 4].map(i => addDays(mon, i));
+    const maxP = Math.max(6, ...rows.map(r => +r.PERIO));
+    const map = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = r.ITRT_CNTNT; });
+    const t = ymd(today());
+    let h = '<table class="week"><thead><tr><th style="width:34px"></th>' + days.map(d => `<th class="${ymd(d) === t ? 'today' : ''}">${DOW[d.getDay()]} ${d.getDate()}</th>`).join('') + '</tr></thead><tbody>';
+    for (let p = 1; p <= maxP; p++) h += `<tr><td class="pn">${p}</td>` + days.map(d => `<td class="${ymd(d) === t ? 'today' : ''}">${esc(map[ymd(d) + '_' + p] || '')}</td>`).join('') + '</tr>';
+    box.innerHTML = rows.length ? h + '</tbody></table>' : '<p class="empty">이 주의 시간표 정보가 없어요</p>';
+  } catch { box.innerHTML = '<p class="empty">시간표를 불러오지 못했어요</p>'; }
+}
+$('#tPrev').onclick = () => { S.ttWeek = addDays(S.ttWeek, -7); renderTTView(); };
+$('#tNext').onclick = () => { S.ttWeek = addDays(S.ttWeek, 7); renderTTView(); };
+
+/* ===== 학사일정 ===== */
+const evHtml = (rows, showPast = true) => {
+  const t = today();
+  return `<ul class="ev">${rows.map(r => {
+    const d = parseYmd(r.AA_YMD), past = d < t, off = r.SBTR_DD_SC_NM === '휴업일';
+    if (past && !showPast) return '';
+    return `<li class="${past ? 'past' : ''}"><div class="d"><b>${d.getDate()}</b><span>${d.getMonth() + 1}월 ${DOW[d.getDay()]}</span></div><div class="n">${esc(r.EVENT_NM)}</div>${off ? '<span class="tag off">휴업</span>' : `<span class="tag">${ddayText(diffDays(d, t))}</span>`}</li>`;
+  }).join('')}</ul>`;
+};
+let upcoming = null;
+async function loadUpcoming() {
+  if (!upcoming) upcoming = getSchedule(today(), addDays(today(), 60)).then(r => r.filter(x => !isNoise(x)).sort((a, b) => a.AA_YMD.localeCompare(b.AA_YMD)));
+  return upcoming;
+}
+async function renderHomeCal() {
+  const box = $('#hCal');
+  try {
+    const rows = (await loadUpcoming()).slice(0, 5);
+    box.innerHTML = rows.length ? evHtml(rows) : '<p class="empty">60일 안에 예정된 일정이 없어요</p>';
+  } catch { box.innerHTML = '<p class="empty">일정을 불러오지 못했어요</p>'; upcoming = null; }
+}
+async function renderCalView() {
+  const m = S.calMonth, end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+  $('#cLbl').textContent = `${m.getFullYear()}년 ${m.getMonth() + 1}월`;
+  const box = $('#cList'); box.innerHTML = skel(4);
+  try {
+    const rows = (await getSchedule(m, end)).filter(x => !isNoise(x)).sort((a, b) => a.AA_YMD.localeCompare(b.AA_YMD));
+    if (m !== S.calMonth) return;
+    box.innerHTML = rows.length ? evHtml(rows) : '<p class="empty">이 달에는 일정이 없어요</p>';
+  } catch { box.innerHTML = '<p class="empty">일정을 불러오지 못했어요</p>'; }
+}
+$('#cPrev').onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() - 1, 1); renderCalView(); };
+$('#cNext').onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() + 1, 1); renderCalView(); };
+
+/* ===== D-day ===== */
+const myD = () => store.get('ddays', []);
+function ddayListHtml(list, removable) {
+  const t = today();
+  if (!list.length) return '<p class="empty">아직 D-day가 없어요</p>';
+  return `<ul class="dlist">${list.map((x, i) => { const d = parseYmd(x.date); return `<li><span class="num">${ddayText(diffDays(d, t))}</span><span class="nm">${esc(x.name)}<br><span class="dt">${fmtDay(d)}</span></span>${removable ? `<button class="x" data-del="${i}" aria-label="삭제">✕</button>` : ''}</li>`; }).join('')}</ul>`;
+}
+const sortD = l => l.slice().sort((a, b) => a.date.localeCompare(b.date));
+async function renderHomeDday() {
+  const mine = sortD(myD()).filter(x => parseYmd(x.date) >= today());
+  let school = [];
+  try { school = (await loadUpcoming()).filter(r => r.SBTR_DD_SC_NM !== '휴업일' || /방학|시험|고사/.test(r.EVENT_NM)).slice(0, 3).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD })); } catch {}
+  const list = sortD(mine.concat(school)).slice(0, 4);
+  $('#hDday').innerHTML = list.length ? ddayListHtml(list, false) : '<p class="empty">D-day를 추가해 보세요 · <span class="link" data-go="dday">추가하기</span></p>';
+}
+async function renderDdayView() {
+  const list = myD();
+  const sorted = list.map((x, i) => ({ ...x, i })).sort((a, b) => a.date.localeCompare(b.date));
+  const t = today();
+  $('#dMine').innerHTML = sorted.length ? `<ul class="dlist">${sorted.map(x => { const d = parseYmd(x.date); return `<li><span class="num">${ddayText(diffDays(d, t))}</span><span class="nm">${esc(x.name)}<br><span class="dt">${fmtDay(d)}</span></span><button class="x" data-del="${x.i}" aria-label="삭제">✕</button></li>`; }).join('')}</ul>` : '<p class="empty">아직 D-day가 없어요</p>';
+  $('#dSchool').innerHTML = skel(3);
+  try {
+    const rows = (await loadUpcoming()).slice(0, 8).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD }));
+    $('#dSchool').innerHTML = ddayListHtml(rows, false);
+  } catch { $('#dSchool').innerHTML = '<p class="empty">일정을 불러오지 못했어요</p>'; }
+}
+$('#dAdd').onclick = () => {
+  const name = $('#dName').value.trim(), date = $('#dDate').value;
+  if (!name || !date) { toast('이름과 날짜를 입력해 주세요'); return; }
+  const l = myD(); if (l.length >= 20) { toast('D-day는 20개까지 저장할 수 있어요'); return; }
+  l.push({ name, date: date.replace(/-/g, '') }); store.set('ddays', l);
+  $('#dName').value = ''; $('#dDate').value = '';
+  renderDdayView(); renderHomeDday(); toast('추가했어요');
+};
+$('#dMine').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const l = myD(); l.splice(+b.dataset.del, 1); store.set('ddays', l); renderDdayView(); renderHomeDday();
+});
+
+/* ===== 모달 ===== */
+const open = id => $(id).classList.add('open');
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('open'); }));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open')); });
+
+$('#btnShare').onclick = () => {
+  const url = location.protocol.startsWith('http') && location.hostname.endsWith('svmhs-ground.pages.dev') ? location.origin + '/' : SITE_URL;
+  $('#qr').innerHTML = QR.toSvg(url);
+  $('#shareUrl').textContent = url;
+  open('#mShare');
+};
+$('#copyUrl').onclick = async () => {
+  const url = $('#shareUrl').textContent;
+  try { await navigator.clipboard.writeText(url); toast('주소를 복사했어요'); }
+  catch { const i = document.createElement('input'); i.value = url; document.body.appendChild(i); i.select(); document.execCommand('copy'); i.remove(); toast('주소를 복사했어요'); }
+};
+
+function fillClassSel() {
+  $('#selC').innerHTML = Array.from({ length: MAX_CLASS }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('');
+}
+function openClass() { fillClassSel(); if (cls) { $('#selG').value = cls.g; $('#selC').value = cls.c; } open('#mClass'); }
+$('#btnClass').onclick = openClass;
+document.addEventListener('click', e => { if (e.target.closest('[data-open-class]')) openClass(); });
+$('#saveClass').onclick = () => {
+  cls = { g: $('#selG').value, c: $('#selC').value };
+  store.set('class', cls); $('#mClass').classList.remove('open'); renderClassChip();
+  renderHomeTT(); if ($('#v-tt').classList.contains('on')) renderTTView();
+  toast(`${cls.g}학년 ${cls.c}반으로 설정했어요`);
+};
+
+/* ===== 테마 ===== */
+function applyTheme(t) { document.documentElement.dataset.theme = t; document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#0f1115' : '#f4f5f8'; }
+applyTheme(store.get('theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
+
+/* ===== 시작 ===== */
+tickClock(); setInterval(tickClock, 10000);
+renderClassChip();
+renderHomeMeal(); renderHomeTT(); renderHomeCal(); renderHomeDday();
+const h = location.hash.slice(1); if (['meal', 'tt', 'cal', 'dday'].includes(h)) go(h);
+if (!cls) setTimeout(openClass, 400);
+// 오래된 캐시 정리
+try { Object.keys(localStorage).forEach(k => { if (k.startsWith('sg_c_')) { const v = JSON.parse(localStorage.getItem(k)); if (!v || Date.now() - v.t > 86400e3) localStorage.removeItem(k); } }); } catch {}
+})();
+</script>
+</body>
+</html>
