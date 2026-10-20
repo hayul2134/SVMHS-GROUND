@@ -9,11 +9,11 @@
 | `public/index.html` | 화면 뼈대 전부 (아이콘 스프라이트 · 헤더/탭 · 5개 view · 모달 3개). 인라인 스크립트·`style=""` 금지(CSP) |
 | `public/css/style.css` | 스타일. 맨 위 목차 참고. 색은 `:root` 토큰만 바꾸면 라이트/다크 같이 바뀜 |
 | `public/js/theme.js` | 첫 화면 깜빡임 방지용 테마 적용 (일반 스크립트, `<head>`에서 먼저 실행) |
-| `public/js/app.js` | 화면 로직. 홈: 시계 오른쪽 `#sTT`(오늘 시간표) · 아래 `#weekTT`(주간 시간표, `fillWeek` 공용). `/* ===== 섹션 ===== */` 단위: 급식 · 시간표 · 학사일정 · D-day · 모달 · 공유 · 반 설정 · 안내 · 테마 · 시작 |
+| `public/js/app.js` | 화면 로직. 홈: 시계 왼쪽 `#play`(오늘의 밸런스 게임) · 오른쪽 `#sTT`(오늘 시간표) + `#sMeal`(지금 급식 작은 식판) · 아래 `#weekTT`(주간 시간표, `fillWeek` 공용). `/* ===== 섹션 ===== */` 단위: 급식 · 시간표 · 학사일정 · D-day · 모달 · 공유 · 반 설정 · 안내 · 테마 · 시작 |
 | `public/js/neis.js` | 나이스 API 호출 + 브라우저 캐시(3시간). `getMeals / getTimetable / getSchedule` |
 | `public/js/util.js` | 날짜·`esc()`·`store`(localStorage, 키 앞 `sg_`)·토스트 |
 | `public/js/qr.js` | QR 코드 SVG 생성기 (외부 라이브러리 없음) |
-| `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표(D1 `DB`, 테이블 자동 생성) |
+| `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표 · `/api/balance` 오늘의 밸런스 게임(둘 다 D1 `DB`, 테이블 자동 생성) |
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
 | `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 |
 | `public/og-image.jpg` | 카톡 등 링크 미리보기 이미지 (1200×630) |
@@ -40,3 +40,9 @@ npx wrangler@4 pages dev --port 8788
 ## 급식 인기투표 (D1)
 `wrangler.jsonc`의 `d1_databases`에 바인딩 이름 `DB`로 연결. 바인딩이 없으면 투표 UI만 숨겨지고 나머지는 정상 동작.
 기기마다 localStorage의 무작위 ID(`sg_voter`)로 끼니당 한 표, 다시 누르면 취소. 투표는 오늘(한국 시간) 급식만, 메뉴에 있는 음식만 서버에서 허용.
+
+## 급식 자동 전환
+`mealSlot()`: 7시 50분 전 조식 → 5교시 시작(`BELL`의 5교시 start) 전 중식 → 그 뒤 석식. 첫 화면 작은 식판과 아래 '오늘 급식' 카드가 같이 따라감(카드 탭을 직접 누르면 다음 전환 때까지 그 끼니 유지). 그 끼니가 없는 날은 다음 끼니 → 중식 순으로 대신 표시.
+
+## 오늘의 밸런스 게임 (D1)
+질문 목록은 서버 `BALANCE` 배열(한국 날짜로 하루 한 개씩 돌아감). 기기 ID(`sg_voter`)당 하루 한 표, 다시 누르면 취소. 자유 입력은 일부러 없음(익명 저격 방지). DB 바인딩이 없으면 카드가 숨겨짐.

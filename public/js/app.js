@@ -17,7 +17,7 @@ const myDdays = () => {
 
 /* ===== 상태 ===== */
 let cls = validClass(store.get('class', null));
-const S = { mealDate: today(), ttWeek: mondayOf(today()), calMonth: new Date(today().getFullYear(), today().getMonth(), 1), homeMeal: null, homeWeek: mondayOf(addDays(today(), today().getDay() === 6 ? 2 : today().getDay() === 0 ? 1 : 0)) };
+const S = { mealSlot: '', mealManual: false, mealDate: today(), ttWeek: mondayOf(today()), calMonth: new Date(today().getFullYear(), today().getMonth(), 1), homeMeal: null, homeWeek: mondayOf(addDays(today(), today().getDay() === 6 ? 2 : today().getDay() === 0 ? 1 : 0)) };
 const startDay = ymd(today());
 
 /* ===== 헤더 · 시계 · 종 시간 ===== */
@@ -89,6 +89,8 @@ function tickClock() {
   const dow = n.getDay();
   setHtml('#todayLbl', `<span class="d-md"><b>${n.getMonth() + 1}</b>월 <b>${n.getDate()}</b>일</span><span class="d-dow${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}">${DOW[dow]}요일</span>`);
 
+  const slot = mealSlot(n);
+  if (slot !== S.mealSlot) { S.mealSlot = slot; S.mealManual = false; if (homeRows.length) paintHomeMeal(); }
   const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
   const pi = periodInfo(b);
@@ -253,21 +255,43 @@ const cellHtml = (items, cls = '', v = null, em = '') => {
   }
   return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span aria-hidden="true">${dishEmoji(x)}</span>${esc(x)}${voteMark(x, v)}</span>`).join('')}</div>`;
 };
-const mealHtml = (r, d) => {
+const mealHtml = (r, d, mini = false) => {
   if (!r) return empty('급식 정보가 없어요');
   const t = splitTray(cleanDish(r.DDISH_NM)), v = d ? voteOf(ymd(d), r.MMEAL_SC_CODE) : null;
-  const info = !v ? '' : v.open
+  const info = !v ? '' : mini
+    ? `<p class="vnote">🗳️ ${v.open ? (v.mine ? `내 픽 <b>${esc(v.mine)}</b>` : '맛있는 메뉴 눌러서 투표') : '인기투표 결과'} · ${v.total}명</p>`
+    : v.open
     ? `<p class="vnote">🗳️ ${v.mine ? `내 픽 <b>${esc(v.mine)}</b> · 다시 누르면 취소` : '제일 맛있는 메뉴를 눌러 투표!'} · ${v.total}명 참여</p>`
     : `<p class="vnote">🗳️ 인기투표 결과 · ${v.total}명 참여</p>`;
-  return `<div class="tray" role="list" aria-label="급식 식판" data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}">`
+  return `<div class="tray${mini ? ' mini' : ''}" role="list" aria-label="급식 식판" data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}">`
     + cellHtml(t.top[0], '', v)
     + `<div class="mid">${cellHtml(t.top[1], 'half', v)}${cellHtml(t.top[2], 'half', v)}</div>`
     + cellHtml(t.top[3], '', v)
     + cellHtml(t.rice ? [t.rice] : [], 'big', v) + cellHtml(t.soup ? [t.soup] : [], 'big soup', v, t.soup && isSoup(t.soup) ? '🍲' : '')
-    + `</div>` + info + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
+    + `</div>` + info + (r.CAL_INFO && !mini ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
 };
 let homeRows = [];
+// 지금 보여 줄 끼니: 7시 50분까지 조식 → 5교시 시작(점심 끝)까지 중식 → 그 뒤로 석식
+const MEAL_AT = { b: 7 * 3600 + 50 * 60, d: BELL.find(x => x.p === 5).start };
+function mealSlot(n = now()) {
+  const sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  return sec < MEAL_AT.b ? '1' : sec < MEAL_AT.d ? '2' : '3';
+}
+// 그 끼니가 없는 날(석식 없는 날 등)은 다음 끼니 → 중식 → 아무거나 순서로 대신 보여 줌
+function pickMeal(rows, want) {
+  return rows.find(r => r.MMEAL_SC_CODE === want) || rows.find(r => r.MMEAL_SC_CODE > want)
+    || rows.find(r => r.MMEAL_SC_CODE === '2') || rows[rows.length - 1];
+}
+function paintHeroMeal() {
+  const box = $('#sMeal'), lbl = $('#sMealLbl');
+  if (!homeRows.length) { lbl.textContent = '오늘 급식'; box.innerHTML = empty(S.mealFail ? '급식 정보를 불러오지 못했어요' : '오늘은 급식이 없어요'); return; }
+  const r = pickMeal(homeRows, S.mealSlot);
+  lbl.textContent = `${r.MMEAL_SC_CODE === S.mealSlot ? '지금 급식' : '다음 급식'} · ${MEALS[r.MMEAL_SC_CODE]}`;
+  box.innerHTML = mealHtml(r, today(), true);
+}
 function paintHomeMeal() {
+  if (!S.mealManual && homeRows.length) S.homeMeal = pickMeal(homeRows, S.mealSlot).MMEAL_SC_CODE;
+  paintHeroMeal();
   const sel = S.homeMeal;
   $('#hMealTabs').innerHTML = homeRows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
   $('#hMeal').innerHTML = mealHtml(homeRows.find(r => r.MMEAL_SC_CODE === sel), today());
@@ -277,14 +301,11 @@ async function renderHomeMeal() {
   try {
     const [rows] = await Promise.all([getMeals(today()), loadVotes(today())]);
     homeRows = rows.filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
-    if (!homeRows.length) { tabs.innerHTML = ''; box.innerHTML = empty('오늘은 급식이 없어요'); return; }
-    const h = now().getHours(), pref = h < 9 ? '1' : h < 14 ? '2' : '3';
-    if (!homeRows.some(r => r.MMEAL_SC_CODE === S.homeMeal))
-      S.homeMeal = (homeRows.find(r => r.MMEAL_SC_CODE === pref) || homeRows.find(r => r.MMEAL_SC_CODE === '2') || homeRows[0]).MMEAL_SC_CODE;
+    if (!homeRows.length) { tabs.innerHTML = ''; box.innerHTML = empty('오늘은 급식이 없어요'); paintHeroMeal(); return; }
     paintHomeMeal();
     const lunch = homeRows.find(r => r.MMEAL_SC_CODE === '2') || homeRows[0], ll = cleanDish(lunch.DDISH_NM);
     TK.meal = splitTray(ll).main; renderTicker();
-  } catch { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); }
+  } catch { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); S.mealFail = true; paintHeroMeal(); }
 }
 let voting = false;
 async function castVote(el) {
@@ -316,8 +337,8 @@ document.addEventListener('visibilitychange', async () => {   // 다른 친구�
   if (document.hidden || !homeRows.length) return;
   await loadVotes(today()); repaintMeals();
 });
-['#hMeal', '#mCols'].forEach(id => { $(id).addEventListener('click', onVoteClick); $(id).addEventListener('keydown', onVoteKey); });
-$('#hMealTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.homeMeal = b.dataset.m; paintHomeMeal(); } });
+['#hMeal', '#mCols', '#sMeal'].forEach(id => { $(id).addEventListener('click', onVoteClick); $(id).addEventListener('keydown', onVoteKey); });
+$('#hMealTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.homeMeal = b.dataset.m; S.mealManual = true; paintHomeMeal(); } });
 async function renderMealView() {
   const d = S.mealDate, cols = $('#mCols');
   $('#mLbl').textContent = fmtDay(d);
@@ -335,6 +356,56 @@ function paintMealView() {
 }
 $('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealView(); };
 $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };
+
+/* ===== 오늘의 밸런스 게임 (첫 화면 왼쪽) — 친구들 전체가 같은 질문에 투표 ===== */
+let BAL = null, balBusy = false, balTimer = 0;
+async function loadBalance() {
+  try {
+    const r = await fetch('/api/balance', { headers: { 'x-voter': voterId } });
+    const j = r.ok ? await r.json() : null;
+    BAL = j && j.enabled ? j : null;
+  } catch {}
+  paintBalance();
+}
+function paintBalance() {
+  const box = $('#play');
+  box.hidden = !BAL;
+  if (!BAL) return;
+  const { a, b, counts, mine } = BAL, total = counts.a + counts.b, show = !!mine;
+  const pct = k => total ? Math.round(counts[k] / total * 100) : 0;
+  setText('#plQ', BAL.q);
+  setText('#plN', `${total}명 참여`);
+  const opt = (k, name) => `<button class="pl-o pl-${k}${mine === k ? ' picked' : ''}${show ? ' shown' : ''}" data-pick="${k}" aria-pressed="${mine === k}">`
+    + `<i class="pl-fill" aria-hidden="true"></i><span class="pl-t">${esc(name)}</span>${show ? `<b class="pl-p">${pct(k)}%</b>` : ''}</button>`;
+  $('#plOpts').innerHTML = opt('a', a) + '<span class="pl-vs" aria-hidden="true">VS</span>' + opt('b', b);
+  if (show) $$('#plOpts .pl-fill').forEach(el => { el.style.transform = `scaleX(${(pct(el.parentNode.dataset.pick) / 100).toFixed(3)})`; });
+  const lead = counts.a === counts.b ? '' : counts.a > counts.b ? a : b;
+  setText('#plNote', !show ? '골라야 결과가 보여요 · 익명 · 내일 새 질문'
+    : `${lead ? `지금은 '${lead}' 우세` : '지금은 막상막하'} · 다시 누르면 취소`);
+}
+$('#plOpts').addEventListener('click', async e => {
+  const el = e.target.closest('[data-pick]');
+  if (!el || !BAL || balBusy) return;
+  const k = el.dataset.pick, next = BAL.mine === k ? '' : k;
+  if (BAL.mine) BAL.counts[BAL.mine]--;   // 화면 먼저 바꾸고 서버에 저장
+  if (next) BAL.counts[next]++;
+  BAL.mine = next; paintBalance();
+  balBusy = true;
+  try {
+    const r = await fetch('/api/balance', { method: 'POST', headers: { 'content-type': 'application/json', 'x-voter': voterId }, body: JSON.stringify({ pick: next, ymd: BAL.ymd }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || '투표하지 못했어요');
+    BAL = j; paintBalance();
+    if (next) toast('한 표 완료! 친구들은 뭘 골랐을까 👀');
+  } catch (err) { toast(err.message || '투표하지 못했어요'); await loadBalance(); }
+  balBusy = false;
+});
+// 다른 친구들 표 반영: 화면이 보이는 동안 40초마다, 다시 돌아왔을 때 바로
+function pollBalance() {
+  clearTimeout(balTimer);
+  balTimer = setTimeout(async () => { if (!document.hidden && heroVisible && !balBusy) await loadBalance(); pollBalance(); }, 40000);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && BAL) loadBalance(); });
 
 /* ===== 시간표 ===== */
 const subjName = s => String(s || '').replace(/^[\s*#·-]+/, '').trim();   // 나이스 원문의 '* 영상 CG작업' 같은 기호 제거
@@ -381,6 +452,7 @@ function renderHomeWeek() {
   $('#hwNote').textContent = cls && !api.hasKey ? '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)' : '';
   fillWeek($('#hWeek'), mon, () => mon !== S.homeWeek);
 }
+$('#goMeal').onclick = e => { e.preventDefault(); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 $('#goWeek').onclick = e => { e.preventDefault(); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 async function renderTTView() {
   const mon = S.ttWeek;
@@ -569,7 +641,7 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 loadConfig().finally(() => {
-  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays();
+  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance);
   const h = location.hash.slice(1); if (h && h !== 'home') go(h);
   if (!cls) setTimeout(openClass, 400);
 });
