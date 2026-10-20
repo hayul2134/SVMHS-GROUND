@@ -41,7 +41,8 @@ a{color:inherit}
 header{position:relative;z-index:20}
 .hd{max-width:1060px;margin:0 auto;padding:16px 20px 8px;display:flex;align-items:center;gap:8px}
 .logo{display:flex;align-items:center;gap:10px;line-height:1;margin-right:auto;color:var(--on-bg)}
-.logo img{width:44px;height:40px;display:block;padding:6px;background:var(--card);border:var(--bd);border-radius:14px;box-shadow:var(--sh-s);transform:rotate(-6deg)}
+.logo img{width:48px;height:48px;display:block;transform:rotate(-6deg);transition:transform .2s}
+.logo:hover img{transform:rotate(6deg) scale(1.05)}
 .logo .lt{display:flex;flex-direction:column;gap:3px}
 .logo small{font-size:10px;font-weight:800;letter-spacing:.35em;opacity:.85}
 .logo strong{font-family:var(--disp);font-weight:400;font-size:24px;letter-spacing:.01em;text-shadow:3px 3px 0 var(--ink)}
@@ -85,8 +86,8 @@ nav button.on{color:var(--ink);background:var(--lime);transform:rotate(-2deg)}
 @keyframes blink{50%{opacity:0}}
 .h-date{font-size:14px;font-weight:800;background:var(--ink);color:var(--card);padding:5px 11px;border-radius:9px;transform:rotate(2deg)}
 .h-say{display:flex;align-items:center;gap:12px;margin-top:14px}
-.buddy{width:52px;height:52px;flex:none;border-radius:16px;background:var(--card);border:var(--bd);display:grid;place-items:center;box-shadow:var(--sh-s);animation:bob 2.4s ease-in-out infinite}
-.buddy img{width:30px;height:auto}
+.buddy{width:54px;height:54px;flex:none;display:grid;place-items:center;animation:bob 2.4s ease-in-out infinite}
+.buddy img{width:54px;height:54px}
 @keyframes bob{50%{transform:translateY(-5px) rotate(-8deg)}}
 .bubble{position:relative;background:var(--card);color:var(--ink);font-weight:800;font-size:15.5px;padding:10px 15px;border-radius:16px 16px 16px 4px;border:var(--bd);box-shadow:var(--sh-s);max-width:100%}
 .h-big{margin-top:auto;display:flex;flex-direction:column}
