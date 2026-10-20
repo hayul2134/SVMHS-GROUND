@@ -9,7 +9,10 @@ export const ymd = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate(
 export const isYmd = s => typeof s === 'string' && /^\d{8}$/.test(s);
 export const parseYmd = s => new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
 export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-export const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+/* 기기 시계가 틀려도 종 시간 카운트다운이 맞도록 서버 시각과의 차이(ms)를 보정 */
+export const clock = { off: 0 };
+export const now = () => new Date(Date.now() + clock.off);
+export const today = () => { const n = now(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
 export const mondayOf = d => addDays(d, -((d.getDay() + 6) % 7));
 export const diffDays = (a, b) => Math.round((a - b) / 86400000);
 export const DOW = ['일', '월', '화', '수', '목', '금', '토'];

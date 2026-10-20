@@ -105,6 +105,8 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 
 .s-date{margin-top:16px;display:inline-flex;align-items:stretch;border:var(--bd);border-radius:16px;box-shadow:var(--sh-s);overflow:hidden;transform:rotate(1.2deg);background:var(--card);color:var(--text)}
 .s-date:empty{display:none}
+.s-note{margin-top:12px;max-width:min(92vw,520px);padding:7px 14px;border:var(--bd);border-radius:12px;background:var(--card);color:var(--text);font-weight:700;font-size:14px;line-height:1.45;box-shadow:var(--sh-s);transform:rotate(-.8deg)}
+.s-note[hidden]{display:none}
 .s-date .d-md{display:flex;align-items:baseline;gap:2px;padding:8px 16px 8px 18px;font-weight:800;font-size:17px}
 .s-date .d-md b{font-family:var(--num);font-weight:800;font-size:28px;line-height:1;margin-left:4px}
 .s-date .d-md b:first-child{margin-left:0}

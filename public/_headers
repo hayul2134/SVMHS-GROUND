@@ -7,6 +7,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()
   Cross-Origin-Opener-Policy: same-origin
+  X-Robots-Tag: noindex
   ! Access-Control-Allow-Origin
 
 # 이미지는 하루 캐시 (CSS/JS/HTML은 Pages 기본값: 매번 변경 여부 확인)

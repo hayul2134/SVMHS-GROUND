@@ -1,5 +1,5 @@
 // 나이스 교육정보 개방 포털 API — 항상 우리 서버(/api/neis/*)를 거친다 (functions/api/[[path]].js)
-import { ymd, addDays, store } from './util.js';
+import { ymd, addDays, store, clock } from './util.js';
 
 export const api = { hasKey: false };   // 서버에 인증키가 있으면 한 번에 많이 받고, 없으면 5건씩 나눠 받는다
 export const MEALS = { '1': '조식', '2': '중식', '3': '석식' };
@@ -9,11 +9,17 @@ const memo = new Map();
 
 /** 서버에 키가 있는지 확인. 지난번 값이 있으면 바로 쓰고(대기 없음) 뒤에서 새로 확인한다 */
 export function loadConfig() {
-  const fresh = fetch('/api/config').then(r => r.ok ? r.json() : null).then(c => {
+  const t0 = Date.now();
+  const fresh = fetch('/api/config', { cache: 'no-store' }).then(r => {
+    // 서버 시각(Date 헤더, 초 단위)과 기기 시각 차이가 3초 넘게 나면 보정
+    const sv = Date.parse(r.headers.get('date') || ''), off = sv + 500 - (t0 + Date.now()) / 2;
+    if (sv && Math.abs(off) > 3000 && Math.abs(off) < 864e5) clock.off = off;
+    return r.ok ? r.json() : null;
+  }).then(c => {
     if (c) { api.hasKey = !!c.hasKey; store.set('hasKey', api.hasKey); }
   }).catch(() => {});
-  const cached = store.get('hasKey', null);
-  if (typeof cached === 'boolean') { api.hasKey = cached; return Promise.resolve(); }
+  // 지난번에 '키 있음'이었으면 바로 쓰고, 아니면 새 값을 기다린다 (키 등록 후에도 5교시 제한이 남지 않게)
+  if (store.get('hasKey', null) === true) { api.hasKey = true; return Promise.resolve(); }
   return fresh;
 }
 
@@ -67,6 +73,13 @@ export async function getSchedule(from, to) {
     .filter(r => r.EVENT_NM && r.EVENT_NM !== '토요휴업일')
     .filter(r => { const k = r.AA_YMD + r.EVENT_NM; if (seen.has(k)) return false; seen.add(k); return true; })
     .sort((a, b) => a.AA_YMD.localeCompare(b.AA_YMD));
+}
+
+/** 학년별 반 목록 [{ c: '1', dep: '영상콘텐츠과' }] (학년도는 3월 기준) */
+export async function getClasses(g) {
+  const d = new Date(), ay = d.getMonth() < 2 ? d.getFullYear() - 1 : d.getFullYear();
+  const rows = await neis('classInfo', { AY: String(ay), GRADE: String(g) });
+  return rows.map(r => ({ c: String(+r.CLASS_NM), dep: r.DDDEP_NM || '' })).filter(x => +x.c > 0).sort((a, b) => a.c - b.c);
 }
 
 /** '밥<br/>국(1.2.5)' → ['밥', '국'] (알레르기 번호·기호 제거) */

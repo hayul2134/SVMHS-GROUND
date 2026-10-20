@@ -2,4 +2,3 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://svmhs-ground.pages.dev/sitemap.xml

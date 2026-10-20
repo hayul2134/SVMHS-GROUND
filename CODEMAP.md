@@ -17,14 +17,14 @@
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
 | `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 |
 | `public/og-image.jpg` | 카톡 등 링크 미리보기 이미지 (1200×630) |
-| `public/404.html`, `robots.txt`, `sitemap.xml` | 기타 |
+| `public/404.html`, `robots.txt` | 기타 (검색 노출 차단: noindex) |
 
 ## 규칙
 - 나이스 응답·사용자 입력을 `innerHTML`에 넣을 땐 **반드시 `esc()`**.
 - 외부 스크립트/스타일을 새로 쓰면 `public/_headers`의 CSP에 도메인 추가해야 동작한다.
 - 새 나이스 서비스나 파라미터를 쓰려면 `functions/api/[[path]].js`의 `SERVICES`에 먼저 추가.
-- 종 시간(시정표)은 `app.js`의 `BELL` 배열. 월·화·수 7교시, 목·금 6교시. 학사일정 '휴업일'은 자동으로 쉬는 날 처리.
-- 학교 코드(B10 / 7010795)는 서버(`SCHOOL`)에 고정. 반 개수는 `app.js`의 `MAX_CLASS`.
+- 종 시간(시정표)은 `app.js`의 `BELL` 배열. 월·화·수 7교시, 목·금 6교시. 학사일정 휴업일·공휴일은 자동으로 쉬는 날 처리. 시간표가 있으면 마지막 교시는 시간표 기준(요일 교체 대응). 기기 시계는 서버 Date 헤더로 보정(util `now()`).
+- 학교 코드(B10 / 7010795)는 서버(`SCHOOL`)에 고정. 반 목록은 나이스 classInfo에서 받음(실패 시 `BASE_CLASS`=6).
 
 ## 인증키 (NEIS_KEY)
 없어도 동작하지만 요청당 5건 제한 → 시간표 5교시까지만 보임. 넣으려면

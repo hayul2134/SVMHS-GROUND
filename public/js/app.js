@@ -1,10 +1,10 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
-import { $, $$, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
-import { api, MEALS, loadConfig, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
+import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
+import { api, MEALS, loadConfig, getClasses, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
-const MAX_GRADE = 3, MAX_CLASS = 8, MAX_DDAY = 20;
+const MAX_GRADE = 3, MAX_CLASS = 10, BASE_CLASS = 6, MAX_DDAY = 20;   // 2026년 학년별 6개 반 (반 목록은 나이스에서 받아옴, 실패 시 BASE_CLASS)
 const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday'];
 
 /* ===== 저장된 값 불러오기 (손상·조작된 값은 버림) ===== */
@@ -25,14 +25,17 @@ const startDay = ymd(today());
 const BELL = [['조회', '08:00', '08:10'], [1, '08:20', '09:10'], [2, '09:20', '10:10'], [3, '10:20', '11:10'], [4, '11:20', '12:10'],
   [5, '13:00', '13:50'], [6, '14:00', '14:50'], [7, '15:00', '15:50']]
   .map(([p, a, b]) => { const s = t => +t.slice(0, 2) * 3600 + +t.slice(3) * 60; return { p, start: s(a), end: s(b) }; });
-const offDays = new Set();   // 학사일정상 휴업일(YYYYMMDD)
+const offDays = new Set();   // 학사일정상 휴업일·공휴일(YYYYMMDD)
+const isOff = r => r.SBTR_DD_SC_NM === '휴업일' || r.SBTR_DD_SC_NM === '공휴일';
 const fmtLeft = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(s); };
 const pName = p => p === '조회' ? '조회' : p + '교시';
 
 function bellInfo(n) {
   const dow = n.getDay();
   if (dow === 0 || dow === 6 || offDays.has(ymd(n))) return { state: '쉬는 날', label: '오늘은 수업이 없어요' };
-  const last = dow <= 3 ? 7 : 6, list = BELL.filter(x => x.p === '조회' || x.p <= last);
+  // 마지막 교시: 오늘 시간표가 있으면 그대로 따름(요일 교체 수업 대응), 없으면 월~수 7 · 목금 6
+  const ttMax = S.todayTT && S.todayTT.length ? Math.max(...S.todayTT.map(r => +r.PERIO || 0)) : 0;
+  const last = ttMax >= 6 ? Math.min(7, ttMax) : dow <= 3 ? 7 : 6, list = BELL.filter(x => x.p === '조회' || x.p <= last);
   const now = (n - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 1000;
   for (let i = 0; i < list.length; i++) {
     const cur = list[i], prev = list[i - 1];
@@ -82,7 +85,7 @@ const setHtml = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v);
 function tickClock() {
   clearTimeout(tickTimer);
   if (document.hidden) return;   // 안 보일 땐 멈춤 (다시 보이면 visibilitychange에서 재시작)
-  const n = new Date();
+  const n = now();
   const dow = n.getDay();
   setHtml('#todayLbl', `<span class="d-md"><b>${n.getMonth() + 1}</b>월 <b>${n.getDate()}</b>일</span><span class="d-dow${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}">${DOW[dow]}요일</span>`);
 
@@ -94,7 +97,7 @@ function tickClock() {
     nextKey = key; renderNext(b, pi); renderTicker(b, pi);
     $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
   }
-  if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
+  if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - now().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
   setText('#bellLbl', b.cnt || b.label);
@@ -112,7 +115,7 @@ function tickClock() {
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${prog.toFixed(4)})`;
   setText('#bellPct', bar ? `${Math.floor(prog * 100)}% 지남` : b.target != null ? '곧 시작해요' : b.state === '쉬는 날' ? '푹 쉬는 날' : '오늘 수업 끝');
-  tickTimer = setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
+  tickTimer = setTimeout(tickClock, 1000 - now().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
 // 다음 수업 카드 (첫 화면 오른쪽 작은 카드)
 function renderNext(b, pi) {
@@ -137,9 +140,9 @@ function renderNext(b, pi) {
 // 전광판: 오늘 정보를 한 줄로 흘려보냄
 const TK = { meal: '', up: '' };
 function renderTicker(b, pi) {
-  b = b || bellInfo(new Date()); pi = pi || periodInfo(b);
+  b = b || bellInfo(now()); pi = pi || periodInfo(b);
   const rows = S.todayTT, subj = p => { const r = rows && rows.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
-  const items = [`${fmtDay(new Date())}`, b.state];
+  const items = [`${fmtDay(now())}`, b.state];
   if (pi.cur && subj(pi.cur)) items.push(`지금 ${pi.cur}교시 ${subj(pi.cur)}`);
   if (pi.nxt && subj(pi.nxt)) items.push(`다음 ${pi.nxt}교시 ${subj(pi.nxt)}`);
   if (TK.meal) items.push(`오늘 메인 ${TK.meal}`);
@@ -150,8 +153,13 @@ function renderTicker(b, pi) {
 }
 async function loadOffDays() {
   try {
-    (await loadUpcoming()).filter(r => r.SBTR_DD_SC_NM === '휴업일').forEach(r => offDays.add(r.AA_YMD));
+    const rows = await loadUpcoming(), t = ymd(today());
+    rows.filter(isOff).forEach(r => offDays.add(r.AA_YMD));
+    // 오늘 학교 행사·시험이 있으면 시계 아래에 알림 (그런 날은 종 시간이 평소와 다를 수 있음)
+    const ev = rows.filter(r => r.AA_YMD === t && !isOff(r)).map(r => r.EVENT_NM);
+    if (ev.length) { const el = $('#todayNote'); el.textContent = `오늘 일정 · ${ev.slice(0, 2).join(', ')}${ev.length > 2 ? ' 외' : ''} — 종 시간이 평소와 다를 수 있어요`; el.hidden = false; }
   } catch {}
+  nextKey = '';
 }
 function renderClassChip() {
   const el = $('#classChip');
@@ -227,7 +235,7 @@ async function renderHomeMeal() {
   try {
     const rows = (await getMeals(today())).filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
     if (!rows.length) { tabs.innerHTML = ''; box.innerHTML = empty('오늘은 급식이 없어요'); return; }
-    const h = new Date().getHours(), pref = h < 9 ? '1' : h < 14 ? '2' : '3';
+    const h = now().getHours(), pref = h < 9 ? '1' : h < 14 ? '2' : '3';
     const sel = S.homeMeal || (rows.find(r => r.MMEAL_SC_CODE === pref) || rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0]).MMEAL_SC_CODE;
     tabs.innerHTML = rows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
     box.innerHTML = mealHtml(rows.find(r => r.MMEAL_SC_CODE === sel));
@@ -309,8 +317,8 @@ $('#tNext').onclick = () => { S.ttWeek = addDays(S.ttWeek, 7); renderTTView(); }
 const evHtml = rows => {
   const t = today();
   return `<ul class="ev">${rows.map(r => {
-    const d = parseYmd(r.AA_YMD), off = r.SBTR_DD_SC_NM === '휴업일';
-    const tag = off ? '<span class="tag off">휴업</span>' : `<span class="tag">${ddayText(diffDays(d, t))}</span>`;
+    const d = parseYmd(r.AA_YMD), off = isOff(r);
+    const tag = off ? `<span class="tag off">${r.SBTR_DD_SC_NM === '공휴일' ? '공휴일' : '휴업'}</span>` : `<span class="tag">${ddayText(diffDays(d, t))}</span>`;
     return `<li class="${d < t ? 'past' : ''}"><div class="d"><b>${d.getDate()}</b><span>${d.getMonth() + 1}월 ${DOW[d.getDay()]}</span></div><div class="n">${esc(r.EVENT_NM)}</div>${tag}</li>`;
   }).join('')}</ul>`;
 };
@@ -349,7 +357,7 @@ async function renderHomeDday() {
   const mine = myDdays().filter(x => parseYmd(x.date) >= t).map(x => ({ ...x, mine: true }));
   let school = [], fail = false;
   try {
-    school = (await loadUpcoming()).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: r.SBTR_DD_SC_NM === '휴업일' }));
+    school = (await loadUpcoming()).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: isOff(r) }));
   } catch { fail = true; }
   const list = mine.concat(school).sort(byDate).slice(0, 10);
   if (!list.length) { box.innerHTML = empty(fail ? '일정을 불러오지 못했어요' : '60일 안에 예정된 일정이 없어요 · <button class="link" data-go="dday">D-day 추가</button>'); return; }
@@ -417,8 +425,27 @@ $('#copyUrl').onclick = async () => {
 };
 
 /* ===== 반 설정 ===== */
-$('#selC').innerHTML = Array.from({ length: MAX_CLASS }, (_, i) => `<option value="${i + 1}">${i + 1}반</option>`).join('');
-function openClass() { if (cls) { $('#selG').value = cls.g; $('#selC').value = cls.c; } openModal('#mClass'); }
+// 반 목록: 나이스 반 정보(학과 이름 포함)로 채우고, 못 받으면 1~BASE_CLASS반
+const classOpts = list => list.map(x => `<option value="${esc(x.c)}">${esc(x.c)}반${x.dep ? ' · ' + esc(x.dep) : ''}</option>`).join('');
+const baseClasses = () => Array.from({ length: BASE_CLASS }, (_, i) => ({ c: String(i + 1), dep: '' }));
+async function fillClasses(g, keep) {
+  const sel = $('#selC'), want = keep || sel.value;
+  let list = baseClasses();
+  try {   // 키가 없으면 5개만 오므로 기본 목록에 학과 이름만 합침
+    const l = await getClasses(g), by = new Map(l.map(x => [x.c, x]));
+    list = list.map(x => by.get(x.c) || x).concat(l.filter(x => +x.c > BASE_CLASS));
+  } catch {}
+  if ($('#selG').value !== String(g)) return;   // 그사이 학년을 바꿨으면 버림
+  sel.innerHTML = classOpts(list);
+  if (list.some(x => x.c === want)) sel.value = want;
+}
+$('#selC').innerHTML = classOpts(baseClasses());
+$('#selG').addEventListener('change', () => fillClasses($('#selG').value));
+function openClass() {
+  if (cls) $('#selG').value = cls.g;
+  fillClasses($('#selG').value, cls ? cls.c : '');
+  openModal('#mClass');
+}
 $('#btnClass').onclick = openClass;
 document.addEventListener('click', e => { if (e.target.closest('[data-open-class]')) openClass(); });
 $('#saveClass').onclick = () => {
