@@ -19,6 +19,7 @@
   --accent:#8b8bff; --accent-soft:#23243d; --shadow:none;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
@@ -432,7 +433,7 @@ const QR = (() => {
 /* ===== 설정 ===== */
 const NEIS_KEY = '';               // 나이스 오픈 API 인증키 (넣으면 시간표 6·7교시와 일정 전체가 표시됨)
 const ATPT = 'B10', SCHUL = '7010795';
-const SITE_URL = 'https://svmhs-ground.pages.dev/';
+const SITE_URL = 'https://svmhs-ground.officialhayul.workers.dev/';
 const MAX_CLASS = 8;
 
 /* ===== 유틸 ===== */
@@ -673,7 +674,7 @@ document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e =
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open')); });
 
 $('#btnShare').onclick = () => {
-  const url = location.protocol.startsWith('http') && location.hostname.endsWith('svmhs-ground.pages.dev') ? location.origin + '/' : SITE_URL;
+  const url = location.protocol.startsWith('http') ? location.origin + '/' : SITE_URL;
   $('#qr').innerHTML = QR.toSvg(url);
   $('#shareUrl').textContent = url;
   open('#mShare');
