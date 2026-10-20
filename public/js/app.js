@@ -97,10 +97,12 @@ function tickClock() {
   const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
   const pi = periodInfo(b);
+  if (S.ttShown && cls && ymd(ttTarget(n)) !== S.ttShown) renderHomeTT();   // 마지막 교시 끝·자정에 홈 시간표 날짜 전환
   const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
   if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
     nextKey = key; renderNext(b, pi); renderTicker(b, pi);
-    $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
+    const live = S.ttShown === ymd(n);
+    $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', live && p === pi.cur); li.classList.toggle('done', live && p < pi.done && p !== pi.cur); });
   }
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - now().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
@@ -159,6 +161,7 @@ async function loadOffDays() {
     if (ev.length) { const el = $('#todayNote'); el.textContent = `오늘 일정 · ${ev.slice(0, 2).join(', ')}${ev.length > 2 ? ' 외' : ''} — 종 시간이 평소와 다를 수 있어요`; el.hidden = false; }
   } catch {}
   nextKey = '';
+  if (cls && S.ttShown && ymd(ttTarget()) !== S.ttShown) renderHomeTT();
 }
 function renderClassChip() {
   const el = $('#classChip');
@@ -420,20 +423,38 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && BA
 /* ===== 시간표 ===== */
 const subjName = s => String(s || '').replace(/^[\s*#·-]+/, '').trim();   // 나이스 원문의 '* 영상 CG작업' 같은 기호 제거
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
+// 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
+const isSchoolDay = d => d.getDay() % 6 !== 0 && !offDays.has(ymd(d));
+function ttTarget(n = now()) {
+  let d = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  const ttMax = S.todayTT && S.todayTT.length ? Math.max(...S.todayTT.map(r => +r.PERIO || 0)) : 0;
+  const last = ttMax ? Math.min(7, ttMax) : d.getDay() <= 3 ? 7 : 6, end = BELL.find(x => x.p === last).end;
+  if (!isSchoolDay(d) || sec >= end) { let i = 0; do d = addDays(d, 1); while (!isSchoolDay(d) && ++i < 21); }
+  return d;
+}
+const ttLabel = (d, base = today()) => { const k = diffDays(d, base); return k === 0 ? '오늘' : k === 1 ? '내일' : DOW[d.getDay()] + '요일'; };
+let ttSeq = 0;
 async function renderHomeTT() {
-  const box = $('#sTT'), d = today();
+  const box = $('#sTT'), d = today(), tgt = ttTarget(), seq = ++ttSeq, isToday = ymd(tgt) === ymd(d);
+  S.ttShown = ymd(tgt);
   renderHomeWeek();
+  $('#sTTlbl').textContent = `${ttLabel(tgt)} 시간표`;
   if (!cls) { S.todayTT = []; box.innerHTML = needClass; nextKey = ''; return; }
-  if (d.getDay() % 6 === 0) { S.todayTT = []; box.innerHTML = empty('오늘은 주말이에요. 푹 쉬어요!'); nextKey = ''; return; }
   try {
-    const rows = (await getTimetable(cls, mondayOf(d), addDays(mondayOf(d), 4))).filter(r => r.ALL_TI_YMD === ymd(d)).sort((a, b) => a.PERIO - b.PERIO);
-    S.todayTT = rows;
-    const dep = rows[0] && rows[0].DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
+    const wk = d.getDay() % 6 ? await getTimetable(cls, mondayOf(d), addDays(mondayOf(d), 4)) : [];
+    const pick = (rs, day) => rs.filter(r => r.ALL_TI_YMD === ymd(day)).sort((a, b) => a.PERIO - b.PERIO);
+    const todayRows = pick(wk, d);
+    const rows = isToday ? todayRows : ymd(mondayOf(tgt)) === ymd(mondayOf(d)) && wk.length ? pick(wk, tgt)
+      : pick(await getTimetable(cls, mondayOf(tgt), addDays(mondayOf(tgt), 4)), tgt);
+    if (seq !== ttSeq) return;
+    S.todayTT = todayRows;
+    const dep = (rows[0] || todayRows[0] || {}).DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     box.innerHTML = rows.length
       ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
-      : empty('오늘 시간표 정보가 없어요');
-  } catch { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+      : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
+  } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
 }
 // 월~금 시간표 표 (홈 아래쪽 카드와 시간표 화면이 같이 씀)
@@ -456,37 +477,52 @@ async function fillWeek(box, mon, stale) {
 }
 function renderHomeWeek() {
   const mon = S.homeWeek;
-  $('#hwLbl').textContent = weekLbl(mon);
-  const w = Math.round(diffDays(mon, mondayOf(today())) / 7), tag = { '-1': '지난주 ', 0: '이번 주 ', 1: '다음 주 ' }[w] || '';
-  $('#hwTitle').textContent = tag + (cls ? `${cls.g}학년 ${cls.c}반 시간표` : '시간표');
+  $('#hwTitle').innerHTML = cls ? `<b class="hw-cls">${esc(cls.g)}학년 ${esc(cls.c)}반</b>시간표` : '시간표';
   $('#hwNote').textContent = cls && !api.hasKey ? '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)' : '';
   fillWeek($('#hWeek'), mon, () => mon !== S.homeWeek);
 }
-/* ===== 첫 화면 급식판·시간표 넣기/꺼내기/고정 ===== */
-const SIDE = { meal: { el: $('.s-meal'), name: '급식판', dir: 'l' }, tt: { el: $('.k-tt'), name: '시간표', dir: 'r' } };
-function paintPin(k) {
-  const x = SIDE[k], b = x.el.querySelector('.s-pin'), st = x.el.classList.contains('stow');
-  b.textContent = st ? '📌 고정' : x.dir === 'l' ? '◀ 넣기' : '넣기 ▶';
-  b.setAttribute('aria-label', st ? `${x.name}을 화면에 고정하기` : `${x.name}을 옆으로 넣기`);
-  x.el.querySelector('.s-tab').setAttribute('aria-expanded', String(x.el.classList.contains('open')));
+/* ===== 첫 화면 급식판·시간표: 가장자리 서랍 (700px 이상) ===== */
+// 핀 = 꺼낸 그 자리에 고정(기기별 저장). 핀이 없으면 탭으로 꺼내고, 바깥을 누르면 들어감. 첫 화면 아래로 내려가면 잠시 접힘.
+const SIDE = { meal: { el: $('.s-meal'), name: '급식판' }, tt: { el: $('.s-ttc'), name: '시간표' } };
+const wideMQ = matchMedia('(min-width:700px)');
+function paintSide(k) {
+  const { el, name } = SIDE[k], pin = el.classList.contains('pin');
+  const b = el.querySelector('.s-pin');
+  b.setAttribute('aria-pressed', String(pin)); b.title = pin ? '고정 풀기' : '이 자리에 고정';
+  b.setAttribute('aria-label', pin ? `${name} 고정 풀기` : `${name} 고정`);
+  const t = el.querySelector('.s-tab'); t.setAttribute('aria-expanded', String(el.classList.contains('open')));
+  t.setAttribute('aria-label', el.classList.contains('open') ? `${name} 넣기` : `${name} 꺼내기`);
 }
-function setStow(k, stow, anim = true) {
+function setSide(k, open, pin) {
   const el = SIDE[k].el;
-  if (stow && anim && !el.classList.contains('stow')) {   // 제자리에서 꺼낸 상태로 바꾼 뒤 가장자리로 밀어 넣기
-    el.classList.add('stow', 'open', 'noanim'); void el.offsetWidth; el.classList.remove('noanim');
-    requestAnimationFrame(() => { el.classList.remove('open'); paintPin(k); });
-  } else {
-    el.classList.toggle('stow', stow); el.classList.remove('open');
+  el.classList.toggle('open', open); el.classList.toggle('pin', open && pin);
+  store.set('side_' + k, open && pin ? 'pin' : 'free'); paintSide(k);
+}
+function openSide(k, on) { const el = SIDE[k].el; if (el.classList.contains('stow') && !el.classList.contains('pin')) { el.classList.toggle('open', on); paintSide(k); } }
+function applyDrawers() {
+  const on = wideMQ.matches;
+  $('#bigclock').classList.toggle('drawers', on);
+  for (const k in SIDE) {
+    const el = SIDE[k].el;
+    el.classList.toggle('stow', on);
+    if (!on) { el.classList.remove('open', 'pin'); continue; }
+    const v = store.get('side_' + k, innerWidth >= 1100 ? 'pin' : 'free');   // 처음엔 넓은 화면만 꺼내서 고정
+    el.classList.toggle('pin', v === 'pin'); el.classList.toggle('open', v === 'pin');
+    paintSide(k);
   }
-  store.set('stow_' + k, stow); paintPin(k);
 }
-function openSide(k, on) { const el = SIDE[k].el; if (!el.classList.contains('stow')) return; el.classList.toggle('open', on); paintPin(k); }
 for (const k in SIDE) {
-  setStow(k, !!store.get('stow_' + k, false), false);
-  SIDE[k].el.querySelector('.s-pin').onclick = e => { e.stopPropagation(); setStow(k, !SIDE[k].el.classList.contains('stow')); };
-  SIDE[k].el.querySelector('.s-tab').onclick = e => { e.stopPropagation(); openSide(k, !SIDE[k].el.classList.contains('open')); };
+  const el = SIDE[k].el;
+  el.querySelector('.s-pin').onclick = e => { e.stopPropagation(); const pin = el.classList.contains('pin'); setSide(k, !pin, !pin); };
+  el.querySelector('.s-tab').onclick = e => {
+    e.stopPropagation();
+    if (document.documentElement.classList.contains('tuck')) { scrollTo({ top: 0, behavior: 'smooth' }); if (!el.classList.contains('open')) setSide(k, true, false); return; }
+    setSide(k, !el.classList.contains('open'), false);
+  };
 }
-document.addEventListener('click', e => { for (const k in SIDE) if (SIDE[k].el.classList.contains('open') && !e.composedPath().includes(SIDE[k].el)) openSide(k, false); });
+wideMQ.addEventListener('change', applyDrawers); applyDrawers();
+new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .45 }).observe($('#bigclock'));
+document.addEventListener('click', e => { for (const k in SIDE) if (!e.composedPath().includes(SIDE[k].el)) openSide(k, false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') for (const k in SIDE) openSide(k, false); });
 $('#goMeal').onclick = e => { e.preventDefault(); openSide('meal', false); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 $('#goWeek').onclick = e => { e.preventDefault(); openSide('tt', false); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };

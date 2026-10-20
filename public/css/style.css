@@ -254,28 +254,39 @@ header:not(.away) #btnHome,header.away .logo{display:none}
   .s-tt .tt li .s{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .s-tt .tt li.now .s::after{display:none}
 }
-/* 첫 화면 급식판·시간표: 화면 가장자리로 넣기 / 꺼내기 / 고정 */
+/* 첫 화면 급식판·시간표: 화면 가장자리 서랍 (700px 이상) — 탭으로 꺼내기/넣기, 핀으로 고정 */
 .s-acts{display:flex;align-items:center;gap:5px;flex:none}
-.s-pin{font:inherit;font-size:12px;font-weight:900;color:var(--sub);padding:3px 9px;border-radius:999px;background:var(--chip);border:2px solid var(--line);cursor:pointer;white-space:nowrap}
-.s-pin:hover{color:var(--text);border-color:var(--ink)}
-.s-tt.stow .s-pin{background:var(--yellow);color:#173048;border-color:var(--ink)}
-.s-tab{display:none}
-.s-tt.stow{position:fixed;top:50%;z-index:40;margin:0;max-width:calc(100vw - 64px);transition:transform .38s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
-.s-tt.stow.noanim{transition:none}
+.s-pin,.s-tab{display:none}
+.drawers .s-row{display:flex;justify-content:center}
+.drawers .s-pin{display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:10px;background:var(--chip);color:var(--sub);border:2px solid var(--line);cursor:pointer;transition:transform .15s,background .15s}
+.drawers .s-pin svg{width:17px;height:17px;transform:rotate(35deg);transition:transform .2s}
+.drawers .s-pin:hover{color:var(--text);border-color:var(--ink)}
+.drawers .s-pin[aria-pressed="true"]{background:var(--yellow);color:#c0392b;border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.drawers .s-pin[aria-pressed="true"] svg{transform:none}
+.s-tt.stow{position:fixed;top:50%;z-index:40;margin:0;max-width:calc(100vw - 64px);transition:transform .4s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
 .s-meal.stow{left:0;transform:translate(calc(-100% - 6px),-50%)}
-.s-meal.stow.open{transform:translate(14px,-50%) rotate(-1deg)}
-.k-tt.stow{right:0;transform:translate(calc(100% + 6px),-50%)}
-.k-tt.stow.open{transform:translate(-14px,-50%) rotate(1deg)}
+.s-meal.stow.open{transform:translate(18px,-50%) rotate(-1.2deg)}
+.s-ttc.stow{right:0;transform:translate(calc(100% + 6px),-50%)}
+.s-ttc.stow.open{transform:translate(-18px,-50%) rotate(1.2deg)}
+.tuck .s-meal.stow.open{transform:translate(calc(-100% - 6px),-50%)}
+.tuck .s-ttc.stow.open{transform:translate(calc(100% + 6px),-50%)}
 .s-tt.stow .s-tab{display:flex;align-items:center;gap:6px;position:absolute;top:50%;margin-top:-56px;min-height:112px;padding:14px 7px;writing-mode:vertical-rl;letter-spacing:.08em;
-  font:inherit;font-size:13.5px;font-weight:900;color:#173048;background:var(--yellow);border:var(--bd);box-shadow:var(--sh-s);cursor:pointer}
+  font:inherit;font-size:13.5px;font-weight:900;color:#173048;background:var(--yellow);border:var(--bd);box-shadow:var(--sh-s);cursor:pointer;transition:opacity .2s}
 .s-tt.stow .s-tab span{writing-mode:horizontal-tb;font-size:17px}
 .s-meal.stow .s-tab{left:100%;margin-left:6px;border-radius:0 14px 14px 0;border-left-width:0}
-.k-tt.stow .s-tab{right:100%;margin-right:6px;border-radius:14px 0 0 14px;border-right-width:0;background:var(--lime)}
-.s-tt.stow:not(.open){box-shadow:none}
-.s-tt.stow:not(.open) > :not(.s-tab){visibility:hidden}
-.s-tt.stow:not(.open)::before{display:none}
+.s-ttc.stow .s-tab{right:100%;margin-right:6px;border-radius:14px 0 0 14px;border-right-width:0;background:var(--lime)}
+.s-tt.stow.pin .s-tab{display:none}
+.tuck .s-tt.stow.pin .s-tab{display:flex}
+.s-tt.stow:not(.open),.tuck .s-tt.stow{box-shadow:none}
+.s-tt.stow:not(.open) > :not(.s-tab),.tuck .s-tt.stow > :not(.s-tab){visibility:hidden}
+.s-tt.stow:not(.open)::before,.tuck .s-tt.stow::before{display:none}
 .s-tab:hover{filter:brightness(1.05)}
-:root[data-theme="dark"] .s-tt.stow .s-tab{color:#173048}
+/* 홈 아래 주간 시간표 제목 */
+.hw-h{font-size:25px!important;gap:14px!important}
+#weekTT .hw-badge{width:48px;height:48px;border-radius:14px;background:var(--lime);color:#173048;box-shadow:3px 3px 0 var(--ink)}
+#weekTT .hw-badge svg{width:27px;height:27px}
+.hw-cls{display:inline-block;padding:2px 12px 3px;margin-right:6px;border-radius:12px;background:var(--yellow);color:#173048;border:var(--bd);box-shadow:2px 2px 0 var(--ink);transform:rotate(-2deg)}
+@media (max-width:560px){.hw-h{font-size:20px!important}#weekTT .hw-badge{width:40px;height:40px}#weekTT .hw-badge svg{width:22px;height:22px}}
 .bento #weekTT{transform:rotate(.3deg);scroll-margin-top:96px}
 .bento #weekTT .ct{flex-wrap:wrap;gap:10px}
 /* ===== 6. 카드 · 그리드 ===== */
