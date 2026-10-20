@@ -200,10 +200,10 @@ function splitTray(list) {
   if (mi > 0) rest.unshift(rest.splice(mi, 1)[0]);   // 메인을 맨 앞으로
   if (!rice && rest.length > 3) rice = rest.pop();     // 밥·국이 없는 날은 남는 메뉴로 아래 칸 채움
   if (!soup && rest.length > 3) soup = rest.pop();
-  // 위 3칸: 메인은 첫 칸에 혼자, 나머지는 2·3번째 칸에 나눠 담기
-  const top = [[], [], []], others = mi >= 0 ? rest.slice(1) : rest.slice();
+  // 위 칸: [왼쪽(메인), 가운데 위, 가운데 아래, 오른쪽] — 메인은 첫 칸에 혼자, 나머지는 남은 칸에 나눠 담기
+  const top = [[], [], [], []], others = mi >= 0 ? rest.slice(1) : rest.slice();
   if (mi >= 0) top[0].push(rest[0]);
-  others.forEach((n, i) => top[mi >= 0 ? 1 + (i % 2) : i % 3].push(n));
+  others.forEach((n, i) => top[mi >= 0 ? 1 + (i % 3) : i % 4].push(n));
   return { main: mi >= 0 ? rest[0] : (rest[0] || rice || ''), top, rice, soup, hasMain: mi >= 0 };
 }
 const cellHtml = (items, cls = '', tag = '', em = '') => {
@@ -216,7 +216,9 @@ const mealHtml = r => {
   if (!r) return empty('급식 정보가 없어요');
   const t = splitTray(cleanDish(r.DDISH_NM));
   return `<div class="tray" role="list" aria-label="급식 식판">`
-    + t.top.map((c, i) => cellHtml(c, i === 0 && t.hasMain ? 'main' : '', i === 0 && t.hasMain ? '메인' : '')).join('')
+    + cellHtml(t.top[0], t.hasMain ? 'main' : '', t.hasMain ? '메인' : '')
+    + `<div class="mid">${cellHtml(t.top[1], 'half')}${cellHtml(t.top[2], 'half')}</div>`
+    + cellHtml(t.top[3])
     + cellHtml(t.rice ? [t.rice] : [], 'big') + cellHtml(t.soup ? [t.soup] : [], 'big soup', '', t.soup && isSoup(t.soup) ? '🍲' : '')
     + `</div>` + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
 };
@@ -357,7 +359,14 @@ async function renderHomeDday() {
     const tag = x.mine ? '<em class="tag me">내 D-day</em>' : x.off ? '<em class="tag off">쉬는 날</em>' : '';
     return `<div class="up${i === 0 ? ' first' : ''}${x.mine ? ' mine' : ''}"><b class="num">${ddayText(n)}</b><p class="nm">${esc(x.name)}</p><span class="dt">${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</span>${tag}</div>`;
   }).join('');
+  fitUp();
 }
+// 다가오는 일정: 화면 폭에 맞춰 딱 2줄까지만 보이기
+function fitUp() {
+  const box = $('#hUp'), cols = getComputedStyle(box).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+  $$('.up', box).forEach((el, i) => { el.hidden = i >= cols * 2; });
+}
+addEventListener('resize', fitUp);
 async function renderDdayView() {
   $('#dMine').innerHTML = ddayListHtml(myDdays().map((x, i) => ({ ...x, i })).sort(byDate));
   $('#dSchool').innerHTML = skel(3);
