@@ -21,12 +21,56 @@ let cls = validClass(store.get('class', null));
 const S = { mealDate: today(), ttWeek: mondayOf(today()), calMonth: new Date(today().getFullYear(), today().getMonth(), 1), homeMeal: null };
 const startDay = ymd(today());
 
-/* ===== 헤더 · 시계 ===== */
+/* ===== 헤더 · 시계 · 종 시간 ===== */
+// 학교 공지 시정표(2025 기준). 월·화·수 7교시, 목·금 6교시. 시험 기간 등 특별 일과는 반영 안 됨
+const BELL = [['조회', '08:00', '08:10'], [1, '08:20', '09:10'], [2, '09:20', '10:10'], [3, '10:20', '11:10'], [4, '11:20', '12:10'],
+  [5, '13:00', '13:50'], [6, '14:00', '14:50'], [7, '15:00', '15:50']]
+  .map(([p, a, b]) => { const s = t => +t.slice(0, 2) * 3600 + +t.slice(3) * 60; return { p, start: s(a), end: s(b) }; });
+const offDays = new Set();   // 학사일정상 휴업일(YYYYMMDD)
+const fmtLeft = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(s); };
+const pName = p => p === '조회' ? '조회' : p + '교시';
+
+function bellInfo(n) {
+  const dow = n.getDay();
+  if (dow === 0 || dow === 6 || offDays.has(ymd(n))) return { state: '쉬는 날', label: '오늘은 수업이 없어요' };
+  const last = dow <= 3 ? 7 : 6, list = BELL.filter(x => x.p === '조회' || x.p <= last);
+  const now = (n - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 1000;
+  for (let i = 0; i < list.length; i++) {
+    const cur = list[i], prev = list[i - 1];
+    if (now >= cur.end) continue;
+    if (now >= cur.start) {   // 수업(또는 조회) 중
+      if (cur.p === '조회') return { state: '조회 중', label: '1교시 시작까지', target: list[1].start, from: cur.start };
+      const next = list[i + 1];
+      return { state: `${pName(cur.p)} 수업 중`, label: !next ? '수업 끝까지' : cur.p === 4 ? '점심시간까지' : '쉬는 시간까지', target: cur.end, from: cur.start };
+    }
+    // 수업 전 쉬는 시간
+    const state = !prev ? '등교 전' : prev.p === 4 ? '점심시간' : '쉬는 시간';
+    return { state, label: `${pName(cur.p)} 시작까지`, target: cur.start, from: prev ? prev.end : null, brk: !!prev };
+  }
+  return { state: '방과 후', label: '오늘 수업이 끝났어요' };
+}
+
 function tickClock() {
   const n = new Date(), h = n.getHours();
-  $('#clock').textContent = pad(h) + ':' + pad(n.getMinutes());
+  $('#clock').textContent = pad(h) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
   $('#todayLbl').textContent = `${n.getFullYear()}년 ${fmtDay(n)}`;
   $('#greet').textContent = h < 9 ? '좋은 아침이에요' : h < 12 ? '오늘도 힘내요' : h < 14 ? '점심 맛있게 먹어요' : h < 18 ? '조금만 더 힘내요' : '오늘도 수고했어요';
+
+  const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  const left = b.target != null ? b.target - secNow : null;
+  $('#bellState').textContent = b.state;
+  $('#bellLbl').textContent = b.label;
+  $('#bellCnt').textContent = left != null ? fmtLeft(left) : '';
+  $('#bigclock').classList.toggle('soon', left != null && left <= 60);
+  const bar = b.from != null && left != null;
+  $('#bellBarBox').hidden = !bar;
+  if (bar) $('#bellBar').style.transform = `scaleX(${Math.min(1, (secNow - b.from) / (b.target - b.from)).toFixed(4)})`;
+  setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
+}
+async function loadOffDays() {
+  try {
+    (await loadUpcoming()).filter(r => r.SBTR_DD_SC_NM === '휴업일').forEach(r => offDays.add(r.AA_YMD));
+  } catch {}
 }
 function renderClassChip() {
   const el = $('#classChip');
@@ -255,14 +299,14 @@ applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
 $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
 
 /* ===== 시작 ===== */
-tickClock(); setInterval(tickClock, 10000);
+tickClock();
 renderClassChip();
 store.pruneCache();
 // 날짜가 바뀐 채로 다시 열면(자정 넘김) 새로 고침
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ymd(today()) !== startDay) location.reload(); });
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 loadConfig().finally(() => {
-  renderHomeMeal(); renderHomeTT(); renderHomeCal(); renderHomeDday();
+  renderHomeMeal(); renderHomeTT(); renderHomeCal(); renderHomeDday(); loadOffDays();
   const h = location.hash.slice(1); if (h && h !== 'home') go(h);
   if (!cls) setTimeout(openClass, 400);
 });

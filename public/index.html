@@ -81,11 +81,16 @@
       <h1 id="greet">안녕하세요</h1>
       <div class="classchip" id="classChip" hidden></div>
     </div>
-    <div class="clock" id="clock" aria-label="현재 시각">--:--</div>
   </section>
 
   <!-- 홈 -->
   <div class="view on" id="v-home">
+    <section class="card bigclock" id="bigclock" aria-label="현재 시각과 종 시간">
+      <div class="bc-state" id="bellState">&nbsp;</div>
+      <div class="bc-time" id="clock" role="timer" aria-label="현재 시각">--:--:--</div>
+      <div class="bc-next"><span id="bellLbl">&nbsp;</span> <b id="bellCnt"></b></div>
+      <div class="bc-bar" id="bellBarBox" hidden><i id="bellBar"></i></div>
+    </section>
     <div class="grid">
       <div class="card c5 k-meal">
         <div class="ct"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg>오늘 급식</h2><a href="#meal" data-go="meal">전체 보기</a></div>
