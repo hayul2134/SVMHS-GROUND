@@ -1,7 +1,7 @@
 {
   "name": "SVMHS GROUND · 서울영상고생을 위한 웹사이트",
   "short_name": "GROUND",
-  "description": "서울영상고 급식·시간표·학사일정·D-day 모음",
+  "description": "서울영상고 학생을 위한 사이트",
   "lang": "ko",
   "id": "/",
   "start_url": "/",
