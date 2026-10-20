@@ -1,5 +1,9 @@
 {
   "name": "svmhs-ground",
   "pages_build_output_dir": "./public",
-  "compatibility_date": "2026-10-01"
+  "compatibility_date": "2026-10-01",
+  // 급식 인기투표 · 밸런스 게임 · 소셜(프로필·DM·게임 랭킹)이 함께 쓰는 D1 (테이블은 첫 요청 때 자동 생성)
+  "d1_databases": [
+    { "binding": "DB", "database_name": "svmhs-ground-db", "database_id": "a88ef890-a617-4c02-84d9-f041d394170c" }
+  ]
 }
