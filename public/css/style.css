@@ -14,6 +14,7 @@
   --accent:#2f8fe0; --lime:#8fe8cf; --yellow:#ffe08a; --pink:#a9c4ff; --red:#ff8f8f; --sky:#6fc6f4; --violet:#9bb8ff; --hero:#38a5ea; --next:#86ccf6;
   --bd:2.5px solid var(--ink); --sh:4px 4px 0 var(--ink); --sh-s:3px 3px 0 var(--ink);
   --radius:22px;
+  --num:"Outfit","Pretendard Variable",Pretendard,sans-serif;
   --disp:"Bagel Fat One","Pretendard Variable",Pretendard,sans-serif;
 }
 :root[data-theme="dark"]{
@@ -85,9 +86,9 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .dk.dot1{width:9px;height:9px;border-radius:50%;background:var(--ink);right:-12%;top:30%;opacity:.7}
 @keyframes tw{50%{transform:scale(.72) rotate(18deg)}}
 .clock.paused .dk,.stage.paused .dk{animation-play-state:paused}
-.s-big{font-family:var(--disp);font-weight:400;font-size:clamp(84px,17vw,200px);line-height:.95;white-space:nowrap;color:var(--on-bg);text-shadow:6px 6px 0 var(--sky);transition:text-shadow .4s}
-.s-big .n{display:inline-block;width:.64em;text-align:center}
-.s-big .c{display:inline-block;width:.3em;text-align:center}
+.s-big{font-family:var(--num);font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;font-size:clamp(84px,17vw,200px);line-height:.95;white-space:nowrap;color:var(--on-bg);text-shadow:6px 6px 0 var(--sky);transition:text-shadow .4s}
+.s-big .n{display:inline-block;width:.6em;text-align:center}
+.s-big .c{display:inline-block;width:.26em;position:relative;top:-.06em;text-align:center}
 .stage.rest .s-big{text-shadow:6px 6px 0 var(--lime)}
 .s-big .sec{font-size:.34em;color:var(--sub);text-shadow:none;margin-left:.06em}
 .stage.soon .s-big{text-shadow:6px 6px 0 var(--red)}
@@ -96,7 +97,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .s-sub{margin-top:22px;display:flex;justify-content:center}
 .s-left{display:inline-flex;align-items:center;gap:12px;background:var(--card);color:var(--text);border:var(--bd);border-radius:999px;box-shadow:var(--sh-s);padding:8px 10px 8px 20px;transform:rotate(-1.5deg)}
 .s-left b{font-weight:900;font-size:16px}
-.s-cnt{font-family:var(--disp);font-weight:400!important;font-size:22px!important;line-height:1;background:var(--yellow);color:#173048;border:2px solid var(--ink);border-radius:999px;padding:6px 14px;font-variant-numeric:tabular-nums}
+.s-cnt{font-family:var(--num);font-weight:800!important;font-size:22px!important;line-height:1;background:var(--yellow);color:#173048;border:2px solid var(--ink);border-radius:999px;padding:6px 14px;font-variant-numeric:tabular-nums}
 .s-cnt:empty{display:none}
 .stage.rest .s-cnt{background:var(--lime)}
 .s-date{margin-top:12px;font-weight:800;font-size:14px;color:var(--sub)}
