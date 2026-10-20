@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SVMHS GROUND · 서울영상고 급식·시간표</title>
 <meta name="description" content="서울영상고 학생들을 위한 급식·시간표·학사일정·D-day 모음. 로그인 없이 바로 써요.">
-<meta name="theme-color" content="#f4f5f7">
+<meta name="theme-color" content="#eef2fb">
 <meta name="color-scheme" content="light dark">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="canonical" href="https://svmhs-ground.pages.dev/">
@@ -75,39 +75,33 @@
 <main class="wrap">
   <noscript><div class="noscript">이 사이트는 자바스크립트가 필요해요. 브라우저 설정에서 자바스크립트를 켜 주세요.</div></noscript>
 
-  <section class="hero">
-    <div>
-      <p id="todayLbl"></p>
-      <h1 id="greet">안녕하세요</h1>
-      <div class="classchip" id="classChip" hidden></div>
-    </div>
-  </section>
-
-  <!-- 홈 -->
+  <!-- 홈: 벤토 그리드 -->
   <div class="view on" id="v-home">
-    <section class="bigclock" id="bigclock" aria-label="현재 시각과 종 시간">
-      <div class="bc-state" id="bellState">&nbsp;</div>
-      <div class="bc-time" role="timer" aria-label="현재 시각"><span id="cH">--</span><span class="col">:</span><span id="cM">--</span><span class="ss" id="cS">--</span></div>
-      <div class="bc-next"><span id="bellLbl">&nbsp;</span><b id="bellCnt"></b></div>
-      <div class="bc-bar" id="bellBarBox" hidden><i id="bellBar"></i></div>
-    </section>
-    <div class="grid">
+    <div class="grid bento">
+      <!-- 메인 타일: 남은 시간이 주인공 -->
+      <section class="tile hero c8" id="bigclock" aria-label="종 시간">
+        <div class="h-top"><span class="pill" id="bellState">&nbsp;</span><span class="h-date" id="todayLbl"></span></div>
+        <div class="h-say"><span class="buddy" aria-hidden="true"><img src="/logo-mark.svg" alt="" width="30" height="27"></span><p class="bubble" id="greet">안녕!</p></div>
+        <div class="h-big"><span class="h-lbl" id="bellLbl">&nbsp;</span><b id="bellCnt" role="timer">--:--</b></div>
+        <div class="h-bar" id="bellBarBox" hidden><i id="bellBar"></i></div>
+        <div class="h-foot"><span class="h-clock" aria-label="현재 시각"><span id="cH">--</span>:<span id="cM">--</span><span class="ss">:<span id="cS">--</span></span></span><span class="classchip" id="classChip" hidden></span></div>
+      </section>
+      <!-- 다음 수업 -->
+      <section class="tile next c4" id="hNext" aria-live="polite"><div class="skel"></div><div class="skel"></div></section>
+
       <div class="card c5 k-meal">
-        <div class="ct"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg>오늘 급식</h2><a href="#meal" data-go="meal">전체 보기</a></div>
+        <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg></i>오늘 급식</h2><a href="#meal" data-go="meal">전체 보기</a></div>
         <div class="mealtabs" id="hMealTabs"></div>
         <div id="hMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
       </div>
       <div class="card c7 k-tt">
-        <div class="ct"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg>오늘 시간표</h2><a href="#tt" data-go="tt">주간 보기</a></div>
+        <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>오늘 시간표</h2><a href="#tt" data-go="tt">주간 보기</a></div>
         <div id="hTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
       </div>
-      <div class="card c7 k-cal">
-        <div class="ct"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg>다가오는 일정</h2><a href="#cal" data-go="cal">전체 보기</a></div>
-        <div id="hCal"><div class="skel"></div><div class="skel"></div></div>
-      </div>
-      <div class="card c5 k-dd">
-        <div class="ct"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg>D-day</h2><a href="#dday" data-go="dday">관리</a></div>
-        <div id="hDday"></div>
+      <!-- 학사일정 + D-day 합침 -->
+      <div class="card c12 k-up">
+        <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>다가오는 일정</h2><span class="links"><a href="#cal" data-go="cal">학사일정</a><a href="#dday" data-go="dday">D-day 추가</a></span></div>
+        <div class="uprow" id="hUp"><div class="skel"></div></div>
       </div>
     </div>
   </div>

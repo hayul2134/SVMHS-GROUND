@@ -50,24 +50,68 @@ function bellInfo(n) {
   return { state: '방과 후', label: '오늘 수업이 끝났어요' };
 }
 
+// 지금 상태에 맞춘 G의 한마디 (시간대가 아니라 종 시간 기준이라 '수업 중인데 점심 인사' 같은 어긋남이 없음)
+function sayLine(b) {
+  const p = +((b.state.match(/^(\d)교시/) || [])[1] || 0);
+  if (b.state === '쉬는 날') return '오늘은 쉬는 날! 푹 쉬자 😴';
+  if (b.state === '방과 후') return '오늘도 수고했어 👋';
+  if (b.state === '등교 전') return '좋은 아침! 오늘도 가보자 ☀️';
+  if (b.state === '조회 중') return '조회 시간, 정신 차려~ 🫡';
+  if (b.state === '점심시간') return '점심시간! 맛있게 먹고 와 🍚';
+  if (b.state === '쉬는 시간') return '쉬는 시간! 잠깐 숨 돌리자 🙌';
+  if (p === 4) return '배고프다… 점심까지 조금만 🤤';
+  if (p >= 6) return '거의 다 왔어, 조금만 더 💪';
+  return `${p}교시 버티는 중… 화이팅 ✊`;
+}
+// 오늘 시간표에서 지금/다음/끝난 교시 계산
+function periodInfo(b) {
+  const cur = +((b.state.match(/^(\d)교시/) || [])[1] || 0);
+  const nxt = +((b.label.match(/^(\d)교시 시작/) || [])[1] || 0) || (cur ? cur + 1 : 0);
+  const done = b.state === '방과 후' ? 99 : cur || nxt || 0;   // 이 교시 '전'까지는 끝남
+  return { cur, nxt, done };
+}
+let nextKey = '';
 function tickClock() {
-  const n = new Date(), h = n.getHours();
-  $('#cH').textContent = pad(h); $('#cM').textContent = pad(n.getMinutes()); $('#cS').textContent = pad(n.getSeconds());
-  $('#todayLbl').textContent = `${n.getFullYear()}년 ${fmtDay(n)}`;
-  $('#greet').textContent = h < 9 ? '좋은 아침이에요' : h < 12 ? '오늘도 힘내요' : h < 14 ? '점심 맛있게 먹어요' : h < 18 ? '조금만 더 힘내요' : '오늘도 수고했어요';
+  const n = new Date();
+  $('#cH').textContent = pad(n.getHours()); $('#cM').textContent = pad(n.getMinutes()); $('#cS').textContent = pad(n.getSeconds());
+  $('#todayLbl').textContent = fmtDay(n);
 
   const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
+  $('#greet').textContent = sayLine(b);
   $('#bellState').textContent = b.state;
   $('#bellLbl').textContent = b.label;
-  $('#bellCnt').textContent = left != null ? fmtLeft(left) : '';
-  $('#bigclock').classList.toggle('soon', left != null && left <= 60);
-  const curP = (b.state.match(/^(\d)교시/) || [])[1];   // 오늘 시간표에서 지금 교시 강조
-  $$('#hTT li').forEach(li => li.classList.toggle('now', li.dataset.p === curP));
+  $('#bellCnt').textContent = left != null ? fmtLeft(left) : `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  const hero = $('#bigclock');
+  hero.classList.toggle('soon', left != null && left <= 60);
+  hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
+  const pi = periodInfo(b);
+  $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
+  const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
+  if (key !== nextKey) { nextKey = key; renderNext(b, pi); }
   const bar = b.from != null && left != null;
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${Math.min(1, (secNow - b.from) / (b.target - b.from)).toFixed(4)})`;
   setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
+}
+// 다음 수업 타일
+function renderNext(b, pi) {
+  const box = $('#hNext'), rows = S.todayTT;
+  const subj = p => { const r = rows && rows.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
+  let h;
+  if (!cls) h = `<span class="t-lbl">다음 수업</span><p class="t-msg">반을 설정하면<br>다음 수업이 보여요</p><button class="btn lime" data-open-class>반 설정하기</button>`;
+  else if (b.state === '쉬는 날') h = `<span class="t-lbl">오늘</span><b class="t-big">OFF</b><p class="t-sub">수업 없는 날이에요</p>`;
+  else if (rows && !rows.length) h = `<span class="t-lbl">다음 수업</span><p class="t-msg">오늘 시간표 정보가<br>아직 없어요</p>`;
+  else if (b.state === '방과 후' || (rows && pi.nxt && !subj(pi.nxt) && !subj(pi.cur))) h = `<span class="t-lbl">오늘 수업</span><b class="t-big">끝!</b><p class="t-sub">내일 또 봐요</p>`;
+  else if (rows === undefined) h = '<div class="skel"></div><div class="skel"></div>';
+  else {
+    const np = subj(pi.nxt) ? pi.nxt : 0;
+    h = np ? `<span class="t-lbl">다음 수업</span><b class="t-big">${np}<small>교시</small></b><p class="t-subj">${esc(subj(np))}</p>`
+           : `<span class="t-lbl">지금 수업</span><b class="t-big">${pi.cur}<small>교시</small></b><p class="t-subj">${esc(subj(pi.cur))}</p>`;
+    if (np && pi.cur && subj(pi.cur)) h += `<p class="t-sub">지금 · ${esc(subj(pi.cur))}</p>`;
+    else if (np) h += `<p class="t-sub">${b.state === '등교 전' ? '오늘 첫 수업' : '곧 시작해요'}</p>`;
+  }
+  box.innerHTML = h;
 }
 async function loadOffDays() {
   try {
@@ -94,9 +138,26 @@ $('#nav').addEventListener('click', e => { const b = e.target.closest('button');
 document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) { e.preventDefault(); go(a.dataset.go); } });
 
 /* ===== 급식 ===== */
-const mealHtml = r => r
-  ? `<ul class="menu">${cleanDish(r.DDISH_NM).map(x => `<li>${esc(x)}</li>`).join('')}</ul><div class="kcal">${esc(r.CAL_INFO)}</div>`
-  : empty('급식 정보가 없어요');
+// 메뉴 이름으로 이모지 고르기 (위에서부터 먼저 맞는 것)
+const EMOJI = [[/우유|요구르트|요거트|주스|에이드|스무디|라떼/, '🥤'], [/김치|깍두기|겉절이|섞박지/, '🥬'], [/치킨|닭|윙|봉/, '🍗'],
+  [/돈까스|돈가스|까스|가스|커틀릿|튀김|강정|탕수/, '🍤'], [/피자/, '🍕'], [/버거|햄버거/, '🍔'], [/떡볶이|떡/, '🍡'],
+  [/면|국수|우동|짜장|짬뽕|파스타|스파게티|라면|쫄면|냉면/, '🍜'], [/카레|커리/, '🍛'], [/볶음밥|덮밥|비빔밥|주먹밥|김밥|밥/, '🍚'],
+  [/국|탕|찌개|수프|스프/, '🍲'], [/생선|고등어|삼치|연어|가자미|동태|임연수|오징어|새우|쭈꾸미|주꾸미/, '🐟'],
+  [/불고기|갈비|제육|고기|삼겹|목살|스테이크|보쌈|족발|함박|미트/, '🍖'], [/계란|달걀|에그|오믈렛|스크램블/, '🥚'],
+  [/샐러드|무침|나물|겉절/, '🥗'], [/빵|파이|케이크|머핀|와플|토스트|도넛|츄러스|쿠키/, '🥐'],
+  [/멜론|수박|사과|배|귤|오렌지|포도|딸기|바나나|파인애플|키위|과일|망고|복숭아/, '🍉'], [/아이스|빙수|젤리|푸딩/, '🍨']];
+const dishEmoji = n => (EMOJI.find(([re]) => re.test(n)) || [, '🍽️'])[1];
+// 메인 메뉴: 밥·국·김치·음료를 뺀 첫 반찬 (없으면 첫 메뉴)
+const isSide = n => /^(흑미|잡곡|현미|보리|백미|쌀)?밥$|김치|깍두기|우유|요구르트|주스|국$|탕$|찌개$/.test(n);
+const mealHtml = r => {
+  if (!r) return empty('급식 정보가 없어요');
+  const list = cleanDish(r.DDISH_NM);
+  const mi = Math.max(0, list.findIndex(n => !isSide(n))), main = list[mi];
+  const rest = list.filter((_, i) => i !== mi);
+  return `<div class="dish-main"><span class="em" aria-hidden="true">${dishEmoji(main)}</span><span><small>오늘의 메인</small><b>${esc(main)}</b></span></div>`
+    + `<ul class="dishes">${rest.map(x => `<li><span aria-hidden="true">${dishEmoji(x)}</span>${esc(x)}</li>`).join('')}</ul>`
+    + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
+};
 async function renderHomeMeal() {
   const box = $('#hMeal'), tabs = $('#hMealTabs');
   try {
@@ -123,19 +184,22 @@ $('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealVi
 $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };
 
 /* ===== 시간표 ===== */
+const subjName = s => String(s || '').replace(/^[\s*#·-]+/, '').trim();   // 나이스 원문의 '* 영상 CG작업' 같은 기호 제거
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 async function renderHomeTT() {
   const box = $('#hTT'), d = today();
   if (!cls) { box.innerHTML = needClass; return; }
-  if (d.getDay() % 6 === 0) { box.innerHTML = empty('오늘은 주말이에요. 푹 쉬어요!'); return; }
+  if (d.getDay() % 6 === 0) { S.todayTT = []; box.innerHTML = empty('오늘은 주말이에요. 푹 쉬어요!'); return; }
   try {
     const rows = (await getTimetable(cls, d, d)).filter(r => r.ALL_TI_YMD === ymd(d)).sort((a, b) => a.PERIO - b.PERIO);
+    S.todayTT = rows;
     const dep = rows[0] && rows[0].DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(r.ITRT_CNTNT)}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
+      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
       : empty('오늘 시간표 정보가 없어요');
-  } catch { box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+  } catch { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+  nextKey = '';   // 다음 수업 타일 다시 그리기
 }
 async function renderTTView() {
   const mon = S.ttWeek, fri = addDays(mon, 4), box = $('#tWeek');
@@ -150,7 +214,7 @@ async function renderTTView() {
     if (!rows.length) { box.innerHTML = empty('이 주의 시간표 정보가 없어요'); return; }
     const days = [0, 1, 2, 3, 4].map(i => addDays(mon, i)), t = ymd(today());
     const maxP = Math.min(10, Math.max(6, ...rows.map(r => +r.PERIO || 0)));
-    const map = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = r.ITRT_CNTNT; });
+    const map = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = subjName(r.ITRT_CNTNT); });
     const td = (d, p) => `<td class="${ymd(d) === t ? 'today' : ''}">${esc(map[ymd(d) + '_' + p] || '')}</td>`;
     let h = '<table class="week"><thead><tr><th></th>' + days.map(d => `<th class="${ymd(d) === t ? 'today' : ''}">${DOW[d.getDay()]} ${d.getDate()}</th>`).join('') + '</tr></thead><tbody>';
     for (let p = 1; p <= maxP; p++) h += `<tr><td class="pn">${p}</td>${days.map(d => td(d, p)).join('')}</tr>`;
@@ -174,13 +238,6 @@ const loadUpcoming = () => {
   if (!upcoming) upcoming = getSchedule(today(), addDays(today(), 60)).catch(e => { upcoming = null; throw e; });
   return upcoming;
 };
-async function renderHomeCal() {
-  const box = $('#hCal');
-  try {
-    const rows = (await loadUpcoming()).slice(0, 5);
-    box.innerHTML = rows.length ? evHtml(rows) : empty('60일 안에 예정된 일정이 없어요');
-  } catch { box.innerHTML = empty('일정을 불러오지 못했어요'); }
-}
 async function renderCalView() {
   const m = S.calMonth, end = new Date(m.getFullYear(), m.getMonth() + 1, 0), box = $('#cList');
   $('#cLbl').textContent = `${m.getFullYear()}년 ${m.getMonth() + 1}월`;
@@ -205,15 +262,21 @@ function ddayListHtml(list) {   // list: [{ name, date, i? }] — i가 있으면
     return `<li><span class="num">${ddayText(diffDays(d, t))}</span><span class="nm">${esc(x.name)}<br><span class="dt">${fmtDay(d)}</span></span>${del}</li>`;
   }).join('')}</ul>`;
 }
+// 홈 '다가오는 일정': 학교 일정 + 내 D-day를 날짜순으로 한 줄에 (큰 D-숫자 타일)
 async function renderHomeDday() {
-  const mine = myDdays().filter(x => parseYmd(x.date) >= today());
-  let school = [];
+  const box = $('#hUp'), t = today();
+  const mine = myDdays().filter(x => parseYmd(x.date) >= t).map(x => ({ ...x, mine: true }));
+  let school = [], fail = false;
   try {
-    school = (await loadUpcoming()).filter(r => r.SBTR_DD_SC_NM !== '휴업일' || /방학|시험|고사/.test(r.EVENT_NM))
-      .slice(0, 3).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD }));
-  } catch {}
-  const list = mine.concat(school).sort(byDate).slice(0, 4);
-  $('#hDday').innerHTML = list.length ? ddayListHtml(list) : empty('D-day를 추가해 보세요 · <button class="link" data-go="dday">추가하기</button>');
+    school = (await loadUpcoming()).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: r.SBTR_DD_SC_NM === '휴업일' }));
+  } catch { fail = true; }
+  const list = mine.concat(school).sort(byDate).slice(0, 10);
+  if (!list.length) { box.innerHTML = empty(fail ? '일정을 불러오지 못했어요' : '60일 안에 예정된 일정이 없어요 · <button class="link" data-go="dday">D-day 추가</button>'); return; }
+  box.innerHTML = list.map((x, i) => {
+    const d = parseYmd(x.date), n = diffDays(d, t);
+    const tag = x.mine ? '<em class="tag me">내 D-day</em>' : x.off ? '<em class="tag off">쉬는 날</em>' : '';
+    return `<div class="up${i === 0 ? ' first' : ''}${x.mine ? ' mine' : ''}"><b class="num">${ddayText(n)}</b><p class="nm">${esc(x.name)}</p><span class="dt">${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</span>${tag}</div>`;
+  }).join('');
 }
 async function renderDdayView() {
   $('#dMine').innerHTML = ddayListHtml(myDdays().map((x, i) => ({ ...x, i })).sort(byDate));
@@ -295,7 +358,7 @@ $('#clearData').onclick = () => {
 /* ===== 테마 (첫 적용은 js/theme.js가 깜빡임 없이 처리) ===== */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
-  $('meta[name=theme-color]').content = t === 'dark' ? '#0e0f12' : '#f4f5f7';
+  $('meta[name=theme-color]').content = t === 'dark' ? '#0a0d18' : '#eef2fb';
 }
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
@@ -308,7 +371,7 @@ store.pruneCache();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ymd(today()) !== startDay) location.reload(); });
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 loadConfig().finally(() => {
-  renderHomeMeal(); renderHomeTT(); renderHomeCal(); renderHomeDday(); loadOffDays();
+  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays();
   const h = location.hash.slice(1); if (h && h !== 'home') go(h);
   if (!cls) setTimeout(openClass, 400);
 });
