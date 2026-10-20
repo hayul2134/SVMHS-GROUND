@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SVMHS GROUND · 서울영상고생을 위한 웹사이트</title>
-<meta name="description" content="서울영상고 학생들을 위한 급식·시간표·학사일정·D-day 모음. 로그인 없이 바로 써요.">
+<meta name="description" content="서울영상고 학생들을 위한 급식·시간표·학사일정·D-day 모음. DM·프로필·미니게임도 있어요.">
 <meta name="theme-color" content="#eaf5fd">
 <meta name="color-scheme" content="light dark">
 <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -56,6 +56,9 @@
     <g id="i-cal" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></g>
     <g id="i-dday" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></g>
     <g id="i-share" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></g>
+    <g id="i-user" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></g>
+    <g id="i-chat" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.2A8 8 0 1 1 21 12z"/></g>
+    <g id="i-game" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="12" rx="6"/><path d="M7 11v4M5 13h4M15.5 12h.01M18 14.5h.01"/></g>
     <g id="i-down" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></g>
     <g id="i-prev" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></g>
     <g id="i-next" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></g>
@@ -66,6 +69,8 @@
   <div class="hd">
     <button class="iconbtn" id="btnHome" data-go="home" title="처음으로" aria-label="처음 화면으로"><svg viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
     <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="52" height="52"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
+    <button class="iconbtn" id="btnDm" data-go="dm" title="DM" aria-label="DM"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg><i class="hbadge" data-badge="dm" hidden></i></button>
+    <button class="iconbtn" id="btnMe" data-go="me" title="내 프로필" aria-label="내 프로필"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></button>
     <button class="iconbtn" id="btnClass" title="반 설정" aria-label="반 설정"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
     <button class="iconbtn" id="btnShare" title="친구에게 공유" aria-label="친구에게 공유하기"><svg viewBox="0 0 24 24"><use href="#i-qr"/></svg></button>
     <button class="iconbtn" id="btnTheme" title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg viewBox="0 0 24 24"><use href="#i-moon"/></svg></button>
@@ -129,6 +134,9 @@
     <section class="apps" id="apps" aria-labelledby="appsT">
       <h2 class="sec-t" id="appsT">바로가기</h2>
       <div class="appgrid">
+        <button class="app hot" data-go="me"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-user"/></svg></i>프로필</button>
+        <button class="app hot" data-go="dm"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg><i class="hbadge" data-badge="dm" hidden></i></i>DM</button>
+        <button class="app hot" data-go="game"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-game"/></svg></i>게임</button>
         <button class="app" data-go="meal"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg></i>급식</button>
         <button class="app" data-go="tt"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>시간표</button>
         <button class="app" data-go="cal"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></i>학사일정</button>
@@ -212,6 +220,12 @@
     </div>
   </div>
 
+  <!-- 소셜 (js/social.js가 채움) -->
+  <div class="view" id="v-me"><div class="vhead"><h2>내 프로필</h2></div><div class="soc" id="meBox"></div></div>
+  <div class="view" id="v-u"><div class="vhead"><h2>프로필</h2></div><div class="soc" id="uBox"></div></div>
+  <div class="view" id="v-dm"><div class="vhead"><h2>DM</h2></div><div class="soc" id="dmBox"></div></div>
+  <div class="view" id="v-game"><div class="vhead"><h2>쉬는 시간 게임</h2></div><div id="gameBox"></div></div>
+
   <footer>SVMHS GROUND · 우리끼리 쓰는 비공식 사이트 ✌️ · <button id="btnInfo">이용 안내</button><br>급식·시간표·학사일정 정보: 나이스 교육정보 개방 포털</footer>
 </main>
 
@@ -254,7 +268,9 @@
       </section>
       <section>
         <h4>🔒 개인정보</h4>
-        <p>로그인이 없고, 이름·연락처 같은 개인정보를 모으지 않아요. 반 설정·D-day·테마는 <b>이 기기의 브라우저에만</b> 저장되고 서버로 보내지 않아요.</p>
+        <p>급식·시간표·D-day는 로그인 없이 쓸 수 있고, 반 설정·D-day·테마는 <b>이 기기의 브라우저에만</b> 저장돼요.</p>
+        <p>프로필·DM·게임을 쓰려고 가입하면 <b>아이디·닉네임·꾸민 프로필·팔로우·DM·게임 기록</b>이 서버에 저장돼요. 이메일·전화번호는 받지 않고, 비밀번호는 암호화해서 보관해요. <b>탈퇴하면 전부 지워져요</b> (내 프로필 → ⚙️).</p>
+        <p>불편한 사람은 프로필의 ⋯에서 <b>차단·신고</b>할 수 있어요.</p>
         <button class="btn ghost" id="clearData">이 기기에 저장된 내용 지우기</button>
       </section>
       <section>
@@ -265,6 +281,11 @@
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>
   </div>
 </div>
+
+<!-- 소셜 공용 시트 -->
+<div class="modal" id="mSoc" role="dialog" aria-modal="true"><div class="sheet" id="socSheet"></div></div>
+<!-- 게임 플레이 화면 -->
+<div class="play" id="gamePlay" hidden></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>

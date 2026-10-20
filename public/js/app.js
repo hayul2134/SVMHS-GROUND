@@ -5,7 +5,7 @@ import { api, MEALS, loadConfig, getClasses, getMeals, getTimetable, getSchedule
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
 const MAX_GRADE = 3, MAX_CLASS = 10, BASE_CLASS = 6, MAX_DDAY = 20;   // 2026년 학년별 6개 반 (반 목록은 나이스에서 받아옴, 실패 시 BASE_CLASS)
-const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday'];
+const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday', 'me', 'u', 'dm', 'game'];   // me·u·dm·game은 social.js가 그림
 
 /* ===== 저장된 값 불러오기 (손상·조작된 값은 버림) ===== */
 const validClass = c => c && +c.g >= 1 && +c.g <= MAX_GRADE && +c.c >= 1 && +c.c <= MAX_CLASS
@@ -175,10 +175,14 @@ function renderClassChip() {
 
 /* ===== 화면 이동 ===== */
 const RENDER = { meal: renderMealView, tt: renderTTView, cal: renderCalView, dday: renderDdayView };
+const SOC = { RENDER, go: (...a) => go(...a), onLeave: null };
 function go(v) {
-  if (!VIEWS.includes(v)) v = 'home';
-  $$('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
-  RENDER[v]?.();
+  let [base, ...rest] = String(v || '').split('/');   // 예: 'u/아이디', 'dm/아이디'
+  if (!VIEWS.includes(base)) { base = 'home'; rest = []; v = 'home'; }
+  const arg = decodeURIComponent(rest.join('/'));
+  SOC.onLeave?.(base);
+  $$('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + base));
+  RENDER[base]?.(arg);
   window.scrollTo(0, 0);
   onScroll();
   if (location.hash !== '#' + v) history.replaceState(null, '', v === 'home' ? location.pathname : '#' + v);
@@ -553,8 +557,8 @@ $('#dMine').addEventListener('click', e => {
 
 /* ===== 모달 공통 ===== */
 let lastFocus = null;
-const openModal = id => { lastFocus = document.activeElement; const m = $(id); m.classList.add('open'); [...m.querySelectorAll('button, select')].find(el => !el.hidden)?.focus(); };
-const closeModal = m => { m.classList.remove('open'); lastFocus?.focus?.(); };
+const openModal = SOC.openModal = id => { lastFocus = document.activeElement; const m = $(id); m.classList.add('open'); [...m.querySelectorAll('button, select')].find(el => !el.hidden)?.focus(); };
+const closeModal = SOC.closeModal = m => { m.classList.remove('open'); lastFocus?.focus?.(); };
 $$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) closeModal(m); }));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.modal.open').forEach(closeModal); });
 
@@ -643,8 +647,12 @@ document.addEventListener('visibilitychange', () => {
   if (ymd(today()) !== startDay) location.reload(); else tickClock();
 });
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
-loadConfig().finally(() => {
+// 소셜 화면의 링크(#u/…, #dm/…)도 hashchange로 처리됨
+SOC.getClass = () => cls;
+const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => {});
+loadConfig().finally(async () => {
   renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance);
-  const h = location.hash.slice(1); if (h && h !== 'home') go(h);
+  const h = location.hash.slice(1);
+  if (h && h !== 'home') { if (/^(me|u|dm|game)\b/.test(h)) await socReady; go(h); }
   if (!cls) setTimeout(openClass, 400);
 });
