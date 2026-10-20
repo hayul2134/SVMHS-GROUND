@@ -200,7 +200,7 @@ document.addEventListener('click', e => { const a = e.target.closest('[data-go]'
 // 메뉴 이름으로 이모지 고르기 (위에서부터 먼저 맞는 것)
 const EMOJI = [[/우유|요구르트|요거트|주스|에이드|스무디|라떼/, '🥤'], [/김치|깍두기|겉절이|섞박지/, '🥬'], [/치킨|닭|윙|봉/, '🍗'],
   [/돈까스|돈가스|까스|가스|커틀릿|튀김|강정|탕수/, '🍤'], [/피자/, '🍕'], [/버거|햄버거/, '🍔'], [/떡볶이|떡/, '🍡'],
-  [/면|국수|우동|짜장|짬뽕|파스타|스파게티|라면|쫄면|냉면/, '🍜'], [/카레|커리/, '🍛'], [/볶음밥|덮밥|비빔밥|주먹밥|김밥|밥/, '🍚'],
+  [/파스타|스파게티|올리오|까르보|로제|봉골레|리조또|그라탕/, '🍝'], [/면|국수|우동|짜장|짬뽕|라면|쫄면|냉면/, '🍜'], [/카레|커리/, '🍛'], [/볶음밥|덮밥|비빔밥|주먹밥|김밥|밥/, '🍚'],
   [/국|탕|찌개|수프|스프/, '🍲'], [/생선|고등어|삼치|연어|가자미|동태|임연수|오징어|새우|쭈꾸미|주꾸미/, '🐟'],
   [/불고기|갈비|제육|고기|삼겹|목살|스테이크|보쌈|족발|함박|미트/, '🍖'], [/계란|달걀|에그|오믈렛|스크램블/, '🥚'],
   [/샐러드|무침|나물|겉절/, '🥗'], [/빵|파이|케이크|머핀|와플|토스트|도넛|츄러스|쿠키/, '🥐'],
@@ -220,7 +220,9 @@ function splitTray(list) {
   // 위 칸: [왼쪽(메인), 가운데 위, 가운데 아래, 오른쪽] — 메인은 첫 칸에 혼자, 나머지는 남은 칸에 나눠 담기
   const top = [[], [], [], []], others = mi >= 0 ? rest.slice(1) : rest.slice();
   if (mi >= 0) top[0].push(rest[0]);
-  others.forEach((n, i) => top[mi >= 0 ? 1 + (i % 3) : i % 4].push(n));
+  // 위아래로 나뉜 가운데 칸은 하나씩만, 남는 메뉴는 넓은 오른쪽 칸에 모아 담음 (작은 칸에 두 개씩 넣으면 글자가 잘림)
+  const slots = mi >= 0 ? [1, 2, 3] : [0, 1, 2, 3];
+  others.forEach((n, i) => top[slots[Math.min(i, slots.length - 1)]].push(n));
   return { main: mi >= 0 ? rest[0] : (rest[0] || rice || ''), top, rice, soup, hasMain: mi >= 0 };
 }
 /* 급식 인기투표: 음식을 누르면 한 표 (끼니마다 한 표, 다시 누르면 취소) */
@@ -251,16 +253,23 @@ const voteOf = (k, meal) => {
 const voteMark = (name, v) => {
   if (!v) return '';
   const n = v.counts[name] || 0;
+  if (!n) return '';   // 표 없는 메뉴는 숫자 숨김 (화면이 덜 복잡하게)
   return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? '👑 ' : '♥ '}${n}</i>`;
 };
 const dishAttr = (name, v) => v && v.open ? ` data-dish="${esc(name)}" role="button" tabindex="0" aria-label="${esc(name)}에 투표"` : '';
+// 메뉴 이름: 단어 중간에서 줄이 끊기지 않게 '+'·'(' 앞뒤에서만 줄바꿈, 긴 이름은 글자를 조금 줄임
+const nm = x => {
+  const n = x.replace(/\s/g, '').length, sz = n >= 10 ? ' xl' : n >= 7 ? ' lg' : '';
+  return { cls: sz, html: esc(x).replace(/\+/g, '+<wbr>').replace(/\(/g, '<wbr>(').replace(/&amp;/g, '&amp;<wbr>') };
+};
 const cellHtml = (items, cls = '', v = null, em = '') => {
   if (!items.length) return `<div class="cell empty ${cls}"></div>`;
   if (items.length === 1) {
     const x = items[0], pick = v && v.mine === x ? ' picked' : '';
-    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${voteMark(x, v)}<span class="em" aria-hidden="true">${em || dishEmoji(x)}</span><b>${esc(x)}</b></div>`;
+    const t = nm(x);
+    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${voteMark(x, v)}<span class="em" aria-hidden="true">${em || dishEmoji(x)}</span><b><span class="nm${t.cls}">${t.html}</span></b></div>`;
   }
-  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span aria-hidden="true">${dishEmoji(x)}</span>${esc(x)}${voteMark(x, v)}</span>`).join('')}</div>`;
+  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span aria-hidden="true">${dishEmoji(x)}</span><em><span class="nm${nm(x).cls}">${nm(x).html}</span></em>${voteMark(x, v)}</span>`).join('')}</div>`;
 };
 const mealHtml = (r, d, mini = false) => {
   if (!r) return empty('급식 정보가 없어요');
