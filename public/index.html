@@ -6,18 +6,19 @@
 <title>SVMHS GROUND</title>
 <meta name="description" content="서울영상고 학생들을 위한 급식·시간표·학사일정 모음">
 <meta name="theme-color" content="#111318">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235b5bf7'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='900' font-size='28' text-anchor='middle' fill='white'%3ESG%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
   --bg:#f6f5f2; --card:#ffffff; --text:#191a1f; --sub:#6f727b; --line:#ebe9e4; --chip:#f1f0ec;
-  --accent:#4f46e5; --accent-soft:#eceafd; --warn:#e5484d; --ok:#16a34a;
+  --accent:#2f6bff; --accent-soft:#e6eeff; --warn:#e5484d; --ok:#16a34a;
   --meal:#ea6a12; --meal-s:#fff0e3; --tt:#2f6fe4; --tt-s:#e7f0ff; --cal:#15965a; --cal-s:#e3f5eb; --dd:#d9447a; --dd-s:#fde7ef;
   --radius:24px; --shadow:0 1px 2px rgba(20,20,30,.04),0 8px 24px rgba(20,20,30,.06);
 }
 :root[data-theme="dark"]{
   --bg:#0f1013; --card:#1a1b20; --text:#f0f1f4; --sub:#9a9eaa; --line:#2a2c33; --chip:#23252b;
-  --accent:#8f88ff; --accent-soft:#25234a;
+  --accent:#6fa8ff; --accent-soft:#16264d;
   --meal:#ff9a4d; --meal-s:#3a2516; --tt:#6aa0ff; --tt-s:#172744; --cal:#4cc98a; --cal-s:#13301f; --dd:#ff7aa6; --dd-s:#3a1828;
   --shadow:none;
 }
@@ -34,9 +35,12 @@ button{cursor:pointer;border:0;background:none}
 /* header */
 header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .hd{max-width:1080px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:8px}
-.logo{font-weight:900;font-size:18px;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
-.logo b{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#6d5efc,#4f46e5);color:#fff;font-size:13px;box-shadow:0 4px 12px rgba(79,70,229,.3)}
-.logo span{color:var(--accent)}
+.logo{display:flex;align-items:center;gap:8px;line-height:1}
+.logo img{width:38px;height:34px;display:block}
+.logo .lt{display:flex;flex-direction:column;gap:3px}
+.logo small{font-size:9px;font-weight:700;letter-spacing:.42em;color:#5b8cff}
+.logo strong{font-size:20px;font-weight:900;letter-spacing:.01em;background:linear-gradient(90deg,#3fa9ff,#2f5bff 55%,#4a2bd1);-webkit-background-clip:text;background-clip:text;color:transparent}
+:root[data-theme="dark"] .logo strong{background-image:linear-gradient(90deg,#8fe3ff,#6f9bff 55%,#a48bff)}
 .hd .sp{flex:1}
 .iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--sub);transition:.15s}
 .iconbtn:hover{background:var(--chip);color:var(--text)}
@@ -176,22 +180,22 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:32px 0 0}
   --glass-edge:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),inset 1px 0 0 rgba(255,255,255,.4),inset -1px 0 0 rgba(255,255,255,.4);
   --shadow:var(--glass-edge),0 10px 36px rgba(40,40,90,.10),0 2px 6px rgba(40,40,90,.05);
   --blur:blur(26px) saturate(185%);
-  --bg:#eef0f8;
+  --bg:#eaf1ff;
 }
 :root[data-theme="dark"]{
   --card:rgba(34,36,46,.52); --chip:rgba(255,255,255,.07); --line:rgba(255,255,255,.13);
   --glass-edge:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.05),inset 1px 0 0 rgba(255,255,255,.07),inset -1px 0 0 rgba(255,255,255,.07);
   --shadow:var(--glass-edge),0 12px 40px rgba(0,0,0,.35);
-  --bg:#0b0c12;
+  --bg:#070c22;
 }
 body{background:var(--bg)}
 body::before{content:"";position:fixed;inset:-15%;z-index:-1;pointer-events:none;
   background:
-    radial-gradient(38% 34% at 18% 22%,rgba(255,150,80,.55),transparent 70%),
-    radial-gradient(36% 38% at 82% 18%,rgba(90,140,255,.55),transparent 70%),
-    radial-gradient(40% 36% at 70% 82%,rgba(255,110,170,.45),transparent 70%),
-    radial-gradient(36% 34% at 22% 80%,rgba(70,200,140,.45),transparent 70%),
-    radial-gradient(30% 30% at 50% 50%,rgba(140,120,255,.35),transparent 70%);
+    radial-gradient(38% 34% at 18% 22%,rgba(90,184,255,.55),transparent 70%),
+    radial-gradient(36% 38% at 82% 18%,rgba(127,224,255,.5),transparent 70%),
+    radial-gradient(40% 36% at 70% 82%,rgba(47,91,255,.42),transparent 70%),
+    radial-gradient(36% 34% at 22% 80%,rgba(155,123,255,.4),transparent 70%),
+    radial-gradient(30% 30% at 50% 50%,rgba(74,43,209,.22),transparent 70%);
   animation:drift 40s ease-in-out infinite alternate}
 :root[data-theme="dark"] body::before{opacity:.85}
 @keyframes drift{50%{transform:translate(3%,-2%) rotate(4deg) scale(1.04)}to{transform:translate(-3%,2%) rotate(-3deg)}}
@@ -246,7 +250,7 @@ nav button.on{background:rgba(255,255,255,.92);color:var(--accent);border:0;box-
 <body>
 <header>
   <div class="hd">
-    <div class="logo"><b>SG</b>SVMHS <span>GROUND</span></div>
+    <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg" alt=""><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
     <div class="sp"></div>
     <button class="iconbtn" id="btnClass" title="반 설정" aria-label="반 설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button class="iconbtn" id="btnTheme" title="테마" aria-label="테마 바꾸기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
@@ -795,7 +799,7 @@ $('#saveClass').onclick = () => {
 };
 
 /* ===== 테마 ===== */
-function applyTheme(t) { document.documentElement.dataset.theme = t; document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#0b0c12' : '#eef0f8'; }
+function applyTheme(t) { document.documentElement.dataset.theme = t; document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#070c22' : '#eaf1ff'; }
 applyTheme(store.get('theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
 
