@@ -73,7 +73,9 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .bubble{position:relative;background:var(--card);color:var(--text);font-weight:800;font-size:15px;padding:9px 16px;border-radius:16px;border:var(--bd);box-shadow:var(--sh-s);max-width:100%}
 .bubble::after{content:"";position:absolute;left:50%;bottom:-8.5px;width:13px;height:13px;background:var(--card);border-right:var(--bd);border-bottom:var(--bd);transform:translateX(-50%) rotate(45deg);border-bottom-right-radius:3px}
 /* 큰 시계 + 주변 스티커 */
-.clock{position:relative;margin-top:26px;padding:0 .2em}
+.s-what{margin-top:26px;font-weight:900;font-size:clamp(17px,2.2vw,22px);color:var(--on-bg);background:linear-gradient(transparent 58%,var(--sky) 58% 88%,transparent 88%);padding:0 4px}
+.stage.rest .s-what{background:linear-gradient(transparent 58%,var(--lime) 58% 88%,transparent 88%)}
+.clock{position:relative;margin-top:6px;padding:0 .2em}
 .clock .dk{position:absolute;pointer-events:none}
 .clock svg.dk path{stroke:var(--ink);stroke-width:2.6;stroke-linejoin:round}
 .dk.k1{width:clamp(30px,5.4vw,58px);left:-6%;top:-8%;fill:#a9c4ff;animation:tw 3.2s ease-in-out infinite}
@@ -92,14 +94,15 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .stage.rest .s-big{text-shadow:6px 6px 0 var(--lime)}
 .s-big .sec{font-size:.34em;color:var(--sub);text-shadow:none;margin-left:.06em}
 .stage.soon .s-big{text-shadow:6px 6px 0 var(--red)}
-.stage.soon .s-left{background:#ffe1e1;animation:shake .5s infinite}
+.stage.soon .clock{animation:shake .5s infinite}
 @keyframes shake{25%{transform:translateX(-3px) rotate(-1deg)}75%{transform:translateX(3px) rotate(1deg)}}
 .s-sub{margin-top:22px;display:flex;justify-content:center}
+.s-sub[hidden]{display:none}
 .s-left{display:inline-flex;align-items:center;gap:12px;background:var(--card);color:var(--text);border:var(--bd);border-radius:999px;box-shadow:var(--sh-s);padding:8px 10px 8px 20px;transform:rotate(-1.5deg)}
 .s-left b{font-weight:900;font-size:16px}
 .s-cnt{font-family:var(--num);font-weight:800!important;font-size:22px!important;line-height:1;background:var(--yellow);color:#173048;border:2px solid var(--ink);border-radius:999px;padding:6px 14px;font-variant-numeric:tabular-nums}
 .s-cnt:empty{display:none}
-.stage.rest .s-cnt{background:var(--lime)}
+
 .s-date{margin-top:12px;font-weight:800;font-size:14px;color:var(--sub)}
 .s-cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:min(640px,100%);margin-top:34px}
 .mini{background:var(--card);color:var(--text);border:var(--bd);border-radius:20px;box-shadow:var(--sh);padding:16px 20px;text-align:left;display:flex;flex-direction:column;gap:3px;min-height:108px;position:relative;min-width:0}

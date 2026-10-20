@@ -97,9 +97,12 @@ function tickClock() {
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
   setText('#bellLbl', b.cnt || b.label);
-  setText('#bellCnt', left != null ? fmtLeft(left) : '');
   const dg = t => [...t].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join('');   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
-  setHtml('#bigTime', dg(`${pad(n.getHours())}:${pad(n.getMinutes())}`) + `<span class="sec">${dg(':' + pad(n.getSeconds()))}</span>`);
+  const hm = `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  // 큰 숫자 = 남은 시간, 아래 작은 칩 = 현재 시각 (수업 없는 때엔 큰 숫자가 현재 시각)
+  setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : dg(hm) + `<span class="sec">${dg(':' + pad(n.getSeconds()))}</span>`);
+  setText('#bellCnt', `${hm}:${pad(n.getSeconds())}`);
+  $('#nowBox').hidden = left == null;
   const hero = $('#bigclock');
   hero.classList.toggle('soon', left != null && left <= 60);
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
