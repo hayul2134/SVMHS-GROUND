@@ -531,8 +531,7 @@ const QR = (() => {
 (() => {
 'use strict';
 /* ===== 설정 ===== */
-const NEIS_KEY = '';               // 나이스 오픈 API 인증키 (넣으면 시간표 6·7교시와 일정 전체가 표시됨)
-const ATPT = 'B10', SCHUL = '7010795';
+let NEIS_KEY = false;              // 서버(Worker)에 인증키가 설정돼 있는지 여부
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
 const MAX_CLASS = 8;
 
@@ -559,11 +558,10 @@ const skel = n => '<div class="skel"></div>'.repeat(n);
 /* ===== 나이스 API ===== */
 const memo = new Map();
 async function neis(svc, params) {
-  const q = new URLSearchParams({ Type: 'json', ATPT_OFCDC_SC_CODE: ATPT, SD_SCHUL_CODE: SCHUL, pSize: NEIS_KEY ? '1000' : '5', ...params });
-  if (NEIS_KEY) q.set('KEY', NEIS_KEY);
-  const url = `https://open.neis.go.kr/hub/${svc}?${q}`;
+  const q = new URLSearchParams({ pSize: NEIS_KEY ? '1000' : '5', ...params });
+  const url = `/api/neis/${svc}?${q}`;
   if (memo.has(url)) return memo.get(url);
-  const ck = 'c_' + svc + '_' + q.toString().replace(/KEY=[^&]*&?/, '');
+  const ck = 'c_' + svc + '_' + q.toString();
   const cached = store.get(ck);
   if (cached && Date.now() - cached.t < 3 * 3600e3) { memo.set(url, Promise.resolve(cached.v)); return cached.v; }
   const p = fetch(url).then(r => r.json()).then(j => {
@@ -806,9 +804,12 @@ $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.them
 /* ===== 시작 ===== */
 tickClock(); setInterval(tickClock, 10000);
 renderClassChip();
+fetch('/api/config').then(r => r.json()).then(c => { NEIS_KEY = !!c.hasKey; }).catch(() => {}).finally(start);
+function start() {
 renderHomeMeal(); renderHomeTT(); renderHomeCal(); renderHomeDday();
 const h = location.hash.slice(1); if (['meal', 'tt', 'cal', 'dday'].includes(h)) go(h);
 if (!cls) setTimeout(openClass, 400);
+}
 // 오래된 캐시 정리
 try { Object.keys(localStorage).forEach(k => { if (k.startsWith('sg_c_')) { const v = JSON.parse(localStorage.getItem(k)); if (!v || Date.now() - v.t > 86400e3) localStorage.removeItem(k); } }); } catch {}
 })();
