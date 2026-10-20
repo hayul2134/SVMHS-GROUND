@@ -220,18 +220,34 @@ header:not(.away) #btnHome,header.away .logo{display:none}
   background:linear-gradient(150deg,var(--t1) 0%,var(--t2) 48%,var(--t1) 70%,var(--t2) 100%);border:var(--bd);box-shadow:var(--sh)}
 .tray::after{content:"";position:absolute;inset:4px;border-radius:21px;pointer-events:none;border:1.5px solid rgba(255,255,255,.7)}
 .tray{grid-template-rows:150px 118px}
-.tray .mid{grid-column:span 2;display:grid;grid-template-rows:1fr 1fr;gap:9px;min-width:0;min-height:0}
+.tray .mid{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:9px;min-width:0;min-height:0}
 .tray .cell{grid-column:span 2;position:relative;min-width:0;min-height:0;height:100%;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   padding:12px 6px 10px;border-radius:15px;text-align:center;background:linear-gradient(160deg,var(--c1),var(--c2));
   box-shadow:inset 3px 3px 7px var(--cs),inset -2px -2px 4px var(--ch)}
 .tray .big{grid-column:span 3;border-radius:20px}
-.tray .half{flex-direction:row;gap:6px;padding:6px 8px}
-.tray .half .em{font-size:22px}
-.tray .half.multi{flex-direction:column;gap:2px}
-.tray .half .it{flex-direction:row;gap:4px;font-size:11.5px}
-.tray .half .it span{font-size:14px}
+.tray .half{grid-column:auto;padding:16px 3px 8px;border-radius:13px}
+.tray .half .em{font-size:24px}
+.tray .half .it{font-size:11px}
+.tray .half .it span{font-size:16px}
 .tray b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tray .half b{font-size:12.5px;text-align:left;overflow-wrap:normal;word-break:keep-all}
+.tray .half b{font-size:11.5px;-webkit-line-clamp:3;word-break:keep-all;letter-spacing:-.06em}
+/* 인기투표 */
+.tray .vote{cursor:pointer;transition:transform .12s,box-shadow .12s}
+.tray .cell.vote:hover{transform:translateY(-2px)}
+.tray .cell.vote:active,.tray .it.vote:active{transform:scale(.96)}
+.tray .vote:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tray .it.vote{border-radius:10px;padding:2px 4px}
+.tray .picked{background:linear-gradient(160deg,color-mix(in srgb,var(--ks) 75%,var(--c1)),var(--c2));box-shadow:inset 0 0 0 2.5px var(--k),inset 3px 3px 7px var(--cs)}
+.tray .it.picked{box-shadow:inset 0 0 0 2px var(--k)}
+.tray .picked b,.tray .it.picked{color:var(--k)}
+.tray .vc{position:absolute;top:5px;right:6px;font-style:normal;font-size:10.5px;font-weight:900;line-height:1;padding:3px 6px;border-radius:7px;background:rgba(255,255,255,.75);color:var(--sub)}
+.tray .it .vc{position:static;margin-top:2px;display:inline-block}
+.tray .vc.best{background:var(--yellow);color:var(--ink);border:1.5px solid var(--ink)}
+.tray .half .vc{top:3px;right:3px;padding:2px 4px;font-size:9.5px}
+:root[data-theme="dark"] .tray .vc:not(.best){background:rgba(0,0,0,.35);color:var(--text)}
+.vnote{margin-top:12px;font-size:12.5px;font-weight:800;color:var(--sub)}
+.vnote b{color:var(--k)}
+.vnote + .kcal{margin-top:8px}
 .tray .em{font-size:31px;line-height:1;filter:drop-shadow(0 3px 2px rgba(23,48,72,.25))}
 .tray .big .em{font-size:44px}
 .tray b{font-size:13.5px;font-weight:800;line-height:1.25;letter-spacing:-.03em;overflow-wrap:anywhere}
@@ -246,7 +262,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .tray .empty{opacity:.6}
 :root[data-theme="dark"] .tray{--t1:#4a627a;--t2:#2a4057;--c1:#1d3247;--c2:#2c445c;--cs:rgba(0,0,0,.5);--ch:rgba(255,255,255,.08)}
 :root[data-theme="dark"] .tray::after{border-color:rgba(255,255,255,.15)}
-@media (max-width:400px){.tray{gap:7px;padding:9px;grid-template-rows:134px 104px}.tray .mid{gap:7px}.tray .half .em{font-size:18px}.tray .half b{font-size:11.5px}.tray .em{font-size:26px}.tray .big .em{font-size:36px}.tray b{font-size:12.5px}}
+@media (max-width:400px){.tray{gap:7px;padding:9px;grid-template-rows:134px 104px}.tray .mid{gap:7px}.tray .half .em{font-size:20px}.tray .half b{font-size:10.5px}.tray .em{font-size:26px}.tray .big .em{font-size:36px}.tray b{font-size:12.5px}}
 .kcal{display:inline-block;margin-top:14px;font-size:12.5px;font-weight:900;padding:3px 10px;border-radius:8px;background:var(--ink);color:var(--card)}
 .mealtabs{display:inline-flex;gap:4px;padding:4px;margin-bottom:14px;background:var(--chip);border-radius:14px;border:2px solid var(--ink)}
 .mealtabs:empty{display:none}

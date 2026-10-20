@@ -214,45 +214,124 @@ function splitTray(list) {
   others.forEach((n, i) => top[mi >= 0 ? 1 + (i % 3) : i % 4].push(n));
   return { main: mi >= 0 ? rest[0] : (rest[0] || rice || ''), top, rice, soup, hasMain: mi >= 0 };
 }
-const cellHtml = (items, cls = '', tag = '', em = '') => {
+/* 급식 인기투표: 음식을 누르면 한 표 (끼니마다 한 표, 다시 누르면 취소) */
+const voterId = (() => {
+  let v = store.get('voter', '');
+  if (!/^[a-z0-9]{20,40}$/.test(v)) {
+    v = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(36).padStart(2, '0')).join('').slice(0, 32);
+    store.set('voter', v);
+  }
+  return v;
+})();
+const VOTES = {};   // ymd → { enabled, today, meals }
+async function loadVotes(d) {
+  const k = ymd(d);
+  try {
+    const r = await fetch('/api/vote?ymd=' + k, { headers: { 'x-voter': voterId } });
+    VOTES[k] = r.ok ? await r.json() : { enabled: false };
+  } catch { VOTES[k] = VOTES[k] || { enabled: false }; }
+  return VOTES[k];
+}
+const voteOf = (k, meal) => {
+  const v = VOTES[k];
+  if (!v || !v.enabled) return null;
+  const m = (v.meals && v.meals[meal]) || { counts: {}, total: 0, mine: '' };
+  const top = Math.max(0, ...Object.values(m.counts));
+  return { ...m, top, open: v.today === k };
+};
+const voteMark = (name, v) => {
+  if (!v) return '';
+  const n = v.counts[name] || 0;
+  return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? '👑 ' : '♥ '}${n}</i>`;
+};
+const dishAttr = (name, v) => v && v.open ? ` data-dish="${esc(name)}" role="button" tabindex="0" aria-label="${esc(name)}에 투표"` : '';
+const cellHtml = (items, cls = '', v = null, em = '') => {
   if (!items.length) return `<div class="cell empty ${cls}"></div>`;
-  const t = tag ? `<i class="tag">${tag}</i>` : '';
-  if (items.length === 1) return `<div class="cell ${cls}">${t}<span class="em" aria-hidden="true">${em || dishEmoji(items[0])}</span><b>${esc(items[0])}</b></div>`;
-  return `<div class="cell multi ${cls}">${t}${items.map(x => `<span class="it"><span aria-hidden="true">${dishEmoji(x)}</span>${esc(x)}</span>`).join('')}</div>`;
+  if (items.length === 1) {
+    const x = items[0], pick = v && v.mine === x ? ' picked' : '';
+    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${voteMark(x, v)}<span class="em" aria-hidden="true">${em || dishEmoji(x)}</span><b>${esc(x)}</b></div>`;
+  }
+  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span aria-hidden="true">${dishEmoji(x)}</span>${esc(x)}${voteMark(x, v)}</span>`).join('')}</div>`;
 };
-const mealHtml = r => {
+const mealHtml = (r, d) => {
   if (!r) return empty('급식 정보가 없어요');
-  const t = splitTray(cleanDish(r.DDISH_NM));
-  return `<div class="tray" role="list" aria-label="급식 식판">`
-    + cellHtml(t.top[0], t.hasMain ? 'main' : '', t.hasMain ? '메인' : '')
-    + `<div class="mid">${cellHtml(t.top[1], 'half')}${cellHtml(t.top[2], 'half')}</div>`
-    + cellHtml(t.top[3])
-    + cellHtml(t.rice ? [t.rice] : [], 'big') + cellHtml(t.soup ? [t.soup] : [], 'big soup', '', t.soup && isSoup(t.soup) ? '🍲' : '')
-    + `</div>` + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
+  const t = splitTray(cleanDish(r.DDISH_NM)), v = d ? voteOf(ymd(d), r.MMEAL_SC_CODE) : null;
+  const info = !v ? '' : v.open
+    ? `<p class="vnote">🗳️ ${v.mine ? `내 픽 <b>${esc(v.mine)}</b> · 다시 누르면 취소` : '제일 맛있는 메뉴를 눌러 투표!'} · ${v.total}명 참여</p>`
+    : `<p class="vnote">🗳️ 인기투표 결과 · ${v.total}명 참여</p>`;
+  return `<div class="tray" role="list" aria-label="급식 식판" data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}">`
+    + cellHtml(t.top[0], '', v)
+    + `<div class="mid">${cellHtml(t.top[1], 'half', v)}${cellHtml(t.top[2], 'half', v)}</div>`
+    + cellHtml(t.top[3], '', v)
+    + cellHtml(t.rice ? [t.rice] : [], 'big', v) + cellHtml(t.soup ? [t.soup] : [], 'big soup', v, t.soup && isSoup(t.soup) ? '🍲' : '')
+    + `</div>` + info + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
 };
+let homeRows = [];
+function paintHomeMeal() {
+  const sel = S.homeMeal;
+  $('#hMealTabs').innerHTML = homeRows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
+  $('#hMeal').innerHTML = mealHtml(homeRows.find(r => r.MMEAL_SC_CODE === sel), today());
+}
 async function renderHomeMeal() {
   const box = $('#hMeal'), tabs = $('#hMealTabs');
   try {
-    const rows = (await getMeals(today())).filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
-    if (!rows.length) { tabs.innerHTML = ''; box.innerHTML = empty('오늘은 급식이 없어요'); return; }
+    const [rows] = await Promise.all([getMeals(today()), loadVotes(today())]);
+    homeRows = rows.filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
+    if (!homeRows.length) { tabs.innerHTML = ''; box.innerHTML = empty('오늘은 급식이 없어요'); return; }
     const h = now().getHours(), pref = h < 9 ? '1' : h < 14 ? '2' : '3';
-    const sel = S.homeMeal || (rows.find(r => r.MMEAL_SC_CODE === pref) || rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0]).MMEAL_SC_CODE;
-    tabs.innerHTML = rows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
-    box.innerHTML = mealHtml(rows.find(r => r.MMEAL_SC_CODE === sel));
-    const lunch = rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0], ll = cleanDish(lunch.DDISH_NM);
+    if (!homeRows.some(r => r.MMEAL_SC_CODE === S.homeMeal))
+      S.homeMeal = (homeRows.find(r => r.MMEAL_SC_CODE === pref) || homeRows.find(r => r.MMEAL_SC_CODE === '2') || homeRows[0]).MMEAL_SC_CODE;
+    paintHomeMeal();
+    const lunch = homeRows.find(r => r.MMEAL_SC_CODE === '2') || homeRows[0], ll = cleanDish(lunch.DDISH_NM);
     TK.meal = splitTray(ll).main; renderTicker();
   } catch { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); }
 }
-$('#hMealTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.homeMeal = b.dataset.m; renderHomeMeal(); } });
+let voting = false;
+async function castVote(el) {
+  const tray = el.closest('.tray'); if (!tray || voting) return;
+  const k = tray.dataset.ymd, meal = tray.dataset.meal, v = voteOf(k, meal);
+  if (!v || !v.open) return;
+  const dish = el.dataset.dish, next = v.mine === dish ? '' : dish;
+  // 화면 먼저 바꾸고 서버에 저장
+  const m = (VOTES[k].meals[meal] ||= { counts: {}, total: 0, mine: '' });
+  if (m.mine) { m.counts[m.mine]--; m.total--; }
+  if (next) { m.counts[next] = (m.counts[next] || 0) + 1; m.total++; }
+  m.mine = next; repaintMeals();
+  voting = true;
+  try {
+    const r = await fetch('/api/vote', { method: 'POST', headers: { 'content-type': 'application/json', 'x-voter': voterId }, body: JSON.stringify({ ymd: k, meal, dish: next }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || '투표하지 못했어요');
+    VOTES[k] = j; toast(next ? `${next}에 한 표! 🗳️` : '투표를 취소했어요');
+  } catch (e) { toast(e.message || '투표하지 못했어요'); await loadVotes(parseYmd(k)); }
+  voting = false; repaintMeals();
+}
+function repaintMeals() {
+  if (homeRows.length) paintHomeMeal();
+  if (S.mealRows && ymd(S.mealDate) in VOTES) paintMealView();
+}
+const onVoteClick = e => { const el = e.target.closest('[data-dish]'); if (el) castVote(el); };
+const onVoteKey = e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-dish]')) { e.preventDefault(); castVote(e.target); } };
+document.addEventListener('visibilitychange', async () => {   // 다른 친구들 표 반영
+  if (document.hidden || !homeRows.length) return;
+  await loadVotes(today()); repaintMeals();
+});
+['#hMeal', '#mCols'].forEach(id => { $(id).addEventListener('click', onVoteClick); $(id).addEventListener('keydown', onVoteKey); });
+$('#hMealTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.homeMeal = b.dataset.m; paintHomeMeal(); } });
 async function renderMealView() {
   const d = S.mealDate, cols = $('#mCols');
   $('#mLbl').textContent = fmtDay(d);
+  S.mealRows = null;
   cols.innerHTML = Object.values(MEALS).map(n => `<div class="card k-meal"><h3>${n}</h3>${skel(4)}</div>`).join('');
   try {
-    const rows = await getMeals(d);
+    const [rows] = await Promise.all([getMeals(d), loadVotes(d)]);
     if (d !== S.mealDate) return;   // 그사이 날짜를 넘겼으면 버림
-    cols.innerHTML = Object.entries(MEALS).map(([c, n]) => `<div class="card k-meal"><h3>${n}</h3>${mealHtml(rows.find(r => r.MMEAL_SC_CODE === c))}</div>`).join('');
+    S.mealRows = rows; paintMealView();
   } catch { cols.innerHTML = `<div class="card k-meal">${empty('급식 정보를 불러오지 못했어요')}</div>`; }
+}
+function paintMealView() {
+  const d = S.mealDate, rows = S.mealRows || [];
+  $('#mCols').innerHTML = Object.entries(MEALS).map(([c, n]) => `<div class="card k-meal"><h3>${n}</h3>${mealHtml(rows.find(r => r.MMEAL_SC_CODE === c), d)}</div>`).join('');
 }
 $('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealView(); };
 $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };

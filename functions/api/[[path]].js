@@ -25,10 +25,11 @@ const json = (obj, status = 200, cache = 'no-store') => new Response(JSON.string
 });
 
 export async function onRequest({ request, env, params }) {
+  const path = (params.path || []).join('/');
+  if (path === 'vote') return vote(request, env);
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...SECURITY_HEADERS } });
   }
-  const path = (params.path || []).join('/');
 
   if (path === 'config') return json({ hasKey: Boolean(env.NEIS_KEY) }, 200, 'public, max-age=300');
 
@@ -58,4 +59,69 @@ export async function onRequest({ request, env, params }) {
   } catch {
     return json({ error: 'upstream failed' }, 502);
   }
+}
+
+/* ===== 급식 인기투표 (D1 바인딩 DB 필요) =====
+   한 기기(브라우저에 저장된 무작위 ID)당 끼니마다 한 표. 다시 누르면 바꾸거나 취소. 투표는 '오늘(한국 시간)' 급식만. */
+const MEAL_CODES = ['1', '2', '3'];
+const VOTER_RE = /^[a-z0-9]{20,40}$/;
+const cleanDish = s => String(s || '').split(/<br\s*\/?>/i).map(x => x.replace(/\([\d.\s]*\)/g, '').replace(/[*#]/g, '').trim()).filter(Boolean);
+const kstYmd = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+let tableReady = false;
+
+async function tally(db, ymd, voter) {
+  const { results } = await db.prepare('SELECT meal, dish, COUNT(*) AS n FROM meal_votes WHERE ymd = ?1 GROUP BY meal, dish').bind(ymd).all();
+  const mine = voter ? (await db.prepare('SELECT meal, dish FROM meal_votes WHERE ymd = ?1 AND voter = ?2').bind(ymd, voter).all()).results : [];
+  const meals = {};
+  for (const r of results) { const m = meals[r.meal] ||= { counts: {}, total: 0, mine: '' }; m.counts[r.dish] = r.n; m.total += r.n; }
+  for (const r of mine) (meals[r.meal] ||= { counts: {}, total: 0, mine: '' }).mine = r.dish;
+  return meals;
+}
+
+async function menuOf(env, ymd, meal) {
+  const q = new URLSearchParams({ Type: 'json', ...SCHOOL, MLSV_YMD: ymd, MMEAL_SC_CODE: meal });
+  if (env.NEIS_KEY) q.set('KEY', env.NEIS_KEY);
+  const res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?${q}`, { cf: { cacheTtl: 1800, cacheEverything: true } });
+  if (!res.ok) throw new Error('upstream');
+  const row = (await res.json()).mealServiceDietInfo?.[1]?.row?.[0];
+  return row ? cleanDish(row.DDISH_NM) : [];
+}
+
+async function vote(request, env) {
+  if (!env.DB) return json({ enabled: false });
+  const db = env.DB, url = new URL(request.url);
+  if (!tableReady) {
+    await db.prepare('CREATE TABLE IF NOT EXISTS meal_votes (ymd TEXT NOT NULL, meal TEXT NOT NULL, voter TEXT NOT NULL, dish TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (ymd, meal, voter))').run();
+    tableReady = true;
+  }
+  const voter = request.headers.get('x-voter') || '';
+  const okVoter = VOTER_RE.test(voter);
+
+  if (request.method === 'GET') {
+    const ymd = url.searchParams.get('ymd') || '';
+    if (!/^\d{8}$/.test(ymd)) return json({ error: 'bad ymd' }, 400);
+    return json({ enabled: true, today: kstYmd(), meals: await tally(db, ymd, okVoter ? voter : '') });
+  }
+  if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'GET, POST', ...SECURITY_HEADERS } });
+
+  // 다른 사이트에서 대신 투표시키는 것 막기
+  const origin = request.headers.get('origin');
+  if (origin && origin !== url.origin) return json({ error: 'forbidden' }, 403);
+  if (!okVoter) return json({ error: 'bad voter' }, 400);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'bad body' }, 400); }
+  const ymd = String(body?.ymd || ''), meal = String(body?.meal || ''), dish = String(body?.dish ?? '').slice(0, 60);
+  if (ymd !== kstYmd()) return json({ error: '오늘 급식만 투표할 수 있어요' }, 400);
+  if (!MEAL_CODES.includes(meal)) return json({ error: 'bad meal' }, 400);
+
+  if (!dish) {
+    await db.prepare('DELETE FROM meal_votes WHERE ymd = ?1 AND meal = ?2 AND voter = ?3').bind(ymd, meal, voter).run();
+  } else {
+    let menu;
+    try { menu = await menuOf(env, ymd, meal); } catch { return json({ error: '급식 정보를 확인하지 못했어요' }, 502); }
+    if (!menu.includes(dish)) return json({ error: '메뉴에 없는 음식이에요' }, 400);
+    await db.prepare('INSERT INTO meal_votes (ymd, meal, voter, dish, at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (ymd, meal, voter) DO UPDATE SET dish = excluded.dish, at = excluded.at')
+      .bind(ymd, meal, voter, dish, Date.now()).run();
+  }
+  return json({ enabled: true, today: ymd, meals: await tally(db, ymd, voter) });
 }

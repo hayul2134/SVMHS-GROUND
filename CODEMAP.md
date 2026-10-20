@@ -13,7 +13,7 @@
 | `public/js/neis.js` | 나이스 API 호출 + 브라우저 캐시(3시간). `getMeals / getTimetable / getSchedule` |
 | `public/js/util.js` | 날짜·`esc()`·`store`(localStorage, 키 앞 `sg_`)·토스트 |
 | `public/js/qr.js` | QR 코드 SVG 생성기 (외부 라이브러리 없음) |
-| `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시. 허용 서비스·파라미터 화이트리스트, 숫자만 통과 |
+| `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표(D1 `DB`, 테이블 자동 생성) |
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
 | `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 |
 | `public/og-image.jpg` | 카톡 등 링크 미리보기 이미지 (1200×630) |
@@ -36,3 +36,7 @@ Cloudflare 대시보드 → Workers & Pages → `svmhs-ground` → 설정 → �
 npx wrangler@4 pages dev --port 8788
 ```
 → http://localhost:8788 (functions 포함). 키 테스트는 `.dev.vars`에 `NEIS_KEY=...` (git 제외됨).
+
+## 급식 인기투표 (D1)
+`wrangler.jsonc`의 `d1_databases`에 바인딩 이름 `DB`로 연결. 바인딩이 없으면 투표 UI만 숨겨지고 나머지는 정상 동작.
+기기마다 localStorage의 무작위 ID(`sg_voter`)로 끼니당 한 표, 다시 누르면 취소. 투표는 오늘(한국 시간) 급식만, 메뉴에 있는 음식만 서버에서 허용.
