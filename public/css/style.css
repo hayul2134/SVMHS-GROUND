@@ -355,4 +355,3 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .s-greet .bubble::after{left:72%}
 .s-sub{position:relative;left:clamp(-60px,-4vw,-16px)}
 .s-date{position:relative;left:clamp(16px,4vw,60px)}
-.mini.now{text-align:center;align-items:center}.mini.now .m-bar{align-self:stretch}
