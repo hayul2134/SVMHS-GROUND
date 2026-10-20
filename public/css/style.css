@@ -67,7 +67,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 @keyframes tk{to{transform:translateX(-50%)}}
 
 /* ===== 5. 첫 화면 (남은 시간이 주인공) ===== */
-.stage{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:88px 0 76px;position:relative}
+.stage{min-height:80vh;min-height:80svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:88px 0 64px;position:relative}
 /* 첫 화면 아래 부가 정보 (날짜 · 오늘 일정 알림 · 지금 상태) */
 .s-more{display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0 64px;scroll-margin-top:80px}
 .s-more .s-sub{margin-top:0}
@@ -134,7 +134,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .m-bar{height:14px;border-radius:999px;background:var(--chip);border:2px solid var(--ink);overflow:hidden;margin-top:auto}
 .m-bar i{display:block;height:100%;width:100%;background:repeating-linear-gradient(-45deg,#1f73c4 0 10px,#3a8fdc 10px 20px);transform-origin:left;transform:scaleX(0);transition:transform 1s linear}
 .stage.soon .m-bar i{background:repeating-linear-gradient(-45deg,#ff6b7a 0 10px,#ff8a95 10px 20px)}
-.s-down{position:absolute;bottom:20px;left:50%;margin-left:-22px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--on-bg);animation:hop 1.8s ease-in-out infinite}
+.s-down{position:absolute;bottom:10px;left:50%;margin-left:-22px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--on-bg);animation:hop 1.8s ease-in-out infinite}
 .s-down svg{width:22px;height:22px}
 @keyframes hop{50%{transform:translateY(6px)}}
 @media (max-width:560px){.mini.now{transform:rotate(-.8deg)}.s-date .d-md b{font-size:24px}.s-big{text-shadow:4px 4px 0 var(--sky)}}
