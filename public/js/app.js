@@ -69,7 +69,13 @@ function periodInfo(b) {
   const done = b.state === '방과 후' ? 99 : cur || nxt || 0;   // 이 교시 '전'까지는 끝남
   return { cur, nxt, done };
 }
-let nextKey = '', tickTimer = 0;
+let nextKey = '', tickTimer = 0, heroVisible = true;
+// 화면 밖으로 스크롤된 전광판·종 시간 타일은 애니메이션을 멈춘다 (스크롤 렉 방지)
+const offscreen = new IntersectionObserver(es => es.forEach(e => {
+  e.target.classList.toggle('paused', !e.isIntersecting);
+  if (e.target.id === 'bigclock') { const was = heroVisible; heroVisible = e.isIntersecting; if (heroVisible && !was) tickClock(); }
+}));
+document.querySelectorAll('.ticker, #bigclock').forEach(el => offscreen.observe(el));
 const lastVal = new Map();
 const setText = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).textContent = v; } };
 const setHtml = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).innerHTML = v; } };
@@ -82,6 +88,13 @@ function tickClock() {
 
   const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
+  const pi = periodInfo(b);
+  const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
+  if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
+    nextKey = key; renderNext(b, pi); renderTicker(b, pi);
+    $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
+  }
+  if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
   setText('#bellLbl', b.label);
@@ -89,12 +102,6 @@ function tickClock() {
   const hero = $('#bigclock');
   hero.classList.toggle('soon', left != null && left <= 60);
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
-  const pi = periodInfo(b);
-  const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
-  if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
-    nextKey = key; renderNext(b, pi); renderTicker(b, pi);
-    $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
-  }
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${prog.toFixed(4)})`;
