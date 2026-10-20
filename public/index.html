@@ -81,12 +81,18 @@
       <p class="s-greet"><span class="bubble" id="greet">안녕!</span></p>
       <p class="s-what" id="bellLbl">&nbsp;</p>
       <div class="s-row">
+      <div class="s-lside">
+      <aside class="s-tt s-meal k-meal" aria-labelledby="sMealh">
+        <h2 class="s-tth" id="sMealh"><span id="sMealLbl">지금 급식</span><a href="#mealCard" class="s-ttmore" id="goMeal">전체 ▾</a></h2>
+        <div id="sMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>
+      </aside>
       <aside class="s-play" id="play" aria-labelledby="plT" hidden>
         <h2 class="s-tth"><span id="plT">⚖️ 오늘의 밸런스 게임</span><span class="pl-n" id="plN"></span></h2>
         <p class="pl-q" id="plQ"></p>
         <div class="pl-opts" id="plOpts"></div>
         <p class="pl-note" id="plNote">골라야 결과가 보여요 · 익명</p>
       </aside>
+      </div>
       <div class="clock">
         <b class="s-big" id="bigTime" role="timer">--:--</b>
         <i class="dk tape" aria-hidden="true"></i>
@@ -102,10 +108,6 @@
       <aside class="s-tt k-tt" aria-labelledby="sTTh">
         <h2 class="s-tth" id="sTTh"><span id="sTTlbl">오늘 시간표</span><a href="#weekTT" class="s-ttmore" id="goWeek">전체 ▾</a></h2>
         <div id="sTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
-      </aside>
-      <aside class="s-tt s-meal k-meal" aria-labelledby="sMealh">
-        <h2 class="s-tth" id="sMealh"><span id="sMealLbl">지금 급식</span><a href="#mealCard" class="s-ttmore" id="goMeal">전체 ▾</a></h2>
-        <div id="sMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>
       </aside>
       </div>
       </div>
