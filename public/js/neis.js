@@ -7,8 +7,14 @@ export const MEALS = { '1': '조식', '2': '중식', '3': '석식' };
 const CACHE_TTL = 3 * 3600e3;           // 브라우저 캐시 3시간
 const memo = new Map();
 
-export async function loadConfig() {
-  try { const r = await fetch('/api/config'); if (r.ok) api.hasKey = !!(await r.json()).hasKey; } catch {}
+/** 서버에 키가 있는지 확인. 지난번 값이 있으면 바로 쓰고(대기 없음) 뒤에서 새로 확인한다 */
+export function loadConfig() {
+  const fresh = fetch('/api/config').then(r => r.ok ? r.json() : null).then(c => {
+    if (c) { api.hasKey = !!c.hasKey; store.set('hasKey', api.hasKey); }
+  }).catch(() => {});
+  const cached = store.get('hasKey', null);
+  if (typeof cached === 'boolean') { api.hasKey = cached; return Promise.resolve(); }
+  return fresh;
 }
 
 async function neis(svc, params) {

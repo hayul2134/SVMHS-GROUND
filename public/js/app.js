@@ -1,7 +1,6 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
 import { $, $$, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
-import { QR } from './qr.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -70,29 +69,36 @@ function periodInfo(b) {
   const done = b.state === '방과 후' ? 99 : cur || nxt || 0;   // 이 교시 '전'까지는 끝남
   return { cur, nxt, done };
 }
-let nextKey = '';
+let nextKey = '', tickTimer = 0;
+const lastVal = new Map();
+const setText = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).textContent = v; } };
+const setHtml = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).innerHTML = v; } };
 function tickClock() {
+  clearTimeout(tickTimer);
+  if (document.hidden) return;   // 안 보일 땐 멈춤 (다시 보이면 visibilitychange에서 재시작)
   const n = new Date();
-  $('#cH').textContent = pad(n.getHours()); $('#cM').textContent = pad(n.getMinutes()); $('#cS').textContent = pad(n.getSeconds());
-  $('#todayLbl').textContent = fmtDay(n);
+  setText('#cH', pad(n.getHours())); setText('#cM', pad(n.getMinutes())); setText('#cS', pad(n.getSeconds()));
+  setText('#todayLbl', fmtDay(n));
 
   const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
-  $('#greet').textContent = sayLine(b);
-  $('#bellState').textContent = b.state;
-  $('#bellLbl').textContent = b.label;
-  $('#bellCnt').innerHTML = [...(left != null ? fmtLeft(left) : `${pad(n.getHours())}:${pad(n.getMinutes())}`)].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join('');   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
+  setText('#greet', sayLine(b));
+  setText('#bellState', b.state);
+  setText('#bellLbl', b.label);
+  setHtml('#bellCnt', [...(left != null ? fmtLeft(left) : `${pad(n.getHours())}:${pad(n.getMinutes())}`)].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join(''));   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
   const hero = $('#bigclock');
   hero.classList.toggle('soon', left != null && left <= 60);
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
   const pi = periodInfo(b);
-  $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
   const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
-  if (key !== nextKey) { nextKey = key; renderNext(b, pi); renderTicker(b, pi); }
+  if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
+    nextKey = key; renderNext(b, pi); renderTicker(b, pi);
+    $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
+  }
   const bar = b.from != null && left != null;
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${Math.min(1, (secNow - b.from) / (b.target - b.from)).toFixed(4)})`;
-  setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
+  tickTimer = setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
 // 다음 수업 타일
 function renderNext(b, pi) {
@@ -207,7 +213,7 @@ async function renderHomeTT() {
   if (!cls) { box.innerHTML = needClass; return; }
   if (d.getDay() % 6 === 0) { S.todayTT = []; box.innerHTML = empty('오늘은 주말이에요. 푹 쉬어요!'); return; }
   try {
-    const rows = (await getTimetable(cls, d, d)).filter(r => r.ALL_TI_YMD === ymd(d)).sort((a, b) => a.PERIO - b.PERIO);
+    const rows = (await getTimetable(cls, mondayOf(d), addDays(mondayOf(d), 4))).filter(r => r.ALL_TI_YMD === ymd(d)).sort((a, b) => a.PERIO - b.PERIO);
     S.todayTT = rows;
     const dep = rows[0] && rows[0].DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
@@ -326,8 +332,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.modal.o
 
 /* ===== 공유 ===== */
 const shareUrl = () => location.protocol.startsWith('http') ? location.origin + '/' : SITE_URL;
-$('#btnShare').onclick = () => {
+$('#btnShare').onclick = async () => {
   const url = shareUrl();
+  const { QR } = await import('./qr.js');   // 공유할 때만 받음
   $('#qr').innerHTML = QR.toSvg(url);
   $('#shareUrl').textContent = url;
   $('#nativeShare').hidden = !navigator.share;
@@ -385,7 +392,10 @@ tickClock();
 renderClassChip();
 store.pruneCache();
 // 날짜가 바뀐 채로 다시 열면(자정 넘김) 새로 고침
-document.addEventListener('visibilitychange', () => { if (!document.hidden && ymd(today()) !== startDay) location.reload(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (ymd(today()) !== startDay) location.reload(); else tickClock();
+});
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 loadConfig().finally(() => {
   renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays();
