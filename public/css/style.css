@@ -349,14 +349,10 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .ticker{contain:paint}
 .ticker .tk{will-change:transform}
 
-/* 홈 첫 화면: 큰 시계만 중앙, 나머지는 스티커처럼 흩어 붙이기 */
+/* 홈 첫 화면: 말풍선만 기울여 비껴 붙이고, 시각·날짜는 살짝 엇갈리게 */
 .s-greet{position:relative;left:clamp(-260px,-19vw,-56px);top:6px}
 .s-greet .bubble{transform:rotate(-4deg)}
 .s-greet .bubble::after{left:72%}
-.s-what{position:relative;left:clamp(30px,11vw,130px);transform:rotate(3deg);margin-top:14px}
-.s-sub{position:relative;left:clamp(-210px,-15vw,-34px);margin-top:14px}
-.s-left{transform:rotate(-5deg)}
-.s-date{position:relative;left:clamp(40px,15vw,220px);margin-top:-4px;transform:rotate(5deg)}
-.s-cards{position:relative;left:clamp(-120px,-8vw,-18px);width:min(400px,86%);margin-top:30px}
-.mini.now{transform:rotate(-3.5deg)}
-@media (max-width:560px){.mini.now{transform:rotate(-2.5deg)}.s-date{margin-top:10px}.s-sub{left:-14px}}
+.s-sub{position:relative;left:clamp(-60px,-4vw,-16px)}
+.s-date{position:relative;left:clamp(16px,4vw,60px)}
+.mini.now{text-align:center;align-items:center}.mini.now .m-bar{align-self:stretch}
