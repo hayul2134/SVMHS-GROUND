@@ -53,61 +53,73 @@
     <g id="i-tt" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></g>
     <g id="i-cal" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></g>
     <g id="i-dday" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></g>
+    <g id="i-share" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></g>
+    <g id="i-down" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></g>
     <g id="i-prev" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></g>
     <g id="i-next" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></g>
   </defs>
 </svg>
 
-<header>
+<header id="hdr">
   <div class="hd">
-    <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="56" height="56"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
+    <button class="iconbtn" id="btnHome" data-go="home" title="처음으로" aria-label="처음 화면으로"><svg viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
+    <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="52" height="52"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
     <button class="iconbtn" id="btnClass" title="반 설정" aria-label="반 설정"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
-    <button class="iconbtn" id="btnTheme" title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg viewBox="0 0 24 24"><use href="#i-moon"/></svg></button>
     <button class="iconbtn" id="btnShare" title="친구에게 공유" aria-label="친구에게 공유하기"><svg viewBox="0 0 24 24"><use href="#i-qr"/></svg></button>
-    <button class="iconbtn" id="btnInfo" title="이용 안내" aria-label="이용 안내"><svg viewBox="0 0 24 24"><use href="#i-info"/></svg></button>
+    <button class="iconbtn" id="btnTheme" title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg viewBox="0 0 24 24"><use href="#i-moon"/></svg></button>
   </div>
 </header>
-<nav id="nav" aria-label="메뉴">
-  <button data-v="home" class="on" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-home"/></svg>홈</button>
-  <button data-v="meal"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg>급식</button>
-  <button data-v="tt"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg>시간표</button>
-  <button data-v="cal"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg>학사일정</button>
-  <button data-v="dday"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg>D-day</button>
-</nav>
 
 <main class="wrap">
   <noscript><div class="noscript">이 사이트는 자바스크립트가 필요해요. 브라우저 설정에서 자바스크립트를 켜 주세요.</div></noscript>
 
-  <!-- 홈: 스티커 보드 -->
+  <!-- 홈: 첫 화면(큰 시계) → 바로가기 → 오늘 보드 -->
   <div class="view on" id="v-home">
-    <div class="ticker" aria-hidden="true"><div class="tk" id="ticker"></div></div>
-    <div class="grid bento">
-      <!-- 메인 타일: 남은 시간이 주인공 -->
-      <section class="tile hero c8" id="bigclock" aria-label="종 시간">
-        <div class="h-top"><span class="pill" id="bellState">&nbsp;</span><span class="h-date" id="todayLbl"></span></div>
-        <div class="h-say"><span class="buddy" aria-hidden="true"><img src="/logo-mark.svg?v=4" alt="" width="54" height="54"></span><p class="bubble" id="greet">안녕!</p></div>
-        <div class="h-big"><span class="h-lbl" id="bellLbl">&nbsp;</span><b id="bellCnt" role="timer">--:--</b></div>
-        <div class="h-bar" id="bellBarBox" hidden><i id="bellBar"></i></div>
-        <div class="h-foot"><span class="h-clock" aria-label="현재 시각"><span id="cH">--</span>:<span id="cM">--</span><span class="ss">:<span id="cS">--</span></span></span><span class="classchip" id="classChip" hidden></span></div>
-      </section>
-      <!-- 다음 수업 -->
-      <section class="tile next c4" id="hNext" aria-live="polite"><div class="skel"></div><div class="skel"></div></section>
+    <section class="stage" id="bigclock" aria-label="종 시간">
+      <p class="s-greet"><span class="buddy" aria-hidden="true"><img src="/logo-mark.svg?v=4" alt="" width="46" height="46"></span><span class="bubble" id="greet">안녕!</span></p>
+      <b class="s-big" id="bellCnt" role="timer">--:--</b>
+      <p class="s-sub"><b id="bellLbl">&nbsp;</b><span class="dot">·</span><span id="todayLbl"></span><span class="dot">·</span><span class="h-clock" aria-label="현재 시각"><span id="cH">--</span>:<span id="cM">--</span><span class="ss">:<span id="cS">--</span></span></span><span class="classchip" id="classChip" hidden></span></p>
+      <div class="s-cards">
+        <div class="mini now"><span class="m-lbl" id="bellState">&nbsp;</span><b class="m-val" id="bellPct">&nbsp;</b><div class="m-bar" id="bellBarBox" hidden><i id="bellBar"></i></div></div>
+        <div class="mini nxt" id="hNext" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>
+      </div>
+      <button class="s-down" id="goDown" aria-label="바로가기로 내려가기"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></button>
+    </section>
 
-      <div class="card c5 k-meal">
-        <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg></i>오늘 급식</h2><a href="#meal" data-go="meal">전체 보기</a></div>
-        <div class="mealtabs" id="hMealTabs"></div>
-        <div id="hMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    <div class="ticker" aria-hidden="true"><div class="tk" id="ticker"></div></div>
+
+    <section class="apps" id="apps" aria-labelledby="appsT">
+      <h2 class="sec-t" id="appsT">바로가기</h2>
+      <div class="appgrid">
+        <button class="app" data-go="meal"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg></i>급식</button>
+        <button class="app" data-go="tt"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>시간표</button>
+        <button class="app" data-go="cal"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></i>학사일정</button>
+        <button class="app" data-go="dday"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>D-day</button>
+        <button class="app" data-open-class><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></i>반 설정</button>
+        <button class="app" data-act="share"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-share"/></svg></i>친구 공유</button>
+        <button class="app" data-act="theme"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moon"/></svg></i>테마</button>
+        <button class="app" data-act="info"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-info"/></svg></i>이용 안내</button>
       </div>
-      <div class="card c7 k-tt">
-        <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>오늘 시간표</h2><a href="#tt" data-go="tt">주간 보기</a></div>
-        <div id="hTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    </section>
+
+    <section class="board" aria-labelledby="boardT">
+      <h2 class="sec-t" id="boardT">오늘 한눈에</h2>
+      <div class="grid bento">
+        <div class="card c5 k-meal">
+          <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-meal"/></svg></i>오늘 급식</h2><a href="#meal" data-go="meal">전체 보기</a></div>
+          <div class="mealtabs" id="hMealTabs"></div>
+          <div id="hMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+        </div>
+        <div class="card c7 k-tt">
+          <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>오늘 시간표</h2><a href="#tt" data-go="tt">주간 보기</a></div>
+          <div id="hTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+        </div>
+        <div class="card c12 k-up">
+          <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>다가오는 일정</h2><span class="links"><a href="#cal" data-go="cal">학사일정</a><a href="#dday" data-go="dday">D-day 추가</a></span></div>
+          <div class="uprow" id="hUp"><div class="skel"></div></div>
+        </div>
       </div>
-      <!-- 학사일정 + D-day 합침 -->
-      <div class="card c12 k-up">
-        <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>다가오는 일정</h2><span class="links"><a href="#cal" data-go="cal">학사일정</a><a href="#dday" data-go="dday">D-day 추가</a></span></div>
-        <div class="uprow" id="hUp"><div class="skel"></div></div>
-      </div>
-    </div>
+    </section>
   </div>
 
   <!-- 급식 -->
@@ -159,7 +171,7 @@
     </div>
   </div>
 
-  <footer>SVMHS GROUND · 우리끼리 쓰는 비공식 사이트 ✌️ · <button id="openInfo">이용 안내</button><br>급식·시간표·학사일정 정보: 나이스 교육정보 개방 포털</footer>
+  <footer>SVMHS GROUND · 우리끼리 쓰는 비공식 사이트 ✌️ · <button id="btnInfo">이용 안내</button><br>급식·시간표·학사일정 정보: 나이스 교육정보 개방 포털</footer>
 </main>
 
 <!-- 공유 -->

@@ -95,27 +95,28 @@ function tickClock() {
     nextKey = key; renderNext(b, pi); renderTicker(b, pi);
     $$('#hTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', p === pi.cur); li.classList.toggle('done', p < pi.done && p !== pi.cur); });
   }
-  const bar = b.from != null && left != null;
+  const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
-  if (bar) $('#bellBar').style.transform = `scaleX(${Math.min(1, (secNow - b.from) / (b.target - b.from)).toFixed(4)})`;
+  if (bar) $('#bellBar').style.transform = `scaleX(${prog.toFixed(4)})`;
+  setText('#bellPct', bar ? `${Math.floor(prog * 100)}% 지남` : b.target != null ? '곧 시작해요' : b.state === '쉬는 날' ? '푹 쉬는 날' : '오늘 수업 끝');
   tickTimer = setTimeout(tickClock, 1000 - new Date().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
-// 다음 수업 타일
+// 다음 수업 카드 (첫 화면 오른쪽 작은 카드)
 function renderNext(b, pi) {
   const box = $('#hNext'), rows = S.todayTT;
   const subj = p => { const r = rows && rows.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
+  const card = (lbl, val, sub = '') => `<span class="m-lbl">${lbl}</span><b class="m-val">${val}</b>${sub}`;
   let h;
-  if (!cls) h = `<span class="t-lbl">다음 수업</span><p class="t-msg">반을 설정하면<br>다음 수업이 보여요</p><button class="btn lime" data-open-class>반 설정하기</button>`;
-  else if (b.state === '쉬는 날') h = `<span class="t-lbl">오늘</span><b class="t-big">OFF</b><p class="t-sub">수업 없는 날이에요</p>`;
-  else if (rows && !rows.length) h = `<span class="t-lbl">다음 수업</span><p class="t-msg">오늘 시간표 정보가<br>아직 없어요</p>`;
-  else if (b.state === '방과 후' || (rows && pi.nxt && !subj(pi.nxt) && !subj(pi.cur))) h = `<span class="t-lbl">오늘 수업</span><b class="t-big">끝!</b><p class="t-sub">내일 또 봐요</p>`;
+  if (!cls) h = card('다음 수업', '반을 골라 주세요', '<button class="link" data-open-class>반 설정하기</button>');
+  else if (b.state === '쉬는 날') h = card('오늘', 'OFF', '<span class="m-sub">수업 없는 날이에요</span>');
+  else if (rows && !rows.length) h = card('다음 수업', '정보가 아직 없어요');
+  else if (b.state === '방과 후' || (rows && pi.nxt && !subj(pi.nxt) && !subj(pi.cur))) h = card('오늘 수업', '끝!', '<span class="m-sub">내일 또 봐요</span>');
   else if (rows === undefined) h = '<div class="skel"></div><div class="skel"></div>';
   else {
     const np = subj(pi.nxt) ? pi.nxt : 0;
-    h = np ? `<span class="t-lbl">다음 수업</span><b class="t-big">${np}<small>교시</small></b><p class="t-subj">${esc(subj(np))}</p>`
-           : `<span class="t-lbl">지금 수업</span><b class="t-big">${pi.cur}<small>교시</small></b><p class="t-subj">${esc(subj(pi.cur))}</p>`;
-    if (np && pi.cur && subj(pi.cur)) h += `<p class="t-sub">지금 · ${esc(subj(pi.cur))}</p>`;
-    else if (np) h += `<p class="t-sub">${b.state === '등교 전' ? '오늘 첫 수업' : '곧 시작해요'}</p>`;
+    const sub = np && pi.cur && subj(pi.cur) ? `지금 · ${esc(subj(pi.cur))}` : np ? (b.state === '등교 전' ? '오늘 첫 수업' : '곧 시작해요') : '';
+    h = np ? card('다음 수업', `${np}교시 · ${esc(subj(np))}`, sub ? `<span class="m-sub">${sub}</span>` : '')
+           : card('지금 수업', `${pi.cur}교시 · ${esc(subj(pi.cur))}`);
   }
   box.innerHTML = h;
 }
@@ -144,17 +145,23 @@ function renderClassChip() {
   if (cls) el.textContent = `${cls.g}학년 ${cls.c}반${cls.dep ? ' · ' + cls.dep : ''}`;
 }
 
-/* ===== 탭 이동 ===== */
+/* ===== 화면 이동 ===== */
 const RENDER = { meal: renderMealView, tt: renderTTView, cal: renderCalView, dday: renderDdayView };
 function go(v) {
   if (!VIEWS.includes(v)) v = 'home';
-  $$('#nav button').forEach(b => { const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false'); });
   $$('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
   RENDER[v]?.();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo(0, 0);
+  onScroll();
   if (location.hash !== '#' + v) history.replaceState(null, '', v === 'home' ? location.pathname : '#' + v);
 }
-$('#nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.v); });
+// 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
+function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
+addEventListener('scroll', onScroll, { passive: true });
+$('#goDown').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth' });
+// 바로가기 아이콘 → 위쪽 버튼과 같은 동작
+const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
+document.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) $(ACT[a.dataset.act]).click(); });
 document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) { e.preventDefault(); go(a.dataset.go); } });
 
 /* ===== 급식 ===== */
@@ -367,7 +374,6 @@ $('#saveClass').onclick = () => {
 
 /* ===== 이용 안내 · 홈 화면에 추가 ===== */
 $('#btnInfo').onclick = () => openModal('#mInfo');
-$('#openInfo').onclick = () => openModal('#mInfo');
 let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; });
 $('#installBtn').onclick = async () => {
