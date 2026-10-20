@@ -279,7 +279,7 @@ async function fillWeek(box, mon, stale) {
     const maxP = Math.min(10, Math.max(6, ...rows.map(r => +r.PERIO || 0)));
     const map = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = subjName(r.ITRT_CNTNT); });
     const td = (d, p) => `<td class="${ymd(d) === t ? 'today' : ''}">${esc(map[ymd(d) + '_' + p] || '')}</td>`;
-    let h = '<table class="week"><thead><tr><th></th>' + days.map(d => `<th class="${ymd(d) === t ? 'today' : ''}">${DOW[d.getDay()]} ${d.getDate()}</th>`).join('') + '</tr></thead><tbody>';
+    let h = '<table class="week"><thead><tr><th></th>' + days.map(d => `<th class="${ymd(d) === t ? 'today' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`).join('') + '</tr></thead><tbody>';
     for (let p = 1; p <= maxP; p++) h += `<tr><td class="pn">${p}</td>${days.map(d => td(d, p)).join('')}</tr>`;
     box.innerHTML = h + '</tbody></table>';
   } catch { if (!stale()) box.innerHTML = empty('시간표를 불러오지 못했어요'); }
@@ -292,8 +292,6 @@ function renderHomeWeek() {
   $('#hwNote').textContent = cls && !api.hasKey ? '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)' : '';
   fillWeek($('#hWeek'), mon, () => mon !== S.homeWeek);
 }
-$('#hwPrev').onclick = () => { S.homeWeek = addDays(S.homeWeek, -7); renderHomeWeek(); };
-$('#hwNext').onclick = () => { S.homeWeek = addDays(S.homeWeek, 7); renderHomeWeek(); };
 $('#goWeek').onclick = e => { e.preventDefault(); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 async function renderTTView() {
   const mon = S.ttWeek;
