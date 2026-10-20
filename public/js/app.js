@@ -83,7 +83,8 @@ function tickClock() {
   clearTimeout(tickTimer);
   if (document.hidden) return;   // 안 보일 땐 멈춤 (다시 보이면 visibilitychange에서 재시작)
   const n = new Date();
-  setText('#todayLbl', fmtDay(n));
+  const dow = n.getDay();
+  setHtml('#todayLbl', `<span class="d-md"><b>${n.getMonth() + 1}</b>월 <b>${n.getDate()}</b>일</span><span class="d-dow${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}">${DOW[dow]}요일</span>`);
 
   const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
@@ -98,10 +99,11 @@ function tickClock() {
   setText('#bellState', b.state);
   setText('#bellLbl', b.cnt || b.label);
   const dg = t => [...t].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join('');   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
-  const hm = `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  const ap = n.getHours() < 12 ? '오전' : '오후', h12 = n.getHours() % 12 || 12;
+  const hm = `${h12}:${pad(n.getMinutes())}`;
   // 큰 숫자 = 남은 시간, 아래 작은 칩 = 현재 시각 (수업 없는 때엔 큰 숫자가 현재 시각)
-  setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : dg(hm) + `<span class="sec">${dg(':' + pad(n.getSeconds()))}</span>`);
-  setText('#bellCnt', `${hm}:${pad(n.getSeconds())}`);
+  setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : `<span class="ap">${ap}</span>` + dg(hm) + `<span class="sec">${dg(':' + pad(n.getSeconds()))}</span>`);
+  setText('#bellCnt', `${ap} ${hm}:${pad(n.getSeconds())}`);
   $('#nowBox').hidden = left == null;
   const hero = $('#bigclock');
   hero.classList.toggle('soon', left != null && left <= 60);
@@ -115,6 +117,7 @@ function tickClock() {
 // 다음 수업 카드 (첫 화면 오른쪽 작은 카드)
 function renderNext(b, pi) {
   const box = $('#hNext'), rows = S.todayTT;
+  if (!box) return;
   const subj = p => { const r = rows && rows.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
   const card = (lbl, val, sub = '') => `<span class="m-lbl">${lbl}</span><b class="m-val">${val}</b>${sub}`;
   let h;

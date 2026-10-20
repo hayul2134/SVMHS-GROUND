@@ -103,8 +103,16 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .s-cnt{font-family:var(--num);font-weight:800!important;font-size:22px!important;line-height:1;background:var(--yellow);color:#173048;border:2px solid var(--ink);border-radius:999px;padding:6px 14px;font-variant-numeric:tabular-nums}
 .s-cnt:empty{display:none}
 
-.s-date{margin-top:12px;font-weight:800;font-size:14px;color:var(--sub)}
-.s-cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:min(640px,100%);margin-top:34px}
+.s-date{margin-top:16px;display:inline-flex;align-items:stretch;border:var(--bd);border-radius:16px;box-shadow:var(--sh-s);overflow:hidden;transform:rotate(1.2deg);background:var(--card);color:var(--text)}
+.s-date:empty{display:none}
+.s-date .d-md{display:flex;align-items:baseline;gap:2px;padding:8px 16px 8px 18px;font-weight:800;font-size:17px}
+.s-date .d-md b{font-family:var(--num);font-weight:800;font-size:28px;line-height:1;margin-left:4px}
+.s-date .d-md b:first-child{margin-left:0}
+.s-date .d-dow{display:flex;align-items:center;padding:0 16px;font-weight:900;font-size:17px;background:var(--yellow);color:#173048;border-left:var(--bd)}
+.s-date .d-dow.sat{background:var(--sky)}
+.s-date .d-dow.sun{background:#ffb3b3}
+.s-big .ap{font-family:inherit;font-size:.26em;font-weight:900;color:var(--sub);text-shadow:none;margin-right:.18em;vertical-align:.9em}
+.s-cards{display:grid;grid-template-columns:1fr;width:min(420px,100%);margin:34px auto 0}
 .mini{background:var(--card);color:var(--text);border:var(--bd);border-radius:20px;box-shadow:var(--sh);padding:16px 20px;text-align:left;display:flex;flex-direction:column;gap:3px;min-height:108px;position:relative;min-width:0}
 .mini.now{transform:rotate(-1.2deg)}
 .mini.nxt{transform:rotate(1.2deg)}
@@ -121,7 +129,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .s-down{position:absolute;bottom:20px;left:50%;margin-left:-22px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--on-bg);animation:hop 1.8s ease-in-out infinite}
 .s-down svg{width:22px;height:22px}
 @keyframes hop{50%{transform:translateY(6px)}}
-@media (max-width:560px){.s-cards{grid-template-columns:1fr;gap:20px}.mini.now{transform:rotate(-.8deg)}.mini.nxt{transform:rotate(.8deg)}.s-big{text-shadow:4px 4px 0 var(--sky)}}
+@media (max-width:560px){.mini.now{transform:rotate(-.8deg)}.s-date .d-md b{font-size:24px}.s-big{text-shadow:4px 4px 0 var(--sky)}}
 
 /* 바로가기 */
 .sec-t{font-family:var(--disp);font-weight:400;font-size:26px;text-align:center;color:var(--on-bg);text-shadow:3px 3px 0 var(--sky);transform:rotate(-2deg);margin-bottom:26px}
