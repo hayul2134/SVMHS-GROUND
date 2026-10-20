@@ -1,6 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
-// 선택: 비밀 변수 JOIN_CODE를 넣으면 가입할 때 그 코드를 알아야 한다(친구들끼리만 쓰게).
+// 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
+import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -20,40 +21,12 @@ const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj)
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...SECURITY_HEADERS, ...extra },
 });
 const err = (msg, status = 400) => json({ error: msg }, status);
-const kstYmd = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
 // 사용자 글: 제어문자 제거 · 공백 정리 · 길이 제한
 const clean = (s, max, multiline = false) => {
   let t = String(s ?? '').replace(multiline ? /[\u0000-\u0009\u000B-\u001F\u007F​-‏‪-‮⁦-⁩]/g : /[\u0000-\u001F\u007F​-‏‪-‮⁦-⁩]/g, '');
   t = multiline ? t.replace(/\n{3,}/g, '\n\n') : t.replace(/\s+/g, ' ');
   return [...t.trim()].slice(0, max).join('');
 };
-
-/* ===== 테이블 ===== */
-const SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, handle TEXT NOT NULL UNIQUE, name TEXT NOT NULL, pw TEXT NOT NULL, salt TEXT NOT NULL,
-    created INTEGER NOT NULL, bio TEXT NOT NULL DEFAULT '', avatar TEXT NOT NULL DEFAULT '😎', color TEXT NOT NULL DEFAULT 'sky', grade INTEGER NOT NULL DEFAULT 0,
-    cls INTEGER NOT NULL DEFAULT 0, club TEXT NOT NULL DEFAULT '', mood TEXT NOT NULL DEFAULT '', stickers TEXT NOT NULL DEFAULT '[]', seen INTEGER NOT NULL DEFAULT 0)`,
-  `CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, uid INTEGER NOT NULL, exp INTEGER NOT NULL)`,
-  `CREATE INDEX IF NOT EXISTS sessions_uid ON sessions (uid)`,
-  `CREATE TABLE IF NOT EXISTS follows (a INTEGER NOT NULL, b INTEGER NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (a, b))`,
-  `CREATE INDEX IF NOT EXISTS follows_b ON follows (b)`,
-  `CREATE TABLE IF NOT EXISTS blocks (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY (a, b))`,
-  `CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, pair TEXT NOT NULL, a INTEGER NOT NULL, b INTEGER NOT NULL, body TEXT NOT NULL,
-    at INTEGER NOT NULL, seen INTEGER NOT NULL DEFAULT 0, del INTEGER NOT NULL DEFAULT 0)`,
-  `CREATE INDEX IF NOT EXISTS messages_pair ON messages (pair, id)`,
-  `CREATE INDEX IF NOT EXISTS messages_unread ON messages (b, seen)`,
-  `CREATE INDEX IF NOT EXISTS messages_a ON messages (a)`,
-  `CREATE TABLE IF NOT EXISTS scores (uid INTEGER NOT NULL, game TEXT NOT NULL, day TEXT NOT NULL, best INTEGER NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (uid, game, day))`,
-  `CREATE INDEX IF NOT EXISTS scores_day ON scores (game, day, best)`,
-  `CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter INTEGER NOT NULL, target INTEGER NOT NULL, msg INTEGER, reason TEXT NOT NULL, at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS rl (k TEXT PRIMARY KEY, n INTEGER NOT NULL, reset INTEGER NOT NULL)`,
-];
-let ready = false;
-async function setup(db) {
-  if (ready) return;
-  await db.batch(SCHEMA.map(s => db.prepare(s)));
-  ready = true;
-}
 
 /* ===== 보안 도구 ===== */
 const enc = new TextEncoder();
@@ -93,7 +66,8 @@ async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
   const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, s.exp
-    FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1`).bind(await sha256(token)).first();
+    FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
+    AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
   if (Date.now() - row.seen > 60e3) await db.prepare('UPDATE users SET seen = ?1 WHERE id = ?2').bind(Date.now(), row.id).run();
   return row;
@@ -149,14 +123,19 @@ const needMe = fn => async ctx => {
 
 const ROUTES = {
   /* ----- 계정 ----- */
-  'GET config': async ({ env }) => json({ enabled: true, needCode: Boolean(env.JOIN_CODE) }),
+  'GET config': async ({ env, db }) => {
+    const st = await getSettings(db);
+    return json({ enabled: true, needCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st) });
+  },
 
   'POST signup': async ({ req, env, db, body }) => {
     const handle = String(body.handle || '').trim().toLowerCase(), name = clean(body.name, 12), pw = String(body.pw || '');
     if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (pw.length < 6 || pw.length > 64) return err('비밀번호는 6~64자로 해 주세요');
-    if (env.JOIN_CODE && String(body.code || '').trim() !== env.JOIN_CODE) return err('가입 코드가 달라요');
+    const st = await getSettings(db), code = joinCodeOf(env, st);
+    if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
+    if (code && String(body.code || '').trim() !== code) return err('가입 코드가 달라요');
     if (await limited(db, 'su:' + ipOf(req), 8, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
     const salt = randHex(16);
@@ -172,6 +151,11 @@ const ROUTES = {
     if (await limited(db, 'li:' + ipOf(req), 20, 600) || await limited(db, 'lh:' + handle, 10, 600)) return err('로그인 시도가 너무 많아요. 10분 뒤에 다시 해 주세요', 429);
     const u = HANDLE_RE.test(handle) && await db.prepare('SELECT id, pw, salt FROM users WHERE handle = ?1').bind(handle).first();
     if (!u || !sameStr(await hashPw(pw, u.salt), u.pw)) return err('아이디나 비밀번호가 맞지 않아요', 401);
+    const ban = await db.prepare('SELECT until, reason FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first();
+    if (ban) {
+      const when = ban.until ? new Date(ban.until + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') + '까지' : '무기한';
+      return err(`이용이 정지된 계정이에요 (${when}${ban.reason ? ' · ' + ban.reason : ''})`, 403);
+    }
     return json({ ok: true }, 200, { 'set-cookie': await newSession(req, db, u.id) });
   },
 
@@ -221,7 +205,7 @@ const ROUTES = {
     if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) return err('비밀번호가 맞지 않아요', 401);
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM users WHERE id = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(me.id)));
     return json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
   }),
@@ -357,6 +341,7 @@ const ROUTES = {
     const r = await rel(db, me.id, u.id);
     if (r.blocked || r.blockedMe) return err('메시지를 보낼 수 없어요', 403);
     if (!(r.following && r.followsMe)) return err('서로 팔로우한 친구에게만 보낼 수 있어요', 403);
+    if (!dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);
     const text = clean(body.body, 500, true);
     if (!text) return err('내용을 적어 주세요');
     if (await limited(db, 'dm:' + me.id, 40, 60)) return err('너무 빨리 보내고 있어요. 잠깐만요!', 429);

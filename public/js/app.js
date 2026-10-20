@@ -637,6 +637,21 @@ function applyTheme(t) {
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 $('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
 
+/* ===== 관리자 공지 ===== */
+async function loadNotice() {
+  let n = null;
+  try { const r = await fetch('/api/notice'); if (r.ok) n = (await r.json()).notice; } catch {}
+  const box = $('#notice');
+  if (!n || store.get('notice_x') === n.id) { box.hidden = true; return; }
+  $('#noticeIc').textContent = { warn: '⚠️', fun: '🎉' }[n.tone] || '📢';
+  box.className = 'notice ' + ({ warn: 'warn', fun: 'fun' }[n.tone] || '');
+  const a = $('#noticeTx');
+  a.textContent = n.text;
+  if (n.link) { a.href = n.link; a.dataset.go = n.link.slice(1); a.removeAttribute('aria-disabled'); } else { a.removeAttribute('href'); delete a.dataset.go; }
+  $('#noticeX').onclick = () => { store.set('notice_x', n.id); box.hidden = true; };
+  box.hidden = false;
+}
+
 /* ===== 시작 ===== */
 tickClock();
 renderClassChip();
@@ -651,7 +666,7 @@ window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 SOC.getClass = () => cls;
 const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => {});
 loadConfig().finally(async () => {
-  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance);
+  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance); loadNotice();
   const h = location.hash.slice(1);
   if (h && h !== 'home') { if (/^(me|u|dm|game)\b/.test(h)) await socReady; go(h); }
   if (!cls) setTimeout(openClass, 400);

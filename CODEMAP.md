@@ -16,6 +16,9 @@
 | `public/js/social.js` | 소셜 화면 전부: 로그인/가입 · 프로필 꾸미기(아바타·색·스티커) · 친구 찾기/팔로우 · DM(3초 폴링) · 미니게임 3종(반응속도·1 to 25·컷 타이밍) · 랭킹(오늘/친구/반 대항전/역대). `app.js`가 시작할 때 동적 import → `init(SOC)` |
 | `functions/api/s/[[path]].js` | 소셜 API `/api/s/*` (D1 `DB`, 테이블 자동 생성). 쿠키 세션(HttpOnly) · PBKDF2 비밀번호 · 횟수 제한 · DM은 맞팔끼리만 · 차단/신고 · 게임 기록 범위 검사 |
 | `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표 · `/api/balance` 오늘의 밸런스 게임(둘 다 D1 `DB`, 테이블 자동 생성) |
+| `public/admin/` | **관리자 페이지** `/admin` (index.html · admin.css · admin.js). 대시보드 · 신고 처리 · 사용자 관리(정지·임시 비번·프로필 정리·삭제) · 게임 기록 · 공지 · 밸런스 질문 · 설정(가입 코드·가입/DM 켜고 끄기) · 관리 기록 |
+| `functions/api/admin/[[path]].js` | 관리자 API `/api/admin/*`. 비밀 변수 `ADMIN_KEY`로 로그인 → 12시간 세션(HttpOnly 쿠키, 경로 /api/admin). IP당 15분 8회 시도 제한. 모든 조치는 `admin_log`에 기록 |
+| `lib/db.js`, `lib/balance.js` | functions 세 곳이 같이 쓰는 D1 테이블 정의(`setup`)·설정(`settings` 테이블)·밸런스 기본 질문. functions/ 밖이라 라우트가 아님 |
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
 | `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 |
 | `public/og-image.jpg` | 카톡 등 링크 미리보기 이미지 (1200×630) |
@@ -54,4 +57,12 @@ npx wrangler@4 pages dev --port 8788
 - D1 바인딩 `DB`가 없으면 `/api/s/config`가 `{enabled:false}` → 화면에 '준비 중'만 보임.
 - 선택: Pages 비밀 변수 `JOIN_CODE`를 넣으면 가입할 때 코드 필요(친구끼리만).
 - 목록(AVATARS·COLORS·STICKERS)은 서버·`social.js` 둘 다 같게 유지. 게임 추가 시 서버 `GAMES`(허용 범위)와 `social.js`의 `GAMES` 둘 다 수정.
-- 신고는 D1 `reports` 테이블에 쌓임(관리 화면 없음 → Cloudflare 대시보드 D1 콘솔에서 `SELECT * FROM reports`).
+- 신고·정지·공지 등은 관리자 페이지 `/admin`에서 처리.
+
+## 관리자 페이지 (/admin)
+- 필요: D1 바인딩 `DB` + Pages 비밀 변수 **`ADMIN_KEY`**(관리자 비밀번호, 길게). 없으면 /admin에 준비 안내만 보임.
+- DM은 **신고된 메시지와 앞뒤 5개만** 볼 수 있음(사생활 보호). 전체 DM 열람 기능은 일부러 없음.
+- 정지(`bans`): 정지 즉시 세션 삭제 + 로그인 거부(사유·기간 표시). 소셜 `auth()`도 정지된 사람은 막음.
+- 설정(`settings`): `join_code`(있으면 비밀 변수 JOIN_CODE보다 우선, ''이면 코드 없음) · `signup_open` · `dm_open` · `notice`(JSON).
+- 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 학생이 닫으면 `sg_notice_x`에 그 공지 id 저장.
+- 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기. 오늘 질문을 바꾸면 오늘 표 초기화.

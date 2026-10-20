@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>관리자 · SVMHS GROUND</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#eaf5fd">
+<link rel="icon" href="/logo.svg?v=4" type="image/svg+xml">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jua@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/outfit@5/800.css">
+<link rel="stylesheet" href="/admin/admin.css">
+<script src="/js/theme.js"></script>
+</head>
+<body>
+<noscript><p class="gate">자바스크립트가 필요해요.</p></noscript>
+
+<!-- 로그인 / 준비 상태 -->
+<section class="gate" id="gate" hidden>
+  <div class="gcard">
+    <img src="/logo.svg?v=4" alt="" width="64" height="64">
+    <h1 class="disp">GROUND 관리자</h1>
+    <div id="gateBody"></div>
+  </div>
+</section>
+
+<!-- 관리 화면 -->
+<div class="app" id="app" hidden>
+  <header class="top">
+    <a class="brand" href="#dash"><img src="/logo.svg?v=4" alt="" width="36" height="36"><span class="disp">GROUND <em>관리자</em></span></a>
+    <a class="tbtn" href="/" target="_blank" rel="noopener">사이트 열기 ↗</a>
+    <button class="tbtn" id="btnLogout" type="button">로그아웃</button>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="관리 메뉴">
+    <a href="#dash" data-t="dash">📊 <span>대시보드</span></a>
+    <a href="#reports" data-t="reports">🚨 <span>신고</span><b class="badge" id="repBadge" hidden></b></a>
+    <a href="#users" data-t="users">👥 <span>사용자</span></a>
+    <a href="#scores" data-t="scores">🎮 <span>게임 기록</span></a>
+    <a href="#notice" data-t="notice">📢 <span>공지</span></a>
+    <a href="#balance" data-t="balance">⚖️ <span>밸런스 게임</span></a>
+    <a href="#settings" data-t="settings">⚙️ <span>설정</span></a>
+    <a href="#log" data-t="log">📜 <span>관리 기록</span></a>
+  </nav>
+  <main class="main" id="main" aria-live="polite"></main>
+</div>
+
+<!-- 사용자 상세 등 -->
+<div class="modal" id="modal" hidden>
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="mhead"><h2 id="mTitle"></h2><button class="x" type="button" data-close aria-label="닫기">✕</button></div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script type="module" src="/admin/admin.js"></script>
+</body>
+</html>

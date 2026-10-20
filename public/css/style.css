@@ -683,3 +683,14 @@ body.playing{overflow:hidden}
 .result .row{display:flex;gap:10px;margin-top:12px;width:100%}.result .row .btn{flex:1}
 :root[data-theme="dark"] .crown,:root[data-theme="dark"] .gtop a,:root[data-theme="dark"] .rank li.me{background:#4a3c10;color:#ffe08a}
 :root[data-theme="dark"] .av .dot{border-color:var(--card)}
+
+/* ===== 관리자 공지 띠 (/admin에서 작성) ===== */
+.notice{position:relative;z-index:31;margin:84px auto 0;max-width:760px;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;
+  background:var(--sky);color:#173048;border:var(--bd);border-radius:16px;box-shadow:var(--sh-s);font-weight:700;transform:rotate(-.4deg)}
+.notice.warn{background:var(--yellow)}.notice.fun{background:var(--lime)}
+.notice .n-tx{flex:1;min-width:0;text-decoration:none;line-height:1.4}
+.notice .n-tx[href]{text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.notice .n-x{width:30px;height:30px;border-radius:9px;border:2px solid #173048;background:rgba(255,255,255,.6);color:#173048;flex:none;font-size:13px}
+.notice:not([hidden]) ~ #v-home .stage{padding-top:20px}
+.notice:not([hidden]) ~ .view:not(#v-home){padding-top:18px}
+@media (max-width:560px){.notice{margin-top:70px;font-size:14px}}
