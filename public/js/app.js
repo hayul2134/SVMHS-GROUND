@@ -73,7 +73,7 @@ function periodInfo(b) {
   const done = b.state === '방과 후' ? 99 : cur || nxt || 0;   // 이 교시 '전'까지는 끝남
   return { cur, nxt, done };
 }
-let nextKey = '', tickTimer = 0, heroVisible = true;
+let nextKey = '', tickTimer = 0, heroVisible = true, balVisible = true;
 // 화면 밖으로 스크롤된 전광판·종 시간 타일은 애니메이션을 멈춘다 (스크롤 렉 방지)
 const seen = new Set();   // 지금 화면에 보이는 첫 화면 구역(큰 시계 · 아래 상태 카드)
 const offscreen = new IntersectionObserver(es => es.forEach(e => {
@@ -82,7 +82,7 @@ const offscreen = new IntersectionObserver(es => es.forEach(e => {
   e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
   const was = heroVisible; heroVisible = seen.size > 0; if (heroVisible && !was) tickClock();
 }));
-document.querySelectorAll('.ticker, #bigclock, #more').forEach(el => offscreen.observe(el));
+document.querySelectorAll('.ticker, #bigclock').forEach(el => offscreen.observe(el));
 const lastVal = new Map();
 const setText = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).textContent = v; } };
 const setHtml = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).innerHTML = v; } };
@@ -202,7 +202,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu'
 // 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
-$('#goDown').onclick = () => $('#more').scrollIntoView({ behavior: 'smooth', block: 'start' });
+$('#goDown').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
 document.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) $(ACT[a.dataset.act]).click(); });
@@ -460,10 +460,11 @@ $('#plOpts').addEventListener('click', async e => {
   } catch (err) { toast(err.message || '투표하지 못했어요'); await loadBalance(); }
   balBusy = false;
 });
-// 다른 친구들 표 반영: 화면이 보이는 동안 40초마다, 다시 돌아왔을 때 바로
+// 다른 친구들 표 반영: 투표 카드가 보이는 동안 40초마다, 다시 돌아왔을 때 바로
+new IntersectionObserver(es => { balVisible = es[0].isIntersecting; }).observe($('#play'));
 function pollBalance() {
   clearTimeout(balTimer);
-  balTimer = setTimeout(async () => { if (!document.hidden && heroVisible && !balBusy) await loadBalance(); pollBalance(); }, 40000);
+  balTimer = setTimeout(async () => { if (!document.hidden && balVisible && !balBusy) await loadBalance(); pollBalance(); }, 40000);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && BAL) loadBalance(); });
 
