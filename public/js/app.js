@@ -598,13 +598,29 @@ const loadUpcoming = () => {
   if (!upcoming) upcoming = getSchedule(today(), addDays(today(), 60)).catch(e => { upcoming = null; throw e; });
   return upcoming;
 };
+// 학사일정: 달력(월간 그리드) + 아래 목록
+const calHtml = (m, rows) => {
+  const t = today(), y = m.getFullYear(), mo = m.getMonth(), last = new Date(y, mo + 1, 0).getDate(), first = new Date(y, mo, 1).getDay();
+  const by = {};
+  rows.forEach(r => (by[r.AA_YMD] = by[r.AA_YMD] || []).push(r));
+  let h = DOW.map(d => `<div class="dh">${d}</div>`).join('');
+  for (let i = 0; i < first; i++) h += '<div class="dy pad"></div>';
+  for (let d = 1; d <= last; d++) {
+    const dt = new Date(y, mo, d), k = ymd(dt), ev = by[k] || [], dow = dt.getDay();
+    const cls = ['dy', dow === 0 ? 'sun' : dow === 6 ? 'sat' : '', ev.length ? 'has' : '', ev.some(isOff) ? 'off' : '', dt < t ? 'past' : '', k === ymd(t) ? 'today' : ''].filter(Boolean).join(' ');
+    h += `<div class="${cls}" title="${ev.map(r => esc(r.EVENT_NM)).join(', ')}"><b class="n">${d}</b>${ev.slice(0, 2).map(r => `<span class="e${isOff(r) ? ' off' : ''}">${esc(r.EVENT_NM)}</span>`).join('')}${ev.length > 2 ? `<span class="e">+${ev.length - 2}</span>` : ''}</div>`;
+  }
+  return h;
+};
 async function renderCalView() {
-  const m = S.calMonth, end = new Date(m.getFullYear(), m.getMonth() + 1, 0), box = $('#cList');
+  const m = S.calMonth, end = new Date(m.getFullYear(), m.getMonth() + 1, 0), box = $('#cList'), grid = $('#cGrid');
   $('#cLbl').textContent = `${m.getFullYear()}년 ${m.getMonth() + 1}월`;
+  grid.innerHTML = calHtml(m, []);
   box.innerHTML = skel(4);
   try {
     const rows = await getSchedule(m, end);
     if (m !== S.calMonth) return;
+    grid.innerHTML = calHtml(m, rows);
     box.innerHTML = rows.length ? evHtml(rows) : empty('이 달에는 일정이 없어요');
   } catch { box.innerHTML = empty('일정을 불러오지 못했어요'); }
 }
@@ -640,10 +656,9 @@ async function renderHomeDday() {
   }).join('');
   fitUp();
 }
-// 다가오는 일정: 화면 폭에 맞춰 딱 2줄까지만 보이기
+// 다가오는 일정: 항상 3개만 보이기 (넓은 화면은 세로 3장, 좁은 화면은 가로 3장)
 function fitUp() {
-  const box = $('#hUp'), cols = getComputedStyle(box).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
-  $$('.up', box).forEach((el, i) => { el.hidden = i >= cols * 2; });
+  $$('.up', $('#hUp')).forEach((el, i) => { el.hidden = i >= 3; });
 }
 addEventListener('resize', fitUp);
 async function renderDdayView() {
