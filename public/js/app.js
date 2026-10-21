@@ -30,6 +30,9 @@ const offDays = new Set();   // 학사일정상 휴업일·공휴일(YYYYMMDD)
 const isOff = r => r.SBTR_DD_SC_NM === '휴업일' || r.SBTR_DD_SC_NM === '공휴일';
 const fmtLeft = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(s); };
 const pName = p => p === '조회' ? '조회' : p + '교시';
+/* 실제 종소리가 시계보다 늦게 울리는 만큼(ms) 카운트다운을 늦춘다. 종이 타이머보다 빠르면 음수로 */
+const BELL_LAG = 500;
+const bellNow = () => new Date(now() - BELL_LAG);
 
 function bellInfo(n) {
   const dow = n.getDay();
@@ -95,7 +98,8 @@ function tickClock() {
 
   const slot = mealSlot(n);
   if (slot !== S.mealSlot) { S.mealSlot = slot; S.mealManual = false; if (homeRows.length) paintHomeMeal(); }
-  const b = bellInfo(n), secNow = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  const nb = bellNow();   // 종 기준 시각(종소리 지연 반영)
+  const b = bellInfo(nb), secNow = nb.getHours() * 3600 + nb.getMinutes() * 60 + nb.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
   const pi = periodInfo(b);
   if (S.ttShown && cls && ymd(ttTarget(n)) !== S.ttShown) renderHomeTT();   // 마지막 교시 끝·자정에 홈 시간표 날짜 전환
@@ -105,7 +109,7 @@ function tickClock() {
     const live = S.ttShown === ymd(n);
     $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', live && p === pi.cur); li.classList.toggle('done', live && p < pi.done && p !== pi.cur); });
   }
-  if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - now().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
+  if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
   setText('#bellLbl', b.cnt || b.label);
@@ -123,7 +127,7 @@ function tickClock() {
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${prog.toFixed(4)})`;
   setText('#bellPct', bar ? `${Math.floor(prog * 100)}% 지남` : b.target != null ? '곧 시작해요' : b.state === '쉬는 날' ? '푹 쉬는 날' : '오늘 수업 끝');
-  tickTimer = setTimeout(tickClock, 1000 - now().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
+  tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
 // 다음 수업 카드 (첫 화면 오른쪽 작은 카드)
 function renderNext(b, pi) {
