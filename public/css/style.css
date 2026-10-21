@@ -384,7 +384,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .tray .lbl{position:relative;z-index:1;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:calc(100% - 6px);
   padding:3px 7px 2px;border-radius:9px;background:rgba(255,255,255,.92);color:#173048;font-weight:900;text-align:center;word-break:normal;overflow-wrap:anywhere;line-height:1.18;
   box-shadow:0 1px 0 rgba(23,48,72,.25),0 2px 6px rgba(23,48,72,.22)}
-.tray .cell .lbl{font-size:13.5px}
+.tray .cell .lbl{font-size:13.5px;-webkit-line-clamp:3}
 .tray .big .lbl{font-size:15px}
 .tray .half .lbl{font-size:12px;padding:2px 5px 1px;border-radius:7px;max-width:100%;word-break:keep-all;letter-spacing:-.06em}
 .tray .multi{padding:4px;gap:4px;justify-content:stretch;align-items:stretch}
