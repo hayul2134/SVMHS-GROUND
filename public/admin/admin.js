@@ -5,9 +5,10 @@ const $ = s => document.querySelector(s);
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ESC[c]);
 const GAMES = {
-  reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms' },
-  num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초' },
-  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms' },
+  // sus: 사람이 내기 어려운 기록(이 값 이하) → 게임 기록 화면에 '의심' 표시
+  reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 130 },
+  num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 4000 },
+  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 25 },
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const pad = n => String(n).padStart(2, '0');
@@ -131,6 +132,7 @@ VIEWS.dash = async () => {
       <section class="card"><h3>🩺 사이트 상태</h3>
         <ul class="checks">
           ${chk(true, 'D1 데이터베이스 연결됨')}
+          ${chk(s.dbWrite, s.dbWrite ? 'DB 저장 정상' : 'DB 저장 멈춤 — Cloudflare 계정 전체 무료 한도(하루 10만 행) 초과, 오전 9시에 풀림')}
           ${chk(s.neisKey, s.neisKey ? '나이스 인증키 있음 (시간표 전 교시)' : '나이스 인증키 없음 → 시간표 5교시까지만')}
           ${chk(s.signup, s.signup ? '새 가입 열림' : '새 가입 닫힘', '#settings')}
           ${chk(s.joinCode, s.joinCode ? '가입 코드 사용 중 (친구만 가입)' : '가입 코드 없음 → 주소만 알면 누구나 가입', '#settings', true)}
@@ -257,9 +259,9 @@ VIEWS.scores = async () => {
       <input class="inp" type="date" id="scDay" value="${dayIso}" max="${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)}">
       <button class="btn sm bad" type="button" data-act="resetday" ${d.list.length ? '' : 'disabled'}>이 날 ${g.name} 랭킹 전부 지우기</button>
     </div>
-    <p class="sub sp-b">이상하게 빠른 기록(핵·매크로 의심)은 지울 수 있어요. 지워도 그 사람은 다시 도전할 수 있어요.</p>
+    <p class="sub sp-b">이상하게 빠른 기록(핵·매크로 의심)은 지울 수 있어요. 지워도 그 사람은 다시 도전할 수 있어요. ${g.fmt(g.sus)} 이하는 <b class="sus">의심</b> 표시${d.list.some(x => x.best <= g.sus) ? ` — 이 날 ${d.list.filter(x => x.best <= g.sus).length}건` : ''}.</p>
     <section class="card"><div class="scroll">${d.list.length ? `<table class="tbl"><thead><tr><th>#</th><th>사용자</th><th>반</th><th class="r">기록</th><th>시각</th><th></th></tr></thead><tbody>
-      ${d.list.map((x, i) => `<tr><td class="num">${i + 1}</td><td>${who(x)}</td><td>${cls(x) || '-'}</td><td class="r num">${esc(g.fmt(x.best))}</td><td>${when(x.at)}</td>
+      ${d.list.map((x, i) => `<tr><td class="num">${i + 1}</td><td>${who(x)}</td><td>${cls(x) || '-'}</td><td class="r num">${x.best <= g.sus ? '<b class="sus">의심</b> ' : ''}${esc(g.fmt(x.best))}</td><td>${when(x.at)}</td>
         <td class="r"><button class="btn sm" type="button" data-act="delscore" data-h="${esc(x.handle)}">지우기</button></td></tr>`).join('')}
       </tbody></table>` : `<p class="empty">${ymdLabel(d.day)} ${g.name} 기록이 없어요</p>`}</div></section>`;
   $('#scDay').onchange = e => { if (e.target.value) { SC.day = e.target.value.replace(/-/g, ''); route(); } };

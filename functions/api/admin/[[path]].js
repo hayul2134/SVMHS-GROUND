@@ -1,7 +1,7 @@
 // SVMHS GROUND — 관리자 API (/api/admin/*). 화면은 public/admin/
 // 로그인: Pages 비밀 변수 ADMIN_KEY(관리자 비밀번호)와 같으면 12시간짜리 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만)을 준다.
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
-import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, maskIp } from '../../../lib/db.js';
+import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, maskIp, isWriteLimit, LIMIT_MSG } from '../../../lib/db.js';
 import { defaultBalance } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
@@ -52,7 +52,7 @@ export async function onRequest({ request: req, env, params }) {
   const method = req.method;
   if (!env.DB) return path === 'status' ? json({ db: false, adminKey: Boolean(env.ADMIN_KEY), authed: false }) : err('D1 데이터베이스가 연결되지 않았어요', 503);
   const db = env.DB;
-  await setup(db);
+  try { await setup(db); } catch (e) { console.error(e); return isWriteLimit(e) ? json({ error: LIMIT_MSG, limit: true }, 503) : err('처리 중 오류가 났어요. 잠시 후 다시 해 주세요', 500); }
 
   let body = {};
   if (method === 'POST') {
@@ -74,6 +74,7 @@ export async function onRequest({ request: req, env, params }) {
     return await route({ req, env, db, body, arg, url });
   } catch (e) {
     console.error(e);
+    if (isWriteLimit(e)) return json({ error: LIMIT_MSG, limit: true }, 503);
     return err('처리 중 오류가 났어요. 잠시 후 다시 해 주세요', 500);   // 내부 오류 내용은 로그에만
   }
 }
@@ -143,10 +144,14 @@ const ROUTES = {
     }
     const st = await getSettings(db, true);
     let notice = null; try { notice = JSON.parse(st.notice || 'null'); } catch {}
+    // 지금 DB에 쓸 수 있는지 한 줄 써서 확인 (계정 전체 무료 한도를 넘으면 실패)
+    let dbWrite = true;
+    try { await db.prepare("INSERT INTO settings (k, v) VALUES ('probe', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(String(now)).run(); }
+    catch (e) { if (!isWriteLimit(e)) throw e; dbWrite = false; }
     return json({
       counts: { users: n(0), activeToday: n(1), online: n(2), newToday: n(3), dmsToday: n(4), playsToday: n(5), openReports: n(6), mealVotes: n(7), balanceVotes: n(8), banned: n(9), follows: n(10) },
       days, classes: r[14].results,
-      status: { neisKey: Boolean(env.NEIS_KEY), joinCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st), notice: !!(notice && notice.text && !(notice.until && notice.until < now)) },
+      status: { dbWrite, neisKey: Boolean(env.NEIS_KEY), joinCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st), notice: !!(notice && notice.text && !(notice.until && notice.until < now)) },
     });
   },
 

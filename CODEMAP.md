@@ -14,12 +14,13 @@
 | `public/js/neis.js` | 나이스 API 호출 + 브라우저 캐시(3시간). `getMeals / getTimetable / getSchedule` |
 | `public/js/util.js` | 날짜·`esc()`·`store`(localStorage, 키 앞 `sg_`)·토스트 |
 | `public/js/qr.js` | QR 코드 SVG 생성기 (외부 라이브러리 없음) |
-| `public/js/social.js` | 소셜 화면 전부: 로그인/가입 · 프로필 꾸미기(아바타·색·스티커) · 친구 찾기/팔로우 · DM(3초 폴링) · 미니게임 3종(반응속도·1 to 25·컷 타이밍) · 랭킹(전체/친구/반 대항전 — 모두 개인 최고 기록 기준, 하루 단위 랭킹 없음). `app.js`가 시작할 때 동적 import → `init(SOC)` |
-| `functions/api/s/[[path]].js` | 소셜 API `/api/s/*` (D1 `DB`, 테이블 자동 생성). 쿠키 세션(HttpOnly) · PBKDF2 비밀번호 · 횟수 제한 · DM은 맞팔끼리만 · 차단/신고 · 게임 기록 범위 검사 |
+| `public/js/social.js` | 소셜 화면 전부: 로그인/가입 · 프로필 꾸미기(아바타·색·스티커) · 친구 찾기/팔로우 · DM(새 메시지 확인 25초, 대화창 3~15초, 화면 숨기면 멈춤) · 미니게임 3종(반응속도·1 to 25·컷 타이밍) · 랭킹(전체/친구/반 대항전 — 모두 개인 최고 기록 기준, 하루 단위 랭킹 없음). `app.js`가 시작할 때 동적 import → `init(SOC)` |
+| `functions/api/s/[[path]].js` | 소셜 API `/api/s/*` (D1 `DB`, 테이블 자동 생성). 쿠키 세션(HttpOnly, 30일·연장 없음) · PBKDF2 비밀번호 · 횟수 제한 · DM은 맞팔끼리만 · 차단/신고 · 게임 기록 범위 검사 |
 | `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표 · `/api/balance` 오늘의 밸런스 게임(둘 다 D1 `DB`, 테이블 자동 생성) |
 | `public/admin/` | **관리자 페이지** `/admin` (index.html · admin.css · admin.js). 대시보드 · 신고 처리 · 사용자 관리(정지·임시 비번·프로필 정리·삭제) · 게임 기록 · 공지 · 밸런스 질문 · 설정(가입 코드·가입/DM 켜고 끄기) · 관리 기록 |
 | `functions/api/admin/[[path]].js` | 관리자 API `/api/admin/*`. 비밀 변수 `ADMIN_KEY`로 로그인 → 12시간 세션(HttpOnly 쿠키, 경로 /api/admin). IP당 15분 8회 시도 제한. 모든 조치는 `admin_log`에 기록 |
 | `lib/db.js`, `lib/balance.js` | functions 세 곳이 같이 쓰는 D1 테이블 정의(`setup`)·설정(`settings` 테이블)·횟수 제한(`limited`·`ipKey`: IP는 해시로만, 만료 줄 자동 삭제)·관리 기록용 `maskIp`·밸런스 기본 질문. **표 구조를 바꾸면 `SCHEMA_V`를 올릴 것**(평소엔 버전 확인 쿼리 1번만 실행). functions/ 밖이라 라우트가 아님 |
+| `public/sw.js` | 서비스 워커(`app.js` 시작에서 등록). 화면 파일·`/api/neis`·`/api/config`를 네트워크 먼저(3.5초 넘으면 저장본) 방식으로 저장 → 와이파이가 끊겨도 마지막 화면·급식·시간표 보임. 로그인·DM·게임·투표·관리자는 건드리지 않음. 저장 목록을 크게 바꾸면 `SHELL`·`DATA` 이름의 v를 올릴 것 |
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
 | `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 |
 | `public/og-image.jpg` | 카톡 등 링크 미리보기 이미지 (1200×630) |

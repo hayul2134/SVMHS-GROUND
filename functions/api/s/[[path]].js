@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
-import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey } from '../../../lib/db.js';
+import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -16,7 +16,7 @@ const TICKET_RE = /^[0-9a-f]{32}$/;
 const TICKET_TTL = 3600e3;
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
-const SESSION_DAYS = 365;   // 로그아웃하지 않으면 유지: 접속할 때마다 만료를 다시 365일로 연장(GET me)
+const SESSION_DAYS = 30;   // 로그인 후 30일이 지나면 다시 로그인 (연장 없음 — 공용 태블릿에 로그인이 무한히 남지 않게)
 const COOKIE = 'sg_s';
 const SECURITY_HEADERS = { 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), {
@@ -88,7 +88,7 @@ export async function onRequest({ request: req, env, params }) {
   const path = (params.path || []).join('/');
   if (!env.DB) return json({ enabled: false });
   const db = env.DB;
-  await setup(db);
+  try { await setup(db); } catch (e) { console.error(e); return isWriteLimit(e) ? json({ error: LIMIT_MSG, limit: true }, 503) : err('잠시 후 다시 시도해 주세요', 500); }
   const method = req.method;
   let body = {};
   if (method === 'POST') {
@@ -106,6 +106,7 @@ export async function onRequest({ request: req, env, params }) {
     return await route({ req, env, db, body, arg: decodeURIComponent(path.split('/')[1] || ''), url: new URL(req.url) });
   } catch (e) {
     console.error(e);
+    if (isWriteLimit(e)) return json({ error: LIMIT_MSG, limit: true }, 503);
     return err('잠시 후 다시 시도해 주세요', 500);
   }
 }
@@ -172,14 +173,7 @@ const ROUTES = {
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE b = ?1').bind(me.id).first(),
       friendIds(db, me.id),
     ]);
-    // 로그인 유지: 하루 넘게 지났으면 세션·쿠키 만료를 다시 SESSION_DAYS로 늘림 (로그아웃·비번 변경 전까지 계속 로그인)
-    let hdr;
-    if (me.exp - Date.now() < (SESSION_DAYS - 1) * 86400e3) {
-      const token = cookieOf(req, COOKIE);
-      await db.prepare('UPDATE sessions SET exp = ?1 WHERE token = ?2').bind(Date.now() + SESSION_DAYS * 86400e3, await sha256(token)).run();
-      hdr = { 'set-cookie': setCookie(req, token, SESSION_DAYS * 86400) };
-    }
-    return json({ me: { ...pub(me), online: true }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } }, 200, hdr);
+    return json({ me: { ...pub(me), online: true }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {

@@ -1,6 +1,6 @@
 // SVMHS GROUND — 나이스 API 프록시 (Cloudflare Pages Functions, /api/* 담당)
 // 인증키는 Pages 프로젝트의 비밀 변수 NEIS_KEY에 보관한다. 키가 없어도 동작하지만 한 번에 5건까지만 받는다.
-import { setup, getSettings, kstYmd, limited, ipKey } from '../../lib/db.js';
+import { setup, getSettings, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG } from '../../lib/db.js';
 import { defaultBalance } from '../../lib/balance.js';
 
 const SCHOOL = { ATPT_OFCDC_SC_CODE: 'B10', SD_SCHUL_CODE: '7010795' }; // 서울시교육청 · 서울영상고
@@ -28,9 +28,13 @@ const json = (obj, status = 200, cache = 'no-store') => new Response(JSON.string
 
 export async function onRequest({ request, env, params }) {
   const path = (params.path || []).join('/');
-  if (path === 'vote') return vote(request, env);
-  if (path === 'balance') return balance(request, env);
-  if (path === 'notice') return notice(env);
+  if (path === 'vote' || path === 'balance' || path === 'notice') {
+    try { return await { vote, balance, notice: (_, e) => notice(e) }[path](request, env); }
+    catch (e) {
+      console.error(e);
+      return json(isWriteLimit(e) ? { error: LIMIT_MSG, limit: true } : { error: '잠시 후 다시 시도해 주세요' }, isWriteLimit(e) ? 503 : 500);
+    }
+  }
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...SECURITY_HEADERS } });
   }

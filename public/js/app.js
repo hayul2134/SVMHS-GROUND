@@ -821,6 +821,8 @@ $('#intro').addEventListener('click', e => {
 tickClock();
 renderClassChip();
 store.pruneCache();
+// 서비스 워커: 와이파이가 끊겨도 마지막 화면·급식·시간표 보이기 (public/sw.js)
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 // 날짜가 바뀐 채로 다시 열면(자정 넘김) 새로 고침
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
