@@ -57,18 +57,24 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .iconbtn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .iconbtn svg{width:19px;height:19px}
 /* 목록 버튼(☰ ↔ ✕) + 아래로 펼쳐지는 아이콘 목록 */
-.hmenu{position:relative}
+.hmenu{position:relative;display:flex;align-items:center;gap:8px}
 .burger span{position:absolute;left:50%;top:50%;width:20px;height:2.6px;margin:-1.3px 0 0 -10px;border-radius:2px;background:currentColor;transition:transform .38s cubic-bezier(.65,0,.35,1),opacity .2s}
 .burger span:nth-child(1){transform:translateY(-6.5px)}
 .burger span:nth-child(3){transform:translateY(6.5px)}
 .hmenu.open .burger span:nth-child(1){transform:rotate(45deg)}
 .hmenu.open .burger span:nth-child(2){opacity:0;transform:scaleX(.2)}
 .hmenu.open .burger span:nth-child(3){transform:rotate(-45deg)}
-.hlist{position:absolute;top:100%;right:0;padding-top:10px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
-.hi{display:block;opacity:0;transform:translateY(calc(var(--n) * -54px)) scale(.7);transition:transform .32s cubic-bezier(.55,0,.6,.2),opacity .22s;transition-delay:calc((3 - var(--n)) * 35ms)}
-.hi:nth-child(1){--n:1}.hi:nth-child(2){--n:2}.hi:nth-child(3){--n:3}.hi:nth-child(4){--n:4}
-.hmenu.open .hlist{pointer-events:auto}
-.hmenu.open .hi{opacity:1;transform:none;transition:transform .45s cubic-bezier(.34,1.45,.6,1),opacity .2s;transition-delay:calc((var(--n) - 1) * 45ms)}
+.hlist{position:absolute;top:calc(100% + 10px);right:0;width:236px;padding:8px;background:var(--card);border:var(--bd);border-radius:20px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:2px;z-index:40;opacity:0;transform:translateY(-10px) scale(.95);transform-origin:top right;pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.34,1.3,.6,1)}
+.hmenu.open .hlist{opacity:1;transform:none;pointer-events:auto}
+.hi{display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border-radius:14px;text-align:left;color:var(--text);font-weight:900;font-size:15px;line-height:1.15;transition:background .12s,transform .12s}
+.hi:hover,.hi:focus-visible{background:var(--chip);outline:0}
+.hi:active{transform:translateX(3px)}
+.hi .mi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--chip);border:var(--bd);color:var(--ink);transition:transform .15s}
+:root[data-theme="dark"] .hi .mi{color:var(--text)}
+.hi:hover .mi{transform:rotate(-8deg)}
+.hi .mi svg{width:18px;height:18px}
+.hi .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hi small{font-size:11.5px;font-weight:700;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:560px){.hd{padding:12px 16px;gap:6px}.iconbtn{width:40px;height:40px;border-radius:12px}.logo img{width:44px;height:44px}.logo strong{font-size:19px}}
 
 /* ===== 4. 전광판 (오늘 정보가 흘러감) ===== */
@@ -642,7 +648,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .hbadge{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font:900 11px/16px var(--num);font-style:normal;border:2px solid var(--ink);display:grid;place-items:center}
 .ai{position:relative}
 .app.hot .ai{background:var(--yellow)!important;color:var(--ink)!important}
-#btnMe .av.tiny{width:30px;height:30px;min-height:0;padding:0;font-size:17px;border-width:2px;box-shadow:none}
+#btnMe .av.tiny{width:34px;height:34px;min-height:0;padding:0;font-size:17px;border-width:2px;box-shadow:none}
 /* 아바타 색 */
 .c-sky{--pc:#6fc6f4}.c-blue{--pc:#5b8ff0}.c-mint{--pc:#8fe8cf}.c-lime{--pc:#c8ef7d}.c-yellow{--pc:#ffe08a}
 .c-peach{--pc:#ffb88f}.c-pink{--pc:#ffaad3}.c-violet{--pc:#bba6ff}.c-ink{--pc:#34507a}

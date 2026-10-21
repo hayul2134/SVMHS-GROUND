@@ -53,7 +53,7 @@ const closeSheet = () => ctx.closeModal($('#mSoc'));
 function paintBadges() {
   const n = S.me ? S.unread : 0;
   $$('[data-badge="dm"]').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
-  $('#btnMe').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
+  $('#btnMe .mi').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
 }
 async function refreshMe() {
   try {
@@ -231,6 +231,22 @@ document.addEventListener('click', async e => {
   const a = e.target.closest('[data-act-s]');
   if (a) ({ edit: openEdit, settings: openSettings, more: () => openMore(a.dataset.h) })[a.dataset.actS]?.();
 });
+/* 상단 메뉴 '신고': 아이디와 이유를 적어서 보냄 (로그인 필요) */
+function openReport() {
+  if (!S.enabled) { toast('아직 준비 중이에요'); return; }
+  if (!S.me) { toast('로그인하면 신고할 수 있어요'); ctx.go('me'); return; }
+  sheet(`<h3>🚨 신고하기</h3><p class="note">불편한 사람의 아이디와 이유를 적어 주세요. 관리자가 확인해요.</p>
+    <form class="sform" id="rpForm" autocomplete="off">
+      <label>아이디<input name="handle" required maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" placeholder="신고할 사람의 아이디"></label>
+      <label>이유<input name="reason" required maxlength="200" placeholder="예: 욕설, 괴롭힘"></label>
+      <div class="row"><button class="btn ghost" type="button" data-close>닫기</button><button class="btn">신고 보내기</button></div>
+    </form>`);
+  $('#rpForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target), handle = String(f.get('handle')).trim().replace(/^@/, '');
+    try { await call('report', { handle, reason: String(f.get('reason')).trim() }); toast('신고했어요. 고마워요'); closeSheet(); } catch (err) { fail(err); }
+  };
+}
 function openMore(h) {
   sheet(`<h3>@${esc(h)}</h3><div class="col">
     <button class="btn ghost" data-report="${esc(h)}">🚨 신고하기</button>
@@ -616,6 +632,7 @@ function playCut() {
 export async function init(c) {
   ctx = c;
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
+  c.report = openReport;
   c.onLeave = v => {
     document.body.dataset.view = v;
     if (v === 'dm') closePanel(); else if (threadIn === 'page') stopThread();

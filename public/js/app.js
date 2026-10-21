@@ -185,7 +185,7 @@ function go(v) {
   onScroll();
   if (location.hash !== '#' + v) history.replaceState(null, '', v === 'home' ? location.pathname : '#' + v);
 }
-// 오른쪽 목록 버튼: ☰ 누르면 아이콘들이 아래로 펼쳐지고 ✕로, 다시 누르면 올라가며 ☰로
+// 오른쪽 목록 버튼: ☰ 누르면 서랍처럼 목록(프로필·설정·QR·신고)이 펼쳐지고 ✕로, 다시 누르면 닫히며 ☰로. 테마 버튼은 목록 옆에 따로
 function menu(on) {
   const m = $('#hMenu'), b = $('#btnMenu');
   if (on === m.classList.contains('open')) return;
@@ -195,8 +195,8 @@ function menu(on) {
   b.setAttribute('aria-label', on ? '메뉴 닫기' : '메뉴 열기');
 }
 $('#btnMenu').onclick = () => menu(!$('#hMenu').classList.contains('open'));
-// 항목을 누르면 닫힘(테마는 바로 보이게 열어 둠) · 바깥을 누르거나 Esc면 닫힘
-$('#hList').addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.hasAttribute('data-keep')) menu(false); });
+// 항목을 누르면 닫힘 · 바깥을 누르거나 Esc면 닫힘
+$('#hList').addEventListener('click', e => { if (e.target.closest('button')) menu(false); });
 document.addEventListener('click', e => { if (!e.target.closest('#hMenu')) menu(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu').classList.contains('open')) { menu(false); $('#btnMenu').focus(); } });
 // 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
@@ -731,6 +731,7 @@ $('#saveClass').onclick = () => {
 
 /* ===== 이용 안내 · 홈 화면에 추가 ===== */
 $('#btnInfo').onclick = () => openModal('#mInfo');
+$('#btnReport').onclick = () => { if (SOC.report) SOC.report(); else toast('잠시 후 다시 눌러 주세요'); };
 let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; });
 $('#installBtn').onclick = async () => {
