@@ -1,7 +1,7 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
-import { foodSvg, foodDark, arBucket, drinkSvg, isDrink } from './food.js';
+import { foodSvg, arBucket, drinkSvg, isDrink } from './food.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -308,9 +308,9 @@ const cellHtml = (items, cls = '', v = null) => {
   if (items.length === 1) {
     const x = items[0], pick = v && v.mine === x ? ' picked' : '';
     const t = nm(x);
-    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${fx(x)}${voteMark(x, v)}<b class="lbl${t.cls}${foodDark(x) ? ' dk' : ''}">${t.html}</b></div>`;
+    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${fx(x)}${voteMark(x, v)}<b class="lbl${t.cls}">${t.html}</b></div>`;
   }
-  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}>${fx(x)}<em class="lbl${nm(x).cls}${foodDark(x) ? ' dk' : ''}">${nm(x).html}</em>${voteMark(x, v)}</span>`).join('')}</div>`;
+  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}>${fx(x)}<em class="lbl${nm(x).cls}">${nm(x).html}</em>${voteMark(x, v)}</span>`).join('')}</div>`;
 };
 // 음료: 식판 오른쪽에 따로 세워 둠 (우유팩·컵)
 const drinksHtml = (list, v) => !list.length ? '' : `<div class="drinks" role="list" aria-label="음료">${list.map(x => `<div class="drink${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}" role="listitem"${dishAttr(x, v)}>${voteMark(x, v)}${drinkSvg(x)}<b class="lbl${nm(x).cls}">${nm(x).html}</b></div>`).join('')}</div>`;

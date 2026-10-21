@@ -397,29 +397,26 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .tray .cell:not(.empty):not(.multi){padding:4px}
 .tray .fx{position:absolute;inset:0;pointer-events:none}
 .tray .food{position:absolute;inset:0;width:100%;height:100%;display:block}
-.tray .lbl{--fmax:16px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;max-width:100%;
-  font-family:var(--disp);font-weight:400;font-style:normal;line-height:1.08;letter-spacing:-.02em;text-align:center;color:#173048;
-  font-size:var(--fmax);font-size:min(var(--fmax),calc((100cqi - 8px) / var(--n,4)));
-  text-shadow:-1.2px -1.2px 0 #fff,1.2px -1.2px 0 #fff,-1.2px 1.2px 0 #fff,1.2px 1.2px 0 #fff,0 0 7px rgba(255,255,255,.95)}
+.tray .lbl{--fmax:14px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;max-width:100%;
+  padding:3px 7px 2px;border-radius:9px;background:rgba(255,255,255,.92);color:#173048;font-weight:900;font-style:normal;line-height:1.15;letter-spacing:-.04em;text-align:center;
+  font-size:var(--fmax);font-size:min(var(--fmax),calc((100cqi - 20px) / var(--n,4)));box-shadow:0 1px 0 rgba(23,48,72,.25),0 2px 6px rgba(23,48,72,.22)}
 .tray .lbl .ln{display:block;white-space:nowrap}
-/* 진한 음식(빨간 국물·나물·고기 등) 위: D-day 글씨처럼 흰 테두리 + 흰 그림자 */
-.tray .lbl.dk{text-shadow:-1.5px -1.5px 0 #fff,1.5px -1.5px 0 #fff,-1.5px 1.5px 0 #fff,1.5px 1.5px 0 #fff,0 1.5px 0 #fff,1.5px 0 0 #fff,3px 3px 0 #fff}
 .lbl.c1,.lbl.c2{--n:2.4}.lbl.c3{--n:3.1}.lbl.c4{--n:4.1}.lbl.c5{--n:5.1}.lbl.c6{--n:6.1}.lbl.c7{--n:7.1}.lbl.c8{--n:8.1}.lbl.c9{--n:9.1}.lbl.c10{--n:10.1}
-.tray .big .lbl{--fmax:19px}
-.tray .half .lbl{--fmax:14px}
+.tray .big .lbl{--fmax:15px}
+.tray .half .lbl{--fmax:12.5px;padding:2px 5px 1px;border-radius:7px}
 .tray .multi{padding:3px;gap:3px;justify-content:stretch;align-items:stretch}
 .tray .multi .it{position:relative;flex:1 1 0;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;border-radius:10px;padding:1px}
-.tray .multi .it .lbl{--fmax:13px}
+.tray .multi .it .lbl{--fmax:11.5px;padding:2px 5px 1px;border-radius:7px}
 .tray .it .vc{position:absolute;top:2px;right:3px;margin:0}
 .tray .vc{z-index:2}
 .tray .cell.picked::after,.tray .it.picked::after{content:"";position:absolute;inset:0;z-index:2;border:3px solid var(--k);border-radius:inherit;pointer-events:none}
-.tray .picked .lbl,.tray .it.picked .lbl{color:var(--k)}
+.tray .picked .lbl,.tray .it.picked .lbl{background:var(--k);color:#fff}
 .tray .picked,.tray .it.picked{box-shadow:inset 3px 3px 7px var(--cs)}
-.tray.mini .cell .lbl{--fmax:14px}
-.tray.mini .big .lbl{--fmax:16px}
-.tray.mini .half .lbl{--fmax:12px}
-.tray.mini .multi .it .lbl{--fmax:11px}
-:root[data-theme="dark"] .tray .lbl{color:#173048}
+.tray.mini .cell .lbl{--fmax:12.5px;padding:2px 6px 1px}
+.tray.mini .big .lbl{--fmax:13.5px}
+.tray.mini .half .lbl{--fmax:11px;padding:1px 4px}
+.tray.mini .multi .it .lbl{--fmax:10.5px;padding:1px 4px}
+:root[data-theme="dark"] .tray .lbl{background:rgba(16,26,40,.86);color:#f3f7fb;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 /* 음료: 식판 옆에 따로 */
 .tray-set{display:flex;align-items:flex-end;gap:6px}
 .tray-set > .tray{flex:1 1 auto;min-width:0}

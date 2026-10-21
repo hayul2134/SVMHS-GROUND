@@ -11,10 +11,9 @@ const f = n => Math.round(n * 10) / 10;
 
 /* ---------- 공용 음영(그라디언트) — 문서에 한 번만 넣고 모든 그림이 같이 씀 ---------- */
 const DEFS = `<defs>
-<radialGradient id="fv" cx=".36" cy=".3" r=".78"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></radialGradient>
-<radialGradient id="fb" cx=".42" cy=".34" r=".72"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity=".04"/><stop offset="1" stop-color="#000" stop-opacity=".26"/></radialGradient>
-<radialGradient id="fl" cx=".5" cy=".42" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".38"/></radialGradient>
-<linearGradient id="fs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<radialGradient id="fv" cx=".45" cy=".4" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></radialGradient>
+<radialGradient id="fb" cx=".48" cy=".44" r=".72"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></radialGradient>
+<radialGradient id="fl" cx=".5" cy=".48" r=".72"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></radialGradient>
 </defs>`;
 if (typeof document !== 'undefined' && !document.querySelector('.food-defs')) {
   const d = document.createElement('div');
@@ -53,7 +52,6 @@ class Pen {
     const rot = this.R(0, 6.28), d = this.blob(cx, cy, rx, ry, jit, n, rot);
     if (sh) this.path(this.blob(cx + rx * .1, cy + ry * .24, rx, ry, jit, n, rot), '#2a160a', ` opacity="${f(sh * .42)}"`);
     this.path(d, col).path(d, 'url(#fv)');
-    if (hi) this.add(`<ellipse cx="${f(cx - rx * .32)}" cy="${f(cy - ry * .4)}" rx="${f(rx * .3)}" ry="${f(ry * .15)}" fill="${light}" opacity="${f(Math.min(.85, hi * .95))}" transform="rotate(-18 ${f(cx - rx * .32)} ${f(cy - ry * .4)})"/>`);
     return this;
   }
   // 국물·소스: 칸 안쪽에 담긴 모양(가장자리는 깊어 보이게 어둡게, 위쪽은 반짝)
@@ -64,7 +62,6 @@ class Pen {
     this.add(`<rect x="${f(x)}" y="${f(y)}" width="${f(rw)}" height="${f(rh)}" rx="${rr}" fill="${col}"/>`);
     this.add(`<rect x="${f(x)}" y="${f(y)}" width="${f(rw)}" height="${f(rh)}" rx="${rr}" fill="url(#fl)"/>`);
     this.add(`<rect x="${f(x + 1.2)}" y="${f(y + 1.2)}" width="${f(rw - 2.4)}" height="${f(rh - 2.4)}" rx="${rr}" fill="none" stroke="${rim}" stroke-width="2.4" opacity=".55"/>`);
-    this.add(`<ellipse cx="${f(w * .36)}" cy="${f(h * .27)}" rx="${f(w * .22)}" ry="${f(h * .07)}" fill="url(#fs)" opacity="${f(sheen * 3)}" transform="rotate(-8 ${f(w * .36)} ${f(h * .27)})"/>`);
     this.liq = true;
     return this;
   }
@@ -108,7 +105,6 @@ class Pen {
       const d = `M${f(x)} ${f(y)}Q${f(cx)} ${f(cy)} ${f(x2)} ${f(y2)}`, sw = f(wd * this.R(.8, 1.2));
       if (wd >= 1.6) this.add(`<path d="${d}" stroke="#2a160a" stroke-width="${sw}" stroke-linecap="round" fill="none" opacity=".18" transform="translate(.6 1)"/>`);
       this.add(`<path d="${d}" stroke="${this.pick(pal)}" stroke-width="${sw}" stroke-linecap="round" fill="none"${op < 1 ? ` opacity="${op}"` : ''}/>`);
-      if (wd >= 2.2 && i % 2 === 0) this.add(`<path d="${d}" stroke="#fff" stroke-width="${f(sw * .28)}" stroke-linecap="round" fill="none" opacity=".35" transform="translate(-.4 -.5)"/>`);
     }
     return this;
   }
@@ -174,7 +170,6 @@ const DRAW = {
     const { w, h } = p;
     const sd = p.blob(w * .56, h * .52, w * .27, h * .25, .14, 11);
     p.path(p.blob(w * .57, h * .55, w * .27, h * .25, .14, 11), '#2a160a', ' opacity=".22"').path(sd, col).path(sd, 'url(#fv)');
-    p.add(`<ellipse cx="${f(w * .5)}" cy="${f(h * .42)}" rx="${f(w * .09)}" ry="${f(h * .04)}" fill="#fff" opacity=".55"/>`);
     for (let i = 0; i < 9; i++) { const a = p.R(0, 6.28), d = p.R(0, .8), x = w * .56 + Math.cos(a) * d * w * .22, y = h * .52 + Math.sin(a) * d * h * .2; p.add(`<rect x="${f(x - 2.2)}" y="${f(y - 2.2)}" width="4.4" height="4.4" rx="1.4" fill="${p.pick(veg)}" transform="rotate(${f(p.R(-30, 30))} ${f(x)} ${f(y)})"/>`); }
     if (/마요/.test(n)) p.strands(['#fffbe9'], 5, 18, 1.6, .7);
     if (/(김|김가루)/.test(n)) p.rects(['#1f2a1d'], 10, 2.4, .6, .4, false);
@@ -399,7 +394,7 @@ const DRAW = {
     const soft = /연두부|순두부/.test(n), sauce = /조림|마파|고추장|양념/.test(n);
     if (sauce) p.bed(/마파|고추장|매콤/.test(n) ? '#b9452a' : '#7a4426', null, .95);
     if (soft) { p.lump(p.w / 2, p.h / 2, p.w * .32, p.h * .3, '#fbf8ef', { hi: .5, n: 12, jit: .1 }); }
-    else for (let i = 0; i < 8; i++) { const x = p.w * (.24 + (i % 4) * .17), y = p.h * (.36 + Math.floor(i / 4) * .28) + p.R(-2, 2); p.add(`<rect x="${f(x - 7 + 1)}" y="${f(y - 6 + 1.6)}" width="14" height="12" rx="2" fill="#000" opacity=".15"/><rect x="${f(x - 7)}" y="${f(y - 6)}" width="14" height="12" rx="2" fill="${sauce ? '#e6c08a' : /구이|부침/.test(n) ? '#e8c47a' : '#f7f2e2'}"/><rect x="${f(x - 5)}" y="${f(y - 4.5)}" width="6" height="2.4" rx="1" fill="#fff" opacity=".5"/>`); }
+    else for (let i = 0; i < 8; i++) { const x = p.w * (.24 + (i % 4) * .17), y = p.h * (.36 + Math.floor(i / 4) * .28) + p.R(-2, 2); p.add(`<rect x="${f(x - 7 + 1)}" y="${f(y - 6 + 1.6)}" width="14" height="12" rx="2" fill="#000" opacity=".15"/><rect x="${f(x - 7)}" y="${f(y - 6)}" width="14" height="12" rx="2" fill="${sauce ? '#e6c08a' : /구이|부침/.test(n) ? '#e8c47a' : '#f7f2e2'}"/>`); }
     if (/부추|양념장|간장|숙회/.test(n) || soft) { p.lump(p.w / 2 + 2, p.h / 2 - 2, 9, 5, '#6a3a1e', { sh: 0, hi: .5 }); p.strands(['#5fa83a', '#4c8f2c'], 10, 8, 1.6, .5); p.flakes(10, .5); }
     if (/김치/.test(n)) p.dots(['#d8532e', '#c44422'], 14, 2.4, 4, .8);
     if (/쑥갓|무침/.test(n)) p.strands(['#3f7a2a', '#5a9a3a'], 20, 12, 2.2, .9);
@@ -415,7 +410,7 @@ const DRAW = {
   laver(p, n) {   // 구이김·김자반
     if (/자반|가루|볶음/.test(n)) { p.bed('#1f2a1d'); p.rects(['#1f2a1d', '#2c3a26', '#34442c'], 50, 3.4, .9, .5, false); p.sesame(30); return; }
     for (let i = 0; i < 4; i++) { const x = p.w * .5 + (i - 1.5) * 4, y = p.h * .5 + (i - 1.5) * 3; p.add(`<rect x="${f(x - p.w * .3)}" y="${f(y - p.h * .26)}" width="${f(p.w * .6)}" height="${f(p.h * .52)}" rx="2" fill="#000" opacity=".12" transform="translate(1.5 2)"/><rect x="${f(x - p.w * .3)}" y="${f(y - p.h * .26)}" width="${f(p.w * .6)}" height="${f(p.h * .52)}" rx="2" fill="${i % 2 ? '#22301f' : '#1a2618'}"/>`); }
-    p.dots(['#4a5a3a', '#0f160e'], 40, .4, .9, .9).dots(['#fff'], 6, .4, .8, .7, .25);
+    p.dots(['#4a5a3a', '#0f160e'], 40, .4, .9, .9);
   },
   anchovy(p, n) {
     p.bed('#b89a64');
@@ -591,8 +586,7 @@ function make(name, ar = 1) {
   const n = String(name).split('+')[0] || name, kind = foodKind(n);
   const p = new Pen(w, h, seedOf(name));
   try { DRAW[kind](p, String(name)); } catch { p.o = []; p.tone = ''; DRAW.misc(p, String(name)); }
-  if (p.pile && !p.liq) p.mound(.3);
-  if (HOT.has(kind) && h >= 70) p.steam();
+  if (p.pile && !p.liq) p.mound(.6);
   const r = { svg: p.svg(), dark: isDark(p.tone) };
   memo.set(key, r);
   return r;
