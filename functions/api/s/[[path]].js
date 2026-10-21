@@ -7,11 +7,13 @@ import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ip
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
-const GAMES = {   // 모두 '작을수록 좋음' (ms)
-  reaction: { min: 100, max: 1500 },      // 반응속도 5번 평균
-  num25: { min: 2500, max: 600000 },      // 1→25 순서대로 누르기
-  cut: { min: 0, max: 6000 },             // 컷 타이밍 5번 오차 합
+const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 받은 뒤 기록을 내기까지 최소 걸리는 시간
+  reaction: { min: 100, max: 1500, play: 5000 },      // 반응속도 5번 평균 (매번 1초 이상 기다림)
+  num25: { min: 2500, max: 600000, play: 2000 },      // 1→25 순서대로 누르기
+  cut: { min: 0, max: 6000, play: 5000 },             // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
 };
+const TICKET_RE = /^[0-9a-f]{32}$/;
+const TICKET_TTL = 3600e3;
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
 const SESSION_DAYS = 365;   // 로그아웃하지 않으면 유지: 접속할 때마다 만료를 다시 365일로 연장(GET me)
@@ -141,7 +143,9 @@ const ROUTES = {
 
   'POST login': async ({ req, db, body }) => {
     const handle = String(body.handle || '').trim().toLowerCase(), pw = String(body.pw || '');
-    if (await limited(db, 'li:' + await ipKey(req), 100, 600) || await limited(db, 'lh:' + handle.slice(0, 16), 10, 600)) return err('로그인 시도가 너무 많아요. 10분 뒤에 다시 해 주세요', 429);
+    // 아이디+IP 기준으로 막아서, 다른 사람이 일부러 틀려도 내 기기에서는 계속 로그인할 수 있게 함. 아이디 전체 한도는 여러 IP로 대입하는 것 대비
+    const ik = await ipKey(req), h = handle.slice(0, 16);
+    if (await limited(db, 'li:' + ik, 100, 600) || await limited(db, 'lh:' + h + ':' + ik, 10, 600) || await limited(db, 'lg:' + h, 60, 3600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);
     const u = HANDLE_RE.test(handle) && await db.prepare('SELECT id, pw, salt FROM users WHERE handle = ?1').bind(handle).first();
     const ok = sameStr(await hashPw(pw, (u || DUMMY).salt), (u || DUMMY).pw);   // 없는 아이디도 똑같이 해시 계산
     if (!u || !ok) return err('아이디나 비밀번호가 맞지 않아요', 401);
@@ -373,11 +377,25 @@ const ROUTES = {
   }),
 
   /* ----- 미니게임 ----- */
+  // 게임 시작 티켓: 서버가 시작 시각을 기억해 두고(rl 표, 1시간 뒤 만료), 기록은 티켓 하나당 한 번만 받는다
+  // → 게임을 안 하고 기록만 바로 보내거나, 같은 기록을 여러 번 보내는 것을 막음 (완전한 조작 방지는 아님)
+  'POST start': needMe(async ({ db, me, body }) => {
+    const game = String(body.game || '');
+    if (!GAMES[game]) return err('bad game');
+    if (await limited(db, 'gs:' + me.id, 60, 600)) return err('잠깐 쉬었다가 해요', 429);
+    const ticket = randHex(16);
+    await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + TICKET_TTL).run();
+    return json({ ticket });
+  }),
+
   'POST score': needMe(async ({ db, me, body }) => {
-    const game = String(body.game || ''), v = Math.round(+body.value);
+    const game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
     if (!g || !Number.isFinite(v) || v < g.min || v > g.max) return err('기록이 이상해요');
     if (await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
+    const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
+    if (!tk) return err('게임을 다시 시작해 주세요');
+    if (Date.now() - (tk.reset - TICKET_TTL) < g.play) return err('기록이 이상해요');
     const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const prev = await db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first();
     const allPrev = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();

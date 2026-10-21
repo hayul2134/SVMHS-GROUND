@@ -30,10 +30,12 @@ async function hashPw(pw, salt) {   // 소셜 API와 같은 방식 (비밀번호
 }
 const cookieOf = req => (req.headers.get('cookie') || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '='))?.slice(COOKIE.length + 1) || '';
 const setCookie = (req, token, maxAge) => `${COOKIE}=${token}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${new URL(req.url).protocol === 'https:' ? '; Secure' : ''}`;
-async function isAdmin(req, db) {
+// 세션 토큰은 ADMIN_KEY와 섞어서 해시로 저장 → 비밀번호(ADMIN_KEY)를 바꾸면 기존 관리자 세션이 모두 무효
+const tokenHash = (env, t) => sha256(t + ':' + env.ADMIN_KEY);
+async function isAdmin(req, env, db) {
   const t = cookieOf(req);
-  if (!/^[0-9a-f]{64}$/.test(t)) return false;
-  const r = await db.prepare('SELECT exp FROM admin_sessions WHERE token = ?1').bind(await sha256(t)).first();
+  if (!env.ADMIN_KEY || !/^[0-9a-f]{64}$/.test(t)) return false;
+  const r = await db.prepare('SELECT exp FROM admin_sessions WHERE token = ?1').bind(await tokenHash(env, t)).first();
   return !!r && r.exp > Date.now();
 }
 const log = (db, action, detail = '') => db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), action, String(detail).slice(0, 300)).run();
@@ -68,22 +70,23 @@ export async function onRequest({ request: req, env, params }) {
     if (OPEN[name]) return await OPEN[name]({ req, env, db, body });
     const route = ROUTES[name];
     if (!route) return err('not found', 404);
-    if (!(await isAdmin(req, db))) return err('관리자 로그인이 필요해요', 401);
+    if (!(await isAdmin(req, env, db))) return err('관리자 로그인이 필요해요', 401);
     return await route({ req, env, db, body, arg, url });
   } catch (e) {
     console.error(e);
-    return err('처리 중 오류가 났어요: ' + (e.message || e), 500);
+    return err('처리 중 오류가 났어요. 잠시 후 다시 해 주세요', 500);   // 내부 오류 내용은 로그에만
   }
 }
 
 /* 로그인 없이 되는 것 */
 const OPEN = {
-  'GET status': async ({ req, env, db }) => json({ db: true, adminKey: Boolean(env.ADMIN_KEY), authed: await isAdmin(req, db) }),
+  'GET status': async ({ req, env, db }) => json({ db: true, adminKey: Boolean(env.ADMIN_KEY), authed: await isAdmin(req, env, db) }),
 
   'POST login': async ({ req, env, db, body }) => {
     if (!env.ADMIN_KEY) return err('ADMIN_KEY가 설정되지 않았어요', 503);
     const ip = maskIp(req);   // 기록에는 뒷자리를 가린 IP만
-    if (await limited(db, 'ad:' + await ipKey(req), 8, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
+    // IP당 한도 + 전체 한도(IP를 바꿔 가며 대입하는 것 대비)
+    if (await limited(db, 'ad:' + await ipKey(req), 8, 900) || await limited(db, 'ad:all', 30, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
     if (!sameStr(await sha256(String(body.key || '')), await sha256(env.ADMIN_KEY))) {
       await log(db, '로그인 실패', ip);
       return err('관리자 비밀번호가 맞지 않아요', 401);
@@ -91,15 +94,15 @@ const OPEN = {
     const token = randHex(32);
     await db.batch([
       db.prepare('DELETE FROM admin_sessions WHERE exp < ?1').bind(Date.now()),
-      db.prepare('INSERT INTO admin_sessions (token, exp) VALUES (?1, ?2)').bind(await sha256(token), Date.now() + SESSION_H * 3600e3),
+      db.prepare('INSERT INTO admin_sessions (token, exp) VALUES (?1, ?2)').bind(await tokenHash(env, token), Date.now() + SESSION_H * 3600e3),
     ]);
     await log(db, '로그인', ip);
     return json({ ok: true }, 200, { 'set-cookie': setCookie(req, token, SESSION_H * 3600) });
   },
 
-  'POST logout': async ({ req, db }) => {
+  'POST logout': async ({ req, env, db }) => {
     const t = cookieOf(req);
-    if (/^[0-9a-f]{64}$/.test(t)) await db.prepare('DELETE FROM admin_sessions WHERE token = ?1').bind(await sha256(t)).run();
+    if (env.ADMIN_KEY && /^[0-9a-f]{64}$/.test(t)) await db.prepare('DELETE FROM admin_sessions WHERE token = ?1').bind(await tokenHash(env, t)).run();
     return json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
   },
 };

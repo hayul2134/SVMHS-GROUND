@@ -545,7 +545,9 @@ function stage(title, html) {
 function endPlay() { quitGame?.(); quitGame = null; $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden) endPlay(); });
 
+let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, 한 판에 한 번)
 function play(game) {
+  ticket = S.me ? call('start', { game }).then(r => r.ticket).catch(() => '') : null;
   ({ reaction: playReaction, num25: playNum25, cut: playCut })[game]?.();
 }
 
@@ -557,7 +559,8 @@ async function finish(game, value, detail = '') {
   $('#toRank').addEventListener('click', endPlay);
   if (!S.me) return;
   try {
-    const r = await call('score', { game, value });
+    const r = await call('score', { game, value, ticket: await ticket });
+    ticket = null;
     $('#rMsg').innerHTML = (r.newBest ? '🎉 <b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' 👑' : '');
     if ($('#v-game').classList.contains('on')) renderGame();
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
