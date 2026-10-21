@@ -19,7 +19,7 @@
 | `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표 · `/api/balance` 오늘의 밸런스 게임(둘 다 D1 `DB`, 테이블 자동 생성) |
 | `public/admin/` | **관리자 페이지** `/admin` (index.html · admin.css · admin.js). 대시보드 · 신고 처리 · 사용자 관리(정지·임시 비번·프로필 정리·삭제) · 게임 기록 · 공지 · 밸런스 질문 · 설정(가입 코드·가입/DM 켜고 끄기) · 관리 기록 |
 | `functions/api/admin/[[path]].js` | 관리자 API `/api/admin/*`. 비밀 변수 `ADMIN_KEY`로 로그인 → 12시간 세션(HttpOnly 쿠키, 경로 /api/admin). IP당 15분 8회 시도 제한. 모든 조치는 `admin_log`에 기록 |
-| `lib/db.js`, `lib/balance.js` | functions 세 곳이 같이 쓰는 D1 테이블 정의(`setup`)·설정(`settings` 테이블)·밸런스 기본 질문. functions/ 밖이라 라우트가 아님 |
+| `lib/db.js`, `lib/balance.js` | functions 세 곳이 같이 쓰는 D1 테이블 정의(`setup`)·설정(`settings` 테이블)·횟수 제한(`limited`·`ipKey`: IP는 해시로만, 만료 줄 자동 삭제)·관리 기록용 `maskIp`·밸런스 기본 질문. **표 구조를 바꾸면 `SCHEMA_V`를 올릴 것**(평소엔 버전 확인 쿼리 1번만 실행). functions/ 밖이라 라우트가 아님 |
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
 | `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 |
 | `public/og-image.jpg` | 카톡 등 링크 미리보기 이미지 (1200×630) |
@@ -69,3 +69,8 @@ npx wrangler@4 pages dev --port 8788
 - 설정(`settings`): `join_code`(있으면 비밀 변수 JOIN_CODE보다 우선, ''이면 코드 없음) · `signup_open` · `dm_open` · `notice`(JSON).
 - 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 학생이 닫으면 `sg_notice_x`에 그 공지 id 저장.
 - 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기. 오늘 질문을 바꾸면 오늘 표 초기화.
+
+## 보안·개인정보 원칙
+- IP는 원문 저장 금지: 횟수 제한은 `ipKey()`(해시), 관리 기록은 `maskIp()`. IP 기준 한도는 학교 와이파이(한 반이 IP 공유)를 고려해 넉넉히, 계정 보호는 아이디 기준.
+- DM은 관리자도 전체 열람 불가. 메시지 신고는 신고자와 대상의 대화 속 대상 메시지만 허용(남의 대화 끌어오기 방지).
+- 탈퇴·계정 삭제 시 계정·프로필·DM·게임 기록·본인이 한 신고 삭제(본인을 향한 신고는 남김). 저장 항목이 바뀌면 `index.html` 이용 안내의 개인정보 문단도 같이 고칠 것.

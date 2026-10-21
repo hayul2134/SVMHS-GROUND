@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
-import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd } from '../../../lib/db.js';
+import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -38,15 +38,8 @@ async function hashPw(pw, salt) {
   return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 100000 }, key, 256));
 }
 const sameStr = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-// 간단한 횟수 제한: window초 안에 max번까지
-async function limited(db, key, max, windowSec) {
-  const t = Date.now();
-  const r = await db.prepare(`INSERT INTO rl (k, n, reset) VALUES (?1, 1, ?2)
-    ON CONFLICT (k) DO UPDATE SET n = CASE WHEN rl.reset < ?3 THEN 1 ELSE rl.n + 1 END, reset = CASE WHEN rl.reset < ?3 THEN ?2 ELSE rl.reset END
-    RETURNING n`).bind(key, t + windowSec * 1000, t).first();
-  return r.n > max;
-}
-const ipOf = req => req.headers.get('cf-connecting-ip') || 'local';
+// 없는 아이디로 로그인할 때도 같은 시간이 걸리게 하는 가짜 해시 (응답 시간으로 아이디 존재 여부를 알 수 없게)
+const DUMMY = { pw: '0'.repeat(64), salt: '00000000000000000000000000000000' };
 const cookieOf = (req, name) => (req.headers.get('cookie') || '').split(/;\s*/).find(c => c.startsWith(name + '='))?.slice(name.length + 1) || '';
 const setCookie = (req, token, maxAge) => {
   const secure = new URL(req.url).protocol === 'https:' ? '; Secure' : '';
@@ -135,8 +128,8 @@ const ROUTES = {
     if (pw.length < 6 || pw.length > 64) return err('비밀번호는 6~64자로 해 주세요');
     const st = await getSettings(db), code = joinCodeOf(env, st);
     if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
-    if (code && String(body.code || '').trim() !== code) return err('가입 코드가 달라요');
-    if (await limited(db, 'su:' + ipOf(req), 8, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);
+    if (await limited(db, 'su:' + await ipKey(req), 40, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);   // 코드 대입 막으려고 코드 확인보다 먼저
+    if (code && !sameStr(String(body.code || '').trim(), code)) return err('가입 코드가 달라요');
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
     const salt = randHex(16);
     const g = +body.grade, c = +body.cls;
@@ -148,9 +141,10 @@ const ROUTES = {
 
   'POST login': async ({ req, db, body }) => {
     const handle = String(body.handle || '').trim().toLowerCase(), pw = String(body.pw || '');
-    if (await limited(db, 'li:' + ipOf(req), 20, 600) || await limited(db, 'lh:' + handle, 10, 600)) return err('로그인 시도가 너무 많아요. 10분 뒤에 다시 해 주세요', 429);
+    if (await limited(db, 'li:' + await ipKey(req), 100, 600) || await limited(db, 'lh:' + handle.slice(0, 16), 10, 600)) return err('로그인 시도가 너무 많아요. 10분 뒤에 다시 해 주세요', 429);
     const u = HANDLE_RE.test(handle) && await db.prepare('SELECT id, pw, salt FROM users WHERE handle = ?1').bind(handle).first();
-    if (!u || !sameStr(await hashPw(pw, u.salt), u.pw)) return err('아이디나 비밀번호가 맞지 않아요', 401);
+    const ok = sameStr(await hashPw(pw, (u || DUMMY).salt), (u || DUMMY).pw);   // 없는 아이디도 똑같이 해시 계산
+    if (!u || !ok) return err('아이디나 비밀번호가 맞지 않아요', 401);
     const ban = await db.prepare('SELECT until, reason FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first();
     if (ban) {
       const when = ban.until ? new Date(ban.until + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') + '까지' : '무기한';
@@ -190,13 +184,17 @@ const ROUTES = {
     return json({ ok: true });
   }),
 
-  'POST password': needMe(async ({ db, me, body }) => {
+  'POST password': needMe(async ({ req, db, me, body }) => {
     const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
     if (!sameStr(await hashPw(String(body.old || ''), u.salt), u.pw)) return err('지금 비밀번호가 맞지 않아요', 401);
     const pw = String(body.pw || '');
     if (pw.length < 6 || pw.length > 64) return err('새 비밀번호는 6~64자로 해 주세요');
     const salt = randHex(16);
-    await db.prepare('UPDATE users SET pw = ?1, salt = ?2 WHERE id = ?3').bind(await hashPw(pw, salt), salt, me.id).run();
+    const cur = await sha256(cookieOf(req, COOKIE));
+    await db.batch([
+      db.prepare('UPDATE users SET pw = ?1, salt = ?2 WHERE id = ?3').bind(await hashPw(pw, salt), salt, me.id),
+      db.prepare('DELETE FROM sessions WHERE uid = ?1 AND token != ?2').bind(me.id, cur),   // 다른 기기는 로그아웃
+    ]);
     return json({ ok: true });
   }),
 
@@ -205,7 +203,8 @@ const ROUTES = {
     if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) return err('비밀번호가 맞지 않아요', 401);
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM users WHERE id = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1',
+      'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(me.id)));
     return json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
   }),
@@ -243,7 +242,7 @@ const ROUTES = {
 
   'GET people': needMe(async ({ db, me, url }) => {   // ?who=handle&kind=following|followers|friends
     const who = url.searchParams.get('who') ? await byHandle(db, url.searchParams.get('who')) : me;
-    if (!who) return err('없는 사용자예요', 404);
+    if (!who || (who.id !== me.id && (await rel(db, me.id, who.id)).blockedMe)) return err('없는 사용자예요', 404);
     const kind = url.searchParams.get('kind');
     const sql = {
       following: `SELECT ${PUB.replace(/(\w+)/g, 'u.$1')} FROM follows f JOIN users u ON u.id = f.b WHERE f.a = ?1 ORDER BY f.at DESC LIMIT 200`,
@@ -288,8 +287,15 @@ const ROUTES = {
     const u = await byHandle(db, body.handle);
     if (!u) return err('없는 사용자예요');
     if (await limited(db, 'rp:' + me.id, 10, 3600)) return err('신고가 너무 많아요', 429);
+    // 메시지 신고는 '나와 그 사람의 대화'에 있는 그 사람의 메시지만 (남의 대화를 관리자 화면에 끌어오지 못하게)
+    let msg = null;
+    if (Number.isInteger(body.msg)) {
+      const m = await db.prepare('SELECT id FROM messages WHERE id = ?1 AND pair = ?2 AND a = ?3').bind(body.msg, pairOf(me.id, u.id), u.id).first();
+      if (!m) return err('신고할 수 없는 메시지예요');
+      msg = m.id;
+    }
     await db.prepare('INSERT INTO reports (reporter, target, msg, reason, at) VALUES (?1, ?2, ?3, ?4, ?5)')
-      .bind(me.id, u.id, Number.isInteger(body.msg) ? body.msg : null, clean(body.reason, 200, true) || '(사유 없음)', Date.now()).run();
+      .bind(me.id, u.id, msg, clean(body.reason, 200, true) || '(사유 없음)', Date.now()).run();
     return json({ ok: true });
   }),
 

@@ -1,7 +1,7 @@
 // SVMHS GROUND — 관리자 API (/api/admin/*). 화면은 public/admin/
 // 로그인: Pages 비밀 변수 ADMIN_KEY(관리자 비밀번호)와 같으면 12시간짜리 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만)을 준다.
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
-import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd } from '../../../lib/db.js';
+import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, maskIp } from '../../../lib/db.js';
 import { defaultBalance } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
@@ -27,13 +27,6 @@ const sameStr = (a, b) => { if (a.length !== b.length) return false; let d = 0; 
 async function hashPw(pw, salt) {   // 소셜 API와 같은 방식 (비밀번호 초기화용)
   const key = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
   return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 100000 }, key, 256));
-}
-async function limited(db, key, max, windowSec) {
-  const t = Date.now();
-  const r = await db.prepare(`INSERT INTO rl (k, n, reset) VALUES (?1, 1, ?2)
-    ON CONFLICT (k) DO UPDATE SET n = CASE WHEN rl.reset < ?3 THEN 1 ELSE rl.n + 1 END, reset = CASE WHEN rl.reset < ?3 THEN ?2 ELSE rl.reset END
-    RETURNING n`).bind(key, t + windowSec * 1000, t).first();
-  return r.n > max;
 }
 const cookieOf = req => (req.headers.get('cookie') || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '='))?.slice(COOKIE.length + 1) || '';
 const setCookie = (req, token, maxAge) => `${COOKIE}=${token}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${new URL(req.url).protocol === 'https:' ? '; Secure' : ''}`;
@@ -89,8 +82,8 @@ const OPEN = {
 
   'POST login': async ({ req, env, db, body }) => {
     if (!env.ADMIN_KEY) return err('ADMIN_KEY가 설정되지 않았어요', 503);
-    const ip = req.headers.get('cf-connecting-ip') || 'local';
-    if (await limited(db, 'ad:' + ip, 8, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
+    const ip = maskIp(req);   // 기록에는 뒷자리를 가린 IP만
+    if (await limited(db, 'ad:' + await ipKey(req), 8, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
     if (!sameStr(await sha256(String(body.key || '')), await sha256(env.ADMIN_KEY))) {
       await log(db, '로그인 실패', ip);
       return err('관리자 비밀번호가 맞지 않아요', 401);
@@ -306,7 +299,8 @@ const ROUTES = {
     if (String(body.confirm || '').toLowerCase() !== u.handle) return err('확인용 아이디가 달라요');
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM users WHERE id = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1',
+      'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(u.id)));
     await log(db, '계정 삭제', `@${u.handle} (${u.name})`);
     return json({ ok: true });

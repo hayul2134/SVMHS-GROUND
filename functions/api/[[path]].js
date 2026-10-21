@@ -1,6 +1,6 @@
 // SVMHS GROUND — 나이스 API 프록시 (Cloudflare Pages Functions, /api/* 담당)
 // 인증키는 Pages 프로젝트의 비밀 변수 NEIS_KEY에 보관한다. 키가 없어도 동작하지만 한 번에 5건까지만 받는다.
-import { setup, getSettings, kstYmd } from '../../lib/db.js';
+import { setup, getSettings, kstYmd, limited, ipKey } from '../../lib/db.js';
 import { defaultBalance } from '../../lib/balance.js';
 
 const SCHOOL = { ATPT_OFCDC_SC_CODE: 'B10', SD_SCHUL_CODE: '7010795' }; // 서울시교육청 · 서울영상고
@@ -107,6 +107,7 @@ async function vote(request, env) {
   const origin = request.headers.get('origin');
   if (origin && origin !== url.origin) return json({ error: 'forbidden' }, 403);
   if (!okVoter) return json({ error: 'bad voter' }, 400);
+  if (await limited(db, 'mv:' + await ipKey(request), 400, 600)) return json({ error: '너무 많이 눌렀어요. 잠시 후에 해 주세요' }, 429);   // 기기 ID를 바꿔 가며 몰표 넣기 방지
   let body;
   try { body = await request.json(); } catch { return json({ error: 'bad body' }, 400); }
   const ymd = String(body?.ymd || ''), meal = String(body?.meal || ''), dish = String(body?.dish ?? '').slice(0, 60);
@@ -151,6 +152,7 @@ async function balance(request, env) {
   const origin = request.headers.get('origin');
   if (origin && origin !== url.origin) return json({ error: 'forbidden' }, 403);
   if (!okVoter) return json({ error: 'bad voter' }, 400);
+  if (await limited(db, 'bv:' + await ipKey(request), 300, 600)) return json({ error: '너무 많이 눌렀어요. 잠시 후에 해 주세요' }, 429);
   let body;
   try { body = await request.json(); } catch { return json({ error: 'bad body' }, 400); }
   const pick = String(body?.pick ?? '');

@@ -15,7 +15,7 @@ const GAMES = {
 /* ===== 상태 ===== */
 const S = { enabled: null, needCode: false, me: null, counts: null, unread: 0 };
 let ctx;   // app.js에서 받은 go · openModal · closeModal · getClass
-let dmTimer = 0, pollTimer = 0, openThread = '', threadIn = '';   // threadIn: 'page'(#dm 화면) | 'panel'(떠 있는 메시지 창)
+let dmTimer = 0, dmDelay = 3000, pollTimer = 0, openThread = '', threadIn = '';   // threadIn: 'page'(#dm 화면) | 'panel'(떠 있는 메시지 창)
 
 /* ===== 서버 호출 ===== */
 async function call(path, body) {
@@ -442,12 +442,12 @@ async function renderThread(handle, box, panel) {
       e.preventDefault();
       const text = inp.value.trim(); if (!text) return;
       inp.value = ''; grow();
-      try { const r = await call('dm/' + encodeURIComponent(handle), { body: text }); if (!msgs.some(m => m.id === r.message.id)) msgs.push(r.message); paint(); }
+      try { const r = await call('dm/' + encodeURIComponent(handle), { body: text }); if (!msgs.some(m => m.id === r.message.id)) msgs.push(r.message); paint(); dmDelay = 3000; }
       catch (err) { fail(err); inp.value = text; }
       inp.focus();
     };
   }
-  // 새 메시지 확인 (화면을 보고 있을 때만 3초마다)
+  // 새 메시지 확인 (화면을 보고 있을 때만). 대화가 오가면 3초, 조용하면 점점 늘려 최대 15초 (서버 요청 줄이기)
   const tick = async () => {
     if (openThread !== handle) return;
     if (!document.hidden) {
@@ -457,12 +457,14 @@ async function renderThread(handle, box, panel) {
         if (openThread !== handle) return;
         const fresh = r.messages.filter(m => !msgs.some(x => x.id === m.id));
         if (fresh.length || r.readUpTo !== readUpTo) { msgs.push(...fresh); readUpTo = r.readUpTo; paint(true); }
+        dmDelay = fresh.length ? 3000 : Math.min(15000, Math.round(dmDelay * 1.4));
         S.unread = Math.max(0, S.unread - fresh.filter(m => !m.mine).length); paintBadges();
       } catch {}
     }
-    dmTimer = setTimeout(tick, 3000);
+    dmTimer = setTimeout(tick, dmDelay);
   };
-  dmTimer = setTimeout(tick, 3000);
+  dmDelay = 3000;
+  dmTimer = setTimeout(tick, dmDelay);
   refreshMe();
 }
 
