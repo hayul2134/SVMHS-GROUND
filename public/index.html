@@ -71,11 +71,16 @@
   <div class="hd">
     <button class="iconbtn" id="btnHome" data-go="home" title="처음으로" aria-label="처음 화면으로"><svg viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
     <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="52" height="52"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
-    <!-- 오른쪽 끝에서부터: 프로필 · 테마 · QR · 설정 -->
-    <button class="iconbtn" id="btnClass" title="반 설정" aria-label="반 설정"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
-    <button class="iconbtn" id="btnShare" title="친구에게 공유" aria-label="친구에게 공유하기"><svg viewBox="0 0 24 24"><use href="#i-qr"/></svg></button>
-    <button class="iconbtn" id="btnTheme" title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg viewBox="0 0 24 24"><use href="#i-moon"/></svg></button>
-    <button class="iconbtn" id="btnMe" data-go="me" title="내 프로필" aria-label="내 프로필"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></button>
+    <!-- 오른쪽 목록 버튼(☰ ↔ ✕) → 누르면 아래로 펼쳐짐: 프로필 · 테마 · QR · 설정 -->
+    <div class="hmenu" id="hMenu">
+      <button class="iconbtn burger" id="btnMenu" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="hList"><span></span><span></span><span></span></button>
+      <div class="hlist" id="hList" inert>
+        <span class="hi"><button class="iconbtn" id="btnMe" data-go="me" title="내 프로필" aria-label="내 프로필"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></button></span>
+        <span class="hi"><button class="iconbtn" id="btnTheme" data-keep title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg viewBox="0 0 24 24"><use href="#i-moon"/></svg></button></span>
+        <span class="hi"><button class="iconbtn" id="btnShare" title="친구에게 공유" aria-label="친구에게 공유하기"><svg viewBox="0 0 24 24"><use href="#i-qr"/></svg></button></span>
+        <span class="hi"><button class="iconbtn" id="btnClass" title="반 설정" aria-label="반 설정"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></button></span>
+      </div>
+    </div>
   </div>
 </header>
 

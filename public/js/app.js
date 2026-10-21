@@ -184,6 +184,20 @@ function go(v) {
   onScroll();
   if (location.hash !== '#' + v) history.replaceState(null, '', v === 'home' ? location.pathname : '#' + v);
 }
+// 오른쪽 목록 버튼: ☰ 누르면 아이콘들이 아래로 펼쳐지고 ✕로, 다시 누르면 올라가며 ☰로
+function menu(on) {
+  const m = $('#hMenu'), b = $('#btnMenu');
+  if (on === m.classList.contains('open')) return;
+  m.classList.toggle('open', on);
+  $('#hList').inert = !on;
+  b.setAttribute('aria-expanded', on);
+  b.setAttribute('aria-label', on ? '메뉴 닫기' : '메뉴 열기');
+}
+$('#btnMenu').onclick = () => menu(!$('#hMenu').classList.contains('open'));
+// 항목을 누르면 닫힘(테마는 바로 보이게 열어 둠) · 바깥을 누르거나 Esc면 닫힘
+$('#hList').addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.hasAttribute('data-keep')) menu(false); });
+document.addEventListener('click', e => { if (!e.target.closest('#hMenu')) menu(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu').classList.contains('open')) { menu(false); $('#btnMenu').focus(); } });
 // 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
