@@ -79,14 +79,14 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 
 /* ===== 4. 전광판 (오늘 정보가 흘러감) ===== */
 .ticker{margin:0 calc(50% - 50vw - 30px);background:#1d4f7c;color:#d6f1ff;border-block:3px solid var(--ink);transform:rotate(-1.6deg);overflow:hidden;white-space:nowrap;
-  box-shadow:0 4px 0 rgba(35,35,58,.12)}
+  box-shadow:0 4px 0 rgba(35,35,58,.12);margin-top:max(24px,1.5vw)}
 .ticker .tk{display:inline-flex;padding:9px 0;font-family:var(--disp);font-size:17px;letter-spacing:.01em;animation:tk 70s linear infinite}
 .ticker .tk span{padding:0 14px}
 .ticker .tk i{font-style:normal;color:var(--yellow)}
 @keyframes tk{to{transform:translateX(-50%)}}
 
 /* ===== 5. 첫 화면 (남은 시간이 주인공) ===== */
-.stage{min-height:80vh;min-height:80svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:88px 0 64px;position:relative}
+.stage{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:88px 0 64px;position:relative}
 /* 시계 아래 작은 상태 줄 (현재 시각 · 날짜 · 수업 진행도 · 오늘 일정 알림) — 시계보다 눈에 덜 띄게 작게 */
 .s-info{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 14px;width:min(900px,100%);margin:26px auto 0;padding:0 16px}
 .s-info .s-sub,.s-info .s-date{margin:0;left:0}
