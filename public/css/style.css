@@ -608,7 +608,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .ticker .tk{will-change:transform}
 
 /* 홈 첫 화면: 말풍선만 기울여 비껴 붙이고, 시각·날짜는 살짝 엇갈리게 */
-.s-greet{position:relative;left:clamp(-260px,-19vw,-56px);top:6px}
+.s-greet{position:relative;left:clamp(-180px,-13vw,-40px);top:-14px}
 .s-greet .bubble{transform:rotate(-4deg)}
 .s-greet .bubble::after{left:72%}
 .s-sub{position:relative;left:clamp(-60px,-4vw,-16px)}
