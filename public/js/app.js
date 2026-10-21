@@ -283,7 +283,7 @@ const mealHtml = (r, d, mini = false) => {
     ? `<p class="vnote">🗳️ ${v.mine ? `내 픽 <b>${esc(v.mine)}</b> · 다시 누르면 취소` : '제일 맛있는 메뉴를 눌러 투표!'} · ${v.total}명 참여</p>`
     : `<p class="vnote">🗳️ 인기투표 결과 · ${v.total}명 참여</p>`;
   const at = `data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}"`;
-  return `<div class="tray-set${mini ? ' mini' : ''}${t.drinks.length ? ' has-drink' : ''}" ${at}><div class="tray${mini ? ' mini' : ''}" role="list" aria-label="급식 식판" ${at}>`
+  return `<div class="tray-set${mini ? ' sm' : ''}${t.drinks.length ? ' has-drink' : ''}" ${at}><div class="tray${mini ? ' mini' : ''}" role="list" aria-label="급식 식판" ${at}>`
     + cellHtml(t.top[0], '', v)
     + `<div class="mid">${cellHtml(t.top[1], 'half', v)}${cellHtml(t.top[2], 'half', v)}</div>`
     + cellHtml(t.top[3], '', v)
