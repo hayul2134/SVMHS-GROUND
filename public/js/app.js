@@ -1,7 +1,7 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
-import { foodSvg, foodDark, drinkSvg, isDrink } from './food.js';
+import { foodSvg, foodDark, arBucket, drinkSvg, isDrink } from './food.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -291,15 +291,26 @@ const nm = x => {
   return { cls: ` c${w}`, html: ls.map(l => `<span class="ln">${esc(l)}</span>`).join('') };
 };
 // 칸마다 메뉴 이름에 맞는 음식 그림(food.js)을 깔고, 그 위에 이름표를 얹음
-const shapeOf = cls => /half/.test(cls) ? 'half' : /big/.test(cls) ? 'big' : 'n';
+// 그림은 칸 크기를 잰 뒤 그 비율에 맞춰 넣음 (paintFood) — 칸이 길쭉하든 넓든 꽉 차게
+const fx = x => `<i class="fx" data-food="${esc(x)}"></i>`;
+function paintFood(root) {
+  root.querySelectorAll('.fx').forEach(el => {
+    const c = el.parentElement, w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    const ar = arBucket(w / h);
+    if (el.dataset.ar !== String(ar)) { el.dataset.ar = ar; el.innerHTML = foodSvg(el.dataset.food, ar); }
+  });
+}
+const foodRO = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => paintFood(e.target))) : null;
+const setTray = (box, html) => { box.innerHTML = html; paintFood(box); if (foodRO) foodRO.observe(box); };
 const cellHtml = (items, cls = '', v = null) => {
   if (!items.length) return `<div class="cell empty ${cls}"></div>`;
   if (items.length === 1) {
     const x = items[0], pick = v && v.mine === x ? ' picked' : '';
     const t = nm(x);
-    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${foodSvg(x, shapeOf(cls))}${voteMark(x, v)}<b class="lbl${t.cls}${foodDark(x, shapeOf(cls)) ? ' dk' : ''}">${t.html}</b></div>`;
+    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${fx(x)}${voteMark(x, v)}<b class="lbl${t.cls}${foodDark(x) ? ' dk' : ''}">${t.html}</b></div>`;
   }
-  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}>${foodSvg(x, 'seg')}<em class="lbl${nm(x).cls}${foodDark(x, 'seg') ? ' dk' : ''}">${nm(x).html}</em>${voteMark(x, v)}</span>`).join('')}</div>`;
+  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}>${fx(x)}<em class="lbl${nm(x).cls}${foodDark(x) ? ' dk' : ''}">${nm(x).html}</em>${voteMark(x, v)}</span>`).join('')}</div>`;
 };
 // 음료: 식판 오른쪽에 따로 세워 둠 (우유팩·컵)
 const drinksHtml = (list, v) => !list.length ? '' : `<div class="drinks" role="list" aria-label="음료">${list.map(x => `<div class="drink${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}" role="listitem"${dishAttr(x, v)}>${voteMark(x, v)}${drinkSvg(x)}<b class="lbl${nm(x).cls}">${nm(x).html}</b></div>`).join('')}</div>`;
@@ -336,14 +347,14 @@ function paintHeroMeal() {
   if (!homeRows.length) { lbl.textContent = '오늘 급식'; box.innerHTML = empty(S.mealFail ? '급식 정보를 불러오지 못했어요' : '오늘은 급식이 없어요'); return; }
   const r = pickMeal(homeRows, S.mealSlot);
   lbl.textContent = `오늘 급식 · ${MEALS[r.MMEAL_SC_CODE]}`;
-  box.innerHTML = mealHtml(r, today(), true);
+  setTray(box, mealHtml(r, today(), true));
 }
 function paintHomeMeal() {
   if (!S.mealManual && homeRows.length) S.homeMeal = pickMeal(homeRows, S.mealSlot).MMEAL_SC_CODE;
   paintHeroMeal();
   const sel = S.homeMeal;
   $('#hMealTabs').innerHTML = homeRows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
-  $('#hMeal').innerHTML = mealHtml(homeRows.find(r => r.MMEAL_SC_CODE === sel), today());
+  setTray($('#hMeal'), mealHtml(homeRows.find(r => r.MMEAL_SC_CODE === sel), today()));
 }
 async function renderHomeMeal() {
   const box = $('#hMeal'), tabs = $('#hMealTabs');
@@ -401,7 +412,7 @@ async function renderMealView() {
 }
 function paintMealView() {
   const d = S.mealDate, rows = S.mealRows || [];
-  $('#mCols').innerHTML = Object.entries(MEALS).map(([c, n]) => `<div class="card k-meal"><h3>${n}</h3>${mealHtml(rows.find(r => r.MMEAL_SC_CODE === c), d)}</div>`).join('');
+  setTray($('#mCols'), Object.entries(MEALS).map(([c, n]) => `<div class="card k-meal"><h3>${n}</h3>${mealHtml(rows.find(r => r.MMEAL_SC_CODE === c), d)}</div>`).join(''));
 }
 $('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealView(); };
 $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };

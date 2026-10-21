@@ -32,7 +32,7 @@ class Pen {
   // 음식이 담기는 영역(칸 테두리 안쪽으로 넉넉히 비움) 안의 임의 점
   pt(k = 1) {
     const a = this.r() * Math.PI * 2, d = Math.sqrt(this.r()) * k;
-    return [this.w / 2 + Math.cos(a) * d * this.w * .32, this.h / 2 + Math.sin(a) * d * this.h * .29];
+    return [this.w / 2 + Math.cos(a) * d * this.w * .34, this.h / 2 + Math.sin(a) * d * this.h * .33];
   }
   blob(cx, cy, rx, ry, jit = .18, n = 9, rot = 0) {
     const p = [];
@@ -71,9 +71,9 @@ class Pen {
   // 소복하게 쌓인 더미(밥·나물·김치 등)
   bed(col, dark, k = 1) {
     this.tone ||= col;
-    const { w, h } = this, rot = this.R(0, 6), rx = w * .4 * k, ry = h * .37 * k;
-    this.path(this.blob(w / 2 + 1.5, h / 2 + 3, rx, ry, .08, 12, rot), '#2a160a', ' opacity=".2"');
-    const d = this.blob(w / 2, h / 2, rx, ry, .08, 12, rot);
+    const { w, h } = this, rot = this.R(0, 6), rx = w * .44 * k, ry = h * .42 * k;
+    this.path(this.blob(w / 2 + 1.5, h / 2 + 3, rx, ry, .14, 17, rot), '#2a160a', ' opacity=".2"');
+    const d = this.blob(w / 2, h / 2, rx, ry, .14, 17, rot);
     this.path(d, col).path(d, 'url(#fb)');
     this.pile = d;
     return this;
@@ -242,14 +242,14 @@ const DRAW = {
     else p.dots(['#e6762c', '#7cb648'], 10, 1.4, 2.4, .7);
   },
   kimchi(p, n) {
-    if (/깍두기|석박지|섞박지|무김치/.test(n)) { p.rects(['#e2673a', '#d9562c', '#ec7f4e', '#e8714a'], 18, 9, .9, 2); p.flakes(18); p.strands(['#5fa83a'], 4, 8, 1.4, .7); return; }
+    if (/깍두기|석박지|섞박지|무김치/.test(n)) { p.bed('#d9502a'); p.rects(['#e8673a', '#de562c', '#f08050', '#ec714a'], 24, 12, .95, 2.4); p.flakes(18); p.strands(['#5fa83a'], 4, 8, 1.4, .7); return; }
     if (/오이/.test(n)) { for (let i = 0; i < 9; i++) { const [x, y] = p.pt(.85); p.lump(x, y, 7, 5.5, '#4f8f35', { hi: .4, n: 10 }); p.lump(x - 1, y - .5, 5, 3.8, '#c8d98a', { sh: 0, hi: 0, n: 8 }); p.dots(['#d9562c'], 2, 1, 1.8, .2); } p.flakes(20); p.strands(['#5fa83a', '#e2673a'], 8, 8, 1.4, .8); return; }
     if (/총각|알타리/.test(n)) { for (let i = 0; i < 5; i++) { const [x, y] = p.pt(.7); p.lump(x, y, 9, 6, '#de6a3c', { hi: .4 }); } p.strands(['#3f6a24', '#4f7d2c', '#b0452a'], 14, 16, 2.6, .95); p.flakes(14); return; }
     if (/열무|파김치|부추/.test(n)) { p.bed('#c95a34').strands(['#4f7d2c', '#5e8f34', '#7ba84a', '#c8462a'], 34, 20, 2.6, .95); p.flakes(16); return; }
     const dark = /볶음김치|묵은지/.test(n);
     p.bed(dark ? '#a8361e' : '#d4502c');
-    for (let i = 0; i < 13; i++) {
-      const [x, y] = p.pt(.85), rx = p.R(7, 11), ry = p.R(5, 8);
+    for (let i = 0; i < 16; i++) {
+      const [x, y] = p.pt(.95), rx = p.R(10, 15), ry = p.R(7, 11);
       p.lump(x, y, rx, ry, dark ? p.pick(['#9c2e18', '#b23c20', '#8a2814']) : p.pick(['#d64c2a', '#e05a32', '#cc4524']), { hi: dark ? .7 : .35, n: 8 });
       p.path(p.blob(x + p.R(-2, 2), y + p.R(-2, 2), rx * .55, ry * .28, .2, 7, p.R(0, 3)), dark ? '#d9774a' : '#f2c49a', ' opacity=".8"');
     }
@@ -261,19 +261,19 @@ const DRAW = {
       : /고사리|토란대|궁채|고구마줄기/.test(n) ? 'brown' : /가지/.test(n) ? 'eggplant' : /진미채|오징어채|명엽채|쥐포/.test(n) ? 'jinmi' : /미역줄기|파래|톳|꼬시래기|다시마/.test(n) ? 'sea' : 'green';
     const spicy = /고추장|매콤|양념|초무침|초회|겉절이|빨간|생채/.test(n);
     if (col === 'sprout') { p.bed(spicy ? '#d8693c' : '#efe2b8'); for (let i = 0; i < 34; i++) { p.strands([spicy ? '#f2c79c' : '#f6efcf'], 1, 16, 1.5, .95); const s = p.o[p.o.length - 1].match(/M([\d.-]+) ([\d.-]+)/); p.add(`<ellipse cx="${s[1]}" cy="${s[2]}" rx="2" ry="1.5" fill="${spicy ? '#e8a25a' : '#efcf5a'}"/>`); } if (/파채|부추/.test(n)) p.strands(['#5fa83a', '#7cc04a'], 10, 14, 1.6, .8); }
-    else if (col === 'radish') { p.bed('#e05a32').strands(['#e8673c', '#f08050', '#f7d4bc', '#d9502c'], 60, 18, 1.8, .95); }
-    else if (col === 'dried') p.bed('#b84a24').strands(['#c9562c', '#b04220', '#d86a3c', '#f0c49a'], 40, 12, 3.2, .95);
+    else if (col === 'radish') { p.bed('#e05a32').strands(['#ec6a3c', '#f48450', '#f9dcc4', '#de502c'], 70, 20, 2.6, 1.05); }
+    else if (col === 'dried') p.bed('#c24e26').strands(['#d65e2e', '#bf4822', '#e47440', '#f6cfa4'], 56, 14, 3.8, 1.05);
     else if (col === 'white') p.bed('#f1ead6').strands(['#f6f0de', '#ece2c6', '#e2d6b2'], 46, 16, 2.6, .95);
     else if (col === 'brown') p.bed('#6a4a2a').strands(['#6f4b2b', '#7f5a35', '#5a3c22', '#8a6a3c'], 44, 20, 2.4, .95);
     else if (col === 'eggplant') { p.bed('#5a3a3a'); for (let i = 0; i < 14; i++) { const [x, y] = p.pt(.85); p.lump(x, y, p.R(8, 12), p.R(3, 4.5), p.pick(['#5a2f4a', '#6a3a55', '#7a5a4a']), { hi: .6, n: 8 }); } }
-    else if (col === 'jinmi') p.bed('#b0482a').strands(['#c25530', '#d06a40', '#a9401f', '#e89a6a'], 44, 14, 2.6, .95);
+    else if (col === 'jinmi') p.bed('#c0502a').strands(['#d05a30', '#de7040', '#b8441f', '#f0a470'], 60, 16, 3.2, 1.05);
     else if (col === 'sea') p.bed('#2f4a26').strands(['#2f5a26', '#3f6f2c', '#24401f', '#4a7a33'], 48, 16, 2.4, .95);
     else {
       const leafy = /겉절이|상추|쌈채|얼갈이|알배기|부추|참나물|청경채|쑥갓|깻잎/.test(n) && !/나물$/.test(n);
       if (/브로컬리|브로콜리/.test(n)) { p.bed('#3f6a24'); for (let i = 0; i < 12; i++) { const [x, y] = p.pt(.8); p.lump(x, y, p.R(6, 9), p.R(5, 7), p.pick(['#3f7a2a', '#4f8f35', '#356a22']), { hi: .3, n: 11, jit: .3 }); p.dots(['#2c5a1c', '#5fa03a'], 6, .6, 1.2, .1); } }
       else if (/오이/.test(n)) for (let i = 0; i < 14; i++) { const [x, y] = p.pt(.85); p.lump(x, y, 6, 6, '#4f8f35', { hi: .3, n: 12, jit: .05 }); p.lump(x - .4, y - .4, 4.8, 4.8, '#d8e6a8', { sh: 0, hi: 0, n: 12, jit: .05 }); }
-      else if (leafy) for (let i = 0; i < 12; i++) { const [x, y] = p.pt(.8); p.lump(x, y, p.R(9, 14), p.R(6, 9), p.pick(['#6aa83f', '#7cbc4c', '#5a9a34', '#8fc85a']), { hi: .45, n: 10, jit: .3 }); }
-      else p.bed('#3f6a24').strands(['#3f7a2a', '#4f8f35', '#2f6a22', '#5a9a3a'], 52, 18, 2.6, .95);
+      else if (leafy) { p.bed('#6aa83f'); for (let i = 0; i < 18; i++) { const [x, y] = p.pt(.9); p.lump(x, y, p.R(12, 17), p.R(8, 12), p.pick(['#6fb43f', '#86c84e', '#5aa034', '#9cd462', '#4f9a2c']), { hi: .5, n: 11, jit: .32 }); } p.strands(['#f4f0d8'], 8, 12, 1.6, .85); }
+      else p.bed('#4f8a2e').strands(['#3f8a2a', '#5aa038', '#2f7a22', '#6cb444', '#4a9030'], 70, 22, 3.4, 1.05);
       if (/묵|두부/.test(n)) p.rects(/도토리/.test(n) ? ['#7a5236', '#8a6040'] : ['#f2ecd8', '#ebe2c6'], 9, 8, .8, 1.2);
     }
     if (spicy && col !== 'radish' && col !== 'jinmi' && col !== 'dried') p.flakes(18);
@@ -300,7 +300,7 @@ const DRAW = {
     p.bed('#b0391c', '#7a2412');
     if (isTteok) for (let i = 0; i < 14; i++) { const [x, y] = p.pt(.85); p.lump(x, y, p.R(8, 11), 3.4, p.pick(['#e2683e', '#d65a32']), { hi: .6, n: 8, jit: .08, light: '#ffd9c0' }); }
     else if (isSquid) for (let i = 0; i < 14; i++) { const [x, y] = p.pt(.85); p.lump(x, y, p.R(6, 10), p.R(3, 5), p.pick(['#d24e2a', '#e0683e', '#c4401f']), { hi: .6, n: 8 }); p.add(`<circle cx="${f(x)}" cy="${f(y)}" r="2.2" fill="none" stroke="#f6d6c0" stroke-width="1" opacity=".7"/>`); }
-    else for (let i = 0; i < 16; i++) { const [x, y] = p.pt(.88); p.lump(x, y, p.R(6, 10), p.R(4, 7), p.pick(['#b8401f', '#c75327', '#a23418', '#c4482a']), { hi: .65, n: 9, light: '#ffcfb0' }); }
+    else for (let i = 0; i < 20; i++) { const [x, y] = p.pt(.95); p.lump(x, y, p.R(10, 15), p.R(7, 10), p.pick(['#c4441f', '#d4582a', '#b03a18', '#d04c2a']), { hi: .75, n: 9, light: '#ffd6b8' }); }
     if (/어묵|오뎅/.test(n) && isTteok) p.rects(['#e2a868'], 6, 7, .8, 1.5);
     if (/닭갈비|볶음|제육|두루치기|불고기|순대/.test(n)) { p.strands(['#f3e6d0', '#ece0c2'], 10, 10, 2.2, .85); p.lump(p.R(20, 60), p.R(20, 60), 7, 4, '#a8cf6a', { hi: .4 }); }
     if (/치즈/.test(n)) p.strands(['#f8e7a0', '#fbf0c8'], 8, 18, 3, .7);
@@ -312,7 +312,7 @@ const DRAW = {
     const pal = /오리|훈제/.test(n) ? ['#c9786a', '#b5675a', '#d98a7a'] : /데리야끼|간장|찜닭|조림|장조림|갈비/.test(n) ? ['#6b3b1f', '#7d4626', '#5a2f18', '#8a5230'] : ['#7a4428', '#8b5232', '#6a3a22'];
     p.bed('#5a3018', '#3a1e0e');
     if (stripy) p.strands(pal, 30, 16, 5.2, .9);
-    else for (let i = 0; i < 12; i++) { const [x, y] = p.pt(.85); p.lump(x, y, p.R(7, 11), p.R(5, 8), p.pick(pal), { hi: .7, n: 9, light: '#ffe2c4' }); }
+    else for (let i = 0; i < 16; i++) { const [x, y] = p.pt(.95); p.lump(x, y, p.R(10, 15), p.R(7, 11), p.pick(pal), { hi: .75, n: 9, light: '#ffe2c4' }); }
     if (/찜닭|닭볶음탕|갈비찜/.test(n)) { p.rects(['#f2d79c', '#e8762c'], 7, 7, .8, 2); p.strands(['#7a5030', '#8a5a36'], 12, 20, 1.5, .8, .8); }
     if (/불고기|대패|오리/.test(n)) { p.strands(['#f3e6d0', '#e9dcc0'], 10, 12, 2.2, .85); p.strands(['#e8762c'], 5, 9, 1.8, .8); }
     if (/버섯|팽이/.test(n)) p.strands(['#f2ead6', '#e2d6b8'], 14, 12, 1.4, .85);
@@ -437,8 +437,8 @@ const DRAW = {
     p.lump(p.w * .78, p.h * .78, 6, 4.4, '#5a2e12', { hi: .5 });
   },
   tteok(p, n) {   // 떡·꿀떡·경단
-    const pal = /초코|흑임자/.test(n) ? ['#5a3a2a', '#3a2a22'] : /쑥|수리취/.test(n) ? ['#7a9a4a', '#6a8a3e'] : ['#f6b8c8', '#bfe0a8', '#fbf6ea', '#f8e2a0'];
-    for (let i = 0; i < 12; i++) { const [x, y] = p.pt(.82); p.lump(x, y, 6, 5.4, p.pick(pal), { hi: .7, n: 11, jit: .05, light: '#fff' }); }
+    const pal = /초코|흑임자/.test(n) ? ['#5a3a2a', '#3a2a22'] : /쑥|수리취/.test(n) ? ['#7fa64a', '#6c9a3c', '#8db45a'] : ['#f6b8c8', '#bfe0a8', '#fbf6ea', '#f8e2a0'];
+    for (let i = 0; i < 16; i++) { const [x, y] = p.pt(.9); p.lump(x, y, 9.5, 8.5, p.pick(pal), { hi: .7, n: 11, jit: .05, light: '#fff' }); }
     if (/콩고물|인절미/.test(n)) p.dots(['#e8c47a', '#dcb466'], 60, .5, 1.1, .95);
     p.sesame(/꿀떡/.test(n) ? 0 : 8);
   },
@@ -447,7 +447,7 @@ const DRAW = {
     const circ = (x, y, r, col, rim, op = {}) => p.lump(x, y, r, r, col, { n: 14, jit: .03, ...op }) && rim && p.add(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r - .6)}" fill="none" stroke="${rim}" stroke-width="1.4" opacity=".6"/>`);
     if (/수박/.test(n)) { for (let i = 0; i < 3; i++) { const x = w * (.24 + i * .26), y = h * .5, s = Math.min(w * .14, 18); p.add(`<path d="M${f(x - s)} ${f(y + s * .9)}L${f(x)} ${f(y - s * 1.2)}L${f(x + s)} ${f(y + s * .9)}Z" fill="#000" opacity=".14" transform="translate(1.4 2)"/><path d="M${f(x - s)} ${f(y + s * .9)}L${f(x)} ${f(y - s * 1.2)}L${f(x + s)} ${f(y + s * .9)}Z" fill="#e8473f"/><rect x="${f(x - s)}" y="${f(y + s * .7)}" width="${f(s * 2)}" height="${f(s * .26)}" fill="#e9f1c9"/><rect x="${f(x - s)}" y="${f(y + s * .9)}" width="${f(s * 2)}" height="${f(s * .22)}" fill="#3f8f3a"/>`); for (let k = 0; k < 4; k++) p.add(`<ellipse cx="${f(x + p.R(-s * .4, s * .4))}" cy="${f(y + p.R(-s * .3, s * .4))}" rx=".9" ry="1.4" fill="#1a1a1a"/>`); } return; }
     if (/귤|오렌지|한라봉|천혜향|레드향|감귤|만다린/.test(n)) { for (let i = 0; i < 3; i++) { const x = w * (.27 + i * .23), y = h * (.5 + (i % 2 ? -.08 : .1)), r = Math.min(w * .13, h * .28); circ(x, y, r, '#f39a1f', null, { hi: .6, light: '#ffe2b0' }); p.add(`<circle cx="${f(x + 1)}" cy="${f(y - r * .1)}" r="1.4" fill="#b86a10" opacity=".6"/>`); } p.lump(w * .3, h * .3, 4, 2, '#3f8f3a', { sh: 0, hi: .3 }); return; }
-    if (/사과|배$|배\(|아삭배/.test(n)) { const skin = /배/.test(n) ? '#c9a24a' : '#c8322b', meat = /배/.test(n) ? '#f8f0d6' : '#f7ecd2'; for (let i = 0; i < 5; i++) { const x = w * (.18 + i * .16), y = h * .5 + p.R(-4, 4); p.lump(x, y, 6, 16, meat, { hi: .4, n: 10, jit: .05 }); p.add(`<path d="M${f(x + 4)} ${f(y - 14)}Q${f(x + 9)} ${f(y)} ${f(x + 4)} ${f(y + 14)}" stroke="${skin}" stroke-width="3" fill="none" stroke-linecap="round"/>`); p.add(`<ellipse cx="${f(x - 1)}" cy="${f(y)}" rx="1" ry="2" fill="#6a3a1a"/>`); } return; }
+    if (/사과|배$|배\(|아삭배/.test(n)) { const skin = /배/.test(n) ? '#c9a24a' : '#c8322b', meat = /배/.test(n) ? '#f8f0d6' : '#f7ecd2'; const k = Math.max(3, Math.min(6, Math.round(w / 28))); for (let i = 0; i < k * 2; i++) { const x = w * (.2 + (i % k) * (.6 / Math.max(1, k - 1))), y = h * (i < k ? .38 : .62) + p.R(-4, 4); p.lump(x, y, 9, 22, meat, { hi: .5, n: 10, jit: .05 }); p.add(`<path d="M${f(x + 6)} ${f(y - 19)}Q${f(x + 13)} ${f(y)} ${f(x + 6)} ${f(y + 19)}" stroke="${skin}" stroke-width="4.2" fill="none" stroke-linecap="round"/>`); p.add(`<ellipse cx="${f(x - 1)}" cy="${f(y)}" rx="1.4" ry="2.8" fill="#6a3a1a"/>`); } return; }
     if (/바나나/.test(n)) { for (let i = 0; i < 2; i++) { const y = h * (.38 + i * .26); p.add(`<path d="M${f(w * .14)} ${f(y)}Q${f(w * .5)} ${f(y + h * .26)} ${f(w * .86)} ${f(y - 4)}Q${f(w * .5)} ${f(y + h * .1)} ${f(w * .14)} ${f(y)}Z" fill="#000" opacity=".12" transform="translate(1.5 2)"/><path d="M${f(w * .14)} ${f(y)}Q${f(w * .5)} ${f(y + h * .26)} ${f(w * .86)} ${f(y - 4)}Q${f(w * .5)} ${f(y + h * .1)} ${f(w * .14)} ${f(y)}Z" fill="#f3d34a"/><circle cx="${f(w * .14)}" cy="${f(y)}" r="2" fill="#5a3a1a"/><path d="M${f(w * .2)} ${f(y + 3)}Q${f(w * .5)} ${f(y + h * .16)} ${f(w * .8)} ${f(y)}" stroke="#d8b030" stroke-width="1" fill="none"/>`); } return; }
     if (/키위|골드키위/.test(n)) { const gold = /골드/.test(n); for (let i = 0; i < 4; i++) { const x = w * (.26 + (i % 2) * .48), y = h * (.32 + Math.floor(i / 2) * .36), r = Math.min(w * .17, h * .2); circ(x, y, r, '#8a6a3a', null, { hi: 0 }); circ(x, y, r * .86, gold ? '#e9c93a' : '#8fbf3a', null, { sh: 0, hi: .3 }); circ(x, y, r * .3, '#f6f2d8', null, { sh: 0, hi: 0 }); for (let k = 0; k < 10; k++) { const a = k / 10 * 6.28; p.add(`<ellipse cx="${f(x + Math.cos(a) * r * .45)}" cy="${f(y + Math.sin(a) * r * .45)}" rx=".6" ry="1.2" fill="#1a1a1a" transform="rotate(${f(a * 57.3 + 90)} ${f(x + Math.cos(a) * r * .45)} ${f(y + Math.sin(a) * r * .45)})"/>`); } } return; }
     if (/파인애플/.test(n)) { for (let i = 0; i < 8; i++) { const [x, y] = p.pt(.8); p.lump(x, y, 9, 6, p.pick(['#f5d04b', '#f2c43a']), { hi: .5, n: 6, jit: .06 }); p.add(`<path d="M${f(x - 5)} ${f(y)}h10" stroke="#e2ae2a" stroke-width=".8"/>`); } return; }
@@ -577,26 +577,29 @@ const RULES = [
 export const foodKind = n => (RULES.find(([re]) => re.test(n)) || [, 'misc'])[1];
 
 /** 메뉴 이름 → SVG. shape: 'n'(위 칸) | 'half'(위 가운데 반쪽) | 'big'(밥·국 칸) | 'seg'(한 칸에 여러 개일 때 한 줄) */
-const SIZE = { n: [100, 124], half: [170, 100], big: [160, 100], seg: [220, 80] };
 const HOT = new Set(['rice', 'soup', 'porridge', 'sauceRice', 'mixRice']);
 // 그림의 바탕색이 진한지 (진하면 이름표를 D-day 글씨처럼 흰 그림자로)
 const isDark = hex => { const m = /^#([\da-f]{6})$/i.exec(hex || ''); if (!m) return false; const v = parseInt(m[1], 16); return ((v >> 16) * .299 + (v >> 8 & 255) * .587 + (v & 255) * .114) / 255 < .52; };
+// 칸 비율(가로/세로)을 몇 단계로 묶음 → 그림을 칸 모양 그대로 그려서 잘리거나 작아 보이지 않게
+const ARS = [.4, .5, .62, .75, .88, 1, 1.15, 1.35, 1.6, 1.9, 2.3, 2.8];
+export const arBucket = r => ARS.reduce((a, b) => Math.abs(Math.log(b / r)) < Math.abs(Math.log(a / r)) ? b : a);
 const memo = new Map();
-function make(name, shape) {
-  const key = shape + '|' + name;
+function make(name, ar = 1) {
+  const key = ar + '|' + name;
   if (memo.has(key)) return memo.get(key);
-  const [w, h] = SIZE[shape] || SIZE.n, n = String(name).split('+')[0] || name, kind = foodKind(n);
+  const [w, h] = ar < 1 ? [100, Math.round(100 / ar)] : [Math.round(100 * ar), 100];   // 짧은 변을 100으로
+  const n = String(name).split('+')[0] || name, kind = foodKind(n);
   const p = new Pen(w, h, seedOf(name));
   try { DRAW[kind](p, String(name)); } catch { p.o = []; p.tone = ''; DRAW.misc(p, String(name)); }
-  if (p.pile && !p.liq) p.mound(.55);
-  if (HOT.has(kind) && shape !== 'seg') p.steam();
+  if (p.pile && !p.liq) p.mound(.3);
+  if (HOT.has(kind) && h >= 70) p.steam();
   const r = { svg: p.svg(), dark: isDark(p.tone) };
   memo.set(key, r);
   return r;
 }
-/** 메뉴 이름 → SVG. shape: 'n'(위 칸) | 'half'(위 가운데 반쪽) | 'big'(밥·국 칸) | 'seg'(한 칸에 여러 개일 때 한 줄) */
-export const foodSvg = (name, shape = 'n') => make(name, shape).svg;
-export const foodDark = (name, shape = 'n') => make(name, shape).dark;
+/** 메뉴 이름 + 칸 비율 → SVG */
+export const foodSvg = (name, ar = 1) => make(name, ar).svg;
+export const foodDark = name => make(name, 1).dark;
 
 /* ---------- 음료 (식판 옆에 따로) ---------- */
 export const isDrink = n => !/\+/.test(n) && !/드레싱|스파게티|푸딩|아이스|도넛|핫도그|젤리|그릭|요플레|생크림요거트|우유생크림/.test(n)
