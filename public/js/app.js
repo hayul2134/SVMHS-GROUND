@@ -1,6 +1,7 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
+import { foodSvg, drinkSvg, isDrink } from './food.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -221,7 +222,8 @@ const dishEmoji = n => (EMOJI.find(([re]) => re.test(n)) || [, '🍽️'])[1];
 const isRice = n => /밥$/.test(n);
 const isSoup = n => /(국|탕|찌개|수프|스프|개장)$/.test(n);
 const isExtra = n => /타르트|케이크|쿠키|머핀|마카롱|브라우니|잼|시럽|소스/.test(n) || ['🥬', '🥤', '🥐', '🍉', '🍨'].includes(dishEmoji(n));   // 김치·음료·빵·과일·디저트는 메인 후보에서 뺌
-function splitTray(list) {
+function splitTray(all) {
+  const drinks = all.filter(isDrink), list = all.filter(n => !isDrink(n));   // 우유·주스·에이드는 식판 옆에 따로
   let rice = list.find(isRice), soup = list.find(n => n !== rice && isSoup(n));
   const rest = list.filter(n => n !== rice && n !== soup);
   const mi = rest.findIndex(n => !isExtra(n));
@@ -234,7 +236,7 @@ function splitTray(list) {
   // 위아래로 나뉜 가운데 칸은 하나씩만, 남는 메뉴는 넓은 오른쪽 칸에 모아 담음 (작은 칸에 두 개씩 넣으면 글자가 잘림)
   const slots = mi >= 0 ? [1, 2, 3] : [0, 1, 2, 3];
   others.forEach((n, i) => top[slots[Math.min(i, slots.length - 1)]].push(n));
-  return { main: mi >= 0 ? rest[0] : (rest[0] || rice || ''), top, rice, soup, hasMain: mi >= 0 };
+  return { main: mi >= 0 ? rest[0] : (rest[0] || rice || ''), top, rice, soup, drinks, hasMain: mi >= 0 };
 }
 /* 급식 인기투표: 음식을 누르면 한 표 (끼니마다 한 표, 다시 누르면 취소) */
 const voterId = (() => {
@@ -273,15 +275,19 @@ const nm = x => {
   const n = x.replace(/\s/g, '').length, sz = n >= 10 ? ' xl' : n >= 7 ? ' lg' : '';
   return { cls: sz, html: esc(x).replace(/\+/g, '+<wbr>').replace(/\(/g, '<wbr>(').replace(/&amp;/g, '&amp;<wbr>') };
 };
-const cellHtml = (items, cls = '', v = null, em = '') => {
+// 칸마다 메뉴 이름에 맞는 음식 그림(food.js)을 깔고, 그 위에 이름표를 얹음
+const shapeOf = cls => /half/.test(cls) ? 'half' : /big/.test(cls) ? 'big' : 'n';
+const cellHtml = (items, cls = '', v = null) => {
   if (!items.length) return `<div class="cell empty ${cls}"></div>`;
   if (items.length === 1) {
     const x = items[0], pick = v && v.mine === x ? ' picked' : '';
     const t = nm(x);
-    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${voteMark(x, v)}<span class="em" aria-hidden="true">${em || dishEmoji(x)}</span><b><span class="nm${t.cls}">${t.html}</span></b></div>`;
+    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${foodSvg(x, shapeOf(cls))}${voteMark(x, v)}<b class="lbl"><span class="nm${t.cls}">${t.html}</span></b></div>`;
   }
-  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span aria-hidden="true">${dishEmoji(x)}</span><em><span class="nm${nm(x).cls}">${nm(x).html}</span></em>${voteMark(x, v)}</span>`).join('')}</div>`;
+  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}>${foodSvg(x, 'seg')}<em class="lbl"><span class="nm${nm(x).cls}">${nm(x).html}</span></em>${voteMark(x, v)}</span>`).join('')}</div>`;
 };
+// 음료: 식판 오른쪽에 따로 세워 둠 (우유팩·컵)
+const drinksHtml = (list, v) => !list.length ? '' : `<div class="drinks" role="list" aria-label="음료">${list.map(x => `<div class="drink${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}" role="listitem"${dishAttr(x, v)}>${voteMark(x, v)}${drinkSvg(x)}<b class="lbl"><span class="nm${nm(x).cls}">${nm(x).html}</span></b></div>`).join('')}</div>`;
 const mealHtml = (r, d, mini = false) => {
   if (!r) return empty('급식 정보가 없어요');
   const t = splitTray(cleanDish(r.DDISH_NM)), v = d ? voteOf(ymd(d), r.MMEAL_SC_CODE) : null;
@@ -290,12 +296,13 @@ const mealHtml = (r, d, mini = false) => {
     : v.open
     ? `<p class="vnote">🗳️ ${v.mine ? `내 픽 <b>${esc(v.mine)}</b> · 다시 누르면 취소` : '제일 맛있는 메뉴를 눌러 투표!'} · ${v.total}명 참여</p>`
     : `<p class="vnote">🗳️ 인기투표 결과 · ${v.total}명 참여</p>`;
-  return `<div class="tray${mini ? ' mini' : ''}" role="list" aria-label="급식 식판" data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}">`
+  const at = `data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}"`;
+  return `<div class="tray-set${mini ? ' sm' : ''}${t.drinks.length ? ' has-drink' : ''}" ${at}><div class="tray${mini ? ' mini' : ''}" role="list" aria-label="급식 식판" ${at}>`
     + cellHtml(t.top[0], '', v)
     + `<div class="mid">${cellHtml(t.top[1], 'half', v)}${cellHtml(t.top[2], 'half', v)}</div>`
     + cellHtml(t.top[3], '', v)
-    + cellHtml(t.rice ? [t.rice] : [], 'big', v) + cellHtml(t.soup ? [t.soup] : [], 'big soup', v, t.soup && isSoup(t.soup) ? '🍲' : '')
-    + `</div>` + info + (r.CAL_INFO && !mini ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
+    + cellHtml(t.rice ? [t.rice] : [], 'big', v) + cellHtml(t.soup ? [t.soup] : [], 'big soup', v)
+    + `</div>${drinksHtml(t.drinks, v)}</div>` + info + (r.CAL_INFO && !mini ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
 };
 let homeRows = [];
 // 지금 보여 줄 끼니: 7시 50분까지 조식 → 5교시 시작(점심 끝)까지 중식 → 그 뒤로 석식
@@ -336,7 +343,7 @@ async function renderHomeMeal() {
 }
 let voting = false;
 async function castVote(el) {
-  const tray = el.closest('.tray'); if (!tray || voting) return;
+  const tray = el.closest('.tray-set'); if (!tray || voting) return;
   const k = tray.dataset.ymd, meal = tray.dataset.meal, v = voteOf(k, meal);
   if (!v || !v.open) return;
   const dish = el.dataset.dish, next = v.mine === dish ? '' : dish;
