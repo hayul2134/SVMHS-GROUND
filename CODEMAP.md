@@ -8,7 +8,7 @@
 |---|---|
 | `public/index.html` | 화면 뼈대 전부 (아이콘 스프라이트 · 헤더/탭 · 5개 view · 모달 3개). 인라인 스크립트·`style=""` 금지(CSP) |
 | `public/css/style.css` | 스타일. 맨 위 목차 참고. 색은 `:root` 토큰만 바꾸면 라이트/다크 같이 바뀜 |
-| `public/js/theme.js` | 첫 화면 깜빡임 방지용 테마 적용 + 로그인 전이면 `html.intro`(소개 화면) 미리 붙임 (일반 스크립트, `<head>`에서 먼저 실행) |
+| `public/js/theme.js` | 첫 화면 깜빡임 방지용 테마 적용 + 로그인 전이면 `html.prelogin`(소개 화면) 미리 붙임 (일반 스크립트, `<head>`에서 먼저 실행) |
 | `public/js/app.js` | 화면 로직. 홈: 첫 화면(`#bigclock`)은 시계 + 왼쪽 `#sMeal`(오늘 급식) · 오른쪽 `#sTT`(오늘 시간표)만. 700px 이상에선 두 카드가 화면 가장자리 서랍(`.stow`): 탭으로 꺼내기(`.open`), 핀 버튼으로 꺼낸 자리에 고정(`.pin`, localStorage `side_meal`·`side_tt`), 첫 화면 아래로 스크롤하면 `html.tuck`으로 잠시 접힘. 오른쪽 시간표는 `ttTarget()` — 마지막 교시가 끝나면 다음 등교일(내일/○요일), 0시부터 그날. 시계 바로 아래 작은 상태 줄 `.s-info`(`#more`: 현재 시각·날짜·진행률 카드·오늘 일정 알림, 시계보다 작게). `#play`(밸런스 게임)는 `오늘 한눈에` 벤토(급식 4·일정 4·투표 4칸)로 이동. 1280px 이상은 3단, 700~1279px는 시계 위·카드 2단, 그 아래는 세로 · 아래 `#weekTT`(주간 시간표, `fillWeek` 공용). `/* ===== 섹션 ===== */` 단위: 급식 · 시간표 · 학사일정 · D-day · 모달 · 공유 · 반 설정 · 안내 · 테마 · 시작 |
 | `public/js/food.js` | 급식 메뉴 이름 → 식판 칸 음식 그림(SVG). 2025.03~2026.10 메뉴 855종을 보고 만든 분류 규칙 `RULES`(위에서부터 먼저 맞는 것) → 종류별 그리기 `DRAW`. 이름으로 시드를 잡아 같은 메뉴는 항상 같은 모양. 음료(`isDrink`)는 식판에서 빼서 옆에 우유팩·컵(`drinkSvg`)으로 세움. 그림은 `app.js paintFood()`가 칸 크기를 잰 뒤 그 비율(`arBucket`)로 그려 넣고, 칸 크기가 바뀌면 ResizeObserver로 다시 그림. 공용 음영 그라디언트는 `.food-defs`에 한 번만 넣음. 6글자 이상 이름은 `nameLines()`가 단어 경계에서 2줄로 나눔. 새 메뉴가 엉뚱하게 그려지면 `RULES`에 정규식 한 줄 추가 |
 | `public/js/neis.js` | 나이스 API 호출 + 브라우저 캐시(3시간). `getMeals / getTimetable / getSchedule` |
@@ -54,8 +54,8 @@ npx wrangler@4 pages dev --port 8788
 질문 목록은 서버 `BALANCE` 배열(한국 날짜로 하루 한 개씩 돌아감). 기기 ID(`sg_voter`)당 하루 한 표, 다시 누르면 취소. 자유 입력은 일부러 없음(익명 저격 방지). DB 바인딩이 없으면 카드가 숨겨짐.
 
 ## 소개 화면 (로그인 전)
-- `index.html`의 `#intro`(전체 화면 덮개, z-index 55). `html.intro`일 때만 보임. 내용: 첫 화면(로고·가입/로그인 버튼·둘러보기) → 할 수 있는 것 6개 → 시작 3단계.
-- 흐름: `theme.js`가 `localStorage.sg_in`(로그인한 적 있는 기기)·`sessionStorage.sg_peek`(이번 창에서 '로그인 없이 둘러보기') 둘 다 없으면 `html.intro` 추가 → `social.js init`이 `/api/s/me` 확인 후 `SOC.authed(me, enabled)` → `app.js`가 로그인돼 있으면 닫고 `sg_in` 저장, 아니면 띄움. 연결 오류면 상태 유지.
+- `index.html`의 `#intro`(전체 화면 덮개, z-index 55). `html.prelogin`일 때만 보임. 내용: 첫 화면(로고·가입/로그인 버튼·둘러보기) → 할 수 있는 것 6개 → 시작 3단계.
+- 흐름: `theme.js`가 `localStorage.sg_in`(로그인한 적 있는 기기)·`sessionStorage.sg_peek`(이번 창에서 '로그인 없이 둘러보기') 둘 다 없으면 `html.prelogin` 추가 → `social.js init`이 `/api/s/me` 확인 후 `SOC.authed(me, enabled)` → `app.js`가 로그인돼 있으면 닫고 `sg_in` 저장, 아니면 띄움. 연결 오류면 상태 유지.
 - 가입/로그인 버튼은 `#introAuth` 안에 `authHtml()` 폼을 펼침 → 성공하면 소개가 닫히고 원래 보려던 화면(해시)이 보임. 로그아웃·탈퇴하면 다시 소개.
 - 소셜이 꺼져 있거나(`DB` 없음) social.js를 못 불러오면 소개를 띄우지 않음. 반 설정 창은 소개가 닫힐 때 띄움.
 

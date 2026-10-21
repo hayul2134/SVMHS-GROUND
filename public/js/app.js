@@ -790,12 +790,12 @@ async function loadNotice() {
 }
 
 /* ===== 소개 (로그인 전) ===== */
-// theme.js가 첫 화면부터 html.intro를 붙여 둠 → 로그인 상태가 확인되면 social.js가 SOC.authed()로 알려 줌
+// theme.js가 첫 화면부터 html.prelogin을 붙여 둠 → 로그인 상태가 확인되면 social.js가 SOC.authed()로 알려 줌
 const HTML = document.documentElement;
-const introOn = () => HTML.classList.contains('intro');
+const introOn = () => HTML.classList.contains('prelogin');
 const peeked = () => { try { return !!sessionStorage.getItem('sg_peek'); } catch { return false; } };
 function intro(on) {
-  HTML.classList.toggle('intro', on);
+  HTML.classList.toggle('prelogin', on);
   $('#intro').inert = !on;
   if (on) $('#intro').scrollTop = 0;
   else { $('#introAuth').hidden = true; $('#introAuth').innerHTML = ''; onScroll(); }

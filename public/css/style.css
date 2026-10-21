@@ -923,12 +923,12 @@ body[data-view="dm"] .dmdock,body.playing .dmdock{display:none}
   .dmpanel{display:none}
 }
 
-/* ===== 14. 소개 화면 (로그인 전 · html.intro) ===== */
+/* ===== 14. 소개 화면 (로그인 전 · html.prelogin) ===== */
 .intro{display:none;position:fixed;inset:0;z-index:55;overflow-y:auto;overscroll-behavior:contain;
   background-color:var(--bg);background-image:radial-gradient(var(--dot) 1.6px,transparent 1.7px);background-size:22px 22px}
-html.intro .intro{display:block}
-html.intro body{overflow:hidden}
-html.intro .modal{z-index:57}
+html.prelogin .intro{display:block}
+html.prelogin body{overflow:hidden}
+html.prelogin .modal{z-index:57}
 .in-wrap{max-width:900px;margin:0 auto;padding:max(56px,env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));animation:fade .4s .12s ease-out both}
 .in-hero{position:relative;min-height:calc(100dvh - 96px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding-bottom:30px}
 .in-logo{width:104px;height:104px;rotate:-8deg;filter:drop-shadow(4px 4px 0 var(--ink));animation:bob 3s ease-in-out infinite}
