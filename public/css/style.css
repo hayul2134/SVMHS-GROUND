@@ -296,8 +296,8 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .drawers{--clockw:calc(2.7 * clamp(84px,13.5vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 56px)}
 .drawers .s-big{font-size:clamp(84px,13.5vw,200px)}
 @media (min-width:1280px){.drawers{--clockw:calc(2.7 * clamp(96px,10.5vw,170px))}.drawers .s-big{font-size:clamp(96px,10.5vw,170px)}}
-.s-ttc.stow{width:clamp(240px,var(--free),380px);container-type:inline-size}
-.s-meal.stow{width:clamp(250px,var(--free),420px);container-type:inline-size}
+.s-ttc.stow{width:clamp(220px,calc(var(--free) - 40px),320px);container-type:inline-size}
+.s-meal.stow{width:clamp(250px,calc(var(--free) - 20px),380px);container-type:inline-size}
 .s-ttc.stow .tt li.now{transform:rotate(-1deg)}
 .s-ttc.stow .tt li .s{font-size:clamp(14px,5.4cqw,19px)}
 .s-ttc.stow .tt li .p{width:clamp(26px,9.6cqw,34px);height:clamp(26px,9.6cqw,34px);font-size:clamp(13px,4.6cqw,17px)}
@@ -488,7 +488,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .tray-set.sm .drink .vc:not(.best){display:none}
 .s-tt.s-meal:not(.stow):has(.has-drink){width:398px}
 @media (min-width:1280px){.s-tt.s-meal:not(.stow):has(.has-drink){width:348px}}
-.s-meal.stow:has(.has-drink){width:clamp(280px,var(--free),440px)}
+.s-meal.stow:has(.has-drink){width:clamp(280px,calc(var(--free) - 20px),400px)}
 @media (max-width:699px){.s-tt.s-meal:has(.has-drink){width:100%}}
 
 .tray .it{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12.5px;font-weight:800;line-height:1.2;letter-spacing:-.03em;word-break:keep-all;overflow-wrap:normal}
@@ -656,7 +656,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .ticker .tk{will-change:transform}
 
 /* 홈 첫 화면: 말풍선만 기울여 비껴 붙이고, 시각·날짜는 살짝 엇갈리게 */
-.s-greet{position:relative;left:clamp(-230px,-16vw,-50px);top:-10px}
+.s-greet{position:relative;left:clamp(-150px,-10vw,-40px);top:-10px;z-index:41}
 .s-greet .bubble{transform:rotate(-4deg)}
 .s-greet .bubble::after{left:72%}
 .s-sub{position:relative;left:clamp(-60px,-4vw,-16px)}
