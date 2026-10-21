@@ -40,7 +40,7 @@ a{color:inherit}
 .disp{font-family:var(--disp);font-weight:400;letter-spacing:0}
 
 /* ===== 3. 헤더 (위에 떠 있는 버튼들) ===== */
-header{position:fixed;top:0;left:0;right:0;z-index:30;pointer-events:none}
+header{position:fixed;top:0;left:0;right:0;z-index:45;pointer-events:none}
 .hd{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:8px}
 .hd > *{pointer-events:auto}
 .logo{display:flex;align-items:center;gap:10px;line-height:1;margin-right:auto;color:var(--on-bg)}
@@ -689,7 +689,8 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .hbadge{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font:900 11px/16px var(--num);font-style:normal;border:2px solid var(--ink);display:grid;place-items:center}
 .ai{position:relative}
 .app.hot .ai{background:var(--yellow)!important;color:var(--ink)!important}
-#btnMe .av.tiny{width:34px;height:34px;min-height:0;padding:0;font-size:17px;border-width:2px;box-shadow:none}
+#btnMe .mi:has(.av){background:none;border:0;overflow:visible}
+#btnMe .av.tiny{width:38px;height:38px;min-height:0;padding:0;font-size:19px;border-width:2.5px;box-shadow:none}
 /* 아바타 색 */
 .c-sky{--pc:#6fc6f4}.c-blue{--pc:#5b8ff0}.c-mint{--pc:#8fe8cf}.c-lime{--pc:#c8ef7d}.c-yellow{--pc:#ffe08a}
 .c-peach{--pc:#ffb88f}.c-pink{--pc:#ffaad3}.c-violet{--pc:#bba6ff}.c-ink{--pc:#34507a}
