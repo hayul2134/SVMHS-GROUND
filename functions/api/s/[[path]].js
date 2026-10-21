@@ -14,7 +14,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms)
 };
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
-const SESSION_DAYS = 60;
+const SESSION_DAYS = 365;   // 로그아웃하지 않으면 유지: 접속할 때마다 만료를 다시 365일로 연장(GET me)
 const COOKIE = 'sg_s';
 const SECURITY_HEADERS = { 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), {
@@ -168,7 +168,14 @@ const ROUTES = {
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE b = ?1').bind(me.id).first(),
       friendIds(db, me.id),
     ]);
-    return json({ me: { ...pub(me), online: true }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    // 로그인 유지: 하루 넘게 지났으면 세션·쿠키 만료를 다시 SESSION_DAYS로 늘림 (로그아웃·비번 변경 전까지 계속 로그인)
+    let hdr;
+    if (me.exp - Date.now() < (SESSION_DAYS - 1) * 86400e3) {
+      const token = cookieOf(req, COOKIE);
+      await db.prepare('UPDATE sessions SET exp = ?1 WHERE token = ?2').bind(Date.now() + SESSION_DAYS * 86400e3, await sha256(token)).run();
+      hdr = { 'set-cookie': setCookie(req, token, SESSION_DAYS * 86400) };
+    }
+    return json({ me: { ...pub(me), online: true }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } }, 200, hdr);
   },
 
   'POST me': needMe(async ({ db, me, body }) => {

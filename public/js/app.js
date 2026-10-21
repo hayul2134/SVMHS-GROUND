@@ -793,7 +793,6 @@ async function loadNotice() {
 // theme.js가 첫 화면부터 html.prelogin을 붙여 둠 → 로그인 상태가 확인되면 social.js가 SOC.authed()로 알려 줌
 const HTML = document.documentElement;
 const introOn = () => HTML.classList.contains('prelogin');
-const peeked = () => { try { return !!sessionStorage.getItem('sg_peek'); } catch { return false; } };
 function intro(on) {
   HTML.classList.toggle('prelogin', on);
   $('#intro').inert = !on;
@@ -803,20 +802,14 @@ function intro(on) {
 // me: 로그인한 사람(없으면 null) · on: 소셜 기능이 켜져 있는지 · how: 'login' | 'signup' | undefined(처음 확인)
 SOC.authed = (me, on = true, how) => {
   try { if (me) localStorage.setItem('sg_in', '1'); else localStorage.removeItem('sg_in'); } catch {}
-  if (!on) { intro(false); return; }                 // 가입·로그인이 불가능하면 소개를 띄울 이유가 없음
+  if (!on) return;                                   // 서버 확인 불가: 지금 상태 유지 (로그인 안 된 기기는 소개 화면 그대로)
   if (me) { if (introOn()) { intro(false); if (how === 'login' && !cls) setTimeout(openClass, 400); } }
-  else if (!peeked()) intro(true);
+  else intro(true);                                  // 로그인 안 했으면 사이트는 안 보이고 소개 화면만
 };
 $('#intro').inert = !introOn();
 $('#intro').addEventListener('click', e => {
   const b = e.target.closest('[data-intro]'); if (!b) return;
   const k = b.dataset.intro;
-  if (k === 'peek') {
-    try { sessionStorage.setItem('sg_peek', '1'); } catch {}
-    intro(false);
-    if (!cls) setTimeout(openClass, 400);
-    return;
-  }
   if (!SOC.authForm) { toast('잠시 후 다시 눌러 주세요'); return; }
   const box = $('#introAuth');
   box.innerHTML = SOC.authForm(k); box.hidden = false;
@@ -836,7 +829,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 // 소셜 화면의 링크(#u/…, #dm/…)도 hashchange로 처리됨
 SOC.getClass = () => cls;
-const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => intro(false));   // 소셜을 못 불러오면 소개에 갇히지 않게
+const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => { if (introOn()) toast('불러오지 못했어요. 새로 고침해 주세요'); });
 loadConfig().finally(async () => {
   renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance); loadNotice();
   const h = location.hash.slice(1);
