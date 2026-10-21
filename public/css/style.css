@@ -89,7 +89,9 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .stage{min-height:80vh;min-height:80svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:88px 0 64px;position:relative}
 /* 시계 아래 작은 상태 줄 (현재 시각 · 날짜 · 수업 진행도 · 오늘 일정 알림) — 시계보다 눈에 덜 띄게 작게 */
 .s-info{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 14px;width:min(900px,100%);margin:26px auto 0;padding:0 16px}
-.s-info .s-sub{margin:0}
+.s-info .s-sub,.s-info .s-date{margin:0;left:0}
+/* 서랍이 양옆에 있을 땐 상태 줄도 시계 폭 안에서 줄바꿈 (서랍과 안 겹치게) */
+.drawers .s-info{width:min(900px,calc(var(--clockw) + 100px))}
 .s-info .s-left{gap:8px;padding:5px 6px 5px 14px;transform:rotate(-1.2deg)}
 .s-info .s-left b{font-size:13px}
 .s-info .s-cnt{font-size:16px!important;padding:4px 10px}
