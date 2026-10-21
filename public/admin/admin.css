@@ -39,7 +39,7 @@ a{color:inherit}
 .brand em{font-style:normal;font-size:14px;background:var(--yellow);color:#173048;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;margin-left:4px;vertical-align:3px}
 .tbtn,.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:12px;border:var(--bd);background:var(--card);box-shadow:var(--sh-s);font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;transition:transform .08s,box-shadow .08s}
 .tbtn:hover,.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
-.tbtn:active,.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.tbtn:active,.tbtn.is-pressed,.btn:active,.btn.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .btn.pri{background:var(--accent);color:#fff}
 .btn.ok{background:var(--lime);color:#173048}
 .btn.warn{background:var(--yellow);color:#173048}

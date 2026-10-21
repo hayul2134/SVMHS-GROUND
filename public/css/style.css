@@ -54,7 +54,7 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .iconbtn{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:var(--ink);background:var(--card);border:var(--bd);box-shadow:var(--sh-s);transition:transform .1s,box-shadow .1s}
 :root[data-theme="dark"] .iconbtn{color:var(--text)}
 .iconbtn:hover{transform:translate(-1px,-1px) rotate(-4deg);box-shadow:4px 4px 0 var(--ink)}
-.iconbtn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.iconbtn:active,.iconbtn.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .iconbtn svg{width:19px;height:19px}
 /* 테마 버튼: 해가 지고 달이 뜨는 전환 (밝음=해, 어두움=달) */
 .theme-btn{overflow:hidden}
@@ -78,7 +78,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .hmenu.open .hlist{opacity:1;transform:none;pointer-events:auto}
 .hi{display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border-radius:14px;text-align:left;color:var(--text);font-weight:900;font-size:15px;line-height:1.15;transition:background .12s,transform .12s}
 .hi:hover,.hi:focus-visible{background:var(--chip);outline:0}
-.hi:active{transform:translateX(3px)}
+.hi:active,.hi.is-pressed{transform:translateX(3px)}
 .hi .mi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--chip);border:var(--bd);color:var(--ink);transition:transform .15s}
 :root[data-theme="dark"] .hi .mi{color:var(--text)}
 .hi:hover .mi{transform:rotate(-8deg)}
@@ -190,7 +190,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .app:nth-child(odd){transform:rotate(-1.5deg)}
 .app:nth-child(even){transform:rotate(1.2deg)}
 .app:hover{transform:translate(-2px,-2px) rotate(0);box-shadow:6px 6px 0 var(--ink)}
-.app:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.app:active,.app.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .ai{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;border:var(--bd);color:#173048;background:var(--c,var(--sky));box-shadow:var(--sh-s)}
 .ai svg{width:26px;height:26px}
 .app:hover .ai{transform:rotate(-8deg)}
@@ -263,7 +263,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .pl-o{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:50px;padding:10px 14px;border-radius:14px;border:var(--bd);
   background:var(--chip);color:var(--text);font-weight:900;font-size:15px;text-align:left;box-shadow:var(--sh-s);transition:transform .1s,box-shadow .1s}
 .pl-o:hover{transform:translate(-1px,-1px)}
-.pl-o:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.pl-o:active,.pl-o.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .pl-fill{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);transition:transform .7s cubic-bezier(.2,.8,.2,1)}
 .pl-a .pl-fill{background:var(--sky)}
 .pl-b .pl-fill{background:var(--yellow)}
@@ -410,7 +410,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 /* 인기투표 */
 .tray .vote{cursor:pointer;transition:transform .12s,box-shadow .12s}
 .tray .cell.vote:hover{transform:translateY(-2px)}
-.tray .cell.vote:active,.tray .it.vote:active{transform:scale(.96)}
+.tray .cell.vote:active,.tray .cell.vote.is-pressed,.tray .it.vote:active,.tray .it.vote.is-pressed{transform:scale(.96)}
 .tray .vote:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .tray .it.vote{border-radius:10px;padding:2px 4px}
 .tray .picked{background:linear-gradient(160deg,color-mix(in srgb,var(--ks) 75%,var(--c1)),var(--c2));box-shadow:inset 0 0 0 2.5px var(--k),inset 3px 3px 7px var(--cs)}
@@ -482,7 +482,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .drink .vc.best{background:var(--yellow);color:var(--ink);border:1.5px solid var(--ink)}
 .drink.vote{cursor:pointer;transition:transform .12s}
 .drink.vote:hover{transform:translateY(-3px) rotate(2.5deg)}
-.drink.vote:active{transform:scale(.95)}
+.drink.vote:active,.drink.vote.is-pressed{transform:scale(.95)}
 .drink.vote:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .drink.picked .lbl{background:var(--k);color:#fff;border-color:var(--k)}
 .tray-set.sm{gap:6px}
@@ -613,12 +613,12 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .pager button{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--text);border:2px solid var(--ink);transition:.1s}
 :root[data-theme="dark"] .pager button{border-color:var(--line)}
 .pager button:hover{background:var(--yellow);color:var(--ink)}
-.pager button:active{transform:scale(.9)}
+.pager button:active,.pager button.is-pressed{transform:scale(.9)}
 .pager button svg{width:16px;height:16px}
 .pager .lbl{font-weight:900;min-width:118px;text-align:center;font-variant-numeric:tabular-nums}
 .btn{padding:12px 18px;border-radius:14px;background:var(--accent);color:#fff;font-weight:900;border:var(--bd);box-shadow:var(--sh-s);transition:transform .08s,box-shadow .08s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
-.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.btn:active,.btn.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .btn.ghost{color:var(--text)}
 .btn.lime{background:var(--lime);color:var(--ink)}
 
@@ -841,7 +841,7 @@ body.playing{overflow:hidden}
 .n25top b,#nTime{font-family:var(--num);font-size:22px}
 .n25{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%;max-width:440px;margin:0 auto}
 .n25 button{aspect-ratio:1;border-radius:16px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);font:800 clamp(20px,5vw,28px) var(--num)}
-.n25 button:active{transform:translate(2px,2px);box-shadow:none}
+.n25 button:active,.n25 button.is-pressed{transform:translate(2px,2px);box-shadow:none}
 .n25 button.ok{opacity:.18;box-shadow:none;transform:scale(.9)}
 .n25 button.bad{animation:shake .3s;background:var(--red)}
 @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
@@ -882,7 +882,7 @@ body[data-view="dm"] .dmdock,body.playing .dmdock{display:none}
 .dmpill{display:flex;align-items:center;gap:10px;padding:9px 14px 9px 10px;border-radius:999px;background:var(--card);border:var(--bd);box-shadow:var(--sh);font-weight:900;font-size:15px;color:var(--ink);transition:transform .12s,box-shadow .12s}
 :root[data-theme="dark"] .dmpill{color:var(--text)}
 .dmpill:hover{transform:translate(-1px,-2px) rotate(-1.5deg);box-shadow:5px 6px 0 var(--ink)}
-.dmpill:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.dmpill:active,.dmpill.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .dp-ic{position:relative;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--yellow);border:2px solid var(--ink);color:var(--ink)}
 .dp-ic svg{width:18px;height:18px}
 .dp-ic .hbadge{top:-8px;right:-9px}
