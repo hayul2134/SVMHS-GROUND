@@ -87,6 +87,7 @@ function authHtml(mode = 'login') {
         <div class="two"><label>학년<select name="grade">${grades}</select></label><label>반<select name="cls">${classes}</select></label></div>
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
         <p class="note">⚠️ 이메일이 없어서 비밀번호를 잊으면 찾을 수 없어요. 다른 사이트와 다른 비밀번호를 써 주세요.</p>` : ''}
+      <p class="ferr" role="alert" hidden></p>
       <button class="btn big" type="submit">${mode === 'signup' ? '가입하고 시작하기' : '로그인'}</button>
     </form>
   </div>`;
@@ -109,7 +110,24 @@ document.addEventListener('submit', async e => {
     ctx.authed?.(S.me, true, mode);   // 소개 화면이면 닫힘
     renderMe();
     if (mode === 'signup') setTimeout(openEdit, 500);
-  } catch (err) { fail(err); btn.disabled = false; }
+  } catch (err) { authErr(f, err, mode); btn.disabled = false; }
+});
+// 로그인·가입 실패: 토스트 대신 폼 안에 빨간 경고 + 틀린 칸 빨간 테두리 (다시 입력하면 사라짐)
+function authErr(f, err, mode) {
+  const msg = err.message || '문제가 생겼어요', box = f.querySelector('.ferr');
+  const hit = mode === 'login' && err.status === 401 ? ['handle', 'pw']
+    : /아이디/.test(msg) ? ['handle'] : /비밀번호/.test(msg) ? ['pw'] : /코드/.test(msg) ? ['code'] : [];
+  f.querySelectorAll('.bad').forEach(x => x.classList.remove('bad'));
+  hit.forEach(n => f.elements[n]?.classList.add('bad'));
+  box.textContent = '⚠️ ' + msg; box.hidden = false;
+  f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake');
+  const pw = f.elements.pw;
+  if (hit.includes('pw') && pw) { pw.value = ''; pw.focus(); } else f.elements[hit[0]]?.focus();
+}
+document.addEventListener('input', e => {
+  const f = e.target.closest?.('#authForm'); if (!f) return;
+  e.target.classList.remove('bad');
+  if (!f.querySelector('.bad')) f.querySelector('.ferr').hidden = true;
 });
 
 /* ===== 프로필 카드 ===== */

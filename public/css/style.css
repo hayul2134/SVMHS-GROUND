@@ -727,6 +727,10 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .sheet .col{display:grid;gap:10px;margin-top:18px}
 .sheet .sform + .lbl{margin-top:22px}
 .authcard{max-width:420px;width:100%;margin:0 auto;transform:rotate(-.6deg)}
+.sform .ferr{margin:0;padding:10px 12px;border-radius:12px;border:2px solid #e2483d;background:color-mix(in srgb,#e2483d 12%,var(--card));color:#d23a30;font-weight:900;font-size:14px;line-height:1.4}
+:root[data-theme="dark"] .sform .ferr{color:#ff9a92}
+.sform input.bad{border-color:#e2483d;background:color-mix(in srgb,#e2483d 10%,var(--chip));box-shadow:0 0 0 3px color-mix(in srgb,#e2483d 25%,transparent)}
+.sform.shake{animation:shake .3s}
 /* 고르기 (아바타 · 색 · 스티커) */
 .pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:6px}
 .pick button{aspect-ratio:1;border-radius:12px;font-size:22px;background:var(--chip);border:2px solid transparent;transition:transform .1s}
