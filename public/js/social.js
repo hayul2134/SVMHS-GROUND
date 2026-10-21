@@ -58,8 +58,8 @@ function paintBadges() {
 async function refreshMe() {
   try {
     const r = await call('me');
-    S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null;
-  } catch { S.me = null; }
+    S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
+  } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
   if (!panelOpen()) loadRecent();
 }
@@ -93,7 +93,7 @@ function authHtml(mode = 'login') {
 }
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-auth]'); if (!t) return;
-  $('#meBox').innerHTML = authHtml(t.dataset.auth);
+  (t.closest('#introAuth') || $('#meBox')).innerHTML = authHtml(t.dataset.auth);   // 소개 화면 안의 폼이면 그 자리에서 바꿈
 });
 document.addEventListener('submit', async e => {
   const f = e.target;
@@ -106,6 +106,7 @@ document.addEventListener('submit', async e => {
     await call(mode, d);
     await refreshMe();
     toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉 프로필을 꾸며 보세요` : `${S.me.name}, 반가워요!`);
+    ctx.authed?.(S.me, true, mode);   // 소개 화면이면 닫힘
     renderMe();
     if (mode === 'signup') setTimeout(openEdit, 500);
   } catch (err) { fail(err); btn.disabled = false; }
@@ -312,11 +313,11 @@ function openSettings() {
     e.preventDefault();
     try { await call('password', Object.fromEntries(new FormData(e.target))); toast('비밀번호를 바꿨어요'); e.target.reset(); } catch (err) { fail(err); }
   };
-  $('#btnLogout').onclick = async () => { try { await call('logout', {}); } catch {} S.me = null; S.unread = 0; paintBadges(); closeSheet(); renderMe(); toast('로그아웃했어요'); };
+  $('#btnLogout').onclick = async () => { try { await call('logout', {}); } catch {} S.me = null; S.unread = 0; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('로그아웃했어요'); };
   $('#btnWithdraw').onclick = async () => {
     const pw = prompt('정말 탈퇴할까요? 프로필·팔로우·DM·게임 기록이 모두 지워지고 되돌릴 수 없어요.\n계속하려면 비밀번호를 입력하세요.');
     if (!pw) return;
-    try { await call('withdraw', { pw }); S.me = null; paintBadges(); closeSheet(); renderMe(); toast('탈퇴했어요. 그동안 고마웠어요'); } catch (err) { fail(err); }
+    try { await call('withdraw', { pw }); S.me = null; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('탈퇴했어요. 그동안 고마웠어요'); } catch (err) { fail(err); }
   };
 }
 
@@ -635,6 +636,7 @@ export async function init(c) {
   ctx = c;
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
   c.report = openReport;
+  c.authForm = authHtml;   // 소개 화면의 로그인/가입 폼
   c.onLeave = v => {
     document.body.dataset.view = v;
     if (v === 'dm') closePanel(); else if (threadIn === 'page') stopThread();
@@ -643,6 +645,7 @@ export async function init(c) {
   document.body.dataset.view = location.hash.slice(1).split('/')[0] || 'home';
   setupDock();
   if (S.enabled) await refreshMe(); else paintBadges();
+  if (!S.meErr) c.authed?.(S.me, S.enabled);   // 로그인 전이면 소개 화면 유지, 로그인돼 있으면 닫음 (연결 문제면 지금 상태 그대로)
   startPoll();
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) refreshMe(); });
 }

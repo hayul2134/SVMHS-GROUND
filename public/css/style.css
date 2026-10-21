@@ -915,3 +915,46 @@ body[data-view="dm"] .dmdock,body.playing .dmdock{display:none}
   .dp-ic .hbadge{top:-14px;right:-16px}
   .dmpanel{display:none}
 }
+
+/* ===== 14. 소개 화면 (로그인 전 · html.intro) ===== */
+.intro{display:none;position:fixed;inset:0;z-index:55;overflow-y:auto;overscroll-behavior:contain;
+  background-color:var(--bg);background-image:radial-gradient(var(--dot) 1.6px,transparent 1.7px);background-size:22px 22px}
+html.intro .intro{display:block}
+html.intro body{overflow:hidden}
+html.intro .modal{z-index:57}
+.in-wrap{max-width:900px;margin:0 auto;padding:max(56px,env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));animation:fade .4s .12s ease-out both}
+.in-hero{position:relative;min-height:calc(100dvh - 96px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding-bottom:30px}
+.in-logo{width:104px;height:104px;rotate:-8deg;filter:drop-shadow(4px 4px 0 var(--ink));animation:bob 3s ease-in-out infinite}
+.in-kick{display:inline-block;padding:5px 14px;border-radius:999px;background:var(--yellow);color:#173048;border:var(--bd);box-shadow:var(--sh-s);font-weight:900;font-size:13px;transform:rotate(-2deg)}
+.in-title{font-family:var(--disp);font-weight:400;line-height:.95;color:var(--on-bg);font-size:clamp(52px,12vw,104px);text-shadow:5px 5px 0 var(--sky);display:flex;flex-direction:column;align-items:center}
+.in-title small{font-family:var(--num);font-weight:800;font-size:clamp(13px,2.4vw,18px);letter-spacing:.5em;margin:0 0 6px .5em;text-shadow:none}
+:root[data-theme="dark"] .in-title{text-shadow:5px 5px 0 #000}
+.in-lead{font-size:clamp(16px,2.4vw,19px);font-weight:700;color:var(--sub);line-height:1.55}
+.in-lead b{color:var(--text);background:linear-gradient(transparent 60%,var(--lime) 60%);padding:0 2px}
+:root[data-theme="dark"] .in-lead b{background:linear-gradient(transparent 60%,#1f6f5c 60%)}
+.in-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.in-cta .btn{min-width:170px}
+.in-peek{margin-top:4px;padding:8px 12px;font-weight:800;font-size:14px;color:var(--sub);text-decoration:underline;text-underline-offset:4px}
+.in-peek:hover{color:var(--text)}
+.in-auth{width:100%;max-width:420px;margin-top:6px;text-align:left;animation:fade .3s ease-out}
+.in-st{position:absolute;font-style:normal;font-size:clamp(28px,5vw,44px);line-height:1;pointer-events:none;
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;animation:tw 3.2s ease-in-out infinite}
+.in-st.s1{top:12%;left:8%}.in-st.s2{top:18%;right:9%;animation-delay:-.8s}.in-st.s3{bottom:22%;left:12%;animation-delay:-1.6s}.in-st.s4{bottom:16%;right:11%;animation-delay:-2.4s}
+.in-sec{padding:36px 0 10px}
+.in-feats{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.in-feats li{background:var(--card);border:var(--bd);border-radius:var(--radius);box-shadow:var(--sh);padding:20px;display:grid;gap:6px;align-content:start;transform:rotate(-.8deg);transition:transform .2s}
+.in-feats li:nth-child(even){transform:rotate(.8deg)}
+.in-feats li:hover{transform:rotate(0) translateY(-3px)}
+.in-feats i{font-style:normal;font-size:30px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.in-feats b{font-family:var(--disp);font-weight:400;font-size:20px}
+.in-feats span{font-size:14px;color:var(--sub);font-weight:600;line-height:1.5}
+.in-how{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px}
+.in-how li{display:flex;gap:12px;align-items:flex-start;background:var(--chip);border:var(--bd);border-radius:18px;padding:16px}
+.in-how li>b{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;border:var(--bd);font-family:var(--num);font-size:16px}
+.in-how span{display:grid;gap:2px;font-size:13.5px;color:var(--sub);font-weight:600}
+.in-how strong{color:var(--text);font-size:15.5px;font-weight:900}
+.in-foot{text-align:center;font-size:12.5px;color:var(--sub);font-weight:600;margin-top:34px;line-height:1.7}
+.in-foot button{margin-top:4px;font-weight:800;text-decoration:underline;text-underline-offset:3px;color:var(--sub)}
+@media (max-width:820px){.in-feats{grid-template-columns:repeat(2,1fr)}.in-how{grid-template-columns:1fr}}
+@media (max-width:520px){.in-feats{grid-template-columns:1fr}.in-feats li{padding:16px}.in-cta .btn{flex:1;min-width:0}.in-st.s1,.in-st.s3{display:none}}
+@media (prefers-reduced-motion:reduce){.in-logo,.in-st{animation:none}}

@@ -70,6 +70,49 @@
   </defs>
 </svg>
 
+<!-- 소개 화면: 로그인 전(html.intro)에만 보임. 로직은 app.js '소개' 섹션 -->
+<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="inT">
+  <div class="in-wrap">
+    <section class="in-hero">
+      <img class="in-logo" src="/logo-mark.svg?v=4" alt="" width="104" height="104">
+      <p class="in-kick">서울영상고 학생 전용 · 비공식</p>
+      <h1 class="in-title" id="inT"><small>SVMHS</small>GROUND</h1>
+      <p class="in-lead">휴대폰 없는 쉬는 시간,<br>태블릿·노트북으로 들어오는 <b>우리 학교 놀이터</b></p>
+      <div class="in-cta">
+        <button class="btn big" type="button" data-intro="signup">가입하고 시작하기</button>
+        <button class="btn big ghost" type="button" data-intro="login">로그인</button>
+      </div>
+      <div class="in-auth" id="introAuth" hidden></div>
+      <button class="in-peek" type="button" data-intro="peek">로그인 없이 둘러보기 →</button>
+      <i class="in-st s1" aria-hidden="true">⭐</i><i class="in-st s2" aria-hidden="true">🎬</i><i class="in-st s3" aria-hidden="true">✨</i><i class="in-st s4" aria-hidden="true">🍱</i>
+    </section>
+
+    <section class="in-sec" aria-labelledby="inF">
+      <h2 class="sec-t" id="inF">여기서 할 수 있는 것</h2>
+      <ul class="in-feats">
+        <li><i>⏰</i><b>종 시계</b><span>지금 시각과 쉬는 시간·수업 시간까지 남은 시간을 한눈에</span></li>
+        <li><i>🍱</i><b>오늘 급식</b><span>조식·중식·석식이 시간에 맞춰 식판 그림으로 바뀌고, 인기 메뉴 투표도</span></li>
+        <li><i>📅</i><b>시간표 · 학사일정</b><span>우리 반 시간표, 달력으로 보는 학교 일정, 나만의 D-day</span></li>
+        <li><i>😎</i><b>프로필 꾸미기</b><span>아바타·색·스티커로 나만의 프로필을 만들고 친구 팔로우</span></li>
+        <li><i>💬</i><b>DM</b><span>맞팔한 친구끼리 쉬는 시간에 메시지 주고받기</span></li>
+        <li><i>🎮</i><b>쉬는 시간 게임</b><span>반응속도 · 1 to 25 · 컷 타이밍, 친구 랭킹과 반 대항전</span></li>
+      </ul>
+    </section>
+
+    <section class="in-sec" aria-labelledby="inH">
+      <h2 class="sec-t" id="inH">시작은 1분이면 끝</h2>
+      <ol class="in-how">
+        <li><b>1</b><span><strong>아이디로 가입</strong>이메일·전화번호·실명 필요 없어요</span></li>
+        <li><b>2</b><span><strong>우리 반 설정</strong>학년·반을 고르면 시간표가 떠요</span></li>
+        <li><b>3</b><span><strong>친구 초대</strong>QR이나 주소로 친구에게 공유</span></li>
+      </ol>
+      <div class="in-cta"><button class="btn big" type="button" data-intro="signup">지금 가입하기</button></div>
+    </section>
+
+    <p class="in-foot">학생이 만든 비공식 사이트예요 · 급식·시간표·일정은 나이스 교육정보 개방 포털 기준<br><button type="button" data-act="info">이용 안내 · 개인정보</button></p>
+  </div>
+</div>
+
 <header id="hdr">
   <div class="hd">
     <button class="iconbtn" id="btnHome" data-go="home" title="처음으로" aria-label="처음 화면으로"><svg viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
