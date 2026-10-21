@@ -173,28 +173,24 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .s-row .clock{grid-area:c}
 .s-row .s-lside{grid-area:l;justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:30px}
 .s-row .s-side{grid-area:r;justify-self:start;display:flex;flex-direction:column;gap:30px}
-.s-tt{position:relative;flex:none;width:250px;text-align:left;background:var(--card);color:var(--text);border:var(--bd);border-radius:20px;box-shadow:var(--sh);padding:18px 14px 12px;transform:rotate(1.6deg)}
+.s-tt{position:relative;flex:none;width:300px;text-align:left;background:var(--card);color:var(--text);border:var(--bd);border-radius:20px;box-shadow:var(--sh);padding:18px 14px 12px;transform:rotate(1.6deg)}
 .s-tt::before{content:"";position:absolute;top:-12px;left:50%;width:84px;height:22px;margin-left:-42px;background:rgba(143,232,207,.85);border-left:2px dashed rgba(0,0,0,.15);border-right:2px dashed rgba(0,0,0,.15);transform:rotate(-5deg)}
 .s-tth{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;font-weight:900;margin:0 2px 10px}
 .s-ttmore{font-size:12px;font-weight:900;text-decoration:none;color:var(--sub);padding:3px 9px;border-radius:999px;background:var(--chip);border:2px solid var(--line)}
 .s-ttmore:hover{color:var(--text);border-color:var(--ink)}
 .s-tt .tt{gap:3px}
 .s-tt .tt li{gap:10px;padding:4px 8px 4px 4px;border-radius:12px}
-.s-tt .tt li .p{width:28px;height:28px;border-radius:8px;font-size:14px}
-.s-tt .tt li .s{font-size:15px;line-height:1.25}
+.s-tt .tt li .p{width:30px;height:30px;border-radius:8px;font-size:15px}
+.s-tt .tt li .s{font-size:16.5px;line-height:1.25}
 .s-tt .tt li.now{transform:rotate(-1deg) scale(1.03)}
 .s-tt .empty{font-size:14px;padding:6px 2px 8px}
 .s-tt .note{margin:8px 2px 0}
 @media (min-width:1280px){
   .s-row .s-big{font-size:clamp(96px,10.5vw,170px)}
   .s-row{column-gap:clamp(40px,5vw,84px)}
-  .s-tt{width:232px;padding:16px 12px 10px;box-shadow:var(--sh-s)}
-  .s-tt .tt{gap:1px}
-  .s-tt .tt li{padding:2px 6px 2px 2px}
-  .s-tt .tt li .p{width:24px;height:24px;font-size:12.5px;border-radius:7px}
-  .s-tt .tt li .s{font-size:14px}
-  .s-tth{font-size:14px;margin-bottom:8px}
-  .s-tt.s-meal{width:290px}
+  .s-tt{box-shadow:var(--sh-s)}
+  .s-tt .tt{gap:2px}
+  .s-tt .tt li{padding:3px 6px 3px 3px}
   .tray.mini{grid-template-rows:98px 78px}
   .tray.mini .em{font-size:26px}.tray.mini .big .em{font-size:29px}
   
@@ -267,6 +263,21 @@ header:not(.away) #btnHome,header.away .logo{display:none}
   .s-tt .tt li .s{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .s-tt .tt li.now .s::after{display:none}
 }
+/* 서랍 크기: 시계 양옆에 남는 공간만큼 자동으로 커지고 작아짐 (시계는 항상 가림 없이) */
+.drawers{--clockw:calc(3.4 * clamp(84px,17vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 44px)}
+@media (min-width:1280px){.drawers{--clockw:calc(3.4 * clamp(96px,10.5vw,170px))}}
+.s-ttc.stow{width:clamp(250px,var(--free),380px);container-type:inline-size}
+.s-meal.stow{width:clamp(280px,var(--free),420px);container-type:inline-size}
+.s-ttc.stow .tt li .s{font-size:clamp(14px,5.4cqw,19px)}
+.s-ttc.stow .tt li .p{width:clamp(26px,9.6cqw,34px);height:clamp(26px,9.6cqw,34px);font-size:clamp(13px,4.6cqw,17px)}
+.s-ttc.stow .s-tth{font-size:clamp(14px,5cqw,17px)}
+.s-ttc.stow .tt{gap:clamp(1px,.8cqw,4px)}
+.s-ttc.stow .tt li{padding:clamp(2px,1cqw,5px) 8px clamp(2px,1cqw,5px) 4px}
+.s-meal.stow .tray.mini{grid-template-rows:clamp(96px,32cqw,128px) clamp(74px,25cqw,98px)}
+.s-meal.stow .tray.mini .em{font-size:clamp(24px,8.5cqw,32px)}.s-meal.stow .tray.mini .big .em{font-size:clamp(27px,9.5cqw,36px)}
+.s-meal.stow .tray.mini .it{font-size:clamp(11px,3.6cqw,13px)}
+/* 세로로 긴 시간표는 화면 안에서 스크롤 */
+.s-ttc.stow .tt{max-height:calc(100vh - 230px);overflow:auto;scrollbar-width:thin}
 /* 첫 화면 급식판·시간표: 화면 가장자리 서랍 (700px 이상) — 탭으로 꺼내기/넣기, 핀으로 고정 */
 .s-acts{display:flex;align-items:center;gap:5px;flex:none}
 .s-pin,.s-tab{display:none}

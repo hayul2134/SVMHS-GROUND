@@ -568,7 +568,7 @@ for (const k in SIDE) {
   };
 }
 wideMQ.addEventListener('change', applyDrawers); applyDrawers();
-new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .45 }).observe($('#bigclock'));
+new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
 document.addEventListener('click', e => { for (const k in SIDE) if (!e.composedPath().includes(SIDE[k].el)) openSide(k, false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') for (const k in SIDE) openSide(k, false); });
 $('#goMeal').onclick = e => { e.preventDefault(); openSide('meal', false); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
