@@ -749,7 +749,11 @@ function applyTheme(t) {
   $('meta[name=theme-color]').content = t === 'dark' ? '#0e2236' : '#eaf5fd';
 }
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
-$('#btnTheme').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); };
+$('#btnTheme').onclick = () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  const h = document.documentElement; h.classList.add('tt'); clearTimeout(h._tt); h._tt = setTimeout(() => h.classList.remove('tt'), 600);
+  applyTheme(t); store.set('theme', t);
+};
 
 /* ===== 관리자 공지 ===== */
 async function loadNotice() {

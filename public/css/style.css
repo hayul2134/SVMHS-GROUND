@@ -56,6 +56,16 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .iconbtn:hover{transform:translate(-1px,-1px) rotate(-4deg);box-shadow:4px 4px 0 var(--ink)}
 .iconbtn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .iconbtn svg{width:19px;height:19px}
+/* 테마 버튼: 해가 지고 달이 뜨는 전환 (밝음=해, 어두움=달) */
+.theme-btn{overflow:hidden}
+.theme-btn svg{position:absolute;inset:0;margin:auto;transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .35s ease}
+.theme-btn .sun{color:#e0962d}
+.theme-btn .moon{opacity:0;transform:translateY(14px) rotate(-80deg) scale(.4)}
+:root[data-theme="dark"] .theme-btn .moon{opacity:1;transform:none;color:#ffe08a}
+:root[data-theme="dark"] .theme-btn .sun{opacity:0;transform:translateY(14px) rotate(80deg) scale(.4)}
+/* 테마 바꿀 때 색이 부드럽게 넘어가게 */
+html.tt,html.tt *,html.tt *::before,html.tt *::after{transition:background-color .45s ease,color .45s ease,border-color .45s ease,fill .45s ease,stroke .45s ease,box-shadow .45s ease!important}
+html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .35s ease,color .45s ease!important}
 /* 목록 버튼(☰ ↔ ✕) + 아래로 펼쳐지는 아이콘 목록 */
 .hmenu{position:relative;display:flex;align-items:center;gap:8px}
 .burger span{position:absolute;left:50%;top:50%;width:20px;height:2.6px;margin:-1.3px 0 0 -10px;border-radius:2px;background:currentColor;transition:transform .38s cubic-bezier(.65,0,.35,1),opacity .2s}
