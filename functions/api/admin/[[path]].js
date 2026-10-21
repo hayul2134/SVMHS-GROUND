@@ -39,7 +39,7 @@ async function isAdmin(req, db) {
 const log = (db, action, detail = '') => db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), action, String(detail).slice(0, 300)).run();
 
 /* ----- 사용자 찾기 ----- */
-const U = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, created, seen';
+const U = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, created, seen, insta';
 const userOf = (db, h) => db.prepare(`SELECT ${U} FROM users WHERE handle = ?1`).bind(String(h || '').trim().toLowerCase()).first();
 const banOf = (db, uid) => db.prepare('SELECT until, reason, at FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(uid, Date.now()).first();
 const row = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, created: u.created, seen: u.seen, online: Date.now() - (u.seen || 0) < 150e3 });
@@ -225,7 +225,7 @@ const ROUTES = {
     ]);
     const n = i => r[i].results[0].n;
     return json({
-      user: { ...row(u), bio: u.bio, club: u.club, mood: u.mood },
+      user: { ...row(u), bio: u.bio, club: u.club, mood: u.mood, insta: u.insta || '' },
       ban: await banOf(db, u.id),
       stats: { following: n(0), followers: n(1), sent: n(2), sentToday: n(3), sessions: n(4), blockedBy: n(5) },
       bests: r[6].results, reportsAgainst: r[7].results, reportsBy: r[8].results,
@@ -286,6 +286,7 @@ const ROUTES = {
     if (f.has('bio')) sets.push("bio = ''");
     if (f.has('mood')) sets.push("mood = ''");
     if (f.has('club')) sets.push("club = ''");
+    if (f.has('insta')) sets.push("insta = ''");
     if (f.has('stickers')) sets.push("stickers = '[]'");
     if (!sets.length) return err('지울 항목을 골라 주세요');
     await db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?1`).bind(u.id).run();

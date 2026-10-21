@@ -47,9 +47,9 @@ const setCookie = (req, token, maxAge) => {
 };
 
 /* ===== 사용자 ===== */
-const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen';
+const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta';
 const pub = u => u && ({
-  handle: u.handle, name: u.name, bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood,
+  handle: u.handle, name: u.name, bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
   stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
 });
 const card = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
@@ -58,7 +58,7 @@ const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -178,9 +178,12 @@ const ROUTES = {
     const color = COLORS.includes(body.color) ? body.color : me.color;
     const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => STICKERS.includes(s)).slice(0, 6);
     const g = +body.grade, c = +body.cls;
-    await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9 WHERE id = ?10')
+    // 인스타 아이디: @·주소를 붙여 넣어도 아이디만 남김. 인스타 규칙(영문·숫자·._, 30자)에 안 맞으면 거절
+    const insta = String(body.insta || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '').toLowerCase();
+    if (insta && !/^(?!.*\.\.)(?!\.)[a-z0-9._]{1,30}(?<!\.)$/.test(insta)) return err('인스타 아이디는 영문·숫자·밑줄(_)·마침표(.)만 쓸 수 있어요');
+    await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9, insta = ?11 WHERE id = ?10')
       .bind(name, clean(body.bio, 80, true), avatar, color, g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 10 ? c : 0, clean(body.club, 16), clean(body.mood, 24),
-        JSON.stringify([...new Set(stickers)]), me.id).run();
+        JSON.stringify([...new Set(stickers)]), me.id, insta).run();
     return json({ ok: true });
   }),
 

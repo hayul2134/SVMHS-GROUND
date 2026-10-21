@@ -219,7 +219,7 @@ async function openUser(handle) {
   $('#mBody').innerHTML = `
     <div class="prof">${av(u)}<div><b>${esc(u.name)}</b> ${u.online ? '<span class="tag on">접속 중</span>' : ''}
       <p class="sub">${cls(u) ? cls(u) + '반 · ' : ''}${u.club ? esc(u.club) + ' · ' : ''}가입 ${full(u.created)} · 최근 ${when(u.seen)}</p>
-      ${u.mood ? `<p>💭 ${esc(u.mood)}</p>` : ''}${u.bio ? `<p class="sub">${esc(u.bio)}</p>` : ''}</div></div>
+      ${u.mood ? `<p>💭 ${esc(u.mood)}</p>` : ''}${u.bio ? `<p class="sub">${esc(u.bio)}</p>` : ''}${u.insta ? `<p class="sub">📷 instagram.com/${esc(u.insta)}</p>` : ''}</div></div>
     ${d.ban ? `<p class="banbox">⛔ 이용 정지 중 · ${d.ban.until ? full(d.ban.until) + '까지' : '무기한'}${d.ban.reason ? ' · ' + esc(d.ban.reason) : ''}</p>` : ''}
     <div class="kv">
       <div><b>${s.followers}</b><span>팔로워</span></div><div><b>${s.following}</b><span>팔로잉</span></div><div><b>${s.blockedBy}</b><span>차단당함</span></div>
@@ -235,7 +235,7 @@ async function openUser(handle) {
       <p class="sub">정지하면 바로 로그아웃되고, 기간 동안 로그인할 수 없어요.</p>`}
     </div>
     <div class="sec"><h4>🧹 프로필 정리 (부적절한 글 지우기)</h4>
-      <div class="chk"><label><input type="checkbox" value="name">닉네임 → 아이디로</label><label><input type="checkbox" value="mood">상태 메시지</label><label><input type="checkbox" value="bio">소개</label><label><input type="checkbox" value="club">동아리</label><label><input type="checkbox" value="stickers">스티커</label></div>
+      <div class="chk"><label><input type="checkbox" value="name">닉네임 → 아이디로</label><label><input type="checkbox" value="mood">상태 메시지</label><label><input type="checkbox" value="bio">소개</label><label><input type="checkbox" value="club">동아리</label><label><input type="checkbox" value="insta">인스타 아이디</label><label><input type="checkbox" value="stickers">스티커</label></div>
       <div class="row"><button class="btn sm warn" type="button" data-act="clear" data-h="${h}">고른 항목 지우기</button></div></div>
     <div class="sec"><h4>🔑 계정</h4>
       <div class="row"><button class="btn sm" type="button" data-act="kick" data-h="${h}">모든 기기 로그아웃</button><button class="btn sm warn" type="button" data-act="resetpw" data-h="${h}">임시 비밀번호 발급</button></div>

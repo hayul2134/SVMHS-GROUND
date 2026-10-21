@@ -136,6 +136,7 @@ function profileHtml(d) {
       <p class="phandle">@${esc(u.handle)}${u.online && !self ? ' · <b class="onl">접속 중</b>' : ''}${!self && r.followsMe ? ' · <span class="fm">나를 팔로우함</span>' : ''}</p>
       ${chips ? `<p class="pchips">${chips}</p>` : ''}
       ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
+      ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
       ${u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
       <div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
       <div class="pact">${actions}</div>
@@ -267,6 +268,7 @@ function openEdit() {
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
       <div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
         <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>
+      <label>인스타 아이디 <small>(선택)</small><input name="insta" maxlength="60" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="예: svmhs_ground (@ 없이)" value="${esc(u.insta || '')}"><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <p class="lbl">프로필 사진</p>
       <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}">${a}</button>`).join('')}</div>

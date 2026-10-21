@@ -751,6 +751,13 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .pchips,.pcrowns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .chip{background:var(--chip);border:2px solid var(--ink);border-radius:999px;padding:3px 11px;font-weight:900;font-size:13px}
 .crown{background:#fff3c4;color:#7a5600;border:2px solid var(--ink);border-radius:999px;padding:3px 11px;font-weight:900;font-size:13px}
+.pinsta{display:inline-flex;align-items:center;gap:6px;padding:5px 13px 5px 9px;border-radius:999px;background:var(--card);border:2px solid var(--ink);box-shadow:var(--sh-s);color:var(--ink);font-weight:900;font-size:13.5px;text-decoration:none;transition:transform .12s}
+:root[data-theme="dark"] .pinsta{color:var(--text)}
+.pinsta svg{width:17px;height:17px;fill:none;stroke:#e1306c;stroke-width:2.2}
+.pinsta svg circle:last-child{fill:#e1306c}
+.pinsta span{opacity:.5;font-size:12px}
+.pinsta:hover{transform:rotate(-2deg) scale(1.04)}
+.pinsta:active{transform:scale(.96)}
 .pbio{white-space:pre-line;font-weight:600;max-width:440px}
 .pstats{display:flex;gap:10px;margin-top:4px}
 .pstats button{display:grid;padding:6px 16px;border-radius:14px;font-size:12.5px;font-weight:800;color:var(--sub);transition:background .12s}
