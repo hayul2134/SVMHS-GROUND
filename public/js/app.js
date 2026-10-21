@@ -656,13 +656,13 @@ async function renderHomeDday() {
   box.innerHTML = list.map((x, i) => {
     const d = parseYmd(x.date), n = diffDays(d, t);
     const tag = x.mine ? '<em class="tag me">내 D-day</em>' : x.off ? '<em class="tag off">쉬는 날</em>' : '';
-    return `<div class="up${i === 0 ? ' first' : ''}${x.mine ? ' mine' : ''}"><b class="num">${ddayText(n)}</b><p class="nm">${esc(x.name)}</p><span class="dt">${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</span>${tag}</div>`;
+    return `<div class="up${i === 0 ? ' first' : ''}${x.mine ? ' mine' : ''}"><b class="num">${ddayText(n)}</b><div class="txt"><p class="nm">${esc(x.name)}</p><span class="dt">${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</span></div>${tag}</div>`;
   }).join('');
   fitUp();
 }
-// 다가오는 일정: 항상 3개만 보이기 (넓은 화면은 세로 3장, 좁은 화면은 가로 3장)
+// 다가오는 일정: 5개만 보이기 (첫 번째는 큰 카드, 나머지는 작은 줄)
 function fitUp() {
-  $$('.up', $('#hUp')).forEach((el, i) => { el.hidden = i >= 3; });
+  $$('.up', $('#hUp')).forEach((el, i) => { el.hidden = i >= 5; });
 }
 addEventListener('resize', fitUp);
 async function renderDdayView() {
