@@ -1,7 +1,7 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
-import { foodSvg, drinkSvg, isDrink } from './food.js';
+import { foodSvg, foodDark, drinkSvg, isDrink } from './food.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -270,10 +270,25 @@ const voteMark = (name, v) => {
   return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? '👑 ' : '♥ '}${n}</i>`;
 };
 const dishAttr = (name, v) => v && v.open ? ` data-dish="${esc(name)}" role="button" tabindex="0" aria-label="${esc(name)}에 투표"` : '';
-// 메뉴 이름: 단어 중간에서 줄이 끊기지 않게 '+'·'(' 앞뒤에서만 줄바꿈, 긴 이름은 글자를 조금 줄임
+// 메뉴 이름: 6글자 이상이면 두 줄로. 재료·조리법 단어(고추장|조림…) 경계 중 가운데에 가장 가까운 곳에서 나눔
+const CUT = /볶음밥|비빔밥|덮밥|샤브샤브|떡볶이|돈까스|불고기|겉절이|샐러드|스파게티|파스타|소시지|고추장|쇠고기|소고기|오징어|콩나물|시금치|에이드|볶음|무침|조림|구이|튀김|강정|나물|갈비|찌개|김치|간장|된장|돼지|돈육|버섯|계란|두부|어묵|감자|채소|야채|치즈|크림|스프|주스|우유|라떼|소스|만두|까스|미역|매콤|달콤|허니|양념|훈제|직화|석쇠|우동|국수|짬뽕|떡국|볼|전|찜|탕|국|밥|떡/g;
+function nameLines(x) {
+  const s = x.trim(), n = [...s].length;
+  if (n < 6) return [s];
+  const plus = s.indexOf('+'), par = s.indexOf('(');
+  if (plus > 1 && plus < s.length - 2) return [s.slice(0, plus + 1), s.slice(plus + 1)];
+  if (par > 1) return [s.slice(0, par), s.slice(par)];
+  let best = -1;
+  for (const m of s.matchAll(CUT)) for (const at of [m.index, m.index + m[0].length]) {
+    if (at < 2 || s.length - at < 2) continue;
+    if (best < 0 || Math.abs(at - s.length / 2) < Math.abs(best - s.length / 2)) best = at;
+  }
+  if (best < 0 || Math.abs(best - s.length / 2) > s.length * .3) best = Math.ceil(s.length / 2);
+  return [s.slice(0, best), s.slice(best)];
+}
 const nm = x => {
-  const n = x.replace(/\s/g, '').length, sz = n >= 10 ? ' xl' : n >= 7 ? ' lg' : '';
-  return { cls: sz, html: esc(x).replace(/\+/g, '+<wbr>').replace(/\(/g, '<wbr>(').replace(/&amp;/g, '&amp;<wbr>') };
+  const ls = nameLines(x), w = Math.min(10, Math.max(...ls.map(l => [...l.replace(/\s/g, '')].length)));
+  return { cls: ` c${w}`, html: ls.map(l => `<span class="ln">${esc(l)}</span>`).join('') };
 };
 // 칸마다 메뉴 이름에 맞는 음식 그림(food.js)을 깔고, 그 위에 이름표를 얹음
 const shapeOf = cls => /half/.test(cls) ? 'half' : /big/.test(cls) ? 'big' : 'n';
@@ -282,12 +297,12 @@ const cellHtml = (items, cls = '', v = null) => {
   if (items.length === 1) {
     const x = items[0], pick = v && v.mine === x ? ' picked' : '';
     const t = nm(x);
-    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${foodSvg(x, shapeOf(cls))}${voteMark(x, v)}<b class="lbl"><span class="nm${t.cls}">${t.html}</span></b></div>`;
+    return `<div class="cell ${cls}${v && v.open ? ' vote' : ''}${pick}"${dishAttr(x, v)}>${foodSvg(x, shapeOf(cls))}${voteMark(x, v)}<b class="lbl${t.cls}${foodDark(x, shapeOf(cls)) ? ' dk' : ''}">${t.html}</b></div>`;
   }
-  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}>${foodSvg(x, 'seg')}<em class="lbl"><span class="nm${nm(x).cls}">${nm(x).html}</span></em>${voteMark(x, v)}</span>`).join('')}</div>`;
+  return `<div class="cell multi ${cls}">${items.map(x => `<span class="it${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}>${foodSvg(x, 'seg')}<em class="lbl${nm(x).cls}${foodDark(x, 'seg') ? ' dk' : ''}">${nm(x).html}</em>${voteMark(x, v)}</span>`).join('')}</div>`;
 };
 // 음료: 식판 오른쪽에 따로 세워 둠 (우유팩·컵)
-const drinksHtml = (list, v) => !list.length ? '' : `<div class="drinks" role="list" aria-label="음료">${list.map(x => `<div class="drink${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}" role="listitem"${dishAttr(x, v)}>${voteMark(x, v)}${drinkSvg(x)}<b class="lbl"><span class="nm${nm(x).cls}">${nm(x).html}</span></b></div>`).join('')}</div>`;
+const drinksHtml = (list, v) => !list.length ? '' : `<div class="drinks" role="list" aria-label="음료">${list.map(x => `<div class="drink${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}" role="listitem"${dishAttr(x, v)}>${voteMark(x, v)}${drinkSvg(x)}<b class="lbl${nm(x).cls}">${nm(x).html}</b></div>`).join('')}</div>`;
 const mealHtml = (r, d, mini = false) => {
   if (!r) return empty('급식 정보가 없어요');
   const t = splitTray(cleanDish(r.DDISH_NM)), v = d ? voteOf(ymd(d), r.MMEAL_SC_CODE) : null;

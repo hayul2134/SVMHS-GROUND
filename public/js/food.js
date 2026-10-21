@@ -9,17 +9,31 @@ function rng(seed) {
 }
 const f = n => Math.round(n * 10) / 10;
 
+/* ---------- 공용 음영(그라디언트) — 문서에 한 번만 넣고 모든 그림이 같이 씀 ---------- */
+const DEFS = `<defs>
+<radialGradient id="fv" cx=".36" cy=".3" r=".78"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></radialGradient>
+<radialGradient id="fb" cx=".42" cy=".34" r=".72"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity=".04"/><stop offset="1" stop-color="#000" stop-opacity=".26"/></radialGradient>
+<radialGradient id="fl" cx=".5" cy=".42" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".38"/></radialGradient>
+<linearGradient id="fs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+</defs>`;
+if (typeof document !== 'undefined' && !document.querySelector('.food-defs')) {
+  const d = document.createElement('div');
+  d.className = 'food-defs';
+  d.setAttribute('aria-hidden', 'true');
+  d.innerHTML = `<svg width="0" height="0" focusable="false">${DEFS}</svg>`;
+  document.body.prepend(d);
+}
+
 /* ---------- 그리기 도구 ---------- */
 class Pen {
-  constructor(w, h, seed) { this.w = w; this.h = h; this.r = rng(seed); this.o = []; }
+  constructor(w, h, seed) { this.w = w; this.h = h; this.r = rng(seed); this.o = []; this.tone = ''; }
   R(a, b) { return a + (b - a) * this.r(); }
   pick(a) { return a[Math.floor(this.r() * a.length)]; }
-  // 음식이 담기는 영역(칸 가장자리는 조금 비움) 안의 임의 점
+  // 음식이 담기는 영역(칸 테두리 안쪽으로 넉넉히 비움) 안의 임의 점
   pt(k = 1) {
     const a = this.r() * Math.PI * 2, d = Math.sqrt(this.r()) * k;
-    return [this.w / 2 + Math.cos(a) * d * this.w * .4, this.h / 2 + Math.sin(a) * d * this.h * .37];
+    return [this.w / 2 + Math.cos(a) * d * this.w * .32, this.h / 2 + Math.sin(a) * d * this.h * .29];
   }
-  // 울퉁불퉁한 덩어리 경로
   blob(cx, cy, rx, ry, jit = .18, n = 9, rot = 0) {
     const p = [];
     for (let i = 0; i < n; i++) {
@@ -33,28 +47,45 @@ class Pen {
   }
   add(s) { this.o.push(s); return this; }
   path(d, fill, extra = '') { return this.add(`<path d="${d}" fill="${fill}"${extra}/>`); }
-  // 그림자 + 몸통 + 윤기
+  // 덩어리: 그림자 + 몸통 + 입체 음영 + 윤기(반사광)
   lump(cx, cy, rx, ry, col, { sh = .5, hi = .4, jit = .2, n = 9, light = '#fff' } = {}) {
-    const rot = this.R(0, 6.28);
-    if (sh) this.path(this.blob(cx + rx * .12, cy + ry * .22, rx, ry, jit, n, rot), '#000', ` opacity="${sh * .32}"`);
-    this.path(this.blob(cx, cy, rx, ry, jit, n, rot), col);
-    if (hi) this.path(this.blob(cx - rx * .28, cy - ry * .3, rx * .38, ry * .26, .25, 7), light, ` opacity="${hi * .55}"`);
+    this.tone ||= col;
+    const rot = this.R(0, 6.28), d = this.blob(cx, cy, rx, ry, jit, n, rot);
+    if (sh) this.path(this.blob(cx + rx * .1, cy + ry * .24, rx, ry, jit, n, rot), '#2a160a', ` opacity="${f(sh * .42)}"`);
+    this.path(d, col).path(d, 'url(#fv)');
+    if (hi) this.add(`<ellipse cx="${f(cx - rx * .32)}" cy="${f(cy - ry * .4)}" rx="${f(rx * .3)}" ry="${f(ry * .15)}" fill="${light}" opacity="${f(Math.min(.85, hi * .95))}" transform="rotate(-18 ${f(cx - rx * .32)} ${f(cy - ry * .4)})"/>`);
     return this;
   }
-  // 칸 전체가 국물/소스로 찬 모양
+  // 국물·소스: 칸 안쪽에 담긴 모양(가장자리는 깊어 보이게 어둡게, 위쪽은 반짝)
   liquid(col, rim, sheen = .22) {
-    const { w, h } = this;
-    this.add(`<rect x="-2" y="-2" width="${w + 4}" height="${h + 4}" fill="${col}"/>`);
-    this.add(`<rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="8" fill="none" stroke="${rim}" stroke-width="7" opacity=".45"/>`);
-    this.add(`<ellipse cx="${f(w * .34)}" cy="${f(h * .28)}" rx="${f(w * .26)}" ry="${f(h * .12)}" fill="#fff" opacity="${sheen}" transform="rotate(-12 ${f(w * .34)} ${f(h * .28)})"/>`);
+    this.tone ||= col;
+    const { w, h } = this, x = w * .07, y = h * .08, rw = w * .86, rh = h * .84, rr = f(Math.min(w, h) * .2);
+    this.add(`<rect x="${f(x + 1)}" y="${f(y + 2)}" width="${f(rw)}" height="${f(rh)}" rx="${rr}" fill="#000" opacity=".16"/>`);
+    this.add(`<rect x="${f(x)}" y="${f(y)}" width="${f(rw)}" height="${f(rh)}" rx="${rr}" fill="${col}"/>`);
+    this.add(`<rect x="${f(x)}" y="${f(y)}" width="${f(rw)}" height="${f(rh)}" rx="${rr}" fill="url(#fl)"/>`);
+    this.add(`<rect x="${f(x + 1.2)}" y="${f(y + 1.2)}" width="${f(rw - 2.4)}" height="${f(rh - 2.4)}" rx="${rr}" fill="none" stroke="${rim}" stroke-width="2.4" opacity=".55"/>`);
+    this.add(`<ellipse cx="${f(w * .36)}" cy="${f(h * .27)}" rx="${f(w * .22)}" ry="${f(h * .07)}" fill="url(#fs)" opacity="${f(sheen * 3)}" transform="rotate(-8 ${f(w * .36)} ${f(h * .27)})"/>`);
+    this.liq = true;
     return this;
   }
-  // 밑에 깔리는 넓은 더미(밥·나물 등)
+  // 소복하게 쌓인 더미(밥·나물·김치 등)
   bed(col, dark, k = 1) {
-    const { w, h } = this, rot = this.R(0, 6);
-    this.path(this.blob(w / 2 + 2, h / 2 + 3, w * .44 * k, h * .41 * k, .1, 12, rot), '#000', ' opacity=".14"');
-    this.path(this.blob(w / 2, h / 2, w * .44 * k, h * .41 * k, .1, 12, rot), col);
-    if (dark) this.path(this.blob(w / 2 + w * .1, h / 2 + h * .12, w * .3 * k, h * .25 * k, .2, 9), dark, ' opacity=".35"');
+    this.tone ||= col;
+    const { w, h } = this, rot = this.R(0, 6), rx = w * .4 * k, ry = h * .37 * k;
+    this.path(this.blob(w / 2 + 1.5, h / 2 + 3, rx, ry, .08, 12, rot), '#2a160a', ' opacity=".2"');
+    const d = this.blob(w / 2, h / 2, rx, ry, .08, 12, rot);
+    this.path(d, col).path(d, 'url(#fb)');
+    this.pile = d;
+    return this;
+  }
+  // 더미 위에 한 번 더 입체 음영 (재료가 올라간 뒤에도 소복해 보이게)
+  mound(op = .8) { if (this.pile) this.path(this.pile, 'url(#fv)', ` opacity="${op}"`); return this; }
+  steam() {
+    const { w, h } = this;
+    for (let i = 0; i < 2; i++) {
+      const x = w * (.3 + i * .38) + this.R(-3, 3), y = h * .3;
+      this.add(`<path d="M${f(x)} ${f(y)}c-4 -5 4 -8 0 -13s4 -8 0 -12" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none" opacity=".5"/>`);
+    }
     return this;
   }
   grains(pal, n, rx = 2.6, ry = 1.4, k = 1) {
@@ -68,33 +99,37 @@ class Pen {
     for (let i = 0; i < n; i++) { const [x, y] = this.pt(k); this.add(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(this.R(r0, r1))}" fill="${this.pick(pal)}"${op < 1 ? ` opacity="${op}"` : ''}/>`); }
     return this;
   }
+  // 가닥(나물·면·채): 아래 그림자 한 줄 + 위에 윤기 한 줄
   strands(pal, n, len, wd, k = 1, op = 1) {
+    n = n > 24 ? Math.round(n * .78) : n;
     for (let i = 0; i < n; i++) {
-      const [x, y] = this.pt(k), a = this.R(0, 6.28), L = len * this.R(.6, 1.2), b = a + this.R(-.9, .9);
+      const [x, y] = this.pt(k), a = this.R(0, 6.28), L = len * this.R(.6, 1.15), b = a + this.R(-.9, .9);
       const x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L, cx = x + Math.cos(b) * L * .6, cy = y + Math.sin(b) * L * .6;
-      this.add(`<path d="M${f(x)} ${f(y)}Q${f(cx)} ${f(cy)} ${f(x2)} ${f(y2)}" stroke="${this.pick(pal)}" stroke-width="${f(wd * this.R(.75, 1.25))}" stroke-linecap="round" fill="none"${op < 1 ? ` opacity="${op}"` : ''}/>`);
+      const d = `M${f(x)} ${f(y)}Q${f(cx)} ${f(cy)} ${f(x2)} ${f(y2)}`, sw = f(wd * this.R(.8, 1.2));
+      if (wd >= 1.6) this.add(`<path d="${d}" stroke="#2a160a" stroke-width="${sw}" stroke-linecap="round" fill="none" opacity=".18" transform="translate(.6 1)"/>`);
+      this.add(`<path d="${d}" stroke="${this.pick(pal)}" stroke-width="${sw}" stroke-linecap="round" fill="none"${op < 1 ? ` opacity="${op}"` : ''}/>`);
+      if (wd >= 2.2 && i % 2 === 0) this.add(`<path d="${d}" stroke="#fff" stroke-width="${f(sw * .28)}" stroke-linecap="round" fill="none" opacity=".35" transform="translate(-.4 -.5)"/>`);
     }
     return this;
   }
   rects(pal, n, s, k = 1, rr = 1.5, sh = true) {
     for (let i = 0; i < n; i++) {
-      const [x, y] = this.pt(k), a = f(this.R(-35, 35)), z = s * this.R(.8, 1.2), c = this.pick(pal);
-      const t = `transform="rotate(${a} ${f(x)} ${f(y)})"`;
-      if (sh) this.add(`<rect x="${f(x - z / 2 + 1)}" y="${f(y - z / 2 + 1.6)}" width="${f(z)}" height="${f(z)}" rx="${rr}" fill="#000" opacity=".16" ${t}/>`);
-      this.add(`<rect x="${f(x - z / 2)}" y="${f(y - z / 2)}" width="${f(z)}" height="${f(z)}" rx="${rr}" fill="${c}" ${t}/>`);
-      this.add(`<rect x="${f(x - z / 2 + z * .15)}" y="${f(y - z / 2 + z * .12)}" width="${f(z * .45)}" height="${f(z * .22)}" rx="1" fill="#fff" opacity=".35" ${t}/>`);
+      const [x, y] = this.pt(k), a = f(this.R(-35, 35)), z = f(s * this.R(.8, 1.2)), c = this.pick(pal);
+      const t = `transform="rotate(${a} ${f(x)} ${f(y)})"`, xy = `x="${f(x - z / 2)}" y="${f(y - z / 2)}" width="${z}" height="${z}" rx="${rr}"`;
+      if (sh) this.add(`<rect x="${f(x - z / 2 + .8)}" y="${f(y - z / 2 + 1.5)}" width="${z}" height="${z}" rx="${rr}" fill="#2a160a" opacity=".2" ${t}/>`);
+      this.add(`<rect ${xy} fill="${c}" ${t}/>`);
+      if (sh) this.add(`<rect ${xy} fill="url(#fv)" ${t}/>`);
     }
     return this;
   }
-  // 깨·파 등 고명
-  sesame(n = 10, k = .9) { for (let i = 0; i < n; i++) { const [x, y] = this.pt(k); this.add(`<ellipse cx="${f(x)}" cy="${f(y)}" rx="1.1" ry=".6" fill="#f8f0d8" transform="rotate(${f(this.R(0, 180))} ${f(x)} ${f(y)})"/>`); } return this; }
-  scallion(n = 6, k = .85) { for (let i = 0; i < n; i++) { const [x, y] = this.pt(k); this.add(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(this.R(1.4, 2.2))}" fill="none" stroke="${this.pick(['#5fa83a', '#7cc04a', '#4c8f2c'])}" stroke-width="1.1"/>`); } return this; }
-  flakes(n = 14, k = .9) { return this.dots(['#b3231a', '#cf3a22', '#8f1c14'], n, .5, 1, k); }
-  svg() { return `<svg class="food" viewBox="0 0 ${this.w} ${this.h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">${this.o.join('')}</svg>`; }
+  sesame(n = 10, k = .9) { for (let i = 0; i < n; i++) { const [x, y] = this.pt(k); this.add(`<ellipse cx="${f(x)}" cy="${f(y)}" rx="1.2" ry=".65" fill="#fbf3dc" transform="rotate(${f(this.R(0, 180))} ${f(x)} ${f(y)})"/>`); } return this; }
+  scallion(n = 6, k = .85) { for (let i = 0; i < n; i++) { const [x, y] = this.pt(k); this.add(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(this.R(1.5, 2.3))}" fill="#c8ec8a" fill-opacity=".35" stroke="${this.pick(['#58b02c', '#7ccc3e', '#46a020'])}" stroke-width="1.2"/>`); } return this; }
+  flakes(n = 14, k = .9) { return this.dots(['#c8261a', '#e0401f', '#a81c10'], n, .5, 1, k); }
+  svg() { return `<svg class="food" viewBox="0 0 ${this.w} ${this.h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">${this.o.join('')}</svg>`; }
 }
 
 /* ---------- 재료 팔레트 ---------- */
-const WHITE_RICE = ['#fbfaf4', '#f3efe3', '#ebe5d4', '#fffdf8'];
+const WHITE_RICE = ['#fffefa', '#fbf8ef', '#f4efe2', '#ffffff', '#efe9da'];
 const RICE_MIX = [
   [/흑미/, ['#7b4b70', '#5e3757', '#8e5b80', '#efe4ea', '#e6d6df']],
   [/잡곡|혼합|오곡|찰보리|귀리/, [...WHITE_RICE, '#6b3a5b', '#c9a66b', '#8b6a44', '#b58f5a']],
@@ -105,8 +140,8 @@ const RICE_MIX = [
   [/퀴노아|렌틸/, [...WHITE_RICE, '#c79a6a', '#b0443b', '#e3c493']],
 ];
 const SOUP = {   // 국물 색, 테두리
-  red: ['#cf4b2a', '#8f2a16'], miyeok: ['#8a6c3c', '#5a4320'], doen: ['#b88a4e', '#7a5428'],
-  milk: ['#eee6d4', '#c7b897'], clear: ['#e8cf8d', '#b89a52'], perilla: ['#d9c5a0', '#a8916a'],
+  red: ['#dc4f26', '#9a2c12'], miyeok: ['#9a7840', '#5f4520'], doen: ['#c4924e', '#83592a'],
+  milk: ['#eee6d4', '#c7b897'], clear: ['#f0d58e', '#c39e4e'], perilla: ['#d9c5a0', '#a8916a'],
   cream: ['#f2e2b6', '#c9b07a'], mush: ['#cdb595', '#9a7f5c'], pumpkin: ['#f0b84a', '#c98a1e'], jjajang: ['#3e2a1c', '#21150c'],
 };
 
@@ -114,7 +149,7 @@ const SOUP = {   // 국물 색, 테두리
 const DRAW = {
   rice(p, n) {
     const extra = (RICE_MIX.find(([re]) => re.test(n)) || [, WHITE_RICE])[1];
-    p.bed("#f4f0e4", "#d9d0bb").grains(extra, 115, 2.6, 1.4);
+    p.bed("#fbf8f0").grains(extra, 120, 2.9, 1.6);
     if (/검은콩|서리태|콩밥/.test(n)) for (let i = 0; i < 9; i++) { const [x, y] = p.pt(.85); p.lump(x, y, 3.6, 2.6, '#1d1a1f', { sh: .4, hi: .6, n: 7 }); }
     if (/완두/.test(n)) for (let i = 0; i < 10; i++) { const [x, y] = p.pt(.85); p.lump(x, y, 2.6, 2.6, '#79b443', { sh: .3, hi: .5, n: 7 }); }
     if (/옥수수/.test(n)) p.rects(['#f2c53d', '#f6d65a'], 16, 3.4, .85, 1.2);
@@ -135,15 +170,15 @@ const DRAW = {
       : /제육|고추장|김치|닭갈비/.test(n) ? ['#bf4a26', '#7d2a14', ['#9a3a1c', '#f0e2c6', '#5a9a37']]
       : /참치마요|치킨마요|스팸마요/.test(n) ? ['#f2ead2', '#cfc29b', ['#c99e70', '#1f2a1d', '#d77a4a']]
       : ['#7a4426', '#4b2814', ['#8a4f2c', '#f0e2c6', '#5a9a37']];
-    p.bed('#f4f0e4', '#d9d0bb').grains(WHITE_RICE, 90, 2.6, 1.4);
+    p.bed('#fbf8f0').grains(WHITE_RICE, 95, 2.9, 1.6);
     const { w, h } = p;
-    p.path(p.blob(w * .58, h * .54, w * .34, h * .3, .14, 11), '#000', ' opacity=".18"');
-    p.path(p.blob(w * .56, h * .5, w * .34, h * .3, .14, 11), col);
-    p.path(p.blob(w * .5, h * .42, w * .14, h * .08, .2, 8), '#fff', ' opacity=".22"');
-    for (let i = 0; i < 9; i++) { const a = p.R(0, 6.28), d = p.R(0, .8), x = w * .56 + Math.cos(a) * d * w * .3, y = h * .5 + Math.sin(a) * d * h * .26; p.add(`<rect x="${f(x - 2.2)}" y="${f(y - 2.2)}" width="4.4" height="4.4" rx="1.4" fill="${p.pick(veg)}" transform="rotate(${f(p.R(-30, 30))} ${f(x)} ${f(y)})"/>`); }
+    const sd = p.blob(w * .56, h * .52, w * .27, h * .25, .14, 11);
+    p.path(p.blob(w * .57, h * .55, w * .27, h * .25, .14, 11), '#2a160a', ' opacity=".22"').path(sd, col).path(sd, 'url(#fv)');
+    p.add(`<ellipse cx="${f(w * .5)}" cy="${f(h * .42)}" rx="${f(w * .09)}" ry="${f(h * .04)}" fill="#fff" opacity=".55"/>`);
+    for (let i = 0; i < 9; i++) { const a = p.R(0, 6.28), d = p.R(0, .8), x = w * .56 + Math.cos(a) * d * w * .22, y = h * .52 + Math.sin(a) * d * h * .2; p.add(`<rect x="${f(x - 2.2)}" y="${f(y - 2.2)}" width="4.4" height="4.4" rx="1.4" fill="${p.pick(veg)}" transform="rotate(${f(p.R(-30, 30))} ${f(x)} ${f(y)})"/>`); }
     if (/마요/.test(n)) p.strands(['#fffbe9'], 5, 18, 1.6, .7);
     if (/(김|김가루)/.test(n)) p.rects(['#1f2a1d'], 10, 2.4, .6, .4, false);
-    p.add(`<path d="${p.blob(w * .56, h * .5, w * .34, h * .3, .14, 11)}" fill="none" stroke="${dk}" stroke-width="1.2" opacity=".35"/>`);
+    p.add(`<path d="${sd}" fill="none" stroke="${dk}" stroke-width="1.2" opacity=".35"/>`);
   },
   soup(p, n) {
     const kind = /나가사키/.test(n) ? 'milk' : /미역/.test(n) ? 'miyeok' : /짜장/.test(n) ? 'jjajang' : /크림|스프|수프|양송이/.test(n) ? (/양송이|버섯/.test(n) ? 'mush' : 'cream')
@@ -542,18 +577,26 @@ const RULES = [
 export const foodKind = n => (RULES.find(([re]) => re.test(n)) || [, 'misc'])[1];
 
 /** 메뉴 이름 → SVG. shape: 'n'(위 칸) | 'half'(위 가운데 반쪽) | 'big'(밥·국 칸) | 'seg'(한 칸에 여러 개일 때 한 줄) */
-const SIZE = { n: [100, 120], half: [170, 100], big: [160, 100], seg: [200, 80] };
+const SIZE = { n: [100, 124], half: [170, 100], big: [160, 100], seg: [220, 80] };
+const HOT = new Set(['rice', 'soup', 'porridge', 'sauceRice', 'mixRice']);
+// 그림의 바탕색이 진한지 (진하면 이름표를 D-day 글씨처럼 흰 그림자로)
+const isDark = hex => { const m = /^#([\da-f]{6})$/i.exec(hex || ''); if (!m) return false; const v = parseInt(m[1], 16); return ((v >> 16) * .299 + (v >> 8 & 255) * .587 + (v & 255) * .114) / 255 < .52; };
 const memo = new Map();
-export function foodSvg(name, shape = 'n') {
+function make(name, shape) {
   const key = shape + '|' + name;
   if (memo.has(key)) return memo.get(key);
-  const [w, h] = SIZE[shape] || SIZE.n, n = String(name).split('+')[0] || name;
+  const [w, h] = SIZE[shape] || SIZE.n, n = String(name).split('+')[0] || name, kind = foodKind(n);
   const p = new Pen(w, h, seedOf(name));
-  try { DRAW[foodKind(n)](p, String(name)); } catch { p.o = []; DRAW.misc(p, String(name)); }
-  const s = p.svg();
-  memo.set(key, s);
-  return s;
+  try { DRAW[kind](p, String(name)); } catch { p.o = []; p.tone = ''; DRAW.misc(p, String(name)); }
+  if (p.pile && !p.liq) p.mound(.55);
+  if (HOT.has(kind) && shape !== 'seg') p.steam();
+  const r = { svg: p.svg(), dark: isDark(p.tone) };
+  memo.set(key, r);
+  return r;
 }
+/** 메뉴 이름 → SVG. shape: 'n'(위 칸) | 'half'(위 가운데 반쪽) | 'big'(밥·국 칸) | 'seg'(한 칸에 여러 개일 때 한 줄) */
+export const foodSvg = (name, shape = 'n') => make(name, shape).svg;
+export const foodDark = (name, shape = 'n') => make(name, shape).dark;
 
 /* ---------- 음료 (식판 옆에 따로) ---------- */
 export const isDrink = n => !/\+/.test(n) && !/드레싱|스파게티|푸딩|아이스|도넛|핫도그|젤리|그릭|요플레|생크림요거트|우유생크림/.test(n)
