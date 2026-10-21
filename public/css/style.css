@@ -281,10 +281,12 @@ header:not(.away) #btnHome,header.away .logo{display:none}
   .s-tt .tt li.now .s::after{display:none}
 }
 /* 서랍 크기: 시계 양옆에 남는 공간만큼 자동으로 커지고 작아짐 (시계는 항상 가림 없이) */
-.drawers{--clockw:calc(3.4 * clamp(84px,17vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 44px)}
-@media (min-width:1280px){.drawers{--clockw:calc(3.4 * clamp(96px,10.5vw,170px))}}
-.s-ttc.stow{width:clamp(250px,var(--free),380px);container-type:inline-size}
-.s-meal.stow{width:clamp(280px,var(--free),420px);container-type:inline-size}
+.drawers{--clockw:calc(2.7 * clamp(84px,13.5vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 56px)}
+.drawers .s-big{font-size:clamp(84px,13.5vw,200px)}
+@media (min-width:1280px){.drawers{--clockw:calc(2.7 * clamp(96px,10.5vw,170px))}.drawers .s-big{font-size:clamp(96px,10.5vw,170px)}}
+.s-ttc.stow{width:clamp(240px,var(--free),380px);container-type:inline-size}
+.s-meal.stow{width:clamp(250px,var(--free),420px);container-type:inline-size}
+.s-ttc.stow .tt li.now{transform:rotate(-1deg)}
 .s-ttc.stow .tt li .s{font-size:clamp(14px,5.4cqw,19px)}
 .s-ttc.stow .tt li .p{width:clamp(26px,9.6cqw,34px);height:clamp(26px,9.6cqw,34px);font-size:clamp(13px,4.6cqw,17px)}
 .s-ttc.stow .s-tth{font-size:clamp(14px,5cqw,17px)}
@@ -293,8 +295,13 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .s-meal.stow .tray.mini{grid-template-rows:clamp(96px,32cqw,128px) clamp(74px,25cqw,98px)}
 .s-meal.stow .tray.mini .em{font-size:clamp(24px,8.5cqw,32px)}.s-meal.stow .tray.mini .big .em{font-size:clamp(27px,9.5cqw,36px)}
 .s-meal.stow .tray.mini .it{font-size:clamp(11px,3.6cqw,13px)}
-/* 세로로 긴 시간표는 화면 안에서 스크롤 */
-.s-ttc.stow .tt{max-height:calc(100vh - 230px);overflow:auto;scrollbar-width:thin}
+/* 낮은 화면(짧은 세로)에서는 서랍을 촘촘하게 */
+@media (max-height:740px){
+  .s-ttc.stow .tt li{padding:1px 6px 1px 2px}.s-ttc.stow .tt{gap:0}
+  .s-ttc.stow .tt li .s{font-size:clamp(13px,4.6cqw,15.5px)}.s-ttc.stow .tt li .p{width:24px;height:24px;font-size:12.5px}
+  .s-ttc.stow,.s-meal.stow{padding-top:14px;padding-bottom:8px}
+  .s-meal.stow .tray.mini{grid-template-rows:clamp(84px,26cqw,104px) clamp(64px,20cqw,80px)}
+}
 /* 첫 화면 급식판·시간표: 화면 가장자리 서랍 (700px 이상) — 탭으로 꺼내기/넣기, 핀으로 고정 */
 .s-acts{display:flex;align-items:center;gap:5px;flex:none}
 .s-pin,.s-tab{display:none}
@@ -467,8 +474,9 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .tray-set.sm .drink .lbl{font-size:10.5px;font-size:min(10.5px,calc((100cqi - 8px) / var(--n,4)));padding:1px 4px}
 .drink .lbl .ln{display:block;white-space:nowrap}
 .tray-set.sm .drink .vc:not(.best){display:none}
-.s-tt.s-meal:has(.has-drink){width:398px}
-@media (min-width:1280px){.s-tt.s-meal:has(.has-drink){width:348px}}
+.s-tt.s-meal:not(.stow):has(.has-drink){width:398px}
+@media (min-width:1280px){.s-tt.s-meal:not(.stow):has(.has-drink){width:348px}}
+.s-meal.stow:has(.has-drink){width:clamp(280px,var(--free),440px)}
 @media (max-width:699px){.s-tt.s-meal:has(.has-drink){width:100%}}
 
 .tray .it{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12.5px;font-weight:800;line-height:1.2;letter-spacing:-.03em;word-break:keep-all;overflow-wrap:normal}
@@ -636,7 +644,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .ticker .tk{will-change:transform}
 
 /* 홈 첫 화면: 말풍선만 기울여 비껴 붙이고, 시각·날짜는 살짝 엇갈리게 */
-.s-greet{position:relative;left:clamp(-180px,-13vw,-40px);top:-14px}
+.s-greet{position:relative;left:clamp(-230px,-16vw,-50px);top:-10px}
 .s-greet .bubble{transform:rotate(-4deg)}
 .s-greet .bubble::after{left:72%}
 .s-sub{position:relative;left:clamp(-60px,-4vw,-16px)}
