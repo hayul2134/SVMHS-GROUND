@@ -437,6 +437,18 @@ const ROUTES = {
     return json({ ok: true, notice: n });
   },
 
+  // 지금 공지 고치기: 제목·내용만 바꾸고 날짜·id는 그대로 (학생 화면에 새 공지 알림 점이 다시 뜨지 않음)
+  'POST noticeedit': async ({ db, body }) => {
+    let cur = null; try { cur = JSON.parse((await getSettings(db, true)).notice || 'null'); } catch {}
+    if (!cur || !cur.text) return err('지금 올라간 공지가 없어요');
+    const text = clean(body.text, 120); if (!text) return err('제목을 적어 주세요');
+    const n = { ...cur, text, body: clean(body.body, 2000, true) };
+    await setSetting(db, 'notice', JSON.stringify(n));
+    await db.prepare('UPDATE notices SET text = ?2, body = ?3 WHERE id = ?1').bind(n.id, n.text, n.body).run();
+    await log(db, '공지 고침', text);
+    return json({ ok: true, notice: n });
+  },
+
   /* ----- 공지 기록 (지난 공지 지우기) ----- */
   'GET notices': async ({ db }) => json({ list: (await db.prepare('SELECT id, text, at, until FROM notices ORDER BY at DESC LIMIT 50').all()).results }),
   'POST noticedel': async ({ db, body }) => {

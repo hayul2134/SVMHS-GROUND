@@ -371,7 +371,7 @@ VIEWS.notice = async () => {
           <label class="f">누르면 이동 <small>선택</small><select class="inp" name="link"><option value="">이동 없음</option><option value="#meal">급식</option><option value="#tt">시간표</option><option value="#cal">학사일정</option><option value="#dday">D-day</option><option value="#game">미니게임</option><option value="#me">내 프로필</option><option value="#dm">DM</option></select></label>
         </div>
         <div><p class="sub">미리보기</p><div class="nprev" id="nPrev"><span>📢</span><span id="nPrevT">내용을 적어 보세요</span></div></div>
-        <div class="row"><button class="btn pri" type="submit">올리기</button></div>
+        <div class="row"><button class="btn pri" type="submit">올리기</button>${live ? '<button class="btn" type="button" id="nEdit">지금 공지 고치기 (날짜 그대로)</button>' : ''}</div>
       </form>
     </section>
     <section class="card"><h3>공지 기록</h3><p class="sub">학생 화면 📢 목록에 보이는 지난 공지예요. 지우면 목록에서도 사라져요.</p>
@@ -381,6 +381,9 @@ VIEWS.notice = async () => {
   const prev = () => { $('#nPrev').className = 'nprev ' + f.tone.value; $('#nPrev').firstElementChild.textContent = TONES[f.tone.value].split(' ')[0]; $('#nPrevT').textContent = f.text.value || '내용을 적어 보세요'; };
   if (live && n.link) f.link.value = n.link;
   f.addEventListener('input', prev); prev();
+  if ($('#nEdit')) $('#nEdit').onclick = async () => {
+    try { await call('noticeedit', { text: f.text.value, body: f.body.value }); toast('공지를 고쳤어요 (사이트엔 30초 안에 보여요)'); route(); } catch (x) { fail(x); }
+  };
   f.addEventListener('submit', async e => {
     e.preventDefault();
     try { await call('notice', { text: f.text.value, body: f.body.value, tone: f.tone.value, hours: +f.hours.value, link: f.link.value }); toast('공지를 올렸어요 (사이트엔 30초 안에 보여요)'); route(); } catch (x) { fail(x); }

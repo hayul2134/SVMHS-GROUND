@@ -83,7 +83,7 @@ npx wrangler@4 pages dev --port 8788
 - DM은 **신고된 메시지와 앞뒤 5개만** 볼 수 있음(사생활 보호). 전체 DM 열람 기능은 일부러 없음.
 - 정지(`bans`): 정지 즉시 세션 삭제 + 로그인 거부(사유·기간 표시). 소셜 `auth()`도 정지된 사람은 막음.
 - 설정(`settings`): `join_code`(있으면 비밀 변수 JOIN_CODE보다 우선, ''이면 코드 없음) · `signup_open` · `dm_open` · `notice`(JSON).
-- 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 학생이 닫으면 `sg_notice_x`에 그 공지 id 저장. 공지에 '자세한 내용'(`body`, 최대 2000자)이 있으면 띠 끝에 '자세히 ›'가 붙고, 누르면 `SOC.openNotices(id)`로 공지 목록(넓은 창 `.sheet.wide`)이 열리며 그 공지 본문이 펼쳐짐. 접힌 공지 제목은 2줄까지만. 관리자 공지 화면에서 지난 공지 기록 삭제(`POST noticedel`, 지금 걸린 공지는 불가).
+- 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 학생이 닫으면 `sg_notice_x`에 그 공지 id 저장. 공지에 '자세한 내용'(`body`, 최대 2000자)이 있으면 띠 끝에 '자세히 ›'가 붙고, 누르면 `SOC.openNotices(id)`로 공지 목록(넓은 창 `.sheet.wide`)이 열리며 그 공지 본문이 펼쳐짐. 공지 창 모양(`.ntlist .nt-t`/`.ntb`): 제목은 굵은 큰 글씨 한 줄(넘치면 …), 내용 2줄 미리보기 → '자세히 보기'로 펼침, 펼친 내용 아래 왼쪽 작은 '접기'. 업데이트 소식도 같은 모양. 지금 공지의 제목·내용만 날짜 그대로 고치기: `POST noticeedit`. 관리자 공지 화면에서 지난 공지 기록 삭제(`POST noticedel`, 지금 걸린 공지는 불가).
 - 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기. 오늘 질문을 바꾸면 오늘 표 초기화.
 
 ## 의견 · 공지 버튼 (헤더)
