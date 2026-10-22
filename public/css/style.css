@@ -63,8 +63,8 @@ header:not(.away) #btnHome,header.away .logo{display:none}
 .theme-btn .moon{opacity:0;transform:translateY(14px) rotate(-80deg) scale(.4)}
 :root[data-theme="dark"] .theme-btn .moon{opacity:1;transform:none;color:#ffe08a}
 :root[data-theme="dark"] .theme-btn .sun{opacity:0;transform:translateY(14px) rotate(80deg) scale(.4)}
-/* 테마 바꿀 때 색이 부드럽게 넘어가게 */
-html.tt,html.tt *,html.tt *::before,html.tt *::after{transition:background-color .45s ease,color .45s ease,border-color .45s ease,fill .45s ease,stroke .45s ease,box-shadow .45s ease!important}
+/* 테마 바꿀 때: 화면 전체를 한 번에 부드럽게 겹쳐 바꿈(app.js의 View Transition). 모든 요소에 색 전환을 거는 방식은 끊겨서 안 씀 */
+::view-transition-old(root),::view-transition-new(root){animation-duration:.32s;animation-timing-function:ease}
 html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .35s ease,color .45s ease!important}
 /* 목록 버튼(☰ ↔ ✕) + 아래로 펼쳐지는 아이콘 목록 */
 .hmenu{position:relative;display:flex;align-items:center;gap:8px}

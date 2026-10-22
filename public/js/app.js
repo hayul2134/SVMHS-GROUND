@@ -782,10 +782,15 @@ function applyTheme(t) {
   $('meta[name=theme-color]').content = t === 'dark' ? '#0e2236' : '#eaf5fd';
 }
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+let themeWant = null;   // 전환이 끝나기 전에 또 눌러도 바뀔 방향이 꼬이지 않게, 마지막으로 고른 테마를 기억
 $('#btnTheme').onclick = () => {
-  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  const t = (themeWant || document.documentElement.dataset.theme) === 'dark' ? 'light' : 'dark';
+  themeWant = t;
   const h = document.documentElement; h.classList.add('tt'); clearTimeout(h._tt); h._tt = setTimeout(() => h.classList.remove('tt'), 600);
-  applyTheme(t); store.set('theme', t);
+  const go = () => { applyTheme(t); store.set('theme', t); if (themeWant === t) themeWant = null; };
+  // 화면 전체를 한 장으로 찍어 부드럽게 겹쳐 바꿈(View Transition, GPU) — 예전처럼 모든 요소의 색을 하나하나 애니메이션하면 태블릿에서 끊김.
+  // 지원 안 하는 브라우저나 '동작 줄이기' 설정이면 바로 바꿈
+  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
 };
 
 /* ===== 관리자 공지 ===== */
