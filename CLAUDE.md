@@ -43,6 +43,6 @@
 - 구조를 바꾸면 `CODEMAP.md`도 같이 갱신.
 
 ## 남은 일 (2026-10-21 기준)
-1. ~~관리자 계정 전환~~ — 구현 완료(2026-10-22): `hayuldeveloper`로 로그인 + 비밀번호 재확인 → /admin. `ADMIN_KEY` 방식 제거(Cloudflare의 `ADMIN_KEY` 비밀 변수는 이제 안 씀). **배포는 hayuldeveloper 가입 확인 뒤에.**
+1. ~~관리자 계정 전환~~ — 구현 완료(2026-10-22): `developer`로 로그인 + 비밀번호 재확인 → /admin. `ADMIN_KEY` 방식 제거(Cloudflare의 `ADMIN_KEY` 비밀 변수는 이제 안 씀). **배포는 developer 가입 확인 뒤에.**
 2. ~~D1 하루 쓰기 한도~~ — 해결(2026-10-21): hayul-analyze가 바뀐 값만 쓰고 하루 5만 행 상한. 한도 초과 시 사이트는 503 + 안내 문구, 관리자 대시보드에 'DB 저장' 상태 표시.
 3. ~~원격 브랜치 정리~~ — `dbg`·`food-preview` 삭제 완료(2026-10-21).

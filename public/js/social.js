@@ -6,7 +6,7 @@ const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥',
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
 const MAX_STICKERS = 6;
-const ADMIN_HANDLE = 'hayuldeveloper';   // 서버 lib/db.js와 같게 (버튼 표시용, 실제 권한은 서버가 검사)
+const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시용, 실제 권한은 서버가 검사)
 const GAMES = {
   reaction: { name: '반응속도', em: '⚡', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { name: '1 to 25', em: '🔢', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
@@ -38,9 +38,10 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
 const devTag = u => isDev(u) ? '<span class="devb" title="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
-// 개발자 계정은 닉네임·아이디 대신 '개발자' · '@developer'로 표시 (링크는 실제 아이디 그대로)
+// 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
 const nameOf = u => isDev(u) ? '개발자' : u.name;
-const handleOf = u => isDev(u) ? 'developer' : u.handle;
+const atOf = u => isDev(u) ? '' : '@' + u.handle;   // 화면에 보이는 아이디 (개발자는 빈칸)
+const atH = h => h === ADMIN_HANDLE ? '개발자' : '@' + h;   // 아이디만 있을 때 (시트 제목·확인창)
 const classTxt = u => isDev(u) ? '' : u.grade && u.cls ? `${u.grade}학년 ${u.cls}반` : '';
 const ago = t => {
   const s = (Date.now() - t) / 1000;
@@ -48,7 +49,7 @@ const ago = t => {
   const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`;
 };
 const hm = t => { const d = new Date(t), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
-const personRow = (u, right = '') => `<li class="person"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>@${esc(handleOf(u))}${u.mood ? ' · ' + esc(u.mood) : ''}</small></span></a>${right}</li>`;
+const personRow = (u, right = '') => `<li class="person"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc([atOf(u), u.mood].filter(Boolean).join(' · '))}</small></span></a>${right}</li>`;
 const followBtn = u => u.isMe ? '' : `<button class="fbtn ${u.following ? 'on' : ''}" data-follow="${esc(u.handle)}" data-on="${u.following ? 0 : 1}">${u.following ? '팔로잉' : '팔로우'}</button>`;
 const needLogin = (msg) => `<div class="card soc-gate"><p class="gate-em">🔐</p><p><b>${msg}</b></p><p class="muted small">아이디만 있으면 1분이면 가입해요</p><button class="btn" data-go="me">로그인 / 가입하기</button></div>`;
 const offCard = () => `<div class="card soc-gate"><p class="gate-em">🛠️</p><p><b>소셜 기능을 준비하고 있어요</b></p><p class="muted small">곧 열려요! 조금만 기다려 주세요</p></div>`;
@@ -165,7 +166,7 @@ function profileHtml(d) {
       ${av(u, 'big')}
       ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
       <h2 class="pname">${esc(nameOf(u))}</h2>
-      <p class="phandle">@${esc(handleOf(u))}${u.online && !self ? ' · <b class="onl">접속 중</b>' : ''}${!self && r.followsMe ? ' · <span class="fm">나를 팔로우함</span>' : ''}</p>
+      <p class="phandle">${[isDev(u) ? '🛠 SVMHS GROUND 개발자' : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
       ${isDev(u) ? '<button class="pdev" type="button" data-fb>💡 궁금한 점·원하는 기능은 헤더의 💡 의견으로 보내 주세요!</button>' : ''}
       ${chips ? `<p class="pchips">${chips}</p>` : ''}
       ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
@@ -236,7 +237,7 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('[data-block]');
   if (b) {
     const on = b.dataset.on === '1';
-    if (on && !confirm(`@${b.dataset.block} 님을 차단할까요?\n서로 팔로우가 끊기고, DM을 주고받을 수 없어요.`)) return;
+    if (on && !confirm(`${atH(b.dataset.block)} 님을 차단할까요?\n서로 팔로우가 끊기고, DM을 주고받을 수 없어요.`)) return;
     try { await call('block', { handle: b.dataset.block, on }); toast(on ? '차단했어요' : '차단을 풀었어요'); closeSheet(); rerender(); } catch (err) { fail(err); }
     return;
   }
@@ -283,7 +284,7 @@ function openReport() {
   };
 }
 function openMore(h) {
-  sheet(`<h3>@${esc(h)}</h3><div class="col">
+  sheet(`<h3>${esc(atH(h))}</h3><div class="col">
     <button class="btn ghost" data-report="${esc(h)}">🚨 신고하기</button>
     <button class="btn ghost danger" data-block="${esc(h)}" data-on="1">🚫 차단하기</button>
     <button class="btn ghost" data-close>닫기</button></div>`);
@@ -296,7 +297,7 @@ function openEdit() {
   sheet(`<h3>프로필 꾸미기</h3>
     <form class="sform" id="editForm" autocomplete="off">
       <div class="preview c-${esc(u.color)}" id="edPrev">${av({ ...u, online: false }, 'big')}</div>
-      <label>이름 (닉네임)<input name="name" maxlength="12" required value="${esc(u.name)}"><small class="hint">친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.</small></label>
+      <label>이름 (닉네임)<input name="name" maxlength="12" required value="${esc(u.name)}"><small class="hint">${isDev(u) ? '🛠 개발자 계정은 이름·아이디 대신 어디서나 \'개발자\'로 표시돼요.' : `친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.`}</small></label>
       <label>상태 메시지<input name="mood" maxlength="24" placeholder="예: 시험 끝나면 놀자🔥" value="${esc(u.mood)}"></label>
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
       ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0"><p class="hint">🛠 개발자 계정은 학년·반이 표시되지 않아요.</p>' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
@@ -463,7 +464,7 @@ async function renderThread(handle, box, panel) {
   if (openThread !== handle) return;
   msgs = d.messages; readUpTo = d.readUpTo;
   box.innerHTML = `<div class="card chat">
-    <div class="chead"><a ${toList(panel)} class="back" aria-label="DM 목록">‹</a><a href="#u/${esc(d.user.handle)}" class="who">${av(d.user)}<span class="pi"><b>${esc(d.user.name)}</b><small>${d.user.online ? '접속 중' : '@' + esc(d.user.handle)}</small></span></a></div>
+    <div class="chead"><a ${toList(panel)} class="back" aria-label="DM 목록">‹</a><a href="#u/${esc(d.user.handle)}" class="who">${av(d.user)}<span class="pi"><b>${esc(nameOf(d.user))}${devTag(d.user)}</b><small>${d.user.online ? '접속 중' : esc(atOf(d.user))}</small></span></a></div>
     <ol class="msgs" id="msgs" aria-live="polite">${msgs.length >= 40 ? '<li class="older"><button id="olderBtn">이전 메시지 보기</button></li>' : ''}</ol>
     ${d.canSend ? `<form class="compose" id="dmForm" autocomplete="off"><textarea id="dmIn" rows="1" maxlength="500" placeholder="메시지 보내기…" aria-label="메시지"></textarea><button class="btn" aria-label="보내기">➤</button></form>`
       : `<p class="note locked">${d.rel.blocked ? '차단한 사람이에요' : '이 친구의 DM 설정 때문에 지금은 보낼 수 없어요'}</p>`}
@@ -563,7 +564,7 @@ async function openRank(game, scope = 'all') {
         : '<li class="empty">아직 아무 반도 기록이 없어요</li>';
       $('#rankNote').textContent = '반마다 최고 기록 상위 3명의 평균이에요. 프로필에 학년·반을 적어야 반 점수에 들어가요.';
     } else {
-      $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || '@' + handleOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
+      $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
       $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : '각자 최고 기록으로 순위를 매겨요';
     }
@@ -824,7 +825,7 @@ function openFeedback() {
     <form class="sform" id="fbForm">
       <div class="segs fbk">${FB_KIND.map(([k, t], i) => `<label><input type="radio" name="kind" value="${k}" ${i ? '' : 'checked'}><span>${t}</span></label>`).join('')}</div>
       <textarea name="body" maxlength="500" rows="5" required placeholder="예: 시간표에 교실 이름도 나왔으면 좋겠어요"></textarea>
-      <p class="note">보낸 사람 아이디(@${esc(S.me.handle)})가 개발자에게 보여요. 욕설·저격 글은 보내지 말아 주세요.</p>
+      <p class="note">${isDev(S.me) ? '🛠 개발자 계정으로 보내요.' : `보낸 사람 아이디(@${esc(S.me.handle)})가 개발자에게 보여요. 욕설·저격 글은 보내지 말아 주세요.`}</p>
       <div class="row"><button class="btn" type="submit">보내기</button><button class="btn ghost" type="button" data-close>닫기</button></div>
     </form>`);
   $('#fbForm').onsubmit = async e => {

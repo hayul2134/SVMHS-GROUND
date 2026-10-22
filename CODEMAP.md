@@ -19,7 +19,7 @@
 | `functions/api/s/[[path]].js` | 소셜 API `/api/s/*` (D1 `DB`, 테이블 자동 생성). 쿠키 세션(HttpOnly, 30일·연장 없음) · PBKDF2 비밀번호 · 횟수 제한 · DM은 맞팔끼리만 · 차단/신고 · 게임 기록 범위 검사 |
 | `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표 · `/api/balance` 오늘의 밸런스 게임(둘 다 D1 `DB`, 테이블 자동 생성) |
 | `public/admin/` | **관리자 페이지** `/admin` (index.html · admin.css · admin.js). 대시보드 · 모니터링(지금 접속자·최근 활동·오늘 시간대별·투표·DB 줄 수·나이스 연결·서버 오류, 20초 자동 새로 고침) · 신고 처리 · 사용자 관리(정지·임시 비번·프로필 정리·삭제) · 게임 기록 · 공지 · 밸런스 질문 · 설정(가입 코드·가입/DM 켜고 끄기) · 관리 기록 |
-| `functions/api/admin/[[path]].js` | 관리자 API `/api/admin/*`. 관리자 계정(`lib/db.js` `ADMIN_HANDLE` = hayuldeveloper)으로 사이트에 로그인 → 비밀번호 재확인(`/api/s/admin-pass`, 15분 8회 제한) → 12시간 세션(HttpOnly 쿠키, 경로 /api/admin). 관리자 계정이 지워지거나 정지되면 세션 무효. 모든 조치는 `admin_log`에 기록 |
+| `functions/api/admin/[[path]].js` | 관리자 API `/api/admin/*`. 관리자 계정(`lib/db.js` `ADMIN_HANDLE` = developer)으로 사이트에 로그인 → 비밀번호 재확인(`/api/s/admin-pass`, 15분 8회 제한) → 12시간 세션(HttpOnly 쿠키, 경로 /api/admin). 관리자 계정이 지워지거나 정지되면 세션 무효. 모든 조치는 `admin_log`에 기록 |
 | `lib/db.js`, `lib/balance.js` | functions 세 곳이 같이 쓰는 D1 테이블 정의(`setup`)·설정(`settings` 테이블)·횟수 제한(`limited`·`ipKey`: IP는 해시로만, 만료 줄 자동 삭제)·관리 기록용 `maskIp`·밸런스 기본 질문. **표 구조를 바꾸면 `SCHEMA_V`를 올릴 것**(평소엔 버전 확인 쿼리 1번만 실행). functions/ 밖이라 라우트가 아님 |
 | `public/sw.js` | 서비스 워커(`app.js` 시작에서 등록). 화면 파일·`/api/neis`·`/api/config`를 네트워크 먼저(3.5초 넘으면 저장본) 방식으로 저장 → 와이파이가 끊겨도 마지막 화면·급식·시간표 보임. 로그인·DM·게임·투표·관리자는 건드리지 않음. 저장 목록을 크게 바꾸면 `SHELL`·`DATA` 이름의 v를 올릴 것 |
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
@@ -78,7 +78,7 @@ npx wrangler@4 pages dev --port 8788
 - 신고·정지·공지 등은 관리자 페이지 `/admin`에서 처리.
 
 ## 관리자 페이지 (/admin)
-- 필요: D1 바인딩 `DB` + 사이트에 `hayuldeveloper` 계정. 그 계정의 계정 설정(⚙️)에만 '관리자 페이지' 버튼이 보임(`social.js`의 `ADMIN_HANDLE`, 서버와 같게). /admin에서 그 계정 비밀번호를 한 번 더 넣어야 들어감.
+- 필요: D1 바인딩 `DB` + 사이트에 `developer` 계정. 그 계정의 계정 설정(⚙️)에만 '관리자 페이지' 버튼이 보임(`social.js`의 `ADMIN_HANDLE`, 서버와 같게). /admin에서 그 계정 비밀번호를 한 번 더 넣어야 들어감.
 - 학과별 테스트 계정: 개발자 프로필의 '🧪 학과별로 보기'(콘텐츠과 2-1·미디어과 2-3·프로듀스과 2-5) → `POST /api/s/dev-switch`. 계정(`test_con`·`test_mi`·`test_pro`, `users.is_test=1`, `lib/db.js` `TEST_ACCOUNTS`)은 처음 누를 때 생성, 비밀번호 없음. 개발자 세션은 `sg_d` 쿠키에 보관했다가 '개발자로 돌아가기'로 복구. 이 기기의 반 설정도 바꿨다가 되돌림(`sg_class_dev`). `test_` 아이디는 가입 불가, 친구 찾기·관리 화면 통계에서 빠짐.
 - DM은 **신고된 메시지와 앞뒤 5개만** 볼 수 있음(사생활 보호). 전체 DM 열람 기능은 일부러 없음.
 - 정지(`bans`): 정지 즉시 세션 삭제 + 로그인 거부(사유·기간 표시). 소셜 `auth()`도 정지된 사람은 막음.
