@@ -1420,6 +1420,42 @@ html.away .mascot *{animation-play-state:paused!important}
 .s-lbl{min-width:0;padding:2px 3px;border:0;border-radius:8px;background:none;font:inherit;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
 .s-lbl.off{cursor:pointer;padding:2px 8px;background:var(--yellow);color:#3b3220}
 .s-lbl.off::after{content:" ↺";font-size:.85em}
+/* 홈 카드 라벨: 지금이면 눌러서 하루↔한 주 전환 (⇄), 한 주 모드면 카드가 넓어짐 */
+.s-lbl:not(.off){cursor:pointer;padding:2px 8px;background:var(--chip);border:2px dashed var(--line)}
+.s-lbl:not(.off):hover{border-color:var(--ink)}
+.s-lbl:not(.off)::after{content:" ⇄";font-size:.8em;color:var(--sub)}
+.s-lbl.wkon:not(.off){background:color-mix(in srgb,var(--sky) 35%,var(--card));border-style:solid;border-color:var(--ink)}
+.s-tt.wk.wk.wk{width:min(560px,calc(100vw - 64px))}
+@media (max-width:699px){.s-tt.wk.wk.wk{width:100%}}
+.s-tt.wk #sTT{overflow-x:auto}
+.s-tt .week{min-width:430px;border-spacing:4px 3px}
+.s-tt .week th{padding:0 0 3px}
+.s-tt .week th .wd-d{font-size:10.5px}
+.s-tt .week th .wd-w{font-size:15px;margin-top:2px}
+.s-tt .week th.today .wd-w{padding:1px 7px;border-radius:8px}
+.s-tt .week th:first-child,.s-tt .week td.pn{width:34px}
+.s-tt .week td{height:36px;padding:3px 4px;font-size:12.5px;border-radius:9px}
+.s-tt .week td .si{font-size:15px;margin-bottom:1px}
+.s-tt .week td.dbl .si{font-size:19px}
+.s-tt .week td .x2{font-size:10px;right:3px;bottom:2px;padding:0 3px}
+.s-tt .week td.pn b{font-size:15px}
+.s-tt .week td.pn small{font-size:10px;margin-top:1px}
+.s-tt .week td.now::before,.s-tt .week td.next::before{font-size:9.5px;top:-8px;left:-6px;padding:0 5px}
+.s-tt .week tr.lunch,.s-tt .week tr.lunch td{height:12px}
+.s-tt .week tr.lunch span{font-size:10.5px}
+.wkm{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.wkm li{display:flex;align-items:flex-start;gap:9px;padding:6px 8px;border-radius:12px;background:var(--chip);border:2px solid var(--line)}
+.wkm li.past{opacity:.6;border-style:dashed}
+.wkm li.today{background:color-mix(in srgb,var(--yellow) 40%,var(--card));border-color:var(--ink);box-shadow:var(--sh-s)}
+.wkm .wd{flex:none;width:34px;text-align:center;font-size:12px;font-weight:900;color:var(--sub);line-height:1.1}
+.wkm .wd b{display:block;font-family:var(--disp);font-weight:400;font-size:18px;color:var(--text)}
+.wkm li.today .wd{color:var(--text)}
+.wkm .ds{display:flex;flex-wrap:wrap;gap:3px 5px;min-width:0;padding-top:2px}
+.wkm .ds i{font-style:normal;font-size:13px;font-weight:800;color:var(--text);word-break:keep-all}
+.wkm .ds i:not(:last-child)::after{content:" ·";color:var(--sub)}
+.wkm .ds i.mn{padding:0 6px;border-radius:6px;background:var(--yellow);color:#3b3220}
+.wkm .ds i.mn::after{content:""}
+.wkm .ds.no{font-size:13px;font-weight:800;color:var(--sub)}
 button.s-ttmore{font-family:inherit;cursor:pointer}
 .s-slots{display:flex;gap:4px;margin:-4px 2px 8px}
 .s-slots:empty{display:none}

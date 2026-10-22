@@ -429,6 +429,7 @@ function pickMeal(rows, want) {
 let heroRows = null, heroSeq = 0;
 function paintHeroMeal() {
   const box = $('#sMeal'), lbl = $('#sMealLbl'), slots = $('#sMealSlots'), d = S.sMealDay, day = d || today();
+  if (S.mealWk) { paintHeroWeek(); return; }
   const rows = d ? heroRows : homeRows;
   lbl.textContent = `${ttLabel(day)} 급식`; markOff(lbl, !!d);
   if (!rows) { slots.innerHTML = ''; box.innerHTML = skel(2); return; }
@@ -440,6 +441,15 @@ function paintHeroMeal() {
 async function loadHeroDay() {
   const d = S.sMealDay, seq = ++heroSeq;
   heroRows = null; S.heroFail = false; paintHeroMeal();
+  if (S.mealWk) {
+    const mon = S.mealWk;
+    try {
+      const rows = await getMealsRange(mon, addDays(mon, 4));
+      if (seq !== heroSeq) return;
+      heroRows = rows.filter(r => MEALS[r.MMEAL_SC_CODE]);
+    } catch { if (seq !== heroSeq) return; heroRows = []; S.heroFail = true; }
+    paintHeroMeal(); return;
+  }
   if (!d) return;
   try {
     const rows = await getMeals(d);
@@ -447,6 +457,25 @@ async function loadHeroDay() {
     heroRows = rows.filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
   } catch { if (seq !== heroSeq) return; heroRows = []; S.heroFail = true; }
   paintHeroMeal();
+}
+// 한 주 모드: 월~금 다섯 줄(날짜 + 그 끼니 메뉴, 메인 반찬 먼저). 끼니 칩은 한 주 전체에 적용
+const wkName = (mon, what) => { const w = diffDays(mon, weekOf(today())) / 7; return `${w === 0 ? '이번 주' : w === 1 ? '다음 주' : w === -1 ? '지난주' : `${mon.getMonth() + 1}/${mon.getDate()} 주`} ${what}`; };
+function paintHeroWeek() {
+  const box = $('#sMeal'), slots = $('#sMealSlots'), mon = S.mealWk, rows = heroRows;
+  setLbl($('#sMealLbl'), wkName(mon, '급식'), ymd(mon) !== ymd(weekOf(today())), true);
+  if (!rows) { slots.innerHTML = ''; box.innerHTML = skel(4); wkResize(); return; }
+  if (!rows.length) { slots.innerHTML = ''; box.innerHTML = empty(S.heroFail ? '급식 정보를 불러오지 못했어요' : '이 주는 급식이 없어요'); wkResize(); return; }
+  const codes = [...new Set(rows.map(r => r.MMEAL_SC_CODE))].sort();
+  const want = S.heroPick && codes.includes(S.heroPick) ? S.heroPick : codes.includes('2') ? '2' : codes[0];
+  slots.innerHTML = codes.map(c => `<button type="button" data-m="${c}" class="${c === want ? 'on' : ''}" aria-pressed="${c === want}">${MEALS[c]}</button>`).join('');
+  const t = ymd(today());
+  box.innerHTML = '<ul class="wkm">' + [0, 1, 2, 3, 4].map(i => {
+    const d = addDays(mon, i), k = ymd(d), r = rows.find(x => x.MLSV_YMD === k && x.MMEAL_SC_CODE === want);
+    const om = r && orderMenu(cleanDish(r.DDISH_NM));
+    return `<li class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd"><b>${d.getDate()}</b>${DOW[d.getDay()]}</span>`
+      + (om ? `<span class="ds">${om.list.map((x, j) => `<i${j === 0 && om.hasMain ? ' class="mn"' : ''}>${esc(x)}</i>`).join('')}</span>` : '<span class="ds no">급식 없음</span>') + '</li>';
+  }).join('') + '</ul>';
+  wkResize();
 }
 $('#sMealSlots').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { e.stopPropagation(); S.heroPick = b.dataset.m; armReset(); paintHeroMeal(); } });
 function paintHomeMeal() {
@@ -697,7 +726,8 @@ async function renderHomeTT() {
   const box = $('#sTT'), d = today(), tgt = S.ttPick || ttTarget(), seq = ++ttSeq, isToday = ymd(tgt) === ymd(d);
   S.ttShown = ymd(tgt);
   renderHomeWeek();
-  $('#sTTlbl').textContent = `${ttLabel(tgt)} 시간표`; markOff($('#sTTlbl'), !!S.ttPick);
+  if (S.ttWk) setLbl($('#sTTlbl'), wkName(S.ttWk, '시간표'), ymd(S.ttWk) !== ymd(weekOf(ttTarget())), true);
+  else setLbl($('#sTTlbl'), `${ttLabel(tgt)} 시간표`, !!S.ttPick, false);
   if (!cls) { S.todayTT = []; box.innerHTML = needClass; nextKey = ''; return; }
   try {
     const wk = d.getDay() % 6 ? await getTimetable(cls, mondayOf(d), addDays(mondayOf(d), 4)) : [];
@@ -709,6 +739,7 @@ async function renderHomeTT() {
     S.todayTT = todayRows;
     const dep = (rows[0] || todayRows[0] || {}).DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
+    if (S.ttWk) { nextKey = ''; await fillWeek(box, S.ttWk, () => seq !== ttSeq || !S.ttWk); wkResize(); return; }
     box.innerHTML = rows.length
       ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span>${bellAt(r.PERIO)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(subjName(r.ITRT_CNTNT))}</i>${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
@@ -891,23 +922,42 @@ new MutationObserver(() => heroLater()).observe(document.documentElement, { attr
 document.fonts?.ready.then(heroResize); heroResize();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
 /* ===== 첫 화면 카드에서 다른 날 넘겨 보기 (‹ ›) — 라벨을 누르면 오늘로, 3분 동안 안 만지면 자동으로 오늘로 ===== */
+// 홈 카드 라벨: 지금(오늘·이번 주)이면 눌러서 하루↔한 주 전환, 다른 날·다른 주면 눌러서 지금으로
+function setLbl(el, text, off, wk) {
+  el.textContent = text; el.classList.toggle('off', off); el.classList.toggle('wkon', wk);
+  const tip = off ? (wk ? '이번 주로 돌아가기' : '오늘로 돌아가기') : (wk ? '하루씩 보기' : '한 주씩 보기');
+  el.dataset.tip = tip; el.setAttribute('aria-label', `${text} · 눌러서 ${tip}`);
+  const card = el.closest('.s-tt'), what = card?.classList.contains('s-meal') ? '급식' : '시간표';
+  card?.classList.toggle('wk', wk);
+  card?.querySelectorAll('.s-nb').forEach(b => b.setAttribute('aria-label', `${b.dataset.d < 0 ? '이전' : '다음'} ${wk ? '주' : '날'} ${what}`));
+}
 function markOff(el, off) { el.classList.toggle('off', off); if (off) { el.dataset.tip = '오늘로 돌아가기'; el.setAttribute('aria-label', el.textContent + ' · 눌러서 오늘로'); } else { delete el.dataset.tip; el.removeAttribute('aria-label'); } }
 const stepSchool = (d, k) => { let x = d, i = 0; do x = addDays(x, k); while (!isSchoolDay(x) && ++i < 21); return x; };
 let resetT = 0;
 function armReset() {
   clearTimeout(resetT);
-  resetT = setTimeout(() => { if (S.sMealDay || S.heroPick) homeSide('meal'); if (S.ttPick) homeSide('tt'); }, 180e3);
+  resetT = setTimeout(() => {
+    if (S.sMealDay || S.heroPick || (S.mealWk && ymd(S.mealWk) !== ymd(weekOf(today())))) homeSide('meal');
+    if (S.ttPick || (S.ttWk && ymd(S.ttWk) !== ymd(weekOf(ttTarget())))) homeSide('tt');
+  }, 180e3);
 }
-function homeSide(k) {
-  if (k === 'meal') { S.sMealDay = null; S.heroPick = null; loadHeroDay(); } else { S.ttPick = null; renderHomeTT(); }
+function homeSide(k) {   // 지금(오늘·이번 주)으로 되돌림 — 하루/한 주 모드는 그대로
+  if (k === 'meal') { S.sMealDay = null; S.heroPick = null; if (S.mealWk) S.mealWk = weekOf(today()); loadHeroDay(); }
+  else { S.ttPick = null; if (S.ttWk) S.ttWk = weekOf(ttTarget()); renderHomeTT(); }
+}
+function homeMode(k) {   // 하루 ↔ 한 주 전환 (기억해 둠)
+  if (k === 'meal') { S.mealWk = S.mealWk ? null : weekOf(today()); S.sMealDay = null; S.heroPick = null; store.set('wk_meal', !!S.mealWk); loadHeroDay(); }
+  else { S.ttWk = S.ttWk ? null : weekOf(ttTarget()); S.ttPick = null; store.set('wk_tt', !!S.ttWk); renderHomeTT(); }
 }
 $$('[data-nav]').forEach(b => b.addEventListener('click', e => {
   e.stopPropagation(); stopPeek(); armReset();
   const k = +b.dataset.d;
-  if (b.dataset.nav === 'meal') { const nd = stepSchool(S.sMealDay || today(), k); S.sMealDay = ymd(nd) === ymd(today()) ? null : nd; S.heroPick = null; loadHeroDay(); }
+  if (b.dataset.nav === 'meal' && S.mealWk) { S.mealWk = addDays(S.mealWk, 7 * k); loadHeroDay(); }
+  else if (b.dataset.nav === 'tt' && S.ttWk) { S.ttWk = addDays(S.ttWk, 7 * k); renderHomeTT(); }
+  else if (b.dataset.nav === 'meal') { const nd = stepSchool(S.sMealDay || today(), k); S.sMealDay = ymd(nd) === ymd(today()) ? null : nd; S.heroPick = null; loadHeroDay(); }
   else { const auto = ttTarget(), nd = stepSchool(S.ttPick || auto, k); S.ttPick = ymd(nd) === ymd(auto) ? null : nd; renderHomeTT(); }
 }));
-$$('[data-home]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); if (b.classList.contains('off')) homeSide(b.dataset.home); }));
+$$('[data-home]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); stopPeek(); armReset(); if (b.classList.contains('off')) homeSide(b.dataset.home); else homeMode(b.dataset.home); }));
 
 /* ===== 주 고르기 팝업 — 'M/D ~ M/D' 라벨을 누르면 해 ‹ › · 12달 · 그 달의 주 목록으로 바로 이동 =====
    모달(.sheet는 overflow 스크롤) 안에서도 잘리지 않게 position:fixed로 라벨 아래에 띄움 */
@@ -966,7 +1016,8 @@ function weekPick(sel, getMon, setMon) {
 }
 /* ===== 한 주 크게 보기 (첫 화면 카드 '전체' 버튼 → #mAll) — 아래로 내려가지 않고 바로 급식·시간표 한 주 ===== */
 const ALL = { tab: 'meal', mon: null, seq: 0 };
-const weekOf = d => mondayOf(addDays(d, d.getDay() === 6 ? 2 : d.getDay() === 0 ? 1 : 0));
+function weekOf(d) { return mondayOf(addDays(d, d.getDay() === 6 ? 2 : d.getDay() === 0 ? 1 : 0)); }
+function wkResize() { try { heroResize(); } catch {} }   // 한 주 모드로 카드 높이가 바뀌면 서랍 세로 위치 다시 계산
 function openAll(tab, day) { ALL.tab = tab; ALL.mon = weekOf(day); openModal('#mAll'); renderAll(); }
 async function renderAll() {
   const mon = ALL.mon, box = $('#allBody'), seq = ++ALL.seq, w = diffDays(mon, weekOf(today())) / 7;
@@ -995,8 +1046,8 @@ $$('#mAll [data-all]').forEach(b => b.onclick = () => { ALL.tab = b.dataset.all;
 $('#allPrev').onclick = () => { ALL.mon = addDays(ALL.mon, -7); renderAll(); };
 $('#allNext').onclick = () => { ALL.mon = addDays(ALL.mon, 7); renderAll(); };
 weekPick('#allLbl', () => ALL.mon, m => { ALL.mon = m; renderAll(); });
-$('#goMeal').onclick = e => { e.stopPropagation(); openAll('meal', S.sMealDay || today()); };
-$('#goWeek').onclick = e => { e.stopPropagation(); openAll('tt', S.ttPick || ttTarget()); };
+$('#goMeal').onclick = e => { e.stopPropagation(); openAll('meal', S.mealWk || S.sMealDay || today()); };
+$('#goWeek').onclick = e => { e.stopPropagation(); openAll('tt', S.ttWk || S.ttPick || ttTarget()); };
 async function renderTTView() {
   const mon = S.ttWeek;
   $('#tLbl').textContent = weekLbl(mon);
@@ -1378,6 +1429,7 @@ function bootHome() {
   homeBooted = true;
   // 첫 등장 애니메이션: pre(숨김) → boot(등장). 끝나면 boot를 빼서 다른 화면 갔다 와도 다시 안 나옴
   renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadNotice();
+  if (S.mealWk) loadHeroDay();
   const balP = loadBalance(); balP.then(pollBalance);
   // 첫 등장: 밸런스 티켓(아래 한계)·글꼴이 준비된 뒤 최종 자리를 먼저 잡고 시작 → 엉뚱한 곳에 떴다가 자리를 찾아가지 않게 (최대 1.5초 대기)
   // 등장 중엔 다시 재지 않음(크기 변화 때문에) → 등장 후에도 위치가 안 튐
@@ -1414,6 +1466,8 @@ $('#intro').addEventListener('click', e => {
 });
 
 /* ===== 시작 ===== */
+if (store.get('wk_meal', false)) S.mealWk = weekOf(today());   // 홈 카드 하루/한 주 보기 기억
+if (store.get('wk_tt', false)) S.ttWk = weekOf(today());
 tickClock();
 renderClassChip();
 store.pruneCache();
