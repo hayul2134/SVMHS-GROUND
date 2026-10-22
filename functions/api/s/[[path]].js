@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
-import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, maskIp } from '../../../lib/db.js';
+import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -107,6 +107,7 @@ export async function onRequest({ request: req, env, params }) {
   } catch (e) {
     console.error(e);
     if (isWriteLimit(e)) return json({ error: LIMIT_MSG, limit: true }, 503);
+    await logErr(db, 's', req, e);
     return err('잠시 후 다시 시도해 주세요', 500);
   }
 }

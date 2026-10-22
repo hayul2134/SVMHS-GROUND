@@ -1,6 +1,6 @@
 // SVMHS GROUND — 나이스 API 프록시 (Cloudflare Pages Functions, /api/* 담당)
 // 인증키는 Pages 프로젝트의 비밀 변수 NEIS_KEY에 보관한다. 키가 없어도 동작하지만 한 번에 5건까지만 받는다.
-import { setup, getSettings, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG } from '../../lib/db.js';
+import { setup, getSettings, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, logErr } from '../../lib/db.js';
 import { defaultBalance } from '../../lib/balance.js';
 
 const SCHOOL = { ATPT_OFCDC_SC_CODE: 'B10', SD_SCHUL_CODE: '7010795' }; // 서울시교육청 · 서울영상고
@@ -32,6 +32,7 @@ export async function onRequest({ request, env, params }) {
     try { return await { vote, balance, notice: (_, e) => notice(e) }[path](request, env); }
     catch (e) {
       console.error(e);
+      if (!isWriteLimit(e)) await logErr(env.DB, 'api', request, e);
       return json(isWriteLimit(e) ? { error: LIMIT_MSG, limit: true } : { error: '잠시 후 다시 시도해 주세요' }, isWriteLimit(e) ? 503 : 500);
     }
   }
@@ -59,12 +60,13 @@ export async function onRequest({ request, env, params }) {
 
   try {
     const res = await fetch(`https://open.neis.go.kr/hub/${svc}?${q}`, { cf: { cacheTtl: 1800, cacheEverything: true } });
-    if (!res.ok) return json({ error: 'upstream error' }, 502);
+    if (!res.ok) { await logErr(env.DB, 'neis', request, `나이스 응답 ${res.status}`); return json({ error: 'upstream error' }, 502); }
     const body = await res.text();
     return new Response(body, {
       headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=600', ...SECURITY_HEADERS },
     });
-  } catch {
+  } catch (e) {
+    await logErr(env.DB, 'neis', request, `나이스 연결 실패: ${e?.message || e}`);
     return json({ error: 'upstream failed' }, 502);
   }
 }

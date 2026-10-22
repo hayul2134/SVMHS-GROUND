@@ -150,6 +150,67 @@ VIEWS.dash = async () => {
 
 /* ===== 신고 ===== */
 let repState = 'open';
+/* ===== 모니터링 (20초마다 자동 새로 고침, 이 화면에 있을 때만) ===== */
+let monTimer = 0;
+const FEED = {
+  signup: (u, x) => `${who(u)} <span class="sub">가입</span>`,
+  score: (u, x) => { const [g, v] = String(x).split(':'); return `${who(u)} <span class="sub">${GAMES[g]?.em || '🎮'} ${esc(GAMES[g]?.name || g)} ${esc(GAMES[g] ? GAMES[g].fmt(+v) : v)}${GAMES[g] && +v <= GAMES[g].sus ? ' <b class="sus">의심</b>' : ''}</span>`; },
+  follow: (u, x) => `${who(u)} <span class="sub">→ @${esc(x || '?')} 팔로우</span>`,
+  report: (u, x) => `${who(u)} <span class="sub">→ @${esc(x || '?')} 신고</span>`,
+};
+const SRC = { s: '소셜', admin: '관리자', api: '투표·공지', neis: '나이스' };
+VIEWS.monitor = async () => {
+  clearTimeout(monTimer);
+  const d = await call('monitor');
+  if (cur !== 'monitor') return;
+  const tile = (n, label, k = '') => `<div class="stat ${k}"><b>${n}</b><span>${label}</span></div>`;
+  const hmax = Math.max(1, ...d.hours.dm, ...d.hours.score, ...d.hours.signup);
+  const nowH = (new Date(Date.now() + 9 * 3600e3)).getUTCHours();
+  const meals = { 1: '조식', 2: '중식', 3: '석식' };
+  const t = d.db.tables;
+  $('#main').innerHTML = `
+    <div class="vh"><h2>모니터링</h2><span class="sub">${full(d.at)} 기준 · 20초마다 새로 고침</span><button class="btn sm" type="button" data-act="monrefresh">지금 새로 고침</button></div>
+    <div class="stats">
+      ${tile(d.online.length, '지금 접속 중 (2분 안)', d.online.length ? 'c1' : '')}
+      ${tile(d.activeHour, '최근 1시간 들어온 사람', 'c1')}
+      ${tile(d.sessions, '로그인 유지 중인 기기', 'c2')}
+      ${tile(d.errors24h, '최근 24시간 서버 오류', d.errors24h ? 'hot' : 'c3')}
+      ${tile(d.db.write ? '정상' : '멈춤', 'DB 저장 (계정 무료 한도)', d.db.write ? 'c2' : 'hot')}
+      ${tile(d.neis.ok ? d.neis.ms + 'ms' : '오류', '나이스 연결' + (d.neis.key ? '' : ' (인증키 없음)'), d.neis.ok ? 'c4' : 'hot')}
+    </div>
+    <div class="grid g2">
+      <section class="card"><h3>🟢 지금 접속 중</h3>
+        ${d.online.length ? `<ul class="mlist">${d.online.map(u => `<li><a href="#users/${encodeURIComponent(u.handle)}">${who(u, cls(u))}</a><span class="sub">${when(u.seen)}</span></li>`).join('')}</ul>` : '<p class="empty">지금은 아무도 없어요</p>'}
+      </section>
+      <section class="card"><h3>⏱ 오늘 시간대별</h3>
+        <div class="chart" id="hchart">${d.hours.dm.map((_, h) => `<div class="col${h === nowH ? ' nowh' : ''}" title="${h}시 · 가입 ${d.hours.signup[h]} · 게임 기록 ${d.hours.score[h]} · DM ${d.hours.dm[h]}"><i class="k1" data-h="${d.hours.signup[h] / hmax}"></i><i class="k2" data-h="${d.hours.score[h] / hmax}"></i><i class="k3" data-h="${d.hours.dm[h] / hmax}"></i></div>`).join('')}</div>
+        <div class="xlab">${d.hours.dm.map((_, h) => `<span>${h % 3 ? '' : h}</span>`).join('')}</div>
+        <p class="legend"><span><i class="k1"></i>가입</span><span><i class="k2"></i>게임 기록</span><span><i class="k3"></i>DM 수 (내용은 안 봄)</span><span>가장 큰 값 ${hmax}</span></p>
+      </section>
+    </div>
+    <div class="grid g2">
+      <section class="card"><h3>📰 최근 활동</h3>
+        ${d.feed.length ? `<ul class="mlist">${d.feed.map(x => `<li><span>${FEED[x.k](x.user, x.x)}</span><span class="sub">${when(x.at)}</span></li>`).join('')}</ul>` : '<p class="empty">활동이 없어요</p>'}
+      </section>
+      <div>
+        <section class="card"><h3>🍱 오늘 투표</h3>
+          ${d.votes.meal.length ? `<ul class="mlist">${d.votes.meal.slice(0, 12).map(v => `<li><span><b>${esc(v.dish)}</b> <span class="sub">${meals[v.meal] || v.meal}</span></span><b class="num">${v.n}표</b></li>`).join('')}</ul>` : '<p class="empty">급식 투표가 아직 없어요</p>'}
+          <p class="sub sp">밸런스 게임: A ${d.votes.balance.a || 0}표 · B ${d.votes.balance.b || 0}표 <a href="#balance">자세히 →</a></p>
+        </section>
+        <section class="card"><h3>🗄 DB 줄 수</h3>
+          <ul class="mlist">${Object.entries({ users: '사용자', sessions: '로그인 세션', follows: '팔로우', blocks: '차단', messages: 'DM', scores: '게임 기록', reports: '신고', bans: '정지', meal_votes: '급식 투표', balance_votes: '밸런스 투표', admin_log: '관리 기록', rl: '횟수 제한(임시)', errs: '오류 기록' }).map(([k, l]) => `<li><span>${l} <code>${k}</code></span><b class="num">${t[k] ?? '-'}</b></li>`).join('')}</ul>
+          <p class="sub sp">나이스: ${d.neis.ok ? `정상 (${d.neis.ms}ms, ${esc(d.neis.code)})` : `문제 있음 — ${esc(d.neis.code)}`}</p>
+        </section>
+      </div>
+    </div>
+    <section class="card"><h3>🧯 서버 오류 <span class="sub">최근 60개 · 14일 보관</span>${d.errors.length ? '<button class="btn sm bad" type="button" data-act="errclear">기록 비우기</button>' : ''}</h3>
+      ${d.errors.length ? `<ul class="log">${d.errors.map(x => `<li><span class="t">${full(x.at)}</span><b>${esc(SRC[x.src] || x.src)} <code>${esc(x.route)}</code></b><span>${esc(x.msg)}</span></li>`).join('')}</ul>` : '<p class="empty">오류가 없어요 👍</p>'}
+    </section>`;
+  document.querySelectorAll('#hchart i').forEach(i => { i.style.height = (+i.dataset.h * 100) + '%'; });
+  const tick = () => { if (cur !== 'monitor') return; if (document.hidden) monTimer = setTimeout(tick, 20e3); else VIEWS.monitor().catch(() => { monTimer = setTimeout(tick, 20e3); }); };
+  monTimer = setTimeout(tick, 20e3);
+};
+
 VIEWS.reports = async () => {
   const d = await call('reports' + (repState === 'done' ? '?state=done' : ''));
   $('#main').innerHTML = `
@@ -378,6 +439,8 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]');
   if (!el) return;
   const act = el.dataset.act, h = el.dataset.h, id = +el.dataset.id;
+  if (act === 'monrefresh') return VIEWS.monitor().catch(() => {});
+  if (act === 'errclear') { if (!confirm('서버 오류 기록을 모두 지울까요?')) return; await call('errclear', {}); return VIEWS.monitor(); }
   const again = () => (h && !$('#modal').hidden ? openUser(h) : null);
   try {
     switch (act) {

@@ -1,7 +1,7 @@
 // SVMHS GROUND — 관리자 API (/api/admin/*). 화면은 public/admin/
 // 로그인: 사이트에서 관리자 계정(lib/db.js ADMIN_HANDLE)으로 로그인 → 비밀번호 재확인(/api/s/admin-pass) → 12시간 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만).
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
-import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE } from '../../../lib/db.js';
+import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, logErr } from '../../../lib/db.js';
 import { defaultBalance } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
@@ -75,7 +75,8 @@ export async function onRequest({ request: req, env, params }) {
   } catch (e) {
     console.error(e);
     if (isWriteLimit(e)) return json({ error: LIMIT_MSG, limit: true }, 503);
-    return err('처리 중 오류가 났어요. 잠시 후 다시 해 주세요', 500);   // 내부 오류 내용은 로그에만
+    await logErr(db, 'admin', req, e);
+    return err('처리 중 오류가 났어요. 잠시 후 다시 해 주세요', 500);   // 내부 오류 내용은 로그(모니터링 화면)에만
   }
 }
 
@@ -135,6 +136,66 @@ const ROUTES = {
       days, classes: r[14].results,
       status: { dbWrite, neisKey: Boolean(env.NEIS_KEY), joinCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st), notice: !!(notice && notice.text && !(notice.until && notice.until < now)) },
     });
+  },
+
+  /* ----- 모니터링: 지금 접속자 · 최근 활동 · 오늘 시간대별 · 투표 · DB · 나이스 · 서버 오류 (DM 내용은 포함하지 않음) ----- */
+  'GET monitor': async ({ env, db }) => {
+    const now = Date.now(), t0 = kstStart(), day = kstYmd();
+    const TABLES = ['users', 'sessions', 'follows', 'blocks', 'messages', 'scores', 'reports', 'bans', 'meal_votes', 'balance_votes', 'admin_log', 'rl', 'errs'];
+    const P = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen';
+    const r = await db.batch([
+      db.prepare(`SELECT handle, name, avatar, color, grade, cls, seen FROM users u WHERE seen >= ?1 ORDER BY seen DESC LIMIT 100`).bind(now - 150e3),
+      db.prepare('SELECT COUNT(*) AS n FROM users WHERE seen >= ?1').bind(now - 3600e3),
+      db.prepare('SELECT COUNT(*) AS n FROM sessions WHERE exp > ?1').bind(now),
+      // 최근 활동 (가입 · 게임 기록 · 팔로우 · 신고 · 관리 조치) — 각 20개씩 모아 시간순
+      db.prepare(`SELECT 'signup' AS k, created AS at, ${P}, '' AS x FROM users u ORDER BY created DESC LIMIT 20`),
+      db.prepare(`SELECT 'score' AS k, s.at AS at, ${P}, s.game || ':' || s.best AS x FROM scores s JOIN users u ON u.id = s.uid ORDER BY s.at DESC LIMIT 20`),
+      db.prepare(`SELECT 'follow' AS k, f.at AS at, ${P}, (SELECT handle FROM users WHERE id = f.b) AS x FROM follows f JOIN users u ON u.id = f.a ORDER BY f.at DESC LIMIT 20`),
+      db.prepare(`SELECT 'report' AS k, r.at AS at, ${P}, (SELECT handle FROM users WHERE id = r.target) AS x FROM reports r JOIN users u ON u.id = r.reporter ORDER BY r.at DESC LIMIT 20`),
+      // 오늘(한국) 시간대별: DM 수 · 게임 기록 갱신 수 · 가입 수
+      db.prepare(`SELECT ((at + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY h`).bind(t0),
+      db.prepare(`SELECT ((at + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM scores WHERE at >= ?1 GROUP BY h`).bind(t0),
+      db.prepare(`SELECT ((created + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM users WHERE created >= ?1 GROUP BY h`).bind(t0),
+      // 오늘 투표
+      db.prepare('SELECT meal, dish, COUNT(*) AS n FROM meal_votes WHERE ymd = ?1 GROUP BY meal, dish ORDER BY n DESC').bind(day),
+      db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(day),
+      // 서버 오류
+      db.prepare('SELECT at, src, route, msg FROM errs ORDER BY id DESC LIMIT 60'),
+      db.prepare('SELECT COUNT(*) AS n FROM errs WHERE at >= ?1').bind(now - 86400e3),
+      db.prepare(`SELECT ${TABLES.map(t => `(SELECT COUNT(*) FROM ${t}) AS ${t}`).join(', ')}`),
+    ]);
+    const rows = i => r[i].results, one = i => r[i].results[0];
+    const card = u => ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, seen: u.seen, online: now - (u.seen || 0) < 150e3 });
+    const feed = [3, 4, 5, 6].flatMap(rows).sort((a, b) => b.at - a.at).slice(0, 40).map(x => ({ k: x.k, at: x.at, user: card(x), x: x.x }));
+    const hours = i => { const a = Array(24).fill(0); for (const x of rows(i)) a[x.h] = x.n; return a; };
+    // DB에 지금 쓸 수 있는지 (계정 전체 무료 한도)
+    let dbWrite = true;
+    try { await db.prepare("INSERT INTO settings (k, v) VALUES ('probe', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(String(now)).run(); }
+    catch (e) { if (!isWriteLimit(e)) throw e; dbWrite = false; }
+    // 나이스 연결 상태: 오늘 급식 1건 요청 (캐시 없이) → 응답 시간·결과 코드
+    let neis = { ok: false, ms: 0, code: '', key: Boolean(env.NEIS_KEY) };
+    try {
+      const q = new URLSearchParams({ Type: 'json', ATPT_OFCDC_SC_CODE: 'B10', SD_SCHUL_CODE: '7010795', MLSV_YMD: day, pSize: '1' });
+      if (env.NEIS_KEY) q.set('KEY', env.NEIS_KEY);
+      const s0 = Date.now(), res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?${q}`, { signal: AbortSignal.timeout(6000) });
+      const j = await res.json().catch(() => ({}));
+      const code = j.RESULT?.CODE || j.mealServiceDietInfo?.[0]?.head?.[1]?.RESULT?.CODE || '';
+      neis = { ...neis, ok: res.ok && (code === 'INFO-000' || code === 'INFO-200'), ms: Date.now() - s0, code: code || 'HTTP ' + res.status };
+    } catch (e) { neis.code = String(e?.message || e).slice(0, 60); }
+    return json({
+      at: now,
+      online: rows(0).map(card), activeHour: one(1).n, sessions: one(2).n,
+      feed, hours: { dm: hours(7), score: hours(8), signup: hours(9) },
+      votes: { meal: rows(10), balance: Object.fromEntries(rows(11).map(x => [x.pick, x.n])) },
+      errors: rows(12), errors24h: one(13).n,
+      db: { write: dbWrite, tables: one(14) },
+      neis,
+    });
+  },
+  'POST errclear': async ({ db }) => {
+    const r = await db.prepare('DELETE FROM errs').run();
+    await log(db, '오류 기록 비움', `${r.meta.changes}건`);
+    return json({ ok: true });
   },
 
   /* ----- 신고 ----- */

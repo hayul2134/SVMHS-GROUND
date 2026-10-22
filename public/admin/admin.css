@@ -211,3 +211,13 @@ label.f small{font-weight:500;color:var(--sub)}
 code{background:var(--chip);border:1.5px solid var(--line);border-radius:6px;padding:0 6px;font-size:13px}
 /* 게임 기록: 사람이 내기 어려운 기록 표시 */
 .sus{display:inline-block;background:var(--red);color:#173048;border:2px solid var(--ink);border-radius:999px;font:800 11px/1 var(--num);padding:2px 6px}
+/* 모니터링: 목록 · 지금 시각 막대 */
+.mlist{list-style:none;display:flex;flex-direction:column;max-height:360px;overflow:auto}
+.mlist li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 2px;border-bottom:1.5px solid var(--line);font-size:14px;min-width:0}
+.mlist li:last-child{border-bottom:0}
+.mlist li > a{text-decoration:none;color:inherit;min-width:0}
+.mlist .sub{flex:none}
+.mlist .num{font-family:var(--num);flex:none}
+.chart .col.nowh{background:rgba(111,198,244,.18);border-radius:6px 6px 0 0}
+.sp{margin-top:10px}
+.mlist li > span:first-child{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
