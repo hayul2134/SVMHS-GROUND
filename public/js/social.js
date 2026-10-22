@@ -780,7 +780,7 @@ async function googleDone(mode) {
 /* ===== 헤더: 💡 의견 보내기 · 📢 공지 모아 보기 ===== */
 const pad2 = n => String(n).padStart(2, '0');
 const dt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
-const NT_IC = { warn: '⚠️', fun: '🎉', info: '📢' };
+const NT_IC = { warn: '⚠️', fun: '🎉' };   // 일반(info) 공지는 아이콘 없음 — 창 맨 위 '📢 공지'와 겹쳐 보여서
 let ntList = null;
 // 업데이트 소식(패치노트): public/patchnotes.json — 개발자가 확인한 주간 패치노트가 쌓임 (최신이 맨 앞)
 let ptList = null;
@@ -800,12 +800,12 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
   if (ptList.length) store.set('patch_seen', ptList[0].id);
   $('#ntDot').hidden = true;
   // 공지·업데이트 소식 공통 모양: 굵은 큰 제목 + 내용 2줄 미리보기 → 📖 자세히 보기로 펼치고, 맨 아래 작은 '접기'로 다시 접음
-  const card = (live, ic, title, inner, foot, id) => `<li class="${live ? 'live' : ''}"${id ? ` data-nid="${esc(id)}"` : ''}><span class="nt-ic">${ic}</span><div class="nt-c">
+  const card = (live, ic, title, inner, foot, id) => `<li class="${live ? 'live' : ''}"${id ? ` data-nid="${esc(id)}"` : ''}>${ic ? `<span class="nt-ic">${ic}</span>` : ''}<div class="nt-c">
       <p class="nt-t">${title}</p>${inner ? `<div class="ntb"><div class="nb-txt">${inner}</div><button type="button" class="nb-more">📖 자세히 보기</button><button type="button" class="nb-fold">접기 ▴</button></div>` : ''}
       <small>${foot}</small></div></li>`;
   const patches = ptList.slice(0, 12).map((x, i) => card(!i, '🛠', esc(x.title || '업데이트'),
       (x.items || []).length ? `<ul class="ptitems">${x.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '', `${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}`)).join('');
-  $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => card(n.live, NT_IC[n.tone] || '📢',
+  $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => card(n.live, NT_IC[n.tone] || '',
       n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text), n.body ? esc(n.body) : '',
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
     ${patches ? `<h3 class="sp">🛠 업데이트 소식</h3><ul class="ntlist">${patches}</ul>` : ''}
