@@ -1050,10 +1050,13 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .sheet.wide{max-width:720px}
 .ntlist li:has(> div > details:not([open])) > div > p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ntlist .ntbody{margin:6px 0 4px}
-.ntlist .ntbody summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--accent);list-style:none}
+.ntlist .ntbody summary{display:inline-flex;align-items:center;gap:4px;cursor:pointer;list-style:none;margin-top:4px;padding:8px 14px;border-radius:12px;
+  border:2px solid var(--ink);background:var(--accent);color:#fff;font-weight:900;font-size:14px;box-shadow:var(--sh-s);user-select:none}
+.ntlist .ntbody summary:active{transform:translateY(2px);box-shadow:none}
 .ntlist .ntbody summary::-webkit-details-marker{display:none}
-.ntlist .ntbody summary::before{content:'▸ '}.ntlist .ntbody[open] summary::before{content:'▾ '}
-.ntlist .ntbody[open] summary{margin-bottom:6px}
+.ntlist .ntbody .nb-close,.ntlist .ntbody[open] .nb-open{display:none}
+.ntlist .ntbody[open] .nb-close{display:inline}
+.ntlist .ntbody[open] summary{margin-bottom:8px;background:var(--chip);color:var(--ink)}
 .ntlist .ntbody div{white-space:pre-wrap;word-break:keep-all;font-size:14px;line-height:1.6;font-weight:600;padding:10px 12px;border-radius:12px;background:var(--chip);border:2px solid var(--line)}
 .fbk{display:flex;flex-wrap:wrap;gap:6px}
 .fbk label{display:block;cursor:pointer}

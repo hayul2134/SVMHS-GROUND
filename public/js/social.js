@@ -802,7 +802,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
       <ul class="ptitems">${(x.items || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul><small>${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}</small></div></li>`).join('');
   $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => `<li class="${n.live ? 'live' : ''}">
       <span class="nt-ic">${NT_IC[n.tone] || '📢'}</span><div><p>${n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text)}</p>
-      ${n.body ? `<details class="ntbody"${n.id === focus || (n.live && !focus) ? ' open' : ''}><summary>자세히 보기</summary><div>${esc(n.body)}</div></details>` : ''}
+      ${n.body ? `<details class="ntbody"><summary><span class="nb-open">📖 자세히 보기</span><span class="nb-close">접기 ▴</span></summary><div>${esc(n.body)}</div></details>` : ''}
       <small>${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}</small></div></li>`).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
     ${patches ? `<h3 class="sp">🛠 업데이트 소식</h3><ul class="ntlist">${patches}</ul>` : ''}
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
