@@ -317,7 +317,6 @@
         <button class="bt-com" type="button" id="plCom"><span class="bc-ic" aria-hidden="true">💬</span><span id="plComT">댓글 남기기</span><b id="plComN">0</b><span class="bc-go" aria-hidden="true">›</span></button>
       </div>
       <button class="s-down" id="goDown" aria-label="아래로 내려가기"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></button>
-      <button class="s-svc" type="button" id="heroSvc" aria-label="서비스들로 바로 가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-apps"/></svg>서비스</button>
     </section>
 
     <div class="ticker" aria-hidden="true"><div class="tk" id="ticker"></div></div>
@@ -414,6 +413,8 @@
 </main>
 
 <!-- 메시지 (컴퓨터: 오른쪽 아래 떠 있는 창 · 폰: 둥근 버튼 → DM 화면) -->
+<!-- 홈 왼쪽 아래 고정 '서비스' 버튼 (오른쪽 아래 메시지 버튼과 짝) — 서비스들이 화면에 보이면 숨김 -->
+<button class="svcfab" type="button" id="svcFab" aria-label="서비스들로 바로 가기"><span class="sf-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-apps"/></svg></span><b>서비스</b></button>
 <div class="dmdock" id="dmDock" hidden>
   <section class="dmpanel" id="dmPanel" role="dialog" aria-label="메시지" hidden>
     <div class="dmp-top"><b>메시지</b><button class="dmp-btn" data-go="dm" title="크게 보기" aria-label="DM 화면에서 크게 보기">⤢</button><button class="dmp-btn" id="dmPClose" title="닫기" aria-label="메시지 창 닫기">✕</button></div>

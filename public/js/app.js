@@ -243,7 +243,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu'
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
 $('#goDown').onclick = () => $('#board').scrollIntoView({ behavior: 'smooth', block: 'start' });
-$('#goSvc').onclick = $('#heroSvc').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
+$('#goSvc').onclick = $('#svcFab').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
 document.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) $(ACT[a.dataset.act]).click(); });
@@ -921,6 +921,8 @@ new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, 
 new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
 document.fonts?.ready.then(heroResize); heroResize();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
+// 서비스들이 화면에 들어오면 왼쪽 아래 '서비스' 버튼을 숨김
+new IntersectionObserver(([e]) => document.documentElement.classList.toggle('at-svc', e.isIntersecting), { threshold: .25 }).observe($('#apps'));
 /* ===== 첫 화면 카드에서 다른 날 넘겨 보기 (‹ ›) — 라벨을 누르면 오늘로, 3분 동안 안 만지면 자동으로 오늘로 ===== */
 // 홈 카드 라벨: 지금(오늘·이번 주)이면 눌러서 하루↔한 주 전환, 다른 날·다른 주면 눌러서 지금으로
 function setLbl(el, text, off, wk) {
