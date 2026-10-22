@@ -31,7 +31,7 @@ const isOff = r => r.SBTR_DD_SC_NM === '휴업일' || r.SBTR_DD_SC_NM === '공�
 const fmtLeft = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(s); };
 const pName = p => p === '조회' ? '조회' : p + '교시';
 /* 실제 종소리가 시계보다 늦게 울리는 만큼(ms) 카운트다운을 늦춘다. 종이 타이머보다 빠르면 음수로 */
-const BELL_LAG = 500;
+const BELL_LAG = 850;   // 0.5초 → 0.85초 (2026-10-22 학생 의견: 아직 조금 빠름)
 const bellNow = () => new Date(now() - BELL_LAG);
 
 function bellInfo(n) {
