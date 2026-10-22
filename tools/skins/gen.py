@@ -74,13 +74,19 @@ for name, h, s, m in SKINS:
         # 마스코트 그림은 한 번만 넣고(스티커·고르기 버튼이 같은 --art 공유), 배경 무늬는 <use>로 두 번 찍기
         art = svg(MASCOT[m])
         pat = svg(f"<defs><g id='m'>{MASCOT[m]}</g></defs><g opacity='.09'><use href='#m' transform='translate(6 6) scale(.3)'/><use href='#m' transform='translate(51 51) scale(.3)'/></g>", '0 0 90 90')
-        out.append(f':root[data-skin="{name}"],.sk-{name}{{--art:{art}}}')
+        # 큰 마스코트는 public/js/mascots.js가 인라인 SVG로 띄워 움직임 → 여기 --art는 고르기 버튼 미리보기용만
+        out.append(f'.sk-{name}{{--art:{art}}}')
         out.append(f':root[data-skin="{name}"]{{--pat:{pat};--pat-size:90px 90px}}')
     # 고르기 창 미리보기 색(밝은 기준)
     lt = tokens(h, s, False)
     out.append(f'.sk-{name}{{--p1:{lt["bg"]};--p2:{lt["accent"]};--p3:{lt["sky"]}}}')
 out.append('.sk .sk-face{background-image:var(--art)}')
 out.append("/* ===== 스킨 끝 ===== */")
+# 움직이는 마스코트용 JS 모듈(app.js가 캐릭터 테마일 때만 동적 import)
+import json
+JS = CSS.parents[1] / 'js/mascots.js'
+JS.write_text("// 자동 생성: tools/skins/gen.py — 직접 고치지 말 것. 캐릭터 테마 마스코트 인라인 SVG\nexport const MASCOT = "
+              + json.dumps({k: f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>{v}</svg>" for k, v in MASCOT.items()}, ensure_ascii=False, indent=0) + ";\n")
 block = '\n'.join(out)
 
 src = CSS.read_text()

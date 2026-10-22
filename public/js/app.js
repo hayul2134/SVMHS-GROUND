@@ -921,6 +921,21 @@ function applySkin(k) {
   if (k) h.dataset.skin = k; else delete h.dataset.skin;
   syncBarColor();
   document.querySelectorAll('#mSkin .sk').forEach(b => b.setAttribute('aria-pressed', b.dataset.skin === k));
+  syncMascot();
+}
+// 움직이는 마스코트: 캐릭터 테마이고 '내 캐릭터' 그림이 없을 때만 왼쪽 아래에 인라인 SVG로 띄움(눈 깜빡임·통통·손 흔들기·꼬리).
+// 그림은 js/mascots.js(tools/skins/gen.py가 생성)를 필요할 때만 불러옴. '내 캐릭터' 그림은 지금처럼 배경 스티커(--art)로 가만히.
+const CHAR_SET = new Set(SKINS.char.map(c => c[0]));
+let mascotMod = null;
+async function syncMascot() {
+  const k = document.documentElement.dataset.skin || '';
+  let el = document.getElementById('mascot');
+  const want = CHAR_SET.has(k) && !lsGet(MYART);
+  if (!want) { if (el) el.remove(); return; }
+  try { mascotMod = mascotMod || await import('./mascots.js'); } catch { return; }
+  if ((document.documentElement.dataset.skin || '') !== k) return;  // 불러오는 사이 바뀜
+  if (!el) { el = document.createElement('div'); el.id = 'mascot'; el.className = 'mascot'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
+  if (el.dataset.k !== k) { el.dataset.k = k; el.innerHTML = mascotMod.MASCOT[k] || ''; }
 }
 function skinBtns(list, face) {
   return list.map(([k, n]) => `<button class="sk sk-${k || 'base'}" type="button" data-skin="${k}" aria-pressed="false">`
@@ -946,7 +961,10 @@ function setMyArt(art, pat) {
   if (art) rs.setProperty('--art', `url("${art}")`); else rs.removeProperty('--art');
   if (art && pat) { rs.setProperty('--pat', `url("${pat}")`); rs.setProperty('--pat-size', '90px 90px'); }
   else { rs.removeProperty('--pat'); rs.removeProperty('--pat-size'); }
+  syncMascot();
 }
+syncMascot();
+
 function myArtUi() {
   const a = lsGet(MYART), f = $('#skMyFace');
   f.classList.toggle('on', !!a);

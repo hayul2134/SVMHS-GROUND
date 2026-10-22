@@ -22,12 +22,12 @@ def mochi(c, l, top=16, bot=74, w=37):
 
 
 def eyes(y=54, dx=11, rx=4.3, ry=5.3):
-    o = ''
+    o = "<g class='me'>"
     for x in (50 - dx, 50 + dx):
         o += (f"<ellipse cx='{x}' cy='{y}' rx='{rx}' ry='{ry}' fill='{F}'/>"
               f"<circle cx='{x+1.4:.1f}' cy='{y-2:.1f}' r='{rx*.45:.1f}' fill='#fff'/>"
               f"<circle cx='{x-1.5:.1f}' cy='{y+2.3:.1f}' r='.8' fill='#fff'/>")
-    return o
+    return o + '</g>'
 
 
 def blush(y=61, dx=19, rx=5.5, ry=3.2, o=.5):
@@ -58,7 +58,7 @@ def body(c, l, belly=None, feet=None, wave=False, arms=True):
     if arms:
         o += f"<ellipse cx='33.5' cy='81' rx='4.6' ry='6.2' transform='rotate(28 33.5 81)' fill='{c}' {ln(l)}/>"
         if wave:  # 오른손 들어 인사
-            o += f"<ellipse cx='72' cy='66' rx='4.6' ry='6.6' transform='rotate(-30 72 66)' fill='{c}' {ln(l)}/>"
+            o += f"<g class='ma'><ellipse cx='72' cy='66' rx='4.6' ry='6.6' transform='rotate(-30 72 66)' fill='{c}' {ln(l)}/></g>"
         else:
             o += f"<ellipse cx='66.5' cy='81' rx='4.6' ry='6.2' transform='rotate(-28 66.5 81)' fill='{c}' {ln(l)}/>"
     return o
@@ -66,7 +66,7 @@ def body(c, l, belly=None, feet=None, wave=False, arms=True):
 
 def tail(d, c, l, w=6):
     # 굵은 선으로 그린 꼬리: 테두리색 굵게 → 몸색 얇게
-    return f"<path d='{d}' fill='none' stroke='{l}' stroke-width='{w+2.6}' stroke-linecap='round'/><path d='{d}' fill='none' stroke='{c}' stroke-width='{w}' stroke-linecap='round'/>"
+    return f"<g class='mt'><path d='{d}' fill='none' stroke='{l}' stroke-width='{w+2.6}' stroke-linecap='round'/><path d='{d}' fill='none' stroke='{c}' stroke-width='{w}' stroke-linecap='round'/></g>"
 
 
 def cloud(circles, c, l, w=2.6):
@@ -148,7 +148,7 @@ def M_penguin():
 
 def M_fox():
     c, l, w = '#ffbf8a', '#d47f48', '#fff6ec'
-    return (SHADOW + f"<path d='M64 88 Q90 90 88 66 Q86 58 78 62 Q74 76 62 80Z' fill='{c}' {ln(l)}/><path d='M86 68 Q88 62 82 61 Q80 66 82 70Z' fill='{w}'/>"
+    return (SHADOW + f"<g class='mt'><path d='M64 88 Q90 90 88 66 Q86 58 78 62 Q74 76 62 80Z' fill='{c}' {ln(l)}/><path d='M86 68 Q88 62 82 61 Q80 66 82 70Z' fill='{w}'/></g>"
             + body(c, l, w, feet='#a86c4e')
             + f"<path d='M17 46 L15 7 Q33 11 46 27Z' fill='{c}' {ln(l)}/><path d='M83 46 L85 7 Q67 11 54 27Z' fill='{c}' {ln(l)}/>"
             + f"<path d='M21 36 L20 15 Q30 18 37 26Z' fill='{w}'/><path d='M79 36 L80 15 Q70 18 63 26Z' fill='{w}'/>"
@@ -158,9 +158,10 @@ def M_fox():
 
 def M_panda():
     c, l, k = '#ffffff', '#a3a0ad', '#3e3a45'
-    pupil = ''
+    pupil = "<g class='me'>"
     for x in (39, 61):
         pupil += (f"<circle cx='{x}' cy='54' r='3.6' fill='#fff'/><circle cx='{x+.5}' cy='54.4' r='2.4' fill='{k}'/><circle cx='{x+1.2}' cy='53.4' r='.9' fill='#fff'/>")
+    pupil += '</g>'
     return (SHADOW + body(k, '#2c2932', c, feet=k).replace(f"<ellipse cx='50' cy='81' rx='18' ry='12.5' fill='{k}'", f"<ellipse cx='50' cy='81' rx='18' ry='12.5' fill='{c}'")
             + f"<circle cx='23' cy='22' r='10' fill='{k}' {ln('#2c2932')}/><circle cx='77' cy='22' r='10' fill='{k}' {ln('#2c2932')}/>" + mochi(c, l)
             + f"<ellipse cx='38.5' cy='55' rx='7.4' ry='9.2' transform='rotate(-30 38.5 55)' fill='{k}'/><ellipse cx='61.5' cy='55' rx='7.4' ry='9.2' transform='rotate(30 61.5 55)' fill='{k}'/>"
@@ -182,7 +183,7 @@ def M_ghost():
             + f"<ellipse cx='16' cy='58' rx='4.6' ry='6.4' transform='rotate(40 16 58)' fill='{c}' {ln(l)}/><ellipse cx='85' cy='50' rx='4.6' ry='6.6' transform='rotate(-35 85 50)' fill='{c}' {ln(l)}/>"
             + eyes(46, 10) + blush(53, 18) + mouth(52.5, 3.2)
             + f"<path d='M48.4 54.6 q1.6 3.6 3.2 0z' fill='#ff8fab'/>"
-            + "<path d='M86 16 q1 4 5 5 q-4 1 -5 5 q-1 -4 -5 -5 q4 -1 5 -5z' fill='#fff2a0' stroke='#e2c45a' stroke-width='1.4' stroke-linejoin='round'/>")
+            + "<path class='mk' d='M86 16 q1 4 5 5 q-4 1 -5 5 q-1 -4 -5 -5 q4 -1 5 -5z' fill='#fff2a0' stroke='#e2c45a' stroke-width='1.4' stroke-linejoin='round'/>")
 
 
 def M_slime():
@@ -206,8 +207,8 @@ def M_sheep():
 def M_whale():
     c, l, w = '#a6d4ff', '#5d9edb', '#e6f4ff'
     return (SHADOW
-            + "<path d='M50 22 v-8 M50 15 q-6 -9 -12 -4 M50 15 q6 -9 12 -4' fill='none' stroke='#8ccbff' stroke-width='3.2' stroke-linecap='round'/>"
-            + "<circle cx='36' cy='6' r='2' fill='#8ccbff'/><circle cx='64' cy='6' r='2' fill='#8ccbff'/>"
+            + "<g class='ms'><path d='M50 22 v-8 M50 15 q-6 -9 -12 -4 M50 15 q6 -9 12 -4' fill='none' stroke='#8ccbff' stroke-width='3.2' stroke-linecap='round'/>"
+            + "<circle cx='36' cy='6' r='2' fill='#8ccbff'/><circle cx='64' cy='6' r='2' fill='#8ccbff'/></g>"
             + f"<path d='M78 72 Q94 66 96 54 Q88 54 84 60 Q86 50 80 44 Q76 54 78 62Z' fill='{c}' {ln(l)}/>"
             + mochi(c, l, top=22, bot=90, w=38)
             + f"<path d='M14 70 Q50 82 86 70 Q84 90 50 90 Q16 90 14 70z' fill='{w}'/>"
@@ -226,4 +227,11 @@ def M_axolotl():
             + "<circle cx='43' cy='29' r='1.8' fill='#ffb3c9'/><circle cx='55' cy='26' r='1.3' fill='#ffb3c9'/>")
 
 
-MASCOT = {k[2:]: v() for k, v in list(globals().items()) if k.startswith('M_')}
+def _wrap(v):
+    # 그림자 뺀 몸 전체를 .mb로 묶음(통통 튀기 애니메이션). 정적 그림(스티커 미리보기·무늬)에선 클래스가 무시됨
+    assert v.startswith(SHADOW)
+    return SHADOW + "<g class='mb'>" + v[len(SHADOW):] + '</g>'
+
+
+# 움직이는 부위 클래스: .mb 몸 전체 · .me 눈(깜빡임) · .ma 흔드는 팔 · .mt 꼬리 · .ms 고래 물줄기 · .mk 반짝이
+MASCOT = {k[2:]: _wrap(v()) for k, v in list(globals().items()) if k.startswith('M_')}
