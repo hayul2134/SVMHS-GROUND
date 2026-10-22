@@ -353,11 +353,24 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .s-ttc.stow.open{transform:translate(-18px,-50%) rotate(1.2deg)}
 .tuck .s-meal.stow.open{transform:translate(calc(-100% - 6px),-50%)}
 .tuck .s-ttc.stow.open{transform:translate(calc(100% + 6px),-50%)}
-.s-tt.stow .s-tab{display:flex;align-items:center;gap:6px;position:absolute;top:50%;margin-top:-56px;min-height:112px;padding:14px 7px;writing-mode:vertical-rl;letter-spacing:.08em;
-  font:inherit;font-size:13.5px;font-weight:900;color:var(--onc);background:var(--yellow);border:var(--bd);box-shadow:var(--sh-s);cursor:pointer;transition:opacity .2s}
-.s-tt.stow .s-tab span{writing-mode:horizontal-tb;font-size:17px}
-.s-meal.stow .s-tab{left:100%;margin-left:6px;border-radius:0 14px 14px 0;border-left-width:0}
-.s-ttc.stow .s-tab{right:100%;margin-right:6px;border-radius:14px 0 0 14px;border-right-width:0;background:var(--lime)}
+.s-tt.stow .s-tab{display:flex;align-items:center;gap:6px;position:absolute;top:50%;margin-top:-58px;min-height:116px;padding:16px 8px 18px;writing-mode:vertical-rl;letter-spacing:.08em;
+  font:inherit;font-size:13.5px;font-weight:900;color:var(--onc);background:var(--yellow);border:2px solid var(--ink);box-shadow:3px 4px 0 rgba(15,30,60,.22);cursor:pointer;transition:opacity .2s,translate .25s ease,visibility 0s}
+/* 포스트잇 책갈피: 가장자리에 붙인 접착 띠(::before) + 끝이 살짝 접힌 모서리(::after) */
+.s-tt.stow .s-tab::before{content:"";position:absolute;top:-2px;bottom:-2px;width:13px;background:rgba(255,255,255,.38);border-inline:1.5px dashed rgba(15,30,60,.18)}
+.s-tt.stow .s-tab::after{content:"";position:absolute;bottom:-2px;width:16px;height:16px;border-top:2px solid var(--ink)}
+.s-tt.stow .s-tab span{writing-mode:horizontal-tb;font-size:17px;position:relative}
+.s-meal.stow .s-tab{left:100%;margin-left:4px;border-radius:2px 4px 4px 2px;border-left-width:0;rotate:-2.5deg;transform-origin:left center}
+.s-meal.stow .s-tab::before{left:0}
+.s-meal.stow .s-tab::after{right:-2px;background:linear-gradient(225deg,var(--bg) 50%,color-mix(in srgb,var(--yellow) 78%,#000) 50%);border-left:2px solid var(--ink);border-bottom-left-radius:3px}
+.s-ttc.stow .s-tab{right:100%;margin-right:4px;border-radius:4px 2px 2px 4px;border-right-width:0;background:var(--lime);rotate:2.5deg;transform-origin:right center}
+.s-ttc.stow .s-tab::before{right:0}
+.s-ttc.stow .s-tab::after{left:-2px;background:linear-gradient(135deg,var(--bg) 50%,color-mix(in srgb,var(--lime) 78%,#000) 50%);border-right:2px solid var(--ink);border-bottom-right-radius:3px}
+.s-meal.stow .s-tab:hover{translate:4px 0}
+.s-ttc.stow .s-tab:hover{translate:-4px 0}
+/* 서랍이 나와 있으면 책갈피는 자연스럽게 숨김 (바깥을 누르거나 Esc로 넣으면 다시 나타남) */
+html:not(.tuck) .s-tt.stow.open .s-tab{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s,translate .25s ease,visibility 0s .2s}
+html:not(.tuck) .s-meal.stow.open .s-tab{translate:-10px 0}
+html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .s-tt.stow.pin .s-tab{display:none}
 .tuck .s-tt.stow.pin .s-tab{display:flex}
 .s-tt.stow:not(.open),.tuck .s-tt.stow{box-shadow:none}
@@ -644,6 +657,21 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .pager button:active,.pager button.is-pressed{transform:scale(.9)}
 .pager button svg{width:16px;height:16px}
 .pager .lbl{font-weight:900;min-width:118px;text-align:center;font-variant-numeric:tabular-nums}
+.pager{position:relative}
+.pager button.lbl{width:auto;height:36px;padding:0 10px;border:0;background:none;font:inherit;font-weight:900;color:var(--text);cursor:pointer}
+.pager button.lbl::after{content:" ▾";font-size:.75em;color:var(--sub)}
+.pager button.lbl:hover,.pager button.lbl[aria-expanded="true"]{background:var(--chip);color:var(--text)}
+/* 달 고르기 (학사일정) */
+.mpick{position:absolute;top:calc(100% + 10px);right:0;z-index:30;width:260px;padding:12px;background:var(--card);color:var(--text);border:var(--bd);border-radius:18px;box-shadow:var(--sh);animation:mpIn .16s ease-out}
+@keyframes mpIn{from{opacity:0;transform:translateY(-6px)}}
+.mpick .mp-y{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mpick .mp-y b{font-family:var(--num);font-size:18px;font-weight:800}
+.mpick .mp-m{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pager .mpick .mp-m button{width:auto;height:38px;font:inherit;font-weight:800;font-size:14px;border-color:var(--line)}
+.pager .mpick .mp-m button.now{border-color:var(--ink)}
+.pager .mpick .mp-m button.on{background:var(--yellow);color:var(--ink);border-color:var(--ink)}
+.pager .mpick .mp-today{width:100%;height:34px;margin-top:10px;font:inherit;font-weight:800;font-size:13px}
+@media (prefers-reduced-motion:reduce){.mpick{animation:none}}
 .btn{padding:12px 18px;border-radius:14px;background:var(--accent);color:#fff;font-weight:900;border:var(--bd);box-shadow:var(--sh-s);transition:transform .08s,box-shadow .08s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
 .btn:active,.btn.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}

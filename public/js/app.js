@@ -682,6 +682,33 @@ async function renderCalView() {
 }
 $('#cPrev').onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() - 1, 1); renderCalView(); };
 $('#cNext').onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() + 1, 1); renderCalView(); };
+// 'YYYY년 M월'을 누르면 해를 넘기며 달을 골라 바로 이동
+function closeMonthPick() { $('#cPick')?.remove(); $('#cLbl').setAttribute('aria-expanded', 'false'); }
+$('#cLbl').onclick = e => {
+  e.stopPropagation();
+  if ($('#cPick')) return closeMonthPick();
+  const t = today(), arrow = (k, d, l) => `<button type="button" data-y="${d}" aria-label="${l}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${k}"/></svg></button>`;
+  let y = S.calMonth.getFullYear();
+  const box = document.createElement('div');
+  box.id = 'cPick'; box.className = 'mpick'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '달 고르기');
+  const paint = () => {
+    box.innerHTML = `<div class="mp-y">${arrow('prev', -1, '이전 해')}<b>${y}년</b>${arrow('next', 1, '다음 해')}</div>
+      <div class="mp-m">${Array.from({ length: 12 }, (_, i) => `<button type="button" data-m="${i}" class="${y === S.calMonth.getFullYear() && i === S.calMonth.getMonth() ? 'on' : ''}${y === t.getFullYear() && i === t.getMonth() ? ' now' : ''}">${i + 1}월</button>`).join('')}</div>
+      <button type="button" class="mp-today" data-today="1">이번 달로</button>`;
+  };
+  paint();
+  box.onclick = ev => {
+    ev.stopPropagation();
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.y) { y += +b.dataset.y; paint(); return; }
+    S.calMonth = b.dataset.today ? new Date(t.getFullYear(), t.getMonth(), 1) : new Date(y, +b.dataset.m, 1);
+    closeMonthPick(); renderCalView();
+  };
+  $('#cLbl').after(box); $('#cLbl').setAttribute('aria-expanded', 'true');
+  box.querySelector('.on, .now, [data-m]').focus();
+};
+document.addEventListener('click', () => { if ($('#cPick')) closeMonthPick(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#cPick')) { closeMonthPick(); $('#cLbl').focus(); } });
 
 /* ===== D-day ===== */
 const byDate = (a, b) => a.date.localeCompare(b.date);
