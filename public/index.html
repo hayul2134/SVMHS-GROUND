@@ -53,6 +53,8 @@
     <g id="i-sun" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>
     <g id="i-qr" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></g>
     <g id="i-info" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></g>
+    <g id="i-bulb" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></g>
+    <g id="i-mega" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></g>
     <g id="i-home" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></g>
     <g id="i-meal" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v20M4 2v6a3 3 0 0 0 6 0V2M17 22V2c-2.5 1.5-4 4-4 8h4"/></g>
     <g id="i-tt" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></g>
@@ -119,6 +121,8 @@
     <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="52" height="52"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
     <!-- 오른쪽: 테마 버튼 · 목록 버튼(☰ ↔ ✕) → 누르면 서랍처럼 목록이 펼쳐짐: 프로필 · 설정 · QR · 신고 -->
     <div class="hmenu" id="hMenu">
+      <button class="iconbtn hb-fb" id="btnFeedback" title="의견 보내기" aria-label="개발자에게 의견 보내기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bulb"/></svg><span class="hb-tx">의견</span></button>
+      <button class="iconbtn hb-nt" id="btnNotices" title="공지" aria-label="공지 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mega"/></svg><i class="hbadge dot" id="ntDot" hidden></i></button>
       <button class="iconbtn theme-btn" id="btnTheme" title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sun"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moon"/></svg></button>
       <button class="iconbtn burger" id="btnMenu" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="hList"><span></span><span></span><span></span></button>
       <nav class="hlist" id="hList" inert aria-label="메뉴">
@@ -333,10 +337,10 @@
       <section>
         <h4>🔒 개인정보</h4>
         <p>급식·시간표·D-day는 로그인 없이 쓸 수 있고, 반 설정·D-day·테마는 <b>이 기기의 브라우저에만</b> 저장돼요.</p>
-        <p>프로필·DM·게임을 쓰려고 가입하면 <b>아이디·닉네임·학년/반·동아리·소개·인스타 아이디(선택)·꾸민 프로필·팔로우·DM·게임 기록·최근 접속 시각</b>이 서버에 저장돼요. 프로필과 접속 중 표시는 가입한 다른 학생에게 보여요. 이메일·전화번호·실명은 받지 않아요(닉네임에 실명을 쓰지 않아도 돼요). 비밀번호는 복원할 수 없는 방식(해시)으로 보관해요.</p>
+        <p>프로필·DM·게임을 쓰려고 가입하면 <b>아이디·닉네임·학년/반·동아리·소개·인스타 아이디(선택)·꾸민 프로필·팔로우·DM·게임 기록·보낸 의견(💡)·최근 접속 시각</b>이 서버에 저장돼요. 보낸 의견은 아이디와 함께 개발자만 봐요. 프로필과 접속 중 표시는 가입한 다른 학생에게 보여요. 이메일·전화번호·실명은 받지 않아요(닉네임에 실명을 쓰지 않아도 돼요). 비밀번호는 복원할 수 없는 방식(해시)으로 보관해요.</p>
         <p><b>DM은 관리자도 볼 수 없어요.</b> 다만 누군가 메시지를 신고하면, 처리를 위해 관리자가 그 메시지와 앞뒤 몇 개만 확인해요.</p>
         <p>급식·밸런스 투표는 이름 없이 기기마다 만든 무작위 번호로만 세요. 너무 많은 요청을 막으려고 접속 주소(IP)를 알아볼 수 없게 바꾼 값만 짧게(1시간 이내 제한용) 쓰고, 기간이 끝나면 지워요.</p>
-        <p><b>탈퇴하면 내 계정·프로필·DM·게임 기록·내가 한 신고가 바로 지워져요</b> (내 프로필 → ⚙️). 다른 사람이 나를 신고한 기록은 괴롭힘 방지를 위해 남을 수 있어요.</p>
+        <p><b>탈퇴하면 내 계정·프로필·DM·게임 기록·내가 한 신고·보낸 의견이 바로 지워져요</b> (내 프로필 → ⚙️). 다른 사람이 나를 신고한 기록은 괴롭힘 방지를 위해 남을 수 있어요.</p>
         <p>불편한 사람은 프로필의 ⋯에서 <b>차단·신고</b>할 수 있어요.</p>
         <button class="btn ghost" id="clearData">이 기기에 저장된 내용 지우기</button>
       </section>

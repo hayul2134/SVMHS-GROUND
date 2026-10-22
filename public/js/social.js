@@ -1,5 +1,5 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
-import { $, $$, esc, toast } from './util.js';
+import { $, $$, esc, toast, store } from './util.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -675,4 +675,44 @@ export async function init(c) {
   if (!S.meErr) c.authed?.(S.me, S.enabled);   // 로그인 전이면 소개 화면 유지, 로그인돼 있으면 닫음 (연결 문제면 지금 상태 그대로)
   startPoll();
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) refreshMe(); });
+  $('#btnFeedback').onclick = openFeedback;
+  $('#btnNotices').onclick = openNotices;
+  checkNotices();
+}
+
+/* ===== 헤더: 💡 의견 보내기 · 📢 공지 모아 보기 ===== */
+const pad2 = n => String(n).padStart(2, '0');
+const dt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+const NT_IC = { warn: '⚠️', fun: '🎉', info: '📢' };
+let ntList = null;
+async function checkNotices() {   // 새 공지가 있으면 📢 버튼에 빨간 점 (마지막으로 본 공지 id: sg_notice_seen)
+  try { ntList = (await (await fetch('/api/notices')).json()).list || []; } catch { ntList = []; }
+  $('#ntDot').hidden = !ntList.length || store.get('notice_seen') === ntList[0].id;
+}
+async function openNotices() {
+  sheet('<h3>📢 공지</h3><ul class="ntlist"><li class="skel"></li><li class="skel"></li></ul>');
+  if (!ntList) await checkNotices();
+  if (ntList.length) { store.set('notice_seen', ntList[0].id); store.set('notice_x', null); }   // 다 봤음 + 닫았던 띠 공지도 다시 보이게
+  $('#ntDot').hidden = true;
+  $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => `<li class="${n.live ? 'live' : ''}">
+      <span class="nt-ic">${NT_IC[n.tone] || '📢'}</span><div><p>${n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text)}</p>
+      <small>${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}</small></div></li>`).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
+    <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
+}
+const FB_KIND = [['idea', '💡 이런 기능 있으면 좋겠어요'], ['bug', '🐞 이상하거나 안 돼요'], ['etc', '💬 그 밖의 말']];
+function openFeedback() {
+  if (!S.me) { toast('의견은 로그인하면 보낼 수 있어요'); ctx.go('me'); return; }
+  sheet(`<h3>💡 의견 보내기</h3><p class="note">개발자에게 바로 전달돼요. 사이트를 더 좋게 만드는 데 써요!</p>
+    <form class="sform" id="fbForm">
+      <div class="segs fbk">${FB_KIND.map(([k, t], i) => `<label><input type="radio" name="kind" value="${k}" ${i ? '' : 'checked'}><span>${t}</span></label>`).join('')}</div>
+      <textarea name="body" maxlength="500" rows="5" required placeholder="예: 시간표에 교실 이름도 나왔으면 좋겠어요"></textarea>
+      <p class="note">보낸 사람 아이디(@${esc(S.me.handle)})가 개발자에게 보여요. 욕설·저격 글은 보내지 말아 주세요.</p>
+      <div class="row"><button class="btn" type="submit">보내기</button><button class="btn ghost" type="button" data-close>닫기</button></div>
+    </form>`);
+  $('#fbForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, b = f.querySelector('[type=submit]'); b.disabled = true;
+    try { await call('feedback', { kind: f.kind.value, body: f.body.value }); closeSheet(); toast('고마워요! 개발자에게 전달됐어요 🙌'); }
+    catch (x) { toast(x.message); b.disabled = false; }
+  };
 }

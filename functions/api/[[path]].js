@@ -28,8 +28,8 @@ const json = (obj, status = 200, cache = 'no-store') => new Response(JSON.string
 
 export async function onRequest({ request, env, params }) {
   const path = (params.path || []).join('/');
-  if (path === 'vote' || path === 'balance' || path === 'notice') {
-    try { return await { vote, balance, notice: (_, e) => notice(e) }[path](request, env); }
+  if (path === 'vote' || path === 'balance' || path === 'notice' || path === 'notices') {
+    try { return await { vote, balance, notice: (_, e) => notice(e), notices: (_, e) => notices(e) }[path](request, env); }
     catch (e) {
       console.error(e);
       if (!isWriteLimit(e)) await logErr(env.DB, 'api', request, e);
@@ -168,6 +168,15 @@ async function balance(request, env) {
   else await db.prepare('INSERT INTO balance_votes (ymd, voter, pick, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (ymd, voter) DO UPDATE SET pick = excluded.pick, at = excluded.at')
     .bind(ymd, voter, pick, Date.now()).run();
   return json(await balanceState(db, ymd, voter));
+}
+
+/* ===== 공지 기록: 헤더 📢 버튼에서 지난 공지까지 최근 20개 ===== */
+async function notices(env) {
+  if (!env.DB) return json({ list: [] });
+  await setup(env.DB);
+  const now = Date.now();
+  const rows = (await env.DB.prepare('SELECT id, text, tone, link, at, until FROM notices ORDER BY at DESC LIMIT 20').all()).results;
+  return json({ list: rows.map(r => ({ id: r.id, text: r.text, tone: r.tone, link: r.link, at: r.at, live: !r.until || r.until > now })) }, 200, 'public, max-age=30');
 }
 
 /* ===== 공지 (관리자 페이지에서 작성) ===== */

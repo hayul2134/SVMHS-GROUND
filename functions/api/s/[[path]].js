@@ -231,7 +231,7 @@ const ROUTES = {
     if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) return err('비밀번호가 맞지 않아요', 401);
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(me.id)));
     return json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
@@ -388,6 +388,16 @@ const ROUTES = {
     const id = parseInt(body.id);
     const r = await db.prepare("UPDATE messages SET del = 1, body = '' WHERE id = ?1 AND a = ?2").bind(id, me.id).run();
     return r.meta.changes ? json({ ok: true }) : err('지울 수 없어요');
+  }),
+
+  /* ----- 의견 보내기 (개발자에게, 로그인 필요) ----- */
+  'POST feedback': needMe(async ({ db, me, body }) => {
+    const kind = ['idea', 'bug', 'etc'].includes(body.kind) ? body.kind : 'etc';
+    const text = clean(body.body, 500, true);
+    if (text.length < 2) return err('내용을 조금 더 적어 주세요');
+    if (await limited(db, 'fb:' + me.id, 6, 3600)) return err('의견은 1시간에 6번까지 보낼 수 있어요', 429);
+    await db.prepare('INSERT INTO feedback (uid, kind, body, at) VALUES (?1, ?2, ?3, ?4)').bind(me.id, kind, text, Date.now()).run();
+    return json({ ok: true });
   }),
 
   /* ----- 미니게임 ----- */

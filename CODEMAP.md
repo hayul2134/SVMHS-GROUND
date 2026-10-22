@@ -78,6 +78,10 @@ npx wrangler@4 pages dev --port 8788
 - 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 학생이 닫으면 `sg_notice_x`에 그 공지 id 저장.
 - 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기. 오늘 질문을 바꾸면 오늘 표 초기화.
 
+## 의견 · 공지 버튼 (헤더)
+- 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번) → `feedback` 표 → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.
+- 📢 공지 → `openNotices()` → `GET /api/notices`(최근 20개, 30초 캐시). 관리자가 공지를 올리면 `notices` 표에도 기록(앞 공지는 끝난 것으로). 마지막으로 본 공지 id `sg_notice_seen`과 다르면 버튼에 빨간 점. 목록을 열면 닫았던 띠 공지도 다시 보임.
+
 ## 모니터링 (/admin → 📡 모니터링)
 - API `GET /api/admin/monitor` 하나로 모아 받음. DM은 **개수만**(내용·누가 누구에게는 없음).
 - 서버 오류: 세 API의 catch와 나이스 프록시 실패가 `lib/db.js logErr()` → `errs` 표(14일·500줄 보관). D1 한도 초과 오류는 기록하지 않음(쓸 수 없으니까).

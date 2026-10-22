@@ -98,6 +98,7 @@ async function refreshBadge() {
   try {
     const d = await call('dash');
     const b = $('#repBadge'); b.hidden = !d.counts.openReports; b.textContent = d.counts.openReports;
+    const f = $('#fbBadge'); f.hidden = !d.counts.openFeedback; f.textContent = d.counts.openFeedback;
     return d;
   } catch { return null; }
 }
@@ -114,6 +115,7 @@ VIEWS.dash = async () => {
     <div class="vh"><h2>대시보드</h2><span class="sub">${full(Date.now())} 기준</span><button class="btn sm" id="reDash" type="button">새로 고침</button></div>
     <div class="stats">
       ${tile(c.openReports, '처리 안 한 신고', c.openReports ? 'hot' : 'c4', '#reports')}
+      ${tile(c.openFeedback, '확인 안 한 의견', c.openFeedback ? 'hot' : 'c4', '#feedback')}
       ${tile(c.online, '지금 접속 중', 'c2', '#users')}
       ${tile(c.activeToday, '오늘 들어온 사람', 'c1')}
       ${tile(c.users, '전체 가입자', 'c1', '#users')}
@@ -149,7 +151,19 @@ VIEWS.dash = async () => {
 };
 
 /* ===== 신고 ===== */
-let repState = 'open';
+let repState = 'open', fbState = 'open';
+/* ===== 의견 (학생 → 개발자) ===== */
+const FBK = { idea: '💡 기능 제안', bug: '🐞 오류', etc: '💬 기타' };
+VIEWS.feedback = async () => {
+  const d = await call('feedback' + (fbState === 'done' ? '?state=done' : ''));
+  $('#main').innerHTML = `<div class="vh"><h2>의견</h2><span class="sub">확인 안 한 ${d.open}건 · 전체 ${d.total}건</span>
+      <div class="seg"><button type="button" data-fs="open" class="${fbState === 'open' ? 'on' : ''}">새 의견</button><button type="button" data-fs="done" class="${fbState === 'done' ? 'on' : ''}">확인함</button></div></div>
+    ${d.list.length ? d.list.map(x => `<section class="card fb"><div class="fbh"><span class="tag">${FBK[x.kind] || x.kind}</span>${x.user ? who(x.user, cls(x.user)) : '<span class="sub">(탈퇴한 사용자)</span>'}<span class="sub">${when(x.at)}</span></div>
+        <p class="fbb">${esc(x.body)}</p>${x.note ? `<p class="sub">📝 ${esc(x.note)}</p>` : ''}
+        <div class="row">${x.done ? `<button class="btn sm" type="button" data-act="fbreopen" data-id="${x.id}">되돌리기</button>` : `<button class="btn sm ok" type="button" data-act="fbdone" data-id="${x.id}">✅ 확인함</button>`}
+          ${x.user ? `<button class="btn sm" type="button" data-act="user" data-h="${esc(x.user.handle)}">👤 보낸 사람</button>` : ''}
+          <button class="btn sm bad" type="button" data-act="fbdel" data-id="${x.id}">삭제</button></div></section>`).join('') : `<p class="empty">${fbState === 'open' ? '새 의견이 없어요' : '확인한 의견이 없어요'}</p>`}`;
+};
 /* ===== 모니터링 (20초마다 자동 새로 고침, 이 화면에 있을 때만) ===== */
 let monTimer = 0;
 const FEED = {
@@ -438,6 +452,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#modal
 
 /* ===== 버튼 처리 (위임) ===== */
 document.addEventListener('click', async e => {
+  const fs = e.target.closest('[data-fs]');
+  if (fs) { fbState = fs.dataset.fs; return route(); }
   const rs = e.target.closest('[data-rs]');
   if (rs) { repState = rs.dataset.rs; return route(); }
   const gm = e.target.closest('[data-game]');
@@ -446,6 +462,8 @@ document.addEventListener('click', async e => {
   if (!el) return;
   const act = el.dataset.act, h = el.dataset.h, id = +el.dataset.id;
   if (act === 'monrefresh') return VIEWS.monitor().catch(() => {});
+  if (act === 'fbdone' || act === 'fbreopen') { const note = act === 'fbdone' ? (prompt('메모 (선택: 반영함·다음에 등)', '') ?? null) : ''; if (note === null) return; await call('feedback', { id, done: act === 'fbdone' ? 1 : 0, note }); refreshBadge(); return route(); }
+  if (act === 'fbdel') { if (!confirm('이 의견을 지울까요?')) return; await call('feedback', { id, del: true }); refreshBadge(); return route(); }
   if (act === 'errclear') { if (!confirm('서버 오류 기록을 모두 지울까요?')) return; await call('errclear', {}); return VIEWS.monitor(); }
   const again = () => (h && !$('#modal').hidden ? openUser(h) : null);
   try {

@@ -123,6 +123,7 @@ const ROUTES = {
       one(`SELECT day AS d, COUNT(DISTINCT uid) AS n FROM scores WHERE day >= ?1 GROUP BY day`).bind(kstYmd(now - 13 * DAY)),
       one(`SELECT ((at + 32400000) / 86400000) AS d, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY d`).bind(t0 - 13 * DAY),
       one('SELECT grade, cls, COUNT(*) AS n FROM users WHERE grade > 0 AND cls > 0 GROUP BY grade, cls ORDER BY grade, cls'),
+      one('SELECT COUNT(*) AS n FROM feedback WHERE done = 0'),   // 15: 확인 안 한 의견
     ]);
     const n = i => r[i].results[0].n;
     const days = [];
@@ -139,7 +140,7 @@ const ROUTES = {
     let notice = null; try { notice = JSON.parse(st.notice || 'null'); } catch {}
     const dbWrite = await canWrite(db);   // 계정 전체 무료 한도를 넘으면 false
     return json({
-      counts: { users: n(0), activeToday: n(1), online: n(2), newToday: n(3), dmsToday: n(4), playsToday: n(5), openReports: n(6), mealVotes: n(7), balanceVotes: n(8), banned: n(9), follows: n(10) },
+      counts: { users: n(0), activeToday: n(1), online: n(2), newToday: n(3), dmsToday: n(4), playsToday: n(5), openReports: n(6), openFeedback: n(15), mealVotes: n(7), balanceVotes: n(8), banned: n(9), follows: n(10) },
       days, classes: r[14].results,
       status: { dbWrite, neisKey: Boolean(env.NEIS_KEY), joinCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st), notice: !!(notice && notice.text && !(notice.until && notice.until < now)) },
     });
@@ -203,6 +204,24 @@ const ROUTES = {
   'POST errclear': async ({ db }) => {
     const r = await db.prepare('DELETE FROM errs').run();
     await log(db, '오류 기록 비움', `${r.meta.changes}건`);
+    return json({ ok: true });
+  },
+
+  /* ----- 의견 (학생 → 개발자) ----- */
+  'GET feedback': async ({ db, url }) => {
+    const open = url.searchParams.get('state') !== 'done';
+    const rows = (await db.prepare(`SELECT f.id, f.kind, f.body, f.at, f.done, f.note, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen
+      FROM feedback f LEFT JOIN users u ON u.id = f.uid WHERE f.done ${open ? '= 0' : '> 0'} ORDER BY f.id DESC LIMIT 200`).all()).results;
+    const cnt = await db.prepare('SELECT SUM(done = 0) AS open, COUNT(*) AS total FROM feedback').first();
+    return json({ list: rows.map(x => ({ id: x.id, kind: x.kind, body: x.body, at: x.at, done: x.done, note: x.note, user: x.handle ? { handle: x.handle, name: x.name, avatar: x.avatar, color: x.color, grade: x.grade, cls: x.cls, online: Date.now() - (x.seen || 0) < 150e3 } : null })), open: cnt.open || 0, total: cnt.total || 0 });
+  },
+  'POST feedback': async ({ db, body }) => {
+    const id = parseInt(body.id);
+    if (body.del) { await db.prepare('DELETE FROM feedback WHERE id = ?1').bind(id).run(); await log(db, '의견 삭제', `#${id}`); return json({ ok: true }); }
+    const done = [0, 1].includes(body.done) ? body.done : 1;
+    const r = await db.prepare('UPDATE feedback SET done = ?1, note = ?2 WHERE id = ?3').bind(done, clean(body.note, 200), id).run();
+    if (!r.meta.changes) return err('없는 의견이에요', 404);
+    await log(db, done ? '의견 확인' : '의견 되돌림', `#${id}`);
     return json({ ok: true });
   },
 
@@ -359,7 +378,7 @@ const ROUTES = {
     if (String(body.confirm || '').toLowerCase() !== u.handle) return err('확인용 아이디가 달라요');
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(u.id)));
     await log(db, '계정 삭제', `@${u.handle} (${u.name})`);
@@ -396,12 +415,20 @@ const ROUTES = {
   },
   'POST notice': async ({ db, body }) => {
     const text = clean(body.text, 120);
-    if (!text) { await setSetting(db, 'notice', null); await log(db, '공지 내림'); return json({ ok: true }); }
+    if (!text) {   // 내린 공지도 기록에는 남기고, 끝난 시각만 지금으로
+      await db.prepare('UPDATE notices SET until = ?1 WHERE until = 0 OR until > ?1').bind(Date.now()).run();
+      await setSetting(db, 'notice', null); await log(db, '공지 내림'); return json({ ok: true });
+    }
     const tone = ['info', 'warn', 'fun'].includes(body.tone) ? body.tone : 'info';
     const link = /^#[a-z0-9/_.-]{0,40}$/i.test(body.link || '') ? body.link : '';
     const hours = Math.max(0, Math.min(24 * 60, +body.hours || 0));
     const n = { id: randHex(4), text, tone, link, at: Date.now(), until: hours ? Date.now() + hours * 3600e3 : 0 };
     await setSetting(db, 'notice', JSON.stringify(n));
+    // 공지 기록: 앞 공지는 지금 끝난 것으로, 새 공지 추가
+    await db.batch([
+      db.prepare('UPDATE notices SET until = ?1 WHERE until = 0 OR until > ?1').bind(n.at),
+      db.prepare('INSERT INTO notices (id, text, tone, link, at, until) VALUES (?1, ?2, ?3, ?4, ?5, ?6)').bind(n.id, n.text, n.tone, n.link, n.at, n.until),
+    ]);
     await log(db, '공지 올림', text);
     return json({ ok: true, notice: n });
   },
