@@ -569,6 +569,14 @@ const RULES = [
   [/볶음|조림|구이|찜/, 'veg'],
   [/소스|양념장|쌈장|초장|드레싱/, 'sauce'],
 ];
+/* ---------- 실제 음식 이미지 (public/food/*.webp, 384px) ----------
+   메뉴 이름(알레르기 번호 뺀 것) → 파일 이름. 있으면 그림 대신 이미지를 칸에 꽉 차게 깔고, 없거나 못 불러오면 위의 그림으로 대신함.
+   이미지는 Cloudflare Workers AI 무료 사용량으로 생성(FLUX·Lucid Origin). 새 메뉴는 여기에 한 줄씩 추가 */
+const FOOD_IMG = {
+  '마라부대볶음': 'mala-budae', '붕어싸만코와플': 'fish-waffle', '연근유자청조림': 'lotus-yuja', '배추된장나물': 'cabbage-doenjang',
+  '깍두기': 'kkakdugi', '현미밥': 'brown-rice', '북어채무국': 'bugeo-mu-soup',
+};
+export const foodImg = name => FOOD_IMG[String(name).replace(/\s/g, '')] || '';
 export const foodKind = n => (RULES.find(([re]) => re.test(n)) || [, 'misc'])[1];
 
 /** 메뉴 이름 → SVG. shape: 'n'(위 칸) | 'half'(위 가운데 반쪽) | 'big'(밥·국 칸) | 'seg'(한 칸에 여러 개일 때 한 줄) */

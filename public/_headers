@@ -15,6 +15,9 @@
   Cache-Control: public, max-age=86400
 /og-image.jpg
   Cache-Control: public, max-age=86400
+# 음식 이미지는 일주일 캐시 (파일 내용이 바뀌면 이름을 바꿔서 넣기)
+/food/*
+  Cache-Control: public, max-age=604800
 /logo*.svg
   Cache-Control: public, max-age=86400
 # 관리자 화면은 캐시하지 않음

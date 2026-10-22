@@ -1,7 +1,7 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getTimetable, getSchedule, cleanDish } from './neis.js';
-import { foodSvg, arBucket, drinkSvg, isDrink } from './food.js';
+import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -297,9 +297,18 @@ const nm = x => {
 };
 // 칸마다 메뉴 이름에 맞는 음식 그림(food.js)을 깔고, 그 위에 이름표를 얹음
 // 그림은 칸 크기를 잰 뒤 그 비율에 맞춰 넣음 (paintFood) — 칸이 길쭉하든 넓든 꽉 차게
-const fx = x => `<i class="fx" data-food="${esc(x)}"></i>`;
+// 실제 음식 이미지가 있는 메뉴는 이미지(칸에 꽉 차게, 이름표는 아래쪽), 없으면 그림. 이미지가 안 열리면 그림으로 바꿈
+const fx = x => { const im = foodImg(x); return `<i class="fx${im ? ' fximg' : ''}" data-food="${esc(x)}"${im ? ` data-img="${im}"` : ''}></i>`; };
 function paintFood(root) {
-  root.querySelectorAll('.fx').forEach(el => {
+  root.querySelectorAll('.fx[data-img]').forEach(el => {
+    if (el.firstChild) return;
+    const img = new Image();
+    img.alt = ''; img.decoding = 'async'; img.src = `/food/${el.dataset.img}.webp`;
+    img.addEventListener('error', () => { delete el.dataset.img; el.classList.remove('fximg'); el.closest('.cell,.it')?.classList.remove('hasimg'); el.innerHTML = ''; paintFood(root); }, { once: true });
+    el.appendChild(img);
+    el.closest('.cell,.it')?.classList.add('hasimg');
+  });
+  root.querySelectorAll('.fx:not([data-img])').forEach(el => {
     const c = el.parentElement, w = c.clientWidth, h = c.clientHeight;
     if (!w || !h) return;
     const ar = arBucket(w / h);

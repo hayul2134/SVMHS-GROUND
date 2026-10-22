@@ -1018,3 +1018,8 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
   [data-tip-end]:hover::after,[data-tip-end]:focus-visible::after{transform:translateY(0)}
   :root[data-theme="dark"] [data-tip]::after{background:#f3f7fb;color:#173048}
 }
+/* 식판 실제 음식 이미지: 칸에 꽉 차게(둥근 모서리), 이름표는 아래쪽 가운데로 내려 음식을 가리지 않게 */
+.tray .fx.fximg{overflow:hidden;border-radius:inherit}
+.tray .fx.fximg img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.tray .hasimg > .lbl,.tray .it.hasimg > .lbl{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);max-width:calc(100% - 8px);box-shadow:0 2px 8px rgba(15,34,54,.35)}
+.tray.mini .hasimg > .lbl,.tray.mini .it.hasimg > .lbl{bottom:3px}
