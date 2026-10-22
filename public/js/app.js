@@ -815,7 +815,8 @@ function weekPick(sel, getMon, setMon) {
       box.innerHTML = `<div class="mp-y">${arrow('prev', -1, '이전 해')}<b>${y}년</b>${arrow('next', 1, '다음 해')}</div>
         <div class="mp-m">${Array.from({ length: 12 }, (_, i) => `<button type="button" data-m="${i}" class="${i === mo ? 'on' : ''}${y === t.getFullYear() && i === t.getMonth() ? ' now' : ''}">${i + 1}월</button>`).join('')}</div>
         <div class="mp-w">${weeks().map(m => `<button type="button" data-w="${ymd(m)}" class="${ymd(m) === c ? 'on' : ''}${ymd(m) === ymd(tw) ? ' now' : ''}">${weekLbl(m)}</button>`).join('')}</div>
-        <button type="button" class="mp-today" data-today="1">이번 주로</button>`;
+        <button type="button" class="mp-today" data-today="1">이번 주로</button>
+        <button type="button" class="mp-ok" data-ok="1">확인</button>`;
     };
     paint();
     box.onclick = ev => {
@@ -825,7 +826,10 @@ function weekPick(sel, getMon, setMon) {
       if (b.dataset.m) {   // 달을 누르면 그 달 첫 주로 바로 이동, 팝업은 열어 두고 주 목록만 바꿈
         mo = +b.dataset.m; setMon(weekOf(new Date(y, mo, 1))); paint(); box.querySelector('.mp-w .on, .mp-w button')?.focus(); return;
       }
-      setMon(b.dataset.today ? tw : parseYmd(b.dataset.w)); close(); lbl.focus();
+      if (b.dataset.ok) { close(); lbl.focus(); return; }   // 확인을 눌러야만 닫힘
+      const m = b.dataset.today ? tw : parseYmd(b.dataset.w);   // 주를 골라도 팝업은 열어 둠
+      if (b.dataset.today) { y = anchorOf(tw).getFullYear(); mo = anchorOf(tw).getMonth(); }
+      setMon(m); paint(); box.querySelector(b.dataset.today ? '.mp-today' : `[data-w="${ymd(m)}"]`)?.focus();
     };
     document.body.append(box);
     const r = lbl.getBoundingClientRect(), w = box.offsetWidth, vw = document.documentElement.clientWidth;

@@ -680,6 +680,8 @@ html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .wpick .mp-w small{font-size:10px;color:var(--sub)}
 .wpick .mp-w button.on small{color:var(--ink)}
 .wpick .mp-today{width:100%;height:34px;margin-top:10px;font-size:13px}
+.wpick .mp-ok{width:100%;height:38px;margin-top:8px;border-radius:10px;border:2px solid var(--ink);background:var(--accent);color:#fff;font:inherit;font-weight:900;font-size:14px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:.1s}
+.wpick .mp-ok:hover{filter:brightness(1.06)}
 :root[data-theme="dark"] .wpick .mp-y button{border-color:var(--line)}
 .pager .mpick .mp-today{width:100%;height:34px;margin-top:10px;font:inherit;font-weight:800;font-size:13px}
 /* 이번 달·이번 주 표시: 파란 테두리 + 그림자 + 스티커 배지 (선택(노랑)과 겹쳐도 배지로 구분) */
