@@ -229,3 +229,4 @@ code{background:var(--chip);border:1.5px solid var(--line);border-radius:6px;pad
 .card.fb .fbh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 .card.fb .fbh .sub{margin-left:auto}
 .fbb{white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.5;margin-bottom:10px}
+.nh-t{flex:1;min-width:0;word-break:keep-all}

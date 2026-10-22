@@ -349,7 +349,7 @@ VIEWS.scores = async () => {
 /* ===== 공지 ===== */
 const TONES = { info: '📢 알림', warn: '⚠️ 주의', fun: '🎉 이벤트' };
 VIEWS.notice = async () => {
-  const { notice: n } = await call('notice');
+  const [{ notice: n }, { list: hist = [] }] = await Promise.all([call('notice'), call('notices').catch(() => ({ list: [] }))]);
   const live = n && n.text && !(n.until && n.until < Date.now());
   $('#main').innerHTML = `
     <div class="vh"><h2>공지</h2></div>
@@ -373,6 +373,9 @@ VIEWS.notice = async () => {
         <div><p class="sub">미리보기</p><div class="nprev" id="nPrev"><span>📢</span><span id="nPrevT">내용을 적어 보세요</span></div></div>
         <div class="row"><button class="btn pri" type="submit">올리기</button></div>
       </form>
+    </section>
+    <section class="card"><h3>공지 기록</h3><p class="sub">학생 화면 📢 목록에 보이는 지난 공지예요. 지우면 목록에서도 사라져요.</p>
+      ${hist.length ? hist.map(h => `<div class="row sp-t"><span class="sub">${full(h.at)}</span><span class="nh-t">${esc(h.text)}</span>${live && h.id === n.id ? '<b class="sub">지금 공지</b>' : `<button class="btn sm bad" type="button" data-act="noticedel" data-id="${esc(h.id)}">삭제</button>`}</div>`).join('') : '<p class="sub">기록이 없어요.</p>'}
     </section>`;
   const f = $('#nForm');
   const prev = () => { $('#nPrev').className = 'nprev ' + f.tone.value; $('#nPrev').firstElementChild.textContent = TONES[f.tone.value].split(' ')[0]; $('#nPrevT').textContent = f.text.value || '내용을 적어 보세요'; };
@@ -512,6 +515,9 @@ document.addEventListener('click', async e => {
       case 'resetday':
         if (!confirm(`${ymdLabel(SC.day)} ${GAMES[SC.game].name} 랭킹을 전부 지울까요?`)) return;
         await call('resetday', { game: SC.game, day: SC.day }); toast('랭킹을 비웠어요'); return route();
+      case 'noticedel':
+        if (!confirm('이 공지 기록을 지울까요?')) return;
+        await call('noticedel', { id: el.dataset.id }); toast('공지 기록을 지웠어요'); return route();
       case 'unnotice':
         if (!confirm('공지를 내릴까요?')) return;
         await call('notice', { text: '' }); toast('공지를 내렸어요'); return route();

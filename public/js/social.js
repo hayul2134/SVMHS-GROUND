@@ -53,7 +53,7 @@ const followBtn = u => u.isMe ? '' : `<button class="fbtn ${u.following ? 'on' :
 const needLogin = (msg) => `<div class="card soc-gate"><p class="gate-em">🔐</p><p><b>${msg}</b></p><p class="muted small">아이디만 있으면 1분이면 가입해요</p><button class="btn" data-go="me">로그인 / 가입하기</button></div>`;
 const offCard = () => `<div class="card soc-gate"><p class="gate-em">🛠️</p><p><b>소셜 기능을 준비하고 있어요</b></p><p class="muted small">곧 열려요! 조금만 기다려 주세요</p></div>`;
 
-function sheet(html) { $('#socSheet').innerHTML = html; ctx.openModal('#mSoc'); }
+function sheet(html) { $('#socSheet').classList.remove('wide'); $('#socSheet').innerHTML = html; ctx.openModal('#mSoc'); }
 const closeSheet = () => ctx.closeModal($('#mSoc'));
 
 /* ===== 헤더 배지 · 주기적 확인 ===== */
@@ -793,6 +793,7 @@ async function checkNotices() {   // 새 공지·새 업데이트 소식이 있�
 }
 async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 공지의 자세한 내용을 펼쳐 보임
   sheet('<h3>📢 공지</h3><ul class="ntlist"><li class="skel"></li><li class="skel"></li></ul>');
+  $('#socSheet').classList.add('wide');   // 공지는 넓게: 접힌 공지 제목이 2줄 안에 들어가게
   if (!ntList || !ptList) await checkNotices();
   if (ntList.length) { store.set('notice_seen', ntList[0].id); store.set('notice_x', null); }   // 다 봤음 + 닫았던 띠 공지도 다시 보이게
   if (ptList.length) store.set('patch_seen', ptList[0].id);

@@ -1047,6 +1047,8 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .ntlist small{color:var(--sub);font-size:12px;font-weight:700}
 .ntlist small b{color:var(--accent)}
 .notice .n-tx.more::after{content:' 자세히 ›';font-weight:800;white-space:nowrap;opacity:.75}
+.sheet.wide{max-width:720px}
+.ntlist li:has(> div > details:not([open])) > div > p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ntlist .ntbody{margin:6px 0 4px}
 .ntlist .ntbody summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--accent);list-style:none}
 .ntlist .ntbody summary::-webkit-details-marker{display:none}

@@ -437,6 +437,17 @@ const ROUTES = {
     return json({ ok: true, notice: n });
   },
 
+  /* ----- 공지 기록 (지난 공지 지우기) ----- */
+  'GET notices': async ({ db }) => json({ list: (await db.prepare('SELECT id, text, at, until FROM notices ORDER BY at DESC LIMIT 50').all()).results }),
+  'POST noticedel': async ({ db, body }) => {
+    const id = String(body.id || '').slice(0, 16);
+    let cur = null; try { cur = JSON.parse((await getSettings(db, true)).notice || 'null'); } catch {}
+    if (cur && cur.id === id) return json({ error: '지금 걸린 공지는 먼저 내린 뒤 지울 수 있어요' }, 400);
+    const r = await db.prepare('DELETE FROM notices WHERE id = ?1 RETURNING text').bind(id).first();
+    if (!r) return json({ error: '없는 공지예요' }, 404);
+    await log(db, '지난 공지 삭제', r.text); return json({ ok: true });
+  },
+
   /* ----- 밸런스 게임 ----- */
   'GET balance': async ({ db }) => {
     const custom = (await db.prepare('SELECT ymd, q, a, b FROM balance_custom WHERE ymd >= ?1 ORDER BY ymd').bind(kstYmd(Date.now() - 7 * DAY)).all()).results;
