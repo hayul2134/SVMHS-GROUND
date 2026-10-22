@@ -131,6 +131,7 @@ function tickClock() {
     nextKey = key; renderNext(b, pi); renderTicker(b, pi);
     const live = S.ttShown === ymd(n);
     // 지금 교시 · (쉬는 시간이면) 다음 교시 · 끝난 교시 표시
+    markWeek(n.getDay() % 6 && isSchoolDay(n) ? pi : null);
     $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', live && p === pi.cur); li.classList.toggle('next', live && !pi.cur && p === pi.nxt); li.classList.toggle('done', live && p < pi.done && p !== pi.cur); });
   }
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
@@ -672,11 +673,49 @@ async function fillWeek(box, mon, stale) {
     const days = [0, 1, 2, 3, 4].map(i => addDays(mon, i)), t = ymd(today());
     const maxP = Math.min(10, Math.max(6, ...rows.map(r => +r.PERIO || 0)));
     const map = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = subjName(r.ITRT_CNTNT); });
-    const td = (d, p) => { const v = map[ymd(d) + '_' + p] || ''; return `<td class="${ymd(d) === t ? 'today' : ''}${v ? '' : ' e'}">${esc(v)}</td>`; };   // 수업 없는 칸(e)은 칠하지 않음
-    let h = '<table class="week"><thead><tr><th></th>' + days.map(d => `<th class="${ymd(d) === t ? 'today' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`).join('') + '</tr></thead><tbody>';
-    for (let p = 1; p <= maxP; p++) h += `<tr><td class="pn">${p}</td>${days.map(d => td(d, p)).join('')}</tr>`;
+    // 같은 과목이 이어지면 한 칸으로 합침(점심시간은 넘지 않음). skip[날짜_교시] = 위 칸에 합쳐져서 안 그림
+    const skip = {}, cell = (d, p) => {
+      const k = ymd(d), v = map[k + '_' + p] || '';
+      if (skip[k + '_' + p]) return '';
+      let n = 1;
+      while (v && p + n <= maxP && map[k + '_' + (p + n)] === v && !(p + n === 5 && p + n - 1 === 4)) { skip[k + '_' + (p + n)] = 1; n++; }
+      const c = [k === t ? 'today' : k < t ? 'past' : '', v ? '' : 'e', n > 1 ? 'dbl' : ''].filter(Boolean).join(' ');
+      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}>${v ? `<span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
+    };
+    const pn = p => { const b = BELL.find(x => x.p === p); return `<td class="pn"><b>${p}</b>${b ? `<small>${String(b.start / 3600 | 0).padStart(2, '0')}:${String(b.start % 3600 / 60).padStart(2, '0')}</small>` : ''}</td>`; };
+    let h = '<table class="week"><thead><tr><th></th>' + days.map(d => { const k = ymd(d); return `<th class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`; }).join('') + '</tr></thead><tbody>';
+    for (let p = 1; p <= maxP; p++) {
+      if (p === 5) h += '<tr class="lunch"><td></td><td colspan="5"><span>점심시간 12:10 ~ 13:00</span></td></tr>';
+      h += `<tr>${pn(p)}${days.map(d => cell(d, p)).join('')}</tr>`;
+    }
     box.innerHTML = h + '</tbody></table>';
+    markWeek();
+    const th = box.querySelector('th.today');   // 좁은 화면(가로 스크롤)에선 오늘 칸이 보이게
+    if (th && box.scrollWidth > box.clientWidth + 4) box.scrollLeft = Math.max(0, th.offsetLeft - 56);
   } catch { if (!stale()) box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+}
+// 주간 시간표 표의 오늘 칸에 지금·다음·끝난 교시 표시 (교시가 바뀔 때 tickClock이 다시 부름)
+let weekPI = null;
+function markWeek(pi = weekPI) {
+  weekPI = pi; const t = ymd(today());
+  $$('.week td[data-d]').forEach(td => {
+    const live = pi && td.dataset.d === t, a = +td.dataset.p, z = +td.dataset.p2, has = !td.classList.contains('e');
+    const now = live && has && pi.cur >= a && pi.cur <= z;
+    td.classList.toggle('now', now);
+    td.classList.toggle('next', live && has && !now && !pi.cur && pi.done < 99 && pi.nxt === a);
+    td.classList.toggle('done', live && has && !now && pi.done > z);
+  });
+  // 카드 머리 오른쪽 작은 상태 칩: 지금 수업 / 다음 수업 / 오늘 끝
+  const el = $('#hwNow'); if (!el) return;
+  const rs = S.todayTT || [], sj = p => { const r = rs.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
+  const showing = ymd(S.homeWeek) === ymd(mondayOf(today()));
+  let h = '';
+  if (pi && showing && rs.length) {
+    if (pi.done >= 99 || pi.done > Math.max(...rs.map(r => +r.PERIO || 0))) h = '<em class="d">끝</em>오늘 수업 끝!';
+    else if (pi.cur && sj(pi.cur)) h = `<em>지금</em>${pi.cur}교시 · ${esc(sj(pi.cur))}${sj(pi.cur + 1) && sj(pi.cur + 1) !== sj(pi.cur) ? `<span class="nx">다음 ${esc(sj(pi.cur + 1))}</span>` : ''}`;
+    else if (pi.nxt && sj(pi.nxt)) h = `<em class="n">다음</em>${pi.nxt}교시 · ${esc(sj(pi.nxt))}`;
+  }
+  el.innerHTML = h; el.hidden = !h;
 }
 function renderHomeWeek() {
   const mon = S.homeWeek;
