@@ -155,7 +155,8 @@
       <div class="s-lside">
       <aside class="s-tt s-meal k-meal" aria-labelledby="sMealh">
         <button class="s-tab" type="button" data-side="meal" aria-label="급식판 꺼내기"><span aria-hidden="true">🍱</span><b>급식</b></button>
-        <h2 class="s-tth" id="sMealh"><span id="sMealLbl">오늘 급식</span><span class="s-acts"><a href="#mealCard" class="s-ttmore" id="goMeal">전체 ▾</a><button class="s-put" type="button" data-side="meal" aria-label="급식판 옆으로 넣기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stow"/></svg></button></span></h2>
+        <h2 class="s-tth" id="sMealh"><span class="s-nav"><button class="s-nb" type="button" data-nav="meal" data-d="-1" aria-label="이전 날 급식"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-prev"/></svg></button><button class="s-lbl" type="button" id="sMealLbl" data-home="meal">오늘 급식</button><button class="s-nb" type="button" data-nav="meal" data-d="1" aria-label="다음 날 급식"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-next"/></svg></button></span><span class="s-acts"><button class="s-ttmore" type="button" id="goMeal" aria-label="급식 한 주 크게 보기">전체</button><button class="s-put" type="button" data-side="meal" aria-label="급식판 옆으로 넣기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stow"/></svg></button></span></h2>
+        <div class="s-slots" id="sMealSlots" role="group" aria-label="끼니 고르기"></div>
         <div id="sMeal" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>
       </aside>
       </div>
@@ -173,7 +174,7 @@
       <div class="s-side">
       <aside class="s-tt s-ttc k-tt" aria-labelledby="sTTh">
         <button class="s-tab" type="button" data-side="tt" aria-label="시간표 꺼내기"><span aria-hidden="true">📅</span><b>시간표</b></button>
-        <h2 class="s-tth" id="sTTh"><span id="sTTlbl">오늘 시간표</span><span class="s-acts"><a href="#weekTT" class="s-ttmore" id="goWeek">전체 ▾</a><button class="s-put" type="button" data-side="tt" data-tip-end aria-label="시간표 옆으로 넣기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stow"/></svg></button></span></h2>
+        <h2 class="s-tth" id="sTTh"><span class="s-nav"><button class="s-nb" type="button" data-nav="tt" data-d="-1" aria-label="이전 날 시간표"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-prev"/></svg></button><button class="s-lbl" type="button" id="sTTlbl" data-home="tt">오늘 시간표</button><button class="s-nb" type="button" data-nav="tt" data-d="1" aria-label="다음 날 시간표"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-next"/></svg></button></span><span class="s-acts"><button class="s-ttmore" type="button" id="goWeek" aria-label="시간표 한 주 크게 보기">전체</button><button class="s-put" type="button" data-side="tt" data-tip-end aria-label="시간표 옆으로 넣기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stow"/></svg></button></span></h2>
         <div id="sTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
       </aside>
       </div>
@@ -297,6 +298,19 @@
 
 
 <!-- 공유 -->
+<!-- 급식·시간표 한 주 크게 보기 (첫 화면 카드의 '전체' 버튼) — 로직은 app.js '한 주 크게 보기' -->
+<div class="modal" id="mAll" role="dialog" aria-modal="true" aria-labelledby="allT">
+  <div class="sheet all-sheet">
+    <div class="all-head">
+      <h3 id="allT">한 주 한눈에</h3>
+      <div class="all-tabs mealtabs" role="tablist"><button type="button" role="tab" data-all="meal">급식</button><button type="button" role="tab" data-all="tt">시간표</button></div>
+      <div class="pager"><button type="button" id="allPrev" aria-label="이전 주"><svg viewBox="0 0 24 24"><use href="#i-prev"/></svg></button><button type="button" class="all-wk" id="allLbl" aria-label="이번 주로"></button><button type="button" id="allNext" aria-label="다음 주"><svg viewBox="0 0 24 24"><use href="#i-next"/></svg></button></div>
+      <button class="all-x" type="button" data-close aria-label="닫기">✕</button>
+    </div>
+    <div class="all-body" id="allBody"></div>
+  </div>
+</div>
+
 <div class="modal" id="mShare" role="dialog" aria-modal="true" aria-labelledby="shareT">
   <div class="sheet">
     <h3 id="shareT">친구에게 공유하기</h3>

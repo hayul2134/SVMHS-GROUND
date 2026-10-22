@@ -52,6 +52,14 @@ export async function getMeals(date) {
   return res.flat();
 }
 
+// 여러 날 급식(한 주 크게 보기). 키가 있으면 한 번에, 없으면 날마다 나눠 받음
+export async function getMealsRange(from, to) {
+  if (api.hasKey) return neis('mealServiceDietInfo', { MLSV_FROM_YMD: ymd(from), MLSV_TO_YMD: ymd(to) });
+  const days = [];
+  for (let d = new Date(from); d <= to; d = addDays(d, 1)) if (d.getDay() % 6) days.push(new Date(d));
+  return (await Promise.all(days.map(d => settle(getMeals(d))))).flat();
+}
+
 export async function getTimetable(cls, from, to) {
   if (api.hasKey) return neis('hisTimetable', { GRADE: cls.g, CLASS_NM: cls.c, TI_FROM_YMD: ymd(from), TI_TO_YMD: ymd(to) });
   const days = [];
