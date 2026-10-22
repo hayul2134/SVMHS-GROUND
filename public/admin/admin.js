@@ -59,9 +59,9 @@ async function showGate() {
   }
   // 관리자 계정으로 사이트에 로그인돼 있으면 비밀번호만 한 번 더 확인 → 12시간 관리자 세션
   box.innerHTML = `<form id="loginF" autocomplete="on">
-      <p class="sub">사이트에서 <b>@${esc(st.admin)}</b> 계정으로 로그인한 상태에서만 들어올 수 있어요.</p>
+      <p class="sub">사이트에서 <b>developer</b> 계정으로 로그인한 상태에서만 들어올 수 있어요.</p>
       <input type="text" name="username" value="${esc(st.admin)}" autocomplete="username" hidden>
-      <label class="f">@${esc(st.admin)} 비밀번호<input class="inp" type="password" name="pw" autocomplete="current-password" required autofocus></label>
+      <label class="f">developer 비밀번호<input class="inp" type="password" name="pw" autocomplete="current-password" required autofocus></label>
       <p class="err" id="loginErr"></p>
       <button class="btn pri" type="submit">들어가기</button>
     </form>`;
@@ -429,7 +429,7 @@ VIEWS.settings = async () => {
     <section class="card"><h3>🔑 Cloudflare에서 바꾸는 것</h3>
       <ul class="checks">
         <li><i class="dot ${s.neisKey ? 'on' : 'off'}"></i>나이스 인증키 <code>NEIS_KEY</code> ${s.neisKey ? '있음' : '없음'}</li>
-        <li><i class="dot on"></i>관리자 계정 <code>@hayuldeveloper</code> — 사이트에 로그인 + 비밀번호 재확인, 12시간 유지. 비밀번호는 사이트 계정 설정에서 바꿈</li>
+        <li><i class="dot on"></i>관리자 계정 <code>developer</code> — 사이트에 로그인 + 비밀번호 재확인, 12시간 유지. 비밀번호는 사이트 계정 설정에서 바꿈</li>
       </ul>
     </section>`;
   $('#swSignup').onchange = e => saveSet({ signup: e.target.checked }, e.target);
