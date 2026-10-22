@@ -1007,3 +1007,14 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .fbk span{display:block;padding:7px 11px;border-radius:999px;border:2px solid var(--line);background:var(--chip);font-weight:800;font-size:13.5px}
 .fbk input:checked + span{border-color:var(--ink);background:var(--yellow);color:var(--ink)}
 .fbk input:focus-visible + span{outline:3px solid var(--accent);outline-offset:2px}
+/* 아이콘 버튼 이름표: 마우스를 올리면(또는 키보드로 고르면) 버튼 아래에 이름이 뜸. 터치 기기는 안 씀 */
+@media (hover:hover){
+  [data-tip]{position:relative}
+  [data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 9px);left:50%;transform:translate(-50%,-4px);z-index:80;pointer-events:none;
+    padding:6px 10px;border-radius:9px;background:#173048;color:#fff;font:800 12.5px/1.1 var(--sans,inherit);letter-spacing:-.01em;white-space:nowrap;
+    box-shadow:0 4px 12px rgba(23,48,72,.25);opacity:0;transition:opacity .12s ease,transform .12s ease}
+  [data-tip]:hover::after,[data-tip]:focus-visible::after{opacity:1;transform:translate(-50%,0)}
+  [data-tip-end]::after{left:auto;right:0;transform:translateY(-4px)}
+  [data-tip-end]:hover::after,[data-tip-end]:focus-visible::after{transform:translateY(0)}
+  :root[data-theme="dark"] [data-tip]::after{background:#f3f7fb;color:#173048}
+}

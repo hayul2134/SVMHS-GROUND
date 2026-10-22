@@ -117,14 +117,14 @@
 
 <header id="hdr">
   <div class="hd">
-    <button class="iconbtn" id="btnHome" data-go="home" title="처음으로" aria-label="처음 화면으로"><svg viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
+    <button class="iconbtn" id="btnHome" data-go="home" data-tip="처음으로" aria-label="처음 화면으로"><svg viewBox="0 0 24 24"><use href="#i-home"/></svg></button>
     <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="52" height="52"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
     <!-- 오른쪽: 테마 버튼 · 목록 버튼(☰ ↔ ✕) → 누르면 서랍처럼 목록이 펼쳐짐: 프로필 · 설정 · QR · 신고 -->
     <div class="hmenu" id="hMenu">
-      <button class="iconbtn hb-fb" id="btnFeedback" title="의견 보내기" aria-label="개발자에게 의견 보내기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bulb"/></svg><span class="hb-tx">의견</span></button>
-      <button class="iconbtn hb-nt" id="btnNotices" title="공지" aria-label="공지 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mega"/></svg><i class="hbadge dot" id="ntDot" hidden></i></button>
-      <button class="iconbtn theme-btn" id="btnTheme" title="테마" aria-label="밝은/어두운 테마 바꾸기"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sun"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moon"/></svg></button>
-      <button class="iconbtn burger" id="btnMenu" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="hList"><span></span><span></span><span></span></button>
+      <button class="iconbtn hb-fb" id="btnFeedback" data-tip="개발자에게 의견 보내기" aria-label="개발자에게 의견 보내기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bulb"/></svg><span class="hb-tx">의견</span></button>
+      <button class="iconbtn hb-nt" id="btnNotices" data-tip="공지 보기" aria-label="공지 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mega"/></svg><i class="hbadge dot" id="ntDot" hidden></i></button>
+      <button class="iconbtn theme-btn" id="btnTheme" data-tip="밝은·어두운 테마" aria-label="밝은/어두운 테마 바꾸기"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sun"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      <button class="iconbtn burger" id="btnMenu" type="button" data-tip="메뉴" data-tip-end aria-label="메뉴 열기" aria-expanded="false" aria-controls="hList"><span></span><span></span><span></span></button>
       <nav class="hlist" id="hList" inert aria-label="메뉴">
         <button class="hi" id="btnMe" data-go="me"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></i><span class="tx">프로필<small>내 프로필 보기·꾸미기</small></span></button>
         <button class="hi" id="btnClass"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></i><span class="tx">설정<small>반·학과 바꾸기</small></span></button>
@@ -138,7 +138,7 @@
 
 <main class="wrap">
   <!-- 관리자 공지 (/admin에서 작성) -->
-  <div class="notice" id="notice" role="status" hidden><span class="n-ic" id="noticeIc">📢</span><a class="n-tx" id="noticeTx" href="#"></a><button class="n-x" id="noticeX" type="button" aria-label="공지 닫기">✕</button></div>
+  <div class="notice" id="notice" role="status" hidden><span class="n-ic" id="noticeIc">📢</span><a class="n-tx" id="noticeTx" href="#"></a><button class="n-x" id="noticeX" type="button" data-tip="공지 닫기" data-tip-end aria-label="공지 닫기">✕</button></div>
   <noscript><div class="noscript">이 사이트는 자바스크립트가 필요해요. 브라우저 설정에서 자바스크립트를 켜 주세요.</div></noscript>
 
   <!-- 홈: 첫 화면(큰 시계) → 바로가기 → 오늘 보드 -->
@@ -168,7 +168,7 @@
       <div class="s-side">
       <aside class="s-tt s-ttc k-tt" aria-labelledby="sTTh">
         <button class="s-tab" type="button" data-side="tt" aria-label="시간표 꺼내기"><span aria-hidden="true">📅</span>시간표</button>
-        <h2 class="s-tth" id="sTTh"><span id="sTTlbl">오늘 시간표</span><span class="s-acts"><a href="#weekTT" class="s-ttmore" id="goWeek">전체 ▾</a><button class="s-pin" type="button" data-side="tt" aria-label="시간표 고정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pin"/></svg></button></span></h2>
+        <h2 class="s-tth" id="sTTh"><span id="sTTlbl">오늘 시간표</span><span class="s-acts"><a href="#weekTT" class="s-ttmore" id="goWeek">전체 ▾</a><button class="s-pin" type="button" data-side="tt" data-tip-end aria-label="시간표 고정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pin"/></svg></button></span></h2>
         <div id="sTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
       </aside>
       </div>

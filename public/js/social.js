@@ -541,7 +541,7 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop"><b>${title}</b><button class="iconbtn" id="pQuit" aria-label="그만하기">✕</button></div><div class="parea" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop"><b>${title}</b><button class="iconbtn" id="pQuit" data-tip="그만하기" data-tip-end aria-label="그만하기">✕</button></div><div class="parea" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   return $('#parea');

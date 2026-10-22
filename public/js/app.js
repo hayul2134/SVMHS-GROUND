@@ -545,7 +545,7 @@ const wideMQ = matchMedia('(min-width:700px)');
 function paintSide(k) {
   const { el, name } = SIDE[k], pin = el.classList.contains('pin');
   const b = el.querySelector('.s-pin');
-  b.setAttribute('aria-pressed', String(pin)); b.title = pin ? '고정 풀기' : '이 자리에 고정';
+  b.setAttribute('aria-pressed', String(pin)); b.dataset.tip = pin ? '고정 풀기' : '이 자리에 고정';
   b.setAttribute('aria-label', pin ? `${name} 고정 풀기` : `${name} 고정`);
   const t = el.querySelector('.s-tab'); t.setAttribute('aria-expanded', String(el.classList.contains('open')));
   t.setAttribute('aria-label', el.classList.contains('open') ? `${name} 넣기` : `${name} 꺼내기`);
