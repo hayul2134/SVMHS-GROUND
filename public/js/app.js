@@ -125,7 +125,10 @@ function tickClock() {
   const b = bellInfo(nb), secNow = nb.getHours() * 3600 + nb.getMinutes() * 60 + nb.getSeconds();
   const left = b.target != null ? b.target - secNow : null;
   const pi = periodInfo(b);
-  if (!S.ttPick && S.ttShown && cls && ymd(ttTarget(n)) !== S.ttShown) renderHomeTT();   // 마지막 교시 끝·자정에 홈 시간표 날짜 전환
+  if (ymd(n) !== S.dayKey) {   // 자정이 지나면 '오늘' 기준 카드(시간표 표·급식·일정)를 새 날짜로 다시 그림
+    const first = !S.dayKey; S.dayKey = ymd(n);
+    if (!first) { const d = today(); S.homeWeek = mondayOf(addDays(d, d.getDay() === 6 ? 2 : d.getDay() === 0 ? 1 : 0)); S.mealManual = false; renderHomeTT(); renderHomeMeal(); renderHomeDday(); }
+  } else if (!S.ttPick && S.ttShown && cls && ymd(ttTarget(n)) !== S.ttShown) renderHomeTT();   // 마지막 교시 끝에 홈 시간표 날짜 전환
   const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
   if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
     nextKey = key; renderNext(b, pi); renderTicker(b, pi);
@@ -373,6 +376,15 @@ const mealHtml = (r, d, mini = false) => {
     + cellHtml(t.rice ? [t.rice] : [], 'big', v) + cellHtml(t.soup ? [t.soup] : [], 'big soup', v)
     + `</div>${drinksHtml(t.drinks, v)}</div>` + info + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');   // 홈 작은 식판도 아래 카드와 같게 칼로리 표시
 };
+// 홈 '오늘 급식' 카드: 큰 식판 대신 작은 그림 + 이름 목록 (식판은 첫 화면 서랍·급식 화면에 있음). 누르면 투표(식판과 같은 data-dish)
+const mealListHtml = (r, d) => {
+  if (!r) return empty('급식 정보가 없어요');
+  const all = cleanDish(r.DDISH_NM), v = voteOf(ymd(d), r.MMEAL_SC_CODE);
+  const at = `data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d)}"`;
+  const info = !v ? '' : `<p class="vnote">🗳️ ${v.open ? (v.mine ? `내 픽 <b>${esc(v.mine)}</b>` : '맛있는 메뉴 눌러서 투표') : '인기투표 결과'} · ${v.total}명</p>`;
+  return `<div class="tray-set mlist" ${at}><ul class="ml" role="list" aria-label="급식 메뉴">${all.map(x => `<li class="${v && v.open ? 'vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span class="mth">${isDrink(x) ? drinkSvg(x) : fx(x)}</span><span class="mn">${esc(x)}</span>${voteMark(x, v)}</li>`).join('')}</ul></div>`
+    + `<div class="mfoot">${info}${r.CAL_INFO ? `<span class="kcal">🔥 ${esc(r.CAL_INFO)}</span>` : ''}</div>`;
+};
 let homeRows = [];
 // 지금 보여 줄 끼니: 7시 50분까지 조식 → 5교시 시작(점심 끝)까지 중식 → 그 뒤로 석식
 const MEAL_AT = { b: 7 * 3600 + 50 * 60, d: BELL.find(x => x.p === 5).start };
@@ -414,7 +426,7 @@ function paintHomeMeal() {
   paintHeroMeal();
   const sel = S.homeMeal;
   $('#hMealTabs').innerHTML = homeRows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
-  setTray($('#hMeal'), mealHtml(homeRows.find(r => r.MMEAL_SC_CODE === sel), today()));
+  setTray($('#hMeal'), mealListHtml(homeRows.find(r => r.MMEAL_SC_CODE === sel), today()));
 }
 async function renderHomeMeal() {
   const box = $('#hMeal'), tabs = $('#hMealTabs');
@@ -623,6 +635,14 @@ function pollBalance() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && BAL) loadBalance(); });
 
 /* ===== 시간표 ===== */
+// 과목 이름 → 아이콘(이모지). 위에서부터 먼저 맞는 것. 영상고 전공 과목을 먼저, 일반 과목은 뒤에
+const SUBJ_IC = [[/편집|포스트\s*프로덕션/, '✂️'], [/CG|VFX|모션|애니/i, '✨'], [/연출|영화|시나리오|스토리/, '🎬'], [/촬영|영상|방송|미디어|콘텐츠/, '🎥'], [/사진/, '📷'],
+  [/음향|사운드|오디오/, '🎧'], [/2D|그래픽|일러스트|드로잉|미술|회화/i, '🖌️'], [/디자인|시안|브랜딩|광고/, '🎨'], [/3D|모델링/i, '🧊'],
+  [/인공지능|AI\b|데이터/i, '🤖'], [/정보|프로그래밍|코딩|컴퓨터|웹/, '💻'], [/상업|경제|회계|금융|경영|마케팅/, '💰'],
+  [/미적분|수학|확률|통계|기하/, '📐'], [/영어|English/i, '🔤'], [/일본어/, '🗾'], [/중국어|한문/, '🀄'], [/한국사|역사/, '📜'],
+  [/화법|언어|국어|문학|독서|작문|매체/, '🗣️'], [/사회|윤리|지리|정치|법/, '🌏'], [/과학|물리|화학|생명|지구/, '🔬'],
+  [/스포츠|체육|운동/, '⚽'], [/음악/, '🎵'], [/기술|가정/, '🛠️'], [/진로/, '🧭'], [/동아리/, '🤝'], [/자율|자치|학급/, '🙋'], [/봉사/, '💝'], [/시험|평가/, '📝']];
+const subjIcon = n => (SUBJ_IC.find(([re]) => re.test(n)) || [, '📘'])[1];
 const subjName = s => String(s || '').replace(/^[\s*#·-]+/, '').trim();   // 나이스 원문의 '* 영상 CG작업' 같은 기호 제거
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
@@ -656,7 +676,7 @@ async function renderHomeTT() {
     const dep = (rows[0] || todayRows[0] || {}).DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span>${bellAt(r.PERIO)}<span class="s">${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
+      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span>${bellAt(r.PERIO)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(subjName(r.ITRT_CNTNT))}</i>${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
@@ -680,7 +700,7 @@ async function fillWeek(box, mon, stale) {
       let n = 1;
       while (v && p + n <= maxP && map[k + '_' + (p + n)] === v && !(p + n === 5 && p + n - 1 === 4)) { skip[k + '_' + (p + n)] = 1; n++; }
       const c = [k === t ? 'today' : k < t ? 'past' : '', v ? '' : 'e', n > 1 ? 'dbl' : ''].filter(Boolean).join(' ');
-      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}>${v ? `<span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
+      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}>${v ? `<i class="si" aria-hidden="true">${subjIcon(v)}</i><span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
     };
     const pn = p => { const b = BELL.find(x => x.p === p); return `<td class="pn"><b>${p}</b>${b ? `<small>${String(b.start / 3600 | 0).padStart(2, '0')}:${String(b.start % 3600 / 60).padStart(2, '0')}</small>` : ''}</td>`; };
     let h = '<table class="week"><thead><tr><th></th>' + days.map(d => { const k = ymd(d); return `<th class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`; }).join('') + '</tr></thead><tbody>';
@@ -712,8 +732,8 @@ function markWeek(pi = weekPI) {
   let h = '';
   if (pi && showing && rs.length) {
     if (pi.done >= 99 || pi.done > Math.max(...rs.map(r => +r.PERIO || 0))) h = '<em class="d">끝</em>오늘 수업 끝!';
-    else if (pi.cur && sj(pi.cur)) h = `<em>지금</em>${pi.cur}교시 · ${esc(sj(pi.cur))}${sj(pi.cur + 1) && sj(pi.cur + 1) !== sj(pi.cur) ? `<span class="nx">다음 ${esc(sj(pi.cur + 1))}</span>` : ''}`;
-    else if (pi.nxt && sj(pi.nxt)) h = `<em class="n">다음</em>${pi.nxt}교시 · ${esc(sj(pi.nxt))}`;
+    else if (pi.cur && sj(pi.cur)) h = `<em>지금</em>${subjIcon(sj(pi.cur))} ${pi.cur}교시 · ${esc(sj(pi.cur))}${sj(pi.cur + 1) && sj(pi.cur + 1) !== sj(pi.cur) ? `<span class="nx">다음 ${subjIcon(sj(pi.cur + 1))} ${esc(sj(pi.cur + 1))}</span>` : ''}`;
+    else if (pi.nxt && sj(pi.nxt)) h = `<em class="n">다음</em>${subjIcon(sj(pi.nxt))} ${pi.nxt}교시 · ${esc(sj(pi.nxt))}`;
   }
   el.innerHTML = h; el.hidden = !h;
 }

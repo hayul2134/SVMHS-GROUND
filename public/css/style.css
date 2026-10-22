@@ -545,7 +545,13 @@ html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .week th.today .wd-d{color:var(--text);opacity:1}
 .week th.today .wd-w{background:var(--yellow);color:var(--onc);border:2px solid var(--ink);border-radius:10px;padding:2px 10px;box-shadow:var(--sh-s);transform:rotate(-3deg)}
 .week th.today .wd-w::after{content:"★";color:var(--red);margin-left:3px;font-size:.75em}
-.week td{border-radius:12px;padding:6px;text-align:center;font-size:13.5px;font-weight:700;height:44px;line-height:1.25;border:2px solid var(--line);position:relative;transition:transform .2s,box-shadow .2s,opacity .2s}
+.week td{border-radius:12px;padding:5px 6px;text-align:center;font-size:13px;font-weight:700;height:50px;line-height:1.2;border:2px solid var(--line);position:relative;transition:transform .2s,box-shadow .2s,opacity .2s}
+.week td .si{display:block;font-style:normal;font-size:17px;line-height:1;margin-bottom:3px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.12))}
+.week td.dbl .si{font-size:22px;margin-bottom:5px}
+.week td.done .si,.week td.past .si{filter:grayscale(.7)}
+.week td.now .si{animation:siBob 1.6s ease-in-out infinite}
+@keyframes siBob{50%{transform:translateY(-2px) rotate(-8deg)}}
+@media (prefers-reduced-motion:reduce){.week td.now .si{animation:none}}
 .week td .sj{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
 .week td.dbl{background:repeating-linear-gradient(-45deg,transparent 0 9px,color-mix(in srgb,var(--card) 45%,transparent) 9px 18px),var(--chip)}
 :root[data-theme="dark"] .week td.dbl{background:repeating-linear-gradient(-45deg,transparent 0 9px,rgba(255,255,255,.04) 9px 18px),var(--chip)}
@@ -565,7 +571,8 @@ html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .week td.next::before{content:"다음";position:absolute;top:-10px;left:-8px;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:7px;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);transform:rotate(-8deg)}
 .week td.e:not(.pn),.week td.e.today{background:none;border-color:transparent;box-shadow:none}
 .week th:first-child,.week td.pn{position:sticky;left:0;z-index:2;background:var(--card)!important;box-shadow:-8px 0 0 var(--card)}
-.week tr.lunch td{height:auto;padding:0;border:0;background:none}
+.week tr.lunch,.week tr.lunch td{height:18px}
+.week tr.lunch td{padding:0;border:0;background:none}
 .week tr.lunch span{display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:900;color:var(--sub);letter-spacing:.02em}
 .week tr.lunch span::before,.week tr.lunch span::after{content:"";flex:1;border-top:2px dashed var(--line)}
 .hw-now{margin:0 0 0 auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:900;font-size:14px;padding:7px 14px 7px 8px;border-radius:14px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);transform:rotate(1deg)}
@@ -1553,3 +1560,60 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 @media (min-width:700px) and (min-height:760px){
   .bal-t{position:absolute;left:50%;bottom:clamp(58px,7vh,84px);margin:0;translate:-50% 0}
 }
+
+/* ===== 오늘 한눈에: 한 화면 배치 (2026-10-23) ===== */
+.board{padding-top:30px}
+.board .sec-t{margin-bottom:6px}
+.board .bento{gap:20px 18px;margin-top:22px}
+.board .card{padding:18px 18px 16px}
+.board .ct{margin-bottom:12px}
+.board .ct h2{font-size:19px}
+.board .badge{width:32px;height:32px}
+.board .hw-h{font-size:22px!important}
+.board #weekTT .hw-badge{width:42px;height:42px}
+@media (min-width:1000px){
+  .board .bento{align-items:start}
+  .board #weekTT{grid-column:span 8;grid-row:span 2;align-self:stretch;display:flex;flex-direction:column}
+  .board #hWeek{flex:1;display:flex}.board #hWeek > .week{height:100%}
+  .board #hwNote:empty{display:none}
+  .board #mealCard,.board .k-up{grid-column:span 4}
+  .board .week{min-width:0;border-spacing:5px 4px}
+  .board .week th:first-child,.board .week td.pn{width:38px}
+  .board .week td{font-size:12.5px}
+  .board .hw-now{font-size:13px;padding:6px 12px 6px 7px}
+  .board .hw-now .nx{display:none}
+  .board .ct .links a{padding:4px 8px;font-size:11.5px}
+}
+/* 홈 급식 카드: 작은 그림 + 이름 목록 */
+#mealCard .ct{flex-wrap:nowrap}
+#mealCard .mealtabs{margin-bottom:10px;padding:3px}
+#mealCard .mealtabs button{padding:4px 11px;font-size:12.5px}
+.ml{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.ml li{position:relative;display:flex;align-items:center;gap:8px;min-width:0;padding:3px 7px 3px 3px;border-radius:11px;background:var(--chip);border:2px solid var(--line);font-size:12.5px;font-weight:800;line-height:1.2;transition:transform .15s,border-color .15s}
+.ml li:first-child{grid-column:1/-1;background:var(--yellow);color:var(--onc);border-color:var(--ink);box-shadow:var(--sh-s);font-size:14.5px;transform:rotate(-.6deg)}
+.ml li:first-child .mth{width:36px;height:36px}
+.ml li.vote{cursor:pointer}.ml li.vote:hover{border-color:var(--ink);transform:translateY(-2px)}
+.ml li.picked{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--lime)}
+.mth{position:relative;flex:none;width:28px;height:28px;border-radius:9px;background:var(--card);overflow:hidden;display:grid;place-items:center}
+.mth .fx{position:absolute;inset:2px;pointer-events:none}
+.mth .fx img,.mth .fx svg{width:100%;height:100%;object-fit:contain;display:block}
+.mth > svg{width:80%;height:90%}
+.mn{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;overflow-wrap:anywhere}
+.ml .vc{flex:none;font-style:normal;font-size:10.5px;font-weight:900;padding:2px 5px;border-radius:6px;background:var(--card);color:var(--sub)}
+.ml .vc.best{background:var(--yellow);color:var(--ink);border:1.5px solid var(--ink)}
+.mfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mfoot .vnote{margin:0;font-size:11.5px}
+.mfoot .kcal{margin:0;font-size:11.5px}
+.mfoot:empty{display:none}
+/* 홈 다가오는 일정: 낮게 */
+.board .uprow{gap:7px;padding:6px 6px 8px;margin:-4px -6px 0}
+.board .up{padding:4px 12px;gap:10px;border-radius:11px}
+.board .k-up .ct .links{margin-left:auto}
+.board .up .num{font-size:18px;min-width:50px}
+.board .up .nm{font-size:13px}
+.board .up .dt{font-size:11px}
+.board .up.first{min-height:0;padding:9px 14px;border-radius:14px}
+.board .up.first .num{font-size:28px;text-shadow:2px 2px 0 #fff}
+.board .up.first .nm{font-size:15px}
+/* 첫 화면 서랍 시간표에도 과목 아이콘 */
+.tt li .s .si{font-style:normal;margin-right:6px}
