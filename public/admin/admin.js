@@ -361,9 +361,9 @@ VIEWS.notice = async () => {
     </section>
     <section class="card"><h3>${live ? '새 공지로 바꾸기' : '공지 올리기'}</h3>
       <form id="nForm" class="grid">
-        <label class="f">내용 <small>최대 120자 · 모든 화면 맨 위에 띠로 보여요. 학생이 닫으면 다음 공지 전까지 안 보여요.</small>
+        <label class="f">제목 <small>최대 120자 · 짧게 쓸수록 좋아요(공지 창에선 굵은 큰 글씨, 2줄까지) · 모든 화면 맨 위에 띠로 보여요. 학생이 닫으면 다음 공지 전까지 안 보여요.</small>
           <textarea class="inp" name="text" maxlength="120" required placeholder="예) 내일은 모의고사라 종 시간이 달라요!">${live ? esc(n.text) : ''}</textarea></label>
-        <label class="f">자세한 내용 <small>선택 · 최대 2000자 · 적으면 띠 공지를 눌렀을 때 이 글이 펼쳐져요 (누르면 이동과 같이 쓰면 이동이 우선)</small>
+        <label class="f">내용 <small>선택 · 최대 2000자 · 공지 창에서 제목 아래 2줄만 먼저 보이고 '자세히 보기'로 펼쳐요 · 적으면 띠 공지를 눌렀을 때 이 글이 펼쳐져요 (누르면 이동과 같이 쓰면 이동이 우선)</small>
           <textarea class="inp" name="body" maxlength="2000" rows="10" placeholder="줄바꿈 그대로 보여요">${live ? esc(n.body || '') : ''}</textarea></label>
         <div class="grid g2">
           <label class="f">종류<select class="inp" name="tone">${Object.entries(TONES).map(([k, v]) => `<option value="${k}" ${live && n.tone === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
