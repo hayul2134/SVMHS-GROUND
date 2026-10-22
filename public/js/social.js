@@ -57,7 +57,9 @@ const closeSheet = () => ctx.closeModal($('#mSoc'));
 function paintBadges() {
   const n = S.me ? S.unread : 0;
   $$('[data-badge="dm"]').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
-  $('#btnAdmin').hidden = S.me?.handle !== ADMIN_HANDLE;   // 관리자 계정일 때만 메뉴에 표시 (권한은 서버가 검사)
+  const dev = S.me?.handle === ADMIN_HANDLE;
+  $('#btnAdmin').hidden = !dev;   // 관리자 계정일 때만 메뉴에 표시 (권한은 서버가 검사)
+  ['#btnClass', '#btnShare', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·QR·신고 필요 없음
   $('#btnMe .mi').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
 }
 async function refreshMe() {
