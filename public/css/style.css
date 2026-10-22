@@ -1506,12 +1506,9 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 /* ===== 홈 첫 화면 정리 (2026-10-22): 가운데 묶음이 정신없던 문제 =====
    - 시계 주변 장식 8개 → 별 3개 (테이프·고리·점 제거: 긴 숫자일 때 '1교시 시작까지' 글자와 겹쳤음)
    - 현재 시각 칩 · 날짜 칩 · 수업 상태 카드(테이프 포함) 3장 → 한 장짜리 상태 띠 (서로 다른 방향 기울기·겹침 제거)
-   - 말풍선은 왼쪽으로 비껴 두지 않고 시계 제목 바로 위 가운데로
    - 서랍 카드 기울기 완화 */
 .clock .dk.k3,.clock .dk.k5,.clock .dk.ring,.clock .dk.dot1,.clock .dk.tape{display:none}
-.s-greet{left:0;top:0}
-.s-greet .bubble{transform:rotate(-2deg);font-size:14px;padding:7px 14px}
-.s-greet .bubble::after{left:50%}
+.s-greet .bubble{font-size:14px;padding:7px 14px}   /* 위치·기울기는 원래대로(왼쪽으로 비껴 둠, 768행) — 2026-10-23 사용자 요청 */
 .s-what{margin-top:18px}
 .s-info{display:inline-flex;flex-wrap:wrap;width:auto;max-width:calc(100% - 32px);gap:0;margin:24px auto 0;padding:6px;background:var(--card);color:var(--text);border:var(--bd);border-radius:18px;box-shadow:var(--sh-s);transform:rotate(-.5deg)}
 .drawers .s-info{width:auto;max-width:min(900px,calc(var(--clockw) + 100px))}
