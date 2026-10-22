@@ -861,7 +861,10 @@ function centerHero(force) {
   if (gap >= 16) { st.setProperty('--mx', Math.round(L + dx - gap - mw) + 'px'); st.setProperty('--tx', Math.round(vw - (R + dx) - gap - tw) + 'px'); }
   else { st.removeProperty('--mx'); st.removeProperty('--tx'); }
   // 좌우 서랍도 같은 가운데 줄에. 서랍이 헤더·화면 아래에 걸리면 화면 가운데로
-  const cy = Math.round((T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
+  // 세로 기준은 말풍선을 뺀 큰 시계 + 상태 줄의 가운데 (말풍선까지 넣으면 카드가 위로 떠 보임 — 2026-10-23)
+  let cT = Infinity, cB = -Infinity;
+  for (const el of HERO.querySelectorAll('#bigTime, #more')) { const b = el.getBoundingClientRect(); if (b.height) { cT = Math.min(cT, b.top); cB = Math.max(cB, b.bottom); } }
+  const cy = Math.round(isFinite(cT) ? (cT + cB) / 2 + sy - hy + dy : (T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
 }
 let heroRaf = 0, heroForce = false;
