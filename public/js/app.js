@@ -337,14 +337,12 @@ const mealHtml = (r, d, mini = false) => {
     ? `<p class="vnote">🗳️ ${v.mine ? `내 픽 <b>${esc(v.mine)}</b> · 다시 누르면 취소` : '제일 맛있는 메뉴를 눌러 투표!'} · ${v.total}명 참여</p>`
     : `<p class="vnote">🗳️ 인기투표 결과 · ${v.total}명 참여</p>`;
   const at = `data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}"`;
-  // 홈 작은 식판: 그림 속 이름표는 작아서 아래에 메뉴를 글자로 한 번 더 (반찬 → 밥·국 → 음료 순)
-  const menu = !mini ? '' : `<ul class="menu-txt" aria-label="메뉴">${[...t.top.flat(), t.rice, t.soup, ...t.drinks].filter(Boolean).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
   return `<div class="tray-set${mini ? ' sm' : ''}${t.drinks.length ? ' has-drink' : ''}" ${at}><div class="tray${mini ? ' mini' : ''}" role="list" aria-label="급식 식판" ${at}>`
     + cellHtml(t.top[0], '', v)
     + `<div class="mid">${cellHtml(t.top[1], 'half', v)}${cellHtml(t.top[2], 'half', v)}</div>`
     + cellHtml(t.top[3], '', v)
     + cellHtml(t.rice ? [t.rice] : [], 'big', v) + cellHtml(t.soup ? [t.soup] : [], 'big soup', v)
-    + `</div>${drinksHtml(t.drinks, v)}</div>` + menu + info + (r.CAL_INFO && !mini ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');
+    + `</div>${drinksHtml(t.drinks, v)}</div>` + info + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');   // 홈 작은 식판도 아래 카드와 같게 칼로리 표시
 };
 let homeRows = [];
 // 지금 보여 줄 끼니: 7시 50분까지 조식 → 5교시 시작(점심 끝)까지 중식 → 그 뒤로 석식
