@@ -829,8 +829,10 @@ $('#dMine').addEventListener('click', e => {
 
 /* ===== 모달 공통 ===== */
 let lastFocus = null;
-const openModal = SOC.openModal = id => { lastFocus = document.activeElement; const m = $(id); m.classList.add('open'); [...m.querySelectorAll('button, select')].find(el => !el.hidden)?.focus(); };
-const closeModal = SOC.closeModal = m => { m.classList.remove('open'); lastFocus?.focus?.(); };
+// 창이 하나라도 열려 있으면 뒤 화면 스크롤을 잠금(html.modal-lock) — 창 안(.sheet)만 스크롤됨
+const syncModalLock = () => document.documentElement.classList.toggle('modal-lock', !!document.querySelector('.modal.open'));
+const openModal = SOC.openModal = id => { lastFocus = document.activeElement; const m = $(id); m.classList.add('open'); syncModalLock(); [...m.querySelectorAll('button, select')].find(el => !el.hidden)?.focus(); };
+const closeModal = SOC.closeModal = m => { m.classList.remove('open'); syncModalLock(); lastFocus?.focus?.(); };
 $$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) closeModal(m); }));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.modal.open').forEach(closeModal); });
 
