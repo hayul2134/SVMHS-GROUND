@@ -1142,3 +1142,4 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .gor{display:flex;align-items:center;gap:10px;width:100%;color:var(--sub);font-size:12.5px;font-weight:800}
 .gor::before,.gor::after{content:"";flex:1;border-top:2px dashed var(--line)}
 #socSheet .gbtn{margin:6px auto 10px}
+.gbox.alt{margin:16px 0 0}

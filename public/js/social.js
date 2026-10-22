@@ -89,7 +89,6 @@ function authHtml(mode = 'login') {
   const grades = [1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('');
   const classes = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('');
   return `<div class="card authcard">
-    ${S.google ? `<div class="gbox"><div class="gbtn" data-gintent="login"></div><p class="gor"><span>또는 아이디로 ${mode === 'signup' ? '가입' : '로그인'}</span></p></div>` : ''}
     <div class="segs" role="tablist"><button data-auth="login" class="${mode === 'login' ? 'on' : ''}">로그인</button><button data-auth="signup" class="${mode === 'signup' ? 'on' : ''}">회원가입</button></div>
     <form class="sform" id="authForm" data-mode="${mode}" autocomplete="on">
       <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" autocomplete="username" placeholder="영어 소문자·숫자 3~16자">${mode === 'signup' ? '<small class="hint">🔑 로그인할 때 쓰는 이름이에요. 나중에 바꿀 수 없어요.</small>' : ''}</label>
@@ -102,6 +101,7 @@ function authHtml(mode = 'login') {
       <p class="ferr" role="alert" hidden></p>
       <button class="btn big" type="submit">${mode === 'signup' ? '가입하고 시작하기' : '로그인'}</button>
     </form>
+    ${S.google ? `<div class="gbox alt"><p class="gor"><span>원하면 구글로도 ${mode === 'signup' ? '가입' : '로그인'}할 수 있어요</span></p><div class="gbtn" data-gintent="login"></div></div>` : ''}
   </div>`;
 }
 document.addEventListener('click', e => {
