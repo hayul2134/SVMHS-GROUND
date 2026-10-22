@@ -561,7 +561,7 @@ async function fillWeek(box, mon, stale) {
     const days = [0, 1, 2, 3, 4].map(i => addDays(mon, i)), t = ymd(today());
     const maxP = Math.min(10, Math.max(6, ...rows.map(r => +r.PERIO || 0)));
     const map = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = subjName(r.ITRT_CNTNT); });
-    const td = (d, p) => `<td class="${ymd(d) === t ? 'today' : ''}">${esc(map[ymd(d) + '_' + p] || '')}</td>`;
+    const td = (d, p) => { const v = map[ymd(d) + '_' + p] || ''; return `<td class="${ymd(d) === t ? 'today' : ''}${v ? '' : ' e'}">${esc(v)}</td>`; };   // 수업 없는 칸(e)은 칠하지 않음
     let h = '<table class="week"><thead><tr><th></th>' + days.map(d => `<th class="${ymd(d) === t ? 'today' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`).join('') + '</tr></thead><tbody>';
     for (let p = 1; p <= maxP; p++) h += `<tr><td class="pn">${p}</td>${days.map(d => td(d, p)).join('')}</tr>`;
     box.innerHTML = h + '</tbody></table>';
@@ -603,8 +603,20 @@ function applyDrawers() {
     paintSide(k);
   }
 }
+// 사이트를 처음 켜면 고정 안 한 서랍도 1분 동안 꺼내 보여 주고 넣음. 그사이 탭·핀을 직접 누르면 자동으로 넣지 않음
+let peekT = 0;
+function peekSides() {
+  if (!wideMQ.matches) return;
+  const ks = Object.keys(SIDE).filter(k => !SIDE[k].el.classList.contains('pin'));
+  if (!ks.length) return;
+  ks.forEach(k => openSide(k, true));
+  peekT = setTimeout(() => { peekT = 0; ks.forEach(k => openSide(k, false)); }, 60e3);
+}
+const stopPeek = () => { clearTimeout(peekT); peekT = 0; };
 for (const k in SIDE) {
   const el = SIDE[k].el;
+  el.querySelector('.s-pin').addEventListener('click', stopPeek);
+  el.querySelector('.s-tab').addEventListener('click', stopPeek);
   el.querySelector('.s-pin').onclick = e => { e.stopPropagation(); const pin = el.classList.contains('pin'); setSide(k, !pin, !pin); };
   el.querySelector('.s-tab').onclick = e => {
     e.stopPropagation();
@@ -614,8 +626,8 @@ for (const k in SIDE) {
 }
 wideMQ.addEventListener('change', applyDrawers); applyDrawers();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
-document.addEventListener('click', e => { for (const k in SIDE) if (!e.composedPath().includes(SIDE[k].el)) openSide(k, false); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') for (const k in SIDE) openSide(k, false); });
+document.addEventListener('click', e => { if (peekT) return; for (const k in SIDE) if (!e.composedPath().includes(SIDE[k].el)) openSide(k, false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { stopPeek(); for (const k in SIDE) openSide(k, false); } });
 $('#goMeal').onclick = e => { e.preventDefault(); openSide('meal', false); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 $('#goWeek').onclick = e => { e.preventDefault(); openSide('tt', false); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 async function renderTTView() {
@@ -935,6 +947,7 @@ function bootHome() {
   if (homeBooted || !cfgReady || introOn()) return;
   homeBooted = true;
   renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance); loadNotice();
+  peekSides();
 }
 function intro(on) {
   HTML.classList.toggle('prelogin', on);

@@ -563,6 +563,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .week td{border-radius:12px;padding:10px 6px;text-align:center;font-size:14px;font-weight:700;height:56px;border:2px solid var(--line)}
 .week td.pn{font-family:var(--disp);font-size:17px;border:0;width:36px}
 .week td.today{background:var(--lime);color:var(--ink);border:2px solid var(--ink);box-shadow:var(--sh-s)}
+.week td.e:not(.pn),.week td.e.today{background:none;border-color:transparent;box-shadow:none}
 
 /* ===== 9. 학사일정 ===== */
 /* 학사일정 달력 */
