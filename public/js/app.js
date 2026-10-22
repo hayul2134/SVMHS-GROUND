@@ -1444,9 +1444,60 @@ function bootHome() {
 function intro(on) {
   HTML.classList.toggle('prelogin', on);
   $('#intro').inert = !on;
-  if (on) $('#intro').scrollTop = 0;
-  else { $('#introAuth').hidden = true; $('#introAuth').innerHTML = ''; onScroll(); bootHome(); }
+  if (on) { $('#intro').scrollTop = 0; introTick(); }
+  else { clearTimeout(inTimer); $('#introAuth').hidden = true; $('#introAuth').innerHTML = ''; onScroll(); bootHome(); }
 }
+// 소개 화면의 종 시계: 홈과 같은 종 시간(bellInfo)으로 실제 시각·남은 시간을 보여 줌 — 소개가 떠 있고 탭이 보일 때만 돌아감
+let inTimer = 0;
+function introTick() {
+  clearTimeout(inTimer);
+  if (!introOn() || document.hidden) return;
+  const n = now(), nb = bellNow(), b = bellInfo(nb);
+  const secNow = nb.getHours() * 3600 + nb.getMinutes() * 60 + nb.getSeconds();
+  const left = b.target != null ? Math.max(0, b.target - secNow) : null;
+  const rest = /쉬는|점심/.test(b.state);
+  setText('#inSay', sayLine(b));
+  setText('#inState', b.state);
+  setText('#inAp', n.getHours() < 12 ? '오전' : '오후');
+  setText('#inTime', `${n.getHours() % 12 || 12}:${pad(n.getMinutes())}`);
+  setText('#inSec', pad(n.getSeconds()));
+  $('#inCdBox').hidden = left == null;
+  if (left != null) { setText('#inLbl', b.cnt || b.label); setText('#inLeft', fmtLeft(left)); setText('#inEndT', fmtLeft(left)); }
+  setText('#inEndK', left == null ? '오늘 수업 끝' : (b.cnt || b.label).replace(/까지$/, '') + '까지');
+  const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
+  $('#inBarBox').hidden = !bar;
+  if (bar) $('#inBar').style.transform = `scaleX(${(rest ? 1 - prog : prog).toFixed(4)})`;
+  $('.in-clock').classList.toggle('rest', rest);
+  inTimer = setTimeout(introTick, 1000 - bellNow().getMilliseconds() + 5);
+}
+// 스크롤하면 카드가 하나씩 등장 (IntersectionObserver가 없으면 그냥 다 보임)
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); io.unobserve(e.target); } }), { root: $('#intro'), threshold: .18 });
+  $$('#intro .rv').forEach(el => io.observe(el));
+  $('#intro').classList.add('rv-on');
+}
+// 반응속도 맛보기 (기록은 저장 안 함 — 가입하면 진짜 게임에서 랭킹에 올라감)
+{
+  const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, best = 0, tries = 0;
+  const show = (cls, html) => { pad_.className = 'rx in-rx ' + cls; pad_.innerHTML = html; };
+  const grade = ms => ms < 230 ? '이 정도면 반 대표감!' : ms < 290 ? '꽤 빠른데요?' : ms < 380 ? '평범한 반응속도' : '아직 잠이 덜 깼나 봐요';
+  pad_.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (st === 'wait') { clearTimeout(tm); st = 'shown'; show('early', '<b>앗, 너무 빨라요!</b><small>초록색이 될 때까지 참기 · 탭해서 다시</small>'); return; }
+    if (st === 'go') {
+      const ms = Math.round(performance.now() - t0); tries++;
+      st = 'shown'; show('done', `<b>${ms}ms</b><small>${grade(ms)} · 탭해서 한 번 더</small>`);
+      if (!best || ms < best) best = ms;
+      const el = $('#inBest'); el.hidden = false;
+      el.innerHTML = `내 최고 <b>${best}ms</b><button type="button" data-intro="signup">가입하고 랭킹에 올리기</button>`;
+      return;
+    }
+    st = 'wait'; show('wait', '<b>기다려…</b><small>초록색이 되면 바로 탭!</small>');
+    tm = setTimeout(() => { if (st !== 'wait') return; st = 'go'; show('go', '<b>지금!</b>'); t0 = performance.now(); }, 1000 + Math.random() * 2500);
+  });
+}
+// '구경하기' 화살표: 소개 화면 안에서 부드럽게 내려감 (주소 해시는 안 바꿈)
+$('#intro').addEventListener('click', e => { const a = e.target.closest('[data-intro-go]'); if (!a) return; e.preventDefault(); $('#' + a.dataset.introGo).scrollIntoView({ behavior: 'smooth', block: 'start' }); });
 // me: 로그인한 사람(없으면 null) · on: 소셜 기능이 켜져 있는지 · how: 'login' | 'signup' | undefined(처음 확인)
 SOC.authed = (me, on = true, how) => {
   try { if (me) localStorage.setItem('sg_in', '1'); else localStorage.removeItem('sg_in'); } catch {}
@@ -1455,6 +1506,7 @@ SOC.authed = (me, on = true, how) => {
   else intro(true);                                  // 로그인 안 했으면 사이트는 안 보이고 소개 화면만
 };
 $('#intro').inert = !introOn();
+introTick();
 $('#intro').addEventListener('click', e => {
   const b = e.target.closest('[data-intro]'); if (!b) return;
   const k = b.dataset.intro;
@@ -1476,7 +1528,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
 // 날짜가 바뀐 채로 다시 열면(자정 넘김) 새로 고침
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
-  if (ymd(today()) !== startDay) location.reload(); else tickClock();
+  if (ymd(today()) !== startDay) location.reload(); else { tickClock(); introTick(); }
 });
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 // 소셜 화면의 링크(#u/…, #dm/…)도 hashchange로 처리됨

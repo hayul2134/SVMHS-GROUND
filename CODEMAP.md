@@ -59,7 +59,8 @@ npx wrangler@4 pages dev --port 8788
 - 공개 규칙: 진행 중엔 투표해야 결과·댓글이 보임, 마감 뒤엔 모두에게 결과 + 이긴 쪽 👑·WIN, 진 쪽 흐리게, 무승부 표시.
 
 ## 소개 화면 (로그인 전)
-- `index.html`의 `#intro`(전체 화면 덮개, z-index 55). `html.prelogin`일 때만 보임. 내용: 첫 화면(로고·가입/로그인 버튼·둘러보기) → 할 수 있는 것 6개 → 시작 3단계.
+- `index.html`의 `#intro`(전체 화면 덮개, z-index 55). `html.prelogin`일 때만 보임. 내용(2026-10-23 개편): 첫 화면(왼쪽 제목·가입/로그인, 오른쪽 **실제로 움직이는 종 시계** `.in-clock`) → 전광판 `.in-tick` → 기능 미리보기 벤토 `.in-bento`(급식 식판 모형은 `/food/c/*.webp` 그림, 시간표·밸런스 게임·DM·프로필·D-day 모형은 예시) → 반응속도 맛보기 `#inRx`(기록 저장 안 함, 최고 기록 옆에 가입 버튼) → 시작 3단계 → 자주 묻는 것(`details`) → 마지막 카운트다운 + 가입 버튼.
+- 소개 로직(`app.js` '소개' 섹션): `introTick()`이 홈과 같은 `bellInfo(bellNow())`로 1초마다 갱신(소개가 떠 있고 탭이 보일 때만). `.rv` 요소는 IntersectionObserver로 스크롤 등장(`#intro.rv-on`일 때만 숨김 → 스크립트 실패해도 내용은 보임). 설명용 이모지 대신 스프라이트 아이콘(`#sj-*`)을 씀.
 - 흐름: `theme.js`가 `localStorage.sg_in`(로그인한 적 있는 기기)·`sessionStorage.sg_peek`(이번 창에서 '로그인 없이 둘러보기') 둘 다 없으면 `html.prelogin` 추가 → `social.js init`이 `/api/s/me` 확인 후 `SOC.authed(me, enabled)` → `app.js`가 로그인돼 있으면 닫고 `sg_in` 저장, 아니면 띄움. 연결 오류면 상태 유지.
 - 가입/로그인 버튼은 `#introAuth` 안에 `authHtml()` 폼을 펼침 → 성공하면 소개가 닫히고 원래 보려던 화면(해시)이 보임. 로그아웃·탈퇴하면 다시 소개.
 - 소셜이 꺼져 있거나(`DB` 없음) social.js를 못 불러오면 소개를 띄우지 않음. 반 설정 창은 소개가 닫힐 때 띄움.

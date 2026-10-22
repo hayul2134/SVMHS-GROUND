@@ -112,38 +112,130 @@
 <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="inT">
   <div class="in-wrap">
     <section class="in-hero">
-      <img class="in-logo" src="/logo-mark.svg?v=4" alt="" width="104" height="104">
-      <p class="in-kick">서울영상고 학생 전용 · 비공식</p>
-      <h1 class="in-title" id="inT"><small>SVMHS</small>GROUND</h1>
-      <p class="in-lead">휴대폰 없는 쉬는 시간,<br>태블릿·노트북으로 들어오는 <b>우리 학교 놀이터</b></p>
-      <div class="in-cta">
-        <button class="btn big" type="button" data-intro="signup">가입하고 시작하기</button>
-        <button class="btn big ghost" type="button" data-intro="login">로그인</button>
+      <div class="in-hl">
+        <img class="in-logo" src="/logo-mark.svg?v=4" alt="" width="96" height="96">
+        <p class="in-kick">서울영상고 학생 전용 · 비공식</p>
+        <h1 class="in-title" id="inT"><small>SVMHS</small>GROUND</h1>
+        <p class="in-lead">휴대폰 없는 쉬는 시간 10분,<br>멍때리긴 아깝잖아요. <b>여기서 놀아요.</b></p>
+        <div class="in-cta">
+          <button class="btn big" type="button" data-intro="signup">가입하고 시작하기</button>
+          <button class="btn big ghost" type="button" data-intro="login">로그인</button>
+        </div>
+        <p class="in-note">아이디만 있으면 1분 · 이메일·전화번호 필요 없어요</p>
+        <div class="in-auth" id="introAuth" hidden></div>
       </div>
-      <div class="in-auth" id="introAuth" hidden></div>
-      <i class="in-st s1" aria-hidden="true">⭐</i><i class="in-st s2" aria-hidden="true">🎬</i><i class="in-st s3" aria-hidden="true">✨</i><i class="in-st s4" aria-hidden="true">🍱</i>
+
+      <!-- 실제 시각·종 카운트다운(로그인 없이도 움직임) -->
+      <div class="in-live" aria-live="off">
+        <span class="in-tape" aria-hidden="true"></span>
+        <p class="in-say" id="inSay">오늘도 가보자</p>
+        <div class="in-clock">
+          <p class="in-state"><i class="dot" aria-hidden="true"></i><span id="inState">지금</span></p>
+          <p class="in-time"><span class="ap" id="inAp"></span><b id="inTime">--:--</b><small id="inSec"></small></p>
+          <div class="in-cd" id="inCdBox"><span id="inLbl">쉬는 시간까지</span><b id="inLeft">--:--</b></div>
+          <div class="in-bar" id="inBarBox"><i id="inBar"></i></div>
+        </div>
+        <p class="in-cap">↑ 진짜 우리 학교 종 시간 기준으로 움직여요</p>
+      </div>
+
+      <img class="in-st s1" src="/food/c/tangsuyuk.webp" alt="" width="90" height="78">
+      <img class="in-st s2" src="/food/c/watermelon.webp" alt="" width="70" height="76">
+      <svg class="in-st s3" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-cg"/></svg>
+      <svg class="in-st s4" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-clap"/></svg>
+      <a class="in-down" href="#inF" data-intro-go="inF"><span>뭐가 있는지 구경하기</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></a>
     </section>
 
+    <div class="in-tick" aria-hidden="true"><div class="tk">
+      <span>오늘 급식 뭐야?</span><i>✦</i><span>다음 쉬는 시간까지 몇 분?</span><i>✦</i><span>반응속도 반 대항전</span><i>✦</i><span>맞팔 친구랑 DM</span><i>✦</i><span>평일마다 새 밸런스 게임</span><i>✦</i><span>내 프로필 꾸미기</span><i>✦</i>
+      <span>오늘 급식 뭐야?</span><i>✦</i><span>다음 쉬는 시간까지 몇 분?</span><i>✦</i><span>반응속도 반 대항전</span><i>✦</i><span>맞팔 친구랑 DM</span><i>✦</i><span>평일마다 새 밸런스 게임</span><i>✦</i><span>내 프로필 꾸미기</span><i>✦</i>
+    </div></div>
+
     <section class="in-sec" aria-labelledby="inF">
-      <h2 class="sec-t" id="inF">여기서 할 수 있는 것</h2>
-      <ul class="in-feats">
-        <li><i>⏰</i><b>종 시계</b><span>지금 시각과 쉬는 시간·수업 시간까지 남은 시간을 한눈에</span></li>
-        <li><i>🍱</i><b>오늘 급식</b><span>조식·중식·석식이 시간에 맞춰 식판 그림으로 바뀌고, 인기 메뉴 투표도</span></li>
-        <li><i>📅</i><b>시간표 · 학사일정</b><span>우리 반 시간표, 달력으로 보는 학교 일정, 나만의 D-day</span></li>
-        <li><i>😎</i><b>프로필 꾸미기</b><span>아바타·색·스티커로 나만의 프로필을 만들고 친구 팔로우</span></li>
-        <li><i>💬</i><b>DM</b><span>맞팔한 친구끼리 쉬는 시간에 메시지 주고받기</span></li>
-        <li><i>🎮</i><b>쉬는 시간 게임</b><span>반응속도 · 1 to 25 · 컷 타이밍, 친구 랭킹과 반 대항전</span></li>
+      <h2 class="in-h" id="inF"><small>들어오면 이런 게 있어요</small>쉬는 시간 10분, 여기서 다 돼요</h2>
+      <ul class="in-bento">
+        <li class="bx meal rv">
+          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-tray"/></svg>오늘 급식</p>
+          <p class="bx-d">조식·중식·석식이 시간 맞춰 바뀌고, 메뉴가 식판 그림으로 보여요</p>
+          <div class="mk-tray" aria-hidden="true">
+            <span class="c main"><img src="/food/c/tangsuyuk.webp" alt="" loading="lazy" width="64" height="56"></span>
+            <span class="c"><img src="/food/c/japchae.webp" alt="" loading="lazy" width="64" height="43"></span>
+            <span class="c"><img src="/food/c/kimchi_cabbage.webp" alt="" loading="lazy" width="64" height="63"></span>
+            <span class="c rice"><img src="/food/c/rice_multigrain.webp" alt="" loading="lazy" width="64" height="61"></span>
+            <span class="c soup"><img src="/food/c/soup_miyeok.webp" alt="" loading="lazy" width="64" height="62"></span>
+          </div>
+          <span class="bx-tag">메뉴 예시</span>
+        </li>
+        <li class="bx ttc rv">
+          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-ttab"/></svg>우리 반 시간표</p>
+          <ol class="mk-tt" aria-hidden="true">
+            <li><b>1</b><svg viewBox="0 0 24 24"><use href="#sj-ko"/></svg>국어</li>
+            <li class="cur"><b>2</b><svg viewBox="0 0 24 24"><use href="#sj-cam"/></svg>영상 제작<em>지금</em></li>
+            <li><b>3</b><svg viewBox="0 0 24 24"><use href="#sj-en"/></svg>영어</li>
+            <li><b>4</b><svg viewBox="0 0 24 24"><use href="#sj-ball"/></svg>체육</li>
+            <li class="lunch">점심시간</li>
+            <li><b>5</b><svg viewBox="0 0 24 24"><use href="#sj-ruler"/></svg>수학</li>
+            <li><b>6</b><svg viewBox="0 0 24 24"><use href="#sj-palette"/></svg>미술</li>
+          </ol>
+          <p class="bx-d">학년·반만 고르면 끝. 7교시 끝나면 내일 시간표로</p>
+        </li>
+        <li class="bx bal rv">
+          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-vote"/></svg>오늘의 밸런스 게임</p>
+          <p class="mk-q">평생 짜장면만 vs 평생 짬뽕만</p>
+          <div class="mk-vs" aria-hidden="true"><span class="a">짜장 <b>58%</b></span><span class="b">짬뽕 <b>42%</b></span></div>
+          <p class="bx-d">평일마다 새 질문 하나, 마지막 교시 끝나면 결과 공개</p>
+          <span class="bx-tag">예시</span>
+        </li>
+        <li class="bx dm rv">
+          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg>친구랑 DM</p>
+          <div class="mk-chat" aria-hidden="true"><p class="l">점심 뭐 나와?</p><p class="r">탕수육 ㄷㄷ</p><p class="l">4교시 왜 이렇게 기냐…</p></div>
+          <p class="bx-d">맞팔한 친구끼리만 주고받아요</p>
+        </li>
+        <li class="bx prof rv">
+          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-user"/></svg>프로필 꾸미기</p>
+          <div class="mk-prof" aria-hidden="true"><span class="av"><svg viewBox="0 0 24 24"><use href="#sj-cg"/></svg></span><span class="pn"><b>나만의 프로필</b><small>아바타 · 색 · 스티커 · 인스타</small></span></div>
+          <p class="bx-d">친구 찾아서 팔로우하고, 반 친구들 프로필 구경</p>
+        </li>
+        <li class="bx cal rv">
+          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-test"/></svg>학사일정 · D-day</p>
+          <div class="mk-dd" aria-hidden="true"><b>D-7</b><span>다음 시험·행사까지<br>남은 날이 바로 보여요</span></div>
+          <p class="bx-d">달력으로 보는 학교 일정</p>
+        </li>
       </ul>
     </section>
 
-    <section class="in-sec" aria-labelledby="inH">
-      <h2 class="sec-t" id="inH">시작은 1분이면 끝</h2>
+    <section class="in-sec in-play rv" aria-labelledby="inG">
+      <div class="in-pl-txt">
+        <h2 class="in-h" id="inG"><small>가입 전에 맛보기</small>반응속도, 한 판 해 볼래요?</h2>
+        <p class="in-p">빨간색일 땐 참고, <b>초록색으로 바뀌는 순간</b> 누르세요.<br>가입하면 기록이 친구 랭킹이랑 <b>반 대항전</b>에 올라가요.</p>
+        <p class="in-best" id="inBest" hidden></p>
+      </div>
+      <button class="rx idle in-rx" id="inRx" type="button"><b>눌러서 시작</b><small>준비되면 탭!</small></button>
+    </section>
+
+    <section class="in-sec rv" aria-labelledby="inH">
+      <h2 class="in-h" id="inH"><small>시작은 1분이면 끝</small>이렇게 시작해요</h2>
       <ol class="in-how">
         <li><b>1</b><span><strong>아이디로 가입</strong>이메일·전화번호·실명 필요 없어요</span></li>
         <li><b>2</b><span><strong>우리 반 설정</strong>학년·반을 고르면 시간표가 떠요</span></li>
         <li><b>3</b><span><strong>친구 초대</strong>QR이나 주소로 친구에게 공유</span></li>
       </ol>
-      <div class="in-cta"><button class="btn big" type="button" data-intro="signup">지금 가입하기</button></div>
+    </section>
+
+    <section class="in-sec rv" aria-labelledby="inQ">
+      <h2 class="in-h" id="inQ"><small>궁금한 거</small>자주 묻는 것</h2>
+      <div class="in-faq">
+        <details><summary>돈 드는 거 있어요?</summary><p>없어요. 가입도, 게임도, DM도 전부 무료예요.</p></details>
+        <details><summary>학교 공식 사이트예요?</summary><p>아니요. 서울영상고 학생이 만든 비공식 사이트예요. 급식·시간표·학사일정은 나이스 교육정보 개방 포털 자료를 그대로 가져와요.</p></details>
+        <details><summary>학교 태블릿에서 로그인해도 괜찮아요?</summary><p>로그인은 30일 동안 유지돼요. 여러 명이 같이 쓰는 기기라면 다 쓰고 로그아웃해 주세요.</p></details>
+        <details><summary>어떤 정보를 받아요?</summary><p>아이디와 비밀번호만 있으면 가입돼요. 이메일·전화번호·실명은 받지 않고, 구글로 가입해도 이메일은 저장하지 않아요. 자세한 건 맨 아래 '이용 안내'에 있어요.</p></details>
+      </div>
+    </section>
+
+    <section class="in-end rv">
+      <p class="in-end-k" id="inEndK">다음 종까지</p>
+      <p class="in-end-t" id="inEndT">--:--</p>
+      <p class="in-end-s">다음 쉬는 시간, 여기서 만나요</p>
+      <div class="in-cta"><button class="btn big" type="button" data-intro="signup">지금 가입하기</button><button class="btn big ghost" type="button" data-intro="login">로그인</button></div>
     </section>
 
     <p class="in-foot">학생이 만든 비공식 사이트예요 · 급식·시간표·일정은 나이스 교육정보 개방 포털 기준<br><button type="button" data-act="info">이용 안내 · 개인정보</button></p>
