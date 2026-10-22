@@ -292,7 +292,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
   .tray.mini{grid-template-rows:112px 88px}
   .s-tt .tt{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
   .s-tt .tt li .s{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .s-tt .tt li.now .s::after{display:none}
+  .s-tt .tt li.now .s::after,.s-tt .tt li.next .s::after,.s-tt .tt li .tm{display:none}
 }
 /* 서랍 크기: 시계 양옆에 남는 공간만큼 자동으로 커지고 작아짐 (시계는 항상 가림 없이) */
 .drawers{--clockw:calc(2.7 * clamp(84px,13.5vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 56px)}
@@ -519,8 +519,14 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
   background:var(--chip);border:2px solid var(--ink);color:var(--text)}
 :root[data-theme="dark"] .tt li .p{border-color:var(--line)}
 .tt li .s{font-weight:800;font-size:16px}
-.tt li.done{opacity:.4}
-.tt li.done .s{text-decoration:line-through 2.5px}
+.tt li.done{opacity:.38}
+.tt li .tm{margin-left:auto;flex:none;font-family:var(--num);font-weight:800;font-size:12px;color:var(--sub);letter-spacing:.02em}
+/* 지금·다음 줄은 배지가 시각 대신 (좁은 카드에서 과목 이름이 두 줄로 꺾이지 않게) */
+.tt li.now .tm,.tt li.next .tm{display:none}
+.tt li .s{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt li.next{border:2px dashed var(--ink);background:var(--card)}
+.tt li.next .p{background:var(--yellow);color:var(--ink);border-color:var(--ink)}
+.tt li.next .s::after{content:"다음";margin-left:8px;font-size:11px;font-weight:900;padding:2px 8px;border-radius:7px;background:var(--sky);color:var(--ink);vertical-align:2px;border:2px solid var(--ink)}
 .tt li.now{background:var(--hero);color:var(--ink);border:var(--bd);box-shadow:var(--sh-s);transform:rotate(-1deg) scale(1.02)}
 .tt li.now .p{background:var(--lime);color:var(--ink);border-color:var(--ink)}
 .tt li.now .s::after{content:"지금!";margin-left:8px;font-size:11px;font-weight:900;padding:2px 8px;border-radius:7px;background:var(--yellow);color:var(--ink);vertical-align:2px;border:2px solid var(--ink)}

@@ -107,7 +107,8 @@ function tickClock() {
   if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
     nextKey = key; renderNext(b, pi); renderTicker(b, pi);
     const live = S.ttShown === ymd(n);
-    $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', live && p === pi.cur); li.classList.toggle('done', live && p < pi.done && p !== pi.cur); });
+    // 지금 교시 · (쉬는 시간이면) 다음 교시 · 끝난 교시 표시
+    $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', live && p === pi.cur); li.classList.toggle('next', live && !pi.cur && p === pi.nxt); li.classList.toggle('done', live && p < pi.done && p !== pi.cur); });
   }
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
@@ -485,6 +486,8 @@ function ttTarget(n = now()) {
   if (!isSchoolDay(d) || sec >= end) { let i = 0; do d = addDays(d, 1); while (!isSchoolDay(d) && ++i < 21); }
   return d;
 }
+// 교시 시작 시각 (홈 시간표 오른쪽 작은 글씨)
+const bellAt = p => { const b = BELL.find(x => x.p === +p); return b ? `<span class="tm">${String(b.start / 3600 | 0).padStart(2, '0')}:${String(b.start % 3600 / 60).padStart(2, '0')}</span>` : ''; };
 const ttLabel = (d, base = today()) => { const k = diffDays(d, base); return k === 0 ? '오늘' : k === 1 ? '내일' : DOW[d.getDay()] + '요일'; };
 let ttSeq = 0;
 async function renderHomeTT() {
@@ -504,7 +507,7 @@ async function renderHomeTT() {
     const dep = (rows[0] || todayRows[0] || {}).DDDEP_NM;   // 학과 이름은 시간표 응답에서 알아냄
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
+      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span><span class="s">${esc(subjName(r.ITRT_CNTNT))}</span>${bellAt(r.PERIO)}</li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
