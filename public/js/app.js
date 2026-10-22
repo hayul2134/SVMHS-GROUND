@@ -34,9 +34,15 @@ const pName = p => p === '조회' ? '조회' : p + '교시';
 const BELL_LAG = 850;   // 0.5초 → 0.85초 (2026-10-22 학생 의견: 아직 조금 빠름)
 const bellNow = () => new Date(now() - BELL_LAG);
 
+// 다음 등교일(오늘 이후, 주말·휴업일 건너뜀) 1교시 시작까지 — 오늘 0시 기준 초 (하루 넘으면 86400 넘게)
+function nextFirstBell(n) {
+  let d = new Date(n.getFullYear(), n.getMonth(), n.getDate()), i = 0;
+  do d = addDays(d, 1); while (!isSchoolDay(d) && ++i < 21);
+  return diffDays(d, new Date(n.getFullYear(), n.getMonth(), n.getDate())) * 86400 + BELL.find(x => x.p === 1).start;
+}
 function bellInfo(n) {
   const dow = n.getDay();
-  if (dow === 0 || dow === 6 || offDays.has(ymd(n))) return { state: '쉬는 날', label: '오늘은 수업이 없어요' };
+  if (dow === 0 || dow === 6 || offDays.has(ymd(n))) return { state: '쉬는 날', label: '1교시 시작까지', cnt: '1교시 시작까지', target: nextFirstBell(n), away: true };
   // 마지막 교시: 오늘 시간표가 있으면 그대로 따름(요일 교체 수업 대응), 없으면 월~수 7 · 목금 6
   const ttMax = S.todayTT && S.todayTT.length ? Math.max(...S.todayTT.map(r => +r.PERIO || 0)) : 0;
   const last = ttMax >= 6 ? Math.min(7, ttMax) : dow <= 3 ? 7 : 6, list = BELL.filter(x => x.p === '조회' || x.p <= last);
@@ -49,11 +55,13 @@ function bellInfo(n) {
       const next = list[i + 1];
       return { state: `${pName(cur.p)} 수업 중`, label: !next ? '수업 끝까지' : cur.p === 4 ? '점심시간까지' : '쉬는 시간까지', cnt: !next ? '수업 끝까지' : cur.p === 4 ? '점심시간까지' : '쉬는 시간까지', target: cur.end, from: cur.start };
     }
+    // 등교 전(조회 전): 1교시 시작까지
+    if (!prev) return { state: '등교 전', label: '1교시 시작까지', cnt: '1교시 시작까지', target: list[1].start, away: true };
     // 수업 전 쉬는 시간
-    const state = !prev ? '등교 전' : prev.p === 4 ? '점심시간' : '쉬는 시간';
+    const state = prev.p === 4 ? '점심시간' : '쉬는 시간';
     return { state, label: `${pName(cur.p)} 시작까지`, cnt: '수업 시간까지', target: cur.start, from: prev ? prev.end : null, brk: !!prev };
   }
-  return { state: '방과 후', label: '오늘 수업이 끝났어요' };
+  return { state: '방과 후', label: '1교시 시작까지', cnt: '1교시 시작까지', target: nextFirstBell(n), away: true };   // 학교 끝나면 다음 1교시까지
 }
 
 // 지금 상태에 맞춘 G의 한마디 (시간대가 아니라 종 시간 기준이라 '수업 중인데 점심 인사' 같은 어긋남이 없음)
@@ -89,6 +97,21 @@ document.querySelectorAll('.ticker, #bigclock').forEach(el => offscreen.observe(
 const lastVal = new Map();
 const setText = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).textContent = v; } };
 const setHtml = (sel, v) => { if (lastVal.get(sel) !== v) { lastVal.set(sel, v); $(sel).innerHTML = v; } };
+// 남은 10초: 화면 새로 그릴 때마다(약 60번/초) 1/100초까지 표시. 0이 되면 멈추고 1초 타이머가 이어받음
+let msRaf = 0, msTarget = null;
+function startMs(target) {
+  msTarget = target;
+  if (msRaf) return;
+  const dg = t => [...t].map(ch => `<span class="${ch === '.' ? 'c' : 'n'}">${ch}</span>`).join('');
+  const step = () => {
+    const nb = bellNow(), sec = nb.getHours() * 3600 + nb.getMinutes() * 60 + nb.getSeconds() + nb.getMilliseconds() / 1000;
+    const l = msTarget - sec;
+    if (document.hidden || !heroVisible || l <= 0 || l > 10) { msRaf = 0; return; }
+    setHtml('#bigTime', dg(l.toFixed(2)));
+    msRaf = requestAnimationFrame(step);
+  };
+  msRaf = requestAnimationFrame(step);
+}
 function tickClock() {
   clearTimeout(tickTimer);
   if (document.hidden) return;   // 안 보일 땐 멈춤 (다시 보이면 visibilitychange에서 재시작)
@@ -114,20 +137,24 @@ function tickClock() {
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
   setText('#bellLbl', b.cnt || b.label);
-  const dg = t => [...t].map(ch => `<span class="${ch === ':' ? 'c' : 'n'}">${ch}</span>`).join('');   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
+  const dg = t => [...t].map(ch => `<span class="${ch === ':' || ch === '.' ? 'c' : 'n'}">${ch}</span>`).join('');   // 글자 폭 고정(숫자가 바뀌어도 안 흔들림)
   const ap = n.getHours() < 12 ? '오전' : '오후', h12 = n.getHours() % 12 || 12;
   const hm = `${h12}:${pad(n.getMinutes())}`;
   // 큰 숫자 = 남은 시간, 아래 작은 칩 = 현재 시각 (수업 없는 때엔 큰 숫자가 현재 시각)
-  setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : `<span class="ap">${ap}</span>` + dg(hm));
+  if (!(left != null && left > 0 && left <= 10)) setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : `<span class="ap">${ap}</span>` + dg(hm));
+  $('#bigTime').classList.toggle('long', left != null && left >= 3600);   // 1시간 넘게 남으면(밤·주말) 글씨 조금 작게
+  if (left != null && left > 0 && left <= 10) startMs(b.target);   // 10초 이하: 1/100초까지
   setText('#bellCnt', `${ap} ${hm}`);
   $('#nowBox').hidden = left == null;
   const hero = $('#bigclock');
-  hero.classList.toggle('soon', left != null && left <= 60);
+  hero.classList.toggle('soon', left != null && left <= 60);    // 1분: 숫자만 흔들림
+  hero.classList.toggle('soon2', left != null && left <= 30);  // 30초: 더 크게
+  hero.classList.toggle('soon3', left != null && left <= 10);  // 10초: 가장 크게 + 1/100초
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
   if (bar) $('#bellBar').style.transform = `scaleX(${prog.toFixed(4)})`;
-  setText('#bellPct', bar ? `${Math.floor(prog * 100)}% 지남` : b.target != null ? '곧 시작해요' : b.state === '쉬는 날' ? '푹 쉬는 날' : '오늘 수업 끝');
+  setText('#bellPct', bar ? `${Math.floor(prog * 100)}% 지남` : b.state === '쉬는 날' ? '푹 쉬는 날' : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
   tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
 // 다음 수업 카드 (첫 화면 오른쪽 작은 카드)
