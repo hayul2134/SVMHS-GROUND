@@ -981,3 +981,9 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .menu-txt li{font-weight:800;font-size:14px;line-height:1.2;padding:4px 9px;border-radius:999px;background:var(--chip);border:2px solid var(--line);color:var(--text);white-space:nowrap}
 .menu-txt li:first-child{background:var(--yellow);border-color:var(--ink);color:var(--ink)}
 @container (max-width:300px){.menu-txt li{font-size:12.5px;padding:3px 7px}}
+/* 개발자 계정 프로필: 밤하늘 배너 + 노란 테두리 + 개발자 배지 (학년·반 없음) */
+.pcard.dev{box-shadow:6px 6px 0 var(--ink),0 0 0 3px var(--yellow) inset}
+.pcard.dev .pban{background:linear-gradient(135deg,#173048 0%,#2a4f7a 55%,#38a5ea 100%);background-image:radial-gradient(rgba(255,224,138,.9) 1.6px,transparent 2px),radial-gradient(rgba(255,255,255,.55) 1.2px,transparent 1.6px),linear-gradient(135deg,#173048 0%,#2a4f7a 55%,#38a5ea 100%);background-size:34px 34px,22px 22px,100% 100%;background-position:5px 7px,15px 3px,0 0}
+.pcard.dev .pban::after{content:"</> DEVELOPER";position:absolute;left:14px;bottom:10px;font:900 12px/1 var(--num);letter-spacing:.18em;color:var(--yellow);opacity:.9}
+.chip.dev{background:var(--yellow);color:var(--ink)}
+.devb{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--yellow);color:var(--ink);border:1.5px solid var(--ink);font-size:11px;font-weight:900;line-height:1.4;vertical-align:1px;white-space:nowrap}

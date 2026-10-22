@@ -35,14 +35,16 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 
 /* ===== 작은 조각들 ===== */
 const av = (u, cls = '') => `<span class="av c-${esc(COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>`;
-const classTxt = u => u.grade && u.cls ? `${u.grade}학년 ${u.cls}반` : '';
+const isDev = u => u?.handle === ADMIN_HANDLE;
+const devTag = u => isDev(u) ? '<span class="devb" title="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
+const classTxt = u => isDev(u) ? '' : u.grade && u.cls ? `${u.grade}학년 ${u.cls}반` : '';
 const ago = t => {
   const s = (Date.now() - t) / 1000;
   if (s < 60) return '방금'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전';
   const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`;
 };
 const hm = t => { const d = new Date(t), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
-const personRow = (u, right = '') => `<li class="person"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>@${esc(u.handle)}${u.mood ? ' · ' + esc(u.mood) : ''}</small></span></a>${right}</li>`;
+const personRow = (u, right = '') => `<li class="person"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u)}<span class="pi"><b>${esc(u.name)}${devTag(u)}</b><small>@${esc(u.handle)}${u.mood ? ' · ' + esc(u.mood) : ''}</small></span></a>${right}</li>`;
 const followBtn = u => u.isMe ? '' : `<button class="fbtn ${u.following ? 'on' : ''}" data-follow="${esc(u.handle)}" data-on="${u.following ? 0 : 1}">${u.following ? '팔로잉' : '팔로우'}</button>`;
 const needLogin = (msg) => `<div class="card soc-gate"><p class="gate-em">🔐</p><p><b>${msg}</b></p><p class="muted small">아이디만 있으면 1분이면 가입해요</p><button class="btn" data-go="me">로그인 / 가입하기</button></div>`;
 const offCard = () => `<div class="card soc-gate"><p class="gate-em">🛠️</p><p><b>소셜 기능을 준비하고 있어요</b></p><p class="muted small">곧 열려요! 조금만 기다려 주세요</p></div>`;
@@ -136,7 +138,7 @@ document.addEventListener('input', e => {
 const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
-  const chips = [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
+  const chips = (isDev(u) ? '<span class="chip dev">🛠 SVMHS GROUND 개발자</span>' : '') + [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
   const crowns = (d.crowns || []).map(g => `<span class="crown">👑 ${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
@@ -147,7 +149,7 @@ function profileHtml(d) {
        <button class="btn ${mutual ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${mutual ? '' : 'data-locked="1"'}>💬 DM</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${g.em}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
-  return `<article class="pcard c-${esc(u.color)}">
+  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}">
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, MAX_STICKERS).map((s, i) => `<i class="stk ${STK_POS[i]}">${esc(s)}</i>`).join('')}</div>
     <div class="pbody">
       ${av(u, 'big')}
@@ -286,8 +288,8 @@ function openEdit() {
       <label>이름 (닉네임)<input name="name" maxlength="12" required value="${esc(u.name)}"><small class="hint">친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.</small></label>
       <label>상태 메시지<input name="mood" maxlength="24" placeholder="예: 시험 끝나면 놀자🔥" value="${esc(u.mood)}"></label>
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
-      <div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
-        <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>
+      ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0"><p class="hint">🛠 개발자 계정은 학년·반이 표시되지 않아요.</p>' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
+        <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>`}
       <label>인스타 아이디 (선택)<input name="insta" maxlength="60" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="예: svmhs_ground (@ 없이)" value="${esc(u.insta || '')}"><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <p class="lbl">프로필 사진</p>
@@ -523,7 +525,7 @@ async function openRank(game, scope = 'all') {
         : '<li class="empty">아직 아무 반도 기록이 없어요</li>';
       $('#rankNote').textContent = '반마다 최고 기록 상위 3명의 평균이에요. 프로필에 학년·반을 적어야 반 점수에 들어가요.';
     } else {
-      $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>${esc(classTxt(u) || '@' + u.handle)}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
+      $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(u.name)}${devTag(u)}</b><small>${esc(classTxt(u) || '@' + u.handle)}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
       $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : '각자 최고 기록으로 순위를 매겨요';
     }
