@@ -27,7 +27,7 @@
 // 눌림 애니메이션 통일: 트랙패드 '탭하여 클릭'·터치스크린은 누름→뗌이 순식간이라 :active가 거의 안 보인다.
 // 누르는 순간 .is-pressed를 붙이고 최소 MIN ms 유지해, 물리 클릭과 같은 눌림 모션이 보이게 한다.
 (function () {
-  var SEL = '.iconbtn,.hi,.app,.bo,.bt-more,.tray .cell.vote,.tray .it.vote,.drink.vote,.pager button,.btn,.tbtn,.n25 button,.dmpill';
+  var SEL = '.iconbtn,.hi,.app,.bo,.go-svc,.s-svc,.bt-more,.tray .cell.vote,.tray .it.vote,.drink.vote,.pager button,.btn,.tbtn,.n25 button,.dmpill';
   var MIN = 150;
   var cur = null, t0 = 0;
   function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }

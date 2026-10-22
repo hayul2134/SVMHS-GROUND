@@ -1772,3 +1772,19 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .go-svc:hover{transform:rotate(0) translateY(-2px)}
 .go-svc:active,.go-svc.is-pressed{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 .apps{min-height:0;padding:64px 0 48px}
+
+/* ===== 간격·제목 정렬·첫 화면 서비스 버튼 (2026-10-23) ===== */
+/* 띠와 '한눈에 보기' 사이를 넓히고, 서비스들은 한 단계 더 아래로(너무 멀지 않게) */
+.board{padding-top:64px}
+.apps{padding-top:112px}
+/* 제목은 정확히 가운데, '서비스 바로가기'는 제목 오른쪽 옆 */
+.board-h{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:16px}
+.board-h .sec-t{grid-column:2}
+.board-h .go-svc{grid-column:3;justify-self:start}
+@media (max-width:480px){.board-h{grid-template-columns:1fr;row-gap:8px}.board-h .sec-t,.board-h .go-svc{grid-column:1;justify-self:center}}
+/* 첫 화면 ▼ 오른쪽 '서비스' 버튼 */
+.s-svc{position:absolute;bottom:14px;left:50%;margin-left:34px;display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:13px;font-weight:900;color:var(--text);cursor:pointer;padding:6px 12px 6px 9px;border:2.5px solid var(--ink);border-radius:999px;background:var(--card,#fff);box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg);transition:.12s}
+.s-svc svg{width:16px;height:16px}
+.s-svc:hover{transform:rotate(0) translateY(-2px)}
+.s-svc:active,.s-svc.is-pressed{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+@media (prefers-reduced-motion:no-preference){html.pre .stage .s-svc{opacity:0;animation:preFail 0s 5s forwards}.boot .stage .s-svc{animation:hFade .4s ease-out 1.2s backwards}}
