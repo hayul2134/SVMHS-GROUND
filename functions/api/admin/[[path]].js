@@ -40,6 +40,8 @@ async function isAdmin(req, db) {
 }
 const log = (db, action, detail = '') => db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), action, String(detail).slice(0, 300)).run();
 
+// 관리자(개발자) 계정은 관리 화면의 사용자 목록·통계·모니터링에서 뺌 (아이디는 코드 상수라 그대로 넣어도 안전)
+const NA = `handle <> '${ADMIN_HANDLE}'`;
 /* ----- 사용자 찾기 ----- */
 const U = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, created, seen, insta';
 const userOf = (db, h) => db.prepare(`SELECT ${U} FROM users WHERE handle = ?1`).bind(String(h || '').trim().toLowerCase()).first();
@@ -107,10 +109,10 @@ const ROUTES = {
     const t0 = kstStart(), day = kstYmd(), now = Date.now();
     const one = sql => db.prepare(sql);
     const r = await db.batch([
-      one('SELECT COUNT(*) AS n FROM users'),
-      one('SELECT COUNT(*) AS n FROM users WHERE seen >= ?1').bind(t0),
-      one('SELECT COUNT(*) AS n FROM users WHERE seen >= ?1').bind(now - 150e3),
-      one('SELECT COUNT(*) AS n FROM users WHERE created >= ?1').bind(t0),
+      one(`SELECT COUNT(*) AS n FROM users WHERE ${NA}`),
+      one(`SELECT COUNT(*) AS n FROM users WHERE seen >= ?1 AND ${NA}`).bind(t0),
+      one(`SELECT COUNT(*) AS n FROM users WHERE seen >= ?1 AND ${NA}`).bind(now - 150e3),
+      one(`SELECT COUNT(*) AS n FROM users WHERE created >= ?1 AND ${NA}`).bind(t0),
       one('SELECT COUNT(*) AS n FROM messages WHERE at >= ?1').bind(t0),
       one('SELECT COUNT(*) AS n FROM scores WHERE day = ?1').bind(day),
       one('SELECT COUNT(*) AS n FROM reports WHERE done = 0'),
@@ -119,7 +121,7 @@ const ROUTES = {
       one('SELECT COUNT(*) AS n FROM bans WHERE until = 0 OR until > ?1').bind(now),
       one('SELECT COUNT(*) AS n FROM follows'),
       // 최근 14일: 날마다 가입 수 · 게임한 사람 수 · DM 수
-      one(`SELECT ((created + 32400000) / 86400000) AS d, COUNT(*) AS n FROM users WHERE created >= ?1 GROUP BY d`).bind(t0 - 13 * DAY),
+      one(`SELECT ((created + 32400000) / 86400000) AS d, COUNT(*) AS n FROM users WHERE created >= ?1 AND ${NA} GROUP BY d`).bind(t0 - 13 * DAY),
       one(`SELECT day AS d, COUNT(DISTINCT uid) AS n FROM scores WHERE day >= ?1 GROUP BY day`).bind(kstYmd(now - 13 * DAY)),
       one(`SELECT ((at + 32400000) / 86400000) AS d, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY d`).bind(t0 - 13 * DAY),
       one('SELECT grade, cls, COUNT(*) AS n FROM users WHERE grade > 0 AND cls > 0 GROUP BY grade, cls ORDER BY grade, cls'),
@@ -152,18 +154,18 @@ const ROUTES = {
     const TABLES = ['users', 'sessions', 'follows', 'blocks', 'messages', 'scores', 'reports', 'bans', 'meal_votes', 'balance_votes', 'admin_log', 'rl', 'errs'];
     const P = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen';
     const r = await db.batch([
-      db.prepare(`SELECT handle, name, avatar, color, grade, cls, seen FROM users u WHERE seen >= ?1 ORDER BY seen DESC LIMIT 100`).bind(now - 150e3),
-      db.prepare('SELECT SUM(seen >= ?1) AS h, SUM(seen >= ?2) AS w, SUM(seen >= ?3) AS m FROM users').bind(now - 3600e3, now - 7 * 86400e3, now - 30 * 86400e3),
+      db.prepare(`SELECT handle, name, avatar, color, grade, cls, seen FROM users u WHERE seen >= ?1 AND ${NA} ORDER BY seen DESC LIMIT 100`).bind(now - 150e3),
+      db.prepare(`SELECT SUM(seen >= ?1) AS h, SUM(seen >= ?2) AS w, SUM(seen >= ?3) AS m FROM users WHERE ${NA}`).bind(now - 3600e3, now - 7 * 86400e3, now - 30 * 86400e3),
       db.prepare('SELECT COUNT(*) AS n FROM sessions WHERE exp > ?1').bind(now),
       // 최근 활동 (가입 · 게임 기록 · 팔로우 · 신고 · 관리 조치) — 각 20개씩 모아 시간순
-      db.prepare(`SELECT 'signup' AS k, created AS at, ${P}, '' AS x FROM users u ORDER BY created DESC LIMIT 20`),
-      db.prepare(`SELECT 'score' AS k, s.at AS at, ${P}, s.game || ':' || s.best AS x FROM scores s JOIN users u ON u.id = s.uid ORDER BY s.at DESC LIMIT 20`),
-      db.prepare(`SELECT 'follow' AS k, f.at AS at, ${P}, (SELECT handle FROM users WHERE id = f.b) AS x FROM follows f JOIN users u ON u.id = f.a ORDER BY f.at DESC LIMIT 20`),
+      db.prepare(`SELECT 'signup' AS k, created AS at, ${P}, '' AS x FROM users u WHERE ${NA} ORDER BY created DESC LIMIT 20`),
+      db.prepare(`SELECT 'score' AS k, s.at AS at, ${P}, s.game || ':' || s.best AS x FROM scores s JOIN users u ON u.id = s.uid WHERE ${NA} ORDER BY s.at DESC LIMIT 20`),
+      db.prepare(`SELECT 'follow' AS k, f.at AS at, ${P}, (SELECT handle FROM users WHERE id = f.b) AS x FROM follows f JOIN users u ON u.id = f.a JOIN users t ON t.id = f.b WHERE u.${NA} AND t.${NA} ORDER BY f.at DESC LIMIT 20`),
       db.prepare(`SELECT 'report' AS k, r.at AS at, ${P}, (SELECT handle FROM users WHERE id = r.target) AS x FROM reports r JOIN users u ON u.id = r.reporter ORDER BY r.at DESC LIMIT 20`),
       // 오늘(한국) 시간대별: DM 수 · 게임 기록 갱신 수 · 가입 수
       db.prepare(`SELECT ((at + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY h`).bind(t0),
       db.prepare(`SELECT ((at + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM scores WHERE at >= ?1 GROUP BY h`).bind(t0),
-      db.prepare(`SELECT ((created + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM users WHERE created >= ?1 GROUP BY h`).bind(t0),
+      db.prepare(`SELECT ((created + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM users WHERE created >= ?1 AND ${NA} GROUP BY h`).bind(t0),
       // 오늘 투표
       db.prepare('SELECT meal, dish, COUNT(*) AS n FROM meal_votes WHERE ymd = ?1 GROUP BY meal, dish ORDER BY n DESC').bind(day),
       db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(day),
@@ -283,7 +285,7 @@ const ROUTES = {
     const rows = (await db.prepare(`SELECT ${U.replace(/(\w+)/g, 'u.$1')}, (SELECT COUNT(*) FROM reports r WHERE r.target = u.id) AS reps,
         (SELECT COUNT(*) FROM reports r WHERE r.target = u.id AND r.done = 0) AS openReps, b.until AS banUntil
       FROM users u LEFT JOIN bans b ON b.uid = u.id AND (b.until = 0 OR b.until > ?2)
-      WHERE ${where} ORDER BY ${sort} LIMIT 300`).bind(`%${q}%`, Date.now()).all()).results;
+      WHERE ${NA} AND ${where} ORDER BY ${sort} LIMIT 300`).bind(`%${q}%`, Date.now()).all()).results;
     return json({ users: rows.map(u => ({ ...row(u), reps: u.reps, openReps: u.openReps, banned: u.banUntil != null, banUntil: u.banUntil })) });
   },
 
