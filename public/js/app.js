@@ -658,6 +658,57 @@ $$('[data-nav]').forEach(b => b.addEventListener('click', e => {
 }));
 $$('[data-home]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); if (b.classList.contains('off')) homeSide(b.dataset.home); }));
 
+/* ===== 주 고르기 팝업 — 'M/D ~ M/D' 라벨을 누르면 해 ‹ › · 12달 · 그 달의 주 목록으로 바로 이동 =====
+   모달(.sheet는 overflow 스크롤) 안에서도 잘리지 않게 position:fixed로 라벨 아래에 띄움 */
+function weekPick(sel, getMon, setMon) {
+  const lbl = $(sel);
+  const close = () => { $('#wPick')?.remove(); $$('[aria-expanded="true"][data-tip="달·해 골라 이동"]').forEach(b => b.setAttribute('aria-expanded', 'false')); };
+  lbl.onclick = e => {
+    e.stopPropagation();
+    if ($('#wPick')) { const mine = $('#wPick').dataset.for === sel; close(); if (mine) return; }
+    const t = today(), tw = weekOf(t), arrow = (k, d, l) => `<button type="button" data-y="${d}" aria-label="${l}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${k}"/></svg></button>`;
+    const cur = () => getMon(), anchorOf = m => addDays(m, 2);   // 주의 '소속 달'은 수요일 기준
+    let y = anchorOf(cur()).getFullYear(), mo = anchorOf(cur()).getMonth();
+    const box = document.createElement('div');
+    box.id = 'wPick'; box.className = 'mpick wpick'; box.dataset.for = sel;
+    box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '주 고르기');
+    const weeks = () => {   // 그 달에 평일(월~금)이 하루라도 걸친 주
+      const out = []; let m = mondayOf(new Date(y, mo, 1));
+      while (m <= new Date(y, mo + 1, 0)) { if (addDays(m, 4).getMonth() === mo || m.getMonth() === mo) out.push(m); m = addDays(m, 7); }
+      return out.filter(m => addDays(m, 4) >= new Date(y, mo, 1));
+    };
+    const paint = () => {
+      const c = ymd(cur());
+      box.innerHTML = `<div class="mp-y">${arrow('prev', -1, '이전 해')}<b>${y}년</b>${arrow('next', 1, '다음 해')}</div>
+        <div class="mp-m">${Array.from({ length: 12 }, (_, i) => `<button type="button" data-m="${i}" class="${i === mo ? 'on' : ''}${y === t.getFullYear() && i === t.getMonth() ? ' now' : ''}">${i + 1}월</button>`).join('')}</div>
+        <div class="mp-w">${weeks().map(m => `<button type="button" data-w="${ymd(m)}" class="${ymd(m) === c ? 'on' : ''}${ymd(m) === ymd(tw) ? ' now' : ''}">${weekLbl(m)}${ymd(m) === ymd(tw) ? '<small>이번 주</small>' : ''}</button>`).join('')}</div>
+        <button type="button" class="mp-today" data-today="1">이번 주로</button>`;
+    };
+    paint();
+    box.onclick = ev => {
+      ev.stopPropagation();
+      const b = ev.target.closest('button'); if (!b) return;
+      if (b.dataset.y) { y += +b.dataset.y; paint(); return; }
+      if (b.dataset.m) {   // 달을 누르면 그 달 첫 주로 바로 이동, 팝업은 열어 두고 주 목록만 바꿈
+        mo = +b.dataset.m; setMon(weekOf(new Date(y, mo, 1))); paint(); box.querySelector('.mp-w .on, .mp-w button')?.focus(); return;
+      }
+      setMon(b.dataset.today ? tw : parseYmd(b.dataset.w)); close(); lbl.focus();
+    };
+    document.body.append(box);
+    const r = lbl.getBoundingClientRect(), w = box.offsetWidth, vw = document.documentElement.clientWidth;
+    box.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, vw - w - 8)) + 'px';
+    box.style.top = (r.bottom + 10) + 'px';
+    lbl.setAttribute('aria-expanded', 'true');
+    box.querySelector('.mp-w .on, .mp-m .on').focus();
+  };
+  if (!weekPick.on) {   // 바깥 클릭·Esc·스크롤로 닫기 (Esc는 뒤의 모달보다 먼저 받음)
+    weekPick.on = true;
+    document.addEventListener('click', () => $('#wPick') && close());
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#wPick')) { const f = $($('#wPick').dataset.for); close(); f?.focus(); e.stopImmediatePropagation(); } }, true);
+    window.addEventListener('resize', () => $('#wPick') && close());
+    document.addEventListener('scroll', e => { if ($('#wPick') && !$('#wPick').contains(e.target)) close(); }, true);
+  }
+}
 /* ===== 한 주 크게 보기 (첫 화면 카드 '전체' 버튼 → #mAll) — 아래로 내려가지 않고 바로 급식·시간표 한 주 ===== */
 const ALL = { tab: 'meal', mon: null, seq: 0 };
 const weekOf = d => mondayOf(addDays(d, d.getDay() === 6 ? 2 : d.getDay() === 0 ? 1 : 0));
@@ -688,7 +739,7 @@ async function renderAll() {
 $$('#mAll [data-all]').forEach(b => b.onclick = () => { ALL.tab = b.dataset.all; renderAll(); });
 $('#allPrev').onclick = () => { ALL.mon = addDays(ALL.mon, -7); renderAll(); };
 $('#allNext').onclick = () => { ALL.mon = addDays(ALL.mon, 7); renderAll(); };
-$('#allLbl').onclick = () => { ALL.mon = weekOf(today()); renderAll(); };
+weekPick('#allLbl', () => ALL.mon, m => { ALL.mon = m; renderAll(); });
 $('#goMeal').onclick = e => { e.stopPropagation(); openAll('meal', S.sMealDay || today()); };
 $('#goWeek').onclick = e => { e.stopPropagation(); openAll('tt', S.ttPick || ttTarget()); };
 async function renderTTView() {
@@ -700,6 +751,7 @@ async function renderTTView() {
 }
 $('#tPrev').onclick = () => { S.ttWeek = addDays(S.ttWeek, -7); renderTTView(); };
 $('#tNext').onclick = () => { S.ttWeek = addDays(S.ttWeek, 7); renderTTView(); };
+weekPick('#tLbl', () => S.ttWeek, m => { S.ttWeek = m; renderTTView(); });
 
 /* ===== 학사일정 ===== */
 const evHtml = rows => {

@@ -240,7 +240,7 @@
   <div class="view" id="v-tt">
     <div class="card k-tt">
       <div class="ct"><h2 id="ttTitle">주간 시간표</h2>
-        <div class="pager"><button id="tPrev" aria-label="이전 주"><svg viewBox="0 0 24 24"><use href="#i-prev"/></svg></button><span class="lbl" id="tLbl"></span><button id="tNext" aria-label="다음 주"><svg viewBox="0 0 24 24"><use href="#i-next"/></svg></button></div>
+        <div class="pager"><button id="tPrev" aria-label="이전 주"><svg viewBox="0 0 24 24"><use href="#i-prev"/></svg></button><button class="lbl" type="button" id="tLbl" aria-haspopup="dialog" aria-expanded="false" data-tip="달·해 골라 이동"></button><button id="tNext" aria-label="다음 주"><svg viewBox="0 0 24 24"><use href="#i-next"/></svg></button></div>
       </div>
       <div class="scrollx" id="tWeek"></div>
       <p class="note" id="ttNote"></p>
@@ -304,7 +304,7 @@
     <div class="all-head">
       <h3 id="allT">한 주 한눈에</h3>
       <div class="all-tabs mealtabs" role="tablist"><button type="button" role="tab" data-all="meal">급식</button><button type="button" role="tab" data-all="tt">시간표</button></div>
-      <div class="pager"><button type="button" id="allPrev" aria-label="이전 주"><svg viewBox="0 0 24 24"><use href="#i-prev"/></svg></button><button type="button" class="all-wk" id="allLbl" aria-label="이번 주로"></button><button type="button" id="allNext" aria-label="다음 주"><svg viewBox="0 0 24 24"><use href="#i-next"/></svg></button></div>
+      <div class="pager"><button type="button" id="allPrev" aria-label="이전 주"><svg viewBox="0 0 24 24"><use href="#i-prev"/></svg></button><button type="button" class="all-wk" id="allLbl" aria-haspopup="dialog" aria-expanded="false" data-tip="달·해 골라 이동"></button><button type="button" id="allNext" aria-label="다음 주"><svg viewBox="0 0 24 24"><use href="#i-next"/></svg></button></div>
       <button class="all-x" type="button" data-close aria-label="닫기">✕</button>
     </div>
     <div class="all-body" id="allBody"></div>
