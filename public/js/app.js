@@ -921,22 +921,32 @@ function applySkin(k) {
   if (k) h.dataset.skin = k; else delete h.dataset.skin;
   syncBarColor();
   document.querySelectorAll('#mSkin .sk').forEach(b => b.setAttribute('aria-pressed', b.dataset.skin === k));
-  syncMascot();
 }
-// 움직이는 마스코트: 캐릭터 테마이고 '내 캐릭터' 그림이 없을 때만 왼쪽 아래에 인라인 SVG로 띄움(눈 깜빡임·통통·손 흔들기·꼬리).
-// 그림은 js/mascots.js(tools/skins/gen.py가 생성)를 필요할 때만 불러옴. '내 캐릭터' 그림은 지금처럼 배경 스티커(--art)로 가만히.
+// 왼쪽 아래 캐릭터(#mascot): '내 캐릭터' 그림이 있으면 그 그림을 가만히, 없고 캐릭터 테마면 움직이는 마스코트(인라인 SVG, CSS 애니메이션).
+// 마스코트 그림은 js/mascots.js(tools/skins/gen.py가 생성)를 캐릭터 테마일 때만 불러옴. hi=true면 고른 순간 깡충 인사 한 번.
 const CHAR_SET = new Set(SKINS.char.map(c => c[0]));
 let mascotMod = null;
-async function syncMascot() {
-  const k = document.documentElement.dataset.skin || '';
+async function syncMascot(hi) {
+  const k = document.documentElement.dataset.skin || '', art = lsGet(MYART);
   let el = document.getElementById('mascot');
-  const want = CHAR_SET.has(k) && !lsGet(MYART);
-  if (!want) { if (el) el.remove(); return; }
-  try { mascotMod = mascotMod || await import('./mascots.js'); } catch { return; }
-  if ((document.documentElement.dataset.skin || '') !== k) return;  // 불러오는 사이 바뀜
+  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) : CHAR_SET.has(k) ? k : '';
+  if (!key) { if (el) el.remove(); return; }
+  if (!art) {
+    try { mascotMod = mascotMod || await import('./mascots.js'); } catch { return; }
+    if ((document.documentElement.dataset.skin || '') !== k || lsGet(MYART)) return;  // 불러오는 사이 바뀜
+  }
   if (!el) { el = document.createElement('div'); el.id = 'mascot'; el.className = 'mascot'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
-  if (el.dataset.k !== k) { el.dataset.k = k; el.innerHTML = mascotMod.MASCOT[k] || ''; }
+  if (el.dataset.key !== key) {
+    el.dataset.key = key; el.dataset.k = art ? '' : k;
+    if (art) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.src = art; el.replaceChildren(im); }
+    else el.innerHTML = mascotMod.MASCOT[k] || '';
+  }
+  if (hi && !art) { el.classList.remove('hi'); void el.offsetWidth; el.classList.add('hi'); }
 }
+document.addEventListener('animationend', e => { if (e.animationName === 'm-hi') e.target.closest('.mascot')?.classList.remove('hi'); });
+// 다른 탭·앱을 보고 있을 땐 캐릭터 애니메이션 멈춤(배터리·CPU 절약)
+const syncAway = () => document.documentElement.classList.toggle('away', document.hidden);
+document.addEventListener('visibilitychange', syncAway); syncAway();
 function skinBtns(list, face) {
   return list.map(([k, n]) => `<button class="sk sk-${k || 'base'}" type="button" data-skin="${k}" aria-pressed="false">`
     + (face ? '<i class="sk-face" aria-hidden="true"></i>' : '<i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i>')
@@ -947,7 +957,7 @@ $('#skChars').innerHTML = skinBtns(SKINS.char, true);
 $('#mSkin').addEventListener('click', e => {
   const b = e.target.closest('.sk'); if (!b) return;
   const k = b.dataset.skin;
-  const go = () => { applySkin(k); store.set('skin', k || null); };
+  const go = () => { applySkin(k); store.set('skin', k || null); syncMascot(true); };
   if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
 });
 $('#btnSkin').onclick = () => { applySkin(document.documentElement.dataset.skin || ''); myArtUi(); openModal('#mSkin'); };
@@ -958,7 +968,6 @@ const MYART = 'sg_myart', MYPAT = 'sg_mypat';
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 function setMyArt(art, pat) {
   const rs = document.documentElement.style;
-  if (art) rs.setProperty('--art', `url("${art}")`); else rs.removeProperty('--art');
   if (art && pat) { rs.setProperty('--pat', `url("${pat}")`); rs.setProperty('--pat-size', '90px 90px'); }
   else { rs.removeProperty('--pat'); rs.removeProperty('--pat-size'); }
   syncMascot();

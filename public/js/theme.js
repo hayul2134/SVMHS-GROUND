@@ -12,12 +12,11 @@
   var k = null;
   try { k = JSON.parse(localStorage.getItem('sg_skin')); } catch (e) {}
   if (/^[a-z]{2,12}$/.test(k || '')) document.documentElement.dataset.skin = k;
-  // 내 캐릭터 그림(app.js가 줄여서 저장한 data URL)
+  // 내 캐릭터 그림의 옅은 배경 무늬(app.js가 줄여서 저장한 data URL). 왼쪽 아래 스티커는 app.js가 #mascot으로 붙임
   try {
     var a = localStorage.getItem('sg_myart'), pt = localStorage.getItem('sg_mypat');
     if (a && a.indexOf('data:image/') === 0) {
       var rs = document.documentElement.style;
-      rs.setProperty('--art', 'url("' + a + '")');
       if (pt && pt.indexOf('data:image/') === 0) { rs.setProperty('--pat', 'url("' + pt + '")'); rs.setProperty('--pat-size', '90px 90px'); }
     }
   } catch (e) {}

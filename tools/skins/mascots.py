@@ -61,7 +61,7 @@ def body(c, l, belly=None, feet=None, wave=False, arms=True):
             o += f"<g class='ma'><ellipse cx='72' cy='66' rx='4.6' ry='6.6' transform='rotate(-30 72 66)' fill='{c}' {ln(l)}/></g>"
         else:
             o += f"<ellipse cx='66.5' cy='81' rx='4.6' ry='6.2' transform='rotate(-28 66.5 81)' fill='{c}' {ln(l)}/>"
-    return o
+    return o + HEAD  # 여기부터 머리(고개 갸웃·따라 움직임)
 
 
 def tail(d, c, l, w=6):
@@ -74,6 +74,7 @@ def cloud(circles, c, l, w=2.6):
             + ''.join(f"<circle cx='{x}' cy='{y}' r='{r-w/2-.2:.1f}' fill='{c}'/>" for x, y, r in circles))
 
 
+HEAD = '<!--H-->'
 SHADOW = "<ellipse cx='50' cy='96' rx='24' ry='2.8' fill='#000' opacity='.08'/>"
 
 
@@ -107,7 +108,7 @@ def M_bear():
 
 def M_bunny():
     c, l, p = '#ffffff', '#e2a6bd', '#ffc9dc'
-    return (SHADOW + body(c, l) + "<circle cx='66' cy='88' r='5' fill='#fff' " + ln(l) + "/>"
+    return (SHADOW + body(c, l).replace(HEAD, '') + "<circle cx='66' cy='88' r='5' fill='#fff' " + ln(l) + "/>" + HEAD
             + f"<path d='M33 32 C26 12 29 3 35 3 C42 3 44 14 43 32Z' fill='{c}' {ln(l)}/><path d='M67 32 C74 12 71 3 65 3 C58 3 56 14 57 32Z' fill='{c}' {ln(l)}/>"
             + f"<path d='M35 27 C31 14 32 9 35 9 C38 9 39 16 39 27Z' fill='{p}'/><path d='M65 27 C69 14 68 9 65 9 C62 9 61 16 61 27Z' fill='{p}'/>"
             + mochi(c, l, top=22) + eyes(57) + blush(64, 19) + dotnose(61, '#ff9bb8', 1.4) + mouth(63.6, 3))
@@ -228,10 +229,15 @@ def M_axolotl():
 
 
 def _wrap(v):
-    # 그림자 뺀 몸 전체를 .mb로 묶음(통통 튀기 애니메이션). 정적 그림(스티커 미리보기·무늬)에선 클래스가 무시됨
+    # 그림자(.msh) · 몸 전체(.mb) 안에 몸통(.mbo)과 머리(.mh)를 나눠 묶음 → 머리가 몸보다 살짝 늦게 따라 움직이게(겹침 동작)
+    # 정적 그림(고르기 버튼·배경 무늬)에선 클래스·주석이 아무 영향 없음
     assert v.startswith(SHADOW)
-    return SHADOW + "<g class='mb'>" + v[len(SHADOW):] + '</g>'
+    v = v[len(SHADOW):]
+    if HEAD in v:
+        b, h = v.split(HEAD, 1)
+        v = f"<g class='mbo'>{b}</g><g class='mh'>{h}</g>"
+    return f"<g class='msh'>{SHADOW}</g><g class='mb'>{v}</g>"
 
 
-# 움직이는 부위 클래스: .mb 몸 전체 · .me 눈(깜빡임) · .ma 흔드는 팔 · .mt 꼬리 · .ms 고래 물줄기 · .mk 반짝이
+# 움직이는 부위 클래스: .msh 그림자 · .mb 몸 전체 · .mbo 몸통 · .mh 머리 · .me 눈(깜빡임) · .ma 흔드는 팔 · .mt 꼬리 · .ms 고래 물줄기 · .mk 반짝이
 MASCOT = {k[2:]: _wrap(v()) for k, v in list(globals().items()) if k.startswith('M_')}
