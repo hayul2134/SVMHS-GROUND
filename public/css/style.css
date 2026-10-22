@@ -564,13 +564,19 @@ html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .week td.pn small{display:block;margin-top:3px;font-family:var(--num);font-size:11.5px;font-weight:800;color:var(--sub)}
 .week td.past{border-style:dashed;color:color-mix(in srgb,var(--text) 80%,var(--card))}
 .week td.past .si{opacity:.7}
-.week td.today{background:color-mix(in srgb,var(--lime) 45%,var(--card));color:var(--ink);border:2px solid var(--ink)}
-:root[data-theme="dark"] .week td.today:not(.e){background:color-mix(in srgb,var(--lime) 30%,var(--card));color:var(--text)}
+.week td.today{background:color-mix(in srgb,var(--lime) 20%,var(--card));color:var(--ink);border:2px solid var(--ink)}
+:root[data-theme="dark"] .week td.today:not(.e){background:color-mix(in srgb,var(--lime) 14%,var(--card));color:var(--text)}
 .week td.today .x2{border-color:var(--ink);color:var(--ink)}
 .week td.today.done{opacity:.8;background:var(--chip);color:color-mix(in srgb,var(--text) 75%,var(--card));border-color:var(--line)}
 .week td.today.done .sj{text-decoration:line-through 2px;text-decoration-color:color-mix(in srgb,var(--sub) 60%,transparent)}
-.week td.now{background:var(--lime);color:var(--ink);box-shadow:var(--sh-s);transform:scale(1.04) rotate(-1deg);z-index:1;font-weight:900}
-.week td.now::before{content:"지금";position:absolute;top:-10px;left:-8px;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:7px;background:var(--red);color:var(--ink);border:2px solid var(--ink);transform:rotate(-8deg)}
+.week td.now,:root[data-theme="dark"] .week td.today.now:not(.e){background:var(--yellow);color:#173048;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);transform:scale(1.07) rotate(-1deg);z-index:1;font-weight:900;overflow:visible}
+.week td.now .sic{color:#173048}
+.week td.now .x2{bottom:13px;background:#fff;color:#173048;border-color:#173048}
+.week td.now::before{content:"지금";white-space:nowrap;position:absolute;top:-13px;left:-10px;font-size:12px;font-weight:900;padding:2px 8px;border-radius:8px;background:var(--red);color:#173048;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);transform:rotate(-6deg);z-index:2}
+.week td.now[data-left]::before{content:"지금 · " attr(data-left)}
+.week td.now::after{content:"";position:absolute;left:6px;right:6px;bottom:4px;height:5px;border-radius:99px;background:linear-gradient(90deg,var(--hero) var(--pg,0%),color-mix(in srgb,#173048 14%,transparent) 0)}
+.week td.pn.nowp b{display:inline-block;min-width:28px;padding:1px 0;border-radius:9px;background:var(--yellow);color:#173048;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);transform:rotate(-4deg)}
+.week td.pn.nowp small{color:var(--text)}
 .week td.next{border-style:dashed;border-color:var(--ink)}
 .week td.next::before{content:"다음";position:absolute;top:-10px;left:-8px;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:7px;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);transform:rotate(-8deg)}
 .week td.e:not(.pn),.week td.e.today{background:none;border-color:transparent;box-shadow:none}

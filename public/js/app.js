@@ -137,6 +137,7 @@ function tickClock() {
     markWeek(n.getDay() % 6 && isSchoolDay(n) ? pi : null);
     $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', live && p === pi.cur); li.classList.toggle('next', live && !pi.cur && p === pi.nxt); li.classList.toggle('done', live && p < pi.done && p !== pi.cur); });
   }
+  weekProg(secNow);
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
@@ -757,7 +758,13 @@ function markWeek(pi = weekPI) {
     td.classList.toggle('now', now);
     td.classList.toggle('next', live && has && !now && !pi.cur && pi.done < 99 && pi.nxt === a);
     td.classList.toggle('done', live && has && !now && pi.done > z);
+    if (!now) delete td.dataset.left;
   });
+  // 지금 교시 줄의 교시 번호(왼쪽 열)도 강조 → 표 어디서 봐도 지금 줄을 따라갈 수 있게
+  $$('.week td.pn').forEach(c => c.classList.remove('nowp'));
+  const cur = $('.week td.now');
+  if (cur) { let tr = cur.closest('tr'); for (let k = +cur.dataset.p; k <= +cur.dataset.p2 && tr; k++, tr = tr.nextElementSibling) tr.querySelector('td.pn')?.classList.add('nowp'); }
+  weekProg();
   // 카드 머리 오른쪽 작은 상태 칩: 지금 수업 / 다음 수업 / 오늘 끝
   const el = $('#hwNow'); if (!el) return;
   const rs = S.todayTT || [], sj = p => { const r = rs.find(x => +x.PERIO === p); return r ? subjName(r.ITRT_CNTNT) : ''; };
@@ -769,6 +776,16 @@ function markWeek(pi = weekPI) {
     else if (pi.nxt && sj(pi.nxt)) h = `<em class="n">다음</em>${subjIcon(sj(pi.nxt))} ${pi.nxt}교시 · ${esc(sj(pi.nxt))}`;
   }
   el.innerHTML = h; el.hidden = !h;
+}
+// 지금 칸 진행 막대(--pg)와 남은 분(data-left) — 1초마다 tickClock이 부름
+function weekProg(sec) {
+  const td = $('.week td.now'); if (!td) return;
+  if (sec == null) { const nb = bellNow(); sec = nb.getHours() * 3600 + nb.getMinutes() * 60 + nb.getSeconds(); }
+  const a = BELL.find(x => x.p === +td.dataset.p), z = BELL.find(x => x.p === +td.dataset.p2);
+  if (!a || !z) return;
+  const tot = z.end - a.start, pg = Math.min(1, Math.max(0, (sec - a.start) / tot)), m = Math.max(1, Math.ceil((z.end - sec) / 60));
+  td.style.setProperty('--pg', (pg * 100).toFixed(1) + '%');
+  const t = `${m}분 남음`; if (td.dataset.left !== t) td.dataset.left = t;
 }
 function renderHomeWeek() {
   const mon = S.homeWeek;
