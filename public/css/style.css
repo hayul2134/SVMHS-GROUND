@@ -320,9 +320,9 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .drawers .s-ttc .s-put:hover svg{transform:scaleX(-1) translateX(-2px)}
 .s-tt.stow{position:fixed;top:var(--hcy,50%);z-index:40;margin:0;max-width:calc(100vw - 64px);transition:transform .4s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
 .s-meal.stow{left:0;transform:translate(calc(-100% - 6px),-50%)}
-.s-meal.stow.open{transform:translate(18px,-50%) rotate(-.6deg)}
+.s-meal.stow.open{transform:translate(var(--mx,18px),-50%) rotate(-.6deg)}
 .s-ttc.stow{right:0;transform:translate(calc(100% + 6px),-50%)}
-.s-ttc.stow.open{transform:translate(-18px,-50%) rotate(.6deg)}
+.s-ttc.stow.open{transform:translate(calc(-1 * var(--tx,18px)),-50%) rotate(.6deg)}
 .tuck .s-meal.stow.open{transform:translate(calc(-100% - 6px),-50%)}
 .tuck .s-ttc.stow.open{transform:translate(calc(100% + 6px),-50%)}
 /* 포스트잇 탭: 정사각 메모지 한 장이 화면 끝 뒤에 붙어 삐져나온 모양 — 위쪽 접착 띠, 아래 모서리가 들려서 생기는 그림자, 살짝 말린 모서리 */

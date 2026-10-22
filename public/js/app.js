@@ -824,7 +824,7 @@ const HERO_PARTS = '.s-greet .bubble, #bellLbl, #bigTime, .clock .dk, #more';
 // force=false(글자 폭 변화 등)일 땐 6px 미만 차이는 무시 → 말풍선 흔들림·별 반짝임 때문에 다시 잴 때마다 1~3px씩 튀던 문제 방지
 function centerHero(force) {
   const st = HERO.style;
-  if (!HERO.classList.contains('drawers')) { st.removeProperty('--hx'); st.removeProperty('--hy'); st.removeProperty('--hcy'); return; }
+  if (!HERO.classList.contains('drawers')) { for (const v of ['--hx', '--hy', '--hcy', '--mx', '--tx']) st.removeProperty(v); return; }
   if (!force && document.documentElement.classList.contains('tuck')) return;   // 첫 화면을 안 보고 있을 땐 안 잼
   if (document.documentElement.classList.contains('boot')) return;   // 등장 애니메이션 중엔 크기가 변하므로 안 잼
   const hx = parseFloat(st.getPropertyValue('--hx')) || 0, hy = parseFloat(st.getPropertyValue('--hy')) || 0;
@@ -847,9 +847,15 @@ function centerHero(force) {
   if (B + dy > bot) dy = bot - B;
   if (T + dy < top) dy = Math.min(0, top - T);
   dy = Math.round(dy);
-  if (!force && Math.abs(dx - hx) < 6 && Math.abs(dy - hy) < 6) return;
+  if (!force && Math.abs(dx - hx) < 6 && Math.abs(dy - hy) < 6) { dx = hx; dy = hy; }   // 작은 차이는 무시(시계는 그대로), 서랍 위치만 다시 맞춤
   if (dx !== hx) st.setProperty('--hx', dx + 'px');
   if (dy !== hy) st.setProperty('--hy', dy + 'px');
+  // 좌우 서랍을 시계 묶음 기준으로 대칭 배치 (2026-10-23): 묶음 왼쪽 끝~급식판, 묶음 오른쪽 끝~시간표 사이 간격을 같게.
+  // 두 카드 폭이 달라 둘 다 화면 끝에 붙이면 간격이 짝짝이로 보이던 문제. 자리가 좁은 쪽은 화면 끝 18px, 넓은 쪽이 안으로 들어옴
+  const vw = document.documentElement.clientWidth, mw = SIDE.meal.el.offsetWidth, tw = SIDE.tt.el.offsetWidth;
+  const gap = Math.floor(Math.min(L + dx - mw, vw - (R + dx) - tw) - 18);
+  if (gap >= 16) { st.setProperty('--mx', Math.round(L + dx - gap - mw) + 'px'); st.setProperty('--tx', Math.round(vw - (R + dx) - gap - tw) + 'px'); }
+  else { st.removeProperty('--mx'); st.removeProperty('--tx'); }
   // 좌우 서랍도 같은 가운데 줄에. 서랍이 헤더·화면 아래에 걸리면 화면 가운데로
   const cy = Math.round((T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
@@ -858,7 +864,7 @@ let heroRaf = 0, heroForce = false;
 const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(() => { const f = heroForce; heroForce = false; centerHero(f); }); };
 const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
-const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet']) heroRO.observe($(s));
+const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet']) heroRO.observe($(s)); heroRO.observe(SIDE.meal.el); heroRO.observe(SIDE.tt.el);   // 카드 폭이 바뀌면(음료 칸 등) 간격 다시 맞춤
 new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
 new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
 document.fonts?.ready.then(heroResize); heroResize();
