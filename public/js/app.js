@@ -565,6 +565,8 @@ function paintBalance() {
   $('#plQ').textContent = BAL.q;
   $('#plSt').textContent = st.txt;
   $('#plC').textContent = BAL.ncom;
+  $('#plComN').textContent = BAL.ncom;
+  $('#plComT').textContent = BAL.open && !BAL.mine ? '한쪽 고르고 댓글 달기' : BAL.ncom ? '댓글 보고 한마디 남기기' : '첫 댓글 남기기';
   $('#plOpts').innerHTML = balOpt('a') + '<span class="bo-vs" aria-hidden="true">VS</span>' + balOpt('b');
   fillBars($('#plOpts'));
   if ($('#mBal').classList.contains('open')) paintBalSheet();
@@ -625,7 +627,7 @@ const onPick = e => { const el = e.target.closest('[data-pick]'); if (el) balVot
 $('#plOpts').addEventListener('click', onPick);
 $('#bsOpts').addEventListener('click', onPick);
 $('#plMore').onclick = () => { if (!BAL) return; paintBalSheet(); openModal('#mBal'); loadBalance().then(pollBalance); };
-$('#plQ').onclick = $('#plMore').onclick;
+$('#plQ').onclick = $('#plCom').onclick = $('#plMore').onclick;
 $('#bsForm').addEventListener('submit', async e => {
   e.preventDefault();
   const inp = $('#bsIn'), body = inp.value.trim();

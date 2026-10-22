@@ -1621,3 +1621,25 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 /* 첫 화면 서랍 시간표에도 과목 아이콘 */
 .tt li .s .si{font-style:normal;margin-right:6px}
 .tt li .s .si .sic{width:1.25em;height:1.25em}
+
+/* ===== 밸런스 티켓 보강 (2026-10-23): 카드는 조연 그대로, 질문·승리 결과·댓글 입구만 또렷하게 ===== */
+.bal-t .bt-q{font-size:15.5px;color:var(--text);margin:6px 2px 8px}
+.bal-t .bt-q::before{content:"Q.";font-family:var(--num);font-weight:800;color:var(--accent);margin-right:5px}
+/* 마감 뒤 결과: 이긴 쪽은 색 꽉 채우고 굵은 테두리 + 왕관·WIN, 진 쪽은 흐리게 */
+.bal-t.st-done .bt-st{color:var(--text);font-weight:900}
+.bal-t .bt-opts .bo.win{border:2px solid var(--ink);opacity:1;filter:none}
+.bal-t .bo.win .bo-fill{opacity:.9}
+.bal-t .bo.win .bo-t,.bal-t .bo.win .bo-p{color:var(--ink)}
+.bal-t .bo.win .bo-crown,.bal-t .bo.win .bo-stamp{display:inline-block}
+.bal-t .bo.win .bo-crown{font-size:14px}
+.bal-t .bo.lose{opacity:.45;filter:grayscale(.8)}
+.bal-t .bo.lose .bo-fill{opacity:.25}
+:root[data-theme="dark"] .bal-t .bo.win .bo-t,:root[data-theme="dark"] .bal-t .bo.win .bo-p{color:#fff}
+:root[data-theme="dark"] .bal-t .bt-opts .bo.win{border-color:#fff}
+/* 댓글 입구: 입력칸처럼 보이는 줄 하나 (누르면 크게 보기 + 댓글) */
+.bt-com{display:flex;align-items:center;gap:6px;width:100%;margin-top:7px;padding:6px 10px;border-radius:10px;border:1.5px dashed var(--line);background:var(--chip);color:var(--sub);font:inherit;font-size:12.5px;font-weight:900;text-align:left;cursor:pointer;transition:border-color .12s,color .12s}
+.bt-com:hover{border-color:var(--accent);color:var(--text)}
+.bt-com #plComT{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-com b{font-family:var(--num);font-weight:800;color:var(--accent)}
+.bt-com .bc-go{font-size:15px;line-height:1}
+.bal-t .bt-more{display:none}
