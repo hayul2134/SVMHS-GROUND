@@ -1107,10 +1107,10 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .sk-myface:not(.on){border-style:dashed;border-color:var(--line)}
 .sk-opt{display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:800;font-size:13.5px;text-align:left}
 /* 왼쪽 아래 캐릭터(움직이는 마스코트 / '내 캐릭터' 그림) — app.js syncMascot()가 body 끝에 붙임.
-   z-index:-1 → 배경처럼 내용 뒤. will-change로 자기 층을 따로 가져서, 캐릭터가 움직여도 페이지 나머지는 다시 그리지 않음.
+   z-index:49 → 화면의 모든 카드·띠보다 위(사용자 요청), 창(.modal 50)·소개(55)·게임(70)보다는 아래. pointer-events:none이라 겹쳐도 아래 버튼은 그대로 눌림. will-change로 자기 층을 따로 가져서, 캐릭터가 움직여도 페이지 나머지는 다시 그리지 않음.
    애니메이션 원칙(tools/skins/ANIMATION_GUIDE.md): 숨쉬기(아주 작은 늘고 줄기) → 예비동작(찌그러짐) → 점프(늘어남) → 착지(찌그러짐) → 출렁임,
    머리는 몸보다 늦게 따라오고(겹침), 그림자는 뜰 때 작아짐. 한 사이클 9초 중 대부분은 쉬는 동작이라 수업 화면에 거슬리지 않게. */
-.mascot{position:fixed;left:18px;bottom:18px;width:min(150px,26vw);aspect-ratio:1;z-index:-1;pointer-events:none;will-change:transform;contain:layout style}
+.mascot{position:fixed;left:18px;bottom:18px;width:min(150px,26vw);aspect-ratio:1;z-index:49;pointer-events:none;will-change:transform;contain:layout style}
 .mascot svg,.mascot img{display:block;width:100%;height:100%;object-fit:contain;object-position:left bottom;overflow:visible}
 .mascot g{transform-box:fill-box}
 .mascot .mb{transform-origin:50% 100%;animation:m-idle 9s infinite}
