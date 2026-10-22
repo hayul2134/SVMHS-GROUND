@@ -1951,3 +1951,53 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .s-svc:hover{transform:rotate(0) translateY(-2px)}
 .s-svc:active,.s-svc.is-pressed{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 @media (prefers-reduced-motion:no-preference){html.pre .stage .s-svc{opacity:0;animation:preFail 0s 5s forwards}.boot .stage .s-svc{animation:hFade .4s ease-out 1.2s backwards}}
+
+/* ===== 한눈에 보기 정돈 (2026-10-23) — 이 블록만 지우면 이전 모습으로 돌아감 =====
+   원칙: 굵은 테두리·그림자는 바깥 카드만 / 노란색은 '지금·오늘'에만 / 기울기·테이프 없음 / 같은 정보는 한 번만 */
+.board{scroll-margin-top:84px}
+/* 카드: 기울기·테이프 제거 */
+.board .bento .card,.board .bento #weekTT{transform:none}
+.board .bento .card::before{display:none}
+.board .bento .card:hover{transform:translateY(-2px)}
+/* 시간표 칸: 테두리 없이 연한 바탕 + 간격으로만 구분 */
+.board .week td:not(.pn){border:0;background:color-mix(in srgb,var(--chip) 70%,var(--card));font-weight:700;font-size:13.5px;box-shadow:none}
+.board .week td.e:not(.pn){background:none}
+.board .week td.dbl{background:color-mix(in srgb,var(--chip) 70%,var(--card))}
+.board .week td .si{font-size:16px;margin-bottom:2px;opacity:.55}
+.board .week td.dbl .si{font-size:18px}
+.board .week td .si .sic{filter:none}
+.board .week td .x2{border:0;background:none;font-size:11px;font-weight:800;color:var(--sub);right:6px;bottom:4px}
+/* 지난 요일은 흐리게, 오늘 열은 색 대신 머리글만 강조 */
+.board .week td.past{opacity:.6;color:var(--text)}
+.board .week th.past{opacity:.6}
+.board .week td.today:not(.now),:root[data-theme="dark"] .board .week td.today:not(.now):not(.e){background:color-mix(in srgb,var(--chip) 70%,var(--card));color:var(--text);border:0}
+.board .week td.today.e{background:none}
+.board .week th.today .wd-w{transform:none;box-shadow:none}
+.board .week th.today .wd-w::after{content:none}
+/* 지금 수업: 노란 칸 + 진행 막대만 (기울어진 '지금' 배지는 남은 시간만 작게) */
+.board .week td.now,:root[data-theme="dark"] .board .week td.today.now:not(.e){background:var(--yellow);color:#173048;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:none}
+.board .week td.now .si{opacity:.9;animation:none}
+.board .week td.now::before{content:"";display:none}
+.board .week td.now[data-left]::before{display:block;content:attr(data-left);position:absolute;top:5px;right:6px;left:auto;transform:none;background:none;border:0;box-shadow:none;padding:0;font-size:10.5px;font-weight:800;color:#173048;opacity:.75}
+.board .week td.now .x2{color:#173048;background:none}
+.board .week td.next{border:2px dashed color-mix(in srgb,var(--ink) 45%,transparent)}
+.board .week td.next::before{transform:none;border:0;top:-8px;left:6px;font-size:10px;padding:0 6px}
+.board .week td.pn.nowp b{box-shadow:none}
+/* 머리 상태 칩: 기울기·테두리 제거 (다음 수업 안내용으로만 남김) */
+.board .hw-now{transform:none;border:0;box-shadow:none;background:var(--chip)}
+.board .hw-now em{border:0}
+/* 급식: 메인 메뉴만 강조, 나머지는 테두리 없는 목록 */
+.board .ml li{border:0;background:color-mix(in srgb,var(--chip) 70%,var(--card));font-weight:700}
+.board .ml:not(.nomain) li:first-child{transform:none;border:2px solid var(--ink);font-weight:800}
+.board .ml li.picked{box-shadow:inset 0 0 0 2px var(--lime)}
+/* 다가오는 일정: 첫 일정만 색 카드, 나머지는 같은 톤의 줄 */
+.board .up{transform:none;box-shadow:none;border:0;background:color-mix(in srgb,var(--chip) 70%,var(--card));color:var(--text)}
+.board .up:nth-child(n){transform:none}
+.board .up:not(.first){background:color-mix(in srgb,var(--chip) 70%,var(--card))}
+.board .up.first{transform:none;border:var(--bd);box-shadow:var(--sh-s);background:var(--hero);color:var(--ink);min-height:0}
+.board .up:not(.first) .num{font-size:20px;color:var(--k)}
+.board .up.mine:not(.first){background:color-mix(in srgb,var(--lime) 35%,var(--card))}
+.board .up:hover{transform:translateY(-2px)}
+.board .up .tag{position:static;transform:none;border:0;flex:none;font-size:10.5px;padding:2px 7px;align-self:center}
+/* 아래로 스크롤했을 땐 양옆 포스트잇 숨김 (같은 내용이 화면에 이미 있음) */
+html.tuck .s-tt.stow{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s,visibility 0s .2s}
