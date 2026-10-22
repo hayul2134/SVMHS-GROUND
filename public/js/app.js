@@ -303,7 +303,7 @@ function paintFood(root) {
   root.querySelectorAll('.fx[data-img]').forEach(el => {
     if (el.firstChild) return;
     const img = new Image();
-    img.alt = ''; img.decoding = 'async'; img.src = `/food/${el.dataset.img}.webp`;
+    img.alt = ''; img.decoding = 'async'; img.src = `/food/c/${el.dataset.img}.webp`;
     img.addEventListener('error', () => { delete el.dataset.img; el.classList.remove('fximg'); el.closest('.cell,.it')?.classList.remove('hasimg'); el.innerHTML = ''; paintFood(root); }, { once: true });
     el.appendChild(img);
     el.closest('.cell,.it')?.classList.add('hasimg');

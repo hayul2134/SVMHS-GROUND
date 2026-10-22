@@ -569,14 +569,51 @@ const RULES = [
   [/볶음|조림|구이|찜/, 'veg'],
   [/소스|양념장|쌈장|초장|드레싱/, 'sauce'],
 ];
-/* ---------- 실제 음식 이미지 (public/food/*.webp, 384px) ----------
-   메뉴 이름(알레르기 번호 뺀 것) → 파일 이름. 있으면 그림 대신 이미지를 칸에 꽉 차게 깔고, 없거나 못 불러오면 위의 그림으로 대신함.
-   이미지는 Cloudflare Workers AI 무료 사용량으로 생성(FLUX·Lucid Origin). 새 메뉴는 여기에 한 줄씩 추가 */
-const FOOD_IMG = {
-  '마라부대볶음': 'mala-budae', '붕어싸만코와플': 'fish-waffle', '연근유자청조림': 'lotus-yuja', '배추된장나물': 'cabbage-doenjang',
-  '깍두기': 'kkakdugi', '현미밥': 'brown-rice', '북어채무국': 'bugeo-mu-soup',
+/* ---------- 카툰 음식 그림 (public/food/c/<키>.webp, 투명 배경 256px) ----------
+   메뉴 이름 → 그림 키. ① 아래 규칙(위에서부터 먼저 맞는 것) ② 없으면 종류(foodKind)별 기본 그림.
+   CARTOON에 있는 키만 이미지로 보여 주고, 아직 없는 키는 위의 도형 그림으로 대신함.
+   그림은 tools/food-gen(Cloudflare Workers AI 무료)으로 만듦 — 새 키를 만들면 CARTOON에도 추가 */
+export const CARTOON = new Set([/*CARTOON_KEYS*/'banana', 'braised_spicy', 'bulgogi', 'burger', 'chicken_braised', 'croquette', 'cucumber_muchim', 'dakgalbi', 'duck', 'fishcake_stirfry', 'fried_mixed', 'fruit_mixed', 'galbijjim', 'geotjeori', 'gim', 'gim_jaban', 'gimbap', 'grape', 'japchae', 'jeyuk', 'jinmichae', 'jjajangmyeon', 'kimchi_cabbage', 'kimchi_chonggak', 'kimchi_cucumber', 'kimchi_white', 'kiwi', 'melon', 'muchim_misc', 'namul_beansprout', 'namul_green', 'noodle_red', 'noodle_soup', 'nugget', 'orange', 'pasta', 'pastry', 'pineapple', 'porridge', 'rice_bibim', 'rice_curry', 'rice_fried', 'rice_jjajang', 'rice_kimchi_fried', 'rice_multigrain', 'salad_green', 'soup_beansprout', 'soup_budae', 'soup_clear', 'soup_cream', 'soup_doenjang', 'soup_fishcake', 'soup_kimchi', 'soup_miyeok', 'soup_radish', 'soup_red', 'tangsuyuk', 'tomato', 'udon', 'watermelon']);
+const CK = [
+  [/김치볶음밥/, 'rice_kimchi_fried'], [/볶음밥|필라프|오므라이스|리조또/, 'rice_fried'], [/비빔밥/, 'rice_bibim'], [/김밥|주먹밥/, 'gimbap'],
+  [/카레|커리|하이라이스/, 'rice_curry'], [/짜장밥/, 'rice_jjajang'], [/덮밥|마요$|라이스$/, 'rice_donburi'], [/죽$/, 'porridge'],
+  [/흑미.*밥$/, 'rice_black'], [/(잡곡|현미|보리|기장|차조|콩|수수|귀리|율무|오곡|팥|조)밥$/, 'rice_multigrain'], [/밥$/, 'rice_white'],
+  [/미역.*(국|탕)$/, 'soup_miyeok'], [/계란국|달걀국|파송송/, 'soup_egg'], [/콩나물국/, 'soup_beansprout'], [/무국$|뭇국|무채국/, 'soup_radish'],
+  [/부대찌개/, 'soup_budae'], [/순두부찌개|순두부국/, 'soup_sundubu'], [/김치(찌개|국)/, 'soup_kimchi'], [/(된장|청국장|시래기|아욱).*(국|찌개|탕)$/, 'soup_doenjang'],
+  [/육개장|짬뽕|매콤.*(국|탕|찌개)$|얼큰|짜글이|고추장찌개|닭개장|감자탕/, 'soup_red'], [/어묵(국|탕)|오뎅(국|탕)/, 'soup_fishcake'], [/수프|스프/, 'soup_cream'],
+  [/깍두기|석박지|섞박지/, 'kkakdugi'], [/총각/, 'kimchi_chonggak'], [/오이소박이|오이김치/, 'kimchi_cucumber'], [/볶음김치|김치볶음$/, 'kimchi_fried'], [/백김치|물김치|나박/, 'kimchi_white'],
+  [/김자반|김가루/, 'gim_jaban'], [/맨김|돌김|^김$/, 'gim'], [/유린기|꿔바로우/, 'tangsuyuk'], [/칠리새우|새우튀김/, 'fried_mixed'], [/단감/, 'fruit_mixed'],
+  [/파인애플/, 'pineapple'], [/사과/, 'apple'], [/바나나/, 'banana'], [/토마토/, 'tomato'], [/귤|오렌지|한라봉|천혜향|레드향/, 'orange'], [/멜론|참외/, 'melon'], [/수박/, 'watermelon'], [/포도|머스캣|머스켓/, 'grape'], [/키위/, 'kiwi'],
+  [/마라/, 'mala'], [/떡볶이/, 'tteokbokki'], [/제육/, 'jeyuk'], [/닭갈비/, 'dakgalbi'], [/(오징어|주꾸미|쭈꾸미|낙지).*볶음/, 'squid_stirfry'], [/찜닭/, 'chicken_braised'],
+  [/매콤.*(갈비|찜)/, 'braised_spicy'], [/갈비찜|갈비$/, 'galbijjim'], [/불고기|주물럭|너비아니/, 'bulgogi'], [/오리/, 'duck'], [/소시지|비엔나|후랑크/, 'sausage'], [/햄|스팸/, 'ham'], [/어묵|오뎅/, 'fishcake_stirfry'],
+  [/생선까스|생선가스|피쉬/, 'fish_cutlet'], [/까스|가스$|카츠|커틀릿/, 'donkatsu'], [/탕수/, 'tangsuyuk'], [/치킨|강정|닭튀김|윙|봉구이/, 'fried_chicken'], [/너겟|텐더/, 'nugget'], [/크로켓|고로케|치즈볼/, 'croquette'],
+  [/마카로니|감자샐러드|콘샐러드|크래미샐러드|코울슬로|에그샐러드/, 'salad_mayo'],
+  [/짜장면/, 'jjajangmyeon'], [/우동/, 'udon'], [/쫄면|비빔|냉면|막국수/, 'noodle_red'], [/잡채/, 'japchae'], [/크림.*(스파게티|파스타)|까르보/, 'pasta_cream'], [/스파게티|파스타|푸실리|뇨끼/, 'pasta'],
+  [/피자/, 'pizza'], [/버거/, 'burger'], [/타르트/, 'tart'], [/케이크|카스테라/, 'cake'], [/와플|붕어|크로플/, 'waffle'], [/도넛|도너츠/, 'donut'], [/마카롱/, 'macaron'], [/파이|트위스트|데니쉬|크로와상/, 'pastry'],
+  [/마파/, 'mapo_tofu'], [/연두부/, 'tofu_soft'],
+  [/계란찜|달걀찜/, 'egg_steamed'], [/후라이|프라이/, 'egg_fried'],
+  [/감자전/, 'jeon_potato'], [/떡갈비/, 'tteokgalbi'], [/미트볼|완자/, 'meatball'], [/함박|스테이크/, 'hamburg'], [/동그랑땡/, 'donggeurang'],
+  [/콩나물|숙주/, 'namul_beansprout'], [/무생채|무말랭이|무채/, 'namul_radish'], [/겉절이|상추/, 'geotjeori'], [/진미채|오징어채|명엽채|쥐포/, 'jinmichae'],
+  [/감자채|감자볶음/, 'potato_stirfry'], [/감자조림|알감자/, 'potato_braised'], [/연근/, 'lotus'],
+  [/버섯.*(무침|초무침)/, 'mushroom_muchim'], [/버섯/, 'mushroom_stirfry'], [/오이/, 'cucumber_muchim'], [/시금치|나물/, 'namul_green'],
+  [/푸딩/, 'pudding'], [/단무지/, 'danmuji'], [/깻잎/, 'kkaennip'], [/청포|탕평/, 'muk_white'],
+];
+const KIND_CK = {
+  soup: 'soup_clear', kimchi: 'kimchi_cabbage', rice: 'rice_white', greens: 'namul_green', fruit: 'fruit_mixed', fried: 'fried_mixed', salad: 'salad_green',
+  redMeat: 'jeyuk', brownMeat: 'bulgogi', bread: 'bread', noodle: 'noodle_soup', sliced: 'sausage', laver: 'gim', tofu: 'tofu_braised', cereal: 'cereal',
+  veg: 'veg_stirfry', egg: 'omelet', mixRice: 'rice_fried', sauceRice: 'rice_donburi', patty: 'tteokgalbi', pancake: 'jeon', porridge: 'porridge', wrap: 'ssam',
+  cup: 'yogurt', braisedEgg: 'quail_egg', tteok: 'tteok', pickle: 'pickle', anchovy: 'anchovy', jelly: 'muk', dumpling: 'mandu', fish: 'fish_grilled', misc: 'food_misc',
 };
-export const foodImg = name => FOOD_IMG[String(name).replace(/\s/g, '')] || '';
+export const cartoonKey = name => {
+  const n = String(name).split('+')[0].replace(/\([^)]*\)/g, '').replace(/\s/g, '');
+  if (/(드레싱|소스|양념장)$/.test(n)) return 'sauce';   // 키위드레싱 등: 과일 그림이 나오면 안 됨
+  const hit = CK.find(([re]) => re.test(n));
+  if (hit) return hit[1];
+  const k = foodKind(n);
+  return k === 'fish' && /조림|찜/.test(n) ? 'fish_braised' : k === 'sauce' ? 'sauce' : KIND_CK[k] || 'food_misc';
+};
+// 있는 카툰 그림의 키 (없으면 '' → 도형 그림)
+export const foodImg = name => { const k = cartoonKey(name); return CARTOON.has(k) ? k : ''; };
 export const foodKind = n => (RULES.find(([re]) => re.test(n)) || [, 'misc'])[1];
 
 /** 메뉴 이름 → SVG. shape: 'n'(위 칸) | 'half'(위 가운데 반쪽) | 'big'(밥·국 칸) | 'seg'(한 칸에 여러 개일 때 한 줄) */
