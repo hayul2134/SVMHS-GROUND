@@ -1234,3 +1234,9 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .gor::before,.gor::after{content:"";flex:1;border-top:2px dashed var(--line)}
 #socSheet .gbtn{margin:6px auto 10px}
 .gbox.alt{margin:16px 0 0}
+/* 개발자: 학과별 테스트 계정 바꾸기 */
+.swbar{flex-basis:100%;display:flex;flex-direction:column;gap:8px;margin-top:6px;padding:12px;border:2px dashed var(--line);border-radius:16px;background:var(--chip)}
+.swbar p{margin:0;font-weight:800;font-size:14px}
+.swbar p b{color:var(--accent)}
+.swbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.swbtns .btn{padding-inline:6px;font-size:14px}

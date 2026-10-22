@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
-import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, maskIp, logErr } from '../../../lib/db.js';
+import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -16,6 +16,7 @@ const TICKET_RE = /^[0-9a-f]{32}$/;
 const TICKET_TTL = 3600e3;
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
+const RESERVED = h => h.startsWith('test_');   // 테스트 계정용 아이디는 가입 불가
 const SESSION_DAYS = 30;   // 로그인 후 30일이 지나면 다시 로그인 (연장 없음 — 공용 태블릿에 로그인이 무한히 남지 않게)
 const COOKIE = 'sg_s';
 const SECURITY_HEADERS = { 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer' };
@@ -73,6 +74,17 @@ const endAdmin = (db, req, me, res) => {
   return db.prepare('DELETE FROM admin_sessions').run().then(() => res);
 };
 
+// 테스트 계정으로 바꿔 들어간 동안 원래 개발자 세션 토큰을 보관하는 쿠키 (HttpOnly, 개발자 세션이 끝나는 때까지)
+const DEV_COOKIE = 'sg_d';
+const devCookie = (req, token, maxAge) => `${DEV_COOKIE}=${token}; Path=/api/s; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${new URL(req.url).protocol === 'https:' ? '; Secure' : ''}`;
+async function devSession(req, db) {   // 보관된 개발자 세션이 아직 유효하면 { token, exp }
+  const token = cookieOf(req, DEV_COOKIE);
+  if (!/^[0-9a-f]{64}$/.test(token)) return null;
+  const r = await db.prepare('SELECT s.exp FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1 AND u.handle = ?2 AND s.exp > ?3')
+    .bind(await sha256(token), ADMIN_HANDLE, Date.now()).first();
+  return r ? { token, exp: r.exp } : null;
+}
+
 /* ===== 사용자 ===== */
 const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref';
 const pub = u => u && ({
@@ -85,7 +97,7 @@ const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -157,6 +169,7 @@ const ROUTES = {
   'POST signup': async ({ req, env, db, body }) => {
     const handle = String(body.handle || '').trim().toLowerCase(), name = clean(body.name, 12), pw = String(body.pw || '');
     if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
+    if (RESERVED(handle)) return err('쓸 수 없는 아이디예요');
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
     if (pw.length < 6 || pw.length > 64) return err('비밀번호는 6~64자로 해 주세요');
@@ -197,9 +210,12 @@ const ROUTES = {
   },
 
   'POST logout': async ({ req, db }) => {
-    const token = cookieOf(req, COOKIE), me = await auth(req, db);
+    const token = cookieOf(req, COOKIE), me = await auth(req, db), dev = me?.is_test ? await devSession(req, db) : null;
     if (/^[0-9a-f]{64}$/.test(token)) await db.prepare('DELETE FROM sessions WHERE token = ?1').bind(await sha256(token)).run();
-    return endAdmin(db, req, me, json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) }));
+    if (dev) await db.prepare('DELETE FROM sessions WHERE token = ?1').bind(await sha256(dev.token)).run();   // 테스트 계정에서 로그아웃하면 개발자 로그인도 끝
+    const res = json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
+    if (cookieOf(req, DEV_COOKIE)) res.headers.append('set-cookie', devCookie(req, '', 0));
+    return endAdmin(db, req, me, res);
   },
 
   'GET me': async ({ req, db }) => {
@@ -211,7 +227,8 @@ const ROUTES = {
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE b = ?1').bind(me.id).first(),
       friendIds(db, me.id),
     ]);
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -283,6 +300,37 @@ const ROUTES = {
     return endAdmin(db, req, me, json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) }));
   }),
 
+  // 개발자 → 학과별 테스트 계정(콘·미·프)으로 바꿔 보기 / 개발자로 돌아가기. 개발자 세션은 sg_d 쿠키에 보관
+  'POST dev-switch': async ({ req, db, body }) => {
+    const me = await auth(req, db);
+    if (!me) return err('로그인이 필요해요', 401);
+    const cur = cookieOf(req, COOKIE);
+    const dev = me.handle === ADMIN_HANDLE ? { token: cur, exp: me.exp } : me.is_test ? await devSession(req, db) : null;
+    if (!dev) return err('개발자 계정만 쓸 수 있어요', 403);
+    const dropCur = async () => { if (me.is_test) await db.prepare('DELETE FROM sessions WHERE token = ?1').bind(await sha256(cur)).run(); };   // 쓰던 테스트 세션은 지움
+    const left = Math.max(0, Math.floor((dev.exp - Date.now()) / 1000));
+    if (body.to === 'back') {
+      if (!me.is_test) return json({ ok: true });
+      await dropCur();
+      const res = json({ ok: true }, 200, { 'set-cookie': setCookie(req, dev.token, left) });
+      res.headers.append('set-cookie', devCookie(req, '', 0));
+      return res;
+    }
+    const t = Object.hasOwn(TEST_ACCOUNTS, body.to) ? TEST_ACCOUNTS[body.to] : null;
+    if (!t) return err('없는 테스트 계정이에요');
+    let u = await db.prepare('SELECT id, is_test FROM users WHERE handle = ?1').bind(t.handle).first();
+    if (u && !u.is_test) return err('그 아이디는 이미 다른 사람이 쓰고 있어요', 409);
+    if (!u) {
+      const salt = randHex(16);
+      u = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, is_test) VALUES (?1, ?2, ?3, ?4, ?5, '🤖', ?6, ?7, ?5, 1) RETURNING id`)
+        .bind(t.handle, t.name, await hashPw(randHex(24), salt), salt, Date.now(), TEST_GRADE, t.cls).first();
+    }
+    await dropCur();
+    const res = json({ ok: true, grade: TEST_GRADE, cls: t.cls }, 200, { 'set-cookie': await newSession(req, db, u.id) });
+    res.headers.append('set-cookie', devCookie(req, dev.token, left));
+    return res;
+  },
+
   /* ----- 사람 ----- */
   'GET user': needMe(async ({ db, me, arg }) => {
     const u = await byHandle(db, arg);
@@ -305,10 +353,10 @@ const ROUTES = {
     const q = clean(url.searchParams.get('q'), 16).toLowerCase().replace(/[%_\\]/g, '');
     let rows;
     if (q) {
-      rows = (await db.prepare(`SELECT ${PUB} FROM users WHERE (handle LIKE ?1 OR name LIKE ?1) AND id != ?2
+      rows = (await db.prepare(`SELECT ${PUB} FROM users WHERE (handle LIKE ?1 OR name LIKE ?1) AND id != ?2 AND is_test = 0
         AND id NOT IN (SELECT a FROM blocks WHERE b = ?2) ORDER BY seen DESC LIMIT 30`).bind(`%${q}%`, me.id).all()).results;
     } else {   // 검색어 없으면: 최근에 들어온 사람
-      rows = (await db.prepare(`SELECT ${PUB} FROM users WHERE id != ?1 AND id NOT IN (SELECT a FROM blocks WHERE b = ?1) ORDER BY seen DESC LIMIT 30`).bind(me.id).all()).results;
+      rows = (await db.prepare(`SELECT ${PUB} FROM users WHERE id != ?1 AND is_test = 0 AND id NOT IN (SELECT a FROM blocks WHERE b = ?1) ORDER BY seen DESC LIMIT 30`).bind(me.id).all()).results;
     }
     const mine = new Set((await db.prepare('SELECT b FROM follows WHERE a = ?1').bind(me.id).all()).results.map(r => r.b));
     return json({ users: rows.map(u => ({ ...card(u), following: mine.has(u.id), grade: u.grade, cls: u.cls })) });
@@ -458,6 +506,7 @@ const ROUTES = {
     if (!body.handle) return json({ need: 'signup', name: clean(g.name, 12) });
     const handle = String(body.handle).trim().toLowerCase(), name = clean(body.name, 12);
     if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
+    if (RESERVED(handle)) return err('쓸 수 없는 아이디예요');
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
     const st = await getSettings(db), code = joinCodeOf(env, st);

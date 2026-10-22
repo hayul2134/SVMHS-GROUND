@@ -41,7 +41,7 @@ async function isAdmin(req, db) {
 const log = (db, action, detail = '') => db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), action, String(detail).slice(0, 300)).run();
 
 // 관리자(개발자) 계정은 관리 화면의 사용자 목록·통계·모니터링에서 뺌 (아이디는 코드 상수라 그대로 넣어도 안전)
-const NA = `handle <> '${ADMIN_HANDLE}'`;
+const NA = `handle <> '${ADMIN_HANDLE}' AND is_test = 0`;   // 학과별 테스트 계정도 뺌
 /* ----- 사용자 찾기 ----- */
 const U = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, created, seen, insta';
 const userOf = (db, h) => db.prepare(`SELECT ${U} FROM users WHERE handle = ?1`).bind(String(h || '').trim().toLowerCase()).first();
@@ -161,7 +161,7 @@ const ROUTES = {
       // 최근 활동 (가입 · 게임 기록 · 팔로우 · 신고 · 관리 조치) — 각 20개씩 모아 시간순
       db.prepare(`SELECT 'signup' AS k, created AS at, ${P}, '' AS x FROM users u WHERE ${NA} ORDER BY created DESC LIMIT 20`),
       db.prepare(`SELECT 'score' AS k, s.at AS at, ${P}, s.game || ':' || s.best AS x FROM scores s JOIN users u ON u.id = s.uid WHERE ${NA} ORDER BY s.at DESC LIMIT 20`),
-      db.prepare(`SELECT 'follow' AS k, f.at AS at, ${P}, (SELECT handle FROM users WHERE id = f.b) AS x FROM follows f JOIN users u ON u.id = f.a JOIN users t ON t.id = f.b WHERE u.${NA} AND t.${NA} ORDER BY f.at DESC LIMIT 20`),
+      db.prepare(`SELECT 'follow' AS k, f.at AS at, ${P}, (SELECT handle FROM users WHERE id = f.b) AS x FROM follows f JOIN users u ON u.id = f.a JOIN users t ON t.id = f.b WHERE u.handle <> '${ADMIN_HANDLE}' AND u.is_test = 0 AND t.handle <> '${ADMIN_HANDLE}' AND t.is_test = 0 ORDER BY f.at DESC LIMIT 20`),
       db.prepare(`SELECT 'report' AS k, r.at AS at, ${P}, (SELECT handle FROM users WHERE id = r.target) AS x FROM reports r JOIN users u ON u.id = r.reporter ORDER BY r.at DESC LIMIT 20`),
       // 오늘(한국) 시간대별: DM 수 · 게임 기록 갱신 수 · 가입 수
       db.prepare(`SELECT ((at + 32400000) / 3600000) % 24 AS h, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY h`).bind(t0),

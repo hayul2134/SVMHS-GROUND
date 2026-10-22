@@ -151,7 +151,8 @@ function profileHtml(d) {
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기·계정 설정 없음
+    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn ghost" data-act-s="logout">로그아웃</button>${swBar()}`   // 개발자: 꾸미기·계정 설정 없음
+      : S.me?.sw ? swBar()   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만
       : `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
@@ -332,6 +333,23 @@ function openEdit() {
 }
 
 /* ===== 계정 설정 ===== */
+/* ----- 개발자: 학과별 테스트 계정으로 바꿔 보기 (콘 1반 · 미 3반 · 프 5반, 2학년) ----- */
+const SW = [['con', '콘텐츠과'], ['mi', '미디어과'], ['pro', '프로듀스과']];
+const swBar = () => !S.me?.sw ? '' : `<div class="swbar"><p>🧪 학과별로 보기 ${S.me.sw === 'dev' ? '' : `<b>· 지금 ${esc(SW.find(x => x[0] === S.me.sw)?.[1] || '')} 테스트 계정</b>`}</p>
+  <div class="swbtns">${SW.map(([k, n]) => `<button class="btn ${S.me.sw === k ? '' : 'ghost'}" type="button" data-sw="${k}" ${S.me.sw === k ? 'disabled' : ''}>${n}</button>`).join('')}</div>
+  ${S.me.sw === 'dev' ? '' : '<button class="btn lime" type="button" data-sw="back">🛠 개발자로 돌아가기</button>'}</div>`;
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-sw]'); if (!b) return;
+  b.disabled = true;
+  try {
+    const fromDev = S.me?.sw === 'dev', r = await call('dev-switch', { to: b.dataset.sw });
+    // 시간표가 그 반으로 보이게 이 기기의 반 설정도 바꿈 (개발자로 돌아가면 원래 반 설정으로)
+    if (fromDev) store.set('class_dev', store.get('class', null));
+    if (b.dataset.sw === 'back') { const c = store.get('class_dev', null); if (c) store.set('class', c); else localStorage.removeItem('sg_class'); }
+    else store.set('class', { g: String(r.grade), c: String(r.cls) });
+    location.assign('/');   // 첫 화면(시간표)에서 바로 확인
+  } catch (x) { toast(x.message); b.disabled = false; }
+});
 async function doLogout() { try { await call('logout', {}); } catch {} S.me = null; S.unread = 0; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('로그아웃했어요'); }
 function openSettings() {
   sheet(`<h3>계정 설정</h3>

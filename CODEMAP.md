@@ -79,6 +79,7 @@ npx wrangler@4 pages dev --port 8788
 
 ## 관리자 페이지 (/admin)
 - 필요: D1 바인딩 `DB` + 사이트에 `hayuldeveloper` 계정. 그 계정의 계정 설정(⚙️)에만 '관리자 페이지' 버튼이 보임(`social.js`의 `ADMIN_HANDLE`, 서버와 같게). /admin에서 그 계정 비밀번호를 한 번 더 넣어야 들어감.
+- 학과별 테스트 계정: 개발자 프로필의 '🧪 학과별로 보기'(콘텐츠과 2-1·미디어과 2-3·프로듀스과 2-5) → `POST /api/s/dev-switch`. 계정(`test_con`·`test_mi`·`test_pro`, `users.is_test=1`, `lib/db.js` `TEST_ACCOUNTS`)은 처음 누를 때 생성, 비밀번호 없음. 개발자 세션은 `sg_d` 쿠키에 보관했다가 '개발자로 돌아가기'로 복구. 이 기기의 반 설정도 바꿨다가 되돌림(`sg_class_dev`). `test_` 아이디는 가입 불가, 친구 찾기·관리 화면 통계에서 빠짐.
 - DM은 **신고된 메시지와 앞뒤 5개만** 볼 수 있음(사생활 보호). 전체 DM 열람 기능은 일부러 없음.
 - 정지(`bans`): 정지 즉시 세션 삭제 + 로그인 거부(사유·기간 표시). 소셜 `auth()`도 정지된 사람은 막음.
 - 설정(`settings`): `join_code`(있으면 비밀 변수 JOIN_CODE보다 우선, ''이면 코드 없음) · `signup_open` · `dm_open` · `notice`(JSON).
