@@ -216,6 +216,7 @@ function go(v) {
   if (!VIEWS.includes(base)) { base = 'home'; rest = []; v = 'home'; }
   const arg = decodeURIComponent(rest.join('/'));
   SOC.onLeave?.(base);
+  if (base !== 'home') $('#v-home').classList.remove('calm');   // 다른 화면 갔다 오면 홈도 평소처럼 페이드
   $$('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + base));
   RENDER[base]?.(arg);
   window.scrollTo(0, 0);
@@ -1364,7 +1365,8 @@ function bootHome() {
   const de = document.documentElement;
   Promise.race([Promise.all([balP, document.fonts?.ready]), new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(() => {
     centerHero(true); de.classList.remove('pre'); de.classList.add('boot');
-    setTimeout(() => { de.classList.remove('boot'); heroLater(); }, 2600);
+    // boot를 빼는 순간 #v-home의 화면 페이드(.view.on fade)가 다시 재생되며 첫 화면이 깜빡이고 서랍이 튀던 문제(2026-10-23) → calm으로 막음
+    setTimeout(() => { $('#v-home').classList.add('calm'); de.classList.remove('boot'); heroLater(); }, 2600);
   }));
   peekSides();
 }

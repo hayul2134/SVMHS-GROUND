@@ -763,6 +763,9 @@ html.modal-lock{overflow-y:hidden;scrollbar-gutter:stable}
 .skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--chip),var(--line),var(--chip));background-size:200% 100%;animation:sk 1.2s infinite;margin:10px 0}
 @keyframes sk{to{background-position:-200% 0}}
 .view{display:none}.view.on{display:block;animation:fade .3s ease-out}
+/* 홈은 transform 없는 페이드만: transform이 걸리면 고정(fixed) 서랍의 기준이 #v-home으로 바뀌어 급식판·시간표가 시계 쪽으로 튐. calm = 첫 등장 직후 페이드 재생 방지 */
+#v-home.on{animation-name:fadeO}#v-home.on.calm{animation:none}
+@keyframes fadeO{from{opacity:0}}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}}
 /* 홈 카드가 차례로 '툭' 붙음 */
 .view.on .bento > *{animation:slap .5s cubic-bezier(.2,1.6,.4,1) both}
