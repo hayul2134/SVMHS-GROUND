@@ -1586,8 +1586,9 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
   /* 시계 묶음('N교시 시작까지'~상태 줄)을 한 덩어리로 보고 화면 세로 정가운데(=좌우 서랍 카드 중심)에 맞춤.
      위아래 여백을 같게 하고, 말풍선 높이+간격(약 60px)만큼 위로 빼서 가운데 계산에서 제외 */
   .stage{padding-top:76px;padding-bottom:76px}
-  .s-greet{margin-top:-60px}
 }
+/* 시계 묶음(말풍선 포함) 한 덩어리 정가운데 — 이동량은 app.js centerHero()가 재서 --hx/--hy로 넣음 */
+.drawers :is(.s-greet,.s-what,.clock,.s-info){translate:var(--hx,0) var(--hy,0)}
 
 /* ===== 오늘 한눈에: 한 화면 배치 (2026-10-23) ===== */
 .board{padding-top:30px}

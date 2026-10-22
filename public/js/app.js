@@ -817,6 +817,33 @@ for (const k in SIDE) {
   };
 }
 wideMQ.addEventListener('change', applyDrawers); applyDrawers();
+/* 첫 화면 '시계 묶음'(말풍선·N교시 시작까지·큰 시계·별 스티커·상태 줄)을 한 덩어리로 보고 화면 정가운데에 맞춤 (2026-10-23)
+   묶음 전체의 바깥 상자를 재서 가운데가 화면 가운데(=좌우 서랍 중심)에 오도록 --hx/--hy 만큼 옮김. 위 공지·아래 밸런스 티켓과는 안 겹치게 제한 */
+const HERO = $('#bigclock');
+function centerHero() {
+  const st = HERO.style;
+  if (!HERO.classList.contains('drawers')) { st.removeProperty('--hx'); st.removeProperty('--hy'); return; }
+  const hx = parseFloat(st.getPropertyValue('--hx')) || 0, hy = parseFloat(st.getPropertyValue('--hy')) || 0;
+  let L = Infinity, T = Infinity, R = -Infinity, B = -Infinity;
+  for (const el of HERO.querySelectorAll('.s-greet .bubble, #bellLbl, #bigTime, .clock .dk, #more')) {
+    const b = el.getBoundingClientRect(); if (!b.width || !b.height) continue;
+    L = Math.min(L, b.left); R = Math.max(R, b.right); T = Math.min(T, b.top); B = Math.max(B, b.bottom);
+  }
+  if (!isFinite(L)) return;
+  const sy = scrollY; L -= hx; R -= hx; T += sy - hy; B += sy - hy;   // 옮기기 전 위치(문서 기준)
+  let dx = innerWidth / 2 - (L + R) / 2, dy = innerHeight / 2 - (T + B) / 2;
+  const top = Math.max(($('header')?.getBoundingClientRect().bottom ?? 0) + sy, $('#notice').hidden ? 0 : $('#notice').getBoundingClientRect().bottom + sy) + 14;
+  if (T + dy < top) dy = top - T;   // 위 공지·헤더와 안 겹치게
+  const bal = $('#play');
+  if (bal && !bal.hidden && getComputedStyle(bal).position === 'absolute') { const bt = bal.getBoundingClientRect().top + sy - 14; if (B + dy > bt) dy = Math.max(top - T, bt - B); }
+  st.setProperty('--hx', Math.round(dx) + 'px'); st.setProperty('--hy', Math.round(dy) + 'px');
+}
+let heroRaf = 0; const heroLater = () => { cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(centerHero); };
+addEventListener('resize', heroLater); wideMQ.addEventListener('change', heroLater);
+new ResizeObserver(heroLater).observe($('#bigTime')); new ResizeObserver(heroLater).observe($('#more')); new ResizeObserver(heroLater).observe($('#greet'));
+new MutationObserver(heroLater).observe($('#notice'), { attributes: true, attributeFilter: ['hidden'] });
+new MutationObserver(heroLater).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
+document.fonts?.ready.then(heroLater); heroLater();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
 /* ===== 첫 화면 카드에서 다른 날 넘겨 보기 (‹ ›) — 라벨을 누르면 오늘로, 3분 동안 안 만지면 자동으로 오늘로 ===== */
 function markOff(el, off) { el.classList.toggle('off', off); if (off) { el.dataset.tip = '오늘로 돌아가기'; el.setAttribute('aria-label', el.textContent + ' · 눌러서 오늘로'); } else { delete el.dataset.tip; el.removeAttribute('aria-label'); } }
