@@ -1136,3 +1136,9 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .hi.out:hover,.hi.out:focus-visible{background:rgba(232,90,90,.1)}
 :root[data-theme="dark"] .hi.out{color:#ff8f8f}
 :root[data-theme="dark"] .hi.out .mi{color:#fff}
+/* 구글 로그인 버튼 자리 */
+.gbox{display:grid;justify-items:center;gap:10px;margin-bottom:12px}
+.gbtn{min-height:44px;display:flex;justify-content:center;width:100%;max-width:320px}
+.gor{display:flex;align-items:center;gap:10px;width:100%;color:var(--sub);font-size:12.5px;font-weight:800}
+.gor::before,.gor::after{content:"";flex:1;border-top:2px dashed var(--line)}
+#socSheet .gbtn{margin:6px auto 10px}

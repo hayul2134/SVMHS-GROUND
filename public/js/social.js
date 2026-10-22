@@ -89,6 +89,7 @@ function authHtml(mode = 'login') {
   const grades = [1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('');
   const classes = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('');
   return `<div class="card authcard">
+    ${S.google ? `<div class="gbox"><div class="gbtn" data-gintent="login"></div><p class="gor"><span>또는 아이디로 ${mode === 'signup' ? '가입' : '로그인'}</span></p></div>` : ''}
     <div class="segs" role="tablist"><button data-auth="login" class="${mode === 'login' ? 'on' : ''}">로그인</button><button data-auth="signup" class="${mode === 'signup' ? 'on' : ''}">회원가입</button></div>
     <form class="sform" id="authForm" data-mode="${mode}" autocomplete="on">
       <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" autocomplete="username" placeholder="영어 소문자·숫자 3~16자">${mode === 'signup' ? '<small class="hint">🔑 로그인할 때 쓰는 이름이에요. 나중에 바꿀 수 없어요.</small>' : ''}</label>
@@ -154,7 +155,7 @@ function profileHtml(d) {
       : `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
-       <button class="btn ${mutual ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${mutual ? '' : 'data-locked="1"'}>💬 DM</button>
+       <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 DM</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${g.em}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}">
@@ -258,7 +259,7 @@ document.addEventListener('click', async e => {
   if (e.target.closest('#socSheet [data-u]')) closeSheet();
   const dm = e.target.closest('[data-dm]');
   if (dm) {
-    if (dm.dataset.locked) { toast('서로 팔로우하면 DM할 수 있어요'); return; }
+    if (dm.dataset.locked) { toast('이 친구의 DM 설정 때문에 지금은 보낼 수 없어요 (팔로우하면 열릴 수 있어요)'); return; }
     openPanel(dm.dataset.dm); return;
   }
   const a = e.target.closest('[data-act-s]');
@@ -338,6 +339,9 @@ function openSettings() {
       <input name="old" type="password" placeholder="지금 비밀번호" required autocomplete="current-password">
       <input name="pw" type="password" placeholder="새 비밀번호 (6자 이상)" minlength="6" maxlength="64" required autocomplete="new-password">
       <button class="btn ghost" type="submit">비밀번호 바꾸기</button></form>
+    <p class="lbl">💬 DM 받는 범위</p>
+    <div class="segs fbk" id="dmPref">${[['0', '서로 팔로우한 친구만'], ['1', '나를 팔로우한 사람'], ['2', '누구나']].map(([v, t]) => `<label><input type="radio" name="dmp" value="${v}" ${String(S.me?.dmPref || 0) === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
+    ${S.google ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요. <button class="btn sm ghost" type="button" id="gUnlink">연결 해제</button></p>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><div class="gbtn" data-gintent="link"></div>'}` : ''}
     <p class="lbl">차단한 사람</p><ul class="plist" id="blkList"><li class="skel"></li></ul>
     <div class="col">${S.me?.handle === ADMIN_HANDLE ? '<a class="btn" href="/admin/">🛠 관리자 페이지</a>' : ''}<button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   call('blocked').then(r => {
@@ -348,7 +352,13 @@ function openSettings() {
     try { await call('password', Object.fromEntries(new FormData(e.target))); toast('비밀번호를 바꿨어요'); e.target.reset(); } catch (err) { fail(err); }
   };
   $('#btnLogout').onclick = doLogout;
+  $('#dmPref').onchange = async e => { try { const r = await call('dmpref', { pref: +e.target.value }); S.me.dmPref = r.dmPref; toast('DM 받는 범위를 바꿨어요'); } catch (x) { toast(x.message); } };
+  if ($('#gUnlink')) $('#gUnlink').onclick = async () => { if (!confirm('구글 계정 연결을 해제할까요? 그 뒤로는 아이디·비밀번호로만 로그인해요.')) return; try { await call('google-link', { off: true }); S.me.google = false; toast('연결을 해제했어요'); openSettings(); } catch (x) { toast(x.message); } };
   $('#btnWithdraw').onclick = async () => {
+    if (S.me?.google && S.google && confirm('정말 탈퇴할까요? 프로필·팔로우·DM·게임 기록이 모두 지워지고 되돌릴 수 없어요.\n구글로 가입했다면 [확인] 후 구글 버튼으로 본인 확인을 해 주세요. (비밀번호로 하려면 [취소])')) {
+      sheet('<h3>탈퇴 본인 확인</h3><p class="note">연결된 구글 계정으로 확인하면 바로 탈퇴돼요.</p><div class="gbtn" data-gintent="withdraw"></div><div class="row"><button class="btn ghost" data-close>취소</button></div>');
+      return;
+    }
     const pw = prompt('정말 탈퇴할까요? 프로필·팔로우·DM·게임 기록이 모두 지워지고 되돌릴 수 없어요.\n계속하려면 비밀번호를 입력하세요.');
     if (!pw) return;
     try { await call('withdraw', { pw }); S.me = null; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('탈퇴했어요. 그동안 고마웠어요'); } catch (err) { fail(err); }
@@ -438,7 +448,7 @@ async function renderThread(handle, box, panel) {
     <div class="chead"><a ${toList(panel)} class="back" aria-label="DM 목록">‹</a><a href="#u/${esc(d.user.handle)}" class="who">${av(d.user)}<span class="pi"><b>${esc(d.user.name)}</b><small>${d.user.online ? '접속 중' : '@' + esc(d.user.handle)}</small></span></a></div>
     <ol class="msgs" id="msgs" aria-live="polite">${msgs.length >= 40 ? '<li class="older"><button id="olderBtn">이전 메시지 보기</button></li>' : ''}</ol>
     ${d.canSend ? `<form class="compose" id="dmForm" autocomplete="off"><textarea id="dmIn" rows="1" maxlength="500" placeholder="메시지 보내기…" aria-label="메시지"></textarea><button class="btn" aria-label="보내기">➤</button></form>`
-      : `<p class="note locked">${d.rel.blocked ? '차단한 사람이에요' : '서로 팔로우하면 메시지를 보낼 수 있어요'}</p>`}
+      : `<p class="note locked">${d.rel.blocked ? '차단한 사람이에요' : '이 친구의 DM 설정 때문에 지금은 보낼 수 없어요'}</p>`}
   </div>`;
   const list = q('#msgs');
   const paint = (keepScroll) => {
@@ -679,7 +689,7 @@ export async function init(c) {
     document.body.dataset.view = v;
     if (v === 'dm') closePanel(); else if (threadIn === 'page') stopThread();
   };
-  try { const r = await call('config'); S.enabled = r.enabled !== false; S.needCode = !!r.needCode; } catch { S.enabled = false; }
+  try { const r = await call('config'); S.enabled = r.enabled !== false; S.needCode = !!r.needCode; S.google = r.google || ''; } catch { S.enabled = false; }
   document.body.dataset.view = location.hash.slice(1).split('/')[0] || 'home';
   setupDock();
   if (S.enabled) await refreshMe(); else paintBadges();
@@ -690,6 +700,61 @@ export async function init(c) {
   $('#btnOut').onclick = doLogout;
   $('#btnNotices').onclick = openNotices;
   checkNotices();
+}
+
+/* ===== 구글 로그인 (Google Identity Services) =====
+   .gbtn[data-gintent] 자리가 화면에 생기면 구글 버튼을 그려 넣음. 목적: login(로그인·가입) · link(계정 연결) · withdraw(탈퇴 본인 확인) */
+let gReady = null, gIntent = 'login';
+function loadGis() {
+  return gReady ||= new Promise((ok, no) => {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = ok; s.onerror = no;
+    document.head.appendChild(s);
+  }).then(() => google.accounts.id.initialize({ client_id: S.google, callback: onGoogle, ux_mode: 'popup', auto_select: false }));
+}
+function mountGoogle() {
+  if (!S.google) return;
+  const els = [...document.querySelectorAll('.gbtn:not([data-done])')];
+  if (!els.length) return;
+  loadGis().then(() => els.forEach(el => {
+    el.dataset.done = '1';
+    google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', text: el.dataset.gintent === 'login' ? 'continue_with' : 'signin_with', locale: 'ko', width: Math.min(320, el.clientWidth || 280) });
+    el.addEventListener('pointerdown', () => { gIntent = el.dataset.gintent; }, true);   // 어느 버튼을 눌렀는지 기억
+  })).catch(() => els.forEach(el => { el.textContent = '구글 로그인을 불러오지 못했어요'; }));
+}
+new MutationObserver(mountGoogle).observe(document.body, { childList: true, subtree: true });
+async function onGoogle({ credential }) {
+  try {
+    if (gIntent === 'link') { await call('google-link', { credential }); S.me.google = true; toast('구글 계정을 연결했어요 🔗'); openSettings(); return; }
+    if (gIntent === 'withdraw') { await call('withdraw', { credential }); S.me = null; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('탈퇴했어요. 그동안 고마웠어요'); return; }
+    const r = await call('google', { credential });
+    if (r.need === 'signup') return googleSignup(credential, r.name);
+    await googleDone('login');
+  } catch (x) { toast(x.message); }
+}
+function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아이디·닉네임·학년·반만 정하고 가입 (비밀번호 없음)
+  const c = ctx.getClass?.() || null;
+  sheet(`<h3>🎉 구글로 가입하기</h3><p class="note">아이디와 닉네임만 정하면 끝! 다음부터는 구글 버튼으로 로그인해요.</p>
+    <form class="sform" id="gForm">
+      <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" placeholder="영어 소문자·숫자 3~16자"><small class="hint">🔑 나중에 바꿀 수 없어요.</small></label>
+      <label>이름 (닉네임)<input name="name" required maxlength="12" value="${esc(name || '')}"></label>
+      <div class="two"><label>학년<select name="grade">${[1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label><label>반<select name="cls">${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>
+      ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40"></label>' : ''}
+      <p class="ferr" role="alert" hidden></p>
+      <div class="row"><button class="btn" type="submit">가입하고 시작하기</button><button class="btn ghost" type="button" data-close>취소</button></div>
+    </form>`);
+  $('#gForm').onsubmit = async e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(e.target)), b = e.target.querySelector('[type=submit]'); b.disabled = true;
+    try { await call('google', { credential, ...d, handle: d.handle.trim().toLowerCase(), grade: +d.grade, cls: +d.cls }); closeSheet(); await googleDone('signup'); }
+    catch (x) { const box = e.target.querySelector('.ferr'); box.textContent = x.message; box.hidden = false; b.disabled = false; }
+  };
+}
+async function googleDone(mode) {
+  await refreshMe();
+  toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉` : `${S.me.name}, 반가워요!`);
+  ctx.authed?.(S.me, true, mode);
+  renderMe();
 }
 
 /* ===== 헤더: 💡 의견 보내기 · 📢 공지 모아 보기 ===== */

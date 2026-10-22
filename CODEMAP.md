@@ -89,6 +89,11 @@ npx wrangler@4 pages dev --port 8788
 - 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번) → `feedback` 표 → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.
 - 📢 공지 → `openNotices()` → `GET /api/notices`(최근 20개, 30초 캐시). 관리자가 공지를 올리면 `notices` 표에도 기록(앞 공지는 끝난 것으로). 마지막으로 본 공지 id `sg_notice_seen`과 다르면 버튼에 빨간 점. 목록을 열면 닫았던 띠 공지도 다시 보임.
 
+## 구글 로그인 · DM 받는 범위 · 카톡
+- 구글: `wrangler.jsonc`의 `vars.GOOGLE_CLIENT_ID`(공개 값)가 있어야 버튼이 보임. 화면은 `social.js`의 `.gbtn[data-gintent]`(login·link·withdraw) 자리에 GIS 버튼을 그림 → `POST /api/s/google`(처음이면 `need:'signup'` → 아이디·닉네임 받고 가입, 비밀번호는 무작위) · `google-link`(연결/해제) · 탈퇴는 구글로 본인 확인 가능. 서버는 tokeninfo로 aud·iss·exp 확인, `users.google_sub`만 저장(이메일 X). CSP에 accounts.google.com, COOP는 `same-origin-allow-popups`.
+- DM 받는 범위: `users.dm_pref` 0 맞팔만(기본) · 1 나를 팔로우한 사람 · 2 누구나. 서버 `dmAllowed()`, 계정 설정에서 학생이 고름. 차단은 항상 막음.
+- 카톡 안 브라우저로 열리면 `theme.js`가 `kakaotalk://web/openExternal`로 기본 브라우저로 넘김.
+
 ## 업데이트 소식 (주간 패치노트)
 - `public/patchnotes.json`(최신이 맨 앞인 배열 `{id,date,title,items[]}`) → 📢 공지 창 아래 '🛠 업데이트 소식'. 새 id면 📢 버튼에 빨간 점(`sg_patch_seen`).
 - 매주 월요일 7시 30분 예약 작업이 지난주 `git log`로 초안(`tools/patchnotes/draft-*.json`, 이모지·이모티콘 많이)을 만들고 **하율 확인 후에만** 위 파일에 넣어 배포.

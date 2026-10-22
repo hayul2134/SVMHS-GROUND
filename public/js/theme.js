@@ -1,3 +1,7 @@
+// 카카오톡 안 브라우저로 열리면 기기 기본 브라우저(크롬·사파리)로 넘김 — 로그인 유지·구글 로그인·홈 화면 추가가 카톡 안에선 잘 안 되기 때문
+(function () {
+  try { if (/KAKAOTALK/i.test(navigator.userAgent)) location.replace('kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href)); } catch (e) {}
+})();
 // 첫 화면 깜빡임 방지: CSS보다 먼저 저장된 테마(없으면 기기 설정)를 적용한다. (모듈이 아닌 일반 스크립트)
 (function () {
   var t = null;

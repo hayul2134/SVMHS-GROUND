@@ -35,6 +35,18 @@ const clean = (s, max, multiline = false) => {
 const BAD = /씨발|시발|씨빨|씌발|ㅅㅂ|ㅆㅂ|병신|븅신|ㅂㅅ|좆|좃|존나|졸라|개새|개색|개세끼|새끼|쌔끼|썅|니애미|느금|니미|애미|애비|지랄|ㅈㄹ|미친놈|미친년|닥쳐|꺼져|엠창|창녀|걸레|섹스|fuck|shit|bitch/i;
 const isBad = (...xs) => xs.some(x => BAD.test(String(x || '').replace(/[\s\d_.\-~!@#$%^&*()+=|\\/?,'"`:;<>[\]{}·ㆍ]/g, '')));
 
+/* ===== 구글 ID 토큰 확인: 구글 tokeninfo로 서명·만료를 확인하고 우리 사이트용(aud)인지 검사 ===== */
+async function verifyGoogle(env, cred) {
+  if (!env.GOOGLE_CLIENT_ID || typeof cred !== 'string' || cred.length > 4096) return null;
+  try {
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(cred));
+    if (!r.ok) return null;
+    const t = await r.json();
+    if (t.aud !== env.GOOGLE_CLIENT_ID || !['accounts.google.com', 'https://accounts.google.com'].includes(t.iss) || +t.exp * 1000 < Date.now() || !t.sub) return null;
+    return { sub: String(t.sub), name: t.given_name || t.name || '' };
+  } catch { return null; }
+}
+
 /* ===== 보안 도구 ===== */
 const enc = new TextEncoder();
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -54,7 +66,7 @@ const setCookie = (req, token, maxAge) => {
 };
 
 /* ===== 사용자 ===== */
-const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta';
+const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref';
 const pub = u => u && ({
   handle: u.handle, name: u.name, bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
   stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
@@ -65,7 +77,7 @@ const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -86,6 +98,8 @@ async function rel(db, me, other) {
   return { following: !!r.fo, followsMe: !!r.fb, blocked: !!r.bl, blockedMe: !!r.bb };
 }
 const friendIds = async (db, me) => (await db.prepare('SELECT f.b AS id FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1').bind(me).all()).results.map(r => r.id);
+// DM 보내도 되는지: 받는 사람(u)의 설정 — 0 서로 팔로우 · 1 받는 사람이 나를 팔로우 · 2 누구나. 차단은 항상 막음
+const dmAllowed = (u, r) => !r.blocked && !r.blockedMe && ((u.dm_pref || 0) === 2 || ((u.dm_pref || 0) === 1 && r.followsMe) || (r.following && r.followsMe));
 const pairOf = (x, y) => x < y ? `${x}:${y}` : `${y}:${x}`;
 
 /* ===== 라우터 ===== */
@@ -127,7 +141,7 @@ const ROUTES = {
   /* ----- 계정 ----- */
   'GET config': async ({ env, db }) => {
     const st = await getSettings(db);
-    return json({ enabled: true, needCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st) });
+    return json({ enabled: true, google: env.GOOGLE_CLIENT_ID || '', needCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st) });
   },
 
   'POST signup': async ({ req, env, db, body }) => {
@@ -187,7 +201,7 @@ const ROUTES = {
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE b = ?1').bind(me.id).first(),
       friendIds(db, me.id),
     ]);
-    return json({ me: { ...pub(me), online: true }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -240,9 +254,15 @@ const ROUTES = {
     return json({ ok: true }, 200, { 'set-cookie': `sg_a=${token}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${H * 3600}${secure}` });
   }),
 
-  'POST withdraw': needMe(async ({ req, db, me, body }) => {
-    const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
-    if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) return err('비밀번호가 맞지 않아요', 401);
+  'POST withdraw': needMe(async ({ req, env, db, me, body }) => {
+    // 본인 확인: 비밀번호, 또는 구글로 가입한 계정이면 연결된 구글 로그인
+    if (body.credential) {
+      const g = await verifyGoogle(env, body.credential);
+      if (!g || g.sub !== me.google_sub) return err('연결된 구글 계정으로 확인해 주세요', 401);
+    } else {
+      const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
+      if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) return err('비밀번호가 맞지 않아요', 401);
+    }
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
       'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback WHERE uid = ?1',
@@ -264,7 +284,7 @@ const ROUTES = {
       topCrowns(db, u.id),
     ]);
     return json({
-      user: pub(u), me: u.id === me.id, rel: r, counts: { following: fo.n, followers: fb.n },
+      user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r), counts: { following: fo.n, followers: fb.n },
       bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns,
     });
   }),
@@ -378,7 +398,7 @@ const ROUTES = {
     // 상대가 읽은 내 마지막 메시지 (읽음 표시용)
     const read = await db.prepare('SELECT MAX(id) AS id FROM messages WHERE pair = ?1 AND a = ?2 AND seen = 1').bind(pair, me.id).first();
     return json({
-      user: card(u), rel: r, canSend: r.following && r.followsMe && !r.blocked, readUpTo: read?.id || 0,
+      user: card(u), rel: r, canSend: dmAllowed(u, r), readUpTo: read?.id || 0,
       messages: rows.map(m => ({ id: m.id, mine: m.a === me.id, body: m.del ? '' : m.body, del: !!m.del, at: m.at })),
     });
   }),
@@ -388,7 +408,7 @@ const ROUTES = {
     if (!u || u.id === me.id) return err('없는 사용자예요', 404);
     const r = await rel(db, me.id, u.id);
     if (r.blocked || r.blockedMe) return err('메시지를 보낼 수 없어요', 403);
-    if (!(r.following && r.followsMe)) return err('서로 팔로우한 친구에게만 보낼 수 있어요', 403);
+    if (!dmAllowed(u, r)) return err(['서로 팔로우한 친구에게만', '나를 팔로우하는 사람에게만', ''][u.dm_pref || 0] + ' 보낼 수 있어요', 403);
     if (!dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);
     const text = clean(body.body, 500, true);
     if (!text) return err('내용을 적어 주세요');
@@ -402,6 +422,50 @@ const ROUTES = {
     const id = parseInt(body.id);
     const r = await db.prepare("UPDATE messages SET del = 1, body = '' WHERE id = ?1 AND a = ?2").bind(id, me.id).run();
     return r.meta.changes ? json({ ok: true }) : err('지울 수 없어요');
+  }),
+
+  // DM 받는 범위 설정
+  'POST dmpref': needMe(async ({ db, me, body }) => {
+    const v = [0, 1, 2].includes(body.pref) ? body.pref : 0;
+    await db.prepare('UPDATE users SET dm_pref = ?1 WHERE id = ?2').bind(v, me.id).run();
+    return json({ ok: true, dmPref: v });
+  }),
+
+  /* ----- 구글 로그인 (Google Identity Services ID 토큰). 비밀 변수 없이 공개 값 GOOGLE_CLIENT_ID만 필요 ----- */
+  // 처음이면 { need: 'signup' } → 같은 토큰 + 아이디·닉네임으로 다시 보내면 가입
+  'POST google': async ({ req, env, db, body }) => {
+    const g = await verifyGoogle(env, body.credential);
+    if (!g) return err('구글 로그인을 확인하지 못했어요. 다시 해 주세요', 401);
+    if (await limited(db, 'gl:' + await ipKey(req), 600, 600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);
+    const u = await db.prepare('SELECT id FROM users WHERE google_sub = ?1').bind(g.sub).first();
+    if (u) {
+      const ban = await db.prepare('SELECT until, reason FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first();
+      if (ban) return err('이용이 정지된 계정이에요' + (ban.reason ? ' · ' + ban.reason : ''), 403);
+      return json({ ok: true }, 200, { 'set-cookie': await newSession(req, db, u.id) });
+    }
+    if (!body.handle) return json({ need: 'signup', name: clean(g.name, 12) });
+    const handle = String(body.handle).trim().toLowerCase(), name = clean(body.name, 12);
+    if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
+    if (!name) return err('이름(닉네임)을 적어 주세요');
+    if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
+    const st = await getSettings(db), code = joinCodeOf(env, st);
+    if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
+    if (code && !sameStr(String(body.code || '').trim(), code)) return err('가입 코드가 달라요');
+    if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
+    const salt = randHex(16), g2 = +body.grade, c2 = +body.cls;
+    const nu = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, google_sub) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?9) RETURNING id`)
+      .bind(handle, name, await hashPw(randHex(24), salt), salt, Date.now(), AVATARS[Math.floor(Math.random() * 16)], g2 >= 1 && g2 <= 3 ? g2 : 0, c2 >= 1 && c2 <= 10 ? c2 : 0, g.sub).first();   // 비밀번호는 아무도 모르는 무작위 값(구글로만 로그인)
+    return json({ ok: true, created: true }, 200, { 'set-cookie': await newSession(req, db, nu.id) });
+  },
+  // 이미 있는 계정에 구글 연결 / 해제
+  'POST google-link': needMe(async ({ env, db, me, body }) => {
+    if (body.off) { await db.prepare('UPDATE users SET google_sub = NULL WHERE id = ?1').bind(me.id).run(); return json({ ok: true }); }
+    const g = await verifyGoogle(env, body.credential);
+    if (!g) return err('구글 로그인을 확인하지 못했어요', 401);
+    const other = await db.prepare('SELECT id FROM users WHERE google_sub = ?1').bind(g.sub).first();
+    if (other && other.id !== me.id) return err('이 구글 계정은 이미 다른 아이디에 연결돼 있어요');
+    await db.prepare('UPDATE users SET google_sub = ?1 WHERE id = ?2').bind(g.sub, me.id).run();
+    return json({ ok: true });
   }),
 
   /* ----- 의견 보내기 (개발자에게, 로그인 필요) ----- */
