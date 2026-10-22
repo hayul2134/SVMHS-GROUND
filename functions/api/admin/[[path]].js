@@ -425,12 +425,13 @@ const ROUTES = {
     const tone = ['info', 'warn', 'fun'].includes(body.tone) ? body.tone : 'info';
     const link = /^#[a-z0-9/_.-]{0,40}$/i.test(body.link || '') ? body.link : '';
     const hours = Math.max(0, Math.min(24 * 60, +body.hours || 0));
-    const n = { id: randHex(4), text, tone, link, at: Date.now(), until: hours ? Date.now() + hours * 3600e3 : 0 };
+    const more = clean(body.body, 2000, true);   // 자세한 내용(선택) — 띠 공지를 누르면 보임
+    const n = { id: randHex(4), text, body: more, tone, link, at: Date.now(), until: hours ? Date.now() + hours * 3600e3 : 0 };
     await setSetting(db, 'notice', JSON.stringify(n));
     // 공지 기록: 앞 공지는 지금 끝난 것으로, 새 공지 추가
     await db.batch([
       db.prepare('UPDATE notices SET until = ?1 WHERE until = 0 OR until > ?1').bind(n.at),
-      db.prepare('INSERT INTO notices (id, text, tone, link, at, until) VALUES (?1, ?2, ?3, ?4, ?5, ?6)').bind(n.id, n.text, n.tone, n.link, n.at, n.until),
+      db.prepare('INSERT INTO notices (id, text, tone, link, at, until, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)').bind(n.id, n.text, n.tone, n.link, n.at, n.until, n.body),
     ]);
     await log(db, '공지 올림', text);
     return json({ ok: true, notice: n });

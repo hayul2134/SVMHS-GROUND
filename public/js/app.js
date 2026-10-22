@@ -1021,7 +1021,12 @@ async function loadNotice() {
   box.className = 'notice ' + ({ warn: 'warn', fun: 'fun' }[n.tone] || '');
   const a = $('#noticeTx');
   a.textContent = n.text;
-  if (n.link) { a.href = n.link; a.dataset.go = n.link.slice(1); a.removeAttribute('aria-disabled'); } else { a.removeAttribute('href'); delete a.dataset.go; }
+  a.onclick = null; a.classList.toggle('more', !!n.more && !n.link);
+  if (n.link) { a.href = n.link; a.dataset.go = n.link.slice(1); a.removeAttribute('aria-disabled'); }
+  else if (n.more) {   // 자세한 내용이 있으면 띠를 눌러 긴 공지로
+    a.href = '#'; delete a.dataset.go;
+    a.onclick = e => { e.preventDefault(); if (SOC.openNotices) SOC.openNotices(n.id); else toast('잠시 후 다시 눌러 주세요'); };
+  } else { a.removeAttribute('href'); delete a.dataset.go; }
   $('#noticeX').onclick = () => { store.set('notice_x', n.id); box.hidden = true; };
   box.hidden = false;
 }

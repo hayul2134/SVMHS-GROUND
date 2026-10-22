@@ -1046,6 +1046,13 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .ntlist a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .ntlist small{color:var(--sub);font-size:12px;font-weight:700}
 .ntlist small b{color:var(--accent)}
+.notice .n-tx.more::after{content:' 자세히 ›';font-weight:800;white-space:nowrap;opacity:.75}
+.ntlist .ntbody{margin:6px 0 4px}
+.ntlist .ntbody summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--accent);list-style:none}
+.ntlist .ntbody summary::-webkit-details-marker{display:none}
+.ntlist .ntbody summary::before{content:'▸ '}.ntlist .ntbody[open] summary::before{content:'▾ '}
+.ntlist .ntbody[open] summary{margin-bottom:6px}
+.ntlist .ntbody div{white-space:pre-wrap;word-break:keep-all;font-size:14px;line-height:1.6;font-weight:600;padding:10px 12px;border-radius:12px;background:var(--chip);border:2px solid var(--line)}
 .fbk{display:flex;flex-wrap:wrap;gap:6px}
 .fbk label{display:block;cursor:pointer}
 .fbk input{position:absolute;opacity:0;pointer-events:none}

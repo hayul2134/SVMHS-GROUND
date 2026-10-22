@@ -354,7 +354,7 @@ VIEWS.notice = async () => {
   $('#main').innerHTML = `
     <div class="vh"><h2>공지</h2></div>
     <section class="card"><h3>지금 사이트에 보이는 공지</h3>
-      ${live ? `<div class="nprev ${esc(n.tone)}"><span>${TONES[n.tone]?.split(' ')[0] || '📢'}</span><span>${esc(n.text)}</span></div>
+      ${live ? `<div class="nprev ${esc(n.tone)}"><span>${TONES[n.tone]?.split(' ')[0] || '📢'}</span><span>${esc(n.text)}</span></div>${n.body ? `<p class="sub sp-t">자세한 내용 ${[...n.body].length}자 있음 (띠를 누르면 보여요)</p>` : ''}
         <p class="sub sp-t">${full(n.at)}에 올림 · ${n.until ? full(n.until) + '에 자동으로 내려감' : '직접 내릴 때까지 보임'}</p>
         <div class="row sp-t"><button class="btn sm bad" type="button" data-act="unnotice">공지 내리기</button></div>`
       : '<p class="sub">올라간 공지가 없어요.</p>'}
@@ -363,6 +363,8 @@ VIEWS.notice = async () => {
       <form id="nForm" class="grid">
         <label class="f">내용 <small>최대 120자 · 모든 화면 맨 위에 띠로 보여요. 학생이 닫으면 다음 공지 전까지 안 보여요.</small>
           <textarea class="inp" name="text" maxlength="120" required placeholder="예) 내일은 모의고사라 종 시간이 달라요!">${live ? esc(n.text) : ''}</textarea></label>
+        <label class="f">자세한 내용 <small>선택 · 최대 2000자 · 적으면 띠 공지를 눌렀을 때 이 글이 펼쳐져요 (누르면 이동과 같이 쓰면 이동이 우선)</small>
+          <textarea class="inp" name="body" maxlength="2000" rows="10" placeholder="줄바꿈 그대로 보여요">${live ? esc(n.body || '') : ''}</textarea></label>
         <div class="grid g2">
           <label class="f">종류<select class="inp" name="tone">${Object.entries(TONES).map(([k, v]) => `<option value="${k}" ${live && n.tone === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
           <label class="f">자동으로 내리기<select class="inp" name="hours"><option value="0">직접 내릴 때까지</option><option value="3">3시간 뒤</option><option value="12">12시간 뒤</option><option value="24" selected>하루 뒤</option><option value="72">3일 뒤</option><option value="168">일주일 뒤</option></select></label>
@@ -378,7 +380,7 @@ VIEWS.notice = async () => {
   f.addEventListener('input', prev); prev();
   f.addEventListener('submit', async e => {
     e.preventDefault();
-    try { await call('notice', { text: f.text.value, tone: f.tone.value, hours: +f.hours.value, link: f.link.value }); toast('공지를 올렸어요 (사이트엔 30초 안에 보여요)'); route(); } catch (x) { fail(x); }
+    try { await call('notice', { text: f.text.value, body: f.body.value, tone: f.tone.value, hours: +f.hours.value, link: f.link.value }); toast('공지를 올렸어요 (사이트엔 30초 안에 보여요)'); route(); } catch (x) { fail(x); }
   });
 };
 

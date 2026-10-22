@@ -175,8 +175,8 @@ async function notices(env) {
   if (!env.DB) return json({ list: [] });
   await setup(env.DB);
   const now = Date.now();
-  const rows = (await env.DB.prepare('SELECT id, text, tone, link, at, until FROM notices ORDER BY at DESC LIMIT 20').all()).results;
-  return json({ list: rows.map(r => ({ id: r.id, text: r.text, tone: r.tone, link: r.link, at: r.at, live: !r.until || r.until > now })) }, 200, 'public, max-age=30');
+  const rows = (await env.DB.prepare('SELECT id, text, tone, link, at, until, body FROM notices ORDER BY at DESC LIMIT 20').all()).results;
+  return json({ list: rows.map(r => ({ id: r.id, text: r.text, body: r.body || '', tone: r.tone, link: r.link, at: r.at, live: !r.until || r.until > now })) }, 200, 'public, max-age=30');
 }
 
 /* ===== 공지 (관리자 페이지에서 작성) ===== */
@@ -186,5 +186,5 @@ async function notice(env) {
   let n = null;
   try { n = JSON.parse((await getSettings(env.DB)).notice || 'null'); } catch {}
   if (n && n.until && n.until < Date.now()) n = null;
-  return json({ notice: n && n.text ? { id: n.id, text: n.text, tone: n.tone, link: n.link || '' } : null }, 200, 'public, max-age=30');
+  return json({ notice: n && n.text ? { id: n.id, text: n.text, more: !!n.body, tone: n.tone, link: n.link || '' } : null }, 200, 'public, max-age=30');
 }
