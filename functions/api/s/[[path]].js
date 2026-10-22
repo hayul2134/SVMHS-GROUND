@@ -30,6 +30,11 @@ const clean = (s, max, multiline = false) => {
   return [...t.trim()].slice(0, max).join('');
 };
 
+/* ===== 욕설 기본 필터 (프로필에 공개되는 글: 아이디·닉네임·소개·상태·동아리) =====
+   띄어쓰기·특수문자·숫자를 빼고 검사 ('시 발', '씨1발' 등). 완벽하진 않음 → 나머지는 신고로 처리. DM은 사적인 대화라 검사하지 않음 */
+const BAD = /씨발|시발|씨빨|씌발|ㅅㅂ|ㅆㅂ|병신|븅신|ㅂㅅ|좆|좃|존나|졸라|개새|개색|개세끼|새끼|쌔끼|썅|니애미|느금|니미|애미|애비|지랄|ㅈㄹ|미친놈|미친년|닥쳐|꺼져|엠창|창녀|걸레|섹스|fuck|shit|bitch/i;
+const isBad = (...xs) => xs.some(x => BAD.test(String(x || '').replace(/[\s\d_.\-~!@#$%^&*()+=|\\/?,'"`:;<>[\]{}·ㆍ]/g, '')));
+
 /* ===== 보안 도구 ===== */
 const enc = new TextEncoder();
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -129,11 +134,19 @@ const ROUTES = {
     const handle = String(body.handle || '').trim().toLowerCase(), name = clean(body.name, 12), pw = String(body.pw || '');
     if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
     if (!name) return err('이름(닉네임)을 적어 주세요');
+    if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
     if (pw.length < 6 || pw.length > 64) return err('비밀번호는 6~64자로 해 주세요');
     const st = await getSettings(db), code = joinCodeOf(env, st);
     if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
-    if (await limited(db, 'su:' + await ipKey(req), 40, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);   // 코드 대입 막으려고 코드 확인보다 먼저
-    if (code && !sameStr(String(body.code || '').trim(), code)) return err('가입 코드가 달라요');
+    // 학교 와이파이는 한 반·한 학년이 IP 하나를 같이 씀 → 가입 자체는 IP당 넉넉하게(1시간 300번),
+    // 가입 코드 대입 방지는 '코드를 틀린 횟수'만 따로 IP당 1시간 30번으로 제한
+    const ik = await ipKey(req);
+    if (await limited(db, 'su:' + ik, 300, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);
+    if (code) {
+      const wrong = await db.prepare('SELECT n FROM rl WHERE k = ?1 AND reset > ?2').bind('cw:' + ik, Date.now()).first();
+      if (wrong && wrong.n >= 30) return err('가입 코드를 너무 많이 틀렸어요. 1시간 뒤에 다시 해 주세요', 429);
+      if (!sameStr(String(body.code || '').trim(), code)) { await limited(db, 'cw:' + ik, 30, 3600); return err('가입 코드가 달라요'); }
+    }
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
     const salt = randHex(16);
     const g = +body.grade, c = +body.cls;
@@ -147,7 +160,7 @@ const ROUTES = {
     const handle = String(body.handle || '').trim().toLowerCase(), pw = String(body.pw || '');
     // 아이디+IP 기준으로 막아서, 다른 사람이 일부러 틀려도 내 기기에서는 계속 로그인할 수 있게 함. 아이디 전체 한도는 여러 IP로 대입하는 것 대비
     const ik = await ipKey(req), h = handle.slice(0, 16);
-    if (await limited(db, 'li:' + ik, 100, 600) || await limited(db, 'lh:' + h + ':' + ik, 10, 600) || await limited(db, 'lg:' + h, 60, 3600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);
+    if (await limited(db, 'li:' + ik, 600, 600) ||   /* IP당 10분 600번: 반 전체가 같은 IP로 동시에 로그인해도 안 막힘 */ await limited(db, 'lh:' + h + ':' + ik, 10, 600) || await limited(db, 'lg:' + h, 60, 3600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);
     const u = HANDLE_RE.test(handle) && await db.prepare('SELECT id, pw, salt FROM users WHERE handle = ?1').bind(handle).first();
     const ok = sameStr(await hashPw(pw, (u || DUMMY).salt), (u || DUMMY).pw);   // 없는 아이디도 똑같이 해시 계산
     if (!u || !ok) return err('아이디나 비밀번호가 맞지 않아요', 401);
@@ -180,6 +193,7 @@ const ROUTES = {
   'POST me': needMe(async ({ db, me, body }) => {
     const name = clean(body.name, 12);
     if (!name) return err('이름(닉네임)을 적어 주세요');
+    if (isBad(name, body.bio, body.mood, body.club)) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     const avatar = AVATARS.includes(body.avatar) ? body.avatar : me.avatar;
     const color = COLORS.includes(body.color) ? body.color : me.color;
     const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => STICKERS.includes(s)).slice(0, 6);

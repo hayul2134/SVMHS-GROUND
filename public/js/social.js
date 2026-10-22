@@ -80,7 +80,7 @@ function startPoll() {
     if (document.hidden || !S.me || openThread) return;
     try { const r = await call('poll'); const more = r.unread > S.unread; S.unread = r.unread; paintBadges();
     if (more) { if (panelOpen()) renderDm('', $('#dmPBox'), true); else { if (!location.hash.startsWith('#dm')) toast('💬 새 메시지가 왔어요'); loadRecent(); } } } catch {}
-  }, 25000);
+  }, 60000);   // 60초마다 (학생 수가 많을 때 Cloudflare 무료 요청 수 아끼기, 대화창 안은 따로 3~15초)
 }
 
 /* ===== 로그인 · 가입 ===== */

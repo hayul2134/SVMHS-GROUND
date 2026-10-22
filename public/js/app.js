@@ -506,7 +506,7 @@ $('#plOpts').addEventListener('click', async e => {
 new IntersectionObserver(es => { balVisible = es[0].isIntersecting; }).observe($('#play'));
 function pollBalance() {
   clearTimeout(balTimer);
-  balTimer = setTimeout(async () => { if (!document.hidden && balVisible && !balBusy) await loadBalance(); pollBalance(); }, 40000);
+  balTimer = setTimeout(async () => { if (!document.hidden && balVisible && !balBusy) await loadBalance(); pollBalance(); }, 90000);   // 90초마다 (무료 요청 수 절약)
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && BAL) loadBalance(); });
 
