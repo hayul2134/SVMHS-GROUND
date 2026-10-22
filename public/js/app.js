@@ -831,8 +831,8 @@ function centerHero() {
   }
   if (!isFinite(L)) return;
   const sy = scrollY; L -= hx; R -= hx; T += sy - hy; B += sy - hy;   // 옮기기 전 위치(문서 기준)
-  // 위 한계: 헤더·공지 아래 / 아래 한계: 밸런스 티켓·▼ 버튼·첫 화면 끝(띠 배너) 중 가장 위 (헤더는 화면 고정이라 스크롤 값을 더하지 않음)
-  const top = Math.max(($('header')?.getBoundingClientRect().bottom ?? 0), $('#notice').hidden ? 0 : $('#notice').getBoundingClientRect().bottom + sy) + 14;
+  // 위 한계: 헤더 아래 / 아래 한계: 밸런스 티켓·▼ 버튼·첫 화면 끝(띠 배너) 중 가장 위 (헤더는 화면 고정이라 스크롤 값을 더하지 않음)
+  const top = ($('header')?.getBoundingClientRect().bottom ?? 0) + 14;   // 공지는 위에 겹쳐 뜨므로 계산에서 뺌 — 공지가 떠도 묶음이 안 움직임
   let bot = Math.min(HERO.getBoundingClientRect().bottom + sy, innerHeight);
   for (const el of [$('#play'), $('#goDown')]) if (el && !el.hidden && el.offsetParent) bot = Math.min(bot, el.getBoundingClientRect().top + sy);
   bot -= 14;

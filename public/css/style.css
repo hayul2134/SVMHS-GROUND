@@ -995,9 +995,10 @@ body.playing{overflow:hidden}
 .notice .n-tx{flex:1;min-width:0;text-decoration:none;line-height:1.4}
 .notice .n-tx[href]{text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .notice .n-x{width:30px;height:30px;border-radius:9px;border:2px solid var(--onc);background:rgba(255,255,255,.6);color:var(--onc);flex:none;font-size:13px}
-.notice:not([hidden]) ~ #v-home .stage{padding-top:20px}
+/* 홈에서는 공지가 떠도 아래 오브젝트가 움직이지 않게: 자리를 차지하지 않고 맨 위에 겹쳐 뜸 (2026-10-23 사용자 요청) */
+.notice:has(~ #v-home.on){position:absolute;top:84px;left:0;right:0;width:calc(100% - 40px);margin:0 auto}
 .notice:not([hidden]) ~ .view:not(#v-home){padding-top:18px}
-@media (max-width:560px){.notice{margin-top:70px;font-size:14px}}
+@media (max-width:560px){.notice{margin-top:70px;font-size:14px}.notice:has(~ #v-home.on){top:70px;margin-top:0;width:calc(100% - 32px)}}
 
 /* ===== 15. 메시지 창 (인스타 PC DM처럼 오른쪽 아래에 떠 있음) ===== */
 .dmdock{position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
