@@ -177,7 +177,7 @@
   <div class="notice" id="notice" role="status" hidden><span class="n-ic" id="noticeIc">📢</span><a class="n-tx" id="noticeTx" href="#"></a><button class="n-x" id="noticeX" type="button" data-tip="공지 닫기" data-tip-end aria-label="공지 닫기">✕</button></div>
   <noscript><div class="noscript">이 사이트는 자바스크립트가 필요해요. 브라우저 설정에서 자바스크립트를 켜 주세요.</div></noscript>
 
-  <!-- 홈: 첫 화면(큰 시계) → 바로가기 → 오늘 보드 -->
+  <!-- 홈: 첫 화면(큰 시계) → 한눈에 보기 → 서비스들 -->
   <div class="view on" id="v-home">
     <section class="stage" id="bigclock" aria-label="종 시간">
       <p class="s-greet"><span class="bubble" id="greet">안녕!</span></p>
@@ -228,19 +228,8 @@
 
     <div class="ticker" aria-hidden="true"><div class="tk" id="ticker"></div></div>
 
-    <section class="apps" id="apps" aria-labelledby="appsT">
-      <h2 class="sec-t" id="appsT">서비스들</h2>
-      <!-- 다른 버튼이 없거나(게임·시간표) 찾아가기 번거로운 것(학사일정·D-day)만. 프로필·설정·공유·DM·테마·이용 안내·급식은 헤더 메뉴·메시지 버튼·급식 카드에 이미 있음 -->
-      <div class="appgrid">
-        <button class="app hot" data-go="game"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-game"/></svg></i>게임</button>
-        <button class="app" data-go="tt"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>시간표</button>
-        <button class="app" data-go="cal"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></i>학사일정</button>
-        <button class="app" data-go="dday"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>D-day</button>
-      </div>
-    </section>
-
-    <section class="board" aria-labelledby="boardT">
-      <h2 class="sec-t" id="boardT">오늘 한눈에</h2>
+    <section class="board" id="board" aria-labelledby="boardT">
+      <div class="board-h"><h2 class="sec-t" id="boardT">한눈에 보기</h2><button class="go-svc" type="button" id="goSvc" aria-label="서비스들로 바로 가기">서비스 바로가기<svg class="gs-ar" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></button></div>
       <div class="grid bento">
         <div class="card c12 k-tt" id="weekTT">
           <div class="ct"><h2 class="hw-h"><i class="badge hw-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></i><span id="hwTitle">시간표</span></h2><p class="hw-now" id="hwNow" aria-live="polite" hidden></p></div>
@@ -256,6 +245,17 @@
           <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>다가오는 일정</h2><span class="links"><a href="#dday" data-go="dday">D-day 추가</a><a href="#cal" data-go="cal">학사일정</a></span></div>
           <div class="uprow" id="hUp"><div class="skel"></div></div>
         </div>
+      </div>
+    </section>
+
+    <section class="apps" id="apps" aria-labelledby="appsT">
+      <h2 class="sec-t" id="appsT">서비스들</h2>
+      <!-- 다른 버튼이 없거나(게임·시간표) 찾아가기 번거로운 것(학사일정·D-day)만. 프로필·설정·공유·DM·테마·이용 안내·급식은 헤더 메뉴·메시지 버튼·급식 카드에 이미 있음 -->
+      <div class="appgrid">
+        <button class="app hot" data-go="game"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-game"/></svg></i>게임</button>
+        <button class="app" data-go="tt"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>시간표</button>
+        <button class="app" data-go="cal"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></i>학사일정</button>
+        <button class="app" data-go="dday"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>D-day</button>
       </div>
     </section>
   </div>

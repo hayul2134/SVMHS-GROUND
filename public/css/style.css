@@ -1719,3 +1719,13 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 @keyframes hFade{from{opacity:0;scale:.94}}
 @keyframes sideL{from{transform:translate(calc(-100% - 60px),-50%) rotate(-7deg)}}
 @keyframes sideR{from{transform:translate(calc(100% + 60px),-50%) rotate(7deg)}}
+
+/* ===== 한눈에 보기 → 서비스들 순서 (2026-10-23) ===== */
+#board,#apps{scroll-margin-top:84px}
+.board-h{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 16px}
+.board-h .sec-t{margin-bottom:6px}
+.go-svc{display:inline-flex;align-items:center;gap:4px;font:inherit;font-size:13px;font-weight:900;color:var(--ink);cursor:pointer;padding:6px 10px 6px 14px;border:2.5px solid var(--ink);border-radius:999px;background:var(--yellow);box-shadow:3px 3px 0 var(--ink);transform:rotate(2deg);transition:.12s}
+.go-svc .gs-ar{width:16px;height:16px}
+.go-svc:hover{transform:rotate(0) translateY(-2px)}
+.go-svc:active,.go-svc.is-pressed{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.apps{min-height:0;padding:64px 0 48px}
