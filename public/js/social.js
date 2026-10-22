@@ -341,7 +341,7 @@ function openSettings() {
       <button class="btn ghost" type="submit">비밀번호 바꾸기</button></form>
     <p class="lbl">💬 DM 받는 범위</p>
     <div class="segs fbk" id="dmPref">${[['0', '서로 팔로우한 친구만'], ['1', '나를 팔로우한 사람'], ['2', '누구나']].map(([v, t]) => `<label><input type="radio" name="dmp" value="${v}" ${String(S.me?.dmPref || 0) === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
-    ${S.google ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요. <button class="btn sm ghost" type="button" id="gUnlink">연결 해제</button></p>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><div class="gbtn" data-gintent="link"></div>'}` : ''}
+    ${S.google ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><form class="sform" id="gUnlinkForm"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"><button class="btn ghost" type="submit">연결 해제</button></form>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요. 지금 비밀번호를 적고 구글 버튼을 눌러 주세요.</p><div class="sform"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"></div><div class="gbtn" data-gintent="link"></div>'}` : ''}
     <p class="lbl">차단한 사람</p><ul class="plist" id="blkList"><li class="skel"></li></ul>
     <div class="col">${S.me?.handle === ADMIN_HANDLE ? '<a class="btn" href="/admin/">🛠 관리자 페이지</a>' : ''}<button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   call('blocked').then(r => {
@@ -353,7 +353,7 @@ function openSettings() {
   };
   $('#btnLogout').onclick = doLogout;
   $('#dmPref').onchange = async e => { try { const r = await call('dmpref', { pref: +e.target.value }); S.me.dmPref = r.dmPref; toast('DM 받는 범위를 바꿨어요'); } catch (x) { toast(x.message); } };
-  if ($('#gUnlink')) $('#gUnlink').onclick = async () => { if (!confirm('구글 계정 연결을 해제할까요? 그 뒤로는 아이디·비밀번호로만 로그인해요.')) return; try { await call('google-link', { off: true }); S.me.google = false; toast('연결을 해제했어요'); openSettings(); } catch (x) { toast(x.message); } };
+  if ($('#gUnlinkForm')) $('#gUnlinkForm').onsubmit = async e => { e.preventDefault(); if (!confirm('구글 계정 연결을 해제할까요? 그 뒤로는 아이디·비밀번호로만 로그인해요.')) return; try { await call('google-link', { off: true, pw: $('#gPw').value }); S.me.google = false; toast('연결을 해제했어요'); openSettings(); } catch (x) { toast(x.message); } };
   $('#btnWithdraw').onclick = async () => {
     if (S.me?.google && S.google && confirm('정말 탈퇴할까요? 프로필·팔로우·DM·게임 기록이 모두 지워지고 되돌릴 수 없어요.\n구글로 가입했다면 [확인] 후 구글 버튼으로 본인 확인을 해 주세요. (비밀번호로 하려면 [취소])')) {
       sheet('<h3>탈퇴 본인 확인</h3><p class="note">연결된 구글 계정으로 확인하면 바로 탈퇴돼요.</p><div class="gbtn" data-gintent="withdraw"></div><div class="row"><button class="btn ghost" data-close>취소</button></div>');
@@ -725,7 +725,7 @@ function mountGoogle() {
 new MutationObserver(mountGoogle).observe(document.body, { childList: true, subtree: true });
 async function onGoogle({ credential }) {
   try {
-    if (gIntent === 'link') { await call('google-link', { credential }); S.me.google = true; toast('구글 계정을 연결했어요 🔗'); openSettings(); return; }
+    if (gIntent === 'link') { await call('google-link', { credential, pw: $('#gPw')?.value || '' }); S.me.google = true; toast('구글 계정을 연결했어요 🔗'); openSettings(); return; }
     if (gIntent === 'withdraw') { await call('withdraw', { credential }); S.me = null; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('탈퇴했어요. 그동안 고마웠어요'); return; }
     const r = await call('google', { credential });
     if (r.need === 'signup') return googleSignup(credential, r.name);

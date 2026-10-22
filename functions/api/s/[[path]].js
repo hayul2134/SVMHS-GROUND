@@ -65,6 +65,14 @@ const setCookie = (req, token, maxAge) => {
   return `${COOKIE}=${token}; Path=/api/s; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 };
 
+// 관리자 계정이 로그아웃·비밀번호 변경·탈퇴하면 관리자 세션도 모두 끝냄 (쿠키도 지움)
+const ADMIN_OUT = req => `sg_a=; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=0${new URL(req.url).protocol === 'https:' ? '; Secure' : ''}`;
+const endAdmin = (db, req, me, res) => {
+  if (!me || me.handle !== ADMIN_HANDLE) return res;
+  res.headers.append('set-cookie', ADMIN_OUT(req));
+  return db.prepare('DELETE FROM admin_sessions').run().then(() => res);
+};
+
 /* ===== 사용자 ===== */
 const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref';
 const pub = u => u && ({
@@ -114,6 +122,8 @@ export async function onRequest({ request: req, env, params }) {
     // 다른 사이트에서 대신 요청 보내는 것 막기 (JSON만 받음 → 교차 출처는 사전 확인에서 막힘)
     const origin = req.headers.get('origin');
     if (origin && origin !== new URL(req.url).origin) return err('forbidden', 403);
+    if (req.headers.get('sec-fetch-site') === 'cross-site') return err('forbidden', 403);
+    if (+(req.headers.get('content-length') || 0) > 32768) return err('too large', 413);   // 이 API에 32KB 넘는 요청은 없음
     if (!(req.headers.get('content-type') || '').includes('application/json')) return err('bad content type', 415);
     try { body = await req.json(); } catch { return err('bad body'); }
     if (!body || typeof body !== 'object') return err('bad body');
@@ -187,9 +197,9 @@ const ROUTES = {
   },
 
   'POST logout': async ({ req, db }) => {
-    const token = cookieOf(req, COOKIE);
+    const token = cookieOf(req, COOKIE), me = await auth(req, db);
     if (/^[0-9a-f]{64}$/.test(token)) await db.prepare('DELETE FROM sessions WHERE token = ?1').bind(await sha256(token)).run();
-    return json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
+    return endAdmin(db, req, me, json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) }));
   },
 
   'GET me': async ({ req, db }) => {
@@ -222,6 +232,7 @@ const ROUTES = {
   }),
 
   'POST password': needMe(async ({ req, db, me, body }) => {
+    if (await limited(db, 'pw:' + me.id, 10, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);   // 로그인된 기기를 잠깐 빌린 사람이 비밀번호를 대입하지 못하게
     const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
     if (!sameStr(await hashPw(String(body.old || ''), u.salt), u.pw)) return err('지금 비밀번호가 맞지 않아요', 401);
     const pw = String(body.pw || '');
@@ -232,7 +243,7 @@ const ROUTES = {
       db.prepare('UPDATE users SET pw = ?1, salt = ?2 WHERE id = ?3').bind(await hashPw(pw, salt), salt, me.id),
       db.prepare('DELETE FROM sessions WHERE uid = ?1 AND token != ?2').bind(me.id, cur),   // 다른 기기는 로그아웃
     ]);
-    return json({ ok: true });
+    return endAdmin(db, req, me, json({ ok: true }));
   }),
 
   // 관리자 입장: ADMIN_HANDLE 계정만, 비밀번호를 한 번 더 확인 → 12시간 관리자 세션(쿠키 경로 /api/admin, 관리자 API에서 검사)
@@ -255,6 +266,7 @@ const ROUTES = {
   }),
 
   'POST withdraw': needMe(async ({ req, env, db, me, body }) => {
+    if (await limited(db, 'pw:' + me.id, 10, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
     // 본인 확인: 비밀번호, 또는 구글로 가입한 계정이면 연결된 구글 로그인
     if (body.credential) {
       const g = await verifyGoogle(env, body.credential);
@@ -268,7 +280,7 @@ const ROUTES = {
       'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(me.id)));
-    return json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
+    return endAdmin(db, req, me, json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) }));
   }),
 
   /* ----- 사람 ----- */
@@ -458,7 +470,11 @@ const ROUTES = {
     return json({ ok: true, created: true }, 200, { 'set-cookie': await newSession(req, db, nu.id) });
   },
   // 이미 있는 계정에 구글 연결 / 해제
+  // 연결·해제 모두 지금 비밀번호 확인 (로그인된 기기를 잠깐 빌린 사람이 자기 구글을 몰래 연결해 계정을 가져가지 못하게)
   'POST google-link': needMe(async ({ env, db, me, body }) => {
+    if (await limited(db, 'pw:' + me.id, 10, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
+    const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
+    if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) return err('지금 비밀번호가 맞지 않아요', 401);
     if (body.off) { await db.prepare('UPDATE users SET google_sub = NULL WHERE id = ?1').bind(me.id).run(); return json({ ok: true }); }
     const g = await verifyGoogle(env, body.credential);
     if (!g) return err('구글 로그인을 확인하지 못했어요', 401);

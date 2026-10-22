@@ -70,6 +70,7 @@ export async function onRequest({ request: req, env, params }) {
   if (method === 'POST') {
     const origin = req.headers.get('origin');
     if (!origin || origin !== new URL(req.url).origin) return err('forbidden', 403);   // 관리자 요청은 같은 사이트에서만
+    if (+(req.headers.get('content-length') || 0) > 65536) return err('too large', 413);
     if (!(req.headers.get('content-type') || '').includes('application/json')) return err('bad content type', 415);
     try { body = await req.json(); } catch { return err('bad body'); }
     if (!body || typeof body !== 'object') return err('bad body');
