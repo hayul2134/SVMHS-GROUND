@@ -1591,6 +1591,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .s-tt.wk.wk.wk{width:min(560px,calc(100vw - 64px))}
 @media (max-width:699px){.s-tt.wk.wk.wk{width:100%}}
 .s-tt.wk #sTT{overflow-x:auto}
+.s-tt.stow.wk{z-index:44}   /* 넓어진 한 주 카드가 말풍선(41)에 가리지 않게 */
 .s-tt .week{min-width:430px;border-spacing:4px 3px}
 .s-tt .week th{padding:0 0 3px}
 .s-tt .week th .wd-d{font-size:10.5px}
@@ -1616,7 +1617,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .wkm .ds{display:flex;flex-wrap:wrap;gap:3px 5px;min-width:0;padding-top:2px}
 .wkm .ds i{font-style:normal;font-size:13px;font-weight:800;color:var(--text);word-break:keep-all}
 .wkm .ds i:not(:last-child)::after{content:" ·";color:var(--sub)}
-.wkm .ds i.mn{padding:0 6px;border-radius:6px;background:var(--yellow);color:#3b3220}
+.wkm .ds i.mn{white-space:nowrap;padding:0 6px;border-radius:6px;background:var(--yellow);color:#3b3220}
 .wkm .ds i.mn::after{content:""}
 .wkm .ds.no{font-size:13px;font-weight:800;color:var(--sub)}
 button.s-ttmore{font-family:inherit;cursor:pointer}
