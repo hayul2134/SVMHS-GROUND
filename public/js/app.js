@@ -1360,10 +1360,15 @@ function bootHome() {
   if (homeBooted || !cfgReady || introOn()) return;
   homeBooted = true;
   // 첫 등장 애니메이션: pre(숨김) → boot(등장). 끝나면 boot를 빼서 다른 화면 갔다 와도 다시 안 나옴
-  // 가운데 정렬은 등장 애니메이션(크기 변화) 전에 확정하고, 등장 중엔 다시 재지 않음 → 등장 후 위치가 튀지 않게
-  const de = document.documentElement; centerHero(true); de.classList.remove('pre'); de.classList.add('boot');
-  setTimeout(() => { de.classList.remove('boot'); heroLater(); }, 2600);
-  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance); loadNotice();
+  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadNotice();
+  const balP = loadBalance(); balP.then(pollBalance);
+  // 첫 등장: 밸런스 티켓(아래 한계)·글꼴이 준비된 뒤 최종 자리를 먼저 잡고 시작 → 엉뚱한 곳에 떴다가 자리를 찾아가지 않게 (최대 1.5초 대기)
+  // 등장 중엔 다시 재지 않음(크기 변화 때문에) → 등장 후에도 위치가 안 튐
+  const de = document.documentElement;
+  Promise.race([Promise.all([balP, document.fonts?.ready]), new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(() => {
+    centerHero(true); de.classList.remove('pre'); de.classList.add('boot');
+    setTimeout(() => { de.classList.remove('boot'); heroLater(); }, 2600);
+  }));
   peekSides();
 }
 function intro(on) {
