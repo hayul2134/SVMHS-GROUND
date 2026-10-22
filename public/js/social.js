@@ -38,6 +38,9 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
 const devTag = u => isDev(u) ? '<span class="devb" title="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
+// 개발자 계정은 닉네임·아이디 대신 '개발자' · '@developer'로 표시 (링크는 실제 아이디 그대로)
+const nameOf = u => isDev(u) ? '개발자' : u.name;
+const handleOf = u => isDev(u) ? 'developer' : u.handle;
 const classTxt = u => isDev(u) ? '' : u.grade && u.cls ? `${u.grade}학년 ${u.cls}반` : '';
 const ago = t => {
   const s = (Date.now() - t) / 1000;
@@ -45,7 +48,7 @@ const ago = t => {
   const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`;
 };
 const hm = t => { const d = new Date(t), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
-const personRow = (u, right = '') => `<li class="person"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u)}<span class="pi"><b>${esc(u.name)}${devTag(u)}</b><small>@${esc(u.handle)}${u.mood ? ' · ' + esc(u.mood) : ''}</small></span></a>${right}</li>`;
+const personRow = (u, right = '') => `<li class="person"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>@${esc(handleOf(u))}${u.mood ? ' · ' + esc(u.mood) : ''}</small></span></a>${right}</li>`;
 const followBtn = u => u.isMe ? '' : `<button class="fbtn ${u.following ? 'on' : ''}" data-follow="${esc(u.handle)}" data-on="${u.following ? 0 : 1}">${u.following ? '팔로잉' : '팔로우'}</button>`;
 const needLogin = (msg) => `<div class="card soc-gate"><p class="gate-em">🔐</p><p><b>${msg}</b></p><p class="muted small">아이디만 있으면 1분이면 가입해요</p><button class="btn" data-go="me">로그인 / 가입하기</button></div>`;
 const offCard = () => `<div class="card soc-gate"><p class="gate-em">🛠️</p><p><b>소셜 기능을 준비하고 있어요</b></p><p class="muted small">곧 열려요! 조금만 기다려 주세요</p></div>`;
@@ -157,12 +160,13 @@ function profileHtml(d) {
     <div class="pbody">
       ${av(u, 'big')}
       ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-      <h2 class="pname">${esc(u.name)}</h2>
-      <p class="phandle">@${esc(u.handle)}${u.online && !self ? ' · <b class="onl">접속 중</b>' : ''}${!self && r.followsMe ? ' · <span class="fm">나를 팔로우함</span>' : ''}</p>
+      <h2 class="pname">${esc(nameOf(u))}</h2>
+      <p class="phandle">@${esc(handleOf(u))}${u.online && !self ? ' · <b class="onl">접속 중</b>' : ''}${!self && r.followsMe ? ' · <span class="fm">나를 팔로우함</span>' : ''}</p>
+      ${isDev(u) ? '<button class="pdev" type="button" data-fb>💡 궁금한 점·원하는 기능은 헤더의 💡 의견으로 보내 주세요!</button>' : ''}
       ${chips ? `<p class="pchips">${chips}</p>` : ''}
       ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
       ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
-      ${isDev(u) ? '<p class="pdev">🛠 이 사이트를 만들고 고치는 사람 ✨<br><small>궁금한 점·원하는 기능은 헤더의 💡 의견으로 보내 주세요!</small></p>' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
+      ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
       ${isDev(u) ? '' : `<div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
       `}<div class="pact">${actions}</div>
       ${isDev(u) ? '' : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
@@ -528,7 +532,7 @@ async function openRank(game, scope = 'all') {
         : '<li class="empty">아직 아무 반도 기록이 없어요</li>';
       $('#rankNote').textContent = '반마다 최고 기록 상위 3명의 평균이에요. 프로필에 학년·반을 적어야 반 점수에 들어가요.';
     } else {
-      $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(u.name)}${devTag(u)}</b><small>${esc(classTxt(u) || '@' + u.handle)}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
+      $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || '@' + handleOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
       $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : '각자 최고 기록으로 순위를 매겨요';
     }
@@ -536,6 +540,7 @@ async function openRank(game, scope = 'all') {
 }
 
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-fb]')) { openFeedback(); return; }   // 개발자 프로필의 의견 안내 → 의견 보내기 창
   const r = e.target.closest('[data-rank]'); if (r) { openRank(r.dataset.rank, r.dataset.scope); return; }
   const p = e.target.closest('[data-play]'); if (p) { closeSheet(); play(p.dataset.play); }
 });
