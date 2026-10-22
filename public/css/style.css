@@ -639,25 +639,28 @@ html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .mpick .mp-y b{font-family:var(--num);font-size:18px;font-weight:800}
 .mpick .mp-m{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .pager .mpick .mp-m button{width:auto;height:38px;font:inherit;font-weight:800;font-size:14px;border-color:var(--line)}
-.pager .mpick .mp-m button.now{border-color:var(--ink)}
 .pager .mpick .mp-m button.on{background:var(--yellow);color:var(--ink);border-color:var(--ink)}
 .wpick{position:fixed;right:auto;top:0;left:0;z-index:300;width:280px}
 .wpick .mp-y button,.wpick .mp-m button,.wpick .mp-w button,.wpick .mp-today{border-radius:10px;border:2px solid var(--line);background:var(--chip);color:var(--text);font:inherit;font-weight:800;cursor:pointer;transition:.1s}
 .wpick .mp-y button{width:34px;height:34px;display:grid;place-items:center;border-color:var(--ink)}
 .wpick .mp-y svg{width:15px;height:15px}
 .wpick .mp-m button{height:36px;font-size:14px}
-.wpick .mp-m button.now{border-color:var(--ink)}
 .wpick button.on{background:var(--yellow);color:var(--ink);border-color:var(--ink)}
 .wpick button:hover{border-color:var(--ink)}
 .wpick button:active,.wpick button.is-pressed{transform:scale(.94)}
 .wpick .mp-w{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;padding-top:10px;border-top:2px dashed var(--line)}
 .wpick .mp-w button{height:38px;font-size:13px;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
-.wpick .mp-w button.now{border-color:var(--ink)}
 .wpick .mp-w small{font-size:10px;color:var(--sub)}
 .wpick .mp-w button.on small{color:var(--ink)}
 .wpick .mp-today{width:100%;height:34px;margin-top:10px;font-size:13px}
 :root[data-theme="dark"] .wpick .mp-y button{border-color:var(--line)}
 .pager .mpick .mp-today{width:100%;height:34px;margin-top:10px;font:inherit;font-weight:800;font-size:13px}
+/* 이번 달·이번 주 표시: 파란 테두리 + 그림자 + 스티커 배지 (선택(노랑)과 겹쳐도 배지로 구분) */
+.mpick .mp-m,.wpick .mp-w{row-gap:12px}
+.mpick .mp-m button.now,.wpick .mp-w button.now{position:relative;border:2.5px solid var(--accent);box-shadow:2px 2px 0 var(--ink)}
+.mpick .mp-m button.now:not(.on),.wpick .mp-w button.now:not(.on){background:color-mix(in srgb,var(--accent) 16%,var(--card));color:var(--text)}
+.mpick .mp-m button.now::after,.wpick .mp-w button.now::after{content:"이번 달";position:absolute;top:-10px;right:-6px;padding:1px 6px;border-radius:99px;border:2px solid var(--ink);background:var(--accent);color:#fff;font-size:10px;font-weight:900;line-height:1.35;white-space:nowrap;transform:rotate(6deg);pointer-events:none}
+.wpick .mp-w button.now::after{content:"이번 주"}
 @media (prefers-reduced-motion:reduce){.mpick{animation:none}}
 .btn{padding:12px 18px;border-radius:14px;background:var(--accent);color:#fff;font-weight:900;border:var(--bd);box-shadow:var(--sh-s);transition:transform .08s,box-shadow .08s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
