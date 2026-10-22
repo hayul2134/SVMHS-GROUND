@@ -142,7 +142,8 @@ function tickClock() {
   const hm = `${h12}:${pad(n.getMinutes())}`;
   // 큰 숫자 = 남은 시간, 아래 작은 칩 = 현재 시각 (수업 없는 때엔 큰 숫자가 현재 시각)
   if (!(left != null && left > 0 && left <= 10)) setHtml('#bigTime', left != null ? dg(fmtLeft(left)) : `<span class="ap">${ap}</span>` + dg(hm));
-  $('#bigTime').classList.toggle('long', left != null && left >= 3600);   // 1시간 넘게 남으면(밤·주말) 글씨 조금 작게
+  $('#bigTime').classList.toggle('long', left != null && left >= 3600);     // 1시간 넘게 남으면(밤·주말) 글씨 작게
+  $('#bigTime').classList.toggle('long2', left != null && left >= 36000);   // 10시간 넘으면(시가 두 자리) 더 작게
   if (left != null && left > 0 && left <= 10) startMs(b.target);   // 10초 이하: 1/100초까지
   setText('#bellCnt', `${ap} ${hm}`);
   $('#nowBox').hidden = left == null;

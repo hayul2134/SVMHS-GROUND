@@ -150,7 +150,9 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 @keyframes bellQuake{0%,100%{transform:none}15%{transform:translate(-2px,1px) rotate(-.8deg)}30%{transform:translate(2px,-2px) rotate(.6deg)}45%{transform:translate(-1px,2px) rotate(.3deg)}60%{transform:translate(3px,0) rotate(-.6deg)}75%{transform:translate(-2px,-1px) rotate(.8deg)}90%{transform:translate(1px,1px) rotate(-.3deg)}}
 @keyframes bellQuake2{0%,100%{transform:none}12%{transform:translate(-5px,2px) rotate(-1.8deg) scale(1.02)}26%{transform:translate(4px,-4px) rotate(1.4deg)}40%{transform:translate(-3px,4px) rotate(.8deg) scale(.99)}55%{transform:translate(6px,1px) rotate(-1.4deg) scale(1.03)}70%{transform:translate(-5px,-3px) rotate(2deg)}85%{transform:translate(2px,3px) rotate(-.8deg) scale(1.01)}}
 @keyframes bellQuake3{0%,100%{transform:scale(1.03)}10%{transform:translate(-8px,3px) rotate(-3deg) scale(1.06)}25%{transform:translate(7px,-6px) rotate(2.4deg) scale(1.01)}40%{transform:translate(-5px,7px) rotate(1.5deg) scale(1.07)}55%{transform:translate(9px,2px) rotate(-2.6deg) scale(1.02)}70%{transform:translate(-7px,-5px) rotate(3deg) scale(1.06)}85%{transform:translate(4px,6px) rotate(-1.4deg) scale(1.03)}}
-.s-big.long{font-size:clamp(64px,12vw,150px)}   /* 1시간 넘게 남은 긴 숫자(시:분:초) */
+/* 1시간 넘게 남은 긴 숫자(시:분:초) — 서랍 배치의 글씨 크기 규칙보다 우선하도록 id로 */
+#bigTime.long{font-size:clamp(60px,10vw,138px)}
+#bigTime.long2{font-size:clamp(52px,8.6vw,118px)}
 @media (prefers-reduced-motion:reduce){.stage.soon .s-big,.stage.soon2 .s-big,.stage.soon3 .s-big{animation:none}}
 .s-sub{margin-top:22px;display:flex;justify-content:center}
 .s-sub[hidden]{display:none}
