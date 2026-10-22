@@ -941,9 +941,9 @@ async function syncMascot(hi) {
     if (art) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.src = art; el.replaceChildren(im); }
     else el.innerHTML = mascotMod.MASCOT[k] || '';
   }
-  if (hi && !art) { el.classList.remove('hi'); void el.offsetWidth; el.classList.add('hi'); }
+  if (hi && !art) { el.classList.remove('m-hello'); void el.offsetWidth; el.classList.add('m-hello'); }  // .hi는 메뉴 항목 클래스라 쓰면 안 됨
 }
-document.addEventListener('animationend', e => { if (e.animationName === 'm-hi') e.target.closest('.mascot')?.classList.remove('hi'); });
+document.addEventListener('animationend', e => { if (e.animationName === 'm-hi') e.target.closest('.mascot')?.classList.remove('m-hello'); });
 // 다른 탭·앱을 보고 있을 땐 캐릭터 애니메이션 멈춤(배터리·CPU 절약)
 const syncAway = () => document.documentElement.classList.toggle('away', document.hidden);
 document.addEventListener('visibilitychange', syncAway); syncAway();

@@ -1125,9 +1125,9 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .mascot[data-k="whale"] .mb{transform-origin:50% 80%;animation:m-sway 4.5s cubic-bezier(.45,0,.55,1) infinite}
 .mascot[data-k="whale"] .msh,.mascot[data-k="slime"] .msh{animation:none}
 /* 테마를 고른 순간 한 번: 깡충 인사 */
-.mascot.hi .mb{animation:m-hi .95s cubic-bezier(.3,0,.3,1) 1}
-.mascot.hi .msh{animation:m-shhi .95s cubic-bezier(.3,0,.3,1) 1}
-.mascot.hi .mh{animation:m-headhi .95s 1}
+.mascot.m-hello .mb{animation:m-hi .95s cubic-bezier(.3,0,.3,1) 1}
+.mascot.m-hello .msh{animation:m-shhi .95s cubic-bezier(.3,0,.3,1) 1}
+.mascot.m-hello .mh{animation:m-headhi .95s 1}
 /* 화면을 안 보고 있을 땐 멈춤 */
 html.away .mascot *{animation-play-state:paused!important}
 @keyframes m-idle{
