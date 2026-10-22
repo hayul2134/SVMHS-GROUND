@@ -586,7 +586,7 @@ const ROUTES = {
     return json(await balState(env, db, me));
   }),
   'POST balc': needMe(async ({ env, db, me, body }) => {
-    const text = clean(body.body, 100);
+    const text = clean(body.body, 100, true);
     if (!text) return err('내용을 적어 주세요');
     if (isBad(text)) return err('욕설·비속어는 쓸 수 없어요');
     const st = await balState(env, db, me);

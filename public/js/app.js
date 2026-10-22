@@ -628,12 +628,16 @@ $('#plOpts').addEventListener('click', onPick);
 $('#bsOpts').addEventListener('click', onPick);
 $('#plMore').onclick = () => { if (!BAL) return; paintBalSheet(); openModal('#mBal'); loadBalance().then(pollBalance); };
 $('#plQ').onclick = $('#plCom').onclick = $('#plMore').onclick;
+// 댓글 입력: Enter = 등록, Shift+Enter = 줄바꿈 (한글 조합 중 Enter는 무시)
+const bsGrow = () => { const i = $('#bsIn'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 110) + 'px'; };
+$('#bsIn').addEventListener('input', bsGrow);
+$('#bsIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); $('#bsForm').requestSubmit(); } });
 $('#bsForm').addEventListener('submit', async e => {
   e.preventDefault();
   const inp = $('#bsIn'), body = inp.value.trim();
   if (!BAL || !body || balBusy) return;
   balBusy = true;
-  try { setBal(await balCall('/api/s/balc', { body, ymd: BAL.ymd })); inp.value = ''; $('#bsList').scrollTop = 0; }
+  try { setBal(await balCall('/api/s/balc', { body, ymd: BAL.ymd })); inp.value = ''; bsGrow(); $('#bsList').scrollTop = 0; }
   catch (err) { toast(err.message); }
   balBusy = false;
 });
