@@ -1530,3 +1530,22 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
   .s-info > :not([hidden]) ~ :not([hidden]){border-left:0}
   .s-info .mini.now{flex:0 0 100%;border-top:2px dashed var(--line);margin-top:6px;padding-top:6px}
 }
+/* 수업 진행 바(조회·수업·쉬는 시간에만 나옴 — 등교 전·방과 후·쉬는 날은 시작점이 없어 숫자 문구만) */
+.s-info .mini.now:has(.m-bar:not([hidden])){min-width:190px}
+.s-info .m-bar{height:10px}
+/* 밸런스 티켓은 조연: 시계·상태 띠보다 눈에 덜 띄게 (테두리·그림자·테이프·기울기·강한 색 빼고 작게, 더 아래로) */
+.bal-t{width:min(400px,calc(100% - 32px));margin-top:clamp(56px,9vh,104px);border:1.5px solid var(--line);box-shadow:none;transform:none;padding:8px 11px 9px;background:color-mix(in srgb,var(--card) 70%,transparent)}
+.bal-t::before{display:none}
+.bal-t .bt-tag{background:var(--chip);color:var(--sub);font-size:11px}
+.bal-t .bt-st,.bal-t .bt-more{color:var(--sub)}
+.bal-t .bt-more{background:none;border-color:transparent}
+.bal-t .bt-q{font-size:14px;margin:5px 2px 6px;color:var(--sub)}
+.bal-t .bt-opts .bo{min-height:32px;padding:4px 9px;border:1.5px solid var(--line);box-shadow:none;font-size:12.5px}
+.bal-t .bt-opts .bo.picked,.bal-t .bt-opts .bo.win{box-shadow:none;outline:0;animation:none;border-color:var(--sub)}
+.bal-t .bo-fill{opacity:.4}
+.bal-t .bo.shown .bo-t,.bal-t .bo.shown .bo-p{color:var(--text)}
+.bal-t .bo-stamp,.bal-t .bo-crown{display:none}
+.bal-t .bt-opts .bo-p{font-size:12.5px}
+.bal-t .bt-opts .bo-vs{background:none;color:var(--sub);transform:none;padding:0 2px}
+.bal-t:hover{border-color:var(--sub)}
+@media (max-width:560px){.bal-t{margin-top:44px}}
