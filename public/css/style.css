@@ -137,9 +137,9 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .dk.dot1{width:9px;height:9px;border-radius:50%;background:var(--ink);right:-12%;top:30%;opacity:.7}
 @keyframes tw{50%{transform:scale(.72) rotate(18deg)}}
 .clock.paused .dk,.stage.paused .dk{animation-play-state:paused}
-.s-big{font-family:var(--num);font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;font-size:clamp(84px,17vw,200px);line-height:.95;white-space:nowrap;color:var(--on-bg);text-shadow:6px 6px 0 var(--sky);transition:text-shadow .4s}
-.s-big .n{display:inline-block;width:.6em;text-align:center}
-.s-big .c{display:inline-block;width:.26em;position:relative;top:-.06em;text-align:center}
+.s-big{font-family:var(--num);font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;--bf:clamp(84px,17vw,200px);font-size:var(--bf);line-height:.95;white-space:nowrap;color:var(--on-bg);text-shadow:6px 6px 0 var(--sky);transition:text-shadow .4s}
+.s-big .n{display:inline-block;width:.65em;text-align:center}   /* Outfit 800 숫자 폭(0이 가장 넓음 .67em, 양옆 여백 포함)보다 좁으면 숫자끼리 겹침 */
+.s-big .c{display:inline-block;width:.3em;position:relative;top:-.06em;text-align:center}
 .stage.rest .s-big{text-shadow:6px 6px 0 var(--lime)}
 .s-big .sec{font-size:.34em;color:var(--sub);text-shadow:none;margin-left:.06em}
 .stage.soon .s-big{text-shadow:6px 6px 0 var(--red)}
@@ -151,8 +151,9 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 @keyframes bellQuake2{0%,100%{transform:none}12%{transform:translate(-5px,2px) rotate(-1.8deg) scale(1.02)}26%{transform:translate(4px,-4px) rotate(1.4deg)}40%{transform:translate(-3px,4px) rotate(.8deg) scale(.99)}55%{transform:translate(6px,1px) rotate(-1.4deg) scale(1.03)}70%{transform:translate(-5px,-3px) rotate(2deg)}85%{transform:translate(2px,3px) rotate(-.8deg) scale(1.01)}}
 @keyframes bellQuake3{0%,100%{transform:scale(1.03)}10%{transform:translate(-8px,3px) rotate(-3deg) scale(1.06)}25%{transform:translate(7px,-6px) rotate(2.4deg) scale(1.01)}40%{transform:translate(-5px,7px) rotate(1.5deg) scale(1.07)}55%{transform:translate(9px,2px) rotate(-2.6deg) scale(1.02)}70%{transform:translate(-7px,-5px) rotate(3deg) scale(1.06)}85%{transform:translate(4px,6px) rotate(-1.4deg) scale(1.03)}}
 /* 1시간 넘게 남은 긴 숫자(시:분:초) — 서랍 배치의 글씨 크기 규칙보다 우선하도록 id로 */
-#bigTime.long{font-size:clamp(60px,10vw,138px)}
-#bigTime.long2{font-size:clamp(52px,8.6vw,118px)}
+/* 시:분:초(8칸)는 시:분(5칸)과 전체 폭이 비슷해지게 줄임 → 양옆 서랍을 가리지 않음 */
+#bigTime.long{font-size:calc(var(--bf) * .64)}
+#bigTime.long2{font-size:calc(var(--bf) * .6)}
 /* 긴 숫자일 때 장식(테이프·별)이 숫자를 가리지 않게: 숫자 바깥으로 빼고 조금 작게 */
 .clock:has(#bigTime.long) .dk.tape,.clock:has(#bigTime.long2) .dk.tape{width:clamp(44px,6vw,76px);height:clamp(14px,1.8vw,20px);right:-6%;top:-22%;transform:rotate(22deg)}
 .clock:has(#bigTime.long) .dk.k1,.clock:has(#bigTime.long2) .dk.k1{width:clamp(24px,3.6vw,42px);left:-8%;top:-22%}
@@ -235,7 +236,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .s-tt .empty{font-size:14px;padding:6px 2px 8px}
 .s-tt .note{margin:8px 2px 0}
 @media (min-width:1280px){
-  .s-row .s-big{font-size:clamp(96px,10.5vw,170px)}
+  .s-row .s-big{--bf:clamp(96px,10.5vw,170px)}
   .s-row{column-gap:clamp(40px,5vw,84px)}
   .s-tt{box-shadow:var(--sh-s)}
   .s-tt .tt{gap:2px}
@@ -315,9 +316,9 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
   .s-tt .tt li.now::after,.s-tt .tt li.next::after,.s-tt .tt li .tm{display:none}
 }
 /* 서랍 크기: 시계 양옆에 남는 공간만큼 자동으로 커지고 작아짐 (시계는 항상 가림 없이) */
-.drawers{--clockw:calc(2.7 * clamp(84px,13.5vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 56px)}
-.drawers .s-big{font-size:clamp(84px,13.5vw,200px)}
-@media (min-width:1280px){.drawers{--clockw:calc(2.7 * clamp(96px,10.5vw,170px))}.drawers .s-big{font-size:clamp(96px,10.5vw,170px)}}
+.drawers{--clockw:calc(2.95 * clamp(84px,13.5vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 56px)}
+.drawers .s-big{--bf:clamp(84px,13.5vw,200px)}
+@media (min-width:1280px){.drawers{--clockw:calc(2.95 * clamp(96px,10.5vw,170px))}.drawers .s-big{--bf:clamp(96px,10.5vw,170px)}}
 .s-ttc.stow{width:clamp(220px,calc(var(--free) - 40px),320px);container-type:inline-size}
 .s-meal.stow{width:clamp(250px,calc(var(--free) - 20px),380px);container-type:inline-size}
 .s-ttc.stow .tt li.now{transform:rotate(-1deg)}
