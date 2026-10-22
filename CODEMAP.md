@@ -88,6 +88,10 @@ npx wrangler@4 pages dev --port 8788
 - 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번) → `feedback` 표 → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.
 - 📢 공지 → `openNotices()` → `GET /api/notices`(최근 20개, 30초 캐시). 관리자가 공지를 올리면 `notices` 표에도 기록(앞 공지는 끝난 것으로). 마지막으로 본 공지 id `sg_notice_seen`과 다르면 버튼에 빨간 점. 목록을 열면 닫았던 띠 공지도 다시 보임.
 
+## 업데이트 소식 (주간 패치노트)
+- `public/patchnotes.json`(최신이 맨 앞인 배열 `{id,date,title,items[]}`) → 📢 공지 창 아래 '🛠 업데이트 소식'. 새 id면 📢 버튼에 빨간 점(`sg_patch_seen`).
+- 매주 일요일 20시 예약 작업이 `git log`로 초안(`tools/patchnotes/draft-*.json`, 이모지·이모티콘 많이)을 만들고 **하율 확인 후에만** 위 파일에 넣어 배포.
+
 ## 모니터링 (/admin → 📡 모니터링)
 - API `GET /api/admin/monitor` 하나로 모아 받음. DM은 **개수만**(내용·누가 누구에게는 없음).
 - 서버 오류: 세 API의 catch와 나이스 프록시 실패가 `lib/db.js logErr()` → `errs` 표(14일·500줄 보관). D1 한도 초과 오류는 기록하지 않음(쓸 수 없으니까).

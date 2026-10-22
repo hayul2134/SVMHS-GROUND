@@ -685,18 +685,28 @@ const pad2 = n => String(n).padStart(2, '0');
 const dt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 const NT_IC = { warn: '⚠️', fun: '🎉', info: '📢' };
 let ntList = null;
-async function checkNotices() {   // 새 공지가 있으면 📢 버튼에 빨간 점 (마지막으로 본 공지 id: sg_notice_seen)
-  try { ntList = (await (await fetch('/api/notices')).json()).list || []; } catch { ntList = []; }
-  $('#ntDot').hidden = !ntList.length || store.get('notice_seen') === ntList[0].id;
+// 업데이트 소식(패치노트): public/patchnotes.json — 개발자가 확인한 주간 패치노트가 쌓임 (최신이 맨 앞)
+let ptList = null;
+async function checkNotices() {   // 새 공지·새 업데이트 소식이 있으면 📢 버튼에 빨간 점 (본 것: sg_notice_seen · sg_patch_seen)
+  const [n, p] = await Promise.all([
+    fetch('/api/notices').then(r => r.json()).then(j => j.list || []).catch(() => []),
+    fetch('/patchnotes.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).then(j => Array.isArray(j) ? j : []).catch(() => []),
+  ]);
+  ntList = n; ptList = p;
+  $('#ntDot').hidden = !((ntList.length && store.get('notice_seen') !== ntList[0].id) || (ptList.length && store.get('patch_seen') !== ptList[0].id));
 }
 async function openNotices() {
   sheet('<h3>📢 공지</h3><ul class="ntlist"><li class="skel"></li><li class="skel"></li></ul>');
-  if (!ntList) await checkNotices();
+  if (!ntList || !ptList) await checkNotices();
   if (ntList.length) { store.set('notice_seen', ntList[0].id); store.set('notice_x', null); }   // 다 봤음 + 닫았던 띠 공지도 다시 보이게
+  if (ptList.length) store.set('patch_seen', ptList[0].id);
   $('#ntDot').hidden = true;
+  const patches = ptList.slice(0, 12).map((x, i) => `<li class="${i ? '' : 'live'}"><span class="nt-ic">🛠</span><div><p>${esc(x.title || '업데이트')}</p>
+      <ul class="ptitems">${(x.items || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul><small>${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}</small></div></li>`).join('');
   $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => `<li class="${n.live ? 'live' : ''}">
       <span class="nt-ic">${NT_IC[n.tone] || '📢'}</span><div><p>${n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text)}</p>
       <small>${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}</small></div></li>`).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
+    ${patches ? `<h3 class="sp">🛠 업데이트 소식</h3><ul class="ntlist">${patches}</ul>` : ''}
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
 }
 const FB_KIND = [['idea', '💡 이런 기능 있으면 좋겠어요'], ['bug', '🐞 이상하거나 안 돼요'], ['etc', '💬 그 밖의 말']];
