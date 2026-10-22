@@ -1549,3 +1549,7 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .bal-t .bt-opts .bo-vs{background:none;color:var(--sub);transform:none;padding:0 2px}
 .bal-t:hover{border-color:var(--sub)}
 @media (max-width:560px){.bal-t{margin-top:44px}}
+/* 밸런스 티켓: 시계 묶음과 떨어뜨려 첫 화면 맨 아래(▼ 위)에 따로 — 시계 묶음은 혼자 화면 가운데 */
+@media (min-width:700px) and (min-height:760px){
+  .bal-t{position:absolute;left:50%;bottom:clamp(58px,7vh,84px);margin:0;translate:-50% 0}
+}
