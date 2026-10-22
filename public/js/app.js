@@ -578,36 +578,34 @@ function renderHomeWeek() {
 const SIDE = { meal: { el: $('.s-meal'), name: '급식판' }, tt: { el: $('.s-ttc'), name: '시간표' } };
 const wideMQ = matchMedia('(min-width:700px)');
 function paintSide(k) {
-  const { el, name } = SIDE[k], pin = el.classList.contains('pin');
-  const b = el.querySelector('.s-pin');
-  b.setAttribute('aria-pressed', String(pin)); b.dataset.tip = pin ? '고정 풀기' : '이 자리에 고정';
-  b.setAttribute('aria-label', pin ? `${name} 고정 풀기` : `${name} 고정`);
-  const t = el.querySelector('.s-tab'); t.setAttribute('aria-expanded', String(el.classList.contains('open')));
-  t.setAttribute('aria-label', el.classList.contains('open') ? `${name} 넣기` : `${name} 꺼내기`);
+  const { el, name } = SIDE[k], open = el.classList.contains('open');
+  const t = el.querySelector('.s-tab'); t.setAttribute('aria-expanded', String(open));
+  t.setAttribute('aria-label', open ? `${name} 넣기` : `${name} 꺼내기`);
+  const b = el.querySelector('.s-put'); b.dataset.tip = '옆으로 넣기'; b.setAttribute('aria-label', `${name} 옆으로 넣기`);
 }
-function setSide(k, open, pin) {
-  const el = SIDE[k].el;
-  el.classList.toggle('open', open); el.classList.toggle('pin', open && pin);
-  store.set('side_' + k, open && pin ? 'pin' : 'free'); paintSide(k);
+// 꺼낸 서랍은 '옆으로 넣기' 버튼(또는 포스트잇 탭)을 누를 때까지 그대로 둠. 상태는 기기에 기억(side_meal·side_tt: open/closed)
+function setSide(k, open) {
+  SIDE[k].el.classList.toggle('open', open);
+  store.set('side_' + k, open ? 'open' : 'closed'); paintSide(k);
 }
-function openSide(k, on) { const el = SIDE[k].el; if (el.classList.contains('stow') && !el.classList.contains('pin')) { el.classList.toggle('open', on); paintSide(k); } }
+function openSide(k, on) { const el = SIDE[k].el; if (el.classList.contains('stow')) { el.classList.toggle('open', on); paintSide(k); } }
 function applyDrawers() {
   const on = wideMQ.matches;
   $('#bigclock').classList.toggle('drawers', on);
   for (const k in SIDE) {
     const el = SIDE[k].el;
     el.classList.toggle('stow', on);
-    if (!on) { el.classList.remove('open', 'pin'); continue; }
-    const v = store.get('side_' + k, innerWidth >= 1100 ? 'pin' : 'free');   // 처음엔 넓은 화면만 꺼내서 고정
-    el.classList.toggle('pin', v === 'pin'); el.classList.toggle('open', v === 'pin');
+    if (!on) { el.classList.remove('open'); continue; }
+    const v = store.get('side_' + k, innerWidth >= 1100 ? 'open' : 'closed');   // 처음엔 넓은 화면만 꺼내 둠 (예전 값 pin/free도 인식)
+    el.classList.toggle('open', v === 'open' || v === 'pin');
     paintSide(k);
   }
 }
-// 사이트를 처음 켜면 고정 안 한 서랍도 1분 동안 꺼내 보여 주고 넣음. 그사이 탭·핀을 직접 누르면 자동으로 넣지 않음
+// 사이트를 처음 켜면 넣어 둔 서랍도 1분 동안 꺼내 보여 주고 다시 넣음. 그사이 탭·넣기 버튼을 직접 누르면 자동으로 넣지 않음
 let peekT = 0;
 function peekSides() {
   if (!wideMQ.matches) return;
-  const ks = Object.keys(SIDE).filter(k => !SIDE[k].el.classList.contains('pin'));
+  const ks = Object.keys(SIDE).filter(k => !SIDE[k].el.classList.contains('open'));
   if (!ks.length) return;
   ks.forEach(k => openSide(k, true));
   peekT = setTimeout(() => { peekT = 0; ks.forEach(k => openSide(k, false)); }, 60e3);
@@ -615,21 +613,17 @@ function peekSides() {
 const stopPeek = () => { clearTimeout(peekT); peekT = 0; };
 for (const k in SIDE) {
   const el = SIDE[k].el;
-  el.querySelector('.s-pin').addEventListener('click', stopPeek);
-  el.querySelector('.s-tab').addEventListener('click', stopPeek);
-  el.querySelector('.s-pin').onclick = e => { e.stopPropagation(); const pin = el.classList.contains('pin'); setSide(k, !pin, !pin); };
+  el.querySelector('.s-put').onclick = e => { e.stopPropagation(); stopPeek(); setSide(k, false); };
   el.querySelector('.s-tab').onclick = e => {
-    e.stopPropagation();
-    if (document.documentElement.classList.contains('tuck')) { scrollTo({ top: 0, behavior: 'smooth' }); if (!el.classList.contains('open')) setSide(k, true, false); return; }
-    setSide(k, !el.classList.contains('open'), false);
+    e.stopPropagation(); stopPeek();
+    if (document.documentElement.classList.contains('tuck')) { scrollTo({ top: 0, behavior: 'smooth' }); setSide(k, true); return; }
+    setSide(k, !el.classList.contains('open'));
   };
 }
 wideMQ.addEventListener('change', applyDrawers); applyDrawers();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
-document.addEventListener('click', e => { if (peekT) return; for (const k in SIDE) if (!e.composedPath().includes(SIDE[k].el)) openSide(k, false); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { stopPeek(); for (const k in SIDE) openSide(k, false); } });
-$('#goMeal').onclick = e => { e.preventDefault(); openSide('meal', false); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
-$('#goWeek').onclick = e => { e.preventDefault(); openSide('tt', false); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+$('#goMeal').onclick = e => { e.preventDefault(); $('#mealCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+$('#goWeek').onclick = e => { e.preventDefault(); $('#weekTT').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 async function renderTTView() {
   const mon = S.ttWeek;
   $('#tLbl').textContent = weekLbl(mon);

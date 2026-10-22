@@ -337,15 +337,16 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
   .s-ttc.stow,.s-meal.stow{padding-top:14px;padding-bottom:8px}
   .s-meal.stow .tray.mini{grid-template-rows:clamp(84px,26cqw,104px) clamp(64px,20cqw,80px)}
 }
-/* 첫 화면 급식판·시간표: 화면 가장자리 서랍 (700px 이상) — 탭으로 꺼내기/넣기, 핀으로 고정 */
+/* 첫 화면 급식판·시간표: 화면 가장자리 서랍 (700px 이상) — 포스트잇 탭으로 꺼내고, '옆으로 넣기' 버튼으로 다시 넣음 */
 .s-acts{display:flex;align-items:center;gap:5px;flex:none}
-.s-pin,.s-tab{display:none}
+.s-put,.s-tab{display:none}
 .drawers .s-row{display:flex;justify-content:center}
-.drawers .s-pin{display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:10px;background:var(--chip);color:var(--sub);border:2px solid var(--line);cursor:pointer;transition:transform .15s,background .15s}
-.drawers .s-pin svg{width:17px;height:17px;transform:rotate(35deg);transition:transform .2s}
-.drawers .s-pin:hover{color:var(--text);border-color:var(--ink)}
-.drawers .s-pin[aria-pressed="true"]{background:var(--yellow);color:#c0392b;border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
-.drawers .s-pin[aria-pressed="true"] svg{transform:none}
+.drawers .s-put{display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:10px;background:var(--chip);color:var(--sub);border:2px solid var(--line);cursor:pointer;transition:transform .15s,color .15s,border-color .15s}
+.drawers .s-put svg{width:17px;height:17px;transition:transform .2s}
+.drawers .s-ttc .s-put svg{transform:scaleX(-1)}
+.drawers .s-put:hover{color:var(--text);border-color:var(--ink)}
+.drawers .s-meal .s-put:hover svg{transform:translateX(-2px)}
+.drawers .s-ttc .s-put:hover svg{transform:scaleX(-1) translateX(-2px)}
 .s-tt.stow{position:fixed;top:50%;z-index:40;margin:0;max-width:calc(100vw - 64px);transition:transform .4s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
 .s-meal.stow{left:0;transform:translate(calc(-100% - 6px),-50%)}
 .s-meal.stow.open{transform:translate(18px,-50%) rotate(-1.2deg)}
@@ -353,30 +354,29 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .s-ttc.stow.open{transform:translate(-18px,-50%) rotate(1.2deg)}
 .tuck .s-meal.stow.open{transform:translate(calc(-100% - 6px),-50%)}
 .tuck .s-ttc.stow.open{transform:translate(calc(100% + 6px),-50%)}
-.s-tt.stow .s-tab{display:flex;align-items:center;gap:6px;position:absolute;top:50%;margin-top:-58px;min-height:116px;padding:16px 8px 18px;writing-mode:vertical-rl;letter-spacing:.08em;
-  font:inherit;font-size:13.5px;font-weight:900;color:var(--onc);background:var(--yellow);border:2px solid var(--ink);box-shadow:3px 4px 0 rgba(15,30,60,.22);cursor:pointer;transition:opacity .2s,translate .25s ease,visibility 0s}
-/* 포스트잇 책갈피: 가장자리에 붙인 접착 띠(::before) + 끝이 살짝 접힌 모서리(::after) */
-.s-tt.stow .s-tab::before{content:"";position:absolute;top:-2px;bottom:-2px;width:13px;background:rgba(255,255,255,.38);border-inline:1.5px dashed rgba(15,30,60,.18)}
-.s-tt.stow .s-tab::after{content:"";position:absolute;bottom:-2px;width:16px;height:16px;border-top:2px solid var(--ink)}
-.s-tt.stow .s-tab span{writing-mode:horizontal-tb;font-size:17px;position:relative}
-.s-meal.stow .s-tab{left:100%;margin-left:4px;border-radius:2px 4px 4px 2px;border-left-width:0;rotate:-2.5deg;transform-origin:left center}
-.s-meal.stow .s-tab::before{left:0}
-.s-meal.stow .s-tab::after{right:-2px;background:linear-gradient(225deg,var(--bg) 50%,color-mix(in srgb,var(--yellow) 78%,#000) 50%);border-left:2px solid var(--ink);border-bottom-left-radius:3px}
-.s-ttc.stow .s-tab{right:100%;margin-right:4px;border-radius:4px 2px 2px 4px;border-right-width:0;background:var(--lime);rotate:2.5deg;transform-origin:right center}
-.s-ttc.stow .s-tab::before{right:0}
-.s-ttc.stow .s-tab::after{left:-2px;background:linear-gradient(135deg,var(--bg) 50%,color-mix(in srgb,var(--lime) 78%,#000) 50%);border-right:2px solid var(--ink);border-bottom-right-radius:3px}
-.s-meal.stow .s-tab:hover{translate:4px 0}
-.s-ttc.stow .s-tab:hover{translate:-4px 0}
-/* 서랍이 나와 있으면 책갈피는 자연스럽게 숨김 (바깥을 누르거나 Esc로 넣으면 다시 나타남) */
+/* 포스트잇 탭: 정사각 메모지 한 장이 화면 끝 뒤에 붙어 삐져나온 모양 — 위쪽 접착 띠, 아래 모서리가 들려서 생기는 그림자, 살짝 말린 모서리 */
+.s-tt.stow .s-tab{--pi:var(--yellow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:absolute;top:50%;width:88px;height:86px;margin-top:-43px;padding:12px 6px 8px;
+  font:inherit;color:#3b3220;border:0;cursor:pointer;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--pi) 86%,#7a5a00) 0 15px,var(--pi) 15px 70%,color-mix(in srgb,var(--pi) 90%,#fff) 100%);
+  box-shadow:0 1px 1px rgba(40,30,0,.12),0 10px 12px -8px rgba(15,30,60,.45);
+  transition:opacity .2s,translate .25s ease,rotate .25s ease,visibility 0s}
+.s-tt.stow .s-tab::after{content:"";position:absolute;bottom:0;width:20px;height:20px;box-shadow:-1px -1px 2px rgba(40,30,0,.15)}
+.s-tt.stow .s-tab span{font-size:24px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.08))}
+.s-tt.stow .s-tab b{font-family:var(--disp);font-weight:400;font-size:16px;letter-spacing:.02em;line-height:1.1}
+.s-meal.stow .s-tab{left:100%;margin-left:-14px;padding-left:20px;rotate:-4deg;transform-origin:left center;border-radius:0 2px 26px 2px/0 2px 5px 2px}
+.s-meal.stow .s-tab::after{right:0;border-radius:0 0 6px 0;background:linear-gradient(315deg,transparent 50%,color-mix(in srgb,var(--pi) 70%,#fff) 50%,color-mix(in srgb,var(--pi) 92%,#000))}
+.s-ttc.stow .s-tab{--pi:var(--lime);right:100%;margin-right:-14px;padding-right:20px;rotate:4deg;transform-origin:right center;border-radius:2px 0 2px 26px/2px 0 2px 5px;color:#123b31}
+.s-ttc.stow .s-tab::after{left:0;border-radius:0 0 0 6px;box-shadow:1px -1px 2px rgba(0,30,20,.15);background:linear-gradient(45deg,transparent 50%,color-mix(in srgb,var(--pi) 70%,#fff) 50%,color-mix(in srgb,var(--pi) 92%,#000))}
+.s-meal.stow .s-tab:hover{translate:5px 0;rotate:-1.5deg}
+.s-ttc.stow .s-tab:hover{translate:-5px 0;rotate:1.5deg}
+/* 서랍이 나와 있으면 포스트잇은 숨김 ('옆으로 넣기'를 누르면 다시 나타남). 아래로 스크롤해 서랍이 접히면 다시 보임 */
 html:not(.tuck) .s-tt.stow.open .s-tab{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s,translate .25s ease,visibility 0s .2s}
 html:not(.tuck) .s-meal.stow.open .s-tab{translate:-10px 0}
 html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
-.s-tt.stow.pin .s-tab{display:none}
-.tuck .s-tt.stow.pin .s-tab{display:flex}
 .s-tt.stow:not(.open),.tuck .s-tt.stow{box-shadow:none}
 .s-tt.stow:not(.open) > :not(.s-tab),.tuck .s-tt.stow > :not(.s-tab){visibility:hidden}
 .s-tt.stow:not(.open)::before,.tuck .s-tt.stow::before{display:none}
-.s-tab:hover{filter:brightness(1.05)}
+.s-tab:hover{filter:brightness(1.03)}
 /* 홈 아래 주간 시간표 제목 */
 .hw-h{font-size:25px!important;gap:14px!important}
 #weekTT .hw-badge{width:48px;height:48px;border-radius:14px;background:var(--lime);color:var(--onc);box-shadow:3px 3px 0 var(--ink)}
