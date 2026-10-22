@@ -1680,6 +1680,7 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .bt-com b{font-family:var(--num);font-weight:800;color:var(--accent)}
 .bt-com .bc-go{font-size:15px;line-height:1}
 .bal-t .bt-more{display:none}
+.bal-t .bt-st{margin-left:auto;text-align:right}
 
 /* ===== 첫 화면 등장 애니메이션 (2026-10-23) — html.pre: 등장 전 숨김 / html.boot: 등장 중 (app.js bootHome) =====
    시계 묶음은 translate(--hx/--hy 가운데 정렬)·transform(흔들림 등)을 건드리지 않게 opacity·scale 위주로, 위로 떠오르는 건 정렬값을 포함한 translate로 */
