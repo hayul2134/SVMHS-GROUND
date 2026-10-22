@@ -832,10 +832,14 @@ function centerHero() {
   if (!isFinite(L)) return;
   const sy = scrollY; L -= hx; R -= hx; T += sy - hy; B += sy - hy;   // 옮기기 전 위치(문서 기준)
   let dx = innerWidth / 2 - (L + R) / 2, dy = innerHeight / 2 - (T + B) / 2;
-  const top = Math.max(($('header')?.getBoundingClientRect().bottom ?? 0) + sy, $('#notice').hidden ? 0 : $('#notice').getBoundingClientRect().bottom + sy) + 14;
-  if (T + dy < top) dy = top - T;   // 위 공지·헤더와 안 겹치게
-  const bal = $('#play');
-  if (bal && !bal.hidden && getComputedStyle(bal).position === 'absolute') { const bt = bal.getBoundingClientRect().top + sy - 14; if (B + dy > bt) dy = Math.max(top - T, bt - B); }
+  const top = Math.max(($('header')?.getBoundingClientRect().bottom ?? 0), $('#notice').hidden ? 0 : $('#notice').getBoundingClientRect().bottom + sy) + 14;
+  if (T + dy < top) dy = top - T;   // 위 공지·헤더와 안 겹치게 (헤더는 화면 고정이라 스크롤 값을 더하지 않음 — 스크롤 중 다시 재면 시계 묶음이 아래로 밀려 내려가던 버그 수정)
+  // 아래 한계: 밸런스 티켓(흐름 안이든 화면 아래 고정이든)·▼ 버튼·첫 화면 끝(띠 배너) 중 가장 위 — 낮은 화면에서 티켓·띠와 겹치던 문제 수정
+  let bot = HERO.getBoundingClientRect().bottom + sy;
+  for (const el of [$('#play'), $('#goDown')]) if (el && !el.hidden && el.offsetParent) bot = Math.min(bot, el.getBoundingClientRect().top + sy);
+  bot -= 14;
+  if (B + dy > bot) dy = bot - B;
+  if (T + dy < top) dy = Math.min(0, top - T);   // 둘 다 못 지키면 원래 자리에서 더 내리지 않음
   st.setProperty('--hx', Math.round(dx) + 'px'); st.setProperty('--hy', Math.round(dy) + 'px');
 }
 let heroRaf = 0; const heroLater = () => { cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(centerHero); };
