@@ -800,7 +800,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
   $('#ntDot').hidden = true;
   // 공지·업데이트 소식 공통 모양: 굵은 큰 제목 + 내용 2줄 미리보기 → 📖 자세히 보기로 펼치고, 맨 아래 작은 '접기'로 다시 접음
   const card = (live, ic, title, inner, foot, id) => `<li class="${live ? 'live' : ''}"${id ? ` data-nid="${esc(id)}"` : ''}><span class="nt-ic">${ic}</span><div class="nt-c">
-      <p class="nt-t">${title}</p>${inner ? `<div class="nb"><div class="nb-txt">${inner}</div><button type="button" class="nb-more">📖 자세히 보기</button><button type="button" class="nb-fold">접기 ▴</button></div>` : ''}
+      <p class="nt-t">${title}</p>${inner ? `<div class="ntb"><div class="nb-txt">${inner}</div><button type="button" class="nb-more">📖 자세히 보기</button><button type="button" class="nb-fold">접기 ▴</button></div>` : ''}
       <small>${foot}</small></div></li>`;
   const patches = ptList.slice(0, 12).map((x, i) => card(!i, '🛠', esc(x.title || '업데이트'),
       (x.items || []).length ? `<ul class="ptitems">${x.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '', `${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}`)).join('');
@@ -809,13 +809,13 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
     ${patches ? `<h3 class="sp">🛠 업데이트 소식</h3><ul class="ntlist">${patches}</ul>` : ''}
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
-  $$('#socSheet .nb').forEach(b => {   // 2줄 안에 다 들어가는 짧은 내용은 '자세히 보기' 버튼을 숨김
+  $$('#socSheet .ntb').forEach(b => {   // 2줄 안에 다 들어가는 짧은 내용은 '자세히 보기' 버튼을 숨김
     const t = b.querySelector('.nb-txt');
     if (t.scrollHeight <= t.clientHeight + 2) b.classList.add('short');
     b.querySelector('.nb-more').onclick = () => b.classList.add('open');
     b.querySelector('.nb-fold').onclick = () => { b.classList.remove('open'); b.closest('li').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
   });
-  if (focus) $(`#socSheet [data-nid="${CSS.escape(focus)}"] .nb:not(.short)`)?.classList.add('open');
+  if (focus) $(`#socSheet [data-nid="${CSS.escape(focus)}"] .ntb:not(.short)`)?.classList.add('open');
 }
 const FB_KIND = [['idea', '💡 이런 기능 있으면 좋겠어요'], ['bug', '🐞 이상하거나 안 돼요'], ['etc', '💬 그 밖의 말']];
 function openFeedback() {
