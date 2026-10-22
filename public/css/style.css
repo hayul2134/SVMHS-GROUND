@@ -153,6 +153,16 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 /* 1시간 넘게 남은 긴 숫자(시:분:초) — 서랍 배치의 글씨 크기 규칙보다 우선하도록 id로 */
 #bigTime.long{font-size:clamp(60px,10vw,138px)}
 #bigTime.long2{font-size:clamp(52px,8.6vw,118px)}
+/* 긴 숫자일 때 장식(테이프·별)이 숫자를 가리지 않게: 숫자 바깥으로 빼고 조금 작게 */
+.clock:has(#bigTime.long) .dk.tape,.clock:has(#bigTime.long2) .dk.tape{width:clamp(44px,6vw,76px);height:clamp(14px,1.8vw,20px);right:-6%;top:-22%;transform:rotate(22deg)}
+.clock:has(#bigTime.long) .dk.k1,.clock:has(#bigTime.long2) .dk.k1{width:clamp(24px,3.6vw,42px);left:-8%;top:-22%}
+.clock:has(#bigTime.long) .dk.k2,.clock:has(#bigTime.long2) .dk.k2{right:-9%;top:-6%}
+.clock:has(#bigTime.long) .dk.k3,.clock:has(#bigTime.long2) .dk.k3{left:-4%;bottom:-20%}
+.clock:has(#bigTime.long) .dk.k4,.clock:has(#bigTime.long2) .dk.k4{width:clamp(20px,3vw,34px);right:-8%;bottom:-16%}
+.clock:has(#bigTime.long) .dk.k5,.clock:has(#bigTime.long2) .dk.k5{left:-11%}
+.clock:has(#bigTime.long) .dk.ring,.clock:has(#bigTime.long2) .dk.ring{top:-24%}
+.clock:has(#bigTime.long) .dk.dot1,.clock:has(#bigTime.long2) .dk.dot1{right:-13%}
+@media (max-width:560px){.clock:has(#bigTime.long) .dk.tape,.clock:has(#bigTime.long2) .dk.tape{top:-6%;right:-9%}}
 @media (prefers-reduced-motion:reduce){.stage.soon .s-big,.stage.soon2 .s-big,.stage.soon3 .s-big{animation:none}}
 .s-sub{margin-top:22px;display:flex;justify-content:center}
 .s-sub[hidden]{display:none}
