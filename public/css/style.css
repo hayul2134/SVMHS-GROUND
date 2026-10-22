@@ -546,8 +546,10 @@ html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .week th.today .wd-w{background:var(--yellow);color:var(--onc);border:2px solid var(--ink);border-radius:10px;padding:2px 10px;box-shadow:var(--sh-s);transform:rotate(-3deg)}
 .week th.today .wd-w::after{content:"★";color:var(--red);margin-left:3px;font-size:.75em}
 .week td{border-radius:12px;padding:5px 6px;text-align:center;font-size:13px;font-weight:700;height:50px;line-height:1.2;border:2px solid var(--line);position:relative;transition:transform .2s,box-shadow .2s,opacity .2s}
-.week td .si{display:block;font-style:normal;font-size:17px;line-height:1;margin-bottom:3px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.12))}
-.week td.dbl .si{font-size:22px;margin-bottom:5px}
+.sic{width:1.15em;height:1.15em;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--ink);overflow:visible}
+.week td .si{display:block;font-style:normal;font-size:21px;line-height:1;margin-bottom:3px}
+.week td .si .sic{display:block;margin:0 auto;filter:drop-shadow(1.5px 1.5px 0 color-mix(in srgb,var(--ink) 22%,transparent))}
+.week td.dbl .si{font-size:27px;margin-bottom:5px}
 .week td.done .si,.week td.past .si{filter:grayscale(.7)}
 .week td.now .si{animation:siBob 1.6s ease-in-out infinite}
 @keyframes siBob{50%{transform:translateY(-2px) rotate(-8deg)}}
@@ -1618,3 +1620,4 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .board .up.first .nm{font-size:15px}
 /* 첫 화면 서랍 시간표에도 과목 아이콘 */
 .tt li .s .si{font-style:normal;margin-right:6px}
+.tt li .s .si .sic{width:1.25em;height:1.25em}
