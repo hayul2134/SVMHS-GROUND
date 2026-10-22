@@ -169,10 +169,12 @@ VIEWS.monitor = async () => {
   const meals = { 1: '조식', 2: '중식', 3: '석식' };
   const t = d.db.tables;
   $('#main').innerHTML = `
-    <div class="vh"><h2>모니터링</h2><span class="sub">${full(d.at)} 기준 · 20초마다 새로 고침</span><button class="btn sm" type="button" data-act="monrefresh">지금 새로 고침</button></div>
+    <div class="vh"><h2>모니터링</h2><span class="sub">${full(d.at)} 기준 · 20초마다 새로 고침${d.deploy.sha ? ` · 배포 <code>${esc(d.deploy.sha)}</code>${d.deploy.branch ? ' (' + esc(d.deploy.branch) + ')' : ''}` : ' · 로컬 실행'}</span><button class="btn sm" type="button" data-act="monrefresh">지금 새로 고침</button></div>
     <div class="stats">
       ${tile(d.online.length, '지금 접속 중 (2분 안)', d.online.length ? 'c1' : '')}
       ${tile(d.activeHour, '최근 1시간 들어온 사람', 'c1')}
+      ${tile(d.activeWeek, '최근 7일 들어온 사람', 'c1')}
+      ${tile(d.activeMonth, '최근 30일 들어온 사람', 'c1')}
       ${tile(d.sessions, '로그인 유지 중인 기기', 'c2')}
       ${tile(d.errors24h, '최근 24시간 서버 오류', d.errors24h ? 'hot' : 'c3')}
       ${tile(d.db.write ? '정상' : '멈춤', 'DB 저장 (계정 무료 한도)', d.db.write ? 'c2' : 'hot')}
@@ -283,7 +285,8 @@ async function openUser(handle) {
   $('#mBody').innerHTML = `
     <div class="prof">${av(u)}<div><b>${esc(u.name)}</b> ${u.online ? '<span class="tag on">접속 중</span>' : ''}
       <p class="sub">${cls(u) ? cls(u) + '반 · ' : ''}${u.club ? esc(u.club) + ' · ' : ''}가입 ${full(u.created)} · 최근 ${when(u.seen)}</p>
-      ${u.mood ? `<p>💭 ${esc(u.mood)}</p>` : ''}${u.bio ? `<p class="sub">${esc(u.bio)}</p>` : ''}${u.insta ? `<p class="sub">📷 instagram.com/${esc(u.insta)}</p>` : ''}</div></div>
+      ${u.mood ? `<p>💭 ${esc(u.mood)}</p>` : ''}${u.bio ? `<p class="sub">${esc(u.bio)}</p>` : ''}${u.insta ? `<p class="sub">📷 instagram.com/${esc(u.insta)}</p>` : ''}
+      <p class="sp-t"><a class="btn sm" href="/#u/${encodeURIComponent(u.handle)}">사이트에서 프로필 보기 →</a></p></div></div>
     ${d.ban ? `<p class="banbox">⛔ 이용 정지 중 · ${d.ban.until ? full(d.ban.until) + '까지' : '무기한'}${d.ban.reason ? ' · ' + esc(d.ban.reason) : ''}</p>` : ''}
     <div class="kv">
       <div><b>${s.followers}</b><span>팔로워</span></div><div><b>${s.following}</b><span>팔로잉</span></div><div><b>${s.blockedBy}</b><span>차단당함</span></div>
@@ -421,7 +424,10 @@ async function saveSet(body, el) {
 VIEWS.log = async () => {
   const d = await call('log');
   $('#main').innerHTML = `<div class="vh"><h2>관리 기록</h2><span class="sub">최근 200개</span></div>
-    <section class="card">${d.log.length ? `<ul class="log">${d.log.map(x => `<li><span class="t">${full(x.at)}</span><b>${esc(x.action)}</b><span>${esc(x.detail)}</span></li>`).join('')}</ul>` : '<p class="empty">기록이 없어요</p>'}</section>`;
+    <input class="inp logf" id="logQ" type="search" placeholder="찾기 (예: 정지, @아이디, 로그인 실패)">
+    <section class="card">${d.log.length ? `<ul class="log" id="logList">${d.log.map(x => `<li><span class="t">${full(x.at)}</span><b>${esc(x.action)}</b><span>${esc(x.detail)}</span></li>`).join('')}</ul>` : '<p class="empty">기록이 없어요</p>'}</section>`;
+  // 검색: 입력한 글자가 들어 있는 줄만 보이게 (화면 안에서만 거름)
+  $('#logQ').oninput = e => { const q = e.target.value.trim().toLowerCase(); document.querySelectorAll('#logList li').forEach(li => { li.hidden = !!q && !li.textContent.toLowerCase().includes(q); }); };
 };
 
 /* ===== 모달 ===== */

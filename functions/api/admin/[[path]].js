@@ -46,6 +46,16 @@ const userOf = (db, h) => db.prepare(`SELECT ${U} FROM users WHERE handle = ?1`)
 const banOf = (db, uid) => db.prepare('SELECT until, reason, at FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(uid, Date.now()).first();
 const row = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, created: u.created, seen: u.seen, online: Date.now() - (u.seen || 0) < 150e3 });
 
+// DB 저장 가능 여부: 한 줄 써 보고 판단하되 5분에 한 번만 (쓰기 한도 절약). 나이스 연결 확인은 2분에 한 번만
+let probeAt = 0, probeOk = true, neisAt = 0, neisLast = null;
+async function canWrite(db) {
+  if (Date.now() - probeAt < 300e3) return probeOk;
+  try { await db.prepare("INSERT INTO settings (k, v) VALUES ('probe', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(String(Date.now())).run(); probeOk = true; }
+  catch (e) { if (!isWriteLimit(e)) throw e; probeOk = false; }
+  probeAt = Date.now();
+  return probeOk;
+}
+
 /* ===== 라우터 ===== */
 export async function onRequest({ request: req, env, params }) {
   const path = (params.path || []).join('/');
@@ -127,10 +137,7 @@ const ROUTES = {
     }
     const st = await getSettings(db, true);
     let notice = null; try { notice = JSON.parse(st.notice || 'null'); } catch {}
-    // 지금 DB에 쓸 수 있는지 한 줄 써서 확인 (계정 전체 무료 한도를 넘으면 실패)
-    let dbWrite = true;
-    try { await db.prepare("INSERT INTO settings (k, v) VALUES ('probe', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(String(now)).run(); }
-    catch (e) { if (!isWriteLimit(e)) throw e; dbWrite = false; }
+    const dbWrite = await canWrite(db);   // 계정 전체 무료 한도를 넘으면 false
     return json({
       counts: { users: n(0), activeToday: n(1), online: n(2), newToday: n(3), dmsToday: n(4), playsToday: n(5), openReports: n(6), mealVotes: n(7), balanceVotes: n(8), banned: n(9), follows: n(10) },
       days, classes: r[14].results,
@@ -145,7 +152,7 @@ const ROUTES = {
     const P = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen';
     const r = await db.batch([
       db.prepare(`SELECT handle, name, avatar, color, grade, cls, seen FROM users u WHERE seen >= ?1 ORDER BY seen DESC LIMIT 100`).bind(now - 150e3),
-      db.prepare('SELECT COUNT(*) AS n FROM users WHERE seen >= ?1').bind(now - 3600e3),
+      db.prepare('SELECT SUM(seen >= ?1) AS h, SUM(seen >= ?2) AS w, SUM(seen >= ?3) AS m FROM users').bind(now - 3600e3, now - 7 * 86400e3, now - 30 * 86400e3),
       db.prepare('SELECT COUNT(*) AS n FROM sessions WHERE exp > ?1').bind(now),
       // 최근 활동 (가입 · 게임 기록 · 팔로우 · 신고 · 관리 조치) — 각 20개씩 모아 시간순
       db.prepare(`SELECT 'signup' AS k, created AS at, ${P}, '' AS x FROM users u ORDER BY created DESC LIMIT 20`),
@@ -168,13 +175,11 @@ const ROUTES = {
     const card = u => ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, seen: u.seen, online: now - (u.seen || 0) < 150e3 });
     const feed = [3, 4, 5, 6].flatMap(rows).sort((a, b) => b.at - a.at).slice(0, 40).map(x => ({ k: x.k, at: x.at, user: card(x), x: x.x }));
     const hours = i => { const a = Array(24).fill(0); for (const x of rows(i)) a[x.h] = x.n; return a; };
-    // DB에 지금 쓸 수 있는지 (계정 전체 무료 한도)
-    let dbWrite = true;
-    try { await db.prepare("INSERT INTO settings (k, v) VALUES ('probe', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(String(now)).run(); }
-    catch (e) { if (!isWriteLimit(e)) throw e; dbWrite = false; }
+    const dbWrite = await canWrite(db);
     // 나이스 연결 상태: 오늘 급식 1건 요청 (캐시 없이) → 응답 시간·결과 코드
     let neis = { ok: false, ms: 0, code: '', key: Boolean(env.NEIS_KEY) };
-    try {
+    if (neisLast && now - neisAt < 120e3) neis = neisLast;
+    else try {
       const q = new URLSearchParams({ Type: 'json', ATPT_OFCDC_SC_CODE: 'B10', SD_SCHUL_CODE: '7010795', MLSV_YMD: day, pSize: '1' });
       if (env.NEIS_KEY) q.set('KEY', env.NEIS_KEY);
       const s0 = Date.now(), res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?${q}`, { signal: AbortSignal.timeout(6000) });
@@ -182,9 +187,12 @@ const ROUTES = {
       const code = j.RESULT?.CODE || j.mealServiceDietInfo?.[0]?.head?.[1]?.RESULT?.CODE || '';
       neis = { ...neis, ok: res.ok && (code === 'INFO-000' || code === 'INFO-200'), ms: Date.now() - s0, code: code || 'HTTP ' + res.status };
     } catch (e) { neis.code = String(e?.message || e).slice(0, 60); }
+    if (neis !== neisLast) { neisLast = neis; neisAt = now; }
     return json({
       at: now,
-      online: rows(0).map(card), activeHour: one(1).n, sessions: one(2).n,
+      online: rows(0).map(card), activeHour: one(1).h || 0, activeWeek: one(1).w || 0, activeMonth: one(1).m || 0, sessions: one(2).n,
+      // 지금 실행 중인 배포 (Cloudflare Pages가 넣어 주는 값)
+      deploy: { sha: (env.CF_PAGES_COMMIT_SHA || '').slice(0, 7), branch: env.CF_PAGES_BRANCH || '', url: env.CF_PAGES_URL || '' },
       feed, hours: { dm: hours(7), score: hours(8), signup: hours(9) },
       votes: { meal: rows(10), balance: Object.fromEntries(rows(11).map(x => [x.pick, x.n])) },
       errors: rows(12), errors24h: one(13).n,

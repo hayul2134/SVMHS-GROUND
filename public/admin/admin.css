@@ -221,3 +221,7 @@ code{background:var(--chip);border:1.5px solid var(--line);border-radius:6px;pad
 .chart .col.nowh{background:rgba(111,198,244,.18);border-radius:6px 6px 0 0}
 .sp{margin-top:10px}
 .mlist li > span:first-child{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.tbtn.back{background:var(--yellow)}
+.gate-back{text-align:center;margin-top:14px;font-weight:700}
+.gate-back a{color:var(--sub)}
+.logf{margin-bottom:12px}

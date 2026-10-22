@@ -798,11 +798,18 @@ async function loadNotice() {
 // theme.js가 첫 화면부터 html.prelogin을 붙여 둠 → 로그인 상태가 확인되면 social.js가 SOC.authed()로 알려 줌
 const HTML = document.documentElement;
 const introOn = () => HTML.classList.contains('prelogin');
+// 홈 데이터(급식·시간표·일정·투표·공지)는 사이트가 실제로 보일 때 한 번만 불러옴 — 로그인 전 소개 화면에서는 안 받음(요청·그리기 절약)
+let homeBooted = false, cfgReady = false;
+function bootHome() {
+  if (homeBooted || !cfgReady || introOn()) return;
+  homeBooted = true;
+  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance); loadNotice();
+}
 function intro(on) {
   HTML.classList.toggle('prelogin', on);
   $('#intro').inert = !on;
   if (on) $('#intro').scrollTop = 0;
-  else { $('#introAuth').hidden = true; $('#introAuth').innerHTML = ''; onScroll(); }
+  else { $('#introAuth').hidden = true; $('#introAuth').innerHTML = ''; onScroll(); bootHome(); }
 }
 // me: 로그인한 사람(없으면 null) · on: 소셜 기능이 켜져 있는지 · how: 'login' | 'signup' | undefined(처음 확인)
 SOC.authed = (me, on = true, how) => {
@@ -838,7 +845,7 @@ window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 SOC.getClass = () => cls;
 const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => { if (introOn()) toast('불러오지 못했어요. 새로 고침해 주세요'); });
 loadConfig().finally(async () => {
-  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadBalance().then(pollBalance); loadNotice();
+  cfgReady = true; bootHome();
   const h = location.hash.slice(1);
   if (h && h !== 'home') { if (/^(me|u|dm|game)\b/.test(h)) await socReady; go(h); }
   if (!cls && !introOn()) setTimeout(openClass, 400);   // 소개 화면이면 닫힐 때 띄움
