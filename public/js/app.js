@@ -913,7 +913,7 @@ function syncBarColor() { $('meta[name=theme-color]').content = getComputedStyle
 /* ===== 색깔·캐릭터 테마(스킨) — 밝음/어두움과 따로 조합. 색은 style.css 스킨 구간(tools/skins/gen.py가 생성) ===== */
 const SKINS = {
   color: [['', '기본 파랑'], ['pink', '핑크'], ['mint', '민트'], ['purple', '라벤더'], ['peach', '피치'], ['lemon', '레몬'], ['mono', '모노']],
-  char: [['cat', '냥이'], ['dog', '멍멍이'], ['bear', '곰돌이'], ['bunny', '토끼'], ['frog', '개구리'], ['chick', '병아리'],
+  char: [['cat', '고양이'], ['dog', '강아지'], ['bear', '곰돌이'], ['bunny', '토끼'], ['frog', '개구리'], ['chick', '병아리'],
     ['hamster', '햄찌'], ['penguin', '펭귄'], ['fox', '여우'], ['panda', '판다'], ['dino', '공룡'], ['ghost', '유령'], ['slime', '슬라임'], ['sheep', '양'], ['whale', '고래'], ['axolotl', '우파루파']],
 };
 function applySkin(k) {
