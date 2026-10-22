@@ -1,7 +1,7 @@
 // SVMHS GROUND — 관리자 API (/api/admin/*). 화면은 public/admin/
-// 로그인: Pages 비밀 변수 ADMIN_KEY(관리자 비밀번호)와 같으면 12시간짜리 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만)을 준다.
+// 로그인: 사이트에서 관리자 계정(lib/db.js ADMIN_HANDLE)으로 로그인 → 비밀번호 재확인(/api/s/admin-pass) → 12시간 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만).
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
-import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, maskIp, isWriteLimit, LIMIT_MSG } from '../../../lib/db.js';
+import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE } from '../../../lib/db.js';
 import { defaultBalance } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
@@ -30,12 +30,12 @@ async function hashPw(pw, salt) {   // 소셜 API와 같은 방식 (비밀번호
 }
 const cookieOf = req => (req.headers.get('cookie') || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '='))?.slice(COOKIE.length + 1) || '';
 const setCookie = (req, token, maxAge) => `${COOKIE}=${token}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${new URL(req.url).protocol === 'https:' ? '; Secure' : ''}`;
-// 세션 토큰은 ADMIN_KEY와 섞어서 해시로 저장 → 비밀번호(ADMIN_KEY)를 바꾸면 기존 관리자 세션이 모두 무효
-const tokenHash = (env, t) => sha256(t + ':' + env.ADMIN_KEY);
-async function isAdmin(req, env, db) {
+// 관리자 세션: 토큰은 해시로만 저장. 관리자 계정이 지워졌거나 정지되면 세션도 무효
+async function isAdmin(req, db) {
   const t = cookieOf(req);
-  if (!env.ADMIN_KEY || !/^[0-9a-f]{64}$/.test(t)) return false;
-  const r = await db.prepare('SELECT exp FROM admin_sessions WHERE token = ?1').bind(await tokenHash(env, t)).first();
+  if (!/^[0-9a-f]{64}$/.test(t)) return false;
+  const r = await db.prepare(`SELECT exp FROM admin_sessions WHERE token = ?1
+    AND EXISTS (SELECT 1 FROM users u WHERE u.handle = ?2 AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?3)))`).bind(await sha256(t), ADMIN_HANDLE, Date.now()).first();
   return !!r && r.exp > Date.now();
 }
 const log = (db, action, detail = '') => db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), action, String(detail).slice(0, 300)).run();
@@ -50,7 +50,7 @@ const row = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color
 export async function onRequest({ request: req, env, params }) {
   const path = (params.path || []).join('/');
   const method = req.method;
-  if (!env.DB) return path === 'status' ? json({ db: false, adminKey: Boolean(env.ADMIN_KEY), authed: false }) : err('D1 데이터베이스가 연결되지 않았어요', 503);
+  if (!env.DB) return path === 'status' ? json({ db: false, authed: false }) : err('D1 데이터베이스가 연결되지 않았어요', 503);
   const db = env.DB;
   try { await setup(db); } catch (e) { console.error(e); return isWriteLimit(e) ? json({ error: LIMIT_MSG, limit: true }, 503) : err('처리 중 오류가 났어요. 잠시 후 다시 해 주세요', 500); }
 
@@ -70,7 +70,7 @@ export async function onRequest({ request: req, env, params }) {
     if (OPEN[name]) return await OPEN[name]({ req, env, db, body });
     const route = ROUTES[name];
     if (!route) return err('not found', 404);
-    if (!(await isAdmin(req, env, db))) return err('관리자 로그인이 필요해요', 401);
+    if (!(await isAdmin(req, db))) return err('관리자 로그인이 필요해요', 401);
     return await route({ req, env, db, body, arg, url });
   } catch (e) {
     console.error(e);
@@ -81,29 +81,11 @@ export async function onRequest({ request: req, env, params }) {
 
 /* 로그인 없이 되는 것 */
 const OPEN = {
-  'GET status': async ({ req, env, db }) => json({ db: true, adminKey: Boolean(env.ADMIN_KEY), authed: await isAdmin(req, env, db) }),
+  'GET status': async ({ req, db }) => json({ db: true, admin: ADMIN_HANDLE, authed: await isAdmin(req, db) }),
 
-  'POST login': async ({ req, env, db, body }) => {
-    if (!env.ADMIN_KEY) return err('ADMIN_KEY가 설정되지 않았어요', 503);
-    const ip = maskIp(req);   // 기록에는 뒷자리를 가린 IP만
-    // IP당 한도 + 전체 한도(IP를 바꿔 가며 대입하는 것 대비)
-    if (await limited(db, 'ad:' + await ipKey(req), 8, 900) || await limited(db, 'ad:all', 30, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
-    if (!sameStr(await sha256(String(body.key || '')), await sha256(env.ADMIN_KEY))) {
-      await log(db, '로그인 실패', ip);
-      return err('관리자 비밀번호가 맞지 않아요', 401);
-    }
-    const token = randHex(32);
-    await db.batch([
-      db.prepare('DELETE FROM admin_sessions WHERE exp < ?1').bind(Date.now()),
-      db.prepare('INSERT INTO admin_sessions (token, exp) VALUES (?1, ?2)').bind(await tokenHash(env, token), Date.now() + SESSION_H * 3600e3),
-    ]);
-    await log(db, '로그인', ip);
-    return json({ ok: true }, 200, { 'set-cookie': setCookie(req, token, SESSION_H * 3600) });
-  },
-
-  'POST logout': async ({ req, env, db }) => {
+  'POST logout': async ({ req, db }) => {
     const t = cookieOf(req);
-    if (env.ADMIN_KEY && /^[0-9a-f]{64}$/.test(t)) await db.prepare('DELETE FROM admin_sessions WHERE token = ?1').bind(await tokenHash(env, t)).run();
+    if (/^[0-9a-f]{64}$/.test(t)) await db.prepare('DELETE FROM admin_sessions WHERE token = ?1').bind(await sha256(t)).run();
     return json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
   },
 };

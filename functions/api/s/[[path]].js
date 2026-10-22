@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
-import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG } from '../../../lib/db.js';
+import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, maskIp } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -204,6 +204,25 @@ const ROUTES = {
       db.prepare('DELETE FROM sessions WHERE uid = ?1 AND token != ?2').bind(me.id, cur),   // 다른 기기는 로그아웃
     ]);
     return json({ ok: true });
+  }),
+
+  // 관리자 입장: ADMIN_HANDLE 계정만, 비밀번호를 한 번 더 확인 → 12시간 관리자 세션(쿠키 경로 /api/admin, 관리자 API에서 검사)
+  'POST admin-pass': needMe(async ({ req, db, me, body }) => {
+    if (me.handle !== ADMIN_HANDLE) return err('관리자 계정이 아니에요', 403);
+    if (await limited(db, 'ap:' + me.id, 8, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
+    const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
+    if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) {
+      await db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), '로그인 실패', maskIp(req)).run();
+      return err('비밀번호가 맞지 않아요', 401);
+    }
+    const token = randHex(32), H = 12;
+    await db.batch([
+      db.prepare('DELETE FROM admin_sessions WHERE exp < ?1').bind(Date.now()),
+      db.prepare('INSERT INTO admin_sessions (token, exp) VALUES (?1, ?2)').bind(await sha256(token), Date.now() + H * 3600e3),
+      db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), '로그인', maskIp(req)),
+    ]);
+    const secure = new URL(req.url).protocol === 'https:' ? '; Secure' : '';
+    return json({ ok: true }, 200, { 'set-cookie': `sg_a=${token}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${H * 3600}${secure}` });
   }),
 
   'POST withdraw': needMe(async ({ req, db, me, body }) => {

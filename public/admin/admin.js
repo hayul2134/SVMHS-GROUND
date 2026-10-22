@@ -53,26 +53,27 @@ async function showGate() {
   let st;
   try { st = await (await fetch('/api/admin/status', { cache: 'no-store' })).json(); } catch { st = null; }
   if (st && st.authed) return start();
-  if (!st || !st.db || !st.adminKey) {
-    box.innerHTML = `<p class="sub">관리자 페이지를 쓰려면 Cloudflare에서 아래 준비가 필요해요.</p>
-      <ol class="steps">
-        <li>${st?.db ? '✅' : '⬜'} <b>D1 데이터베이스 연결</b> — <code>wrangler.jsonc</code>에 바인딩 <code>DB</code></li>
-        <li>${st?.adminKey ? '✅' : '⬜'} <b>관리자 비밀번호</b> — Workers &amp; Pages → <code>svmhs-ground</code> → 설정 → 변수 및 비밀 → Production에 비밀(Secret) <code>ADMIN_KEY</code> 추가 후 재배포</li>
-      </ol>
-      <p class="sub">준비가 끝나면 이 페이지를 새로 고침하세요.</p>`;
+  if (!st || !st.db) {
+    box.innerHTML = `<p class="sub">관리자 페이지를 쓰려면 Cloudflare에서 D1 데이터베이스(<code>wrangler.jsonc</code>의 바인딩 <code>DB</code>)를 연결해야 해요.</p>`;
     return;
   }
+  // 관리자 계정으로 사이트에 로그인돼 있으면 비밀번호만 한 번 더 확인 → 12시간 관리자 세션
   box.innerHTML = `<form id="loginF" autocomplete="on">
-      <input type="text" name="username" value="admin" autocomplete="username" hidden>
-      <label class="f">관리자 비밀번호<input class="inp" type="password" name="key" autocomplete="current-password" required autofocus></label>
+      <p class="sub">사이트에서 <b>@${esc(st.admin)}</b> 계정으로 로그인한 상태에서만 들어올 수 있어요.</p>
+      <input type="text" name="username" value="${esc(st.admin)}" autocomplete="username" hidden>
+      <label class="f">@${esc(st.admin)} 비밀번호<input class="inp" type="password" name="pw" autocomplete="current-password" required autofocus></label>
       <p class="err" id="loginErr"></p>
       <button class="btn pri" type="submit">들어가기</button>
     </form>`;
   $('#loginF').addEventListener('submit', async e => {
     e.preventDefault();
     const b = e.target.querySelector('button'); b.disabled = true; $('#loginErr').textContent = '';
-    try { await call('login', { key: e.target.key.value }); start(); }
-    catch (x) { $('#loginErr').textContent = x.message; b.disabled = false; }
+    try {
+      const res = await fetch('/api/s/admin-pass', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pw: e.target.pw.value }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(res.status === 401 && !/비밀번호/.test(d.error || '') ? '먼저 사이트에서 관리자 계정으로 로그인해 주세요' : d.error || '오류 ' + res.status);
+      start();
+    } catch (x) { $('#loginErr').textContent = x.message; b.disabled = false; }
   });
 }
 
@@ -345,7 +346,7 @@ VIEWS.settings = async () => {
     <section class="card"><h3>🔑 Cloudflare에서 바꾸는 것</h3>
       <ul class="checks">
         <li><i class="dot ${s.neisKey ? 'on' : 'off'}"></i>나이스 인증키 <code>NEIS_KEY</code> ${s.neisKey ? '있음' : '없음'}</li>
-        <li><i class="dot on"></i>관리자 비밀번호 <code>ADMIN_KEY</code> — 바꾸려면 Cloudflare → svmhs-ground → 설정 → 변수 및 비밀에서 수정 후 재배포</li>
+        <li><i class="dot on"></i>관리자 계정 <code>@hayuldeveloper</code> — 사이트에 로그인 + 비밀번호 재확인, 12시간 유지. 비밀번호는 사이트 계정 설정에서 바꿈</li>
       </ul>
     </section>`;
   $('#swSignup').onchange = e => saveSet({ signup: e.target.checked }, e.target);

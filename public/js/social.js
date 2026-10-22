@@ -6,6 +6,7 @@ const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥',
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
 const MAX_STICKERS = 6;
+const ADMIN_HANDLE = 'hayuldeveloper';   // 서버 lib/db.js와 같게 (버튼 표시용, 실제 권한은 서버가 검사)
 const GAMES = {
   reaction: { name: '반응속도', em: '⚡', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { name: '1 to 25', em: '🔢', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
@@ -325,7 +326,7 @@ function openSettings() {
       <input name="pw" type="password" placeholder="새 비밀번호 (6자 이상)" minlength="6" maxlength="64" required autocomplete="new-password">
       <button class="btn ghost" type="submit">비밀번호 바꾸기</button></form>
     <p class="lbl">차단한 사람</p><ul class="plist" id="blkList"><li class="skel"></li></ul>
-    <div class="col"><button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
+    <div class="col">${S.me?.handle === ADMIN_HANDLE ? '<a class="btn" href="/admin/">🛠 관리자 페이지</a>' : ''}<button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   call('blocked').then(r => {
     $('#blkList').innerHTML = r.users.length ? r.users.map(u => personRow(u, `<button class="fbtn" data-block="${esc(u.handle)}" data-on="0">풀기</button>`)).join('') : '<li class="empty">없어요</li>';
   }).catch(() => { $('#blkList').innerHTML = ''; });
