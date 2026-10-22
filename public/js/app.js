@@ -158,8 +158,9 @@ function tickClock() {
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
-  if (bar) $('#bellBar').style.transform = `scaleX(${prog.toFixed(4)})`;
-  setText('#bellPct', bar ? `${Math.floor(prog * 100)}% 지남` : b.state === '쉬는 날' ? '푹 쉬는 날' : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
+  const restBar = /쉬는|점심/.test(b.state);   // 쉬는 시간: 100%에서 줄어듦(남은 %), 수업: 0%에서 늘어남(지난 %)
+  if (bar) $('#bellBar').style.transform = `scaleX(${(restBar ? 1 - prog : prog).toFixed(4)})`;
+  setText('#bellPct', bar ? (restBar ? `${Math.ceil((1 - prog) * 100)}% 남음` : `${Math.floor(prog * 100)}% 지남`) : b.state === '쉬는 날' ? '푹 쉬는 날' : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
   tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
 // 다음 수업 카드 (첫 화면 오른쪽 작은 카드)
