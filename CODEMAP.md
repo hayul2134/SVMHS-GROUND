@@ -97,7 +97,7 @@ npx wrangler@4 pages dev --port 8788
 
 ## 업데이트 소식 (주간 패치노트)
 - `public/patchnotes.json`(최신이 맨 앞인 배열 `{id,date,title,items[]}`) → 📢 공지 창 아래 '🛠 업데이트 소식'. 새 id면 📢 버튼에 빨간 점(`sg_patch_seen`).
-- 매주 월요일 아침 예약 작업이 `tools/patchnotes/WEEKLY.md` 절차대로 지난주(월~일) `git log`를 학생용 문구(이모지·이모티콘 많이)로 정리해 위 파일 맨 앞에 넣고 **바로 배포**(2026-10-22 하율 결정). 같은 주 id가 있으면 건너뜀.
+- 일요일 21시 예약 작업이 지난주 `git log`로 초안(`tools/patchnotes/draft-YYYY-wWW.json`)을 만들어 하율에게 컨펌 요청 → 승인(`approved: true`)된 초안만 월요일 6시 예약 작업이 위 파일 맨 앞에 넣어 배포. 절차는 `tools/patchnotes/WEEKLY.md`.
 
 ## 모니터링 (/admin → 📡 모니터링)
 - API `GET /api/admin/monitor` 하나로 모아 받음. DM은 **개수만**(내용·누가 누구에게는 없음).
