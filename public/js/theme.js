@@ -8,10 +8,10 @@
   try { t = JSON.parse(localStorage.getItem('sg_theme')); } catch (e) {}
   if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.documentElement.dataset.theme = t;
-  // 색깔·캐릭터 테마(스킨). 목록은 app.js SKINS와 같게 유지
+  // 색깔·캐릭터 테마(스킨). 모르는 이름이면 CSS 규칙이 없어 기본 파랑으로 보임
   var k = null;
   try { k = JSON.parse(localStorage.getItem('sg_skin')); } catch (e) {}
-  if (/^(pink|mint|purple|peach|lemon|mono|cat|dog|bear|bunny|frog|chick)$/.test(k || '')) document.documentElement.dataset.skin = k;
+  if (/^[a-z]{2,12}$/.test(k || '')) document.documentElement.dataset.skin = k;
   // 내 캐릭터 그림(app.js가 줄여서 저장한 data URL)
   try {
     var a = localStorage.getItem('sg_myart'), pt = localStorage.getItem('sg_mypat');
