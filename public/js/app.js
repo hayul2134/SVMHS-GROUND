@@ -777,8 +777,36 @@ $('#clearData').onclick = () => {
 /* ===== 테마 (첫 적용은 js/theme.js가 깜빡임 없이 처리) ===== */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
-  $('meta[name=theme-color]').content = t === 'dark' ? '#0e2236' : '#eaf5fd';
+  syncBarColor();
 }
+// 주소창 색 = 지금 배경색(스킨·밝기 반영)
+function syncBarColor() { $('meta[name=theme-color]').content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#eaf5fd'; }
+
+/* ===== 색깔·캐릭터 테마(스킨) — 밝음/어두움과 따로 조합. 색은 style.css 스킨 구간(tools/skins/gen.py가 생성) ===== */
+const SKINS = {
+  color: [['', '기본 파랑'], ['pink', '핑크'], ['mint', '민트'], ['purple', '라벤더'], ['peach', '피치'], ['lemon', '레몬'], ['mono', '모노']],
+  char: [['cat', '냥이'], ['dog', '멍멍이'], ['bear', '곰돌이'], ['bunny', '토끼'], ['frog', '개구리'], ['chick', '병아리']],
+};
+function applySkin(k) {
+  const h = document.documentElement;
+  if (k) h.dataset.skin = k; else delete h.dataset.skin;
+  syncBarColor();
+  document.querySelectorAll('#mSkin .sk').forEach(b => b.setAttribute('aria-pressed', b.dataset.skin === k));
+}
+function skinBtns(list, face) {
+  return list.map(([k, n]) => `<button class="sk sk-${k || 'base'}" type="button" data-skin="${k}" aria-pressed="false">`
+    + (face ? '<i class="sk-face" aria-hidden="true"></i>' : '<i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i>')
+    + `<span>${n}</span></button>`).join('');
+}
+$('#skColors').innerHTML = skinBtns(SKINS.color, false);
+$('#skChars').innerHTML = skinBtns(SKINS.char, true);
+$('#mSkin').addEventListener('click', e => {
+  const b = e.target.closest('.sk'); if (!b) return;
+  const k = b.dataset.skin;
+  const go = () => { applySkin(k); store.set('skin', k || null); };
+  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
+});
+$('#btnSkin').onclick = () => { applySkin(document.documentElement.dataset.skin || ''); openModal('#mSkin'); };
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 let themeWant = null;   // 전환이 끝나기 전에 또 눌러도 바뀔 방향이 꼬이지 않게, 마지막으로 고른 테마를 기억
 $('#btnTheme').onclick = () => {

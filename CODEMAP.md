@@ -8,7 +8,7 @@
 |---|---|
 | `public/index.html` | 화면 뼈대 전부 (바로가기는 게임·시간표·학사일정·D-day만 — 다른 버튼이 있는 건 넣지 않음) (아이콘 스프라이트 · 헤더/탭 · 5개 view · 모달 3개). 인라인 스크립트·`style=""` 금지(CSP) |
 | `public/css/style.css` | 스타일. 맨 위 목차 참고. 색은 `:root` 토큰만 바꾸면 라이트/다크 같이 바뀜 |
-| `public/js/theme.js` | 첫 화면 깜빡임 방지용 테마 적용 + 로그인 전이면 `html.prelogin`(소개 화면) 미리 붙임 (일반 스크립트, `<head>`에서 먼저 실행) |
+| `public/js/theme.js` | 첫 화면 깜빡임 방지용 테마(`data-theme` 밝음/어두움 + `data-skin` 색깔·캐릭터 테마) 적용 + 로그인 전이면 `html.prelogin`(소개 화면) 미리 붙임 (일반 스크립트, `<head>`에서 먼저 실행) |
 | `public/js/app.js` | 화면 로직. 홈: 첫 화면(`#bigclock`)은 시계 + 왼쪽 `#sMeal`(오늘 급식) · 오른쪽 `#sTT`(오늘 시간표)만. 700px 이상에선 두 카드가 화면 가장자리 서랍(`.stow`): 탭으로 꺼내기(`.open`), 핀 버튼으로 꺼낸 자리에 고정(`.pin`, localStorage `side_meal`·`side_tt`), 첫 화면 아래로 스크롤하면 `html.tuck`으로 잠시 접힘. 오른쪽 시간표는 `ttTarget()` — 마지막 교시가 끝나면 다음 등교일(내일/○요일), 0시부터 그날. 시계 바로 아래 작은 상태 줄 `.s-info`(`#more`: 현재 시각·날짜·진행률 카드·오늘 일정 알림, 시계보다 작게). `#play`(밸런스 게임)는 `오늘 한눈에` 벤토(급식 4·일정 4·투표 4칸)로 이동. 1280px 이상은 3단, 700~1279px는 시계 위·카드 2단, 그 아래는 세로 · 아래 `#weekTT`(주간 시간표, `fillWeek` 공용). `/* ===== 섹션 ===== */` 단위: 급식 · 시간표 · 학사일정 · D-day · 모달 · 공유 · 반 설정 · 안내 · 테마 · 시작 |
 | `public/js/food.js` | 급식 메뉴 이름 → 식판 칸 음식 그림(SVG). 2025.03~2026.10 메뉴 855종을 보고 만든 분류 규칙 `RULES`(위에서부터 먼저 맞는 것) → 종류별 그리기 `DRAW`. 이름으로 시드를 잡아 같은 메뉴는 항상 같은 모양. 음료(`isDrink`)는 식판에서 빼서 옆에 우유팩·컵(`drinkSvg`)으로 세움. 그림은 `app.js paintFood()`가 칸 크기를 잰 뒤 그 비율(`arBucket`)로 그려 넣고, 칸 크기가 바뀌면 ResizeObserver로 다시 그림. 공용 음영 그라디언트는 `.food-defs`에 한 번만 넣음. 6글자 이상 이름은 `nameLines()`가 단어 경계에서 2줄로 나눔. 새 메뉴가 엉뚱하게 그려지면 `RULES`에 정규식 한 줄 추가 |
 | `public/food/c/*.webp`, `tools/food-gen/` | 식판 **카툰 음식 그림**(투명 배경 256px WebP, 약 16KB). 메뉴 이름 → 그림 키는 `food.js`의 `cartoonKey()`(규칙 `CK` → 없으면 종류별 `KIND_CK`), 실제로 있는 키는 `CARTOON`. 없는 키·실패는 기존 도형 그림. 칸 안에 잘리지 않게(contain) 담고 이름표는 아래(`.hasimg`). 새 그림 만들기: `tools/food-gen/README.md` (Workers AI 무료, 하루 한도 있음) |
@@ -61,8 +61,13 @@ npx wrangler@4 pages dev --port 8788
 - 가입/로그인 버튼은 `#introAuth` 안에 `authHtml()` 폼을 펼침 → 성공하면 소개가 닫히고 원래 보려던 화면(해시)이 보임. 로그아웃·탈퇴하면 다시 소개.
 - 소셜이 꺼져 있거나(`DB` 없음) social.js를 못 불러오면 소개를 띄우지 않음. 반 설정 창은 소개가 닫힐 때 띄움.
 
+## 테마 (밝음/어두움 + 색깔·캐릭터)
+- 헤더 해·달 버튼 `#btnTheme`은 밝음/어두움만(`sg_theme`). 메뉴 '테마' `#btnSkin` → `#mSkin` 창에서 색깔 7종(기본 파랑·핑크·민트·라벤더·피치·레몬·모노)·캐릭터 6종(냥이·멍멍이·곰돌이·토끼·개구리·병아리, 모두 오리지널 그림)을 고르면 `html[data-skin]` + `sg_skin` 저장. 두 설정은 따로 조합됨.
+- 스킨 색·마스코트 SVG는 `tools/skins/gen.py`가 `style.css` 맨 아래 '스킨' 구간을 생성(직접 고치지 말 것). 스킨 추가: gen.py `SKINS`·`MASCOT` + `app.js SKINS` + `theme.js` 정규식 세 곳.
+- 스티커 위 글자색은 `--onc` 토큰. 캐릭터 테마는 `--art`(왼쪽 아래 큰 마스코트)·`--pat`(배경 무늬)을 body 배경에 깔아 씀.
+
 ## 소셜 (프로필 · DM · 게임)
-- 헤더 오른쪽은 테마 버튼 `#btnTheme` + 목록 버튼 `#btnMenu`(☰↔✕). 누르면 `#hMenu.open` → `#hList`가 서랍(카드)처럼 펼쳐지고 각 줄은 아이콘+이름+설명: 위에서부터 프로필(`#btnMe`, 로그인하면 `.mi` 안이 아바타) · 설정(`#btnClass`, 반 설정) · QR(`#btnShare`) · 신고(`#btnReport` → `social.js openReport()`: 아이디·이유 입력, 로그인 필요). 항목 누르면 닫힘, 바깥 클릭·Esc로도 닫힘. 로직은 `app.js` `menu()`.
+- 헤더 오른쪽은 테마 버튼 `#btnTheme` + 목록 버튼 `#btnMenu`(☰↔✕). 누르면 `#hMenu.open` → `#hList`가 서랍(카드)처럼 펼쳐지고 각 줄은 아이콘+이름+설명: 위에서부터 프로필(`#btnMe`, 로그인하면 `.mi` 안이 아바타) · 테마(`#btnSkin`) · 설정(`#btnClass`, 반 설정) · QR(`#btnShare`) · 신고(`#btnReport` → `social.js openReport()`: 아이디·이유 입력, 로그인 필요). 항목 누르면 닫힘, 바깥 클릭·Esc로도 닫힘. 로직은 `app.js` `menu()`.
 - DM은 헤더에 없음 → 오른쪽 아래 `#dmDock`. 900px 이상은 '메시지' 버튼(안 읽은 수 + 최근 대화 3명) → 떠 있는 창 `#dmPanel` 안에서 목록·대화(`renderDm(handle, box, panel)` 공용, 창 안 링크는 `data-pdm`). 900px 미만은 둥근 버튼 → `#dm` 화면. `#dm` 화면·게임 중엔 숨김(`body[data-view]`, `body.playing`).
 - 화면: `#me`(내 프로필/로그인) · `#u/아이디`(남의 프로필) · `#dm`, `#dm/아이디` · `#game`. `go()`가 `/` 뒤를 인자로 넘김.
 - 프로필 인스타 아이디(`users.insta`, 선택): 꾸미기에서 입력 → 서버가 @·인스타 주소를 떼고 아이디만 저장(영문·숫자·._ 30자 검사) → 프로필에 `.pinsta` 버튼(새 창으로 instagram.com/아이디). 인스타 API 연동은 개인 계정 불가라 링크 방식. 관리자 '프로필 정리'로 지울 수 있음.
