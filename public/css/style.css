@@ -318,7 +318,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .drawers .s-put:hover{color:var(--text);border-color:var(--ink)}
 .drawers .s-meal .s-put:hover svg{transform:translateX(-2px)}
 .drawers .s-ttc .s-put:hover svg{transform:scaleX(-1) translateX(-2px)}
-.s-tt.stow{position:fixed;top:50%;z-index:40;margin:0;max-width:calc(100vw - 64px);transition:transform .4s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
+.s-tt.stow{position:fixed;top:var(--hcy,50%);z-index:40;margin:0;max-width:calc(100vw - 64px);transition:transform .4s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
 .s-meal.stow{left:0;transform:translate(calc(-100% - 6px),-50%)}
 .s-meal.stow.open{transform:translate(18px,-50%) rotate(-.6deg)}
 .s-ttc.stow{right:0;transform:translate(calc(100% + 6px),-50%)}
