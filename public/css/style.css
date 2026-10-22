@@ -1035,6 +1035,13 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .sk-sw b{flex:1;background:var(--p1)}.sk-sw b:nth-child(2){background:var(--p3)}.sk-sw b:nth-child(3){background:var(--p2)}
 .sk-face{width:56px;height:56px;border-radius:50%;background:var(--p1) no-repeat center/84%;border:2.5px solid var(--ink)}
 .sk-base{--p1:#eaf5fd;--p2:#2f8fe0;--p3:#6fc6f4}
+.sk-note{text-align:left;margin-bottom:10px}
+.sk-mine{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sk-mine .btn{margin:0}
+.sk-up{cursor:pointer}
+.sk-myface{--p1:var(--chip);background-size:contain;flex:none}
+.sk-myface:not(.on){border-style:dashed;border-color:var(--line)}
+.sk-opt{display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:800;font-size:13.5px;text-align:left}
 
 /* ===== 스킨 (자동 생성: tools/skins/gen.py — 직접 고치지 말고 생성기를 고칠 것) =====
    html[data-skin=…]이 색 토큰만 덮어씀 → 밝음/어두움(data-theme)과 따로 조합됨. 기본(파랑)은 스킨 없음 */

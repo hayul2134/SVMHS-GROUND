@@ -8,6 +8,15 @@
   var k = null;
   try { k = JSON.parse(localStorage.getItem('sg_skin')); } catch (e) {}
   if (/^(pink|mint|purple|peach|lemon|mono|cat|dog|bear|bunny|frog|chick)$/.test(k || '')) document.documentElement.dataset.skin = k;
+  // 내 캐릭터 그림(app.js가 줄여서 저장한 data URL)
+  try {
+    var a = localStorage.getItem('sg_myart'), pt = localStorage.getItem('sg_mypat');
+    if (a && a.indexOf('data:image/') === 0) {
+      var rs = document.documentElement.style;
+      rs.setProperty('--art', 'url("' + a + '")');
+      if (pt && pt.indexOf('data:image/') === 0) { rs.setProperty('--pat', 'url("' + pt + '")'); rs.setProperty('--pat-size', '90px 90px'); }
+    }
+  } catch (e) {}
   // 로그인 전이면 소개 화면만 보임 — 로그인 없이는 사이트를 볼 수 없음 (sg_in: 로그인돼 있던 기기 표시 → 깜빡임 방지)
   try { sessionStorage.removeItem('sg_peek'); if (!localStorage.getItem('sg_in')) document.documentElement.classList.add('prelogin'); } catch (e) { document.documentElement.classList.add('prelogin'); }
 })();

@@ -806,7 +806,70 @@ $('#mSkin').addEventListener('click', e => {
   const go = () => { applySkin(k); store.set('skin', k || null); };
   if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
 });
-$('#btnSkin').onclick = () => { applySkin(document.documentElement.dataset.skin || ''); openModal('#mSkin'); };
+$('#btnSkin').onclick = () => { applySkin(document.documentElement.dataset.skin || ''); myArtUi(); openModal('#mSkin'); };
+
+// 내 캐릭터: 사용자가 고른 그림을 이 기기 안에서만 줄여(최대 320px) localStorage에 저장 → 왼쪽 아래 스티커(--art) + 옅은 배경 무늬(--pat)
+// 서버로 올리지 않음. 첫 화면 적용은 theme.js. (CSP img-src에 data: 허용돼 있음)
+const MYART = 'sg_myart', MYPAT = 'sg_mypat';
+const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+function setMyArt(art, pat) {
+  const rs = document.documentElement.style;
+  if (art) rs.setProperty('--art', `url("${art}")`); else rs.removeProperty('--art');
+  if (art && pat) { rs.setProperty('--pat', `url("${pat}")`); rs.setProperty('--pat-size', '90px 90px'); }
+  else { rs.removeProperty('--pat'); rs.removeProperty('--pat-size'); }
+}
+function myArtUi() {
+  const a = lsGet(MYART), f = $('#skMyFace');
+  f.classList.toggle('on', !!a);
+  if (a) f.style.setProperty('background-image', `url("${a}")`); else f.style.removeProperty('background-image');
+  $('#skMyOff').hidden = !a; $('#skPatRow').hidden = !a;
+  $('#skPat').checked = !a || !!lsGet(MYPAT);
+}
+function loadImg(file) {
+  return new Promise((ok, no) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); no(); }; im.src = u; });
+}
+function toUrl(c) { const w = c.toDataURL('image/webp', .85); return w.startsWith('data:image/webp') ? w : c.toDataURL('image/png'); }
+function makeArt(im) {
+  const k = Math.min(1, 320 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  return c;
+}
+function makePat(src) {
+  // 90×90 칸에 작은 그림 두 개를 엇갈려 옅게(캐릭터 테마 무늬와 같은 배치)
+  const c = document.createElement('canvas'); c.width = c.height = 90;
+  const g = c.getContext('2d'), s = 30 / Math.max(src.width, src.height), w = src.width * s, h = src.height * s;
+  g.globalAlpha = .13;
+  g.drawImage(src, 6 + (30 - w) / 2, 6 + (30 - h) / 2, w, h);
+  g.drawImage(src, 51 + (30 - w) / 2, 51 + (30 - h) / 2, w, h);
+  return toUrl(c);
+}
+let myCanvas = null;
+$('#skFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { toast('그림 파일만 넣을 수 있어요'); return; }
+  let im; try { im = await loadImg(file); } catch { toast('그림을 열 수 없어요'); return; }
+  myCanvas = makeArt(im);
+  const art = toUrl(myCanvas), pat = $('#skPat').checked ? makePat(myCanvas) : null;
+  try { localStorage.setItem(MYART, art); if (pat) localStorage.setItem(MYPAT, pat); else localStorage.removeItem(MYPAT); }
+  catch { toast('저장 공간이 부족해요 — 더 작은 그림으로 넣어 주세요'); return; }
+  setMyArt(art, pat); myArtUi(); toast('내 캐릭터를 넣었어요');
+};
+$('#skMyOff').onclick = () => {
+  try { localStorage.removeItem(MYART); localStorage.removeItem(MYPAT); } catch {}
+  myCanvas = null; setMyArt(null, null); myArtUi();
+};
+$('#skPat').onchange = async () => {
+  const a = lsGet(MYART); if (!a) return;
+  let pat = null;
+  if ($('#skPat').checked) {
+    if (!myCanvas) { const im = new Image(); im.src = a; await im.decode().catch(() => {}); myCanvas = im; }
+    pat = makePat(myCanvas);
+  }
+  try { if (pat) localStorage.setItem(MYPAT, pat); else localStorage.removeItem(MYPAT); } catch {}
+  setMyArt(a, pat);
+};
 applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 let themeWant = null;   // 전환이 끝나기 전에 또 눌러도 바뀔 방향이 꼬이지 않게, 마지막으로 고른 테마를 기억
 $('#btnTheme').onclick = () => {

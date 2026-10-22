@@ -313,6 +313,15 @@
     <div class="sk-grid" id="skColors"></div>
     <h4 class="sk-h">캐릭터</h4>
     <div class="sk-grid" id="skChars"></div>
+    <h4 class="sk-h">내 캐릭터</h4>
+    <p class="muted small sk-note">갖고 있는 캐릭터 그림을 넣으면 왼쪽 아래 스티커와 배경 무늬가 돼요 · 이 기기에만 저장 · 위 색깔과 같이 써요</p>
+    <div class="sk-mine">
+      <i class="sk-face sk-myface" id="skMyFace" aria-hidden="true"></i>
+      <label class="btn sk-up" for="skFile">그림 넣기</label>
+      <input type="file" id="skFile" accept="image/*" hidden>
+      <button class="btn ghost" id="skMyOff" type="button" hidden>빼기</button>
+    </div>
+    <label class="sk-opt" id="skPatRow" hidden><input type="checkbox" id="skPat" checked> 배경에 작은 무늬로도 깔기</label>
     <div class="row"><button class="btn" data-close>완료</button></div>
   </div>
 </div>
