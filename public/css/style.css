@@ -1051,9 +1051,9 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .ntlist .nt-c{flex:1;min-width:0}
 .ntlist .nt-t{font-family:var(--disp);font-weight:400;font-size:19px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ntlist .ntb{margin:4px 0 6px}
-.ntlist .nb-txt{white-space:pre-wrap;word-break:keep-all;font-size:14px;line-height:1.6;font-weight:600;color:var(--sub);max-height:3.2em;overflow:hidden}
+.ntlist .nb-txt{white-space:normal;word-break:keep-all;font-size:14px;line-height:1.6;font-weight:600;color:var(--sub);max-height:3.2em;overflow:hidden}
 .ntlist .nb-txt .ptitems{white-space:normal;margin-top:0}
-.ntlist .ntb.open .nb-txt{max-height:none;color:var(--ink);padding:10px 12px;border-radius:12px;background:var(--chip);border:2px solid var(--line)}
+.ntlist .ntb.open .nb-txt{white-space:pre-wrap;max-height:none;color:var(--ink);padding:10px 12px;border-radius:12px;background:var(--chip);border:2px solid var(--line)}
 .ntlist .nb-more{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:8px 14px;border-radius:12px;border:2px solid var(--ink);background:var(--accent);color:#fff;
   font:inherit;font-weight:900;font-size:14px;box-shadow:var(--sh-s);cursor:pointer}
 .ntlist .nb-more:active{transform:translateY(2px);box-shadow:none}
