@@ -259,11 +259,34 @@ const dishEmoji = n => (EMOJI.find(([re]) => re.test(n)) || [, '🍽️'])[1];
 const isRice = n => /밥$/.test(n);
 const isSoup = n => /(국|탕|찌개|수프|스프|개장)$/.test(n);
 const isExtra = n => /타르트|케이크|쿠키|머핀|마카롱|브라우니|잼|시럽|소스/.test(n) || ['🥬', '🥤', '🥐', '🍉', '🍨'].includes(dishEmoji(n));   // 김치·음료·빵·과일·디저트는 메인 후보에서 뺌
+// 메인 반찬 고르기: 학생들이 좋아할 만한 순서로 점수 (0 = 메인 후보 아님). 같은 점수면 원래 순서가 앞선 것
+const isKimchi = n => dishEmoji(n) === '🥬';
+const isSeaweed = n => /김$/.test(n) && !isKimchi(n);   // 구이김·조미김
+function mainScore(n) {
+  if (isExtra(n) || isSeaweed(n)) return 0;
+  if (/나물|무침|샐러드|겉절|장아찌|피클|단무지/.test(n)) return 1;
+  if (/돈까스|돈가스|까스|커틀릿|치킨|강정|탕수|떡볶이|피자|버거|스팸|햄|소시지|비엔나|너겟|핫도그|스테이크|함박|미트볼|불고기|갈비|제육|삼겹|목살|보쌈|족발|닭|오리|튀김|짜장|카레|파스타|스파게티|그라탕|훈제/.test(n)) return 3;
+  if (/고기|돈육|돼지|소고기|쇠고기|생선|고등어|삼치|연어|오징어|새우|쭈꾸미|주꾸미|어묵|만두|떡|계란|달걀|두부|전$|볶음|구이|조림|찜/.test(n)) return 2;
+  return 1;
+}
+const pickMain = arr => arr.reduce((bi, n, i) => { const sc = mainScore(n); return sc > 0 && (bi < 0 || sc > mainScore(arr[bi])) ? i : bi; }, -1);
+// 홈 목록 순서: 메인 반찬(노란 칸) → 밥 → 김치 → 국 → 나머지 반찬 → 디저트 → 음료
+function orderMenu(all) {
+  const drinks = all.filter(isDrink), list = all.filter(n => !isDrink(n));
+  const rice = list.filter(isRice), kimchi = list.filter(n => !rice.includes(n) && isKimchi(n));
+  const soup = list.filter(n => !rice.includes(n) && !kimchi.includes(n) && isSoup(n));
+  const used = new Set([...rice, ...kimchi, ...soup]);
+  let rest = list.filter(n => !used.has(n));
+  const mi = pickMain(rest), main = mi >= 0 ? [rest[mi]] : [];
+  if (mi >= 0) rest = rest.filter((_, i) => i !== mi);
+  const sides = rest.filter(n => !isExtra(n)), dessert = rest.filter(isExtra);
+  return { list: [...main, ...rice, ...kimchi, ...soup, ...sides, ...dessert, ...drinks], hasMain: mi >= 0 };
+}
 function splitTray(all) {
   const drinks = all.filter(isDrink), list = all.filter(n => !isDrink(n));   // 우유·주스·에이드는 식판 옆에 따로
   let rice = list.find(isRice), soup = list.find(n => n !== rice && isSoup(n));
   const rest = list.filter(n => n !== rice && n !== soup);
-  const mi = rest.findIndex(n => !isExtra(n));
+  const mi = pickMain(rest);
   if (mi > 0) rest.unshift(rest.splice(mi, 1)[0]);   // 메인을 맨 앞으로
   if (!rice && rest.length > 3) rice = rest.pop();     // 밥·국이 없는 날은 남는 메뉴로 아래 칸 채움
   if (!soup && rest.length > 3) soup = rest.pop();
@@ -379,10 +402,10 @@ const mealHtml = (r, d, mini = false) => {
 // 홈 '오늘 급식' 카드: 큰 식판 대신 작은 그림 + 이름 목록 (식판은 첫 화면 서랍·급식 화면에 있음). 누르면 투표(식판과 같은 data-dish)
 const mealListHtml = (r, d) => {
   if (!r) return empty('급식 정보가 없어요');
-  const all = cleanDish(r.DDISH_NM), v = voteOf(ymd(d), r.MMEAL_SC_CODE);
+  const om = orderMenu(cleanDish(r.DDISH_NM)), all = om.list, v = voteOf(ymd(d), r.MMEAL_SC_CODE);
   const at = `data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d)}"`;
   const info = !v ? '' : `<p class="vnote">🗳️ ${v.open ? (v.mine ? `내 픽 <b>${esc(v.mine)}</b>` : '맛있는 메뉴 눌러서 투표') : '인기투표 결과'} · ${v.total}명</p>`;
-  return `<div class="tray-set mlist" ${at}><ul class="ml" role="list" aria-label="급식 메뉴">${all.map(x => `<li class="${v && v.open ? 'vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span class="mth">${isDrink(x) ? drinkSvg(x) : fx(x)}</span><span class="mn">${esc(x)}</span>${voteMark(x, v)}</li>`).join('')}</ul></div>`
+  return `<div class="tray-set mlist" ${at}><ul class="ml${om.hasMain ? '' : ' nomain'}" role="list" aria-label="급식 메뉴">${all.map(x => `<li class="${v && v.open ? 'vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span class="mth">${isDrink(x) ? drinkSvg(x) : fx(x)}</span><span class="mn">${esc(x)}</span>${voteMark(x, v)}</li>`).join('')}</ul></div>`
     + `<div class="mfoot">${info}${r.CAL_INFO ? `<span class="kcal">🔥 ${esc(r.CAL_INFO)}</span>` : ''}</div>`;
 };
 let homeRows = [];
