@@ -655,7 +655,9 @@ html:not(.tuck) .s-ttc.stow.open .s-tab{translate:10px 0}
 .pager .lbl{font-weight:900;min-width:118px;text-align:center;font-variant-numeric:tabular-nums}
 .pager{position:relative}
 .pager button.lbl{width:auto;height:36px;padding:0 10px;border:0;background:none;font:inherit;font-weight:900;color:var(--text);cursor:pointer}
-.pager button.lbl::after{content:" ▾";font-size:.75em;color:var(--sub)}
+/* ▾ 표시는 ::before(order로 글자 뒤)에 둠 — ::after는 마우스 올렸을 때 이름표([data-tip])가 써서 겹치면 이름표 대신 ▾만 뜸 */
+.pager button.lbl{display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.pager button.lbl::before{content:"▾";order:1;font-size:.75em;color:var(--sub)}
 .pager button.lbl:hover,.pager button.lbl[aria-expanded="true"]{background:var(--chip);color:var(--text)}
 /* 달 고르기 (학사일정) */
 .mpick{position:absolute;top:calc(100% + 10px);right:0;z-index:30;width:260px;padding:12px;background:var(--card);color:var(--text);border:var(--bd);border-radius:18px;box-shadow:var(--sh);animation:mpIn .16s ease-out}
@@ -1384,7 +1386,7 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .all-head .mealtabs{margin:0}
 .pager button.all-wk{width:auto;padding:0 12px;display:flex;align-items:center;gap:6px;font:inherit;font-weight:900;font-variant-numeric:tabular-nums;color:var(--text);cursor:pointer}
 .all-wk small{font-size:11px;font-weight:800;color:var(--sub)}
-.all-wk::after{content:"▾";font-size:.75em;color:var(--sub)}
+.all-wk::before{content:"▾";order:1;font-size:.75em;color:var(--sub)}
 .pager button.all-wk[aria-expanded="true"]{background:var(--yellow);color:var(--ink)}
 .all-x{width:36px;height:36px;border-radius:10px;border:2px solid var(--ink);background:var(--chip);color:var(--text);font-weight:900;cursor:pointer}
 .all-x:hover{background:var(--yellow);color:var(--ink)}

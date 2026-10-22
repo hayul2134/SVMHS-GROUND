@@ -795,7 +795,7 @@ $$('[data-home]').forEach(b => b.addEventListener('click', e => { e.stopPropagat
    모달(.sheet는 overflow 스크롤) 안에서도 잘리지 않게 position:fixed로 라벨 아래에 띄움 */
 function weekPick(sel, getMon, setMon) {
   const lbl = $(sel);
-  const close = () => { $('#wPick')?.remove(); $$('[aria-expanded="true"][data-tip="달·해 골라 이동"]').forEach(b => b.setAttribute('aria-expanded', 'false')); };
+  const close = () => { $('#wPick')?.remove(); $$('#tLbl[aria-expanded="true"],#allLbl[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false')); };
   lbl.onclick = e => {
     e.stopPropagation();
     if ($('#wPick')) { const mine = $('#wPick').dataset.for === sel; close(); if (mine) return; }
