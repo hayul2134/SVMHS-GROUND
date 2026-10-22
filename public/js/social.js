@@ -34,7 +34,8 @@ async function call(path, body) {
 const fail = e => toast(e.message || '문제가 생겼어요');
 
 /* ===== 작은 조각들 ===== */
-const av = (u, cls = '') => `<span class="av c-${esc(COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>`;
+// 개발자 계정은 이모지 대신 사이트 로고 + 무지개 링 아바타 (어디서나 같게)
+const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
 const devTag = u => isDev(u) ? '<span class="devb" title="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
 const classTxt = u => isDev(u) ? '' : u.grade && u.cls ? `${u.grade}학년 ${u.cls}반` : '';
@@ -159,10 +160,10 @@ function profileHtml(d) {
       ${chips ? `<p class="pchips">${chips}</p>` : ''}
       ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
       ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
-      ${u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
-      <div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
-      <div class="pact">${actions}</div>
-      <ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>
+      ${isDev(u) ? '<p class="pdev">🛠 이 사이트를 만들고 고치는 사람 ✨<br><small>궁금한 점·원하는 기능은 헤더의 💡 의견으로 보내 주세요!</small></p>' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
+      ${isDev(u) ? '' : `<div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
+      `}<div class="pact">${actions}</div>
+      ${isDev(u) ? '' : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
     </div>
   </article>`;
 }
