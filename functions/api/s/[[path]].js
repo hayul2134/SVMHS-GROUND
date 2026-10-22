@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
-import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
+import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -17,6 +17,9 @@ const TICKET_TTL = 3600e3;
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
 const RESERVED = h => h.startsWith('test_') || h === ADMIN_HANDLE || OLD_ADMIN_HANDLES.includes(h);   // 테스트 계정·개발자(예전 아이디 포함) 아이디는 가입 불가
+// 너무 쉬운 비밀번호 (가장 먼저 시도되는 것들) · 아이디와 같은 비밀번호는 거절
+const WEAK = new Set(['123456', '1234567', '12345678', '123456789', '1234567890', '000000', '111111', '123123', '654321', 'password', 'qwerty', 'qwerty123', 'abc123', 'asdf1234', 'qwer1234', 'a12345', 'aa1234', '1q2w3e4r', '1q2w3e', 'iloveyou', 'svmhs', 'svmhs123']);
+const weakPw = (pw, handle) => WEAK.has(pw.toLowerCase()) || pw.toLowerCase() === handle || /^(.)\1+$/.test(pw);
 const SESSION_DAYS = 30;   // 로그인 후 30일이 지나면 다시 로그인 (연장 없음 — 공용 태블릿에 로그인이 무한히 남지 않게)
 const COOKIE = 'sg_s';
 const SECURITY_HEADERS = { 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer' };
@@ -173,6 +176,7 @@ const ROUTES = {
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
     if (pw.length < 6 || pw.length > 64) return err('비밀번호는 6~64자로 해 주세요');
+    if (weakPw(pw, handle)) return err('너무 쉬운 비밀번호예요. 다른 걸로 해 주세요');
     const st = await getSettings(db), code = joinCodeOf(env, st);
     if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
     // 학교 와이파이는 한 반·한 학년이 IP 하나를 같이 씀 → 가입 자체는 IP당 넉넉하게(1시간 300번),
@@ -180,8 +184,7 @@ const ROUTES = {
     const ik = await ipKey(req);
     if (await limited(db, 'su:' + ik, 300, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);
     if (code) {
-      const wrong = await db.prepare('SELECT n FROM rl WHERE k = ?1 AND reset > ?2').bind('cw:' + ik, Date.now()).first();
-      if (wrong && wrong.n >= 30) return err('가입 코드를 너무 많이 틀렸어요. 1시간 뒤에 다시 해 주세요', 429);
+      if (await countOf(db, 'cw:' + ik) >= 30) return err('가입 코드를 너무 많이 틀렸어요. 1시간 뒤에 다시 해 주세요', 429);
       if (!sameStr(String(body.code || '').trim(), code)) { await limited(db, 'cw:' + ik, 30, 3600); return err('가입 코드가 달라요'); }
     }
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
@@ -197,10 +200,10 @@ const ROUTES = {
     const handle = String(body.handle || '').trim().toLowerCase(), pw = String(body.pw || '');
     // 아이디+IP 기준으로 막아서, 다른 사람이 일부러 틀려도 내 기기에서는 계속 로그인할 수 있게 함. 아이디 전체 한도는 여러 IP로 대입하는 것 대비
     const ik = await ipKey(req), h = handle.slice(0, 16);
-    if (await limited(db, 'li:' + ik, 600, 600) ||   /* IP당 10분 600번: 반 전체가 같은 IP로 동시에 로그인해도 안 막힘 */ await limited(db, 'lh:' + h + ':' + ik, 10, 600) || await limited(db, 'lg:' + h, 60, 3600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);
+    if (await limited(db, 'li:' + ik, 600, 600) ||   /* IP당 10분 600번: 반 전체가 같은 IP로 동시에 로그인해도 안 막힘 */ await limited(db, 'lh:' + h + ':' + ik, 10, 600) || await countOf(db, 'lg:' + h) >= 60) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);
     const u = HANDLE_RE.test(handle) && await db.prepare('SELECT id, pw, salt FROM users WHERE handle = ?1').bind(handle).first();
     const ok = sameStr(await hashPw(pw, (u || DUMMY).salt), (u || DUMMY).pw);   // 없는 아이디도 똑같이 해시 계산
-    if (!u || !ok) return err('아이디나 비밀번호가 맞지 않아요', 401);
+    if (!u || !ok) { await limited(db, 'lg:' + h, 60, 3600); return err('아이디나 비밀번호가 맞지 않아요', 401); }   // 아이디 전체로는 '틀린 횟수'만 셈(여러 IP로 대입하는 것 대비)
     const ban = await db.prepare('SELECT until, reason FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first();
     if (ban) {
       const when = ban.until ? new Date(ban.until + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') + '까지' : '무기한';
@@ -254,6 +257,7 @@ const ROUTES = {
     if (!sameStr(await hashPw(String(body.old || ''), u.salt), u.pw)) return err('지금 비밀번호가 맞지 않아요', 401);
     const pw = String(body.pw || '');
     if (pw.length < 6 || pw.length > 64) return err('새 비밀번호는 6~64자로 해 주세요');
+    if (weakPw(pw, me.handle)) return err('너무 쉬운 비밀번호예요. 다른 걸로 해 주세요');
     const salt = randHex(16);
     const cur = await sha256(cookieOf(req, COOKIE));
     await db.batch([
@@ -391,6 +395,7 @@ const ROUTES = {
   'POST block': needMe(async ({ db, me, body }) => {
     const u = await byHandle(db, body.handle);
     if (!u || u.id === me.id) return err('차단할 수 없어요');
+    if (await limited(db, 'bk:' + me.id, 60, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
     if (body.on) {
       await db.batch([
         db.prepare('INSERT OR IGNORE INTO blocks (a, b) VALUES (?1, ?2)').bind(me.id, u.id),
@@ -480,6 +485,7 @@ const ROUTES = {
 
   'POST unsend': needMe(async ({ db, me, body }) => {
     const id = parseInt(body.id);
+    if (!(id > 0)) return err('지울 수 없어요');
     const r = await db.prepare("UPDATE messages SET del = 1, body = '' WHERE id = ?1 AND a = ?2").bind(id, me.id).run();
     return r.meta.changes ? json({ ok: true }) : err('지울 수 없어요');
   }),
@@ -494,9 +500,10 @@ const ROUTES = {
   /* ----- 구글 로그인 (Google Identity Services ID 토큰). 비밀 변수 없이 공개 값 GOOGLE_CLIENT_ID만 필요 ----- */
   // 처음이면 { need: 'signup' } → 같은 토큰 + 아이디·닉네임으로 다시 보내면 가입
   'POST google': async ({ req, env, db, body }) => {
+    const ik = await ipKey(req);
+    if (await limited(db, 'gl:' + ik, 600, 600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);   // 구글 확인(바깥 요청) 전에 막음
     const g = await verifyGoogle(env, body.credential);
     if (!g) return err('구글 로그인을 확인하지 못했어요. 다시 해 주세요', 401);
-    if (await limited(db, 'gl:' + await ipKey(req), 600, 600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);
     const u = await db.prepare('SELECT id FROM users WHERE google_sub = ?1').bind(g.sub).first();
     if (u) {
       const ban = await db.prepare('SELECT until, reason FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first();
@@ -511,7 +518,11 @@ const ROUTES = {
     if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
     const st = await getSettings(db), code = joinCodeOf(env, st);
     if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
-    if (code && !sameStr(String(body.code || '').trim(), code)) return err('가입 코드가 달라요');
+    if (await limited(db, 'su:' + ik, 300, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);
+    if (code) {
+      if (await countOf(db, 'cw:' + ik) >= 30) return err('가입 코드를 너무 많이 틀렸어요. 1시간 뒤에 다시 해 주세요', 429);
+      if (!sameStr(String(body.code || '').trim(), code)) { await limited(db, 'cw:' + ik, 30, 3600); return err('가입 코드가 달라요'); }
+    }
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
     const salt = randHex(16), g2 = +body.grade, c2 = +body.cls;
     const nu = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, google_sub) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?9) RETURNING id`)
@@ -564,8 +575,10 @@ const ROUTES = {
     if (!tk) return err('게임을 다시 시작해 주세요');
     if (Date.now() - (tk.reset - TICKET_TTL) < g.play) return err('기록이 이상해요');
     const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
-    const prev = await db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first();
-    const allPrev = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
+    const [prev, allPrev] = await Promise.all([
+      db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
+      db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first(),
+    ]);
     if (!prev || v < prev.best) {
       await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
         ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, game, day, v, Date.now()).run();
@@ -590,9 +603,9 @@ const ROUTES = {
     }
     let rows;
     if (scope === 'friends') {
-      const ids = [me.id, ...await friendIds(db, me.id)];
-      rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE t.uid IN (${ids.map((_, i) => '?' + (i + 2)).join(',')}) ORDER BY t.best, t.at LIMIT 50`)
-        .bind(game, ...ids).all()).results;
+      rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid
+        WHERE t.uid = ?2 OR t.uid IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?2) ORDER BY t.best, t.at LIMIT 50`)
+        .bind(game, me.id).all()).results;
     } else {
       rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 50`).bind(game).all()).results;
     }
@@ -608,14 +621,14 @@ const ROUTES = {
 
   'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
     const out = {};
-    for (const game of Object.keys(GAMES)) {
+    await Promise.all(Object.keys(GAMES).map(async game => {
       const [top, ma] = await Promise.all([
         db.prepare('SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 ORDER BY s.best, s.at LIMIT 1').bind(game).first(),
         db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first(),
       ]);
       const best = ma?.b ?? null;
       out[game] = { top: top ? { ...card(top), value: top.best } : null, best, rank: best != null ? await rankOf(db, game, best) : null };
-    }
+    }));
     return json({ games: out });
   }),
 };
@@ -625,10 +638,7 @@ async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 �
 }
 
 async function topCrowns(db, uid) {   // 역대 1등인 게임 목록
-  const out = [];
-  for (const game of Object.keys(GAMES)) {
-    const top = await db.prepare('SELECT uid FROM scores WHERE game = ?1 ORDER BY best, at LIMIT 1').bind(game).first();
-    if (top?.uid === uid) out.push(game);
-  }
-  return out;
+  const games = Object.keys(GAMES);
+  const tops = await Promise.all(games.map(game => db.prepare('SELECT uid FROM scores WHERE game = ?1 ORDER BY best, at LIMIT 1').bind(game).first()));
+  return games.filter((_, i) => tops[i]?.uid === uid);
 }

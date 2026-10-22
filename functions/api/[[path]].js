@@ -42,6 +42,8 @@ export async function onRequest({ request, env, params }) {
 
   if (path === 'config') return json({ hasKey: Boolean(env.NEIS_KEY) }, 200, 'public, max-age=300');
 
+  // 나이스 프록시는 이 사이트 화면에서만 (다른 사이트가 우리 인증키로 대량 조회하지 못하게)
+  if (request.headers.get('sec-fetch-site') === 'cross-site') return json({ error: 'forbidden' }, 403);
   const m = path.match(/^neis\/(\w+)$/);
   const allowed = m && SERVICES[m[1]];
   if (!allowed) return json({ error: 'not found' }, 404);
@@ -112,6 +114,7 @@ async function vote(request, env) {
   // 다른 사이트에서 대신 투표시키는 것 막기
   const origin = request.headers.get('origin');
   if (origin && origin !== url.origin) return json({ error: 'forbidden' }, 403);
+  if (request.headers.get('sec-fetch-site') === 'cross-site' || +(request.headers.get('content-length') || 0) > 2048 || !(request.headers.get('content-type') || '').includes('application/json')) return json({ error: 'bad request' }, 400);
   if (!okVoter) return json({ error: 'bad voter' }, 400);
   if (await limited(db, 'mv:' + await ipKey(request), 400, 600)) return json({ error: '너무 많이 눌렀어요. 잠시 후에 해 주세요' }, 429);   // 기기 ID를 바꿔 가며 몰표 넣기 방지
   let body;
@@ -157,6 +160,7 @@ async function balance(request, env) {
 
   const origin = request.headers.get('origin');
   if (origin && origin !== url.origin) return json({ error: 'forbidden' }, 403);
+  if (request.headers.get('sec-fetch-site') === 'cross-site' || +(request.headers.get('content-length') || 0) > 2048 || !(request.headers.get('content-type') || '').includes('application/json')) return json({ error: 'bad request' }, 400);
   if (!okVoter) return json({ error: 'bad voter' }, 400);
   if (await limited(db, 'bv:' + await ipKey(request), 300, 600)) return json({ error: '너무 많이 눌렀어요. 잠시 후에 해 주세요' }, 429);
   let body;
