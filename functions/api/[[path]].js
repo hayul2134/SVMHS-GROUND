@@ -1,7 +1,6 @@
 // SVMHS GROUND — 나이스 API 프록시 (Cloudflare Pages Functions, /api/* 담당)
 // 인증키는 Pages 프로젝트의 비밀 변수 NEIS_KEY에 보관한다. 키가 없어도 동작하지만 한 번에 5건까지만 받는다.
 import { setup, getSettings, kstYmd, limited, ipKey, isWriteLimit, LIMIT_MSG, logErr } from '../../lib/db.js';
-import { defaultBalance } from '../../lib/balance.js';
 
 const SCHOOL = { ATPT_OFCDC_SC_CODE: 'B10', SD_SCHUL_CODE: '7010795' }; // 서울시교육청 · 서울영상고
 
@@ -28,8 +27,8 @@ const json = (obj, status = 200, cache = 'no-store') => new Response(JSON.string
 
 export async function onRequest({ request, env, params }) {
   const path = (params.path || []).join('/');
-  if (path === 'vote' || path === 'balance' || path === 'notice' || path === 'notices') {
-    try { return await { vote, balance, notice: (_, e) => notice(e), notices: (_, e) => notices(e) }[path](request, env); }
+  if (path === 'vote' || path === 'notice' || path === 'notices') {
+    try { return await { vote, notice: (_, e) => notice(e), notices: (_, e) => notices(e) }[path](request, env); }
     catch (e) {
       console.error(e);
       if (!isWriteLimit(e)) await logErr(env.DB, 'api', request, e);
@@ -133,45 +132,6 @@ async function vote(request, env) {
       .bind(ymd, meal, voter, dish, Date.now()).run();
   }
   return json({ enabled: true, today: ymd, meals: await tally(db, ymd, voter) });
-}
-
-/* ===== 오늘의 밸런스 게임 (D1 바인딩 DB 필요) =====
-   하루에 질문 하나(한국 날짜 기준으로 돌아감). 한 기기당 하루 한 표, 다시 누르면 바꾸거나 취소.
-   자유 입력은 받지 않는다 (익명 글은 친구 저격·괴롭힘으로 번지기 쉬워서 고르기만 가능). */
-
-async function balanceState(db, ymd, voter) {
-  // 관리자 페이지에서 그날 질문을 정해 뒀으면 그걸 씀
-  const c = await db.prepare('SELECT q, a, b FROM balance_custom WHERE ymd = ?1').bind(ymd).first();
-  const q = c ? [c.q, c.a, c.b] : defaultBalance(ymd);
-  const { results } = await db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(ymd).all();
-  const counts = { a: 0, b: 0 };
-  for (const r of results) if (r.pick in counts) counts[r.pick] = r.n;
-  const mine = voter ? (await db.prepare('SELECT pick FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(ymd, voter).first())?.pick || '' : '';
-  return { enabled: true, ymd, q: q[0], a: q[1], b: q[2], counts, mine };
-}
-
-async function balance(request, env) {
-  if (!env.DB) return json({ enabled: false });
-  const db = env.DB, url = new URL(request.url);
-  await setup(db);
-  const voter = request.headers.get('x-voter') || '', okVoter = VOTER_RE.test(voter), ymd = kstYmd();
-  if (request.method === 'GET') return json(await balanceState(db, ymd, okVoter ? voter : ''));
-  if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'GET, POST', ...SECURITY_HEADERS } });
-
-  const origin = request.headers.get('origin');
-  if (origin && origin !== url.origin) return json({ error: 'forbidden' }, 403);
-  if (request.headers.get('sec-fetch-site') === 'cross-site' || +(request.headers.get('content-length') || 0) > 2048 || !(request.headers.get('content-type') || '').includes('application/json')) return json({ error: 'bad request' }, 400);
-  if (!okVoter) return json({ error: 'bad voter' }, 400);
-  if (await limited(db, 'bv:' + await ipKey(request), 300, 600)) return json({ error: '너무 많이 눌렀어요. 잠시 후에 해 주세요' }, 429);
-  let body;
-  try { body = await request.json(); } catch { return json({ error: 'bad body' }, 400); }
-  const pick = String(body?.pick ?? '');
-  if (!['a', 'b', ''].includes(pick)) return json({ error: 'bad pick' }, 400);
-  if (body?.ymd && body.ymd !== ymd) return json({ error: '날짜가 바뀌었어요. 새로 고침해 주세요' }, 409);
-  if (!pick) await db.prepare('DELETE FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(ymd, voter).run();
-  else await db.prepare('INSERT INTO balance_votes (ymd, voter, pick, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (ymd, voter) DO UPDATE SET pick = excluded.pick, at = excluded.at')
-    .bind(ymd, voter, pick, Date.now()).run();
-  return json(await balanceState(db, ymd, voter));
 }
 
 /* ===== 공지 기록: 헤더 📢 버튼에서 지난 공지까지 최근 20개 ===== */

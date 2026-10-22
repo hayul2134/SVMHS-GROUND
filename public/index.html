@@ -185,6 +185,12 @@
         <p class="s-date" id="todayLbl" aria-live="off"></p>
         <div class="mini now"><span class="m-lbl" id="bellState">&nbsp;</span><b class="m-val" id="bellPct">&nbsp;</b><div class="m-bar" id="bellBarBox" hidden><i id="bellBar"></i></div></div>
       </div>
+      <!-- 오늘의 밸런스 게임: 시계 아래 한 장짜리 티켓 (누르면 크게 보기 + 댓글 #mBal) — app.js '밸런스 게임' -->
+      <div class="bal-t" id="play" hidden>
+        <div class="bt-h"><span class="bt-tag">⚖️ 오늘의 밸런스</span><span class="bt-st" id="plSt"></span><button class="bt-more" type="button" id="plMore" aria-label="크게 보기와 댓글"><span aria-hidden="true">💬</span><small>댓글</small><b id="plC">0</b></button></div>
+        <p class="bt-q" id="plQ"></p>
+        <div class="bt-opts" id="plOpts"></div>
+      </div>
       <button class="s-down" id="goDown" aria-label="아래로 내려가기"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></button>
     </section>
 
@@ -218,12 +224,6 @@
           <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>다가오는 일정</h2><span class="links"><a href="#dday" data-go="dday">D-day 추가</a><a href="#cal" data-go="cal">학사일정</a></span></div>
           <div class="uprow" id="hUp"><div class="skel"></div></div>
         </div>
-        <aside class="s-play c12" id="play" aria-labelledby="plT" hidden>
-          <h2 class="s-tth"><span id="plT">⚖️ 오늘의 밸런스 게임</span><span class="pl-n" id="plN"></span></h2>
-          <p class="pl-q" id="plQ"></p>
-          <div class="pl-opts" id="plOpts"></div>
-          <p class="pl-note" id="plNote">골라야 결과가 보여요 · 익명</p>
-        </aside>
       </div>
     </section>
   </div>
@@ -298,6 +298,21 @@
 
 
 <!-- 공유 -->
+<!-- 밸런스 게임 크게 보기 + 댓글 -->
+<div class="modal" id="mBal" role="dialog" aria-modal="true" aria-labelledby="balT">
+  <div class="sheet bal-sheet">
+    <div class="bs-top"><span class="bt-tag">⚖️ 오늘의 밸런스</span><span class="bs-st" id="bsSt"></span><button class="all-x" type="button" data-close aria-label="닫기">✕</button></div>
+    <h3 class="bs-q" id="balT"></h3>
+    <div class="bs-opts" id="bsOpts"></div>
+    <p class="bs-n" id="bsN"></p>
+    <section class="bs-com" aria-labelledby="bsCh">
+      <h4 id="bsCh">댓글 <b id="bsCn">0</b></h4>
+      <form class="bs-form" id="bsForm" autocomplete="off"><input class="bs-in" id="bsIn" name="body" maxlength="100" placeholder="왜 그쪽을 골랐는지 한마디!" aria-label="댓글"><button class="btn sm" type="submit">등록</button></form>
+      <ul class="bs-list" id="bsList" aria-live="polite"></ul>
+    </section>
+  </div>
+</div>
+
 <!-- 급식·시간표 한 주 크게 보기 (첫 화면 카드의 '전체' 버튼) — 로직은 app.js '한 주 크게 보기' -->
 <div class="modal" id="mAll" role="dialog" aria-modal="true" aria-labelledby="allT">
   <div class="sheet all-sheet">

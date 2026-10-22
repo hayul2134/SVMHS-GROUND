@@ -9,7 +9,7 @@
 | `public/index.html` | 화면 뼈대 전부 (바로가기는 게임·시간표·학사일정·D-day만 — 다른 버튼이 있는 건 넣지 않음) (아이콘 스프라이트 · 헤더/탭 · 5개 view · 모달 3개). 인라인 스크립트·`style=""` 금지(CSP) |
 | `public/css/style.css` | 스타일. 맨 위 목차 참고. 색은 `:root` 토큰만 바꾸면 라이트/다크 같이 바뀜 |
 | `public/js/theme.js` | 첫 화면 깜빡임 방지용 테마(`data-theme` 밝음/어두움 + `data-skin` 색깔·캐릭터 테마) 적용 + 로그인 전이면 `html.prelogin`(소개 화면) 미리 붙임 (일반 스크립트, `<head>`에서 먼저 실행) |
-| `public/js/app.js` | 화면 로직. 홈: 첫 화면(`#bigclock`)은 시계 + 왼쪽 `#sMeal`(오늘 급식) · 오른쪽 `#sTT`(오늘 시간표)만. 700px 이상에선 두 카드가 화면 가장자리 서랍(`.stow`): 포스트잇 탭(`.s-tab`)으로 꺼내기(`.open`), 카드 안 `옆으로 넣기` 버튼(`.s-put`)으로 다시 넣기 — 꺼낸 상태는 넣을 때까지 유지·기억(localStorage `side_meal`·`side_tt`: open/closed), 첫 화면 아래로 스크롤하면 `html.tuck`으로 잠시 접힘. 오른쪽 시간표는 `ttTarget()` — 마지막 교시가 끝나면 다음 등교일(내일/○요일), 0시부터 그날. 두 카드 머리의 ‹ ›로 다른 등교일을 넘겨 봄(`S.sMealDay`·`S.ttPick`, 라벨 누르면 오늘로, 3분 안 만지면 자동 복귀 `armReset`), 급식 카드 끼니 칩 `#sMealSlots`. '전체' 버튼은 `#mAll` 모달(한 주 급식 텍스트 `getMealsRange` / 한 주 시간표 `fillWeek`, 주 넘기기, 주 라벨 누르면 `weekPick` 팝업 `#wPick`: 해 ‹ › · 12달 · 그 달의 주 목록 · 이번 주로 — 시간표 화면 `#tLbl`도 같은 팝업). 시계 바로 아래 작은 상태 줄 `.s-info`(`#more`: 현재 시각·날짜·진행률 카드·오늘 일정 알림, 시계보다 작게). `#play`(밸런스 게임)는 `오늘 한눈에` 벤토(급식 4·일정 4·투표 4칸)로 이동. 1280px 이상은 3단, 700~1279px는 시계 위·카드 2단, 그 아래는 세로 · 아래 `#weekTT`(주간 시간표, `fillWeek` 공용). `/* ===== 섹션 ===== */` 단위: 급식 · 시간표 · 학사일정 · D-day · 모달 · 공유 · 반 설정 · 안내 · 테마 · 시작 |
+| `public/js/app.js` | 화면 로직. 홈: 첫 화면(`#bigclock`)은 시계 + 왼쪽 `#sMeal`(오늘 급식) · 오른쪽 `#sTT`(오늘 시간표)만. 700px 이상에선 두 카드가 화면 가장자리 서랍(`.stow`): 포스트잇 탭(`.s-tab`)으로 꺼내기(`.open`), 카드 안 `옆으로 넣기` 버튼(`.s-put`)으로 다시 넣기 — 꺼낸 상태는 넣을 때까지 유지·기억(localStorage `side_meal`·`side_tt`: open/closed), 첫 화면 아래로 스크롤하면 `html.tuck`으로 잠시 접힘. 오른쪽 시간표는 `ttTarget()` — 마지막 교시가 끝나면 다음 등교일(내일/○요일), 0시부터 그날. 두 카드 머리의 ‹ ›로 다른 등교일을 넘겨 봄(`S.sMealDay`·`S.ttPick`, 라벨 누르면 오늘로, 3분 안 만지면 자동 복귀 `armReset`), 급식 카드 끼니 칩 `#sMealSlots`. '전체' 버튼은 `#mAll` 모달(한 주 급식 텍스트 `getMealsRange` / 한 주 시간표 `fillWeek`, 주 넘기기, 주 라벨 누르면 `weekPick` 팝업 `#wPick`: 해 ‹ › · 12달 · 그 달의 주 목록 · 이번 주로 — 시간표 화면 `#tLbl`도 같은 팝업). 시계 바로 아래 작은 상태 줄 `.s-info`(`#more`: 현재 시각·날짜·진행률 카드·오늘 일정 알림, 시계보다 작게). `#play`(밸런스 게임)는 시계 아래 `.s-info` 바로 밑 한 장짜리 티켓(`.bal-t`), 💬 댓글 버튼·질문을 누르면 `#mBal` 크게 보기(결과·댓글). 1280px 이상은 3단, 700~1279px는 시계 위·카드 2단, 그 아래는 세로 · 아래 `#weekTT`(주간 시간표, `fillWeek` 공용). `/* ===== 섹션 ===== */` 단위: 급식 · 시간표 · 학사일정 · D-day · 모달 · 공유 · 반 설정 · 안내 · 테마 · 시작 |
 | `public/js/food.js` | 급식 메뉴 이름 → 식판 칸 음식 그림(SVG). 2025.03~2026.10 메뉴 855종을 보고 만든 분류 규칙 `RULES`(위에서부터 먼저 맞는 것) → 종류별 그리기 `DRAW`. 이름으로 시드를 잡아 같은 메뉴는 항상 같은 모양. 음료(`isDrink`)는 식판에서 빼서 옆에 우유팩·컵(`drinkSvg`)으로 세움. 그림은 `app.js paintFood()`가 칸 크기를 잰 뒤 그 비율(`arBucket`)로 그려 넣고, 칸 크기가 바뀌면 ResizeObserver로 다시 그림. 공용 음영 그라디언트는 `.food-defs`에 한 번만 넣음. 6글자 이상 이름은 `nameLines()`가 단어 경계에서 2줄로 나눔. 새 메뉴가 엉뚱하게 그려지면 `RULES`에 정규식 한 줄 추가 |
 | `public/food/c/*.webp`, `tools/food-gen/` | 식판 **카툰 음식 그림**(투명 배경 256px WebP, 약 16KB). 메뉴 이름 → 그림 키는 `food.js`의 `cartoonKey()`(규칙 `CK` → 없으면 종류별 `KIND_CK`), 실제로 있는 키는 `CARTOON`. 없는 키·실패는 기존 도형 그림. 칸 안에 잘리지 않게(contain) 담고 이름표는 아래(`.hasimg`). 새 그림 만들기: `tools/food-gen/README.md` (Workers AI 무료, 하루 한도 있음) |
 | `public/js/neis.js` | 나이스 API 호출 + 브라우저 캐시(3시간). `getMeals / getTimetable / getSchedule` |
@@ -17,7 +17,7 @@
 | `public/js/qr.js` | QR 코드 SVG 생성기 (외부 라이브러리 없음) |
 | `public/js/social.js` | 소셜 화면 전부: 로그인/가입 · 프로필 꾸미기(아바타·색·스티커) · 친구 찾기/팔로우 · DM(새 메시지 확인 25초, 대화창 3~15초, 화면 숨기면 멈춤) · 미니게임 3종(반응속도·1 to 25·컷 타이밍) · 랭킹(전체/친구/반 대항전 — 모두 개인 최고 기록 기준, 하루 단위 랭킹 없음). `app.js`가 시작할 때 동적 import → `init(SOC)` |
 | `functions/api/s/[[path]].js` | 소셜 API `/api/s/*` (D1 `DB`, 테이블 자동 생성). 쿠키 세션(HttpOnly, 30일·연장 없음) · PBKDF2 비밀번호 · 횟수 제한 · DM은 맞팔끼리만 · 차단/신고 · 게임 기록 범위 검사 |
-| `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표 · `/api/balance` 오늘의 밸런스 게임(둘 다 D1 `DB`, 테이블 자동 생성) |
+| `functions/api/[[path]].js` | `/api/config`, `/api/neis/<서비스>` 프록시(허용 서비스·파라미터 화이트리스트, 숫자만 통과) · `/api/vote` 급식 인기투표 (D1 `DB`, 테이블 자동 생성). 밸런스 게임은 소셜 API `/api/s/bal`로 옮김 |
 | `public/admin/` | **관리자 페이지** `/admin` (index.html · admin.css · admin.js). 대시보드 · 모니터링(지금 접속자·최근 활동·오늘 시간대별·투표·DB 줄 수·나이스 연결·서버 오류, 20초 자동 새로 고침) · 신고 처리 · 사용자 관리(정지·임시 비번·프로필 정리·삭제) · 게임 기록 · 공지 · 밸런스 질문 · 설정(가입 코드·가입/DM 켜고 끄기) · 관리 기록 |
 | `functions/api/admin/[[path]].js` | 관리자 API `/api/admin/*`. 관리자 계정(`lib/db.js` `ADMIN_HANDLE` = developer)으로 사이트에 로그인 → 비밀번호 재확인(`/api/s/admin-pass`, 15분 8회 제한) → 12시간 세션(HttpOnly 쿠키, 경로 /api/admin). 관리자 계정이 지워지거나 정지되면 세션 무효. 모든 조치는 `admin_log`에 기록 |
 | `lib/db.js`, `lib/balance.js` | functions 세 곳이 같이 쓰는 D1 테이블 정의(`setup`)·설정(`settings` 테이블)·횟수 제한(`limited`·`ipKey`: IP는 해시로만, 만료 줄 자동 삭제)·관리 기록용 `maskIp`·밸런스 기본 질문. **표 구조를 바꾸면 `SCHEMA_V`를 올릴 것**(평소엔 버전 확인 쿼리 1번만 실행). functions/ 밖이라 라우트가 아님 |
@@ -53,7 +53,10 @@ npx wrangler@4 pages dev --port 8788
 `mealSlot()`: 7시 50분 전 조식 → 5교시 시작(`BELL`의 5교시 start) 전 중식 → 그 뒤 석식. 첫 화면 작은 식판과 아래 '오늘 급식' 카드가 같이 따라감(카드 탭을 직접 누르면 다음 전환 때까지 그 끼니 유지). 그 끼니가 없는 날은 다음 끼니 → 중식 순으로 대신 표시.
 
 ## 오늘의 밸런스 게임 (D1)
-질문 목록은 서버 `BALANCE` 배열(한국 날짜로 하루 한 개씩 돌아감). 기기 ID(`sg_voter`)당 하루 한 표, 다시 누르면 취소. 자유 입력은 일부러 없음(익명 저격 방지). DB 바인딩이 없으면 카드가 숨겨짐.
+- 일정(`lib/balance.js`): **월~금 하루 한 문제**(주말엔 새 질문 없음, 금요일 결과 유지). 한국 시간 **6시 공개** → 그날 **마지막 교시 끝 +10분 마감**. 마지막 교시는 나이스 학교 전체 시간표(`hisTimetable` ALL_TI_YMD)의 최대 교시(시험·단축 대응)를 `balance_days`에 하루 한 번 저장, 없으면 월~수 7·목금 6교시. 6시 전·주말엔 직전 평일 결과를 보여 줌.
+- 질문: `BALANCE` 배열(평일만 번호를 매겨 순서대로, `START` = 2026-10-23 첫 질문). 관리자 페이지에서 날짜별 덮어쓰기(`balance_custom`). 질문 40자·선택지 20자 이내.
+- API(`functions/api/s/[[path]].js`, 로그인 필요): `GET bal` 상태 · `POST bal` {pick,ymd} 투표/취소(마감 전만) · `POST balc` 댓글(100자, 욕설 필터, 진행 중엔 투표해야 가능, 5분 6개) · `POST balcdel` 내 댓글 삭제 · `POST balcrep` 신고(→ `reports`). 표는 `balance_votes`(voter = `u<uid>`, 계정당 한 표), 댓글은 `balance_comments`(배지는 현재 투표 기준).
+- 공개 규칙: 진행 중엔 투표해야 결과·댓글이 보임, 마감 뒤엔 모두에게 결과 + 이긴 쪽 👑·WIN, 진 쪽 흐리게, 무승부 표시.
 
 ## 소개 화면 (로그인 전)
 - `index.html`의 `#intro`(전체 화면 덮개, z-index 55). `html.prelogin`일 때만 보임. 내용: 첫 화면(로고·가입/로그인 버튼·둘러보기) → 할 수 있는 것 6개 → 시작 3단계.
@@ -84,7 +87,7 @@ npx wrangler@4 pages dev --port 8788
 - 정지(`bans`): 정지 즉시 세션 삭제 + 로그인 거부(사유·기간 표시). 소셜 `auth()`도 정지된 사람은 막음.
 - 설정(`settings`): `join_code`(있으면 비밀 변수 JOIN_CODE보다 우선, ''이면 코드 없음) · `signup_open` · `dm_open` · `notice`(JSON).
 - 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 학생이 닫으면 `sg_notice_x`에 그 공지 id 저장. 공지에 '자세한 내용'(`body`, 최대 2000자)이 있으면 띠 끝에 '자세히 ›'가 붙고, 누르면 `SOC.openNotices(id)`로 공지 목록(넓은 창 `.sheet.wide`)이 열리며 그 공지 본문이 펼쳐짐. 공지 창 모양(`.ntlist .nt-t`/`.ntb`): 제목은 굵은 큰 글씨 한 줄(넘치면 …), 내용 2줄 미리보기 → '자세히 보기'로 펼침, 펼친 내용 아래 왼쪽 작은 '접기'. 업데이트 소식도 같은 모양. 지금 공지의 제목·내용만 날짜 그대로 고치기: `POST noticeedit`. 관리자 공지 화면에서 지난 공지 기록 삭제(`POST noticedel`, 지금 걸린 공지는 불가).
-- 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기. 오늘 질문을 바꾸면 오늘 표 초기화.
+- 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기(평일 10일 표시). 지금 질문을 바꾸면 그날 표·댓글 초기화. 지금 질문 댓글 목록·삭제(`balancecdel`).
 
 ## 의견 · 공지 버튼 (헤더)
 - 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번) → `feedback` 표 → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.

@@ -476,54 +476,148 @@ function paintMealView() {
 $('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealView(); };
 $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };
 
-/* ===== 오늘의 밸런스 게임 (첫 화면 왼쪽) — 친구들 전체가 같은 질문에 투표 ===== */
-let BAL = null, balBusy = false, balTimer = 0;
-async function loadBalance() {
-  try {
-    const r = await fetch('/api/balance', { headers: { 'x-voter': voterId } });
-    const j = r.ok ? await r.json() : null;
-    BAL = j && j.enabled ? j : null;
-  } catch {}
+/* ===== 오늘의 밸런스 게임 (시계 아래 티켓 + 크게 보기 #mBal) =====
+   월~금 하루 한 문제 · 6시 공개 · 마지막 교시 끝 +10분 마감 (서버 lib/balance.js가 시각을 정함, 로그인 계정당 한 표)
+   진행 중엔 골라야 결과·댓글이 보이고, 마감 뒤엔 모두에게 결과 공개 + 이긴 쪽 강조 */
+let BAL = null, balBusy = false, balTimer = 0, balSkew = 0, balAuto = 0;
+const balNow = () => Date.now() + balSkew;
+const BAL_API = '/api/s/bal';
+async function balCall(path, body) {
+  const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || '잠시 후 다시 해 주세요'); e.status = r.status; throw e; }
+  return j;
+}
+function setBal(j) {
+  BAL = j && j.enabled ? j : null;
+  if (BAL) balSkew = BAL.now - Date.now();
   paintBalance();
 }
+async function loadBalance() {
+  try { setBal(await balCall(BAL_API)); } catch (e) { if (e.status === 401 || e.status === 404) setBal(null); }
+}
+const hhmm = t => { const d = new Date(t), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${pad(d.getMinutes())}`; };
+const balDow = t => { const d = new Date(t), k = diffDays(new Date(d.getFullYear(), d.getMonth(), d.getDate()), today()); return k === 0 ? '오늘' : k === 1 ? '내일' : DOW[d.getDay()] + '요일'; };
+function balStatus() {
+  const n = balNow();
+  if (BAL.open) {
+    const left = Math.max(0, Math.round((BAL.closes - n) / 1000));
+    return { cls: left <= 600 ? 'hot' : 'live', txt: `⏳ 마감까지 ${fmtLeft(left)}`, long: `${hhmm(BAL.closes)} 마감 · ${fmtLeft(left)} 남음` };
+  }
+  if (n < BAL.opens) return { cls: 'wait', txt: `🌅 ${hhmm(BAL.opens)} 시작`, long: `${hhmm(BAL.opens)}부터 투표 시작` };
+  const w = balWinner(BAL.counts);
+  return { cls: 'done', txt: w === 'tie' ? '🤝 무승부!' : w ? `🏆 '${BAL[w]}' 승리` : '🏁 투표 마감', long: `투표 마감 · 다음 질문은 ${balDow(BAL.next)} ${hhmm(BAL.next)}` };
+}
+// 결과: 'a' | 'b' | 'tie' | '' (투표 없음)
+const balWinner = c => !(c.a + c.b) ? '' : c.a === c.b ? 'tie' : c.a > c.b ? 'a' : 'b';
+function balOpt(k, big) {
+  const { counts, mine, open } = BAL, total = counts.a + counts.b, show = !!mine || !open, closed = !open;
+  const pct = total ? Math.round(counts[k] / total * 100) : 0, w = closed ? balWinner(counts) : '';
+  const cls = ['bo', 'bo-' + k, mine === k && 'picked', show && 'shown', w === k && 'win', w && w !== k && w !== 'tie' && 'lose', w === 'tie' && 'tie'].filter(Boolean).join(' ');
+  return `<button class="${cls}" type="button" data-pick="${k}" aria-pressed="${mine === k}"${closed ? ' aria-disabled="true"' : ''}>`
+    + `<i class="bo-fill" aria-hidden="true" data-pct="${show ? pct : 0}"></i>${w === k ? '<i class="bo-crown" aria-hidden="true">👑</i>' : ''}`
+    + `<span class="bo-t">${esc(BAL[k])}</span>${w === k ? '<span class="bo-stamp">WIN</span>' : ''}${show ? `<b class="bo-p">${pct}%${big ? `<small>${counts[k]}표</small>` : ''}</b>` : ''}</button>`;
+}
+const fillBars = root => root.querySelectorAll('.bo-fill').forEach(el => { el.style.transform = `scaleX(${(+el.dataset.pct / 100).toFixed(3)})`; });
 function paintBalance() {
   const box = $('#play');
   box.hidden = !BAL;
-  if (!BAL) return;
-  const { a, b, counts, mine } = BAL, total = counts.a + counts.b, show = !!mine;
-  const pct = k => total ? Math.round(counts[k] / total * 100) : 0;
-  setText('#plQ', BAL.q);
-  setText('#plN', `${total}명 참여`);
-  const opt = (k, name) => `<button class="pl-o pl-${k}${mine === k ? ' picked' : ''}${show ? ' shown' : ''}" data-pick="${k}" aria-pressed="${mine === k}">`
-    + `<i class="pl-fill" aria-hidden="true"></i><span class="pl-t">${esc(name)}</span>${show ? `<b class="pl-p">${pct(k)}%</b>` : ''}</button>`;
-  $('#plOpts').innerHTML = opt('a', a) + '<span class="pl-vs" aria-hidden="true">VS</span>' + opt('b', b);
-  if (show) $$('#plOpts .pl-fill').forEach(el => { el.style.transform = `scaleX(${(pct(el.parentNode.dataset.pick) / 100).toFixed(3)})`; });
-  const lead = counts.a === counts.b ? '' : counts.a > counts.b ? a : b;
-  setText('#plNote', !show ? '골라야 결과가 보여요 · 익명 · 내일 새 질문'
-    : `${lead ? `지금은 '${lead}' 우세` : '지금은 막상막하'} · 다시 누르면 취소`);
+  if (!BAL) { clearInterval(balAuto); return; }
+  const st = balStatus();
+  box.className = 'bal-t st-' + st.cls;
+  $('#plQ').textContent = BAL.q;
+  $('#plSt').textContent = st.txt;
+  $('#plC').textContent = BAL.ncom;
+  $('#plOpts').innerHTML = balOpt('a') + '<span class="bo-vs" aria-hidden="true">VS</span>' + balOpt('b');
+  fillBars($('#plOpts'));
+  if ($('#mBal').classList.contains('open')) paintBalSheet();
+  clearInterval(balAuto);
+  balAuto = setInterval(balTick, 1000);
 }
-$('#plOpts').addEventListener('click', async e => {
-  const el = e.target.closest('[data-pick]');
-  if (!el || !BAL || balBusy) return;
-  const k = el.dataset.pick, next = BAL.mine === k ? '' : k;
-  if (BAL.mine) BAL.counts[BAL.mine]--;   // 화면 먼저 바꾸고 서버에 저장
+// 1초마다 남은 시간만 바꾸고, 마감·시작 시각이 지나면 서버에서 다시 받아옴
+function balTick() {
+  if (!BAL || document.hidden) return;
+  const n = balNow();
+  if ((BAL.open && n >= BAL.closes) || (!BAL.open && n >= BAL.opens && n < BAL.closes) || (!BAL.open && n >= BAL.next)) { clearInterval(balAuto); setTimeout(loadBalance, 1500); return; }
+  const st = balStatus();
+  setText('#plSt', st.txt);
+  if ($('#mBal').classList.contains('open')) setText('#bsSt', st.long);
+  $('#play').classList.toggle('st-hot', st.cls === 'hot');
+}
+function paintBalSheet() {
+  const st = balStatus(), { counts, open, mine } = BAL, total = counts.a + counts.b, w = !open ? balWinner(counts) : '';
+  $('#mBal .bal-sheet').className = 'sheet bal-sheet st-' + st.cls;
+  $('#balT').textContent = BAL.q;
+  lastVal.delete('#bsSt'); setText('#bsSt', st.long);
+  $('#bsOpts').innerHTML = balOpt('a', true) + '<span class="bo-vs" aria-hidden="true">VS</span>' + balOpt('b', true);
+  fillBars($('#bsOpts'));
+  $('#bsN').innerHTML = !open
+    ? (w === 'tie' ? `🤝 <b>무승부!</b> ${total}명이 정확히 반반으로 갈렸어요` : w ? `🎉 <b>'${esc(BAL[w])}'</b> 승리! · ${total}명 참여` : '아무도 투표하지 않았어요')
+    : mine ? `${total}명 참여 · 마감 전까지 바꾸거나 취소할 수 있어요` : `${total}명 참여 중 · 골라야 결과와 댓글이 보여요`;
+  $('#bsCn').textContent = BAL.ncom;
+  const lock = open && !mine, form = $('#bsForm');
+  form.classList.toggle('lock', lock);
+  $('#bsIn').disabled = lock;
+  $('#bsIn').placeholder = lock ? '먼저 한쪽을 고르면 댓글을 달 수 있어요' : open ? '왜 그쪽을 골랐는지 한마디!' : '결과 보고 한마디!';
+  const list = $('#bsList');
+  if (!BAL.comments) { list.innerHTML = `<li class="bc-empty">🙈 한쪽을 고르면 댓글 ${BAL.ncom}개가 보여요</li>`; return; }
+  if (!BAL.comments.length) { list.innerHTML = `<li class="bc-empty">${open ? '첫 댓글의 주인공이 되어 보세요 ✍️' : '댓글이 없어요'}</li>`; return; }
+  list.innerHTML = BAL.comments.map(c => `<li class="bc${c.pick ? ' side-' + c.pick : ''}">`
+    + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : esc(c.avatar || '😎')}</a>`
+    + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
+    + `<p class="bc-b">${esc(c.body)}</p></div>`
+    + (c.me ? `<button class="bc-x" type="button" data-cdel="${c.id}" aria-label="내 댓글 지우기">지우기</button>` : `<button class="bc-x" type="button" data-crep="${c.id}" aria-label="댓글 신고">신고</button>`)
+    + '</li>').join('');
+}
+const balAgo = t => { const s = (balNow() - t) / 1000; return s < 60 ? '방금' : s < 3600 ? Math.floor(s / 60) + '분 전' : s < 86400 ? Math.floor(s / 3600) + '시간 전' : `${new Date(t).getMonth() + 1}/${new Date(t).getDate()}`; };
+async function balVote(k) {
+  if (!BAL || balBusy) return;
+  if (!BAL.open) { toast(balNow() < BAL.opens ? `투표는 ${hhmm(BAL.opens)}에 시작해요` : '투표가 마감됐어요 · 결과를 확인해 보세요'); return; }
+  const next = BAL.mine === k ? '' : k, prev = BAL.mine;
+  if (prev) BAL.counts[prev]--;   // 화면 먼저 바꾸고 서버에 저장
   if (next) BAL.counts[next]++;
   BAL.mine = next; paintBalance();
   balBusy = true;
   try {
-    const r = await fetch('/api/balance', { method: 'POST', headers: { 'content-type': 'application/json', 'x-voter': voterId }, body: JSON.stringify({ pick: next, ymd: BAL.ymd }) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error || '투표하지 못했어요');
-    BAL = j; paintBalance();
-    if (next) toast('한 표 완료! 친구들은 뭘 골랐을까 👀');
-  } catch (err) { toast(err.message || '투표하지 못했어요'); await loadBalance(); }
+    setBal(await balCall(BAL_API, { pick: next, ymd: BAL.ymd }));
+    if (next && !prev) toast('한 표 완료! 친구들 댓글도 볼 수 있어요 💬');
+  } catch (err) { toast(err.message); await loadBalance(); }
+  balBusy = false;
+}
+const onPick = e => { const el = e.target.closest('[data-pick]'); if (el) balVote(el.dataset.pick); };
+$('#plOpts').addEventListener('click', onPick);
+$('#bsOpts').addEventListener('click', onPick);
+$('#plMore').onclick = () => { if (!BAL) return; paintBalSheet(); openModal('#mBal'); loadBalance().then(pollBalance); };
+$('#plQ').onclick = $('#plMore').onclick;
+$('#bsForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const inp = $('#bsIn'), body = inp.value.trim();
+  if (!BAL || !body || balBusy) return;
+  balBusy = true;
+  try { setBal(await balCall('/api/s/balc', { body, ymd: BAL.ymd })); inp.value = ''; $('#bsList').scrollTop = 0; }
+  catch (err) { toast(err.message); }
   balBusy = false;
 });
-// 다른 친구들 표 반영: 투표 카드가 보이는 동안 40초마다, 다시 돌아왔을 때 바로
+$('#bsList').addEventListener('click', async e => {
+  const d = e.target.closest('[data-cdel]'), r = e.target.closest('[data-crep]');
+  if (d) {
+    if (!confirm('내 댓글을 지울까요?')) return;
+    try { setBal(await balCall('/api/s/balcdel', { id: +d.dataset.cdel })); toast('지웠어요'); } catch (err) { toast(err.message); }
+  } else if (r) {
+    const why = prompt('신고 사유를 적어 주세요 (선택)');
+    if (why === null) return;
+    try { await balCall('/api/s/balcrep', { id: +r.dataset.crep, reason: why }); toast('신고했어요. 개발자가 확인할게요'); } catch (err) { toast(err.message); }
+  }
+});
+// 다른 친구들 표·댓글 반영: 티켓이 보이거나 크게 보기가 열려 있을 때만 (크게 보기 30초 · 티켓 90초)
 new IntersectionObserver(es => { balVisible = es[0].isIntersecting; }).observe($('#play'));
 function pollBalance() {
   clearTimeout(balTimer);
-  balTimer = setTimeout(async () => { if (!document.hidden && balVisible && !balBusy) await loadBalance(); pollBalance(); }, 90000);   // 90초마다 (무료 요청 수 절약)
+  const sheet = $('#mBal').classList.contains('open');
+  balTimer = setTimeout(async () => {
+    if (!document.hidden && !balBusy && ($('#mBal').classList.contains('open') || balVisible)) await loadBalance();
+    pollBalance();
+  }, sheet ? 30000 : 90000);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && BAL) loadBalance(); });
 

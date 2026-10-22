@@ -1,6 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
+import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
@@ -154,6 +155,32 @@ export async function onRequest({ request: req, env, params }) {
     await logErr(db, 's', req, e);
     return err('잠시 후 다시 시도해 주세요', 500);
   }
+}
+
+/* ===== 밸런스 게임 상태 (투표 전엔 결과·댓글을 숨김 — 마감 뒤엔 모두에게 공개) ===== */
+async function balState(env, db, me) {
+  const ymd = balDay(), now = Date.now();
+  const c = await db.prepare('SELECT q, a, b FROM balance_custom WHERE ymd = ?1').bind(ymd).first();
+  const [q, a, b] = c ? [c.q, c.a, c.b] : defaultBalance(ymd);
+  const last = await lastPeriod(env, db, ymd), opens = openAt(ymd), closes = closeAt(ymd, last), open = now >= opens && now < closes;
+  const [votes, mineRow, ncom] = await db.batch([
+    db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(ymd),
+    db.prepare('SELECT pick FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(ymd, 'u' + me.id),
+    db.prepare('SELECT COUNT(*) AS n FROM balance_comments WHERE ymd = ?1').bind(ymd),
+  ]);
+  const counts = { a: 0, b: 0 };
+  for (const r of votes.results) if (r.pick in counts) counts[r.pick] = r.n;
+  const mine = mineRow.results[0]?.pick || '';
+  let comments = null;
+  if (mine || !open) {
+    comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color
+      FROM balance_comments c JOIN users u ON u.id = c.uid LEFT JOIN balance_votes v ON v.ymd = c.ymd AND v.voter = 'u' || c.uid
+      WHERE c.ymd = ?1 AND NOT EXISTS (SELECT 1 FROM blocks k WHERE (k.a = ?2 AND k.b = c.uid) OR (k.a = c.uid AND k.b = ?2))
+      AND NOT EXISTS (SELECT 1 FROM bans x WHERE x.uid = c.uid AND (x.until = 0 OR x.until > ?3))
+      ORDER BY c.id DESC LIMIT 100`).bind(ymd, me.id, now).all()).results
+      .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, avatar: r.avatar, color: r.color }));
+  }
+  return { enabled: true, ymd, q, a, b, last, opens, closes, next: nextOpen(ymd), now, open, counts, mine, ncom: ncom.results[0].n, comments };
 }
 
 const needMe = fn => async ctx => {
@@ -541,6 +568,46 @@ const ROUTES = {
     const other = await db.prepare('SELECT id FROM users WHERE google_sub = ?1').bind(g.sub).first();
     if (other && other.id !== me.id) return err('이 구글 계정은 이미 다른 아이디에 연결돼 있어요');
     await db.prepare('UPDATE users SET google_sub = ?1 WHERE id = ?2').bind(g.sub, me.id).run();
+    return json({ ok: true });
+  }),
+
+  /* ----- 오늘의 밸런스 게임: 월~금 하루 한 문제, 6시 공개 · 마지막 교시 끝 +10분 마감. 한 사람 한 표(로그인 계정 기준), 댓글은 고른 쪽이 같이 보임 ----- */
+  'GET bal': needMe(async ({ env, db, me }) => json(await balState(env, db, me))),
+  'POST bal': needMe(async ({ env, db, me, body }) => {
+    const pick = String(body.pick ?? '');
+    if (!['a', 'b', ''].includes(pick)) return err('bad pick');
+    const st = await balState(env, db, me);
+    if (body.ymd && body.ymd !== st.ymd) return err('질문이 바뀌었어요. 새로 고침해 주세요', 409);
+    if (!st.open) return err(Date.now() < st.opens ? '아직 투표 시작 전이에요 (6시 시작)' : '투표가 마감됐어요');
+    if (await limited(db, 'bv:' + me.id, 40, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
+    if (!pick) await db.prepare('DELETE FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(st.ymd, 'u' + me.id).run();
+    else await db.prepare('INSERT INTO balance_votes (ymd, voter, pick, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (ymd, voter) DO UPDATE SET pick = excluded.pick, at = excluded.at')
+      .bind(st.ymd, 'u' + me.id, pick, Date.now()).run();
+    return json(await balState(env, db, me));
+  }),
+  'POST balc': needMe(async ({ env, db, me, body }) => {
+    const text = clean(body.body, 100);
+    if (!text) return err('내용을 적어 주세요');
+    if (isBad(text)) return err('욕설·비속어는 쓸 수 없어요');
+    const st = await balState(env, db, me);
+    if (body.ymd && body.ymd !== st.ymd) return err('질문이 바뀌었어요. 새로 고침해 주세요', 409);
+    if (st.open && !st.mine) return err('먼저 한쪽을 골라야 댓글을 달 수 있어요');
+    if (await limited(db, 'bc:' + me.id, 6, 300)) return err('댓글은 5분에 6개까지 달 수 있어요', 429);
+    await db.prepare('INSERT INTO balance_comments (ymd, uid, pick, body, at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(st.ymd, me.id, st.mine || '', text, Date.now()).run();
+    return json(await balState(env, db, me));
+  }),
+  'POST balcdel': needMe(async ({ env, db, me, body }) => {
+    const r = await db.prepare('DELETE FROM balance_comments WHERE id = ?1 AND uid = ?2').bind(+body.id || 0, me.id).run();
+    if (!r.meta.changes) return err('지울 수 없는 댓글이에요');
+    return json(await balState(env, db, me));
+  }),
+  'POST balcrep': needMe(async ({ db, me, body }) => {
+    const c = await db.prepare('SELECT uid, ymd, body FROM balance_comments WHERE id = ?1').bind(+body.id || 0).first();
+    if (!c) return err('없는 댓글이에요');
+    if (c.uid === me.id) return err('내 댓글은 신고할 수 없어요');
+    if (await limited(db, 'rp:' + me.id, 10, 3600)) return err('신고가 너무 많아요', 429);
+    await db.prepare('INSERT INTO reports (reporter, target, msg, reason, at) VALUES (?1, ?2, NULL, ?3, ?4)')
+      .bind(me.id, c.uid, `[밸런스 댓글 #${+body.id} · ${c.ymd}] ${c.body}` + (body.reason ? ` / 사유: ${clean(body.reason, 100)}` : ''), Date.now()).run();
     return json({ ok: true });
   }),
 

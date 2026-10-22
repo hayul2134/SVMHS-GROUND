@@ -391,22 +391,26 @@ VIEWS.notice = async () => {
 };
 
 /* ===== 밸런스 게임 ===== */
+const d0ymd = () => document.querySelector('.bal')?.dataset.ymd || '';
 VIEWS.balance = async () => {
   const d = await call('balance');
   const t = d.today, tot = t.a + t.b;
   $('#main').innerHTML = `
     <div class="vh"><h2>밸런스 게임</h2></div>
-    <section class="card"><h3>오늘 투표</h3>
+    <section class="card"><h3>지금 투표 <small class="sub">${ymdLabel(t.ymd)}</small></h3>
       <p><b>${esc(d.days[0].q)}</b></p>
       <p class="sub">${esc(d.days[0].a)} <b class="num">${t.a}</b>표 ${tot ? `(${Math.round(t.a / tot * 100)}%)` : ''} vs ${esc(d.days[0].b)} <b class="num">${t.b}</b>표 ${tot ? `(${Math.round(t.b / tot * 100)}%)` : ''}</p>
     </section>
-    <section class="card"><h3>앞으로 2주 질문</h3>
-      <p class="sub sp-b">기본 질문은 목록에서 자동으로 돌아가요. 날짜를 골라 원하는 질문으로 바꿀 수 있어요. <b>오늘 질문을 바꾸면 오늘 표는 초기화돼요.</b></p>
+    <section class="card"><h3>앞으로 평일 10일 질문</h3>
+      <p class="sub sp-b">월~금 하루 한 문제 · 6시 공개 · 마지막 교시 끝 +10분 마감(나이스 시간표 기준). 기본 질문은 목록에서 자동으로 돌아가요. <b>지금 질문을 바꾸면 그날 표·댓글은 초기화돼요.</b></p>
       ${d.days.map((x, i) => `<div class="bal" data-ymd="${x.ymd}">
-        <div class="d">${ymdLabel(x.ymd)}<small>${i === 0 ? '오늘' : i === 1 ? '내일' : ''}</small></div>
+        <div class="d">${ymdLabel(x.ymd)}<small>${i === 0 ? '지금' : ''}</small></div>
         <div class="qq"><b>${esc(x.q)} ${x.custom ? '<span class="tag cus">직접 정함</span>' : ''}</b><span>${esc(x.a)} vs ${esc(x.b)}</span></div>
         <div class="row"><button class="btn sm" type="button" data-act="baledit">바꾸기</button>${x.custom ? '<button class="btn sm" type="button" data-act="baldel">기본으로</button>' : ''}</div>
       </div>`).join('')}
+    </section>
+    <section class="card"><h3>지금 질문 댓글 <span class="sub num">${d.comments.length}</span></h3>
+      ${d.comments.length ? `<ul class="mlist">${d.comments.map(c => `<li data-cid="${c.id}"><span><b>${esc(c.name)}</b> <small class="sub">@${esc(c.handle)}</small><br>${esc(c.body)}</span><button class="btn sm" type="button" data-act="balcdel">삭제</button></li>`).join('')}</ul>` : '<p class="sub">아직 댓글이 없어요</p>'}
     </section>`;
 };
 
@@ -534,15 +538,19 @@ document.addEventListener('click', async e => {
         f.q.focus();
         f.addEventListener('submit', async ev => {
           ev.preventDefault();
-          if (row.dataset.ymd === kstYmd() && !confirm('오늘 질문을 바꾸면 오늘 들어온 표가 초기화돼요. 바꿀까요?')) return;
+          if (row.dataset.ymd === d0ymd() && !confirm('지금 질문을 바꾸면 들어온 표·댓글이 초기화돼요. 바꿀까요?')) return;
           try { await call('balance', { ymd: row.dataset.ymd, q: f.q.value, a: f.a.value, b: f.b.value }); toast('저장했어요'); route(); } catch (x) { fail(x); }
         });
         return;
       }
+      case 'balcdel': {
+        if (!confirm('이 댓글을 지울까요?')) return;
+        await call('balancecdel', { id: +el.closest('[data-cid]').dataset.cid }); toast('지웠어요'); return route();
+      }
       case 'balcancel': return el.closest('form').remove();
       case 'baldel': {
         const ymd = el.closest('.bal').dataset.ymd;
-        if (ymd === kstYmd() && !confirm('오늘 질문을 기본으로 되돌리면 오늘 표가 초기화돼요. 계속할까요?')) return;
+        if (ymd === d0ymd() && !confirm('지금 질문을 기본으로 되돌리면 표·댓글이 초기화돼요. 계속할까요?')) return;
         await call('balancedel', { ymd }); toast('기본 질문으로 돌렸어요'); return route();
       }
       case 'setcode': {

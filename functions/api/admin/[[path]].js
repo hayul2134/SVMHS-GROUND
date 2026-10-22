@@ -2,7 +2,7 @@
 // 로그인: 사이트에서 관리자 계정(lib/db.js ADMIN_HANDLE)으로 로그인 → 비밀번호 재확인(/api/s/admin-pass) → 12시간 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만).
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
 import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, logErr } from '../../../lib/db.js';
-import { defaultBalance } from '../../../lib/balance.js';
+import { defaultBalance, balDay } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
 const SESSION_H = 12;
@@ -462,30 +462,42 @@ const ROUTES = {
 
   /* ----- 밸런스 게임 ----- */
   'GET balance': async ({ db }) => {
-    const custom = (await db.prepare('SELECT ymd, q, a, b FROM balance_custom WHERE ymd >= ?1 ORDER BY ymd').bind(kstYmd(Date.now() - 7 * DAY)).all()).results;
+    const today = balDay(), custom = (await db.prepare('SELECT ymd, q, a, b FROM balance_custom WHERE ymd >= ?1 ORDER BY ymd').bind(today).all()).results;
     const byDay = new Map(custom.map(c => [c.ymd, c]));
-    const today = kstYmd(), days = [];
-    for (let i = 0; i < 14; i++) {
-      const ymd = kstYmd(Date.now() + i * DAY), c = byDay.get(ymd), d = defaultBalance(ymd);
+    const days = [];   // 지금 보이는 날부터 평일 10일 (주말엔 새 질문 없음)
+    for (let i = 0; days.length < 10 && i < 20; i++) {
+      const ymd = kstYmd(Date.parse(`${today.slice(0, 4)}-${today.slice(4, 6)}-${today.slice(6, 8)}T12:00:00+09:00`) + i * DAY);
+      const dw = new Date(`${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}T12:00:00+09:00`).getUTCDay();
+      if (dw === 0 || dw === 6) continue;
+      const c = byDay.get(ymd), d = defaultBalance(ymd);
       days.push({ ymd, custom: !!c, q: c ? c.q : d[0], a: c ? c.a : d[1], b: c ? c.b : d[2] });
     }
-    const votes = (await db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(today).all()).results;
-    return json({ days, today: { a: votes.find(v => v.pick === 'a')?.n || 0, b: votes.find(v => v.pick === 'b')?.n || 0 } });
+    const [votes, comments] = await db.batch([
+      db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(today),
+      db.prepare('SELECT c.id, c.body, c.at, u.handle, u.name FROM balance_comments c JOIN users u ON u.id = c.uid WHERE c.ymd = ?1 ORDER BY c.id DESC LIMIT 200').bind(today),
+    ]);
+    const v = votes.results;
+    return json({ days, today: { ymd: today, a: v.find(x => x.pick === 'a')?.n || 0, b: v.find(x => x.pick === 'b')?.n || 0 }, comments: comments.results });
+  },
+  'POST balancecdel': async ({ db, body }) => {
+    const r = await db.prepare('DELETE FROM balance_comments WHERE id = ?1 RETURNING body').bind(+body.id || 0).first();
+    if (!r) return err('없는 댓글이에요');
+    await log(db, '밸런스 댓글 삭제', r.body); return json({ ok: true });
   },
   'POST balance': async ({ db, body }) => {
     const ymd = String(body.ymd || ''), q = clean(body.q, 40), a = clean(body.a, 20), b = clean(body.b, 20);
-    if (!/^\d{8}$/.test(ymd) || ymd < kstYmd()) return err('오늘이나 그 뒤 날짜만 정할 수 있어요');
+    if (!/^\d{8}$/.test(ymd) || ymd < balDay()) return err('오늘이나 그 뒤 날짜만 정할 수 있어요');
     if (!q || !a || !b) return err('질문과 두 선택지를 모두 적어 주세요');
     await db.prepare('INSERT INTO balance_custom (ymd, q, a, b) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (ymd) DO UPDATE SET q = excluded.q, a = excluded.a, b = excluded.b').bind(ymd, q, a, b).run();
     // 오늘 질문을 바꾸면 이전 질문에 들어간 표는 의미가 없으므로 비움
-    if (ymd === kstYmd()) await db.prepare('DELETE FROM balance_votes WHERE ymd = ?1').bind(ymd).run();
+    if (ymd === balDay()) await db.batch([db.prepare('DELETE FROM balance_votes WHERE ymd = ?1').bind(ymd), db.prepare('DELETE FROM balance_comments WHERE ymd = ?1').bind(ymd)]);
     await log(db, '밸런스 질문 지정', `${ymd} · ${q} (${a} vs ${b})`);
     return json({ ok: true });
   },
   'POST balancedel': async ({ db, body }) => {
     const ymd = String(body.ymd || '');
     const r = await db.prepare('DELETE FROM balance_custom WHERE ymd = ?1').bind(ymd).run();
-    if (r.meta.changes && ymd === kstYmd()) await db.prepare('DELETE FROM balance_votes WHERE ymd = ?1').bind(ymd).run();
+    if (r.meta.changes && ymd === balDay()) await db.batch([db.prepare('DELETE FROM balance_votes WHERE ymd = ?1').bind(ymd), db.prepare('DELETE FROM balance_comments WHERE ymd = ?1').bind(ymd)]);
     await log(db, '밸런스 질문 기본값으로', ymd);
     return json({ ok: true });
   },
