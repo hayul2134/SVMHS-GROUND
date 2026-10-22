@@ -149,7 +149,8 @@ function profileHtml(d) {
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
+    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기·계정 설정 없음
+      : `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
        <button class="btn ${mutual ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${mutual ? '' : 'data-locked="1"'}>💬 DM</button>
@@ -260,7 +261,7 @@ document.addEventListener('click', async e => {
     openPanel(dm.dataset.dm); return;
   }
   const a = e.target.closest('[data-act-s]');
-  if (a) ({ edit: openEdit, settings: openSettings, more: () => openMore(a.dataset.h) })[a.dataset.actS]?.();
+  if (a) ({ edit: openEdit, settings: openSettings, more: () => openMore(a.dataset.h), logout: doLogout })[a.dataset.actS]?.();
 });
 /* 상단 메뉴 '신고': 아이디와 이유를 적어서 보냄 (로그인 필요) */
 function openReport() {
@@ -329,6 +330,7 @@ function openEdit() {
 }
 
 /* ===== 계정 설정 ===== */
+async function doLogout() { try { await call('logout', {}); } catch {} S.me = null; S.unread = 0; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('로그아웃했어요'); }
 function openSettings() {
   sheet(`<h3>계정 설정</h3>
     <form class="sform" id="pwForm"><p class="lbl">비밀번호 바꾸기</p>
@@ -344,7 +346,7 @@ function openSettings() {
     e.preventDefault();
     try { await call('password', Object.fromEntries(new FormData(e.target))); toast('비밀번호를 바꿨어요'); e.target.reset(); } catch (err) { fail(err); }
   };
-  $('#btnLogout').onclick = async () => { try { await call('logout', {}); } catch {} S.me = null; S.unread = 0; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('로그아웃했어요'); };
+  $('#btnLogout').onclick = doLogout;
   $('#btnWithdraw').onclick = async () => {
     const pw = prompt('정말 탈퇴할까요? 프로필·팔로우·DM·게임 기록이 모두 지워지고 되돌릴 수 없어요.\n계속하려면 비밀번호를 입력하세요.');
     if (!pw) return;
