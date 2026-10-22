@@ -61,6 +61,7 @@ function paintBadges() {
   const n = S.me ? S.unread : 0;
   $$('[data-badge="dm"]').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
   const dev = S.me?.handle === ADMIN_HANDLE;
+  $('#btnOut').hidden = !S.me;   // 로그인돼 있을 때만 메뉴 맨 아래 빨간 로그아웃
   $('#btnAdmin').hidden = !dev;   // 관리자 계정일 때만 메뉴에 표시 (권한은 서버가 검사)
   ['#btnClass', '#btnShare', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·QR·신고 필요 없음
   $('#btnMe .mi').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
@@ -686,6 +687,7 @@ export async function init(c) {
   startPoll();
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) refreshMe(); });
   $('#btnFeedback').onclick = openFeedback;
+  $('#btnOut').onclick = doLogout;
   $('#btnNotices').onclick = openNotices;
   checkNotices();
 }
