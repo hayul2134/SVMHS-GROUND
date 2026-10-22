@@ -270,7 +270,7 @@ function mainScore(n) {
   return 1;
 }
 const pickMain = arr => arr.reduce((bi, n, i) => { const sc = mainScore(n); return sc > 0 && (bi < 0 || sc > mainScore(arr[bi])) ? i : bi; }, -1);
-// 홈 목록 순서: 메인 반찬(노란 칸) → 밥 → 김치 → 국 → 나머지 반찬 → 디저트 → 음료
+// 홈 목록 순서: 메인 반찬(노란 칸) → 나머지 반찬(맛있는 순) → 김치 → 국 → 밥 → 디저트 → 음료
 function orderMenu(all) {
   const drinks = all.filter(isDrink), list = all.filter(n => !isDrink(n));
   const rice = list.filter(isRice), kimchi = list.filter(n => !rice.includes(n) && isKimchi(n));
@@ -279,8 +279,9 @@ function orderMenu(all) {
   let rest = list.filter(n => !used.has(n));
   const mi = pickMain(rest), main = mi >= 0 ? [rest[mi]] : [];
   if (mi >= 0) rest = rest.filter((_, i) => i !== mi);
-  const sides = rest.filter(n => !isExtra(n)), dessert = rest.filter(isExtra);
-  return { list: [...main, ...rice, ...kimchi, ...soup, ...sides, ...dessert, ...drinks], hasMain: mi >= 0 };
+  const sides = rest.filter(n => !isExtra(n)).map((n, i) => [n, i]).sort((a, b) => mainScore(b[0]) - mainScore(a[0]) || a[1] - b[1]).map(([n]) => n);   // 맛있는(점수 높은) 반찬부터
+  const dessert = rest.filter(isExtra);
+  return { list: [...main, ...sides, ...kimchi, ...soup, ...rice, ...dessert, ...drinks], hasMain: mi >= 0 };
 }
 function splitTray(all) {
   const drinks = all.filter(isDrink), list = all.filter(n => !isDrink(n));   // 우유·주스·에이드는 식판 옆에 따로
