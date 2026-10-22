@@ -555,7 +555,7 @@ function balOpt(k, big) {
   const cls = ['bo', 'bo-' + k, mine === k && 'picked', show && 'shown', w === k && 'win', w && w !== k && w !== 'tie' && 'lose', w === 'tie' && 'tie'].filter(Boolean).join(' ');
   return `<button class="${cls}" type="button" data-pick="${k}" aria-pressed="${mine === k}"${closed ? ' aria-disabled="true"' : ''}>`
     + `<i class="bo-fill" aria-hidden="true" data-pct="${show ? pct : 0}"></i>${w === k ? '<i class="bo-crown" aria-hidden="true">👑</i>' : ''}`
-    + `<span class="bo-t">${esc(BAL[k])}</span>${w === k ? '<span class="bo-stamp">WIN</span>' : ''}${show ? `<b class="bo-p">${pct}%${big ? `<small>${counts[k]}표</small>` : ''}</b>` : ''}</button>`;
+    + `<span class="bo-t">${esc(BAL[k])}</span>${mine === k ? '<i class="bo-ck" aria-hidden="true">✔</i>' : ''}${w === k ? '<span class="bo-stamp">WIN</span>' : ''}${show ? `<b class="bo-p">${pct}%${big ? `<small>${counts[k]}표</small>` : ''}</b>` : ''}</button>`;
 }
 const fillBars = root => root.querySelectorAll('.bo-fill').forEach(el => { el.style.transform = `scaleX(${(+el.dataset.pct / 100).toFixed(3)})`; });
 function paintBalance() {

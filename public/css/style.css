@@ -1487,7 +1487,7 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .bo-p small{font-family:var(--disp);font-weight:400;font-size:11.5px;color:var(--sub)}
 .bo.shown .bo-t,.bo.shown .bo-p{color:var(--ink)}
 .bo.picked{box-shadow:var(--sh)}
-.bo.picked .bo-t::after{content:" ✔"}
+.bo-ck{position:relative;flex:none;font-style:normal;font-weight:800;line-height:1;margin-left:-3px;color:var(--ink)}
 /* 마감 뒤: 이긴 쪽 강조 · 진 쪽 흐리게 */
 .bo.win{box-shadow:var(--sh);outline:3px solid var(--ink);outline-offset:-1px;animation:boWin .7s cubic-bezier(.2,1.4,.4,1) both}
 .bo.lose{opacity:.55;filter:grayscale(.6)}
@@ -1579,6 +1579,11 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .bal-t .bt-opts .bo.picked,.bal-t .bt-opts .bo.win{box-shadow:none;outline:0;animation:none;border-color:var(--sub)}
 .bal-t .bo-fill{opacity:.4}
 .bal-t .bo.shown .bo-t,.bal-t .bo.shown .bo-p{color:var(--text)}
+/* 카드: 체크는 모서리 배지로 띄워 글자 폭을 차지하지 않게(한 줄 유지) */
+.bal-t .bt-opts .bo{overflow:visible}
+.bal-t .bo-fill{border-radius:9.5px}
+.bal-t .bo-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bal-t .bo-ck{position:absolute;top:-7px;right:-7px;z-index:2;width:16px;height:16px;margin:0;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--card);font-size:9px}
 .bal-t .bo-stamp,.bal-t .bo-crown{display:none}
 .bal-t .bt-opts .bo-p{font-size:12.5px}
 .bal-t .bt-opts .bo-vs{background:none;color:var(--sub);transform:none;padding:0 2px}
