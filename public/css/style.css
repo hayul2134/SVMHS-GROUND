@@ -1374,8 +1374,8 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 @media (max-width:699px){.all-head h3{flex-basis:100%}.all-sheet{padding:16px 14px 18px}}
 
 /* ===== 오늘의 밸런스 게임: 시계 아래 티켓 (.bal-t) + 크게 보기 (#mBal) ===== */
-.bal-t{position:relative;width:min(560px,calc(100% - 32px));margin:22px auto 0;text-align:left;background:var(--card);color:var(--text);border:var(--bd);border-radius:18px;box-shadow:var(--sh);padding:12px 14px 13px;transform:rotate(-.6deg)}
-.bal-t::before{content:"";position:absolute;top:-11px;left:50%;width:76px;height:20px;margin-left:-38px;background:rgba(169,196,255,.9);border-left:2px dashed rgba(0,0,0,.15);border-right:2px dashed rgba(0,0,0,.15);transform:rotate(-4deg)}
+.bal-t{position:relative;width:min(480px,calc(100% - 32px));margin:clamp(44px,7vh,84px) auto 0;text-align:left;background:var(--card);color:var(--text);border:2px solid var(--ink);border-radius:15px;box-shadow:var(--sh-s);padding:10px 12px 11px;transform:rotate(1.2deg)}
+.bal-t::before{content:"";position:absolute;top:-10px;left:22%;width:58px;height:17px;margin-left:-29px;background:rgba(169,196,255,.9);border-left:2px dashed rgba(0,0,0,.15);border-right:2px dashed rgba(0,0,0,.15);transform:rotate(-4deg)}
 .bt-h,.bs-top{display:flex;align-items:center;gap:8px}
 .bt-tag{font-family:var(--disp);font-size:13px;line-height:1;padding:5px 9px 4px;border-radius:999px;background:var(--ink);color:var(--yellow);white-space:nowrap}
 .bt-st,.bs-st{font-size:12.5px;font-weight:900;color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1385,7 +1385,20 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .bt-more:hover{border-color:var(--ink);transform:translateY(-1px)}
 .bt-more b{font-family:var(--num);font-weight:800}
 .bt-more small{font-size:12px;font-weight:900}
-.bt-q{font-family:var(--disp);font-size:clamp(17px,2.1vw,20px);line-height:1.3;margin:9px 2px 10px;word-break:keep-all;cursor:pointer}
+.bt-q{font-family:var(--disp);font-size:16px;line-height:1.3;margin:7px 2px 8px;word-break:keep-all;cursor:pointer}
+/* 티켓 안은 작게 (크게 보기 창은 그대로) */
+.bal-t .bt-tag{font-size:11.5px;padding:4px 8px 3px}
+.bal-t .bt-st{font-size:11.5px}
+.bal-t .bt-more{padding:3px 8px;font-size:12px;border-width:1.5px}
+.bal-t .bt-more small{font-size:11px}
+.bt-opts{gap:6px}
+.bt-opts .bo{min-height:36px;padding:6px 10px;border-width:2px;border-radius:11px;font-size:13px;box-shadow:2px 2px 0 var(--ink)}
+.bt-opts .bo.picked,.bt-opts .bo.win{box-shadow:3px 3px 0 var(--ink)}
+.bt-opts .bo.win{outline-width:2px}
+.bt-opts .bo-p{font-size:13.5px}
+.bt-opts .bo-crown{font-size:14px}
+.bt-opts .bo-stamp{font-size:9px;padding:1px 5px;border-width:1.5px}
+.bt-opts .bo-vs{font-size:10.5px;padding:3px 6px}
 .bt-opts,.bs-opts{display:flex;align-items:stretch;gap:8px}
 .bo-vs{align-self:center;flex:none;font-family:var(--num);font-weight:800;font-size:12px;line-height:1;padding:4px 7px;border-radius:8px;background:var(--ink);color:var(--yellow);transform:rotate(-6deg)}
 .bo{position:relative;overflow:hidden;flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:44px;padding:8px 12px;border-radius:13px;border:var(--bd);background:var(--card);color:var(--text);
@@ -1414,8 +1427,8 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 :root[data-theme="dark"] .bo-a .bo-fill{background:#2f6fa3}
 :root[data-theme="dark"] .bo-b .bo-fill{background:#8a6d22}
 :root[data-theme="dark"] .bo.shown .bo-t,:root[data-theme="dark"] .bo.shown .bo-p{color:var(--text)}
-@media (max-width:560px){.bal-t{margin-top:18px;padding:11px 12px 12px}.bt-opts{flex-direction:column;gap:6px}.bt-opts .bo-vs{margin:-5px 0;z-index:1}.bo{min-height:40px;padding:7px 12px;font-size:14px}.bo-p{font-size:15px}.bt-tag{font-size:12px}.bs-st{white-space:normal}}
-@media (max-height:740px) and (min-width:700px){.bal-t{margin-top:14px}}
+@media (max-width:560px){.bal-t{margin-top:40px;width:min(340px,calc(100% - 48px))}.bt-opts{flex-direction:column;gap:5px}.bt-opts .bo-vs{margin:-4px 0;z-index:1}.bs-st{white-space:normal}}
+@media (max-height:740px) and (min-width:700px){.bal-t{margin-top:28px}}
 @media (prefers-reduced-motion:reduce){.bo.win,.bo-crown{animation:none}}
 /* 크게 보기 */
 .bal-sheet{max-width:600px;text-align:left;padding:20px 22px 18px;display:flex;flex-direction:column;gap:0}
