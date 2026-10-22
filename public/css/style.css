@@ -1559,6 +1559,10 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 /* 밸런스 티켓: 시계 묶음과 떨어뜨려 첫 화면 맨 아래(▼ 위)에 따로 — 시계 묶음은 혼자 화면 가운데 */
 @media (min-width:700px) and (min-height:760px){
   .bal-t{position:absolute;left:50%;bottom:clamp(58px,7vh,84px);margin:0;translate:-50% 0}
+  /* 시계 묶음('N교시 시작까지'~상태 줄)을 한 덩어리로 보고 화면 세로 정가운데(=좌우 서랍 카드 중심)에 맞춤.
+     위아래 여백을 같게 하고, 말풍선 높이+간격(약 60px)만큼 위로 빼서 가운데 계산에서 제외 */
+  .stage{padding-top:76px;padding-bottom:76px}
+  .s-greet{margin-top:-60px}
 }
 
 /* ===== 오늘 한눈에: 한 화면 배치 (2026-10-23) ===== */
