@@ -332,7 +332,8 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
   box-shadow:0 1px 1px rgba(40,30,0,.12),0 10px 12px -8px rgba(15,30,60,.45);
   transition:opacity .2s,translate .25s ease,rotate .25s ease,visibility 0s}
 .s-tt.stow .s-tab::after{content:"";position:absolute;bottom:0;width:20px;height:20px;box-shadow:-1px -1px 2px rgba(40,30,0,.15)}
-.s-tt.stow .s-tab span{font-size:24px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.08))}
+.s-tt.stow .s-tab span{font-size:28px;line-height:1}
+.s-tt.stow .s-tab .sic{display:block;stroke-width:1.6;filter:drop-shadow(1.5px 1.5px 0 color-mix(in srgb,var(--ink) 25%,transparent))}
 .s-tt.stow .s-tab b{font-family:var(--disp);font-weight:400;font-size:16px;letter-spacing:.02em;line-height:1.1}
 .s-meal.stow .s-tab{left:100%;margin-left:-14px;padding-left:20px;rotate:-4deg;transform-origin:left center;border-radius:0 2px 26px 2px/0 2px 5px 2px}
 .s-meal.stow .s-tab::after{right:0;border-radius:0 0 6px 0;background:linear-gradient(315deg,transparent 50%,color-mix(in srgb,var(--pi) 70%,#fff) 50%,color-mix(in srgb,var(--pi) 92%,#000))}
