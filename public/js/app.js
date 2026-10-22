@@ -820,39 +820,47 @@ wideMQ.addEventListener('change', applyDrawers); applyDrawers();
 /* 첫 화면 '시계 묶음'(말풍선·N교시 시작까지·큰 시계·별 스티커·상태 줄)을 한 덩어리로 보고 화면 정가운데에 맞춤 (2026-10-23)
    묶음 전체의 바깥 상자를 재서 가운데가 화면 가운데(=좌우 서랍 중심)에 오도록 --hx/--hy 만큼 옮김. 위 공지·아래 밸런스 티켓과는 안 겹치게 제한 */
 const HERO = $('#bigclock');
-function centerHero() {
+const HERO_PARTS = '.s-greet .bubble, #bellLbl, #bigTime, .clock .dk, #more';
+// force=false(글자 폭 변화 등)일 땐 6px 미만 차이는 무시 → 말풍선 흔들림·별 반짝임 때문에 다시 잴 때마다 1~3px씩 튀던 문제 방지
+function centerHero(force) {
   const st = HERO.style;
   if (!HERO.classList.contains('drawers')) { st.removeProperty('--hx'); st.removeProperty('--hy'); st.removeProperty('--hcy'); return; }
+  if (!force && document.documentElement.classList.contains('tuck')) return;   // 첫 화면을 안 보고 있을 땐 안 잼
   const hx = parseFloat(st.getPropertyValue('--hx')) || 0, hy = parseFloat(st.getPropertyValue('--hy')) || 0;
+  const bob = new DOMMatrix(getComputedStyle($('.s-greet')).transform).f;   // 말풍선 위아래 흔들림 값은 빼고 잼
   let L = Infinity, T = Infinity, R = -Infinity, B = -Infinity;
-  for (const el of HERO.querySelectorAll('.s-greet .bubble, #bellLbl, #bigTime, .clock .dk, #more')) {
+  for (const el of HERO.querySelectorAll(HERO_PARTS)) {
     const b = el.getBoundingClientRect(); if (!b.width || !b.height) continue;
-    L = Math.min(L, b.left); R = Math.max(R, b.right); T = Math.min(T, b.top); B = Math.max(B, b.bottom);
+    const oy = el.classList.contains('bubble') ? bob : 0;
+    L = Math.min(L, b.left); R = Math.max(R, b.right); T = Math.min(T, b.top - oy); B = Math.max(B, b.bottom - oy);
   }
-  if (!isFinite(L)) return;
+  if (!isFinite(L)) return;   // 홈이 안 보이는 중
   const sy = scrollY; L -= hx; R -= hx; T += sy - hy; B += sy - hy;   // 옮기기 전 위치(문서 기준)
-  // 위 한계: 헤더 아래 / 아래 한계: 밸런스 티켓·▼ 버튼·첫 화면 끝(띠 배너) 중 가장 위 (헤더는 화면 고정이라 스크롤 값을 더하지 않음)
-  const top = ($('header')?.getBoundingClientRect().bottom ?? 0) + 14;   // 공지는 위에 겹쳐 뜨므로 계산에서 뺌 — 공지가 떠도 묶음이 안 움직임
+  // 위 한계: 헤더 아래(헤더는 화면 고정이라 스크롤 값 안 더함, 공지는 위에 겹쳐 뜨므로 제외) / 아래 한계: 밸런스 티켓·▼ 버튼·첫 화면 끝 중 가장 위
+  const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, top = hdr + 14;
   let bot = Math.min(HERO.getBoundingClientRect().bottom + sy, innerHeight);
-  for (const el of [$('#play'), $('#goDown')]) if (el && !el.hidden && el.offsetParent) bot = Math.min(bot, el.getBoundingClientRect().top + sy);
+  for (const el of [$('#play'), $('#goDown')]) if (!el.hidden && el.offsetParent) bot = Math.min(bot, el.getBoundingClientRect().top + sy);
   bot -= 14;
-  // 세로: 화면 수치상 가운데가 아니라 '눈에 보이는 빈 공간'(위 헤더~아래 티켓) 가운데 → 위아래 여백이 같아 보이게 (2026-10-23 사용자 지적)
-  let dx = innerWidth / 2 - (L + R) / 2, dy = (top + bot) / 2 - (T + B) / 2;
+  // 세로: 눈에 보이는 빈 공간(헤더~티켓)의 가운데 → 위아래 여백이 같아 보이게
+  let dx = Math.round(innerWidth / 2 - (L + R) / 2), dy = (top + bot) / 2 - (T + B) / 2;
   if (B + dy > bot) dy = bot - B;
-  if (T + dy < top) dy = Math.min(0, top - T);   // 둘 다 못 지키면 원래 자리에서 더 내리지 않음
-  st.setProperty('--hx', Math.round(dx) + 'px'); st.setProperty('--hy', Math.round(dy) + 'px');
-  // 좌우 서랍(급식판·시간표)도 같은 가운데 줄에 맞춤. 서랍이 헤더·화면 아래에 걸리면 화면 가운데로
-  const cy = (T + B) / 2 + dy;   // 첫 화면(스크롤 0) 기준 화면 좌표 = 문서 좌표
-  const hdr = ($('header')?.getBoundingClientRect().bottom ?? 0) + 8;
-  const dh = Math.max(...Object.values(SIDE).map(o => o.el.offsetHeight || 0)) / 2;
-  if (cy - dh >= hdr && cy + dh <= innerHeight - 8) st.setProperty('--hcy', Math.round(cy) + 'px'); else st.removeProperty('--hcy');
+  if (T + dy < top) dy = Math.min(0, top - T);
+  dy = Math.round(dy);
+  if (!force && Math.abs(dx - hx) < 6 && Math.abs(dy - hy) < 6) return;
+  if (dx !== hx) st.setProperty('--hx', dx + 'px');
+  if (dy !== hy) st.setProperty('--hy', dy + 'px');
+  // 좌우 서랍도 같은 가운데 줄에. 서랍이 헤더·화면 아래에 걸리면 화면 가운데로
+  const cy = Math.round((T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
+  if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
 }
-let heroRaf = 0; const heroLater = () => { cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(centerHero); };
-addEventListener('resize', heroLater); wideMQ.addEventListener('change', heroLater);
-new ResizeObserver(heroLater).observe($('#bigTime')); new ResizeObserver(heroLater).observe($('#more')); new ResizeObserver(heroLater).observe($('#greet'));
-new MutationObserver(heroLater).observe($('#notice'), { attributes: true, attributeFilter: ['hidden'] });
-new MutationObserver(heroLater).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
-document.fonts?.ready.then(heroLater); heroLater();
+let heroRaf = 0, heroForce = false;
+const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(() => { const f = heroForce; heroForce = false; centerHero(f); }); };
+const heroResize = () => heroLater(true);
+addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
+const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet']) heroRO.observe($(s));
+new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
+new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
+document.fonts?.ready.then(heroResize); heroResize();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
 /* ===== 첫 화면 카드에서 다른 날 넘겨 보기 (‹ ›) — 라벨을 누르면 오늘로, 3분 동안 안 만지면 자동으로 오늘로 ===== */
 function markOff(el, off) { el.classList.toggle('off', off); if (off) { el.dataset.tip = '오늘로 돌아가기'; el.setAttribute('aria-label', el.textContent + ' · 눌러서 오늘로'); } else { delete el.dataset.tip; el.removeAttribute('aria-label'); } }
