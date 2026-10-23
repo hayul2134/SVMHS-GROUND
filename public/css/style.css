@@ -1604,14 +1604,14 @@ html.away .mascot *{animation-play-state:paused!important}
 .s-nb svg{width:14px;height:14px}
 .s-nb:hover{color:var(--text);border-color:var(--line);background:var(--chip)}
 .s-nb:active,.s-nb.is-pressed{transform:scale(.86)}
-.s-lbl{min-width:0;padding:2px 3px;border:0;border-radius:8px;background:none;font:inherit;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
-.s-lbl.off{cursor:pointer;padding:2px 8px;background:var(--yellow);color:#3b3220}
-.s-lbl.off::after{content:" ↺";font-size:.85em}
-/* 홈 카드 라벨: 지금이면 눌러서 하루↔한 주 전환 (⇄), 한 주 모드면 카드가 넓어짐 */
-.s-lbl:not(.off){cursor:pointer;padding:2px 8px;background:var(--chip);border:2px dashed var(--line)}
-.s-lbl:not(.off):hover{border-color:var(--ink)}
-.s-lbl:not(.off)::after{content:" ⇄";font-size:.8em;color:var(--sub)}
-.s-lbl.wkon:not(.off){background:color-mix(in srgb,var(--sky) 35%,var(--card));border-style:solid;border-color:var(--ink)}
+/* 홈 카드 라벨(오늘 급식·오늘 시간표): 학사일정 '2026년 10월 ▾'(달·해 고르기)와 같은 디자인 — 테두리 없는 굵은 글씨 + ▾, 마우스 올리면 연한 바탕 + 이름표
+   ▾·↺는 ::before(order로 글자 뒤) — ::after는 이름표([data-tip])가 씀. overflow:hidden 쓰면 이름표가 잘려서 안 씀 */
+.s-lbl{display:inline-flex;align-items:center;gap:4px;min-width:0;height:32px;padding:0 10px;border:0;border-radius:10px;background:none;font:inherit;font-weight:900;color:var(--text);white-space:nowrap;cursor:pointer;transition:background .1s}
+.s-lbl::before{content:"▾";order:1;font-size:.75em;color:var(--sub)}
+.s-lbl:hover,.s-lbl.wkon{background:var(--chip);color:var(--text)}
+.s-lbl.off{background:var(--yellow);color:#3b3220}
+.s-lbl.off::before{content:"↺";font-size:.85em;color:inherit}
+.s-lbl:active,.s-lbl.is-pressed{transform:scale(.94)}
 .s-tt.wk.wk.wk{width:min(560px,calc(100vw - 64px))}
 @media (max-width:699px){.s-tt.wk.wk.wk{width:100%}}
 .s-tt.wk #sTT{overflow-x:auto}
