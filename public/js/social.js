@@ -237,7 +237,7 @@ function profileHtml(d) {
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn ghost" data-act-s="logout">로그아웃</button>${swBar()}`   // 개발자: 꾸미기·계정 설정 없음
+    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn lime" data-act-s="edit">✏️ 꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>${swBar()}`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
       : S.me?.sw ? swBar()   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만
       : `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
