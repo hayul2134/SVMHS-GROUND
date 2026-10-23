@@ -2513,6 +2513,8 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 }
 /* 시계 묶음(말풍선 포함) 한 덩어리 정가운데 — 이동량은 app.js centerHero()가 재서 --hx/--hy로 넣음 */
 .drawers :is(.s-greet,.s-what,.clock,.s-info){translate:var(--hx,0) var(--hy,0)}
+/* 숨은 밸런스 티켓의 자리를 잴 때만 잠깐 붙는 클래스 (app.js centerHero) */
+.bal-t.ghost[hidden]{display:block;visibility:hidden}
 
 /* ===== 오늘 한눈에: 한 화면 배치 (2026-10-23) ===== */
 .board{padding-top:30px}
