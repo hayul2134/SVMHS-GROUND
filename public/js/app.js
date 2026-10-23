@@ -1716,8 +1716,8 @@ const SH_INFO = [
   ['프로필 꾸미기', '아바타·색·스티커·인스타 아이디까지. 친구 찾아서 팔로우'],
   ['학사일정 · D-day', '다음 시험·행사까지 남은 날이 바로 보여요. 달력으로 보는 학교 일정']];
 const SH_EX_MEAL = { main: '탕수육', sides: ['잡채', '배추김치', '오이무침', '요구르트'], rice: '잡곡밥', soup: '미역국' };
-const SH_EX_TT = ['국어', '영상 제작', '영어', '체육', '수학', '미술'];
-let shTT = [];   // [[교시, 과목]]
+var shTT = [];   // [[교시, 과목]] (var: 시계가 먼저 돌 때도 읽을 수 있게)
+const SH_EX_TT = ['국어', '영상 제작', '영어', '체육', '수학', '미술', '한국사'];   // 7교시까지 채워 카드 아래가 비지 않게
 const secHM = sec => `${pad(Math.floor(sec / 3600))}:${pad(Math.floor(sec % 3600 / 60))}`;
 function showClock(n, b, left, pct, rest, sec) {
   shReclock?.();
@@ -1728,7 +1728,10 @@ function showClock(n, b, left, pct, rest, sec) {
   setText('#shState', b.state); setText('#shPct', pct == null ? '' : `${Math.round(pct * 100)}% ${rest ? '남음' : '지남'}`);
   $('#shBar').parentElement.hidden = pct == null;
   if (pct != null) $('#shBar').style.transform = `scaleX(${pct.toFixed(4)})`;
-  $$('#shTt li').forEach(li => { const bl = BELL.find(x => x.p === +li.dataset.p); li.classList.toggle('done', !!bl && sec >= bl.end); li.classList.toggle('cur', !!bl && sec >= bl.start && sec < bl.end); });
+  // 예시 시간표: 학교 가는 날 수업 시간(1교시 시작~마지막 교시 끝)에만 실제 시각을 따르고, 그 밖(주말·방과 후·아침)엔
+  // 전부 지운 줄처럼 보이지 않게 '3교시 진행 중' 예시 모습으로 고정 (2026-10-23 — 주말에 전부 취소선이라 깨져 보였음)
+  const ps = (shTT || []).map(([p]) => BELL.find(x => x.p === p)).filter(Boolean), live = ps.length && isSchoolDay(n) && sec >= ps[0].start && sec < ps[ps.length - 1].end;
+  $$('#shTt li').forEach(li => { const p = +li.dataset.p, bl = BELL.find(x => x.p === p); li.classList.toggle('done', live ? !!bl && sec >= bl.end : p < 3); li.classList.toggle('cur', live ? !!bl && sec >= bl.start && sec < bl.end : p === 3); });
 }
 async function fillShow() {
   const day = ymd(today()), cell = (x, cls) => { if (!x) return `<span class="c ${cls}"></span>`; const k = foodImg(x); return `<span class="c ${cls}">${k ? `<img src="/food/c/${k}.webp" alt="" loading="lazy">` : '<i></i>'}<b>${esc(x)}</b></span>`; };

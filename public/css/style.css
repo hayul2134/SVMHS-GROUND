@@ -1296,13 +1296,13 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 .sh-tray .c i{width:60%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#ffd8a8)}
 .sh-tray .c b{position:absolute;left:50%;bottom:6px;translate:-50% 0;max-width:92%;padding:2px 7px;border-radius:9px;background:#fff;color:#173048;border:2px solid #173048;font-size:11.5px;font-weight:900;line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 시간표 */
-.sh-tt{list-style:none;display:grid;gap:5px;align-content:start}
+.sh-tt{list-style:none;display:grid;gap:5px;align-content:start;min-height:0}
 .sh-tt li{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:13px;font-weight:900;font-size:15px;border:2.5px solid transparent}
 .sh-tt li b{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:8px;border:2px solid var(--ink);font-family:var(--num);font-size:13px;background:var(--card)}
 .sh-tt li small{font-family:var(--num);font-weight:700;font-size:12.5px;color:var(--sub);width:40px;flex:none}
 .sh-tt li .sic{width:20px;height:20px;flex:none}
 .sh-tt li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sh-tt li.done{opacity:.45}.sh-tt li.done span{text-decoration:line-through 2px}
+.sh-tt li.done{opacity:.45}.sh-tt li.done span{text-decoration:line-through 2px;text-decoration-color:color-mix(in srgb,var(--sub) 70%,transparent)}
 .sh-tt li.cur{background:var(--accent);color:#fff;border-color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
 .sh-tt li.cur b{background:var(--lime);color:#173048}.sh-tt li.cur small{color:#fff}
 .sh-tt li.cur::after{content:"지금!";margin-left:auto;padding:1px 8px;border-radius:8px;background:var(--yellow);color:#173048;border:2px solid var(--ink);font-size:11.5px}
