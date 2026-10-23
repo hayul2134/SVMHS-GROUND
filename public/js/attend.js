@@ -220,24 +220,30 @@ function calHtml(r) {
   return `<div class="att-cal-h"><button type="button" class="pg" data-att-m="${prev}" aria-label="이전 달">‹</button><b>${y}년 ${mo}월 <small>· ${cnt}일 출석</small></b><button type="button" class="pg" data-att-m="${next}" aria-label="다음 달" ${next > r.today.slice(0, 6) ? 'disabled' : ''}>›</button></div>
     <div class="att-cal">${h}</div>`;
 }
+// 보상 칸: 그림 칸(고정 크기) → 날짜 → 설명(2줄 자리 고정) 순서라 칸마다 줄이 똑같이 맞음. 받았으면 오른쪽 위 초록 체크, 아니면 자물쇠
+const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : KIND[x.kind];
 function rewardsHtml(r, by) {
   const list = REWARDS.filter(x => x.by === by), have = list.filter(x => rwOn(x, r.best, r.total)).length;
   return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${r.best}일` : `총 ${r.total}일`} · ${have}/${list.length}개 받음</small></div>
     <ul class="att-rw">${list.map(x => {
       const on = rwOn(x, r.best, r.total);
-      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${x.kind === 'title' || x.kind === 'color' ? ' · ' + esc(rwName(x)) : ''}">${rwIcon(x)}${x.kind === 'title' ? `<span class="rw-t">${esc(x.v)}</span>` : x.kind === 'color' ? `<span class="rw-t">${esc(COLOR_NAME[x.v])}</span>` : ''}<b>${x.d}일</b><small>${on ? '받음' : KIND[x.kind]}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
+      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${x.kind === 'title' || x.kind === 'color' ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
     }).join('')}</ul>`;
 }
 function sheetHtml(r) {
   const shields = Array.from({ length: r.shieldMax }, (_, i) => shieldSvg(i < r.shield ? 'on' : 'off')).join('');
-  const state = !r.cur ? '오늘부터 다시 불꽃을 키워 봐요' : !r.done ? '오늘은 아직이에요' : r.pf && r.cur >= 3 ? `${ui('sparkle', 'ic')} 완벽한 연속 — 방패 없이 이어 가는 중` : `${ui('check', 'ic')} 오늘 출석 완료`;
+  const state = !r.done ? (r.cur ? '오늘은 아직 출석 전이에요' : '오늘부터 다시 불꽃을 키워 봐요') : r.pf && r.cur >= 3 ? `${ui('sparkle', 'ic')}완벽한 연속 — 방패 없이 이어 가는 중` : '내일도 와서 불꽃을 지켜 주세요';
+  const md = `${+r.today.slice(4, 6)}.${+r.today.slice(6)}`;
+  // 오늘 출석 도장: 완료면 초록 도장(한 번 쾅 찍힘), 아니면 점선 빈 도장
+  const stamp = `<div class="att-stamp${r.done ? ' ok' : ''}" role="img" aria-label="${r.done ? '오늘 출석 완료' : '오늘 아직 출석 전'}">${r.done ? ui('check', 'sc') : ''}<b>${r.done ? '출석 완료' : '출석 전'}</b><small>${md}</small></div>`;
   return `
     <div class="att-top">
       ${bigFire(r.cur, { sm: true, burn: true, pf: r.pf && r.cur >= 3 })}
       <div class="att-tt">
         <h3>${r.cur ? `${r.cur}일 연속 출석` : '오늘부터 시작!'}</h3>
-        <p class="muted small">${state}</p>
+        <p class="att-st">${state}</p>
       </div>
+      ${stamp}
     </div>
     <div class="att-stats">
       <div><b>${r.best}</b><small>최고 기록</small></div>

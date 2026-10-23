@@ -1797,6 +1797,9 @@ html.away .mascot *{animation-play-state:paused!important}
 .hb-st .hst-f{width:18px;height:21px}
 .hb-st:not(.lit) b{color:var(--sub)}
 .hb-st.lit{background:var(--fire-bg)}
+/* 오늘 출석 완료 표시: 버튼 오른쪽 위 초록 체크 배지 */
+.hb-st.lit::after{content:"";position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;border:2px solid var(--ink);
+  background:#2fbf71 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-8.5' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px no-repeat}
 .hb-st.lit.pf{box-shadow:var(--sh-s),0 0 0 3px var(--gold)}
 @media (max-width:520px){.iconbtn.hb-st{padding:0 9px 0 7px;gap:3px;font-size:15px}}
 /* 폰 폭: 🔥 버튼이 생기면 헤더가 넘쳐서 로고 글자를 숨김(로그인했을 때만) */
@@ -1887,7 +1890,21 @@ html.away .mascot *{animation-play-state:paused!important}
 /* 출석 창 */
 .sheet.attw{max-width:440px}
 .att-sheet{text-align:left}
-.att-top{display:flex;align-items:center;gap:14px}
+.att-top{position:relative;display:flex;align-items:center;gap:14px;padding-right:96px;min-height:90px}
+.att-tt{min-width:0}
+.att-st{margin-top:4px;font-size:13px;font-weight:800;color:var(--sub);line-height:1.4}
+.att-st .att-ic{width:15px;height:15px;margin-right:3px;vertical-align:-3px}
+/* 오늘 출석 도장 — 완료면 초록 이중 테두리 도장이 쾅(한 번), 아직이면 점선 빈 도장 */
+.att-stamp{position:absolute;right:0;top:50%;width:86px;height:86px;margin-top:-43px;border-radius:50%;display:grid;place-items:center;align-content:center;gap:0;
+  border:2.5px dashed var(--line);color:var(--sub);transform:rotate(-10deg);text-align:center}
+.att-stamp b{font-family:var(--disp);font-weight:400;font-size:16px;line-height:1.05}
+.att-stamp small{font:800 11px/1.2 var(--num);opacity:.85}
+.att-stamp.ok{border:3px solid #24a05f;color:#1c8a50;background:color-mix(in srgb,#2fbf71 12%,var(--card));box-shadow:inset 0 0 0 3px var(--card),inset 0 0 0 5px #24a05f;
+  animation:stampIn .55s .35s cubic-bezier(.3,1.6,.5,1) both}
+.att-stamp .sc{width:22px;height:22px;margin-bottom:1px}
+:root[data-theme="dark"] .att-stamp.ok{color:#6fe3a2;border-color:#3ccf85;box-shadow:inset 0 0 0 3px var(--card),inset 0 0 0 5px #3ccf85}
+@keyframes stampIn{0%{transform:scale(2.2) rotate(-28deg);opacity:0}55%{opacity:1;transform:scale(.92) rotate(-8deg)}100%{transform:rotate(-10deg)}}
+@media (max-width:420px){.att-top .att-tt h3{font-size:20px}.att-top{padding-right:80px}.att-stamp{width:72px;height:72px;margin-top:-36px}.att-stamp b{font-size:14px}}
 .att-fire.sm{width:74px;height:86px;margin:0;flex:none}
 .att-fire.sm .att-num{font-size:26px;bottom:7px;-webkit-text-stroke-width:2px}
 .att-tt h3{margin:0;font-size:26px}
@@ -1923,12 +1940,14 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-rwh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:12px 0 8px}
 .att-rwh b{font-weight:900;font-size:14.5px}.att-rwh small{font-size:12px;font-weight:800;color:var(--sub)}
 .att-rw{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
-.att-rw li{position:relative;display:grid;justify-items:center;align-content:start;gap:1px;padding:10px 4px 8px;border-radius:16px;border:2px solid var(--ink);background:var(--card);text-align:center}
-.att-rw .rw-sw{width:30px;height:30px;margin:2px 0 3px}
-.att-rw .rw-t{font-size:11px;font-weight:900;line-height:1.25;padding:0 2px}
-.att-rw b{font:900 15px/1.2 var(--num)}
+.att-rw li{position:relative;display:grid;grid-template-rows:50px auto calc(2 * 1.3em);justify-items:center;align-items:center;row-gap:3px;padding:10px 6px 8px;border-radius:16px;border:2px solid var(--ink);background:var(--card);text-align:center}
+.att-rw .rw-ic{width:50px;height:50px;display:grid;place-items:center}
+.att-rw .rw-cap{align-self:start;font-size:11px;font-weight:800;line-height:1.3;color:var(--sub);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+.att-rw li.k-title .rw-cap{color:var(--text);font-weight:900}
+.att-rw .rw-sw{width:32px;height:32px}
+.att-rw b{font:900 16px/1.15 var(--num)}
 .att-rw small{font-size:11px;font-weight:800;color:var(--sub)}
-.att-rw li.on{background:var(--yellow);color:var(--ink)}.att-rw li.on small{color:#6b5a1d}
+.att-rw li.on{background:var(--yellow);color:var(--ink)}.att-rw li.on .rw-cap{color:#6b5a1d}.att-rw li.on.k-title .rw-cap{color:var(--ink)}
 .att-rw li.on.k-color{background:#ffe0ef}.att-rw li.on.k-title{background:#dff4ff}.att-rw li.on.k-avatar{background:#e6f9da}
 .att-rw li:not(.on) .rw-e,.att-rw li:not(.on) .rw-tag{filter:grayscale(1);opacity:.45}
 .att-rw li:not(.on) .rw-sw{filter:grayscale(.85);opacity:.55}
@@ -1978,12 +1997,11 @@ html.away .mascot *{animation-play-state:paused!important}
 .av.big .ava{width:94%;height:94%}
 .stk .stka{width:1.15em;height:1.15em;display:inline-block}
 .pick button .pka{width:78%;height:78%;margin:auto}
-.att-rw .art.rw-e{width:46px;height:46px;margin:-4px 0 0}
+.att-rw .art.rw-e{width:54px;height:54px}
 .att-gift .art.rw-e,.att-next .art.rw-e{width:30px;height:30px}
-.att-rw .att-ic.rw-tag{width:30px;height:30px;margin:3px 0 1px}
+.att-rw .att-ic.rw-tag{width:36px;height:36px}
 .att-gift .att-ic.rw-tag,.att-next .att-ic.rw-tag{width:26px;height:26px}
-.att-rw .lk{position:absolute;top:4px;right:5px;width:16px;height:16px}
-.att-rw .lk.ok{width:17px;height:17px}
+.att-rw .lk{position:absolute;top:6px;right:6px;width:17px;height:17px}
 .ptitle .att-ic{width:14px;height:14px;margin-right:4px;vertical-align:-2px}
 .sform .att-sm .flm{display:inline-block;width:11px;height:13px;margin-right:2px;vertical-align:-1px}
 /* 보상 그림 스프라이트(문서에 한 번) · 다이컷 스티커 판(흰 판 + 딱딱한 그림자, ART_GUIDE) */
