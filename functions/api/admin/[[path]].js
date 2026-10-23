@@ -368,7 +368,7 @@ const ROUTES = {
     if (f.has('mood')) sets.push("mood = ''");
     if (f.has('club')) sets.push("club = ''");
     if (f.has('insta')) sets.push("insta = ''");
-    if (f.has('stickers')) sets.push("stickers = '[]'");
+    if (f.has('stickers')) sets.push("stickers = '[]', st_rep = '', st_deco = '[]'");   // 대표·시계 스티커도 같이
     if (!sets.length) return err('지울 항목을 골라 주세요');
     await db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?1`).bind(u.id).run();
     await log(db, '프로필 정리', `@${u.handle} · ${[...f].join(', ')}`);

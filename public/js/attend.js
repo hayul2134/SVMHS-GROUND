@@ -66,7 +66,9 @@ const shieldSvg = (cls = '') => `<svg class="shd ${cls}" viewBox="0 0 24 24" ari
 // 큰 불꽃 + 숫자 (+ 완벽한 연속이면 후광)
 const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tierOf(n)}${o.pf ? ' pf' : ''}">${o.pf ? '<i class="halo" aria-hidden="true"></i>' : ''}${flame('big' + (o.burn ? ' burn' : ''), { tier: tierOf(n), off: !n })}<b class="att-num${n >= 100 ? ' d3' : ''}"${o.id ? ` id="${o.id}"` : ''}>${o.from ?? n}</b></div>`;
 // 보상 그림 (스티커·사진은 이모지, 배경 색은 동그란 견본, 칭호는 이름표)
-export const rwIcon = r => r.kind === 'color' ? `<i class="rw-sw c-${r.v}" aria-hidden="true"></i>` : r.kind === 'title' ? ui('tag', 'rw-tag') : artOf(r.v, 'rw-e');
+export const rwIcon = r => r.kind === 'color' ? `<i class="rw-sw c-${r.v}" aria-hidden="true"></i>` : r.kind === 'title' ? ui('tag', 'rw-tag')
+  : r.kind === 'perk' ? (r.v === 'shield3' ? shieldSvg('on rw-tag') : ui('sparkle', 'rw-tag')) : artOf(r.v, 'rw-e');
+const named = k => k === 'title' || k === 'color' || k === 'perk';   // 이름을 글로 같이 보여 주는 보상
 
 /* ----- 헤더 🔥 버튼 ----- */
 let chipTier = -1, chipBurned = false;
@@ -144,7 +146,7 @@ function progressHtml(r) {
   const lastD = Math.max(0, ...REWARDS.filter(x => x.by === n.by && x.d < n.d).map(x => x.d));
   const base = n.by === 'best' && r.cur < lastD ? 0 : lastD;
   const pct = Math.max(4, Math.min(100, Math.round((n.from - base) / (n.d - base) * 100)));
-  return `<div class="att-next"><span class="rw-box">${rwIcon(n)}</span><div class="att-bar"><p><span><b>${n.by === 'total' ? `총 ${n.d}일 출석` : `${n.d}일 연속`}</b> · ${KIND[n.kind]}${n.kind === 'title' || n.kind === 'color' ? ` ${esc(rwName(n))}` : ''}</span><small>${n.left > 0 ? `${n.left}일 남았어요` : '오늘 받아요!'}</small></p><span class="track"><i data-p="${pct}"></i></span></div></div>`;
+  return `<div class="att-next"><span class="rw-box">${rwIcon(n)}</span><div class="att-bar"><p><span><b>${n.by === 'total' ? `총 ${n.d}일 출석` : `${n.d}일 연속`}</b> · ${KIND[n.kind]}${named(n.kind) ? ` ${esc(rwName(n))}` : ''}</span><small>${n.left > 0 ? `${n.left}일 남았어요` : '오늘 받아요!'}</small></p><span class="track"><i data-p="${pct}"></i></span></div></div>`;
 }
 
 /* ----- 축하 창 (그날 첫 출석) — 평소엔 짧게, 기념일은 크게 ----- */
@@ -158,7 +160,7 @@ function celebrate(r) {
     r.gotShield ? `<p class="att-note sh got">${shieldSvg('ic')}<span>연속 ${r.cur}일! <b>출석 방패 +1</b> <small>(${r.shield}/${r.shieldMax})</small></span></p>` : '',
     r.pf && [7, 14, 30, 50, 100].includes(r.cur) ? `<p class="att-note pfn">${ui('sparkle', 'ic')}<span><b>완벽한 연속</b> — 방패 없이 여기까지 왔어요</span></p>` : '',
   ].join('');
-  const gifts = (r.unlocked || []).map((x, i) => `<div class="att-gift k-${x.kind}" data-i="${i}"><span class="rw-box">${rwIcon(x)}</span><p><b>${x.by === 'total' ? `총 ${x.d}일 출석 보상` : `${x.d}일 연속 보상`}</b><small>새 ${KIND[x.kind]}${x.kind === 'title' || x.kind === 'color' ? ` ${esc(rwName(x))}` : ''} 해금!</small></p></div>`).join('');
+  const gifts = (r.unlocked || []).map((x, i) => `<div class="att-gift k-${x.kind}" data-i="${i}"><span class="rw-box">${rwIcon(x)}</span><p><b>${x.by === 'total' ? `총 ${x.d}일 출석 보상` : `${x.d}일 연속 보상`}</b><small>${x.kind === 'perk' ? `${esc(rwName(x))}!` : `새 ${KIND[x.kind]}${named(x.kind) ? ` ${esc(rwName(x))}` : ''} 해금!`}${x.kind === 'sticker' ? '<br>대표 스티커·첫 화면 시계·댓글·DM에 쓸 수 있어요' : ''}</small></p></div>`).join('');
   const kick = big ? `<p class="att-kick">${r.unlocked?.length ? ui('gift') + '보상 도착!' : ui('party') + `${r.cur}일 달성!`}</p>` : '';
   $('#attSheet').className = `sheet att-pop${big ? ' ms' : ''}`;
   $('#attSheet').innerHTML = `
@@ -243,13 +245,13 @@ function calHtml(r) {
     <div class="att-cal">${h}</div>`;
 }
 // 보상 칸: 그림 칸(고정 크기) → 날짜 → 설명(2줄 자리 고정) 순서라 칸마다 줄이 똑같이 맞음. 받았으면 오른쪽 위 초록 체크, 아니면 자물쇠
-const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : KIND[x.kind];
+const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : x.kind === 'perk' ? (x.v === 'shield3' ? '방패 3개' : '시계 칸 +1') : KIND[x.kind];
 function rewardsHtml(r, by) {
   const list = REWARDS.filter(x => x.by === by), have = list.filter(x => rwOn(x, r.best, r.total)).length;
   return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${r.best}일` : `총 ${r.total}일`} · ${have}/${list.length}개 받음</small></div>
     <ul class="att-rw">${list.map(x => {
       const on = rwOn(x, r.best, r.total);
-      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${x.kind === 'title' || x.kind === 'color' ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
+      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${named(x.kind) ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
     }).join('')}</ul>`;
 }
 function sheetHtml(r, quiet = false) {
@@ -285,7 +287,9 @@ function sheetHtml(r, quiet = false) {
       <li>연속 ${r.shieldEvery}일마다 <b>출석 방패</b>를 1개 받아요(최대 ${r.shieldMax}개). 빠진 등교일 하루를 방패가 자동으로 메워 줘요.</li>
       <li>방패를 한 번도 안 쓰고 이어 가면 <b>완벽한 연속</b> — 불꽃에 금빛 후광이 생겨요.</li>
       <li>불꽃은 7일·30일·100일에 색이 바뀌어요.</li>
-      <li>보상은 최고 연속 기록·총 출석일 기준이라 한 번 받으면 사라지지 않아요.</li></ul></details>
+      <li>보상은 최고 연속 기록·총 출석일 기준이라 한 번 받으면 사라지지 않아요.</li>
+      <li>받은 <b>스티커</b>는 이름 옆 대표 스티커, 첫 화면 시계 꾸미기, 밸런스 댓글·DM 스티커로 쓸 수 있어요. 고르기는 프로필 꾸미기에서.</li>
+      <li><b>혜택</b> 보상: 시계 스티커 칸이 늘어나고(1칸 → 최대 3칸), 연속 30일이면 방패를 3개까지 모을 수 있어요.</li></ul></details>
     <div class="row"><button class="btn ghost" type="button" data-close>닫기</button></div>`;
 }
 async function loadRank(scope) {

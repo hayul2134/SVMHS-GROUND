@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, SHIELD_MAX, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
+import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
@@ -102,18 +102,21 @@ async function devSession(req, db) {   // 보관된 개발자 세션이 아직 �
 }
 
 /* ===== 사용자 ===== */
-const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title';
+const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title, st_rep, st_deco';
 const pub = u => u && ({
-  handle: u.handle, name: u.name, title: u.st_title || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
+  handle: u.handle, name: u.name, title: u.st_title || '', rep: u.st_rep || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
   stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
 });
-const card = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
+const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+// 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
+const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !unlockedOf(me.st_best, me.st_total, 'sticker').includes(m[1]) ? '아직 받지 못한 스티커예요' : null; };
+const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.st_deco, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -185,13 +188,13 @@ async function balState(env, db, me) {
   const mine = mineRow.results[0]?.pick || '';
   let comments = null;
   if (mine || !open) {
-    comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color,
+    comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color, u.st_rep,
       (SELECT COUNT(*) FROM balance_comment_likes l WHERE l.cid = c.id) AS likes, EXISTS (SELECT 1 FROM balance_comment_likes l WHERE l.cid = c.id AND l.uid = ?2) AS liked
       FROM balance_comments c JOIN users u ON u.id = c.uid LEFT JOIN balance_votes v ON v.ymd = c.ymd AND v.voter = 'u' || c.uid
       WHERE c.ymd = ?1 AND NOT EXISTS (SELECT 1 FROM blocks k WHERE (k.a = ?2 AND k.b = c.uid) OR (k.a = c.uid AND k.b = ?2))
       AND NOT EXISTS (SELECT 1 FROM bans x WHERE x.uid = c.uid AND (x.until = 0 OR x.until > ?3))
       ORDER BY (u.handle = ?4) DESC, c.id DESC LIMIT 100`).bind(ymd, me.id, now, ADMIN_HANDLE).all()).results
-      .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, avatar: r.avatar, color: r.color, likes: r.likes, liked: !!r.liked }));
+      .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, rep: r.st_rep || '', avatar: r.avatar, color: r.color, likes: r.likes, liked: !!r.liked }));
   }
   return { enabled: true, ymd, q, a, b, last, opens, closes, next: nextOpen(ymd), now, open, counts, mine, ncom: ncom.results[0].n, comments };
 }
@@ -272,7 +275,7 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: me.st_best || 0, attTotal: me.st_total || 0 }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: me.st_best || 0, attTotal: me.st_total || 0, deco: jsonArr(me.st_deco) }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -287,13 +290,16 @@ const ROUTES = {
     const color = coOk.includes(body.color) ? body.color : me.color;
     const title = body.title === '' || ub('title').includes(body.title) ? String(body.title) : (me.st_title || '');
     const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => stOk.includes(s)).slice(0, 6);
+    // 대표 스티커·시계 스티커는 출석 보상 스티커만 (안 보냈으면 그대로 둠)
+    const rep = body.rep === undefined ? (me.st_rep || '') : body.rep === '' || ub('sticker').includes(body.rep) ? String(body.rep) : (me.st_rep || '');
+    const deco = Array.isArray(body.deco) ? [...new Set(body.deco.filter(s => ub('sticker').includes(s)))].slice(0, decoSlots(me.st_best, me.st_total)) : jsonArr(me.st_deco);
     const dev = me.handle === ADMIN_HANDLE, g = dev ? 0 : +body.grade, c = dev ? 0 : +body.cls;   // 개발자 계정은 학년·반 없음
     // 인스타 아이디: @·주소를 붙여 넣어도 아이디만 남김. 인스타 규칙(영문·숫자·._, 30자)에 안 맞으면 거절
     const insta = String(body.insta || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '').toLowerCase();
     if (insta && !/^(?!.*\.\.)(?!\.)[a-z0-9._]{1,30}(?<!\.)$/.test(insta)) return err('인스타 아이디는 영문·숫자·밑줄(_)·마침표(.)만 쓸 수 있어요');
-    await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9, insta = ?11, st_title = ?12 WHERE id = ?10')
+    await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9, insta = ?11, st_title = ?12, st_rep = ?13, st_deco = ?14 WHERE id = ?10')
       .bind(name, clean(body.bio, 80, true), avatar, color, g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 6 ? c : 0, clean(body.club, 16), clean(body.mood, 24),
-        JSON.stringify([...new Set(stickers)]), me.id, insta, title).run();
+        JSON.stringify([...new Set(stickers)]), me.id, insta, title, rep, JSON.stringify(deco)).run();
     return json({ ok: true });
   }),
 
@@ -524,6 +530,7 @@ const ROUTES = {
     if (!dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);
     const text = clean(body.body, 500, true);
     if (!text) return err('내용을 적어 주세요');
+    const se = stkErr(me, text); if (se) return err(se);
     if (await limited(db, 'dm:' + me.id, 40, 60)) return err('너무 빨리 보내고 있어요. 잠깐만요!', 429);
     const m = await db.prepare('INSERT INTO messages (pair, a, b, body, at) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, at')
       .bind(pairOf(me.id, u.id), me.id, u.id, text, Date.now()).first();
@@ -643,6 +650,7 @@ const ROUTES = {
   'POST balc': needMe(async ({ env, db, me, body }) => {
     const text = clean(body.body, 100, true);
     if (!text) return err('내용을 적어 주세요');
+    const se = stkErr(me, text); if (se) return err(se);
     if (isBad(text)) return err('욕설·비속어는 쓸 수 없어요');
     const st = await balState(env, db, me);
     if (body.ymd && body.ymd !== st.ymd) return err('질문이 바뀌었어요. 새로 고침해 주세요', 409);
@@ -733,7 +741,7 @@ const ROUTES = {
   'GET rank': needMe(async ({ db, me, url }) => {
     const game = url.searchParams.get('game'), scope = url.searchParams.get('scope') || 'all';
     if (!GAMES[game]) return err('bad game');
-    const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen';
+    const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.st_rep';
     const BEST = 'SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 GROUP BY uid';
     if (scope === 'class') {   // 반 대항전: 반마다 최고 기록 상위 3명 평균
       const rows = (await db.prepare(`SELECT t.best, u.grade, u.cls FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE u.grade > 0 AND u.cls > 0 ORDER BY t.best`).bind(game).all()).results;
@@ -775,7 +783,7 @@ const ROUTES = {
   // 연속 출석 랭킹: 친구(맞팔 + 나) · 전체 (지금 살아 있는 기록 기준, 같으면 최고 기록 순)
   'GET attrank': needMe(async ({ env, db, me, url }) => {
     const scope = url.searchParams.get('scope') === 'all' ? 'all' : 'friends';
-    const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_best, u.st_last, u.st_shield, u.st_pf, u.st_title';
+    const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_best, u.st_last, u.st_shield, u.st_pf, u.st_title, u.st_rep';
     const since = (() => { const d = new Date(Date.now() + 9 * 3600e3 - 120 * 86400e3); return d.toISOString().slice(0, 10).replace(/-/g, ''); })();
     const rows = (scope === 'friends'
       ? await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND (u.id = ?1 OR u.id IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1)) ORDER BY u.st_cur DESC LIMIT ?2`).bind(me.id, 200, since).all()
@@ -810,7 +818,7 @@ async function attState(env, db, me, doCheck, quiet = false) {
   const out = (extra = {}) => {
     const cur = u.st_last === today ? u.st_cur : liveCur(u, extra.missed ?? []);
     return { today, done: u.st_last === today, cur, best: u.st_best, total: u.st_total, shield: u.st_shield, pf: !!u.st_pf && cur > 0,
-      shieldMax: SHIELD_MAX, shieldEvery: SHIELD_EVERY, week, ...extra, missed: undefined };
+      shieldMax: shieldMaxOf(u.st_best, u.st_total), shieldEvery: SHIELD_EVERY, week, ...extra, missed: undefined };
   };
   if (u.st_last === today) return json(out({ new: false, weekDays: quiet ? undefined : await weekRows() }));
   const [missed, rest] = await Promise.all([missedDays(env, db, u.st_last, today), restDay(env, db, today)]);
@@ -819,7 +827,7 @@ async function attState(env, db, me, doCheck, quiet = false) {
   let cur, used = 0, pf = u.st_pf;
   if (prevLive > 0) { used = missed.length; cur = u.st_cur + 1; if (used) pf = 0; } else { cur = 1; pf = 1; }
   let shield = (prevLive > 0 ? u.st_shield - used : u.st_shield);
-  const gotShield = cur % SHIELD_EVERY === 0 && shield < SHIELD_MAX;
+  const gotShield = cur % SHIELD_EVERY === 0 && shield < shieldMaxOf(Math.max(u.st_best, cur), u.st_total + 1);
   if (gotShield) shield++;
   const best = Math.max(u.st_best, cur), old = { ...u };
   const r = await db.prepare(`UPDATE users SET st_cur = ?1, st_best = ?2, st_last = ?3, st_total = st_total + 1, st_shield = ?4, st_pf = ?7 WHERE id = ?5 AND st_last = ?6 RETURNING st_total`)

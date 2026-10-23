@@ -2,7 +2,7 @@
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish } from './neis.js';
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
-import { emo } from './att-art.js';
+import { emo, ui, stkMsg, repTag } from './att-art.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -751,8 +751,8 @@ function paintBalSheet() {
   if (!BAL.comments.length) { list.innerHTML = `<li class="bc-empty">${open ? '첫 댓글의 주인공이 되어 보세요 ✍️' : '댓글이 없어요'}</li>`; return; }
   list.innerHTML = BAL.comments.map(c => `<li class="bc${c.pick ? ' side-' + c.pick : ''}">`
     + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : emo(c.avatar || '😎', 'ava')}</a>`
-    + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
-    + `<p class="bc-b">${esc(c.body)}</p></div>`
+    + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.dev ? '' : repTag(c)}${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
+    + (stkMsg(c.body) ? `<p class="bc-b bc-stk">${stkMsg(c.body)}</p></div>` : `<p class="bc-b">${esc(c.body)}</p></div>`)
     + likeBtn(c)
     + (c.me ? `<button class="bc-x bc-del" type="button" data-cdel="${c.id}" aria-label="내 댓글 지우기" data-tip="지우기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trash"/></svg></button>` : `<button class="bc-x" type="button" data-crep="${c.id}" aria-label="댓글 신고">신고</button>`)
     + '</li>').join('');
@@ -781,15 +781,17 @@ $('#plQ').onclick = $('#plCom').onclick = $('#plMore').onclick;
 const bsGrow = () => { const i = $('#bsIn'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 110) + 'px'; };
 $('#bsIn').addEventListener('input', bsGrow);
 $('#bsIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); $('#bsForm').requestSubmit(); } });
-$('#bsForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const inp = $('#bsIn'), body = inp.value.trim();
+async function balSend(body, typed) {
   if (!BAL || !body || balBusy) return;
   balBusy = true;
-  try { setBal(await balCall('/api/s/balc', { body, ymd: BAL.ymd })); inp.value = ''; bsGrow(); $('#bsList').scrollTop = 0; }
+  try { setBal(await balCall('/api/s/balc', { body, ymd: BAL.ymd })); if (typed) { $('#bsIn').value = ''; bsGrow(); } $('#bsList').scrollTop = 0; }
   catch (err) { toast(err.message); }
   balBusy = false;
-});
+}
+$('#bsForm').addEventListener('submit', e => { e.preventDefault(); balSend($('#bsIn').value.trim(), true); });
+// 출석 보상 스티커로 댓글 달기 (고르는 창은 social.js stkTray)
+$('#bsStk').innerHTML = ui('sparkle', 'ic');
+$('#bsStk').onclick = e => { if ($('#bsForm').classList.contains('lock')) { toast('먼저 한쪽을 골라 주세요'); return; } if (SOC.stkTray) SOC.stkTray(e.currentTarget, v => balSend('::' + v)); else toast('잠시 후 다시 눌러 주세요'); };
 $('#bsList').addEventListener('click', async e => {
   const d = e.target.closest('[data-cdel]'), r = e.target.closest('[data-crep]'), lk = e.target.closest('[data-clike]');
   if (lk) { toggleLike(lk); return; }
@@ -2022,6 +2024,17 @@ async function fillShow() {
   setup();
   fillShow();
 }
+
+/* ===== 첫 화면 시계 스티커 (출석 보상) =====
+   프로필 꾸미기에서 고른 보상 스티커가 시계의 별 자리를 차례로 대신함: 1칸 왼쪽 위(k1) · 2칸 오른쪽 아래(k4) · 3칸 오른쪽 위(k2). 나만 보임 */
+SOC.setDeco = list => {
+  const clk = $('#bigclock .clock'); if (!clk) return;
+  const key = (list || []).join(','); if (clk.dataset.deco === key) return; clk.dataset.deco = key;
+  [1, 2, 3].forEach(i => {
+    const el = clk.querySelector('.du' + i), v = (list || [])[i - 1];
+    el.innerHTML = v ? emo(v, 'dua') : ''; el.classList.toggle('on', !!v); clk.classList.toggle('d' + i, !!v);
+  });
+};
 
 /* ===== 시작 ===== */
 if (store.get('wk_meal', false)) S.mealWk = weekOf(today());   // 홈 카드 하루/한 주 보기 기억

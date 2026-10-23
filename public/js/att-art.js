@@ -3,6 +3,7 @@
 //       캐릭터는 CHARACTER_GUIDE: 찹쌀떡 얼굴·몸 색을 진하게 한 외곽선·세로 타원 눈·ω 입·볼터치)
 // 그림은 문서에 한 번만 넣는 스프라이트(<symbol>)로 두고 <use>로 불러 씀 → 같은 그림이 여러 번 나와도 가벼움.
 // 보상 값은 'r:이름'으로 저장되고, 사이트 어디서든 프로필 사진·스티커를 그릴 땐 emo(값)을 씀(옛 이모지 값은 글자 그대로).
+import { STK_MSG } from './att-rewards.js';
 const INK = '#173048';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const n1 = v => +v.toFixed(1);
@@ -206,4 +207,9 @@ export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[v
 export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); return `<svg class="art ${cls}" aria-hidden="true"><use href="#art-${v.slice(2)}" width="100%" height="100%"/></svg>`; };
 // 프로필 사진·스티커 값 → 그림(직접 그린 것) 또는 글자(예전 이모지)
 export const emo = (v, cls = '') => isArt(v) ? artOf(v, cls) : esc(v);
+// 스티커만 보낸 댓글·DM('::r:이름') → 큰 스티커 그림, 아니면 ''
+export const stkOf = t => { const m = STK_MSG.exec(String(t || '')); return m && isArt(m[1]) ? m[1] : ''; };
+export const stkMsg = (t, cls = 'stkm') => { const v = stkOf(t); return v ? artOf(v, cls) : ''; };
+// 이름 옆 대표 스티커
+export const repTag = u => isArt(u?.rep) ? `<i class="rep" data-tip="대표 스티커">${artOf(u.rep, 'repa')}</i>` : '';
 export const ui = (k, cls = '') => { ensureSprite(); return `<svg class="att-ic ${cls}" viewBox="-1 -1 26 26" aria-hidden="true">${UI[k]}</svg>`; };

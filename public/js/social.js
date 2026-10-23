@@ -1,8 +1,8 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
-import { ATT_COLORS, COLOR_NAME, rwOn } from './att-rewards.js';
-import { emo, artOf, ui } from './att-art.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots } from './att-rewards.js';
+import { emo, artOf, ui, stkOf, stkMsg, repTag } from './att-art.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -41,7 +41,7 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 // 개발자 계정은 이모지 대신 사이트 로고 + 무지개 링 아바타 (어디서나 같게)
 const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${emo(u.avatar || '😎', 'ava')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
-const devTag = u => isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
+const devTag = u => (isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '') + repTag(u);   // 이름 옆 작은 배지 + 대표 스티커
 // 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
 const nameOf = u => isDev(u) ? '개발자' : u.name;
 const atOf = u => isDev(u) ? '' : '@' + u.handle;   // 화면에 보이는 아이디 (개발자는 빈칸)
@@ -78,7 +78,7 @@ async function refreshMe() {
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
-  if (!S.meErr) ATT.sync(S.me);   // 하루 한 번 자동 출석 (첫 출석이면 축하 창)
+  if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
   if (!panelOpen()) loadRecent();
 }
 function startPoll() {
@@ -249,7 +249,7 @@ function profileHtml(d) {
     <div class="pbody">
       ${av(u, 'big')}
       ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-      <h2 class="pname">${esc(nameOf(u))}</h2>${ttl}
+      <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}
       <p class="phandle">${[isDev(u) ? '🛠 SVMHS GROUND 개발자' : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
       ${isDev(u) ? '<button class="pdev" type="button" data-fb>💡 궁금한 점·원하는 기능은 헤더의 💡 의견으로 보내 주세요!</button>' : ''}
       ${chips ? `<p class="pchips">${chips}</p>` : ''}
@@ -379,6 +379,7 @@ function openMore(h) {
 function openEdit() {
   const u = S.me; if (!u) return;
   const picked = new Set(u.stickers || []);
+  const deco = [...(u.deco || [])], slots = decoSlots(u.attBest, u.attTotal);
   sheet(`<h3>프로필 꾸미기</h3>
     <form class="sform" id="editForm" autocomplete="off">
       <div class="preview c-${esc(u.color)}" id="edPrev">${av({ ...u, online: false }, 'big')}</div>
@@ -396,6 +397,12 @@ function openEdit() {
       ${isDev(u) ? '' : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
       <p class="lbl">스티커 <small id="stkN">${picked.size}/${MAX_STICKERS}</small></p>
       <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}">${s}</button>`).join('')}${attPicks('sticker', x => picked.has(x))}</div>
+      ${isDev(u) ? '' : `<p class="lbl">대표 스티커 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small></p>
+      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}">없음</button>${attPicks('sticker', x => x === u.rep)}</div>
+      <small class="hint">이름 옆에 작게 붙어요 — 댓글·랭킹·DM·친구 목록 어디서나 보여요.</small>
+      <p class="lbl">첫 화면 시계 스티커 <small id="decoN"></small></p>
+      <div class="pick" id="pDeco">${attPicks('sticker', x => deco.includes(x))}</div>
+      <small class="hint">내 첫 화면 큰 시계에 붙어요(나만 보여요). 칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small>`}
       <p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p>
       <div class="row"><button class="btn" type="submit">저장</button><button class="btn ghost" type="button" data-close>취소</button></div>
     </form>`);
@@ -411,11 +418,26 @@ function openEdit() {
     else picked.add(b.dataset.v);
     b.classList.toggle('on', picked.has(b.dataset.v)); $('#stkN').textContent = `${picked.size}/${MAX_STICKERS}`;
   };
+  // 대표 스티커(하나) · 시계 스티커(칸 수만큼, 고른 순서대로 왼쪽 위 → 오른쪽 아래 → 오른쪽 위)
+  sel.rep = u.rep || '';
+  const lockTip = b => toast(`${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`);
+  const decoN = () => { const el = $('#decoN'); if (el) el.textContent = `${deco.length}/${slots}칸`; };
+  decoN();
+  if ($('#pRep')) $('#pRep').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) return lockTip(b); $$('#pRep .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.rep = b.dataset.v; };
+  if ($('#pDeco')) $('#pDeco').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.lock) return lockTip(b);
+    const i = deco.indexOf(b.dataset.v);
+    if (i >= 0) deco.splice(i, 1);
+    else if (deco.length >= slots) { toast(slots < 3 ? `지금은 ${slots}칸까지! 연속 14일·총 30일 출석하면 칸이 늘어나요` : '시계 스티커는 3개까지!'); return; }
+    else deco.push(b.dataset.v);
+    b.classList.toggle('on', deco.includes(b.dataset.v)); decoN();
+  };
   $('#editForm').onsubmit = async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
     try {
-      await call('me', { ...d, grade: +d.grade, cls: +d.cls, avatar: sel.avatar, color: sel.color, stickers: [...picked] });
+      await call('me', { ...d, grade: +d.grade, cls: +d.cls, avatar: sel.avatar, color: sel.color, stickers: [...picked], ...(isDev(u) ? {} : { rep: sel.rep, deco }) });
       await refreshMe(); closeSheet(); renderMe(); toast('프로필을 저장했어요 ✨');
     } catch (err) { fail(err); }
   };
@@ -431,6 +453,22 @@ function attPicks(kind, isOn) {
       ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
       : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${r.d}" data-by="${r.by}" aria-label="${tip} (잠김)">${inner}<i>${r.d}</i></button>`;
   }).join('');
+}
+// 스티커 고르기 작은 창 (DM·밸런스 댓글 공용) — 받은 출석 보상 스티커만. 고르면 onPick('r:이름')
+function stkTray(btn, onPick) {
+  const old = $('.stk-tray'); if (old) { const same = old._btn === btn; old.remove(); if (same) return; }
+  if (!S.me) { toast('로그인하면 쓸 수 있어요'); return; }
+  const have = ATT.lockedOf('sticker').filter(attHave), next = ATT.lockedOf('sticker').find(r => !attHave(r));
+  const t = document.createElement('div');
+  t.className = 'stk-tray'; t._btn = btn; t.setAttribute('role', 'dialog'); t.setAttribute('aria-label', '스티커 고르기');
+  t.innerHTML = have.length
+    ? `<div class="stk-grid">${have.map(r => `<button type="button" data-v="${r.v}" aria-label="스티커 보내기">${artOf(r.v, 'pka')}</button>`).join('')}</div>${next ? `<small>${next.by === 'total' ? '총' : '연속'} ${next.d}일 출석하면 하나 더!</small>` : ''}`
+    : `<p>${ATT.flame('fsm', { tier: 1 })} 출석 보상으로 받은 스티커를 보낼 수 있어요.<br><b>${next.by === 'total' ? '총' : '연속'} ${next.d}일</b> 출석하면 첫 스티커!</p>`;
+  btn.parentElement.append(t);
+  const close = ev => { if (!t.isConnected) return off(); if (ev.type === 'keydown' ? ev.key === 'Escape' : !t.contains(ev.target) && ev.target !== btn && !btn.contains(ev.target)) { t.remove(); off(); } };
+  const off = () => { document.removeEventListener('pointerdown', close, true); document.removeEventListener('keydown', close, true); };
+  setTimeout(() => { document.addEventListener('pointerdown', close, true); document.addEventListener('keydown', close, true); });
+  t.onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; t.remove(); off(); onPick(b.dataset.v); };
 }
 function titleOpts(cur) {
   const have = ATT.lockedOf('title').filter(attHave);
@@ -509,7 +547,7 @@ async function renderDm(handle, box = $('#dmBox'), panel = false) {
     paintRecent(r.threads);
     if (openThread) return;
     const threads = r.threads.map(t => `<li class="thread ${t.unread ? 'new' : ''}"><a ${toThread(t.user.handle, panel)}>${av(t.user)}
-      <span class="pi"><b>${esc(t.user.name)}</b><small>${t.mine ? '나: ' : ''}${esc(t.last)}</small></span>
+      <span class="pi"><b>${esc(nameOf(t.user))}${repTag(t.user)}</b><small>${t.mine ? '나: ' : ''}${stkOf(t.last) ? '스티커를 보냈어요' : esc(t.last)}</small></span>
       <span class="tm">${ago(t.at)}${t.unread ? `<i class="nb">${t.unread}</i>` : ''}</span></a></li>`).join('');
     const friends = r.friends.map(u => `<a class="fchip" ${toThread(u.handle, panel)}>${av(u)}<small>${esc(u.name)}</small></a>`).join('');
     box.innerHTML = `<div class="card dmcard">
@@ -559,8 +597,9 @@ function setupDock() {
 
 function bubbleHtml(m, next, readUpTo) {
   const gap = !next || next.mine !== m.mine || next.at - m.at > 300e3;
-  return `<li class="msg ${m.mine ? 'me' : 'you'} ${m.del ? 'del' : ''}" data-id="${m.id}">
-    <span class="bb">${m.del ? '삭제된 메시지' : esc(m.body)}</span>
+  const sk = !m.del && stkMsg(m.body);
+  return `<li class="msg ${m.mine ? 'me' : 'you'} ${m.del ? 'del' : ''}${sk ? ' stk' : ''}" data-id="${m.id}">
+    <span class="bb">${m.del ? '삭제된 메시지' : sk || esc(m.body)}</span>
     ${gap ? `<small class="mt">${m.mine && m.id <= readUpTo ? '읽음 · ' : ''}${hm(m.at)}</small>` : ''}</li>`;
 }
 async function renderThread(handle, box, panel) {
@@ -575,7 +614,7 @@ async function renderThread(handle, box, panel) {
   box.innerHTML = `<div class="card chat">
     <div class="chead"><a ${toList(panel)} class="back" aria-label="DM 목록">‹</a><a href="#u/${esc(d.user.handle)}" class="who">${av(d.user)}<span class="pi"><b>${esc(nameOf(d.user))}${devTag(d.user)}</b><small>${d.user.online ? '접속 중' : esc(atOf(d.user))}</small></span></a></div>
     <ol class="msgs" id="msgs" aria-live="polite">${msgs.length >= 40 ? '<li class="older"><button id="olderBtn">이전 메시지 보기</button></li>' : ''}</ol>
-    ${d.canSend ? `<form class="compose" id="dmForm" autocomplete="off"><textarea id="dmIn" rows="1" maxlength="500" placeholder="메시지 보내기…" aria-label="메시지"></textarea><button class="btn" aria-label="보내기">➤</button></form>`
+    ${d.canSend ? `<form class="compose" id="dmForm" autocomplete="off"><button class="stk-btn" type="button" id="dmStk" aria-label="스티커 보내기" data-tip="스티커">${ui('sparkle', 'ic')}</button><textarea id="dmIn" rows="1" maxlength="500" placeholder="메시지 보내기…" aria-label="메시지"></textarea><button class="btn" aria-label="보내기">➤</button></form>`
       : `<p class="note locked">${d.rel.blocked ? '차단한 사람이에요' : '이 친구의 DM 설정 때문에 지금은 보낼 수 없어요'}</p>`}
   </div>`;
   const list = q('#msgs');
@@ -611,14 +650,18 @@ async function renderThread(handle, box, panel) {
     const grow = () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 120) + 'px'; };
     inp.addEventListener('input', grow);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
+    const send = async (text, keep) => {
+      try { const r = await call('dm/' + encodeURIComponent(handle), { body: text }); if (!msgs.some(m => m.id === r.message.id)) msgs.push(r.message); paint(); dmDelay = 3000; }
+      catch (err) { fail(err); if (keep) inp.value = text; }
+    };
     form.onsubmit = async e => {
       e.preventDefault();
       const text = inp.value.trim(); if (!text) return;
       inp.value = ''; grow();
-      try { const r = await call('dm/' + encodeURIComponent(handle), { body: text }); if (!msgs.some(m => m.id === r.message.id)) msgs.push(r.message); paint(); dmDelay = 3000; }
-      catch (err) { fail(err); inp.value = text; }
+      await send(text, true);
       inp.focus();
     };
+    q('#dmStk').onclick = e => stkTray(e.currentTarget, v => send('::' + v));
   }
   // 새 메시지 확인 (화면을 보고 있을 때만). 대화가 오가면 3초, 조용하면 점점 늘려 최대 15초 (서버 요청 줄이기)
   const tick = async () => {
@@ -809,7 +852,7 @@ function playCut() {
 
 /* ===== 시작 ===== */
 export async function init(c) {
-  ctx = c;
+  ctx = c; c.stkTray = stkTray;   // app.js 밸런스 댓글에서도 씀
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
   c.report = openReport;
   c.authForm = authHtml;   // 소개 화면의 로그인/가입 폼
