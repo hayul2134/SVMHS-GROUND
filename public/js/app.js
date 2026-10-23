@@ -34,6 +34,14 @@ const pName = p => p === '조회' ? '조회' : p + '교시';
 const BELL_LAG = 850;   // 0.5초 → 0.85초 (2026-10-22 학생 의견: 아직 조금 빠름)
 const bellNow = () => new Date(now() - BELL_LAG);
 
+// 화면 전환 효과가 연달아 눌려 건너뛰어지면 Promise가 거절됨 → 무시 (콘솔 오류 방지)
+const skipOk = vt => { vt.ready.catch(() => {}); vt.finished.catch(() => {}); };
+// 그날 마지막 교시: 오늘 시간표가 있으면 그대로 따름(요일 교체·단축 수업 대응), 없으면 월~수 7 · 목금 6.
+// 인증키가 없으면 나이스가 5교시까지만 주므로 6교시 이상일 때만 믿음. 종 시계와 홈 시간표가 같은 값을 씀
+function lastPeriod(d) {
+  const ttMax = S.todayTT && S.todayTT.length ? Math.max(...S.todayTT.map(r => +r.PERIO || 0)) : 0;
+  return ttMax && (api.hasKey || ttMax >= 6) ? Math.min(7, ttMax) : d.getDay() <= 3 ? 7 : 6;
+}
 // 다음 등교일(오늘 이후, 주말·휴업일 건너뜀) 1교시 시작까지 — 오늘 0시 기준 초 (하루 넘으면 86400 넘게)
 function nextFirstBell(n) {
   let d = new Date(n.getFullYear(), n.getMonth(), n.getDate()), i = 0;
@@ -43,9 +51,7 @@ function nextFirstBell(n) {
 function bellInfo(n) {
   const dow = n.getDay();
   if (dow === 0 || dow === 6 || offDays.has(ymd(n))) return { state: '쉬는 날', label: '1교시 시작까지', cnt: '1교시 시작까지', target: nextFirstBell(n), away: true };
-  // 마지막 교시: 오늘 시간표가 있으면 그대로 따름(요일 교체 수업 대응), 없으면 월~수 7 · 목금 6
-  const ttMax = S.todayTT && S.todayTT.length ? Math.max(...S.todayTT.map(r => +r.PERIO || 0)) : 0;
-  const last = ttMax >= 6 ? Math.min(7, ttMax) : dow <= 3 ? 7 : 6, list = BELL.filter(x => x.p === '조회' || x.p <= last);
+  const last = lastPeriod(n), list = BELL.filter(x => x.p === '조회' || x.p <= last);
   const now = (n - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 1000;
   for (let i = 0; i < list.length; i++) {
     const cur = list[i], prev = list[i - 1];
@@ -720,8 +726,7 @@ const isSchoolDay = d => d.getDay() % 6 !== 0 && !offDays.has(ymd(d));
 function ttTarget(n = now()) {
   let d = new Date(n.getFullYear(), n.getMonth(), n.getDate());
   const sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
-  const ttMax = S.todayTT && S.todayTT.length ? Math.max(...S.todayTT.map(r => +r.PERIO || 0)) : 0;
-  const last = ttMax ? Math.min(7, ttMax) : d.getDay() <= 3 ? 7 : 6, end = BELL.find(x => x.p === last).end;
+  const end = BELL.find(x => x.p === lastPeriod(d)).end;
   if (!isSchoolDay(d) || sec >= end) { let i = 0; do d = addDays(d, 1); while (!isSchoolDay(d) && ++i < 21); }
   return d;
 }
@@ -1341,7 +1346,7 @@ $('#mSkin').addEventListener('click', e => {
   const b = e.target.closest('.sk'); if (!b) return;
   const k = b.dataset.skin;
   const go = () => { applySkin(k); store.set('skin', k || null); syncMascot(true); };
-  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
+  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
 });
 $('#btnSkin').onclick = () => { applySkin(document.documentElement.dataset.skin || ''); myArtUi(); openModal('#mSkin'); };
 
@@ -1418,7 +1423,7 @@ $('#btnTheme').onclick = () => {
   const go = () => { applyTheme(t); store.set('theme', t); if (themeWant === t) themeWant = null; };
   // 화면 전체를 한 장으로 찍어 부드럽게 겹쳐 바꿈(View Transition, GPU) — 예전처럼 모든 요소의 색을 하나하나 애니메이션하면 태블릿에서 끊김.
   // 지원 안 하는 브라우저나 '동작 줄이기' 설정이면 바로 바꿈
-  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
+  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
 };
 
 /* ===== 관리자 공지 ===== */
@@ -1504,7 +1509,7 @@ if ('IntersectionObserver' in window) {
   const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, best = 0, tries = 0;
   const show = (cls, html) => { pad_.className = 'rx in-rx ' + cls; pad_.innerHTML = html; };
   const grade = ms => ms < 230 ? '이 정도면 반 대표감!' : ms < 290 ? '꽤 빠른데요?' : ms < 380 ? '평범한 반응속도' : '아직 잠이 덜 깼나 봐요';
-  pad_.addEventListener('pointerdown', e => {
+  const hit = e => {
     e.preventDefault();
     if (st === 'wait') { clearTimeout(tm); st = 'shown'; show('early', '<b>앗, 너무 빨라요!</b><small>초록색이 될 때까지 참기 · 탭해서 다시</small>'); return; }
     if (st === 'go') {
@@ -1517,7 +1522,9 @@ if ('IntersectionObserver' in window) {
     }
     st = 'wait'; show('wait', '<b>기다려…</b><small>초록색이 되면 바로 탭!</small>');
     tm = setTimeout(() => { if (st !== 'wait') return; st = 'go'; show('go', '<b>지금!</b>'); t0 = performance.now(); }, 1000 + Math.random() * 2500);
-  });
+  };
+  pad_.addEventListener('pointerdown', hit);
+  pad_.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) hit(e); });   // 키보드로도 할 수 있게
 }
 // '구경하기' 화살표: 소개 화면 안에서 부드럽게 내려감 (주소 해시는 안 바꿈)
 $('#intro').addEventListener('click', e => { const a = e.target.closest('[data-intro-go]'); if (!a) return; e.preventDefault(); $('#' + a.dataset.introGo).scrollIntoView({ behavior: 'smooth', block: 'start' }); });
