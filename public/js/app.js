@@ -1476,7 +1476,7 @@ function intro(on) {
   HTML.classList.toggle('prelogin', on);
   $('#intro').inert = !on;
   if (on) { $('#intro').scrollTop = 0; introTick(); }
-  else { clearTimeout(inTimer); $('#introAuth').hidden = true; $('#introAuth').innerHTML = ''; onScroll(); bootHome(); }
+  else { clearTimeout(inTimer); authPage(false); onScroll(); bootHome(); }
 }
 // 소개 화면의 종 시계: 홈과 같은 종 시간(bellInfo)으로 실제 시각·남은 시간을 보여 줌 — 소개가 떠 있고 탭이 보일 때만 돌아감
 let inTimer = 0;
@@ -1540,15 +1540,35 @@ SOC.authed = (me, on = true, how) => {
 };
 $('#intro').inert = !introOn();
 introTick();
+// 로그인·가입 페이지(소개 화면 위 전체 화면): 열면 뒤로 가기 한 칸을 만들어, 태블릿 뒤로 가기 제스처가 사이트를 떠나지 않고 이 페이지만 닫게 함
+let apTimer = 0;
+function apLive() {   // 왼쪽 보드의 말풍선·상태는 소개 화면 종 시계(introTick)가 그린 값을 그대로 옮겨 씀
+  [['#inSay', '#apSay'], ['#inState', '#apState'], ['#inLbl', '#apLbl'], ['#inLeft', '#apLeft']].forEach(([a, b]) => { const t = $(a)?.textContent; if (t && $(b).textContent !== t) $(b).textContent = t; });
+  $('#apLeft').closest('.ap-live').hidden = !$('#inCdBox') || $('#inCdBox').hidden;
+}
+function authPage(k, fromPop) {
+  const p = $('#introAuth'), slot = $('#authSlot');
+  if (k) {
+    slot.innerHTML = SOC.authForm(k);
+    if (p.hidden) { p.hidden = false; p.classList.remove('out'); p.scrollTop = 0; try { history.pushState({ ap: 1 }, ''); } catch {} apLive(); apTimer = setInterval(apLive, 1000); }
+    setTimeout(() => slot.querySelector('input')?.focus({ preventScroll: true }), 380);
+    return;
+  }
+  if (p.hidden) return;
+  clearInterval(apTimer);
+  if (!fromPop && history.state?.ap) history.back();   // 만들어 둔 뒤로 가기 칸 정리
+  if (!introOn()) { p.hidden = true; slot.innerHTML = ''; return; }   // 로그인 성공: 소개와 같이 바로 닫힘
+  p.classList.add('out');
+  setTimeout(() => { p.hidden = true; p.classList.remove('out'); slot.innerHTML = ''; $('.in-cta [data-intro]')?.focus({ preventScroll: true }); }, 220);
+}
 $('#intro').addEventListener('click', e => {
+  if (e.target.closest('[data-auth-close]')) return authPage(false);
   const b = e.target.closest('[data-intro]'); if (!b) return;
-  const k = b.dataset.intro;
   if (!SOC.authForm) { toast('잠시 후 다시 눌러 주세요'); return; }
-  const box = $('#introAuth');
-  box.innerHTML = SOC.authForm(k); box.hidden = false;
-  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  setTimeout(() => box.querySelector('input')?.focus({ preventScroll: true }), 350);
+  authPage(b.dataset.intro);
 });
+window.addEventListener('popstate', () => { if (!$('#introAuth').hidden) authPage(false, true); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#introAuth').hidden && !$('.modal.open')) authPage(false); });
 
 /* ===== 시작 ===== */
 if (store.get('wk_meal', false)) S.mealWk = weekOf(today());   // 홈 카드 하루/한 주 보기 기억

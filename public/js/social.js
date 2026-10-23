@@ -85,62 +85,124 @@ function startPoll() {
 }
 
 /* ===== 로그인 · 가입 ===== */
-function authHtml(mode = 'login') {
-  const c = ctx.getClass?.() || null;
-  const grades = [1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('');
-  const classes = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('');
-  return `<div class="card authcard">
-    <div class="segs" role="tablist"><button data-auth="login" class="${mode === 'login' ? 'on' : ''}">로그인</button><button data-auth="signup" class="${mode === 'signup' ? 'on' : ''}">회원가입</button></div>
-    <form class="sform" id="authForm" data-mode="${mode}" autocomplete="on">
-      <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" autocomplete="username" placeholder="영어 소문자·숫자 3~16자">${mode === 'signup' ? '<small class="hint">🔑 로그인할 때 쓰는 이름이에요. 나중에 바꿀 수 없어요.</small>' : ''}</label>
-      ${mode === 'signup' ? `<label>이름 (닉네임)<input name="name" required maxlength="12" placeholder="친구들에게 보일 이름"><small class="hint">👀 친구들 화면에 보이는 이름이에요. 언제든 바꿀 수 있어요.</small></label>` : ''}
-      <label>비밀번호<input name="pw" type="password" required minlength="6" maxlength="64" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}" placeholder="6자 이상"></label>
-      ${mode === 'signup' ? `
-        <div class="two"><label>학년<select name="grade">${grades}</select></label><label>반<select name="cls">${classes}</select></label></div>
+// keep: 탭(로그인↔가입)을 바꿀 때 적던 아이디·비밀번호를 그대로 옮겨 줌
+const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="e-open" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle class="e-open" cx="12" cy="12" r="3"/><path class="e-shut" d="M3.5 9.5Q12 16.5 20.5 9.5M7 13.4 5.4 15.8M12 15.2v2.8M17 13.4l1.6 2.4"/></svg>';
+function authHtml(mode = 'login', keep = {}) {
+  const c = ctx.getClass?.() || null, up = mode === 'signup';
+  const radio = (name, v, txt, on) => `<label class="pchip"><input type="radio" name="${name}" value="${v}" required ${on ? 'checked' : ''}><span>${txt}</span></label>`;
+  const grades = [1, 2, 3].map(g => radio('grade', g, g + '학년', c && +c.g === g)).join('');
+  const classes = Array.from({ length: 10 }, (_, i) => radio('cls', i + 1, i + 1, c && +c.c === i + 1)).join('');
+  return `<div class="card authcard" data-mode="${mode}">
+    <div class="segs" role="tablist" aria-label="로그인 또는 회원가입"><i class="segs-pill" aria-hidden="true"></i><button type="button" role="tab" aria-selected="${!up}" data-auth="login" class="${up ? '' : 'on'}">로그인</button><button type="button" role="tab" aria-selected="${up}" data-auth="signup" class="${up ? 'on' : ''}">회원가입</button></div>
+    <div class="ah"><h2 class="ah-t">${up ? '처음 왔군요! ✨' : '다시 왔네요 👋'}</h2><p class="ah-s">${up ? '아이디만 정하면 1분이면 끝나요. 이메일·전화번호는 안 받아요.' : '아이디와 비밀번호를 적어 주세요.'}</p></div>
+    <form class="sform" id="authForm" data-mode="${mode}" autocomplete="on" novalidate>
+      <label>아이디<span class="fld at"><span class="pre" aria-hidden="true">@</span><input name="handle" required minlength="3" maxlength="16" pattern="[a-z0-9_.]{3,16}" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username" placeholder="영어 소문자·숫자 3~16자" value="${esc(keep.handle || '')}"><i class="vok" aria-hidden="true">✓</i></span>${up ? '<small class="hint" data-hint="handle">🔑 로그인할 때 쓰는 이름이에요. 나중에 바꿀 수 없어요.</small>' : ''}</label>
+      ${up ? `<label><span class="lrow">이름 (닉네임)<small class="cnt" data-cnt>0/12</small></span><input name="name" required maxlength="12" placeholder="친구들에게 보일 이름"><small class="hint">👀 친구들 화면에 보이는 이름이에요. 언제든 바꿀 수 있어요.</small></label>` : ''}
+      <label>비밀번호<span class="fld"><input name="pw" type="password" required minlength="6" maxlength="64" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="6자 이상" value="${esc(keep.pw || '')}"><button class="eye" type="button" data-eye aria-label="비밀번호 보기" aria-pressed="false">${EYE}</button></span>
+        <small class="caps" hidden>⇪ Caps Lock이 켜져 있어요</small>
+        ${up ? '<span class="pwm" data-lv="0" aria-live="polite"><i></i><i></i><i></i><em>6자 이상 적어 주세요</em></span>' : ''}</label>
+      ${up ? `
+        <fieldset class="apick"><legend>학년</legend><div class="pchips g3">${grades}</div></fieldset>
+        <fieldset class="apick"><legend>반</legend><div class="pchips g10">${classes}</div></fieldset>
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
         <p class="note">⚠️ 이메일을 받지 않아요. 가입 뒤 프로필 → ⚙️에서 구글을 연결해 두면 아이디·비밀번호를 잊어도 찾을 수 있어요. 다른 사이트와 다른 비밀번호를 써 주세요.</p>` : ''}
       <p class="ferr" role="alert" hidden></p>
-      <button class="btn big" type="submit">${mode === 'signup' ? '가입하고 시작하기' : '로그인'}</button>
-      ${mode === 'login' && S.google ? '<button class="linkbtn" type="button" data-forgot>아이디·비밀번호를 잊었어요</button>' : ''}
+      <button class="btn big sbtn" type="submit"><span class="sb-t">${up ? '가입하고 시작하기' : '로그인'}</span><span class="sb-w" aria-hidden="true"><i></i><i></i><i></i></span></button>
+      ${!up && S.google ? '<button class="linkbtn" type="button" data-forgot>아이디·비밀번호를 잊었어요</button>' : ''}
+      <p class="aswap">${up ? '이미 계정이 있나요? <button type="button" data-auth="login">로그인</button>' : '아직 계정이 없나요? <button type="button" data-auth="signup">1분 만에 가입하기</button>'}</p>
     </form>
-    ${S.google ? `<div class="gbox alt"><p class="gor"><span>원하면 구글로도 ${mode === 'signup' ? '가입' : '로그인'}할 수 있어요</span></p><div class="gbtn" data-gintent="login"></div></div>` : ''}
+    ${S.google ? `<div class="gbox alt"><p class="gor"><span>원하면 구글로도 ${up ? '가입' : '로그인'}할 수 있어요</span></p><div class="gbtn" data-gintent="login"></div></div>` : ''}
+    <div class="astamp" aria-hidden="true"><b>입장!</b></div>
   </div>`;
 }
+const HANDLE_OK = /^[a-z0-9_.]{3,16}$/;
+// 폼 안에서 막을 것: 빈 칸·형식 오류를 서버에 보내기 전에 빨간 경고로 (브라우저 기본 말풍선 대신)
+function checkForm(f, mode) {
+  const el = f.elements, h = el.handle.value.trim();
+  if (!h) return ['아이디를 적어 주세요', 'handle'];
+  if (mode === 'signup' && !HANDLE_OK.test(h)) return ['아이디는 영어 소문자·숫자·_·. 로 3~16자예요', 'handle'];
+  if (mode === 'signup' && !el.name.value.trim()) return ['친구들에게 보일 이름을 적어 주세요', 'name'];
+  if (!el.pw.value) return ['비밀번호를 적어 주세요', 'pw'];
+  if (mode === 'signup' && el.pw.value.length < 6) return ['비밀번호는 6자 이상이에요', 'pw'];
+  if (mode === 'signup' && !f.querySelector('[name=grade]:checked')) return ['학년을 골라 주세요', 'grade'];
+  if (mode === 'signup' && !f.querySelector('[name=cls]:checked')) return ['반을 골라 주세요', 'cls'];
+  if (el.code && !el.code.value.trim()) return ['가입 코드를 적어 주세요', 'code'];
+  return null;
+}
+function pwLevel(v) {
+  if (v.length < 6) return 0;
+  return Math.min(3, 1 + (v.length >= 10) + (/\d/.test(v) && /[a-z]/i.test(v) && (/[^a-z0-9]/i.test(v) || /[A-Z]/.test(v) || v.length >= 12)));
+}
+const PW_TXT = ['6자 이상 적어 주세요', '괜찮아요 · 숫자를 섞으면 더 좋아요', '좋아요 👍', '아주 튼튼해요 💪'];
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-auth]'); if (!t) return;
-  (t.closest('#introAuth') || $('#meBox')).innerHTML = authHtml(t.dataset.auth);   // 소개 화면 안의 폼이면 그 자리에서 바꿈
+  const card = t.closest('.authcard'), f = card?.querySelector('#authForm');
+  if (!card || t.dataset.auth === f?.dataset.mode) return;
+  const keep = f ? { handle: f.elements.handle.value, pw: f.elements.pw.value } : {};
+  const slot = card.parentElement;
+  slot.innerHTML = authHtml(t.dataset.auth, keep);   // 소개 화면 페이지면 그 자리, 내 프로필 화면이면 #meBox 안에서 바꿈
+  slot.firstElementChild.classList.add('swap');
+  const nf = slot.querySelector('#authForm');
+  nf.elements.pw.dispatchEvent(new Event('input', { bubbles: true }));
+  [...nf.querySelectorAll('input:not([type=radio])')].find(x => !x.value)?.focus({ preventScroll: true });
 });
+// 비밀번호 보기 · Caps Lock 안내
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-eye]'); if (!b) return;
+  const i = b.parentElement.querySelector('input'), on = i.type === 'password';
+  i.type = on ? 'text' : 'password'; b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? '비밀번호 숨기기' : '비밀번호 보기');
+  const end = i.value.length; i.focus(); try { i.setSelectionRange(end, end); } catch {}
+});
+['keydown', 'keyup'].forEach(ev => document.addEventListener(ev, e => {
+  if (e.target.name !== 'pw' || !e.target.closest('#authForm') || !e.getModifierState) return;
+  e.target.closest('label').querySelector('.caps').hidden = !e.getModifierState('CapsLock');
+}));
+document.addEventListener('focusout', e => { if (e.target.name === 'pw' && e.target.closest('#authForm')) e.target.closest('label').querySelector('.caps').hidden = true; });
 document.addEventListener('submit', async e => {
   const f = e.target;
   if (f.id !== 'authForm') return;
   e.preventDefault();
-  const d = Object.fromEntries(new FormData(f)), mode = f.dataset.mode;
+  const mode = f.dataset.mode, card = f.closest('.authcard');
+  const bad = checkForm(f, mode);
+  if (bad) return authErr(f, { message: bad[0], field: bad[1] }, mode);
+  const d = Object.fromEntries(new FormData(f));
   d.handle = (d.handle || '').trim().toLowerCase();
-  const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+  const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.classList.add('busy'); card.classList.add('busy');
   try {
     await call(mode, d);
     await refreshMe();
+    if (card.closest('#introAuth')) { card.classList.add('ok'); await new Promise(r => setTimeout(r, 760)); }   // 소개 화면: '입장!' 도장 찍히고 닫힘
     toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉 프로필을 꾸며 보세요` : `${S.me.name}, 반가워요!`);
     ctx.authed?.(S.me, true, mode);   // 소개 화면이면 닫힘
     renderMe();
     if (mode === 'signup') setTimeout(openEdit, 500);
   } catch (err) { authErr(f, err, mode); btn.disabled = false; }
+  finally { btn.classList.remove('busy'); card.classList.remove('busy'); }
 });
 // 로그인·가입 실패: 토스트 대신 폼 안에 빨간 경고 + 틀린 칸 빨간 테두리 (다시 입력하면 사라짐)
 function authErr(f, err, mode) {
   const msg = err.message || '문제가 생겼어요', box = f.querySelector('.ferr');
-  const hit = mode === 'login' && err.status === 401 ? ['handle', 'pw']
+  const hit = err.field ? [err.field] : mode === 'login' && err.status === 401 ? ['handle', 'pw']
     : /아이디/.test(msg) ? ['handle'] : /비밀번호/.test(msg) ? ['pw'] : /코드/.test(msg) ? ['code'] : [];
   f.querySelectorAll('.bad').forEach(x => x.classList.remove('bad'));
-  hit.forEach(n => f.elements[n]?.classList.add('bad'));
+  hit.forEach(n => { const x = f.elements[n]; if (x instanceof RadioNodeList) x[0]?.closest('.apick')?.classList.add('bad'); else x?.classList.add('bad'); });
   box.textContent = '⚠️ ' + msg; box.hidden = false;
   f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake');
   const pw = f.elements.pw;
-  if (hit.includes('pw') && pw) { pw.value = ''; pw.focus(); } else f.elements[hit[0]]?.focus();
+  if (hit.includes('pw') && pw && err.status) { pw.value = ''; pw.dispatchEvent(new Event('input', { bubbles: true })); pw.focus(); }
+  else { const x = f.elements[hit[0]]; (x instanceof RadioNodeList ? x[0] : x)?.focus(); }
 }
 document.addEventListener('input', e => {
   const f = e.target.closest?.('#authForm'); if (!f) return;
-  e.target.classList.remove('bad');
+  const t = e.target, up = f.dataset.mode === 'signup';
+  t.classList.remove('bad'); t.closest('.apick')?.classList.remove('bad');
+  if (t.name === 'handle') {   // 아이디: 치는 대로 소문자, 띄어쓰기 없앰 (커서 위치 유지)
+    const v = t.value.toLowerCase().replace(/\s+/g, '');
+    if (v !== t.value) { const p = t.selectionStart - (t.value.length - v.length); t.value = v; try { t.setSelectionRange(p, p); } catch {} }
+    t.closest('.fld').classList.toggle('valid', up && HANDLE_OK.test(v));
+  }
+  if (t.name === 'name') f.querySelector('[data-cnt]').textContent = `${[...t.value].length}/12`;
+  if (t.name === 'pw' && up) { const m = f.querySelector('.pwm'), lv = t.value ? pwLevel(t.value) : 0; m.dataset.lv = lv; m.classList.toggle('short', !!t.value && !lv); m.querySelector('em').textContent = t.value && !lv ? `${6 - t.value.length}자 더 적어 주세요` : PW_TXT[lv]; }
   if (!f.querySelector('.bad')) f.querySelector('.ferr').hidden = true;
 });
 

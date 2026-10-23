@@ -1100,7 +1100,6 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .in-cta .btn{min-width:164px;white-space:nowrap}
 .in-hl .in-cta .btn:first-child{animation:inNudge 4.5s 2s ease-in-out infinite}
 .in-note{font-size:13px;font-weight:700;color:var(--sub)}
-.in-auth{width:100%;max-width:420px;margin-top:4px;text-align:left;animation:fade .3s ease-out}
 
 /* 종 시계 스티커 */
 .in-live{position:relative;z-index:2;justify-self:center;width:min(100%,410px);display:flex;flex-direction:column;align-items:center;gap:14px;animation:inPop .7s .25s cubic-bezier(.34,1.4,.6,1) both}
@@ -1251,6 +1250,131 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 @keyframes inLive{70%{box-shadow:0 0 0 9px rgba(125,255,176,0)}100%{box-shadow:0 0 0 0 rgba(125,255,176,0)}}
 @keyframes inNudge{0%,86%,100%{transform:none}90%{transform:rotate(-2deg) scale(1.03)}94%{transform:rotate(2deg) scale(1.03)}}
 @keyframes inGrow{from{flex:50}}
+
+/* ----- 로그인·가입 페이지 (#introAuth.authpage · 소개 화면 위 전체 화면) ----- */
+.authpage{position:fixed;inset:0;z-index:5;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:minmax(330px,500px) 1fr;
+  background-color:var(--bg);background-image:radial-gradient(var(--dot) 1.6px,transparent 1.7px);background-size:22px 22px;animation:apIn .32s cubic-bezier(.2,.8,.2,1)}
+.authpage.out{animation:apOut .22s ease-in forwards}
+@keyframes apIn{from{opacity:0;transform:translateY(24px)}}
+@keyframes apOut{to{opacity:0;transform:translateY(18px)}}
+.ap-board{position:sticky;top:24px;align-self:start;height:calc(100dvh - 48px);min-height:520px;margin:24px 0 24px 24px;padding:44px 38px;background:var(--hero);color:#fff;
+  background-image:radial-gradient(rgba(255,255,255,.16) 1.4px,transparent 1.5px);background-size:18px 18px;
+  border:3px solid var(--ink);border-radius:32px;box-shadow:7px 7px 0 var(--ink);rotate:-1deg;display:flex;flex-direction:column;justify-content:center;gap:18px;animation:inPop .55s .05s cubic-bezier(.34,1.4,.6,1) both}
+.ap-tape{position:absolute;top:-12px;left:50%;width:130px;height:30px;margin-left:-65px;background:rgba(255,224,138,.9);border:2px solid rgba(23,48,72,.25);rotate:3deg}
+.ap-stk{position:absolute;font-style:normal;line-height:1;pointer-events:none}
+.ap-stk.s1{top:9%;right:12%;font-size:34px;color:var(--yellow);text-shadow:2px 2px 0 var(--ink);animation:inFloat 3.2s ease-in-out infinite}
+.ap-stk.s2,.ap-stk.s3{display:grid;place-items:center;width:64px;height:64px;font-size:32px;background:#fff;border:var(--bd);border-radius:18px;box-shadow:var(--sh-s)}
+.ap-stk.s2{bottom:7%;right:9%;rotate:10deg;animation:inFloat 3.8s .4s ease-in-out infinite}
+.ap-stk.s3{top:7%;left:-18px;rotate:-12deg;width:52px;height:52px;font-size:26px}
+.ap-logo{width:84px;height:84px;rotate:-8deg;filter:drop-shadow(4px 4px 0 var(--ink));animation:bob 3s ease-in-out infinite}
+.ap-name{font-family:var(--disp);font-size:clamp(44px,5vw,66px);line-height:.92;text-shadow:4px 4px 0 var(--ink);display:flex;flex-direction:column}
+.ap-name small{font-family:var(--num);font-weight:800;font-size:14px;letter-spacing:.5em;margin:0 0 8px 3px;text-shadow:none;opacity:.9}
+.ap-say{position:relative;align-self:flex-start;background:var(--card);color:var(--text);border:var(--bd);box-shadow:var(--sh-s);border-radius:18px;padding:8px 15px;font-weight:900;font-size:15px;rotate:-2deg;margin-top:4px}
+.ap-say::after{content:"";position:absolute;left:24px;top:-10px;width:15px;height:15px;background:var(--card);border-left:var(--bd);border-top:var(--bd);transform:rotate(45deg);border-radius:4px 0 0 0}
+.ap-live{display:inline-flex;align-self:flex-start;align-items:center;flex-wrap:wrap;gap:6px;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.2);font-weight:900;font-size:14px}
+.ap-live .dot{width:9px;height:9px;border-radius:50%;background:#7dffb0;animation:inLive 1.6s ease-out infinite}
+.ap-live b{font-family:var(--num);font-weight:800;font-size:16px;font-variant-numeric:tabular-nums;margin-left:2px}
+.ap-sep{opacity:.6}
+.ap-perks{list-style:none;display:grid;gap:10px;margin-top:10px}
+.ap-perks li{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.95);color:var(--ink);border:var(--bd);border-radius:16px;box-shadow:var(--sh-s);width:fit-content;max-width:100%}
+.ap-perks li:nth-child(1){rotate:-1.5deg}.ap-perks li:nth-child(2){rotate:1.2deg;margin-left:18px}.ap-perks li:nth-child(3){rotate:-.6deg;margin-left:6px}
+.ap-perks span{display:flex;flex-direction:column;font-size:12.5px;font-weight:700;color:var(--sub);line-height:1.3}
+.ap-perks b{font-size:14.5px;font-weight:900;color:var(--ink)}
+.ap-ic{width:30px;height:30px;flex:0 0 30px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;color:var(--ink);overflow:visible}
+.ap-main{position:relative;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:84px 28px 40px}
+.ap-back{position:absolute;top:24px;left:28px;display:inline-flex;align-items:center;gap:6px;padding:9px 16px 9px 11px;border-radius:999px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);font-weight:900;font-size:14px;transition:transform .1s,box-shadow .1s}
+.ap-back svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ap-back:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.ap-back:active,.ap-back.is-pressed{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.authslot{width:100%;max-width:450px}
+.ap-foot{max-width:450px;font-size:12.5px;font-weight:700;color:var(--sub);text-align:center;line-height:1.5}
+
+/* 폼 (소개 페이지 · 내 프로필 화면 공통) */
+.authcard{position:relative;padding:22px 24px 24px}
+.authcard .segs{position:relative}
+.authcard .segs button{position:relative;z-index:1;transition:color .2s}
+.authcard .segs button.on{background:none}
+.segs-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 6px);border-radius:10px;background:var(--ink)}
+.authcard[data-mode="signup"] .segs-pill{transform:translateX(calc(100% + 4px))}
+.authcard.swap .segs-pill{animation:pillL .28s cubic-bezier(.3,1.3,.5,1)}
+.authcard.swap[data-mode="signup"] .segs-pill{animation-name:pillR}
+@keyframes pillL{from{transform:translateX(calc(100% + 4px))}}
+@keyframes pillR{from{transform:none}}
+.authcard.swap .ah,.authcard.swap .sform{animation:fade .26s ease-out}
+.ah{margin:2px 0 16px;text-align:left}
+.ah-t{font-family:var(--disp);font-weight:400;font-size:27px;line-height:1.15}
+.ah-s{margin-top:4px;font-size:13.5px;font-weight:700;color:var(--sub)}
+.sform .fld{position:relative;display:block}
+.sform .fld.at input{padding-left:34px}
+.sform .fld .pre{position:absolute;left:14px;top:50%;transform:translateY(-52%);font-family:var(--num);font-weight:800;font-size:17px;color:var(--sub);pointer-events:none}
+.sform .fld .vok{position:absolute;right:12px;top:50%;width:24px;height:24px;margin-top:-12px;display:grid;place-items:center;border-radius:50%;background:#3fc58f;color:#fff;font-style:normal;font-size:13px;font-weight:900;border:2px solid var(--ink);opacity:0;transform:scale(.4);transition:opacity .15s,transform .25s cubic-bezier(.3,1.6,.5,1);pointer-events:none}
+.sform .fld.valid .vok{opacity:1;transform:none}
+.sform .fld.valid input{padding-right:44px}
+.sform .fld input[name="pw"]{padding-right:52px}
+.sform .eye{position:absolute;right:5px;top:50%;width:42px;height:42px;margin-top:-21px;display:grid;place-items:center;border-radius:11px;color:var(--sub)}
+.sform .eye:hover{color:var(--text);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.sform .eye svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sform .eye .e-open,.sform .eye[aria-pressed="true"] .e-shut{display:none}
+.sform .eye[aria-pressed="true"] .e-open{display:inline}
+.sform .lrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sform .cnt{font-family:var(--num);font-weight:700;font-size:12px;color:var(--sub)}
+.sform .caps{justify-self:start;padding:3px 10px;border-radius:9px;background:var(--yellow);color:#173048;border:2px solid var(--ink);font-size:12.5px;font-weight:900;animation:fade .2s ease-out}
+.pwm{display:flex;align-items:center;gap:5px;font-weight:700}
+.pwm i{flex:0 0 34px;height:6px;border-radius:4px;background:var(--line);transition:background .2s}
+.pwm em{margin-left:6px;font-style:normal;font-size:12.5px;color:var(--sub)}
+.pwm[data-lv="1"] i:nth-child(1){background:#ffb347}
+.pwm[data-lv="2"] i:nth-child(-n+2){background:var(--sky)}
+.pwm[data-lv="3"] i{background:#3fc58f}
+.pwm.short em{color:#d23a30}
+:root[data-theme="dark"] .pwm.short em{color:#ff9a92}
+.sform .apick{border:0;display:grid;gap:7px;min-width:0}
+.sform .apick legend{font-weight:900;font-size:14px;margin-bottom:7px}
+.pchips{display:grid;gap:6px}
+.pchips.g3{grid-template-columns:repeat(3,1fr)}
+.pchips.g10{grid-template-columns:repeat(10,1fr)}
+.sform .pchip{position:relative;display:block;margin:0;font-weight:900;font-size:inherit;gap:0}
+.pchip input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.pchip span{display:block;padding:9px 0;text-align:center;border-radius:12px;border:2px solid var(--line);background:var(--chip);font-size:14px;font-family:var(--num);transition:transform .12s,background .12s,border-color .12s}
+.pchip:hover span{border-color:var(--ink)}
+.pchip input:checked + span{background:var(--accent);color:#fff;border-color:var(--ink);box-shadow:2px 2px 0 var(--ink);transform:rotate(-3deg) translateY(-1px)}
+.pchip input:focus-visible + span{outline:3px solid var(--yellow);outline-offset:2px}
+.sform .apick.bad .pchip span{border-color:#e2483d}
+.sbtn{position:relative}
+.sbtn.busy{opacity:1}
+.sbtn.busy .sb-t{visibility:hidden}
+.sb-w{display:none;position:absolute;inset:0;align-items:center;justify-content:center;gap:6px}
+.sbtn.busy .sb-w{display:flex}
+.sb-w i{width:8px;height:8px;border-radius:50%;background:currentColor;animation:sbDot .9s ease-in-out infinite}
+.sb-w i:nth-child(2){animation-delay:.15s}.sb-w i:nth-child(3){animation-delay:.3s}
+@keyframes sbDot{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-6px);opacity:1}}
+.authcard.busy .sform input,.authcard.busy .sform .pchip{pointer-events:none}
+.aswap{text-align:center;font-size:13.5px;font-weight:700;color:var(--sub)}
+.aswap button{color:var(--accent);font-weight:900;text-decoration:underline;text-underline-offset:3px;padding:2px 2px}
+.astamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;visibility:hidden}
+.astamp b{font-family:var(--disp);font-weight:400;font-size:56px;line-height:1;color:#e2483d;border:5px solid #e2483d;border-radius:16px;padding:6px 24px 2px;background:color-mix(in srgb,var(--card) 88%,transparent);rotate:-12deg}
+.authcard.ok .astamp{visibility:visible}
+.authcard.ok .astamp b{animation:stamp .4s cubic-bezier(.2,1.5,.4,1) both}
+.authcard.ok .sform,.authcard.ok .ah,.authcard.ok .segs{opacity:.35;transition:opacity .3s}
+@keyframes stamp{from{opacity:0;transform:scale(2.3)}60%{opacity:1}}
+@media (max-width:900px){
+  .authpage{grid-template-columns:1fr;align-content:start}
+  .ap-board{position:relative;top:0;height:auto;min-height:0;margin:26px 16px 0;padding:20px 22px;rotate:-.6deg;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:6px 16px}
+  .ap-logo{width:60px;height:60px;grid-row:span 2}
+  .ap-name{font-size:34px;text-shadow:3px 3px 0 var(--ink)}.ap-name small{font-size:11px;margin-bottom:4px}
+  .ap-say,.ap-perks,.ap-stk.s2,.ap-stk.s3{display:none}
+  .ap-live{grid-column:2;font-size:13px;padding:4px 12px}
+  .ap-stk.s1{top:14%;right:6%;font-size:26px}
+  .ap-main{min-height:0;padding:22px 16px 40px;justify-content:flex-start}
+  .ap-back{position:static;align-self:flex-start;margin:-4px 0 2px}
+}
+@media (max-width:520px){
+  .pchips.g10{grid-template-columns:repeat(5,1fr)}
+  .authcard{padding:18px 16px 20px}
+  .ap-live .ap-sep,.ap-live #apLbl{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .authpage,.authpage.out,.ap-board,.ap-logo,.ap-stk,.authcard.swap .segs-pill,.authcard.ok .astamp b,.sb-w i{animation:none}
+}
 
 @media (max-width:900px){
   .in-hero{grid-template-columns:1fr;gap:34px;padding-top:24px;min-height:0}

@@ -122,7 +122,6 @@
           <button class="btn big ghost" type="button" data-intro="login">로그인</button>
         </div>
         <p class="in-note">아이디만 있으면 1분 · 이메일·전화번호 필요 없어요</p>
-        <div class="in-auth" id="introAuth" hidden></div>
       </div>
 
       <!-- 실제 시각·종 카운트다운(로그인 없이도 움직임) -->
@@ -239,6 +238,28 @@
     </section>
 
     <p class="in-foot">학생이 만든 비공식 사이트예요 · 급식·시간표·일정은 나이스 교육정보 개방 포털 기준<br><button type="button" data-act="info">이용 안내 · 개인정보</button></p>
+  </div>
+
+  <!-- 로그인·가입 페이지: 소개 화면의 가입/로그인 버튼을 누르면 전체 화면으로 열림. 로직은 app.js authPage(), 폼은 social.js authHtml() -->
+  <div class="authpage" id="introAuth" hidden>
+    <aside class="ap-board" aria-hidden="true">
+      <span class="ap-tape"></span>
+      <i class="ap-stk s1">✦</i><i class="ap-stk s2">🍉</i><i class="ap-stk s3">🎬</i>
+      <img class="ap-logo" src="/logo-mark.svg?v=4" alt="" width="84" height="84">
+      <p class="ap-name"><small>SVMHS</small>GROUND</p>
+      <p class="ap-say" id="apSay">오늘도 가보자</p>
+      <p class="ap-live"><i class="dot"></i><span id="apState">지금</span><span class="ap-sep">·</span><span id="apLbl">쉬는 시간까지</span><b id="apLeft">--:--</b></p>
+      <ul class="ap-perks">
+        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-tray"/></svg><span><b>급식·시간표</b>교시 맞춰 자동으로</span></li>
+        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-heart"/></svg><span><b>맞팔 DM</b>쉬는 시간에 수다</span></li>
+        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-flag"/></svg><span><b>미니게임 랭킹</b>반 대항전까지</span></li>
+      </ul>
+    </aside>
+    <div class="ap-main">
+      <button class="ap-back" type="button" data-auth-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>소개로 돌아가기</button>
+      <div class="authslot" id="authSlot"></div>
+      <p class="ap-foot">🏫 학교 태블릿처럼 여럿이 쓰는 기기라면 다 쓰고 꼭 <b>로그아웃</b>해 주세요. 로그인은 30일 동안 유지돼요.</p>
+    </div>
   </div>
 </div>
 
