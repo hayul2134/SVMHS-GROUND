@@ -557,7 +557,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .week th .wd-d{display:block;font-family:var(--num);font-weight:800;font-size:12px;opacity:.75}
 .week th .wd-w{display:inline-block;margin-top:4px;font-family:var(--disp);font-size:19px;color:var(--text)}
 .week th:first-child{width:44px}
-.week th.past{opacity:.85}
+.week th.past{filter:grayscale(1);opacity:.6}
 .week th.today .wd-d{color:var(--text);opacity:1}
 .week th.today .wd-w{background:var(--yellow);color:var(--onc);border:2px solid var(--ink);border-radius:10px;padding:2px 10px;box-shadow:var(--sh-s);transform:rotate(-3deg)}
 .week th.today .wd-w::after{content:"★";color:var(--red);margin-left:3px;font-size:.75em}
@@ -567,8 +567,10 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .week td .si .sic{display:block;margin:0 auto;filter:drop-shadow(1.5px 1.5px 0 color-mix(in srgb,var(--ink) 22%,transparent))}
 .week td.dbl .si{font-size:27px;margin-bottom:5px}
 .week td.done .si{filter:grayscale(1)}
-.week td.past{border-style:dashed;color:color-mix(in srgb,var(--text) 80%,var(--card))}
-.week td.past .si{opacity:.7;filter:grayscale(.7)}
+/* 지난 요일: 진한 흑백으로 오늘·남은 날과 분리 */
+.week td.past:not(.e){filter:grayscale(1) brightness(.84);border-style:dashed;color:color-mix(in srgb,var(--text) 70%,var(--card))}
+:root[data-theme="dark"] .week td.past:not(.e){filter:grayscale(1) brightness(.7)}
+.week td.past .si{opacity:.75}
 .week td.now .si{animation:siBob 1.6s ease-in-out infinite}
 @keyframes siBob{50%{transform:translateY(-2px) rotate(-8deg)}}
 @media (prefers-reduced-motion:reduce){.week td.now .si{animation:none}}
