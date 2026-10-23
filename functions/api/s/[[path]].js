@@ -231,7 +231,7 @@ const ROUTES = {
     const g = +body.grade, c = +body.cls;
     const u = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5) RETURNING id`)
       .bind(handle, name, await hashPw(pw, salt), salt, Date.now(), AVATARS[Math.floor(Math.random() * 16)],
-        g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 10 ? c : 0).first();
+        g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 6 ? c : 0).first();
     return json({ ok: true }, 200, { 'set-cookie': await newSession(req, db, u.id) });
   },
 
@@ -286,7 +286,7 @@ const ROUTES = {
     const insta = String(body.insta || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '').toLowerCase();
     if (insta && !/^(?!.*\.\.)(?!\.)[a-z0-9._]{1,30}(?<!\.)$/.test(insta)) return err('인스타 아이디는 영문·숫자·밑줄(_)·마침표(.)만 쓸 수 있어요');
     await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9, insta = ?11 WHERE id = ?10')
-      .bind(name, clean(body.bio, 80, true), avatar, color, g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 10 ? c : 0, clean(body.club, 16), clean(body.mood, 24),
+      .bind(name, clean(body.bio, 80, true), avatar, color, g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 6 ? c : 0, clean(body.club, 16), clean(body.mood, 24),
         JSON.stringify([...new Set(stickers)]), me.id, insta).run();
     return json({ ok: true });
   }),
@@ -569,7 +569,7 @@ const ROUTES = {
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
     const salt = randHex(16), g2 = +body.grade, c2 = +body.cls;
     const nu = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, google_sub) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?9) RETURNING id`)
-      .bind(handle, name, await hashPw(randHex(24), salt), salt, Date.now(), AVATARS[Math.floor(Math.random() * 16)], g2 >= 1 && g2 <= 3 ? g2 : 0, c2 >= 1 && c2 <= 10 ? c2 : 0, g.sub).first();   // 비밀번호는 아무도 모르는 무작위 값(구글로만 로그인)
+      .bind(handle, name, await hashPw(randHex(24), salt), salt, Date.now(), AVATARS[Math.floor(Math.random() * 16)], g2 >= 1 && g2 <= 3 ? g2 : 0, c2 >= 1 && c2 <= 6 ? c2 : 0, g.sub).first();   // 비밀번호는 아무도 모르는 무작위 값(구글로만 로그인)
     return json({ ok: true, created: true }, 200, { 'set-cookie': await newSession(req, db, nu.id) });
   },
   // 이미 있는 계정에 구글 연결 / 해제

@@ -86,12 +86,13 @@ function startPoll() {
 
 /* ===== 로그인 · 가입 ===== */
 // keep: 탭(로그인↔가입)을 바꿀 때 적던 아이디·비밀번호를 그대로 옮겨 줌
+const CLS_N = 6;   // 서울영상고는 학년마다 6반까지
 const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="e-open" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle class="e-open" cx="12" cy="12" r="3"/><path class="e-shut" d="M3.5 9.5Q12 16.5 20.5 9.5M7 13.4 5.4 15.8M12 15.2v2.8M17 13.4l1.6 2.4"/></svg>';
 function authHtml(mode = 'login', keep = {}) {
   const c = ctx.getClass?.() || null, up = mode === 'signup';
   const radio = (name, v, txt, on) => `<label class="pchip"><input type="radio" name="${name}" value="${v}" required ${on ? 'checked' : ''}><span>${txt}</span></label>`;
   const grades = [1, 2, 3].map(g => radio('grade', g, g + '학년', c && +c.g === g)).join('');
-  const classes = Array.from({ length: 10 }, (_, i) => radio('cls', i + 1, i + 1, c && +c.c === i + 1)).join('');
+  const classes = Array.from({ length: CLS_N }, (_, i) => radio('cls', i + 1, i + 1, c && +c.c === i + 1)).join('');
   return `<div class="card authcard" data-mode="${mode}">
     <div class="segs" role="tablist" aria-label="로그인 또는 회원가입"><i class="segs-pill" aria-hidden="true"></i><button type="button" role="tab" aria-selected="${!up}" data-auth="login" class="${up ? '' : 'on'}">로그인</button><button type="button" role="tab" aria-selected="${up}" data-auth="signup" class="${up ? 'on' : ''}">회원가입</button></div>
     <div class="ah"><h2 class="ah-t">${up ? '처음 왔군요! ✨' : '다시 왔네요 👋'}</h2><p class="ah-s">${up ? '아이디만 정하면 1분이면 끝나요. 이메일·전화번호는 안 받아요.' : '아이디와 비밀번호를 적어 주세요.'}</p></div>
@@ -102,10 +103,10 @@ function authHtml(mode = 'login', keep = {}) {
         <small class="caps" hidden>⇪ Caps Lock이 켜져 있어요</small>
         ${up ? '<span class="pwm" data-lv="0" aria-live="polite"><i></i><i></i><i></i><em>6자 이상 적어 주세요</em></span>' : ''}</label>
       ${up ? `
-        <fieldset class="apick"><legend>학년</legend><div class="pchips g3">${grades}</div></fieldset>
-        <fieldset class="apick"><legend>반</legend><div class="pchips g10">${classes}</div></fieldset>
+        <div class="apicks"><fieldset class="apick"><legend>학년</legend><div class="pchips g3">${grades}</div></fieldset>
+        <fieldset class="apick"><legend>반</legend><div class="pchips g6">${classes}</div></fieldset></div>
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
-        <p class="note">⚠️ 이메일을 받지 않아요. 가입 뒤 프로필 → ⚙️에서 구글을 연결해 두면 아이디·비밀번호를 잊어도 찾을 수 있어요. 다른 사이트와 다른 비밀번호를 써 주세요.</p>` : ''}
+        <p class="note">⚠️ 이메일을 받지 않아요. 가입 뒤 프로필 → ⚙️에서 구글을 연결해 두면 잊어도 찾을 수 있어요. 다른 사이트와 다른 비밀번호를 써 주세요.</p>` : ''}
       <p class="ferr" role="alert" hidden></p>
       <button class="btn big sbtn" type="submit"><span class="sb-t">${up ? '가입하고 시작하기' : '로그인'}</span><span class="sb-w" aria-hidden="true"><i></i><i></i><i></i></span></button>
       ${!up && S.google ? '<button class="linkbtn" type="button" data-forgot>아이디·비밀번호를 잊었어요</button>' : ''}
@@ -364,7 +365,7 @@ function openEdit() {
       <label>상태 메시지<input name="mood" maxlength="24" placeholder="예: 시험 끝나면 놀자🔥" value="${esc(u.mood)}"></label>
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
       ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0"><p class="hint">🛠 개발자 계정은 학년·반이 표시되지 않아요.</p>' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
-        <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>`}
+        <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: CLS_N }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>`}
       <label>인스타 아이디 (선택)<input name="insta" maxlength="60" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="예: svmhs_ground (@ 없이)" value="${esc(u.insta || '')}"><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <p class="lbl">프로필 사진</p>
@@ -827,7 +828,7 @@ function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아�
     <form class="sform" id="gForm">
       <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" placeholder="영어 소문자·숫자 3~16자"><small class="hint">🔑 나중에 바꿀 수 없어요.</small></label>
       <label>이름 (닉네임)<input name="name" required maxlength="12" value="${esc(name || '')}"></label>
-      <div class="two"><label>학년<select name="grade">${[1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label><label>반<select name="cls">${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>
+      <div class="two"><label>학년<select name="grade">${[1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label><label>반<select name="cls">${Array.from({ length: CLS_N }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>
       ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40"></label>' : ''}
       <p class="ferr" role="alert" hidden></p>
       <div class="row"><button class="btn" type="submit">가입하고 시작하기</button><button class="btn ghost" type="button" data-close>취소</button></div>
