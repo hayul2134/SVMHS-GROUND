@@ -2008,12 +2008,12 @@ html:not(.at-svc):not(.prelogin) body[data-view="home"]:not(.playing) .mascot{tr
   0%{transform:translateY(0) scale(1,1)}
   8%{transform:translateY(-14%) scale(.9,1.12)}
   16%{transform:translateY(-10%) scale(.94,1.08)}
-  60%{transform:translateY(0) scale(.92,1.1)}
-  68%{transform:translateY(0) scale(1.22,.74)}
-  80%{transform:translateY(-4%) scale(.95,1.06)}
+  56%{transform:translateY(0) scale(.92,1.1)}
+  63%{transform:translateY(0) scale(1.22,.74)}
+  77%{transform:translateY(-4%) scale(.95,1.06)}
   90%{transform:translateY(0) scale(1.05,.96)}
   100%{transform:translateY(0) scale(1,1)}}
-@keyframes m-headfall{0%,100%{transform:none}8%{transform:translateY(-6%)}60%{transform:translateY(-8%) rotate(-4deg)}70%{transform:translateY(5%)}82%{transform:translateY(-2%)}}
+@keyframes m-headfall{0%,100%{transform:none}8%{transform:translateY(-6%)}56%{transform:translateY(-8%) rotate(-4deg)}65%{transform:translateY(5%)}79%{transform:translateY(-2%)}}
 @keyframes m-rise{
   0%{transform:translateY(0) scale(1,1) rotate(0)}
   12%{transform:translateY(0) scale(.88,1.14) rotate(0)}
