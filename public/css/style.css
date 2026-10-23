@@ -165,6 +165,15 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .clock:has(#bigTime.long) .dk.dot1,.clock:has(#bigTime.long2) .dk.dot1{right:-13%}
 @media (max-width:560px){.clock:has(#bigTime.long) .dk.tape,.clock:has(#bigTime.long2) .dk.tape{top:-6%;right:-9%}}
 @media (prefers-reduced-motion:reduce){.stage.soon .s-big,.stage.soon2 .s-big,.stage.soon3 .s-big{animation:none}}
+/* 수업 중 '쉬는 시간까지' 카운트다운: 초록 + 커졌다 작아졌다(두근두근). 마지막 1분은 기존 흔들림을 초록으로 */
+.stage.go .s-what{background:linear-gradient(transparent 58%,#9df0bb 58% 88%,transparent 88%)}
+.stage.go .s-big{display:inline-block;color:#1faa5c;text-shadow:6px 6px 0 #a8efc4;transform-origin:50% 55%}
+.stage.go.soon3 .s-big{text-shadow:7px 7px 0 #7fe3a6}
+.stage.go:not(.soon) .s-big{animation:goPulse 1s cubic-bezier(.4,0,.3,1) infinite}
+@keyframes goPulse{0%,100%{transform:scale(1)}18%{transform:scale(1.08) rotate(-1.2deg)}36%{transform:scale(.97) rotate(.6deg)}54%{transform:scale(1.03)}72%{transform:scale(1)}}
+:root[data-theme="dark"] .stage.go .s-big{color:#5fe39a;text-shadow:3px 3px 0 #000}
+@media (max-width:560px){.stage.go .s-big{text-shadow:4px 4px 0 #a8efc4}}
+@media (prefers-reduced-motion:reduce){.stage.go .s-big{animation:none}}
 .s-sub{margin-top:22px;display:flex;justify-content:center}
 .s-sub[hidden]{display:none}
 .s-left{display:inline-flex;align-items:center;gap:12px;background:var(--card);color:var(--text);border:var(--bd);border-radius:999px;box-shadow:var(--sh-s);padding:8px 10px 8px 20px;transform:rotate(-1.5deg)}

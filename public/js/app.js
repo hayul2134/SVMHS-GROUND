@@ -157,6 +157,7 @@ function tickClock() {
   hero.classList.toggle('soon2', left != null && left <= 30);  // 30초: 더 크게
   hero.classList.toggle('soon3', left != null && left <= 10);  // 10초: 가장 크게 + 1/100초
   hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
+  hero.classList.toggle('go', / 수업 중$/.test(b.state) && left != null && left > 0);   // 수업 중(끝나길 기다리는 시간): 초록 + 두근두근
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
   const restBar = /쉬는|점심/.test(b.state);   // 쉬는 시간: 100%에서 줄어듦(남은 %), 수업: 0%에서 늘어남(지난 %)
