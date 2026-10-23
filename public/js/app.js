@@ -156,12 +156,18 @@ function tickClock() {
   hero.classList.toggle('soon', left != null && left <= 60);    // 1분: 숫자만 흔들림
   hero.classList.toggle('soon2', left != null && left <= 30);  // 30초: 더 크게
   hero.classList.toggle('soon3', left != null && left <= 10);  // 10초: 가장 크게 + 1/100초
-  hero.classList.toggle('rest', /쉬는|점심/.test(b.state));
-  hero.classList.toggle('go', / 수업 중$/.test(b.state) && left != null && left > 0);   // 수업 중(끝나길 기다리는 시간): 초록 + 두근두근
+  const isRest = /쉬는|점심/.test(b.state);
+  hero.classList.toggle('rest', isRest);
+  if (isRest && S.wasRest === false) { hero.classList.add('yay'); clearTimeout(S.yayT); S.yayT = setTimeout(() => hero.classList.remove('yay'), 4000); }   // 쉬는 시간이 막 시작: 4초만 초록 두근두근 후 차분하게
+  S.wasRest = isRest;
+  hero.classList.toggle('go', / 수업 중$/.test(b.state) && left != null && left > 0 && left <= 60);   // 수업 마지막 1분: 초록 두근두근
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
   const restBar = /쉬는|점심/.test(b.state);   // 쉬는 시간: 100%에서 줄어듦(남은 %), 수업: 0%에서 늘어남(지난 %)
   if (bar) $('#bellBar').style.transform = `scaleX(${(restBar ? 1 - prog : prog).toFixed(4)})`;
+  const restPct = Math.ceil((1 - prog) * 100);   // 배터리처럼: 40% 이하 노랑, 20% 이하 빨강
+  $('#bellBarBox').classList.toggle('low', bar && restBar && restPct <= 40 && restPct > 20);
+  $('#bellBarBox').classList.toggle('crit', bar && restBar && restPct <= 20);
   setText('#bellPct', bar ? (restBar ? `${Math.ceil((1 - prog) * 100)}% 남음` : `${Math.floor(prog * 100)}% 지남`) : b.state === '쉬는 날' ? '푹 쉬는 날' : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
   tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
