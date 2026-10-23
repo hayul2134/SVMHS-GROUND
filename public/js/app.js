@@ -148,7 +148,7 @@ function tickClock() {
   const pi = periodInfo(b);
   if (ymd(n) !== S.dayKey) {   // 자정이 지나면 '오늘' 기준 카드(시간표 표·급식·일정)를 새 날짜로 다시 그림
     const first = !S.dayKey; S.dayKey = ymd(n);
-    if (!first) { const d = today(); S.homeWeek = mondayOf(addDays(d, d.getDay() === 6 ? 2 : d.getDay() === 0 ? 1 : 0)); S.mealManual = false; renderHomeTT(); renderHomeMeal(); renderHomeDday(); }
+    if (!first) { S.mealManual = false; renderHomeTT(); renderHomeMeal(); renderHomeDday(); }
   } else if (!S.ttPick && S.ttShown && cls && ymd(ttTarget(n)) !== S.ttShown) renderHomeTT();   // 마지막 교시 끝에 홈 시간표 날짜 전환
   const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
   if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
@@ -808,7 +808,18 @@ function ttTarget(n = now()) {
 const bellAt = p => { const b = BELL.find(x => x.p === +p); return b ? `<span class="tm">${String(b.start / 3600 | 0).padStart(2, '0')}:${String(b.start % 3600 / 60).padStart(2, '0')}</span>` : ''; };
 const ttLabel = (d, base = today()) => { const k = diffDays(d, base); return k === 0 ? '오늘' : k === 1 ? '내일' : k === -1 ? '어제' : k > 1 && k < 7 ? DOW[d.getDay()] + '요일' : `${d.getMonth() + 1}/${d.getDate()}(${DOW[d.getDay()]})`; };
 let ttSeq = 0;
+// 주간 시간표가 보여 줄 주 = 홈 시간표가 보여 주는 날(ttTarget)의 주 — 금요일 마지막 교시가 끝나면 바로 다음 주(쉬는 주면 그다음 등교 주)
+// 자동으로 따라가던 표만 옮김(사용자가 ‹ ›로 다른 주를 보고 있으면 그대로 둠)
+function syncAutoWeek() {
+  const w = weekOf(ttTarget()), old = S.autoWk; S.autoWk = w;
+  if (old && ymd(old) === ymd(w)) return;
+  const was = d => !old || (d && ymd(d) === ymd(old));
+  S.homeWeek = w;
+  if (S.ttWk && was(S.ttWk)) S.ttWk = w;
+  if (was(S.ttWeek)) { S.ttWeek = w; if (old) renderTTView(); }
+}
 async function renderHomeTT() {
+  syncAutoWeek();
   const box = $('#sTT'), d = today(), tgt = S.ttPick || ttTarget(), seq = ++ttSeq, isToday = ymd(tgt) === ymd(d);
   S.ttShown = ymd(tgt);
   renderHomeWeek();
@@ -1985,7 +1996,7 @@ async function fillShow() {
 
 /* ===== 시작 ===== */
 if (store.get('wk_meal', false)) S.mealWk = weekOf(today());   // 홈 카드 하루/한 주 보기 기억
-if (store.get('wk_tt', false)) S.ttWk = weekOf(today());
+if (store.get('wk_tt', false)) S.ttWk = weekOf(ttTarget());
 tickClock();
 renderClassChip();
 store.pruneCache();
