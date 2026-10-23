@@ -1665,7 +1665,8 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .fbk input:focus-visible + span{outline:3px solid var(--accent);outline-offset:2px}
 /* 아이콘 버튼 이름표: 마우스를 올리면(또는 키보드로 고르면) 버튼 아래에 이름이 뜸. 터치 기기는 안 씀 */
 @media (hover:hover){
-  [data-tip]{position:relative}
+  /* :where()로 우선순위 0 — 원래 absolute·sticky인 버튼(▼ #goDown, 시트 닫기 등)의 위치를 덮어쓰지 않게 (2026-10-24: ▼가 흐름 안으로 들어와 첫 화면이 위로 쏠리던 원인) */
+  :where([data-tip]){position:relative}
   [data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 9px);left:50%;transform:translate(-50%,-4px);z-index:80;pointer-events:none;
     padding:7px 11px;border-radius:10px;background:#173048;color:#fff;font:700 12.5px/1.2 var(--sans);letter-spacing:-.01em;word-spacing:normal;white-space:nowrap;
     font-style:normal;font-synthesis:weight;font-variant-numeric:tabular-nums;text-transform:none;text-shadow:none;text-align:center;

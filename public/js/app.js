@@ -1044,14 +1044,18 @@ function centerHero(force) {
   if (document.documentElement.classList.contains('boot')) return;   // 등장 애니메이션 중엔 크기가 변하므로 안 잼
   const hx = parseFloat(st.getPropertyValue('--hx')) || 0, hy = parseFloat(st.getPropertyValue('--hy')) || 0;
   const bob = new DOMMatrix(getComputedStyle($('.s-greet')).transform).f;   // 말풍선 위아래 흔들림 값은 빼고 잼
+  // 옮기기 전(정렬값 빼고) 위치로 잼 — --hx/--hy 대신 '지금 실제로 적용 중인' translate를 뺌.
+  // translate가 전환 애니메이션 중일 때 재면 서랍 높이(--hcy)가 엉뚱하게 굳던 문제 (2026-10-24)
+  const offOf = el => { const p = el.closest('.s-greet,.s-what,.clock,.s-info'); const t = p ? getComputedStyle(p).translate : 'none';
+    if (!t || t === 'none') return [0, 0]; const [x, y] = t.split(' '); return [parseFloat(x) || 0, parseFloat(y) || 0]; };
   let L = Infinity, T = Infinity, R = -Infinity, B = -Infinity;
   for (const el of HERO.querySelectorAll(HERO_PARTS)) {
     const b = el.getBoundingClientRect(); if (!b.width || !b.height) continue;
-    const oy = el.classList.contains('bubble') ? bob : 0;
-    L = Math.min(L, b.left); R = Math.max(R, b.right); T = Math.min(T, b.top - oy); B = Math.max(B, b.bottom - oy);
+    const [ox, oy0] = offOf(el), oy = oy0 + (el.classList.contains('bubble') ? bob : 0);
+    L = Math.min(L, b.left - ox); R = Math.max(R, b.right - ox); T = Math.min(T, b.top - oy); B = Math.max(B, b.bottom - oy);
   }
   if (!isFinite(L)) return;   // 홈이 안 보이는 중
-  const sy = scrollY; L -= hx; R -= hx; T += sy - hy; B += sy - hy;   // 옮기기 전 위치(문서 기준)
+  const sy = scrollY; T += sy; B += sy;   // 옮기기 전 위치(문서 기준)
   // 위 한계: 헤더 아래(헤더는 화면 고정이라 스크롤 값 안 더함, 공지는 위에 겹쳐 뜨므로 제외) / 아래 한계: 밸런스 티켓·▼ 버튼·첫 화면 끝 중 가장 위
   const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, top = hdr + 14;
   let bot = Math.min(HERO.getBoundingClientRect().bottom + sy, innerHeight);
@@ -1069,8 +1073,8 @@ function centerHero(force) {
   // 좌우 서랍도 같은 가운데 줄에. 서랍이 헤더·화면 아래에 걸리면 화면 가운데로
   // 세로 기준은 말풍선을 뺀 큰 시계 + 상태 줄의 가운데 — 서랍 가운데를 정확히 같은 높이로 (말풍선까지 넣으면 카드가 위로 떠 보임 — 2026-10-23)
   let cT = Infinity, cB = -Infinity;
-  for (const el of HERO.querySelectorAll('#bigTime, #more')) { const b = el.getBoundingClientRect(); if (b.height) { cT = Math.min(cT, b.top); cB = Math.max(cB, b.bottom); } }
-  const cy = Math.round(isFinite(cT) ? (cT + cB) / 2 + sy - hy + dy : (T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
+  for (const el of HERO.querySelectorAll('#bigTime, #more')) { const b = el.getBoundingClientRect(), oy = offOf(el)[1]; if (b.height) { cT = Math.min(cT, b.top - oy); cB = Math.max(cB, b.bottom - oy); } }
+  const cy = Math.round(isFinite(cT) ? (cT + cB) / 2 + sy + dy : (T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
 }
 let heroRaf = 0, heroForce = false;
