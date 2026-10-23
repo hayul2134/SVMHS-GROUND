@@ -867,6 +867,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .segs button{flex:1;padding:8px 6px;border-radius:10px;font-weight:900;font-size:14px;color:var(--sub);white-space:nowrap}
 .segs button.on{background:var(--ink);color:var(--lime)}
 .sform{display:grid;gap:12px;text-align:left}
+.authcard .sform{gap:16px}
 .sform label,.sform .lbl{display:grid;gap:6px;font-weight:900;font-size:14px;margin:0}
 .sform .hint{font-weight:700;font-size:12.5px;color:var(--sub);line-height:1.4;margin-top:-2px}
 .lbl{font-weight:900;font-size:14px;text-align:left;margin:16px 0 8px}
@@ -1460,6 +1461,15 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .sform .eye[aria-pressed="true"] .e-open{display:inline}
 .sform .lrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .sform .cnt{font-family:var(--num);font-weight:700;font-size:12px;color:var(--sub)}
+/* 가입 폼: 칸을 두 묶음(로그인 정보 / 친구들에게 보일 정보)으로 나눠 한눈에 들어오게 — 설명은 라벨 줄 오른쪽 작은 꼬리표로 */
+.sform .fgrp{display:grid;gap:10px}
+.sform .fgrp + .fgrp{padding-top:14px;border-top:2px dashed var(--line)}
+.sform .fgt{display:flex;align-items:center;gap:7px;margin:0 0 -2px;font-size:12.5px;font-weight:900;color:var(--sub);letter-spacing:-.01em}
+.sform .fgt b{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--ink);color:var(--lime);font-family:var(--num);font-size:11px;line-height:1}
+.sform .lrow .tag{font-size:11.5px;font-weight:800;color:var(--sub);white-space:nowrap}
+.sform .lrow .pwm{flex:none}
+.sform .lrow .pwm i{flex-basis:22px;height:5px}
+.sform .lrow .pwm em{margin-left:3px;font-size:11.5px;white-space:nowrap}
 .sform .caps{justify-self:start;padding:3px 10px;border-radius:9px;background:var(--yellow);color:#173048;border:2px solid var(--ink);font-size:12.5px;font-weight:900;animation:fade .2s ease-out}
 .pwm{display:flex;align-items:center;gap:5px;font-weight:700}
 .pwm{--pc:#ffb347}
@@ -1514,7 +1524,9 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
   .authcard{padding:14px 20px 16px}
   .authcard .segs{margin-bottom:10px}
   .ah{margin:0 0 10px}.ah-t{font-size:23px}.ah-s{font-size:12.5px;margin-top:2px}
-  .authcard .sform{gap:8px}
+  .authcard .sform{gap:10px}
+  .authcard .sform .fgrp{gap:7px}
+  .authcard .sform .fgrp + .fgrp{padding-top:9px}
   .authcard .sform label{gap:4px}
   .authcard .sform input{padding:9px 13px}
   .authcard .sform .hint{font-size:11.5px;margin-top:-1px}
@@ -1529,10 +1541,7 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 /* 더 낮은 화면(세로 760 이하): 위 탭과 겹치는 안내는 숨기고, 비밀번호 세기는 라벨 옆으로 */
 @media (min-width:901px) and (max-height:760px){
   .ap-main{padding:12px 28px;gap:6px}
-  .ah-s,.authcard .sform [name="name"] ~ .hint,.authcard .aswap,.authcard .gor{display:none}
-  .authcard .sform label:has(.pwm){position:relative}
-  .authcard .sform .pwm{position:absolute;top:1px;right:0}
-  .authcard .sform .pwm i{flex-basis:26px}
+  .ah-s,.authcard .aswap,.authcard .gor,.authcard .sform .fgt{display:none}
 }
 @media (max-width:900px){
   .authpage{grid-template-columns:1fr;align-content:start}

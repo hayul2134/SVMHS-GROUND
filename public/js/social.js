@@ -100,22 +100,25 @@ function authHtml(mode = 'login', keep = {}) {
   const classes = Array.from({ length: CLS_N }, (_, i) => radio('cls', i + 1, i + 1, c && +c.c === i + 1)).join('');
   return `<div class="card authcard" data-mode="${mode}">
     <div class="segs" role="tablist" aria-label="로그인 또는 회원가입"><i class="segs-pill" aria-hidden="true"></i><button type="button" role="tab" aria-selected="${!up}" data-auth="login" class="${up ? '' : 'on'}">로그인</button><button type="button" role="tab" aria-selected="${up}" data-auth="signup" class="${up ? 'on' : ''}">회원가입</button></div>
-    <div class="ah"><h2 class="ah-t">${up ? '처음 왔군요! ✨' : '다시 왔네요 👋'}</h2><p class="ah-s">${up ? '아이디만 정하면 1분이면 끝나요. 이메일·전화번호는 안 받아요.' : '아이디와 비밀번호를 적어 주세요.'}</p></div>
+    <div class="ah"><h2 class="ah-t">${up ? '처음 왔군요! ✨' : '다시 왔네요 👋'}</h2><p class="ah-s">${up ? '1분이면 끝나요 · 이메일·전화번호는 안 받아요' : '아이디와 비밀번호를 적어 주세요.'}</p></div>
     <form class="sform" id="authForm" data-mode="${mode}" autocomplete="on" novalidate>
-      <label>아이디<span class="fld at"><span class="pre" aria-hidden="true">@</span><input name="handle" required minlength="3" maxlength="16" pattern="[a-z0-9_.]{3,16}" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username" placeholder="영어 소문자·숫자 3~16자" value="${esc(keep.handle || '')}"><i class="vok" aria-hidden="true">✓</i></span>${up ? '<small class="hint" data-hint="handle">🔑 로그인할 때 쓰는 이름이에요. 나중에 바꿀 수 없어요.</small>' : ''}</label>
-      ${up ? `<label><span class="lrow">이름 (닉네임)<small class="cnt" data-cnt>0/20</small></span><input name="name" required maxlength="20" placeholder="친구들에게 보일 이름"><small class="hint">👀 친구들 화면에 보이는 이름이에요. 언제든 바꿀 수 있어요.</small></label>` : ''}
-      <label>비밀번호<span class="fld"><input name="pw" type="password" required minlength="6" maxlength="64" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="6자 이상" value="${esc(keep.pw || '')}"><button class="eye" type="button" data-eye aria-label="비밀번호 보기" aria-pressed="false">${EYE}</button></span>
-        <small class="caps" hidden>⇪ Caps Lock이 켜져 있어요</small>
-        ${up ? '<span class="pwm" data-lv="0" aria-live="polite"><i></i><i></i><i></i><em>6자 이상 적어 주세요</em></span>' : ''}</label>
+      <div class="fgrp">${up ? '<p class="fgt"><b>1</b>로그인할 때 쓸 정보</p>' : ''}
+      <label><span class="lrow">아이디${up ? '<small class="tag">🔒 나중에 못 바꿔요</small>' : ''}</span><span class="fld at"><span class="pre" aria-hidden="true">@</span><input name="handle" required minlength="3" maxlength="16" pattern="[a-z0-9_.]{3,16}" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username" placeholder="영어 소문자·숫자 3~16자" value="${esc(keep.handle || '')}"><i class="vok" aria-hidden="true">✓</i></span></label>
+      <label><span class="lrow">비밀번호${up ? '<span class="pwm" data-lv="0" aria-live="polite"><i></i><i></i><i></i><em>6자 이상</em></span>' : ''}</span><span class="fld"><input name="pw" type="password" required minlength="6" maxlength="64" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="6자 이상" value="${esc(keep.pw || '')}"><button class="eye" type="button" data-eye aria-label="비밀번호 보기" aria-pressed="false">${EYE}</button></span>
+        <small class="caps" hidden>⇪ Caps Lock이 켜져 있어요</small></label>
+      </div>
       ${up ? `
+      <div class="fgrp"><p class="fgt"><b>2</b>친구들에게 보일 정보</p>
+        <label><span class="lrow">이름 (닉네임)<small class="cnt" data-cnt>0/20</small></span><input name="name" required maxlength="20" placeholder="언제든 바꿀 수 있어요"></label>
         <div class="apicks"><fieldset class="apick"><legend>학년</legend><div class="pchips g3">${grades}</div></fieldset>
         <fieldset class="apick"><legend>반</legend><div class="pchips g6">${classes}</div></fieldset></div>
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
-        <p class="note">⚠️ 이메일을 받지 않아요. 가입 뒤 프로필 → ⚙️에서 구글을 연결해 두면 잊어도 찾을 수 있어요. 다른 사이트와 다른 비밀번호를 써 주세요.</p>` : ''}
+      </div>
+      <p class="note">💡 가입 뒤 ⚙️에서 구글을 연결하면 비밀번호를 잊어도 찾을 수 있어요</p>` : ''}
       <p class="ferr" role="alert" hidden></p>
       <button class="btn big sbtn" type="submit"><span class="sb-t">${up ? '가입하고 시작하기' : '로그인'}</span><span class="sb-w" aria-hidden="true"><i></i><i></i><i></i></span></button>
       ${!up && S.google ? '<button class="linkbtn" type="button" data-forgot>아이디·비밀번호를 잊었어요</button>' : ''}
-      <p class="aswap">${up ? '이미 계정이 있나요? <button type="button" data-auth="login">로그인</button>' : '아직 계정이 없나요? <button type="button" data-auth="signup">1분 만에 가입하기</button>'}</p>
+      ${up ? '' : '<p class="aswap">아직 계정이 없나요? <button type="button" data-auth="signup">1분 만에 가입하기</button></p>'}
     </form>
     ${S.google ? `<div class="gbox alt"><p class="gor"><span>원하면 구글로도 ${up ? '가입' : '로그인'}할 수 있어요</span></p><div class="gbtn" data-gintent="login"></div></div>` : ''}
     <div class="astamp" aria-hidden="true"><b>입장!</b></div>
@@ -127,9 +130,9 @@ function checkForm(f, mode) {
   const el = f.elements, h = el.handle.value.trim();
   if (!h) return ['아이디를 적어 주세요', 'handle'];
   if (mode === 'signup' && !HANDLE_OK.test(h)) return ['아이디는 영어 소문자·숫자·_·. 로 3~16자예요', 'handle'];
-  if (mode === 'signup' && !el.name.value.trim()) return ['친구들에게 보일 이름을 적어 주세요', 'name'];
   if (!el.pw.value) return ['비밀번호를 적어 주세요', 'pw'];
   if (mode === 'signup' && el.pw.value.length < 6) return ['비밀번호는 6자 이상이에요', 'pw'];
+  if (mode === 'signup' && !el.name.value.trim()) return ['친구들에게 보일 이름을 적어 주세요', 'name'];
   if (mode === 'signup' && !f.querySelector('[name=grade]:checked')) return ['학년을 골라 주세요', 'grade'];
   if (mode === 'signup' && !f.querySelector('[name=cls]:checked')) return ['반을 골라 주세요', 'cls'];
   if (el.code && !el.code.value.trim()) return ['가입 코드를 적어 주세요', 'code'];
@@ -147,7 +150,7 @@ function pwFill(v) {
   const frac = lv === 0 ? n / 6 : lv === 1 ? Math.min(.9, (n - 6) / 4 + .1) : Math.min(.9, .15 + kinds * .25 + Math.max(0, n - 10) * .1);
   return lv + frac;
 }
-const PW_TXT = ['6자 이상 적어 주세요', '괜찮아요 · 숫자를 섞으면 더 좋아요', '좋아요 👍', '아주 튼튼해요 💪'];
+const PW_TXT = ['6자 이상', '보통 · 숫자 섞기', '좋아요 👍', '튼튼해요 💪'];
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-auth]'); if (!t) return;
   const card = t.closest('.authcard'), f = card?.querySelector('#authForm');
@@ -216,7 +219,7 @@ document.addEventListener('input', e => {
     t.closest('.fld').classList.toggle('valid', up && HANDLE_OK.test(v));
   }
   if (t.name === 'name') f.querySelector('[data-cnt]').textContent = `${[...t.value].length}/20`;
-  if (t.name === 'pw' && up) { const m = f.querySelector('.pwm'), lv = t.value ? pwLevel(t.value) : 0; const fill = t.value ? pwFill(t.value) : 0; if (lv > +m.dataset.lv) { const seg = m.querySelectorAll('i')[lv - 1]; seg.classList.remove('pop'); void seg.offsetWidth; seg.classList.add('pop'); } m.querySelectorAll('i').forEach((x, k) => x.style.setProperty('--f', Math.max(0, Math.min(1, fill - k)).toFixed(3))); m.dataset.lv = lv; m.classList.toggle('short', !!t.value && !lv); m.querySelector('em').textContent = t.value && !lv ? `${6 - t.value.length}자 더 적어 주세요` : PW_TXT[lv]; }
+  if (t.name === 'pw' && up) { const m = f.querySelector('.pwm'), lv = t.value ? pwLevel(t.value) : 0; const fill = t.value ? pwFill(t.value) : 0; if (lv > +m.dataset.lv) { const seg = m.querySelectorAll('i')[lv - 1]; seg.classList.remove('pop'); void seg.offsetWidth; seg.classList.add('pop'); } m.querySelectorAll('i').forEach((x, k) => x.style.setProperty('--f', Math.max(0, Math.min(1, fill - k)).toFixed(3))); m.dataset.lv = lv; m.classList.toggle('short', !!t.value && !lv); m.querySelector('em').textContent = t.value && !lv ? `${6 - t.value.length}자 더` : PW_TXT[lv]; }
   if (!f.querySelector('.bad')) f.querySelector('.ferr').hidden = true;
 });
 
