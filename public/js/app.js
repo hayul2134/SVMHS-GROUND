@@ -1677,7 +1677,7 @@ async function fillShow() {
   const day = ymd(today()), cell = (x, cls) => { if (!x) return `<span class="c ${cls}"></span>`; const k = foodImg(x); return `<span class="c ${cls}">${k ? `<img src="/food/c/${k}.webp" alt="" loading="lazy">` : '<i></i>'}<b>${esc(x)}</b></span>`; };
   const [meal, rows] = await Promise.all([
     getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),
-    cls ? getTimetable(cls, today(), today()).then(r => r.filter(x => x.ALL_TI_YMD === day).sort((a, b) => a.PERIO - b.PERIO)).catch(() => []) : Promise.resolve([])]);
+    Promise.resolve([])]);
   const r = meal.length ? pickMeal(meal, mealSlot()) : null;
   if (!$('#shTray') || !$('#shTt')) return;   // 진짜 첫 화면을 복제해 쓰는 중이면 직접 그린 카드는 안 씀
   let m = SH_EX_MEAL;
@@ -1686,10 +1686,10 @@ async function fillShow() {
   $('#shTray').innerHTML = cell(m.main, 'm') + cell(m.sides[0], 'a') + cell(m.sides[1], 'a') + cell(m.sides[2], 'a') + cell(m.sides[3], 'a') + cell(m.rice, 'b') + cell(m.soup, 'r');
   $('#shKcal').hidden = !r?.CAL_INFO; if (r?.CAL_INFO) $('#shKcal').textContent = '🔥 ' + r.CAL_INFO;
   $('#shMealEx').hidden = !!r;
-  shTT = rows.length ? rows.slice(0, 7).map(x => [+x.PERIO, subjName(x.ITRT_CNTNT)]) : SH_EX_TT.map((x, i) => [i + 1, x]);
-  $('#shTtK').textContent = rows.length ? `${cls.g}-${cls.c} 시간표` : '오늘 시간표';
+  shTT = SH_EX_TT.map((x, i) => [i + 1, x]);   // 쇼케이스 시간표는 항상 예시 (반 설정과 무관하게 똑같이 보이게)
+  $('#shTtK').textContent = '오늘 시간표';
   $('#shTt').innerHTML = shTT.map(([p, nm]) => { const bl = BELL.find(x => x.p === p); return `<li data-p="${p}"><b>${p}</b><small>${bl ? secHM(bl.start) : ''}</small>${subjIcon(nm)}<span>${esc(nm)}</span></li>`; }).join('');
-  $('#shTtEx').hidden = !!rows.length;
+  $('#shTtEx').hidden = false;
   if (introOn()) introTick();
 }
 {
@@ -1719,6 +1719,7 @@ async function fillShow() {
     if (o._fb == null) o._fb = box.innerHTML;
     if (i === 1) ticking = [];
     const stowed = els.length === 1 && els[0].classList.contains('stow') && !els[0].classList.contains('open');   // 서랍이 들어가 있음(세로 화면 등): 포스트잇 탭만 보임
+    if (i === 2 && rs.length && !stowed) { const r = rs[0]; real[2] = { x: r.left, y: r.top, s: r.width / o.offsetWidth, tab: 1 }; return; }   // 시간표는 항상 예시 카드(2026-10-23) — 진짜 시간표 카드 자리에서 겹쳐 나타나며 출발
     if (!rs.length || rs.length !== els.length || stowed) {
       if (box.classList.contains('cl')) { box.classList.remove('cl'); box.innerHTML = o._fb; o.style.removeProperty('--w'); o.style.removeProperty('--h'); }
       const tab = stowed && els[0].querySelector('.s-tab'), tr = tab && tab.getBoundingClientRect();   // 직접 그린 카드가 그 포스트잇 자리에서 커지며 나옴
@@ -1756,7 +1757,9 @@ async function fillShow() {
     const rowH = Math.min(H * (W < 600 ? .46 : .52), 440), gap = Math.max(26, W * .035), cy = H * (W < 600 ? .44 : .47);
     let x = 0;
     L.sz = sz;
-    L.row = sz.map(([w, h]) => { const s = Math.min(rowH / h, W * .82 / w, 1.5), r = { x, w: w * s, h: h * s, s, y: cy - h * s / 2 }; x += w * s + gap; return r; });
+    // 시계 복제본은 테두리가 바깥으로 넉넉히(좌우 54·위 30·아래 26px) 커지므로 그만큼 크기를 줄이고 양옆 간격을 더 둠
+    const pad = i => i === 1 && real[1] && !real[1].tab ? [108, 56] : [0, 0];
+    L.row = sz.map(([w, h], i) => { const [pw, ph] = pad(i), s = Math.min(rowH / (h + ph), W * .82 / (w + pw), 1.5); x += pw / 2 * s; const r = { x, w: w * s, h: h * s, s, y: cy - h * s / 2 + 2 * s }; x += w * s + pw / 2 * s + gap; return r; });
   }
   function measureTop() { let t = 0, e = sec; while (e && e !== root) { t += e.offsetTop; e = e.offsetParent; } secTop = t; }
   function layout() {
@@ -1775,7 +1778,7 @@ async function fillShow() {
     if (show > 0) { fixedBtns ||= [$('#svcFab'), $('#dmDock'), $('#mascot')]; if (!fixedBtns[2]) fixedBtns[2] = $('#mascot'); fixedBtns.forEach(e => put(e, 'opacity', show.toFixed(3))); }
     // 문구: 처음엔 화면 가운데 크게 → 첫 화면이 드러나며 위로 올라가 작아짐 → 줄 서기 시작하면 사라짐
     const up = easeO(clamp((p - T_IN) / (T_SHOW - T_IN))), s0 = Math.min(1.15, W * .86 / L.capW), s1 = Math.min(W < 700 ? .48 : .74, W * .7 / L.capW);
-    const cs = lerp(s0, s1, up), topY = W < 700 ? H - L.capH * s1 - 88 : 14, cyY = lerp(H / 2 - L.capH * s0 / 2, topY, up);   // 폰은 위쪽이 헤더·말풍선으로 차 있어서 아래에 붙임
+    const cs = lerp(s0, s1, up), topY = W < 700 ? H - L.capH * s1 - 88 : 22 + 16 * s1 + L.capW * s1 * .018, cyY = lerp(H / 2 - L.capH * s0 / 2, topY, up);   // 폰은 위쪽이 헤더·말풍선으로 차 있어서 아래에 붙임
     put(cap, 'transform', `translate3d(${(W / 2 - L.capW * cs / 2).toFixed(1)}px,${cyY.toFixed(1)}px,0) scale(${cs.toFixed(4)})`);
     put(cap, 'opacity', ((1 - clamp((p - T_HOLD) / .03)) * (W < 700 ? 1 - clamp((up - .55) / .45) : 1)).toFixed(3));   // 폰은 화면이 좁아 첫 화면을 가리지 않게, 드러나는 동안 아래로 내려가며 사라짐
     // ②③ 줄 서기 · 넘기기
