@@ -189,7 +189,7 @@ async function balState(env, db, me) {
       FROM balance_comments c JOIN users u ON u.id = c.uid LEFT JOIN balance_votes v ON v.ymd = c.ymd AND v.voter = 'u' || c.uid
       WHERE c.ymd = ?1 AND NOT EXISTS (SELECT 1 FROM blocks k WHERE (k.a = ?2 AND k.b = c.uid) OR (k.a = c.uid AND k.b = ?2))
       AND NOT EXISTS (SELECT 1 FROM bans x WHERE x.uid = c.uid AND (x.until = 0 OR x.until > ?3))
-      ORDER BY c.id DESC LIMIT 100`).bind(ymd, me.id, now).all()).results
+      ORDER BY (u.handle = ?4) DESC, c.id DESC LIMIT 100`).bind(ymd, me.id, now, ADMIN_HANDLE).all()).results
       .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, avatar: r.avatar, color: r.color }));
   }
   return { enabled: true, ymd, q, a, b, last, opens, closes, next: nextOpen(ymd), now, open, counts, mine, ncom: ncom.results[0].n, comments };
