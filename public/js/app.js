@@ -30,6 +30,7 @@ const BELL = [['조회', '08:00', '08:10'], [1, '08:20', '09:10'], [2, '09:20', 
   .map(([p, a, b]) => { const s = t => +t.slice(0, 2) * 3600 + +t.slice(3) * 60; return { p, start: s(a), end: s(b) }; });
 const offDays = new Set();   // 학사일정상 휴업일·공휴일(YYYYMMDD)
 const isOff = r => r.SBTR_DD_SC_NM === '휴업일' || r.SBTR_DD_SC_NM === '공휴일';
+const isSchoolDay = d => d.getDay() % 6 !== 0 && !offDays.has(ymd(d));
 const fmtLeft = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(s); };
 const pName = p => p === '조회' ? '조회' : p + '교시';
 /* 실제 종소리가 시계보다 늦게 울리는 만큼(ms) 카운트다운을 늦춘다. 종이 타이머보다 빠르면 음수로 */
@@ -50,9 +51,16 @@ function nextFirstBell(n) {
   do d = addDays(d, 1); while (!isSchoolDay(d) && ++i < 21);
   return diffDays(d, new Date(n.getFullYear(), n.getMonth(), n.getDate())) * 86400 + BELL.find(x => x.p === 1).start;
 }
+// 쉬는 날(주말·휴업일)은 그냥 시계. 다음 등교일 전날 17시부터만 '1교시 시작까지' 카운트다운 (예: 일요일 17시 → 월요일 1교시)
+const COUNT_FROM = 17 * 3600;
+const tomorrowSchool = n => isSchoolDay(addDays(new Date(n.getFullYear(), n.getMonth(), n.getDate()), 1));
 function bellInfo(n) {
-  const dow = n.getDay();
-  if (dow === 0 || dow === 6 || offDays.has(ymd(n))) return { state: '쉬는 날', label: '1교시 시작까지', cnt: '1교시 시작까지', target: nextFirstBell(n), away: true };
+  const dow = n.getDay(), wk = dow === 0 || dow === 6;
+  if (wk || offDays.has(ymd(n))) {
+    const st = wk ? '주말' : '쉬는 날', sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+    if (tomorrowSchool(n) && sec >= COUNT_FROM) return { state: st, label: '1교시 시작까지', cnt: '1교시 시작까지', target: nextFirstBell(n), away: true, eve: true };
+    return { state: st, label: wk ? '주말이다! 🎉' : '오늘은 쉬는 날', cnt: wk ? '주말이다! 🎉' : '오늘은 쉬는 날', target: null, away: true, free: true };
+  }
   const last = lastPeriod(n), list = BELL.filter(x => x.p === '조회' || x.p <= last);
   const now = (n - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 1000;
   for (let i = 0; i < list.length; i++) {
@@ -69,13 +77,18 @@ function bellInfo(n) {
     const state = prev.p === 4 ? '점심시간' : '쉬는 시간';
     return { state, label: `${pName(cur.p)} 시작까지`, cnt: '수업 시간까지', target: cur.start, from: prev ? prev.end : null, brk: !!prev };
   }
-  return { state: '방과 후', label: '1교시 시작까지', cnt: '1교시 시작까지', target: nextFirstBell(n), away: true };   // 학교 끝나면 다음 1교시까지
+  // 학교 끝나면 다음 1교시까지 — 내일이 쉬는 날이면(금요일 등) 카운트다운 대신 '주말이다!' + 그냥 시계
+  if (!tomorrowSchool(n)) { const wkNext = (dow + 1) % 7 === 6; return { state: '방과 후', label: wkNext ? '주말이다! 🎉' : '내일은 쉬는 날', cnt: wkNext ? '주말이다! 🎉' : '내일은 쉬는 날', target: null, away: true, free: true, wkNext }; }
+  return { state: '방과 후', label: '1교시 시작까지', cnt: '1교시 시작까지', target: nextFirstBell(n), away: true };
 }
 
 // 지금 상태에 맞춘 G의 한마디 (시간대가 아니라 종 시간 기준이라 '수업 중인데 점심 인사' 같은 어긋남이 없음)
 function sayLine(b) {
   const p = +((b.state.match(/^(\d)교시/) || [])[1] || 0);
+  if (b.eve) return '내일 학교… 마음의 준비 하자 🫠';
+  if (b.state === '주말') return '주말이다! 푹 쉬자 😴';
   if (b.state === '쉬는 날') return '오늘은 쉬는 날! 푹 쉬자 😴';
+  if (b.state === '방과 후' && b.free) return b.wkNext ? '주말이다!!! 🎉 일주일 고생했어' : '내일은 쉬는 날! 🎉';
   if (b.state === '방과 후') return '오늘도 수고했어 👋';
   if (b.state === '등교 전') return '좋은 아침! 오늘도 가보자 ☀️';
   if (b.state === '조회 중') return '조회 시간, 정신 차려~ 🫡';
@@ -179,7 +192,7 @@ function tickClock() {
   const restPct = Math.ceil((1 - prog) * 100);   // 배터리처럼: 40% 이하 노랑, 20% 이하 빨강
   $('#bellBarBox').classList.toggle('low', bar && restBar && restPct <= 40 && restPct > 20);
   $('#bellBarBox').classList.toggle('crit', bar && restBar && restPct <= 20);
-  setText('#bellPct', bar ? (restBar ? `${Math.ceil((1 - prog) * 100)}% 남음` : `${Math.floor(prog * 100)}% 지남`) : b.state === '쉬는 날' ? '푹 쉬는 날' : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
+  setText('#bellPct', bar ? (restBar ? `${Math.ceil((1 - prog) * 100)}% 남음` : `${Math.floor(prog * 100)}% 지남`) : b.eve ? '내일 학교 가는 날' : b.state === '주말' ? '즐거운 주말' : b.state === '쉬는 날' ? '푹 쉬는 날' : b.free ? (b.wkNext ? '주말 시작!' : '내일 쉬는 날') : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
   tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
 // 초록 두근두근이 끝날 때: 한 번 작게 뛰며 색이 원래대로 서서히 돌아감(페이드 아웃)
@@ -192,7 +205,7 @@ function renderNext(b, pi) {
   const card = (lbl, val, sub = '') => `<span class="m-lbl">${lbl}</span><b class="m-val">${val}</b>${sub}`;
   let h;
   if (!cls) h = card('다음 수업', '반을 골라 주세요', '<button class="link" data-open-class>반 설정하기</button>');
-  else if (b.state === '쉬는 날') h = card('오늘', 'OFF', '<span class="m-sub">수업 없는 날이에요</span>');
+  else if (b.state === '쉬는 날' || b.state === '주말') h = card('오늘', 'OFF', '<span class="m-sub">수업 없는 날이에요</span>');
   else if (rows && !rows.length) h = card('다음 수업', '정보가 아직 없어요');
   else if (b.state === '방과 후' || (rows && pi.nxt && !subj(pi.nxt) && !subj(pi.cur))) h = card('오늘 수업', '끝!', '<span class="m-sub">내일 또 봐요</span>');
   else if (rows === undefined) h = '<div class="skel"></div><div class="skel"></div>';
@@ -782,7 +795,6 @@ const subjIcon = n => `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><
 const subjName = s => String(s || '').replace(/^[\s*#·-]+/, '').trim();   // 나이스 원문의 '* 영상 CG작업' 같은 기호 제거
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
-const isSchoolDay = d => d.getDay() % 6 !== 0 && !offDays.has(ymd(d));
 function ttTarget(n = now()) {
   let d = new Date(n.getFullYear(), n.getMonth(), n.getDate());
   const sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
