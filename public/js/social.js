@@ -1015,19 +1015,73 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
   if (focus) $(`#socSheet [data-nid="${CSS.escape(focus)}"] .ntb:not(.short)`)?.classList.add('open');
 }
 const FB_KIND = [['idea', '💡 이런 기능 있으면 좋겠어요'], ['bug', '🐞 이상하거나 안 돼요'], ['etc', '💬 그 밖의 말']];
+const FB_MAX = 5;
+// 사진을 긴 변 1600px·JPEG로 줄여 data URL로 (용량 커지면 더 줄임) — 서버 한도 1MB/장
+function shrinkImg(file) {
+  return new Promise((ok, no) => {
+    const rd = new FileReader();
+    rd.onerror = no;
+    rd.onload = () => {
+      const im = new Image();
+      im.onerror = () => no(new Error('이 사진은 열 수 없어요 (JPG·PNG로 올려 주세요)'));
+      im.onload = () => {
+        let side = 1600, q = .8, out = '';
+        for (let k = 0; k < 6; k++) {
+          const sc = Math.min(1, side / Math.max(im.naturalWidth, im.naturalHeight));
+          const c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(im.naturalWidth * sc)); c.height = Math.max(1, Math.round(im.naturalHeight * sc));
+          const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+          out = c.toDataURL('image/jpeg', q);
+          if (out.length < 600e3) break;   // base64 600KB ≈ 실제 450KB
+          side = Math.round(side * .8); q = Math.max(.6, q - .05);
+        }
+        ok(out);
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  });
+}
 function openFeedback() {
   if (!S.me) { toast('의견은 로그인하면 보낼 수 있어요'); ctx.go('me'); return; }
   sheet(`<h3>💡 의견 보내기</h3><p class="note">개발자에게 바로 전달돼요. 사이트를 더 좋게 만드는 데 써요!</p>
     <form class="sform" id="fbForm">
       <div class="segs fbk">${FB_KIND.map(([k, t], i) => `<label><input type="radio" name="kind" value="${k}" ${i ? '' : 'checked'}><span>${t}</span></label>`).join('')}</div>
       <textarea name="body" maxlength="500" rows="5" required placeholder="예: 시간표에 교실 이름도 나왔으면 좋겠어요"></textarea>
+      <div class="fbpics" id="fbPics"></div>
+      <input type="file" id="fbFile" accept="image/*" multiple hidden>
       <p class="note">${isDev(S.me) ? '🛠 개발자 계정으로 보내요.' : `보낸 사람 아이디(@${esc(S.me.handle)})가 개발자에게 보여요. 욕설·저격 글은 보내지 말아 주세요.`}</p>
       <div class="row"><button class="btn" type="submit">보내기</button><button class="btn ghost" type="button" data-close>닫기</button></div>
     </form>`);
-  $('#fbForm').onsubmit = async e => {
+  const pics = [], box = $('#fbPics'), file = $('#fbFile'), form = $('#fbForm');
+  let busy = 0;
+  const paint = () => {
+    box.innerHTML = pics.map((d, i) => `<span class="fbpic"><img src="${d}" alt="첨부 사진 ${i + 1}"><button type="button" data-rm="${i}" aria-label="사진 빼기">✕</button></span>`).join('')
+      + (pics.length + busy < FB_MAX ? `<button type="button" class="fbadd" id="fbAdd"><span>📷</span><small>${busy ? '줄이는 중…' : `사진 ${pics.length}/${FB_MAX}`}</small></button>` : '');
+  };
+  const add = async files => {
+    const list = [...files].filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));
+    const room = FB_MAX - pics.length - busy;
+    if (list.length > room) toast(`사진은 ${FB_MAX}장까지 넣을 수 있어요`);
+    const take = list.slice(0, Math.max(0, room));
+    busy += take.length; paint();
+    for (const f of take) {
+      try { pics.push(await shrinkImg(f)); } catch (x) { toast(x.message || '사진을 열지 못했어요'); }
+      busy--; paint();
+    }
+  };
+  paint();
+  box.addEventListener('click', e => {
+    if (e.target.closest('#fbAdd')) { file.click(); return; }
+    const rm = e.target.closest('[data-rm]'); if (rm) { pics.splice(+rm.dataset.rm, 1); paint(); }
+  });
+  file.onchange = () => { add(file.files); file.value = ''; };
+  form.body.addEventListener('paste', e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); add(fs); } });   // 캡처 붙여넣기
+  form.onsubmit = async e => {
     e.preventDefault();
+    if (busy) { toast('사진을 준비하고 있어요. 잠깐만요!'); return; }
     const f = e.target, b = f.querySelector('[type=submit]'); b.disabled = true;
-    try { await call('feedback', { kind: f.kind.value, body: f.body.value }); closeSheet(); toast('고마워요! 개발자에게 전달됐어요 🙌'); }
+    try { await call('feedback', { kind: f.kind.value, body: f.body.value, imgs: pics }); closeSheet(); toast('고마워요! 개발자에게 전달됐어요 🙌'); }
     catch (x) { toast(x.message); b.disabled = false; }
   };
 }

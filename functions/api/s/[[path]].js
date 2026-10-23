@@ -162,7 +162,8 @@ export async function onRequest({ request: req, env, params }) {
     const origin = req.headers.get('origin');
     if (origin && origin !== new URL(req.url).origin) return err('forbidden', 403);
     if (req.headers.get('sec-fetch-site') === 'cross-site') return err('forbidden', 403);
-    if (+(req.headers.get('content-length') || 0) > 32768) return err('too large', 413);   // 이 API에 32KB 넘는 요청은 없음
+    const cap = path === 'feedback' ? 4 << 20 : 32768;   // 의견(사진 5장까지)만 4MB, 나머지 API는 32KB 넘는 요청이 없음
+    if (+(req.headers.get('content-length') || 0) > cap) return err(path === 'feedback' ? '사진 용량이 너무 커요' : 'too large', 413);
     if (!(req.headers.get('content-type') || '').includes('application/json')) return err('bad content type', 415);
     try { body = await req.json(); } catch { return err('bad body'); }
     if (!body || typeof body !== 'object') return err('bad body');
@@ -360,7 +361,7 @@ const ROUTES = {
     }
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(me.id)));
     return endAdmin(db, req, me, json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) }));
@@ -710,7 +711,20 @@ const ROUTES = {
     const text = clean(body.body, 500, true);
     if (text.length < 2) return err('내용을 조금 더 적어 주세요');
     if (!isAdm(me) && await limited(db, 'fb:' + me.id, 6, 3600)) return err('의견은 1시간에 6번까지 보낼 수 있어요', 429);
-    await db.prepare('INSERT INTO feedback (uid, kind, body, at) VALUES (?1, ?2, ?3, ?4)').bind(me.id, kind, text, Date.now()).run();
+    // 사진: 브라우저에서 줄인 data URL(jpeg·png·webp)만, 최대 5장 · 한 장 1MB
+    const imgs = [];
+    for (const d of (Array.isArray(body.imgs) ? body.imgs : []).slice(0, 5)) {
+      const m = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(d || ''));
+      if (!m) return err('사진 형식을 읽지 못했어요');
+      let bin; try { bin = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0)); } catch { return err('사진 형식을 읽지 못했어요'); }
+      if (bin.length > 1 << 20) return err('사진 한 장이 너무 커요');
+      const ok = m[1] === 'jpeg' ? bin[0] === 0xff && bin[1] === 0xd8 : m[1] === 'png' ? bin[0] === 0x89 && bin[1] === 0x50 : bin[8] === 0x57 && bin[9] === 0x45;   // 실제 파일 머리 확인
+      if (!ok) return err('사진 형식을 읽지 못했어요');
+      imgs.push({ type: 'image/' + m[1], bin });
+    }
+    const r = await db.prepare('INSERT INTO feedback (uid, kind, body, at) VALUES (?1, ?2, ?3, ?4)').bind(me.id, kind, text, Date.now()).run();
+    const fid = r.meta.last_row_id;
+    if (imgs.length) await db.batch(imgs.map((x, i) => db.prepare('INSERT INTO feedback_img (fid, i, type, data) VALUES (?1, ?2, ?3, ?4)').bind(fid, i, x.type, x.bin.buffer)));
     return json({ ok: true });
   }),
 

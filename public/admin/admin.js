@@ -160,7 +160,7 @@ VIEWS.feedback = async () => {
   $('#main').innerHTML = `<div class="vh"><h2>의견</h2><span class="sub">확인 안 한 ${d.open}건 · 전체 ${d.total}건</span>
       <div class="seg"><button type="button" data-fs="open" class="${fbState === 'open' ? 'on' : ''}">새 의견</button><button type="button" data-fs="done" class="${fbState === 'done' ? 'on' : ''}">확인함</button></div></div>
     ${d.list.length ? d.list.map(x => `<section class="card fb"><div class="fbh"><span class="tag">${FBK[x.kind] || x.kind}</span>${x.user ? who(x.user, cls(x.user)) : '<span class="sub">(탈퇴한 사용자)</span>'}<span class="sub">${when(x.at)}</span></div>
-        <p class="fbb">${esc(x.body)}</p>${x.note ? `<p class="sub">📝 ${esc(x.note)}</p>` : ''}
+        <p class="fbb">${esc(x.body)}</p>${x.imgs ? `<div class="fbimgs">${Array.from({ length: x.imgs }, (_, i) => `<a href="/api/admin/fbimg/${x.id}/${i}" target="_blank" rel="noopener"><img src="/api/admin/fbimg/${x.id}/${i}" alt="첨부 사진 ${i + 1}" loading="lazy"></a>`).join('')}</div>` : ''}${x.note ? `<p class="sub">📝 ${esc(x.note)}</p>` : ''}
         <div class="row">${x.done ? `<button class="btn sm" type="button" data-act="fbreopen" data-id="${x.id}">되돌리기</button>` : `<button class="btn sm ok" type="button" data-act="fbdone" data-id="${x.id}">✅ 확인함</button>`}
           ${x.user ? `<button class="btn sm" type="button" data-act="user" data-h="${esc(x.user.handle)}">👤 보낸 사람</button>` : ''}
           <button class="btn sm bad" type="button" data-act="fbdel" data-id="${x.id}">삭제</button></div></section>`).join('') : `<p class="empty">${fbState === 'open' ? '새 의견이 없어요' : '확인한 의견이 없어요'}</p>`}`;

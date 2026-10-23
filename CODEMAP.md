@@ -92,7 +92,7 @@ npx wrangler@4 pages dev --port 8788
 - 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기(평일 10일 표시). 지금 질문을 바꾸면 그날 표·댓글 초기화. 지금 질문 댓글 목록·삭제(`balancecdel`).
 
 ## 의견 · 공지 버튼 (헤더)
-- 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번) → `feedback` 표 → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.
+- 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번 · 이 경로만 요청 4MB까지) → `feedback` 표 + **사진 최대 5장**(2026-10-23: 브라우저 `shrinkImg()`가 긴 변 1600px JPEG·장당 약 450KB 이하로 줄여 data URL로 보냄, 캡처 붙여넣기 지원 → 서버가 형식·파일 머리·1MB 확인 후 `feedback_img`(fid,i,type,data BLOB)에 저장, 관리자 화면은 `GET /api/admin/fbimg/<id>/<i>`로 썸네일) → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.
 - 📢 공지 → `openNotices()` → `GET /api/notices`(최근 20개, 30초 캐시). 관리자가 공지를 올리면 `notices` 표에도 기록(앞 공지는 끝난 것으로). 마지막으로 본 공지 id `sg_notice_seen`과 다르면 버튼에 빨간 점. 목록을 열면 닫았던 띠 공지도 다시 보임.
 
 ## 구글 로그인 · DM 받는 범위 · 카톡

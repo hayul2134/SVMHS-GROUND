@@ -213,14 +213,21 @@ const ROUTES = {
   /* ----- 의견 (학생 → 개발자) ----- */
   'GET feedback': async ({ db, url }) => {
     const open = url.searchParams.get('state') !== 'done';
-    const rows = (await db.prepare(`SELECT f.id, f.kind, f.body, f.at, f.done, f.note, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen
+    const rows = (await db.prepare(`SELECT f.id, f.kind, f.body, f.at, f.done, f.note, (SELECT COUNT(*) FROM feedback_img i WHERE i.fid = f.id) AS imgs, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen
       FROM feedback f LEFT JOIN users u ON u.id = f.uid WHERE f.done ${open ? '= 0' : '> 0'} ORDER BY f.id DESC LIMIT 200`).all()).results;
     const cnt = await db.prepare('SELECT SUM(done = 0) AS open, COUNT(*) AS total FROM feedback').first();
-    return json({ list: rows.map(x => ({ id: x.id, kind: x.kind, body: x.body, at: x.at, done: x.done, note: x.note, user: x.handle ? { handle: x.handle, name: x.name, avatar: x.avatar, color: x.color, grade: x.grade, cls: x.cls, online: Date.now() - (x.seen || 0) < 150e3 } : null })), open: cnt.open || 0, total: cnt.total || 0 });
+    return json({ list: rows.map(x => ({ id: x.id, kind: x.kind, body: x.body, at: x.at, done: x.done, note: x.note, imgs: x.imgs || 0, user: x.handle ? { handle: x.handle, name: x.name, avatar: x.avatar, color: x.color, grade: x.grade, cls: x.cls, online: Date.now() - (x.seen || 0) < 150e3 } : null })), open: cnt.open || 0, total: cnt.total || 0 });
+  },
+  // 의견 사진: GET /api/admin/fbimg/<의견 id>/<번호> → 이미지 그대로 (관리자 화면 <img>에서 씀)
+  'GET fbimg': async ({ db, arg }) => {
+    const [fid, i] = arg.split('/').map(n => parseInt(n));
+    const x = await db.prepare('SELECT type, data FROM feedback_img WHERE fid = ?1 AND i = ?2').bind(fid, i).first();
+    if (!x) return err('없는 사진이에요', 404);
+    return new Response(new Uint8Array(x.data), { headers: { 'content-type': /^image\/(jpeg|png|webp)$/.test(x.type) ? x.type : 'application/octet-stream', 'cache-control': 'private, max-age=86400', 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'content-security-policy': "default-src 'none'" } });
   },
   'POST feedback': async ({ db, body }) => {
     const id = parseInt(body.id);
-    if (body.del) { await db.prepare('DELETE FROM feedback WHERE id = ?1').bind(id).run(); await log(db, '의견 삭제', `#${id}`); return json({ ok: true }); }
+    if (body.del) { await db.batch([db.prepare('DELETE FROM feedback_img WHERE fid = ?1').bind(id), db.prepare('DELETE FROM feedback WHERE id = ?1').bind(id)]); await log(db, '의견 삭제', `#${id}`); return json({ ok: true }); }
     const done = [0, 1].includes(body.done) ? body.done : 1;
     const r = await db.prepare('UPDATE feedback SET done = ?1, note = ?2 WHERE id = ?3').bind(done, clean(body.note, 200), id).run();
     if (!r.meta.changes) return err('없는 의견이에요', 404);
@@ -381,7 +388,7 @@ const ROUTES = {
     if (String(body.confirm || '').toLowerCase() !== u.handle) return err('확인용 아이디가 달라요');
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(u.id)));
     await log(db, '계정 삭제', `@${u.handle} (${u.name})`);

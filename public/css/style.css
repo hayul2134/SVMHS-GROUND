@@ -33,7 +33,7 @@ body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFo
   background-image:var(--pat,radial-gradient(var(--dot) 1.6px,transparent 1.7px));background-size:var(--pat-size,22px 22px);
   /* 왼쪽 아래 캐릭터 스티커는 배경(fixed)이 아니라 #mascot 요소 — 고정 배경은 스크롤할 때마다 화면 전체를 다시 그려서 뺌 */
   -webkit-font-smoothing:antialiased;letter-spacing:-.01em;overflow-x:clip}
-button,select,input{font:inherit;color:inherit}
+button,select,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 a{color:inherit}
 :focus-visible{outline:3px solid var(--yellow);outline-offset:3px;border-radius:10px}
@@ -2758,3 +2758,12 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .ptitle.dev span{background:linear-gradient(90deg,#ff7aa8,#ffb35c,#ffe066,#7ee0a1,#6fc6f4,#a98bff,#ff7aa8);background-size:200% 100%;color:#173048;box-shadow:2px 2px 0 var(--ink);animation:devTitle 4s linear infinite}
 @keyframes devTitle{to{background-position:200% 0}}
 @media (prefers-reduced-motion:reduce){.ptitle.dev span{animation:none}}
+
+/* 의견 보내기: 사진 첨부(최대 5장) */
+.fbpics{display:flex;flex-wrap:wrap;gap:8px}
+.fbpic{position:relative;width:64px;height:64px;flex:none}
+.fbpic img{width:100%;height:100%;object-fit:cover;border-radius:12px;border:var(--bd);display:block}
+.fbpic button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--ink,#173048);color:#fff;font-size:11px;font-weight:900;line-height:22px;text-align:center}
+.fbadd{width:64px;height:64px;flex:none;border-radius:12px;border:2px dashed var(--line);background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--sub)}
+.fbadd span{font-size:20px;line-height:1}
+.fbadd small{font-size:10.5px;font-weight:800;white-space:nowrap}
