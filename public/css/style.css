@@ -1810,9 +1810,10 @@ html.away .mascot *{animation-play-state:paused!important}
 .hb-st .hst-f{width:18px;height:21px}
 .hb-st:not(.lit) b{color:var(--sub)}
 .hb-st.lit{background:var(--fire-bg)}
-/* 오늘 출석 완료 표시: 버튼 오른쪽 위 초록 체크 배지 */
-.hb-st.lit::after{content:"";position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;border:2px solid var(--ink);
+/* 오늘 출석 완료 표시: 버튼 오른쪽 위 초록 체크 배지 (::after는 말풍선 도움말이 쓰고 있어서 진짜 요소 .st-ok로) */
+.hb-st .st-ok{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;border:2px solid var(--ink);display:none;
   background:#2fbf71 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-8.5' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px no-repeat}
+.hb-st.lit .st-ok{display:block}
 .hb-st.lit.pf{box-shadow:var(--sh-s),0 0 0 3px var(--gold)}
 @media (max-width:520px){.iconbtn.hb-st{padding:0 9px 0 7px;gap:3px;font-size:15px}}
 /* 폰 폭: 🔥 버튼이 생기면 헤더가 넘쳐서 로고 글자를 숨김(로그인했을 때만) */
