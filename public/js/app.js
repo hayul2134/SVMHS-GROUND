@@ -656,7 +656,7 @@ function paintLike(btn, c, burst) {
   if (burst && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     btn.querySelectorAll('.bl-p').forEach(p => p.remove());
     for (let i = 0; i < 7; i++) {   // 작은 하트가 사방으로 톡 튀어나감
-      const p = document.createElement('i'), a = (i / 7) * Math.PI * 2 - Math.PI / 2, r = 20 + (i % 2) * 7;
+      const p = document.createElement('i'), a = (i / 7) * Math.PI * 2 - Math.PI / 2, r = 24 + (i % 2) * 8;
       p.className = 'bl-p'; p.textContent = i % 3 ? '♥' : '✦';
       p.style.setProperty('--x', (Math.cos(a) * r).toFixed(1) + 'px');
       p.style.setProperty('--y', (Math.sin(a) * r).toFixed(1) + 'px');

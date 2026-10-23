@@ -1621,6 +1621,8 @@ html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform
   [data-tip-end]::after{left:auto;right:0;transform:translateY(-4px)}
   [data-tip-end]:hover::after,[data-tip-end]:focus-visible::after{transform:translateY(0)}
   :root[data-theme="dark"] [data-tip]::after{background:#f3f7fb;color:var(--onc)}
+  .bs-list [data-tip]::after{top:50%;left:auto;right:calc(100% + 8px);transform:translate(4px,-50%)}
+  .bs-list [data-tip]:hover::after,.bs-list [data-tip]:focus-visible::after{transform:translate(0,-50%)}
   .cal .dy[data-tip]:hover{z-index:5;opacity:1}   /* 학사일정 칸 이름표가 옆 칸에 가리거나 흐려지지 않게 */
   .cal .dy[data-tip]::after{white-space:normal;width:max-content;max-width:220px;line-height:1.35}
 }
@@ -2282,20 +2284,20 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .side-a .bc-side{background:var(--sky)}
 .side-b .bc-side{background:var(--yellow)}
 .bc-side.none{background:var(--card);color:var(--sub);border-color:var(--line)}
-.bc-b{margin:3px 0 0;font-size:14.5px;line-height:1.45;word-break:break-word;white-space:pre-line}
-.bc-like{position:relative;flex:none;align-self:center;display:inline-flex;align-items:center;gap:3px;min-width:36px;justify-content:center;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--sub);font:inherit;font-weight:900;font-size:12px;cursor:pointer;transition:color .15s,border-color .15s,background .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.bc-like .bl-h{display:inline-block;font-size:15px;line-height:1}
+.bc-b{margin:4px 0 0;font-family:var(--disp);font-weight:400;font-size:16px;line-height:1.45;letter-spacing:.01em;word-break:break-word;white-space:pre-line}
+.bc-like{position:relative;flex:none;align-self:center;display:inline-flex;align-items:center;gap:4px;min-width:42px;height:30px;justify-content:center;padding:0 10px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--sub);font:inherit;font-weight:900;font-size:13.5px;cursor:pointer;transition:color .15s,border-color .15s,background .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.bc-like .bl-h{display:inline-block;font-size:20px;line-height:1}
 .bc-like .bl-n{display:inline-block;min-width:0;font-variant-numeric:tabular-nums}
 .bc-like .bl-n:empty{display:none}
 .bc-like:hover{color:#e8667a;border-color:#e8667a}
 .bc-like.on{color:#e2483d;border-color:#e2483d;background:#ffe8ea}
-.bc-like::after{content:"";position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:3px solid #ff6b81;opacity:0;pointer-events:none}
+.bc-like::after{content:"";position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:3px solid #ff6b81;opacity:0;pointer-events:none}
 .bc-like.pop{animation:blbtn .45s ease-out}
 .bc-like.pop .bl-h{animation:blheart .55s cubic-bezier(.17,.89,.32,1.49)}
 .bc-like.pop::after{animation:blring .5s ease-out}
 .bc-like.unpop .bl-h{animation:blunheart .3s ease-out}
 .bc-like .bl-n.roll{animation:blroll .3s ease-out}
-.bl-p{position:absolute;left:50%;top:50%;margin:-6px 0 0 -5px;font-style:normal;font-size:11px;line-height:1;color:#ff4d6d;pointer-events:none;opacity:0;animation:blpart .65s ease-out forwards}
+.bl-p{position:absolute;left:50%;top:50%;margin:-7px 0 0 -6px;font-style:normal;font-size:13px;line-height:1;color:#ff4d6d;pointer-events:none;opacity:0;animation:blpart .65s ease-out forwards}
 .bl-p:nth-of-type(3n){color:#ffb703}
 @keyframes blbtn{30%{background:#ffd0d7;box-shadow:0 0 0 4px rgba(255,107,129,.25)}}
 @keyframes blheart{0%{transform:scale(1)}15%{transform:scale(.6)}45%{transform:scale(1.7) rotate(-12deg)}70%{transform:scale(.92) rotate(4deg)}100%{transform:scale(1)}}
