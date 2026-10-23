@@ -53,7 +53,7 @@
 
 ## 고칠 때 주의
 - 보상 목록은 `public/js/att-rewards.js` **한 곳**. 서버(`lib/attend.js`)와 화면이 같이 쓴다.
-- 이모지는 학교 태블릿에서도 보이는 2019년 이전 것만 쓴다.
+- 보상 그림·출석 화면 아이콘은 이모지를 쓰지 않는다. 모두 `public/js/att-art.js`에 직접 그린 SVG이고, 그리는 규칙은 `tools/attend/ART_GUIDE.md`에 있다.
 - 축하 창은 열 때 맨 아래 버튼에 초점이 가면서 내려가므로, 연 뒤 `scrollTop = 0`으로 올린다.
 - CSP가 `style=""`을 막는다. 진행 막대·색종이 위치는 `style.setProperty`로 넣는다.
 - 클래스 이름이 사이트 공용 클래스와 겹치면 모양이 깨진다(`.mini`·`.hd`·`.dot` 사고).

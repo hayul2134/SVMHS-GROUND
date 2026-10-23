@@ -1,6 +1,7 @@
 // SVMHS GROUND 관리자 화면. 서버는 functions/api/admin/[[path]].js
 // CSP 때문에 인라인 스크립트·style 속성은 못 씀 → 이벤트는 위임, 막대 높이는 CSSOM으로 지정.
 
+import { emo } from '/js/att-art.js';   // 출석 보상 프로필 사진(직접 그린 그림)
 const $ = s => document.querySelector(s);
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ESC[c]);
@@ -42,7 +43,7 @@ let toastT;
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); };
 const fail = e => toast('⚠️ ' + (e.message || e));
 
-const av = u => `<span class="av">${esc(u?.avatar || '❔')}</span>`;
+const av = u => `<span class="av">${emo(u?.avatar || '❔', 'ava')}</span>`;   // 출석 보상 그림('r:이름')은 SVG로
 const who = (u, sub) => u ? `<span class="who">${av(u)}<span><b>${esc(u.name)}${u.online ? '<i class="on-dot" title="접속 중"></i>' : ''}</b><small>@${esc(u.handle)}${sub ? ' · ' + sub : ''}</small></span></span>` : '<span class="sub">(탈퇴한 사용자)</span>';
 const cls = u => u.grade && u.cls ? `${u.grade}-${u.cls}` : '';
 

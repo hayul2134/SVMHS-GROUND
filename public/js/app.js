@@ -2,6 +2,7 @@
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish } from './neis.js';
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
+import { emo } from './att-art.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -705,7 +706,7 @@ function paintBalSheet() {
   if (!BAL.comments) { list.innerHTML = `<li class="bc-empty">🙈 한쪽을 고르면 댓글 ${BAL.ncom}개가 보여요</li>`; return; }
   if (!BAL.comments.length) { list.innerHTML = `<li class="bc-empty">${open ? '첫 댓글의 주인공이 되어 보세요 ✍️' : '댓글이 없어요'}</li>`; return; }
   list.innerHTML = BAL.comments.map(c => `<li class="bc${c.pick ? ' side-' + c.pick : ''}">`
-    + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : esc(c.avatar || '😎')}</a>`
+    + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : emo(c.avatar || '😎', 'ava')}</a>`
     + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
     + `<p class="bc-b">${esc(c.body)}</p></div>`
     + likeBtn(c)

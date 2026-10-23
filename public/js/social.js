@@ -2,6 +2,7 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import { ATT_COLORS, COLOR_NAME, rwOn } from './att-rewards.js';
+import { emo, artOf, ui } from './att-art.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -38,7 +39,7 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 
 /* ===== 작은 조각들 ===== */
 // 개발자 계정은 이모지 대신 사이트 로고 + 무지개 링 아바타 (어디서나 같게)
-const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
+const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${emo(u.avatar || '😎', 'ava')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
 const devTag = u => isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
 // 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
@@ -230,7 +231,7 @@ function profileHtml(d) {
   const chips = (isDev(u) ? '<span class="chip dev">🛠 SVMHS GROUND 개발자</span>' : '') + [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = isDev(u) || !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${sk.best}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
-  const ttl = !isDev(u) && u.title ? `<p class="ptitle"><span>🏷️ ${esc(u.title)}</span></p>` : '';
+  const ttl = !isDev(u) && u.title ? `<p class="ptitle"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
   const crowns = (d.crowns || []).map(g => `<span class="crown">👑 ${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
@@ -244,7 +245,7 @@ function profileHtml(d) {
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${g.em}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">
-    <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, MAX_STICKERS).map((s, i) => `<i class="stk ${STK_POS[i]}">${esc(s)}</i>`).join('')}</div>
+    <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, MAX_STICKERS).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
       ${av(u, 'big')}
       ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
@@ -392,10 +393,10 @@ function openEdit() {
       <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
       <p class="lbl">배경 색</p>
       <div class="pick sw" id="pCo">${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}${attPicks('color', x => x === u.color)}</div>
-      ${isDev(u) ? '' : `<label>칭호 <small class="att-sm">🔥 출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
+      ${isDev(u) ? '' : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
       <p class="lbl">스티커 <small id="stkN">${picked.size}/${MAX_STICKERS}</small></p>
       <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}">${s}</button>`).join('')}${attPicks('sticker', x => picked.has(x))}</div>
-      <p class="hint att-hint">🔥 표시는 연속 출석 보상이에요. 헤더의 불꽃 버튼에서 기록을 볼 수 있어요.</p>
+      <p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p>
       <div class="row"><button class="btn" type="submit">저장</button><button class="btn ghost" type="button" data-close>취소</button></div>
     </form>`);
   const sel = { avatar: u.avatar, color: u.color };
@@ -425,7 +426,7 @@ const attHave = r => rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
 function attPicks(kind, isOn) {
   return ATT.lockedOf(kind).map(r => {
     const tip = `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상${kind === 'color' ? ' · ' + COLOR_NAME[r.v] : ''}`;
-    const inner = kind === 'color' ? '' : r.v;
+    const inner = kind === 'color' ? '' : artOf(r.v, 'pka');
     return attHave(r)
       ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
       : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${r.d}" data-by="${r.by}" aria-label="${tip} (잠김)">${inner}<i>${r.d}</i></button>`;

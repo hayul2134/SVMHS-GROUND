@@ -8,6 +8,7 @@
 //  5. 다음 보상까지 남은 날을 늘 보여 줌 (목표가 분명하게)
 import { $, esc, pad } from './util.js';
 import { REWARDS, KIND, COLOR_NAME, rwOn, rwName } from './att-rewards.js';
+import { artOf, ui, medal } from './att-art.js';
 export { REWARDS };
 export const unlocked = (best, total, kind) => REWARDS.filter(r => r.kind === kind && rwOn(r, best || 0, total || 0)).map(r => r.v);
 export const lockedOf = kind => REWARDS.filter(r => r.kind === kind);
@@ -18,41 +19,78 @@ const kstDay = () => { const d = new Date(Date.now() + 9 * 3600e3); return d.toI
 const DOW = ['월', '화', '수', '목', '금', '토', '일'];
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ----- 불꽃 그림 (직접 그림). tier: 0 주황 · 1 붉은 주황 · 2 금빛 · 3 푸른 불꽃 ----- */
+/* ----- 불꽃 그림 (직접 그림, 규칙: tools/attend/ART_GUIDE.md '불꽃')
+   두툼한 아래 → S자로 오른쪽으로 살짝 기울며 가늘어짐 · 크기가 다른 갈고리 끝 3개 · C자로 파인 가장자리 · 떨어져 나간 불씨 2개
+   4겹(바깥·가운데·속·심지) + 남색 외곽선 + 두께(오른쪽 아래 진한 판) + 왼쪽 광택 = 로고와 같은 젤리 스티커.
+   tier: 0 주황 · 1 붉은 주황 · 2 금빛 · 3 푸른 불꽃. 'burn' 클래스를 붙이면 한 번 활활 타오르고 가만히 멈춤 ----- */
 export const tierOf = n => n >= 100 ? 3 : n >= 30 ? 2 : n >= 7 ? 1 : 0;
-const FIRE = [
-  ['#ffd25c', '#ff9d3c', '#ff6a3a', '#fff6c8', '#ffd36a'],
-  ['#ffc24a', '#ff7a2e', '#f2452e', '#fff0b8', '#ffc552'],
-  ['#fff1a6', '#ffcf3d', '#f59e0b', '#ffffff', '#fff1a6'],
-  ['#c9f1ff', '#6fb8ff', '#6a5cff', '#ffffff', '#cdeaff'],
+const FIRE = [   // [바깥 위, 바깥 아래, 가운데 위, 가운데 아래, 속 위, 속 아래, 심지, 두께]
+  ['#ffa03e', '#ff5a36', '#ffc24c', '#ff8b3a', '#ffe68c', '#ffc64e', '#fff9df', '#cf4127'],
+  ['#ff7c3a', '#e2372d', '#ffae3e', '#ff6a2e', '#ffd86c', '#ffb43e', '#fff3d0', '#a82a22'],
+  ['#ffcf3d', '#f39a0b', '#ffe168', '#ffbe2c', '#fff4b2', '#ffe16a', '#ffffff', '#b8700a'],
+  ['#86b8ff', '#5847f0', '#a6d2ff', '#7290ff', '#d8f1ff', '#aad8ff', '#ffffff', '#3a2fb0'],
+  ['#d7dee5', '#aab7c4', '#e4e9ee', '#c3ced9', '#f1f4f7', '#dde4ea', '#ffffff', '#8d9aa8'],   // 꺼짐
 ];
+const F_OUT = 'M24 57C14 57 6.5 50.5 6.5 41 6.5 33.5 9.5 28 12 22 13.5 26 15.5 28.5 18 29.5 16.5 20 20.5 12 27 3 27.5 9.5 30 13.5 33.5 17 34.5 14.5 35.5 13 39 11 37.5 15.5 37.5 19 39 22.5 41 26.5 42 31 42 36 42 48.5 34 57 24 57Z';
+const F_MID = 'M24 55.5C16.5 55.5 11 50.5 11 43.5 11 38.5 13.5 35 16 32.5 16.5 35.5 18 37 20 37.5 19 30 22 24 27 17.5 27.5 23 30 26 32.5 28.5 33.2 27 34 26 35.5 25.5 34.8 29 35.5 31 36.5 33.5 37.2 35.5 37.5 38 37.5 41 37.5 49.5 31.5 55.5 24 55.5Z';
+const F_IN = 'M24 54.5C19 54.5 15.5 51 15.5 46.5 15.5 42 18.5 39 21 36.5 21 39 22 40.5 23.5 41 23.5 36.5 25 33 28 29.5 28.5 33.5 31 36 32.3 39.5 32.8 41 33 42.5 33 44 33 50 29 54.5 24 54.5Z';
+const F_CORE = 'M24.5 53.6C21.5 53.6 19.8 51.4 19.8 48.6 19.8 45.6 22.2 43.6 24 41.5 24.8 44 27.2 45.5 28.3 47.5 29 50.8 27.4 53.6 24.5 53.6Z';
+const F_BIT1 = 'M36 1.5C37.6 4.2 38.6 5.8 38.6 7.4 38.6 9 37.4 10.1 36 10.1S33.4 9 33.4 7.4C33.4 5.8 34.4 4.2 36 1.5Z';
+const F_BIT2 = 'M9.6 10.6C10.7 12.4 11.4 13.4 11.4 14.5 11.4 15.6 10.6 16.4 9.6 16.4S7.8 15.6 7.8 14.5C7.8 13.4 8.5 12.4 9.6 10.6Z';
+// 아주 작은 크기(헤더·달력·순위·칩)용 단순한 불꽃: 갈고리 끝 2개만 (작으면 끝이 많을수록 손 모양처럼 보임)
+const S_OUT = 'M24 57C14 57 7 50.5 7 41.5 7 32.5 12.5 27 16.5 20.5 17.5 25 19.5 27.5 22.5 28.5 21.5 19 25 10 31 2.5 31.2 11 34.6 16.4 37.8 21.8 40.2 25.8 41.5 30.4 41.5 35.8 41.5 48.2 34 57 24 57Z';
+const S_MID = 'M24 55.4C16.8 55.4 11.6 50.6 11.6 43.8 11.6 38.4 14.4 34.6 17.4 31.4 18.2 34.8 20 36.6 22.4 37.2 22 30.8 24.4 25 28.6 20.4 29.2 26.2 32 29.6 34.2 33.4 35.8 36 36.6 38.6 36.6 41.6 36.6 49.8 31 55.4 24 55.4Z';
+const S_IN = 'M24 54.4C19.2 54.4 16 51 16 46.6 16 42.4 18.8 39.6 21.4 37.4 21.8 39.6 23 40.8 24.6 41 24.6 37 26.2 33.8 28.8 30.8 29.4 34.4 31.6 37 32.6 40.2 33 41.6 33.2 43 33.2 44.4 33.2 50.2 29.2 54.4 24 54.4Z';
+const INKC = '#173048';
 let fid = 0;
 export function flame(cls = '', o = {}) {
-  const i = ++fid, c = FIRE[o.tier || 0];
-  return `<svg class="flm ${cls}${o.off ? ' off' : ''}" viewBox="0 0 48 56" aria-hidden="true">
-    <defs><linearGradient id="fg${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c[0]}"/><stop offset=".55" stop-color="${c[1]}"/><stop offset="1" stop-color="${c[2]}"/></linearGradient>
-    <linearGradient id="fi${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c[3]}"/><stop offset="1" stop-color="${c[4]}"/></linearGradient></defs>
-    <path class="fo" fill="url(#fg${i})" d="M24 2c1.4 6.6-2.6 10.2-5.8 13.8C15 19.3 11 23.6 11 30.5 11 42.4 17.2 53 24 53s13-10.6 13-22.5c0-5.4-2.4-9.4-5-12.6-.6 3-2 5.2-4.4 6.3C29 16.6 26.3 8 24 2z"/>
-    <path class="fi" fill="url(#fi${i})" d="M24 26.5c-3.4 3-5.6 5.6-5.6 9.2 0 4.2 2.5 7.8 5.6 7.8s5.6-3.6 5.6-7.8c0-3.6-2.2-6.2-5.6-9.2z"/>
+  const i = ++fid, c = FIRE[o.off ? 4 : (o.tier || 0)], small = /\b(fsm|hst-f|cf)\b/.test(cls);
+  const OUT = small ? S_OUT : F_OUT, MID = small ? S_MID : F_MID, IN = small ? S_IN : F_IN;
+  const lg = (id, a, b) => `<linearGradient id="${id}${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+  const bit = (d, k) => `<g class="bit ${k}"><path d="${d}" transform="translate(.8 1.4)" fill="${c[7]}" stroke="${INKC}" stroke-width="1.8" stroke-linejoin="round"/><path d="${d}" fill="url(#fb${i})" stroke="${INKC}" stroke-width="1.8" stroke-linejoin="round"/></g>`;
+  return `<svg class="flm ${cls}${o.off ? ' off' : ''}" viewBox="-1 -1 50 62" aria-hidden="true">
+    <defs>${lg('fa', c[0], c[1])}${lg('fb', c[2], c[3])}${lg('fc', c[4], c[5])}</defs>
+    <g class="sps"><path class="sp s1" d="${F_BIT1}" fill="${c[2]}" stroke="${INKC}" stroke-width="1.6" transform="translate(-9 14) scale(.8)"/><path class="sp s2" d="${F_BIT2}" fill="${c[0]}" stroke="${INKC}" stroke-width="1.6" transform="translate(6 6)"/><path class="sp s3" d="${F_BIT1}" fill="${c[4]}" stroke="${INKC}" stroke-width="1.6" transform="translate(-14 2) scale(.7)"/></g>
+    <g class="fw">
+      <path class="fx" d="${OUT}" transform="translate(1.2 2.2)" fill="${c[7]}" stroke="${INKC}" stroke-width="2.2" stroke-linejoin="round"/>
+      <g class="fl"><path class="l1" d="${OUT}" fill="url(#fa${i})"/><path class="l2" d="${MID}" fill="url(#fb${i})"/><path class="l3" d="${IN}" fill="url(#fc${i})"/><path class="l4" d="${F_CORE}" fill="${c[6]}"/>
+        <path d="M22.2 21.5C21 26 21.2 29.4 22.6 32.4M33.6 22.8C34.6 25.6 34.8 28 34.4 30.4" fill="none" stroke="${c[1]}" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></g>
+      <path class="ol" d="${OUT}" fill="none" stroke="${INKC}" stroke-width="2.4" stroke-linejoin="round"/>
+      <path class="fh" d="M10.4 44.5C9.6 39.6 10.8 35.4 13 32.2" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".75"/>
+    </g>
+    ${small ? '' : bit(F_BIT1, 'b1') + bit(F_BIT2, 'b2')}
   </svg>`;
 }
 const shieldSvg = (cls = '') => `<svg class="shd ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.3v6.2c0 4.7 3.2 8.6 7.5 10 4.3-1.4 7.5-5.3 7.5-10V5.3L12 2.5z"/><path class="tk" d="m8.6 12 2.4 2.4 4.6-4.8"/></svg>`;
 // 큰 불꽃 + 숫자 (+ 완벽한 연속이면 후광)
-const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tierOf(n)}${o.pf ? ' pf' : ''}">${o.pf ? '<i class="halo" aria-hidden="true"></i>' : ''}${flame('big' + (o.ign ? ' ign' : ''), { tier: tierOf(n), off: !n })}<b class="att-num"${o.id ? ` id="${o.id}"` : ''}>${o.from ?? n}</b></div>`;
+const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tierOf(n)}${o.pf ? ' pf' : ''}">${o.pf ? '<i class="halo" aria-hidden="true"></i>' : ''}${flame('big' + (o.burn ? ' burn' : ''), { tier: tierOf(n), off: !n })}<b class="att-num"${o.id ? ` id="${o.id}"` : ''}>${o.from ?? n}</b></div>`;
 // 보상 그림 (스티커·사진은 이모지, 배경 색은 동그란 견본, 칭호는 이름표)
-export const rwIcon = r => r.kind === 'color' ? `<i class="rw-sw c-${r.v}" aria-hidden="true"></i>` : r.kind === 'title' ? '<i class="rw-tag" aria-hidden="true">🏷️</i>' : `<span class="rw-e">${r.v}</span>`;
+export const rwIcon = r => r.kind === 'color' ? `<i class="rw-sw c-${r.v}" aria-hidden="true"></i>` : r.kind === 'title' ? ui('tag', 'rw-tag') : artOf(r.v, 'rw-e');
 
 /* ----- 헤더 🔥 버튼 ----- */
+let chipTier = -1, chipBurned = false;
 function paintChip() {
   const b = $('#btnStreak'); if (!b) return;
   b.hidden = !st;
   if (!st) return;
-  b.classList.toggle('lit', !!st.done && st.cur > 0);
-  b.classList.remove('t0', 't1', 't2', 't3'); b.classList.add('t' + tierOf(st.cur));
+  const lit = !!st.done && st.cur > 0, t = tierOf(st.cur);
+  if (t !== chipTier || b.dataset.lit !== String(lit)) {   // 불꽃 그림은 단계·켜짐이 바뀔 때만 다시 그림
+    const old = b.querySelector('svg'); old?.insertAdjacentHTML('afterend', flame('hst-f', { tier: t, off: !lit })); old?.remove();
+    chipTier = t; b.dataset.lit = String(lit);
+  }
+  // 접속했을 때 한 번만: 활활 타오르고 가만히 (축하 창이 뜨는 날은 창에서 타오르니 헤더는 그 뒤에)
+  if (lit && !chipBurned && !document.hidden) { chipBurned = true; burn(b.querySelector('.flm'), st.new ? 900 : 300); }
+  b.classList.toggle('lit', lit);
+  b.classList.remove('t0', 't1', 't2', 't3'); b.classList.add('t' + t);
   b.classList.toggle('pf', !!st.pf && st.cur >= 3);
   $('#stN').textContent = st.cur;
   const lbl = st.done ? `${st.cur}일 연속 출석 중` : '오늘 아직 출석 안 함';
   b.setAttribute('aria-label', lbl + ' — 출석 체크 열기'); b.dataset.tip = lbl;
+}
+// 불꽃 한 번 타오르기 (애니메이션이 끝나면 클래스를 떼서 가만히)
+export function burn(el, delay = 0) {
+  if (!el || reduce()) return;
+  setTimeout(() => { el.classList.remove('burn'); void el.getBoundingClientRect(); el.classList.add('burn'); setTimeout(() => el.classList.remove('burn'), 2200); }, delay);
 }
 
 /* ----- 오늘 출석 (자동) ----- */
@@ -100,7 +138,7 @@ function nextOf(r) {
 }
 function progressHtml(r) {
   const n = nextOf(r);
-  if (!n) return '<p class="att-next done">🎉 모든 출석 보상을 모았어요!</p>';
+  if (!n) return `<p class="att-next done">${ui('party', 'ic')} 모든 출석 보상을 모았어요!</p>`;
   const lastD = Math.max(0, ...REWARDS.filter(x => x.by === n.by && x.d < n.d).map(x => x.d));
   const base = n.by === 'best' && r.cur < lastD ? 0 : lastD;
   const pct = Math.max(4, Math.min(100, Math.round((n.from - base) / (n.d - base) * 100)));
@@ -113,19 +151,19 @@ function celebrate(r) {
   const big = !!r.milestone, first = r.total === 1, pw = perfectWeek(r) && r.week.indexOf(r.today) === 4;   // 금요일에 개근 완성
   const msg = first ? '첫 출석이에요! 등교하는 날마다 들러서 불꽃을 키워 보세요' : r.lost > 1 ? `아쉽게 ${r.lost}일 기록이 끊겼어요. 오늘부터 다시 키워요!` : CHEER[Math.floor(Math.random() * CHEER.length)];
   const notes = [
-    pw ? '<p class="att-note pwk">🏆 <span><b>이번 주 개근!</b> 월~금 모두 출석했어요</span></p>' : '',
+    pw ? `<p class="att-note pwk">${ui('pw', 'ic')}<span><b>이번 주 개근!</b> 월~금 모두 출석했어요</span></p>` : '',
     r.used ? `<p class="att-note sh">${shieldSvg('ic')}<span>방패 <b>${r.used}개</b>가 빠진 날을 지켜 줬어요</span></p>` : '',
     r.gotShield ? `<p class="att-note sh got">${shieldSvg('ic')}<span>연속 ${r.cur}일! <b>출석 방패 +1</b> <small>(${r.shield}/${r.shieldMax})</small></span></p>` : '',
-    r.pf && [7, 14, 30, 50, 100].includes(r.cur) ? '<p class="att-note pfn">✨ <span><b>완벽한 연속</b> — 방패 없이 여기까지 왔어요</span></p>' : '',
+    r.pf && [7, 14, 30, 50, 100].includes(r.cur) ? `<p class="att-note pfn">${ui('sparkle', 'ic')}<span><b>완벽한 연속</b> — 방패 없이 여기까지 왔어요</span></p>` : '',
   ].join('');
   const gifts = (r.unlocked || []).map((x, i) => `<div class="att-gift k-${x.kind}" data-i="${i}"><span class="rw-box">${rwIcon(x)}</span><p><b>${x.by === 'total' ? `총 ${x.d}일 출석 보상` : `${x.d}일 연속 보상`}</b><small>새 ${KIND[x.kind]}${x.kind === 'title' || x.kind === 'color' ? ` ${esc(rwName(x))}` : ''} 해금!</small></p></div>`).join('');
-  const kick = big ? `<p class="att-kick">${r.unlocked?.length ? '🎁 보상 도착!' : `🎉 ${r.cur}일 달성!`}</p>` : '';
+  const kick = big ? `<p class="att-kick">${r.unlocked?.length ? ui('gift') + '보상 도착!' : ui('party') + `${r.cur}일 달성!`}</p>` : '';
   $('#attSheet').className = `sheet att-pop${big ? ' ms' : ''}`;
   $('#attSheet').innerHTML = `
     ${big ? '<div class="att-burst" aria-hidden="true"><i class="rays"></i></div>' : ''}
     <div class="att-hero">
       ${kick}
-      ${bigFire(r.cur, { ign: true, pf: r.pf && r.cur >= 3, id: 'attNum', from: Math.max(0, r.cur - 1) })}
+      ${bigFire(r.cur, { burn: true, pf: r.pf && r.cur >= 3, id: 'attNum', from: Math.max(0, r.cur - 1) })}
       <h3 id="attT"><span>${r.cur}</span>일 연속 출석!</h3>
       ${big && !first && !(r.lost > 1) ? '' : `<p class="att-msg">${esc(msg)}</p>`}
     </div>
@@ -187,15 +225,15 @@ function rewardsHtml(r, by) {
   return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${r.best}일` : `총 ${r.total}일`} · ${have}/${list.length}개 받음</small></div>
     <ul class="att-rw">${list.map(x => {
       const on = rwOn(x, r.best, r.total);
-      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${x.kind === 'title' || x.kind === 'color' ? ' · ' + esc(rwName(x)) : ''}">${rwIcon(x)}${x.kind === 'title' ? `<span class="rw-t">${esc(x.v)}</span>` : x.kind === 'color' ? `<span class="rw-t">${esc(COLOR_NAME[x.v])}</span>` : ''}<b>${x.d}일</b><small>${on ? '받음 ✓' : KIND[x.kind]}</small>${on ? '' : '<i class="lk" aria-label="잠김">🔒</i>'}</li>`;
+      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${x.kind === 'title' || x.kind === 'color' ? ' · ' + esc(rwName(x)) : ''}">${rwIcon(x)}${x.kind === 'title' ? `<span class="rw-t">${esc(x.v)}</span>` : x.kind === 'color' ? `<span class="rw-t">${esc(COLOR_NAME[x.v])}</span>` : ''}<b>${x.d}일</b><small>${on ? '받음' : KIND[x.kind]}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
     }).join('')}</ul>`;
 }
 function sheetHtml(r) {
   const shields = Array.from({ length: r.shieldMax }, (_, i) => shieldSvg(i < r.shield ? 'on' : 'off')).join('');
-  const state = !r.cur ? '오늘부터 다시 불꽃을 키워 봐요' : !r.done ? '오늘은 아직이에요' : r.pf && r.cur >= 3 ? '✨ 완벽한 연속 — 방패 없이 이어 가는 중' : '✅ 오늘 출석 완료';
+  const state = !r.cur ? '오늘부터 다시 불꽃을 키워 봐요' : !r.done ? '오늘은 아직이에요' : r.pf && r.cur >= 3 ? `${ui('sparkle', 'ic')} 완벽한 연속 — 방패 없이 이어 가는 중` : `${ui('check', 'ic')} 오늘 출석 완료`;
   return `
     <div class="att-top">
-      ${bigFire(r.cur, { sm: true, pf: r.pf && r.cur >= 3 })}
+      ${bigFire(r.cur, { sm: true, burn: true, pf: r.pf && r.cur >= 3 })}
       <div class="att-tt">
         <h3>${r.cur ? `${r.cur}일 연속 출석` : '오늘부터 시작!'}</h3>
         <p class="muted small">${state}</p>
@@ -227,8 +265,7 @@ async function loadRank(scope) {
   list.innerHTML = '<li class="skel"></li>';
   try {
     const r = await api.call('attrank?scope=' + scope);
-    const medal = i => ['🥇', '🥈', '🥉'][i] || i + 1;
-    list.innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${api.av(u)}<span class="pi"><b>${esc(api.nameOf(u))}${api.devTag(u)}</b><small>${u.title ? `🏷️ ${esc(u.title)}` : esc(api.classTxt(u) || api.atOf(u))}</small></span></a><b class="rv att-rv t${tierOf(u.value)}${u.pf && u.value >= 3 ? ' pf' : ''}">${flame('fsm', { tier: tierOf(u.value) })}${u.value}</b></li>`).join('')
+        list.innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${api.av(u)}<span class="pi"><b>${esc(api.nameOf(u))}${api.devTag(u)}</b><small>${u.title ? `${ui('tag', 'ic')}${esc(u.title)}` : esc(api.classTxt(u) || api.atOf(u))}</small></span></a><b class="rv att-rv t${tierOf(u.value)}${u.pf && u.value >= 3 ? ' pf' : ''}">${flame('fsm', { tier: tierOf(u.value) })}${u.value}</b></li>`).join('')
       : `<li class="empty">${scope === 'friends' ? '아직 불꽃을 키우는 친구가 없어요. 맞팔 친구에게 같이 하자고 해 보세요!' : '아직 기록이 없어요'}</li>`;
   } catch (e) { list.innerHTML = `<li class="empty">${esc(e.message)}</li>`; }
 }

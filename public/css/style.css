@@ -1768,38 +1768,46 @@ html.away .mascot *{animation-play-state:paused!important}
 .t3{--fire:#6a7dff;--fire2:#9fd0ff;--fire-bg:#e6ecff}
 :root[data-theme="dark"] .t2{--fire-bg:#4a3c12}:root[data-theme="dark"] .t3{--fire-bg:#262f5c}
 .flm{display:block;overflow:visible}
-.flm.off .fo{fill:#c3ccd5}.flm.off .fi{fill:#e6ebf0}
-:root[data-theme="dark"] .flm.off .fo{fill:#55697d}:root[data-theme="dark"] .flm.off .fi{fill:#7b8fa3}
+.flm .fw,.flm .fl>*,.flm .bit,.flm .sp{transform-box:fill-box;transform-origin:50% 100%}
+.flm .sp{opacity:0}
+.flm.off .fh{display:none}
+.flm.fsm .bit,.flm.cf .bit,.flm.fsm .fh,.flm.cf .fh{display:none}   /* 아주 작을 땐 불씨·광택 빼서 또렷하게 */
+/* 접속했을 때 한 번: 활활 (ART_GUIDE '불꽃 애니메이션') — 예비동작(눌림) → 솟음 → 바람 세 번(진폭 줄어듦, 가운데·속불은 늦게 따라옴)
+   → 끝 조각이 떨어져 나가 위로 사라짐 → 제자리에서 멈춤. 크기만 키웠다 줄이지 않고 기울기·밀림·흐름으로 표현 */
+.flm.burn .fw{animation:burnW 1.8s cubic-bezier(.35,0,.25,1) both}
+.flm.burn .l2{animation:burnM 1.8s .07s cubic-bezier(.35,0,.25,1) both}
+.flm.burn .l3,.flm.burn .l4{animation:burnI 1.8s .13s cubic-bezier(.35,0,.25,1) both}
+.flm.burn .fh{animation:burnH 1.8s ease-out both}
+.flm.burn .bit{animation:bitIn 1.8s cubic-bezier(.3,1.6,.5,1) both}
+.flm.burn .sp{animation:spark 1s cubic-bezier(.2,.6,.4,1) both}
+.flm.burn .s1{animation-delay:.3s}.flm.burn .s2{animation-delay:.52s}.flm.burn .s3{animation-delay:.78s}
+@keyframes burnW{0%{transform:translateY(4%) scale(.25,.08);opacity:0}8%{opacity:1;transform:scale(1.12,.78)}18%{transform:scale(.9,1.2) rotate(-2deg)}30%{transform:scale(1.03,1.04) rotate(-7deg)}44%{transform:scale(.98,1.06) rotate(5deg)}58%{transform:scale(1.01,1.02) rotate(-3deg)}72%{transform:rotate(1.6deg)}86%{transform:rotate(-.6deg)}100%{transform:none}}
+@keyframes burnM{0%,18%{transform:none}32%{transform:skewX(7deg) translateX(-4%)}46%{transform:skewX(-6deg) translateX(3%)}60%{transform:skewX(3deg) translateX(-1%)}75%{transform:skewX(-1.4deg)}100%{transform:none}}
+@keyframes burnI{0%,12%{transform:translateY(12%) scale(.6)}26%{transform:scale(.9,1.22)}40%{transform:scale(1.06,.94)}54%{transform:scale(.96,1.08)}70%{transform:scale(1.02,.98)}100%{transform:none}}
+@keyframes burnH{0%,55%{opacity:0}100%{opacity:.75}}
+@keyframes bitIn{0%,68%{opacity:0;transform:translateY(40%) scale(.3)}84%{opacity:1;transform:translateY(-8%) scale(1.12)}100%{transform:none}}
+@keyframes spark{0%{opacity:0;transform:translateY(6px) scale(.5)}20%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(.35)}}
 .flm.fsm{width:13px;height:15px;flex:none}
 .shd{display:block;fill:var(--shield);stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
 .shd .tk{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}
 .shd.off{fill:var(--chip);stroke:var(--line)}.shd.off .tk{stroke:var(--line)}
 .shd.fsm{width:15px;height:15px}
-@keyframes flick{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.06,.97) rotate(-3deg)}60%{transform:scale(.97,1.05) rotate(2deg)}}
 /* 헤더 버튼 */
 .iconbtn.hb-st{width:auto;padding:0 12px 0 9px;display:flex;align-items:center;gap:5px;font:900 16px/1 var(--num);position:relative}
-.hb-st .hst-f{width:17px;height:20px;transition:transform .2s}
-.hb-st .hst-f path{fill:#b9c5d0}.hb-st .hst-f .in{fill:#e8edf2}
+.hb-st .hst-f{width:18px;height:21px}
 .hb-st:not(.lit) b{color:var(--sub)}
 .hb-st.lit{background:var(--fire-bg)}
-.hb-st.lit .hst-f path{fill:var(--fire)}.hb-st.lit .hst-f .in{fill:var(--fire2)}
-.hb-st.lit .hst-f{animation:flick 2.4s ease-in-out infinite;transform-origin:50% 90%}
 .hb-st.lit.pf{box-shadow:var(--sh-s),0 0 0 3px var(--gold)}
 @media (max-width:520px){.iconbtn.hb-st{padding:0 9px 0 7px;gap:3px;font-size:15px}}
 /* 폰 폭: 🔥 버튼이 생기면 헤더가 넘쳐서 로고 글자를 숨김(로그인했을 때만) */
 @media (max-width:440px){body:has(#btnStreak:not([hidden])) .logo .lt{display:none}}
 /* 큰 불꽃 + 숫자 (+ 후광) */
 .att-fire{position:relative;width:118px;height:136px;margin:4px auto 0}
-.att-fire .flm.big{position:relative;width:100%;height:100%;filter:drop-shadow(3px 4px 0 var(--ink))}
-.att-fire .flm .fo{stroke:var(--ink);stroke-width:1.4}
-.att-fire .flm .fo,.att-fire .flm .fi{transform-origin:50% 95%;animation:flick 2.6s ease-in-out infinite}
-.att-fire .flm .fi{animation-duration:1.9s}
-.att-fire .flm.ign{animation:ign .75s cubic-bezier(.2,1.6,.4,1) both}
-@keyframes ign{0%{transform:scale(.2) rotate(-14deg);opacity:0}60%{opacity:1}}
+.att-fire .flm.big{position:relative;width:100%;height:100%}
 .att-fire .halo{position:absolute;left:50%;top:56%;width:150%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;
-  background:radial-gradient(closest-side,color-mix(in srgb,var(--gold) 55%,transparent),color-mix(in srgb,var(--gold) 18%,transparent) 62%,transparent);animation:halo 2.8s ease-in-out infinite}
-.att-fire .halo::after{content:"";position:absolute;inset:16%;border-radius:50%;border:3px dashed color-mix(in srgb,var(--gold) 80%,var(--ink));animation:spin 14s linear infinite}
-@keyframes halo{50%{transform:scale(1.07);opacity:.8}}
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--gold) 55%,transparent),color-mix(in srgb,var(--gold) 18%,transparent) 62%,transparent);animation:halo .9s .5s cubic-bezier(.2,1.5,.4,1) both}
+.att-fire .halo::after{content:"";position:absolute;inset:16%;border-radius:50%;border:3px dashed color-mix(in srgb,var(--gold) 80%,var(--ink))}
+@keyframes halo{from{transform:scale(.4);opacity:0}}
 @keyframes spin{to{transform:rotate(1turn)}}
 .att-num{position:absolute;left:0;right:0;bottom:12px;text-align:center;font:900 40px/1 var(--num);color:#fff;
   -webkit-text-stroke:2.5px var(--ink);paint-order:stroke fill;text-shadow:2px 3px 0 var(--ink)}
@@ -1820,7 +1828,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-burst .rays{position:absolute;left:50%;top:128px;width:560px;height:560px;margin:-280px 0 0 -280px;border-radius:50%;
   background:repeating-conic-gradient(color-mix(in srgb,var(--fire2) 55%,transparent) 0 9deg,transparent 9deg 22deg);
   -webkit-mask:radial-gradient(closest-side,#000 25%,transparent 75%);mask:radial-gradient(closest-side,#000 25%,transparent 75%);
-  animation:raysIn .8s .1s cubic-bezier(.2,1.2,.4,1) both,spin 24s linear infinite}
+  animation:raysIn .8s .1s cubic-bezier(.2,1.2,.4,1) both,spin 6s cubic-bezier(.1,.6,.3,1) both}
 @keyframes raysIn{from{opacity:0;scale:.3}}
 .att-burst .cf{position:absolute;left:50%;top:128px;width:9px;height:14px;border-radius:2px;background:var(--c);border:1.5px solid var(--ink);opacity:0;
   animation:conf 1.6s var(--d) cubic-bezier(.15,.7,.35,1) forwards}
@@ -1857,7 +1865,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-note small{color:var(--sub)}
 /* 해금 보상 카드: 차례로 튀어나옴 */
 .att-gifts{display:grid;gap:7px;margin-top:10px}
-.att-gift .rw-box{width:38px;height:38px}.att-gift .rw-e{font-size:22px}.att-gift .rw-sw{width:24px;height:24px}.att-gift .rw-tag{font-size:20px}
+.att-gift .rw-box{width:40px;height:40px}.att-gift .rw-sw{width:24px;height:24px}
 .att-gift{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:18px;background:var(--yellow);color:var(--ink);border:var(--bd);box-shadow:var(--sh-s);text-align:left;
   animation:gift .6s .9s cubic-bezier(.2,1.6,.4,1) both}
 .att-gift:nth-child(2){animation-delay:1.15s}.att-gift:nth-child(3){animation-delay:1.4s}.att-gift:nth-child(4){animation-delay:1.65s}
@@ -1866,9 +1874,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-gift p{display:grid;font-weight:900;line-height:1.3}.att-gift small{font-weight:700;font-size:12.5px}
 /* 보상 그림: 이모지 · 배경 색 견본 · 칭호 이름표 */
 .rw-box{width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--card);border:2px solid var(--ink);transform:rotate(-5deg)}
-.rw-e{font-size:27px;line-height:1}
 .rw-sw{display:block;width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);background:var(--pg,var(--pc))}
-.rw-tag{font-style:normal;font-size:24px;line-height:1}
 /* 다음 보상 진행 막대 */
 .att-next{display:flex;align-items:center;gap:12px;margin-top:14px;text-align:left}
 .att-next.done{justify-content:center;font-weight:900}
@@ -1918,9 +1924,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-rwh b{font-weight:900;font-size:14.5px}.att-rwh small{font-size:12px;font-weight:800;color:var(--sub)}
 .att-rw{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
 .att-rw li{position:relative;display:grid;justify-items:center;align-content:start;gap:1px;padding:10px 4px 8px;border-radius:16px;border:2px solid var(--ink);background:var(--card);text-align:center}
-.att-rw .rw-e{font-size:28px;line-height:1.25}
 .att-rw .rw-sw{width:30px;height:30px;margin:2px 0 3px}
-.att-rw .rw-tag{font-size:22px;margin-top:3px}
 .att-rw .rw-t{font-size:11px;font-weight:900;line-height:1.25;padding:0 2px}
 .att-rw b{font:900 15px/1.2 var(--num)}
 .att-rw small{font-size:11px;font-weight:800;color:var(--sub)}
@@ -1928,7 +1932,6 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-rw li.on.k-color{background:#ffe0ef}.att-rw li.on.k-title{background:#dff4ff}.att-rw li.on.k-avatar{background:#e6f9da}
 .att-rw li:not(.on) .rw-e,.att-rw li:not(.on) .rw-tag{filter:grayscale(1);opacity:.45}
 .att-rw li:not(.on) .rw-sw{filter:grayscale(.85);opacity:.55}
-.att-rw .lk{position:absolute;top:4px;right:6px;font-style:normal;font-size:11px}
 .att-rv{display:flex;align-items:center;gap:4px;font:900 16px var(--num)}
 .att-rv.pf .flm{filter:drop-shadow(0 0 3px var(--gold))}
 .att-rule{margin-top:18px;padding:10px 14px;border-radius:14px;background:var(--chip);font-size:13.5px}
@@ -1965,7 +1968,28 @@ html.away .mascot *{animation-play-state:paused!important}
 .pick .att-pk i{position:absolute;right:2px;bottom:1px;font:900 10px/1 var(--num);font-style:normal;color:var(--ink);background:var(--card);border-radius:6px;padding:1px 3px}
 .sform .att-hint{margin-top:-4px}
 .sform .att-sm{font-size:11.5px;color:var(--fire);font-weight:900}
-@media (prefers-reduced-motion:reduce){.hb-st.lit .hst-f,.att-fire .flm .fo,.att-fire .flm .fi,.att-fire .halo,.att-burst{animation:none}.att-burst .cf{display:none}}
+.att-ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.22em;flex:none;overflow:visible}
+.att-kick .att-ic{width:20px;height:20px;margin-right:5px;vertical-align:-4px}
+.att-note .att-ic.ic{width:22px;height:22px}
+.att-tt .att-ic,.att-rank .att-ic{margin-right:3px}
+.rank .rk .att-ic.md{width:26px;height:26px;vertical-align:middle}
+.art{display:block;overflow:visible}
+.av .ava{width:96%;height:96%}
+.av.big .ava{width:94%;height:94%}
+.stk .stka{width:1.15em;height:1.15em;display:inline-block}
+.pick button .pka{width:78%;height:78%;margin:auto}
+.att-rw .art.rw-e{width:46px;height:46px;margin:-4px 0 0}
+.att-gift .art.rw-e,.att-next .art.rw-e{width:30px;height:30px}
+.att-rw .att-ic.rw-tag{width:30px;height:30px;margin:3px 0 1px}
+.att-gift .att-ic.rw-tag,.att-next .att-ic.rw-tag{width:26px;height:26px}
+.att-rw .lk{position:absolute;top:4px;right:5px;width:16px;height:16px}
+.att-rw .lk.ok{width:17px;height:17px}
+.ptitle .att-ic{width:14px;height:14px;margin-right:4px;vertical-align:-2px}
+.sform .att-sm .flm{display:inline-block;width:11px;height:13px;margin-right:2px;vertical-align:-1px}
+/* 보상 그림 스프라이트(문서에 한 번) · 다이컷 스티커 판(흰 판 + 딱딱한 그림자, ART_GUIDE) */
+.att-sprite{position:absolute;width:0;height:0;overflow:hidden}.att-sprite svg{width:0;height:0}
+.att-rw .art,.att-gift .art,.att-next .art,.stk .art{filter:drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff) drop-shadow(0 -1.6px 0 #fff) drop-shadow(1.5px 2px 0 rgba(23,48,72,.28))}
+@media (prefers-reduced-motion:reduce){.att-fire .halo,.att-burst{animation:none}.att-burst .cf{display:none}}
 
 /* ===== 스킨 (자동 생성: tools/skins/gen.py — 직접 고치지 말고 생성기를 고칠 것) =====
    html[data-skin=…]이 색 토큰만 덮어씀 → 밝음/어두움(data-theme)과 따로 조합됨. 기본(파랑)은 스킨 없음 */
