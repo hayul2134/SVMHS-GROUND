@@ -1856,7 +1856,7 @@ async function fillShow() {
   const rawP = () => L ? (root.scrollTop - secTop) / L.range : 0;
   // 스크롤을 따라가는 방식: 목표(스크롤 위치)를 '부드러운 감쇠(SmoothDamp)'로 쫓아감 — 출발·멈춤이 매끈하고 튕김(오버슛) 없음.
   // 확확 내려도 장면을 건너뛰지 않게 최고 속도만 제한(VMAX: 1초에 진행도 0.42 ≈ 한 장면 0.22초). 스크롤 스냅은 안 씀(되돌림 때문에 앞뒤로 흔들림)
-  const SMOOTH = .16, VMAX = .42;
+  const SMOOTH = .16, VMAX = .6;
   function loop(ts) {
     const dt = Math.min(1 / 20, (ts - (last || ts - 16.7)) / 1000); last = ts;
     // SmoothDamp (Game Programming Gems 4) — 시간 상수 SMOOTH초, 최고 속도 VMAX
@@ -1913,7 +1913,7 @@ async function fillShow() {
     if (!L) return;
     const now = performance.now();
     if (now < lockUntil) return;
-    lockUntil = now + 520;   // 한 장면 움직이는 동안은 다음 입력 무시
+    lockUntil = now + 260;   // 넘어간 직후 잠깐만 다음 입력 무시 (연달아 밀면 바로바로 다음 장면)
     if (stopI < 0) stopI = nearestStop();
     const k = stopI + dir;
     if (k < 0 || k >= STOPS.length) return leave(dir);
@@ -1932,15 +1932,20 @@ async function fillShow() {
     if (!inside) stopI = -1;
     wasIn = inside;
   }, { passive: true });
-  // 휠·트랙패드: 이벤트가 끊김 없이 이어지면(관성 포함) 한 번으로 침. 잠깐 멈췄거나(160ms) 확 세게 다시 밀면 새로운 한 번
+  // 휠·트랙패드: 한 번 미는 동작의 '시작'만 잡음 (2026-10-23 맥북 트랙패드 대응)
+  //  · 새로 민 것으로 보는 경우: 입력이 잠깐(120ms) 끊겼다 다시 옴 / 방향이 바뀜 / 관성으로 줄어들던 값이 두 번 연속 다시 커짐(관성 중에 또 민 것)
+  //  · 관성 꼬리(점점 작아지는 값)는 무시. 장면이 넘어간 직후 0.26초만 다음 입력을 막음 (예전엔 관성이 이어지는 내내 막혀서 맥북에서 잘 안 먹었음)
+  let wDir = 0, wLast = 0, wMin = 0, wRise = 0;
   root.addEventListener('wheel', e => {
-    if (!on || !L || !inShow() || performance.now() < leaving || e.ctrlKey) return;
+    if (!on || !L || !inShow() || performance.now() < leaving || e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
     e.preventDefault();
-    const now = performance.now(), mag = Math.abs(e.deltaY) * (e.deltaMode ? 30 : 1), gap = now - lastWheel;
-    const fresh = gap > 160 || mag > wheelMag * 1.8 + 6;
-    wheelMag = gap > 160 ? mag : Math.max(mag, wheelMag * .9); lastWheel = now;
-    if (fresh && mag > .5) step(Math.sign(e.deltaY));
-    else lockUntil = Math.max(lockUntil, now + 60);   // 관성 꼬리가 이어지는 동안은 계속 잠금
+    const now = performance.now(), mag = Math.abs(e.deltaY) * (e.deltaMode ? 30 : 1), dir = Math.sign(e.deltaY), gap = now - lastWheel;
+    if (!dir) return;
+    wRise = mag > wLast + 1 ? wRise + 1 : 0;
+    const fresh = gap > 120 || dir !== wDir || (wRise >= 2 && mag > wMin * 2 + 3);
+    if (mag < wLast) wMin = Math.min(wMin, mag);   // 줄어드는 구간(관성)에서만 최저값을 잼 → 처음 밀 때 점점 커지는 구간은 '새로 밂'으로 착각하지 않음
+    lastWheel = now; wDir = dir; wLast = mag;
+    if (fresh && now >= lockUntil) { wMin = Infinity; wRise = 0; step(dir); }
   }, { passive: false });
   // 터치: 손가락을 떼는 순간 위·아래 중 어느 쪽으로 밀었는지만 봄
   root.addEventListener('touchstart', e => { touchY = inShow() ? e.touches[0].clientY : null; touchMoved = false; }, { passive: true });
