@@ -438,7 +438,7 @@ function paintHeroMeal() {
   const box = $('#sMeal'), lbl = $('#sMealLbl'), slots = $('#sMealSlots'), d = S.sMealDay, day = d || today();
   if (S.mealWk) { paintHeroWeek(); return; }
   const rows = d ? heroRows : homeRows;
-  lbl.textContent = `${ttLabel(day)} 급식`; markOff(lbl, !!d);
+  setLbl(lbl, `${ttLabel(day)} 급식`, !!d, false);   // 하루 보기로 돌아올 때 한 주 카드 폭(.wk)도 같이 풂 (2026-10-23: 식판이 한 주 폭으로 커져 시계를 가리던 문제)
   if (!rows) { slots.innerHTML = ''; box.innerHTML = skel(2); return; }
   if (!rows.length) { slots.innerHTML = ''; box.innerHTML = empty((d ? S.heroFail : S.mealFail) ? '급식 정보를 불러오지 못했어요' : '급식이 없는 날이에요'); return; }
   const r = (S.heroPick && rows.find(x => x.MMEAL_SC_CODE === S.heroPick)) || pickMeal(rows, d ? '2' : S.mealSlot);
@@ -1093,7 +1093,8 @@ const calHtml = (m, rows) => {
   for (let d = 1; d <= last; d++) {
     const dt = new Date(y, mo, d), k = ymd(dt), ev = by[k] || [], dow = dt.getDay();
     const cls = ['dy', dow === 0 ? 'sun' : dow === 6 ? 'sat' : '', ev.length ? 'has' : '', ev.some(isOff) ? 'off' : '', dt < t ? 'past' : '', k === ymd(t) ? 'today' : ''].filter(Boolean).join(' ');
-    h += `<div class="${cls}" title="${ev.map(r => esc(r.EVENT_NM)).join(', ')}"><b class="n">${d}</b>${ev.slice(0, 2).map(r => `<span class="e${isOff(r) ? ' off' : ''}">${esc(r.EVENT_NM)}</span>`).join('')}${ev.length > 2 ? `<span class="e">+${ev.length - 2}</span>` : ''}</div>`;
+    const tip = ev.length ? ` data-tip="${ev.map(r => esc(r.EVENT_NM)).join(', ')}"${dow === 6 ? ' data-tip-end' : ''}` : '';
+    h += `<div class="${cls}"${tip}><b class="n">${d}</b>${ev.slice(0, 2).map(r => `<span class="e${isOff(r) ? ' off' : ''}">${esc(r.EVENT_NM)}</span>`).join('')}${ev.length > 2 ? `<span class="e">+${ev.length - 2}</span>` : ''}</div>`;
   }
   return h;
 };

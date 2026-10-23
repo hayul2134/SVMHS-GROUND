@@ -35,9 +35,9 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 
 /* ===== 작은 조각들 ===== */
 // 개발자 계정은 이모지 대신 사이트 로고 + 무지개 링 아바타 (어디서나 같게)
-const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" title="접속 중"></i>' : ''}</span>`;
+const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${esc(u.avatar || '😎')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
-const devTag = u => isDev(u) ? '<span class="devb" title="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
+const devTag = u => isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '';   // 이름 옆 작은 배지
 // 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
 const nameOf = u => isDev(u) ? '개발자' : u.name;
 const atOf = u => isDev(u) ? '' : '@' + u.handle;   // 화면에 보이는 아이디 (개발자는 빈칸)

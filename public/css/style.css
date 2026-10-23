@@ -1330,6 +1330,8 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
   [data-tip-end]::after{left:auto;right:0;transform:translateY(-4px)}
   [data-tip-end]:hover::after,[data-tip-end]:focus-visible::after{transform:translateY(0)}
   :root[data-theme="dark"] [data-tip]::after{background:#f3f7fb;color:var(--onc)}
+  .cal .dy[data-tip]:hover{z-index:5;opacity:1}   /* 학사일정 칸 이름표가 옆 칸에 가리거나 흐려지지 않게 */
+  .cal .dy[data-tip]::after{white-space:normal;width:max-content;max-width:220px;line-height:1.35}
 }
 /* 식판 카툰 음식 그림(투명 배경): 칸 안에 잘리지 않게 담고(contain), 아래는 이름표 자리로 조금 비움 */
 .tray .fx.fximg{overflow:hidden;border-radius:inherit}
