@@ -930,7 +930,16 @@ new MutationObserver(() => heroLater()).observe(document.documentElement, { attr
 document.fonts?.ready.then(heroResize); heroResize();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
 // 서비스들이 화면에 들어오면 왼쪽 아래 '서비스' 버튼을 숨김
-new IntersectionObserver(([e]) => document.documentElement.classList.toggle('at-svc', e.isIntersecting), { threshold: .25 }).observe($('#apps'));
+new IntersectionObserver(([e]) => {
+  const H = document.documentElement, was = H.classList.contains('at-svc');
+  H.classList.toggle('at-svc', e.isIntersecting);
+  // 서비스 버튼이 사라지면 그 위에 앉아 있던 캐릭터가 깜짝 놀라 떨어져 착지(m-drop), 버튼이 다시 나오면 같이 올라와 놀라며 휘청(m-rise)
+  const m = document.getElementById('mascot');
+  if (m && was !== e.isIntersecting && document.body.dataset.view === 'home' && !H.classList.contains('prelogin')) {
+    m.classList.remove('m-drop', 'm-rise', 'm-hello'); void m.offsetWidth;
+    m.classList.add(e.isIntersecting ? 'm-drop' : 'm-rise');
+  }
+}, { threshold: .25 }).observe($('#apps'));
 /* ===== 첫 화면 카드에서 다른 날 넘겨 보기 (‹ ›) — 라벨을 누르면 오늘로, 3분 동안 안 만지면 자동으로 오늘로 ===== */
 // 홈 카드 라벨: 지금(오늘·이번 주)이면 눌러서 하루↔한 주 전환, 다른 날·다른 주면 눌러서 지금으로
 function setLbl(el, text, off, wk) {
@@ -1314,7 +1323,10 @@ async function syncMascot(hi) {
   }
   if (hi && !art) { el.classList.remove('m-hello'); void el.offsetWidth; el.classList.add('m-hello'); }  // .hi는 메뉴 항목 클래스라 쓰면 안 됨
 }
-document.addEventListener('animationend', e => { if (e.animationName === 'm-hi') e.target.closest('.mascot')?.classList.remove('m-hello'); });
+document.addEventListener('animationend', e => {
+  if (e.animationName === 'm-hi') e.target.closest('.mascot')?.classList.remove('m-hello');
+  if (e.animationName === 'm-fall' || e.animationName === 'm-rise') e.target.closest('.mascot')?.classList.remove('m-drop', 'm-rise');
+});
 // 다른 탭·앱을 보고 있을 땐 캐릭터 애니메이션 멈춤(배터리·CPU 절약)
 const syncAway = () => document.documentElement.classList.toggle('away', document.hidden);
 document.addEventListener('visibilitychange', syncAway); syncAway();
