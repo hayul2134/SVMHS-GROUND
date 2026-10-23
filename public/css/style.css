@@ -1251,7 +1251,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 .sh-cap small{font-family:inherit;font-size:15px;color:var(--accent);display:inline-flex;align-items:center;gap:6px}
 .sh-cap small::before{content:"";width:18px;height:3px;border-radius:2px;background:currentColor}
 .sh-cap i{font-style:normal}
-.sh-chrome,.sh-say,.sh-skip,.sh-dots,.shk-sp{display:none}
+.sh-cover,.sh-say,.sh-skip,.sh-dots,.shk-sp{display:none}
 .so{position:relative;width:min(var(--w),100%);height:var(--h);flex:none}
 .so-meal{--w:400px;--h:420px}.so-clock{--w:600px;--h:360px}.so-tt{--w:340px;--h:420px}.so-bal{--w:440px;--h:230px}
 .so-game{--w:340px;--h:360px}.so-dm{--w:320px;--h:340px}.so-prof{--w:320px;--h:380px}.so-cal{--w:340px;--h:340px}
@@ -1346,23 +1346,29 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 /* 붙여 두고 움직이는 모드 */
 .in-show.sh-on{padding:0;height:calc(var(--steps,11) * 85svh + 100svh)}
 .sh-on .sh-stage{position:sticky;top:0;display:block;width:100vw;height:100svh;margin-left:calc(50% - 50vw);overflow:hidden}
-.sh-on .sh-cap{position:absolute;left:0;right:0;top:max(18px,3vh);align-items:center;text-align:center;font-size:clamp(20px,2.6vw,30px);z-index:3;pointer-events:none}
+
+/* 진짜 첫 화면 드러내기: 쇼케이스가 붙어 있는 동안 소개 화면 배경을 투명하게(.sh-see) 하고, 덮개(.sh-cover)가 걷히며 뒤의 실제 첫 화면이 보임 */
+.sh-on .sh-cover{display:block;position:absolute;inset:0;z-index:0;background-color:var(--bg);background-image:var(--pat,radial-gradient(var(--dot) 1.6px,transparent 1.7px));background-size:var(--pat-size,22px 22px);pointer-events:none}
+#intro.sh-see{background:transparent}
+#intro.sh-see .sh-stage{pointer-events:auto}
+/* 로그인 전엔 숨기는 첫 화면 버튼들도 이때만 똑같이 보이게(소개 화면 아래라 눌리진 않음) */
+html.sh-real .svcfab{display:flex!important;opacity:var(--shr,1)}
+html.sh-real #dmDock{display:flex!important;opacity:var(--shr,1)}
+html.sh-real .mascot{opacity:var(--shr,1)}
+html.sh-hand #bigclock :is(.s-meal,.s-ttc,.s-greet,.s-what,.clock,.s-info){visibility:hidden}
+html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-55px)}
+@media (max-width:560px){ html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-49px)} }
+/* '로그인하면 바로 이 화면이에요!' 스티커 — 처음엔 화면 가운데 크게, 첫 화면이 드러나면 위로 올라가 붙음 */
+.sh-on .sh-cap{position:absolute;left:0;top:0;z-index:4;width:max-content;max-width:none;margin:0;transform-origin:0 0;pointer-events:none;will-change:transform,opacity;
+  display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 30px 18px;background:var(--card);border:3px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);rotate:-2deg;font-size:52px;line-height:1.1;text-align:center}
+.sh-on .sh-cap::before{content:"";position:absolute;top:-16px;left:50%;width:120px;height:30px;margin-left:-60px;background:rgba(255,224,138,.92);border:2px solid rgba(23,48,72,.22);rotate:3deg}
+.sh-on .sh-cap small{font-family:var(--disp);font-size:22px;padding:2px 14px;border-radius:999px;background:var(--accent);color:#fff;border:2.5px solid var(--ink);rotate:2deg}
 .sh-on .sh-cap small::before{display:none}
-.sh-on .sh-chrome{display:block;position:absolute;left:0;top:0;transform-origin:0 0;width:1440px;height:860px;pointer-events:none}
-.shc-logo{position:absolute;left:30px;top:26px;display:flex;align-items:center;gap:10px;line-height:1;color:var(--on-bg)}
-.shc-logo img{width:52px;height:52px;rotate:-6deg}
-.shc-logo span{display:flex;flex-direction:column;gap:3px;font-family:var(--disp);font-size:22px;text-shadow:2px 2px 0 var(--sky)}
-.shc-logo small{font-family:var(--num);font-size:10px;font-weight:800;letter-spacing:.35em;text-shadow:none}
-.shc-btns{position:absolute;right:30px;top:26px;display:flex;gap:8px}
-.shc-btns span{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);color:var(--ink)}
-.shc-btns span.fb{width:auto;padding:0 14px;gap:6px;display:flex;align-items:center;background:var(--yellow);font-weight:900;color:#173048}
-.shc-btns svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-:root[data-theme="dark"] .shc-btns span:not(.fb){color:var(--text)}
-.shc-pill{position:absolute;bottom:24px;display:flex;align-items:center;gap:10px;padding:8px 22px 8px 8px;border-radius:999px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);font-weight:900;font-size:17px}
-.shc-pill.l{left:30px}.shc-pill.r{right:30px;flex-direction:row-reverse;padding:8px 8px 8px 22px}
-.shc-pill i{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--lime);border:2px solid var(--ink)}
-.shc-pill.r i{background:var(--yellow)}
-.shc-pill svg{width:20px;height:20px;fill:none;stroke:#173048;stroke-width:2}
+.sh-on .sh-cap em{font-style:normal;color:var(--accent);background:linear-gradient(transparent 60%,var(--yellow) 60%);padding:0 4px}
+.sh-on .sh-cap .eye{position:absolute;right:-22px;top:-22px;font-style:normal;font-size:40px;animation:inFloat 2.2s ease-in-out infinite}
+.so-in.cl{background:none;border:0;box-shadow:none;padding:0;display:block}
+.so-in.cl .so-ex{display:none}
+.sh-cl{position:relative!important;width:100%!important;height:100%!important;min-height:0!important;padding:0!important;margin:0!important;display:block!important;text-align:center}
 .sh-on .so{position:absolute;left:0;top:0;width:var(--w);transform-origin:0 0;will-change:transform,opacity;opacity:0}
 .sh-on .shk-sp{display:block;opacity:var(--sp,1)}
 .sh-on .sh-say{display:grid;justify-items:center;gap:4px;position:absolute;left:16px;right:16px;bottom:max(26px,4.5vh);text-align:center;pointer-events:none;opacity:0}
@@ -2500,8 +2506,6 @@ html.at-svc .mascot{transition:transform .3s cubic-bezier(.5,0,.9,.6) .32s}
 .apps{padding-bottom:300px}
 footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 @media (max-width:640px){.apps{padding-bottom:200px}footer{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
-.sh-snap{position:absolute;left:0;width:1px;height:1px;scroll-snap-align:start;pointer-events:none}
-#intro.sh-snapy{scroll-snap-type:y proximity}
 
 /* 입력 안내 말풍선 (브라우저 기본 경고창 대체) */
 .ftip{position:absolute;z-index:9999;display:flex;align-items:center;gap:9px;max-width:min(320px,calc(100vw - 24px));padding:9px 14px 9px 9px;border:var(--bd);border-radius:14px;background:var(--card);color:var(--text);box-shadow:var(--sh-s);font-weight:800;font-size:14px;line-height:1.35;transform-origin:var(--ax,22px) 0;animation:ftipIn .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none}

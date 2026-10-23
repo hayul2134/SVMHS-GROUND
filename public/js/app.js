@@ -18,6 +18,7 @@ const myDdays = () => {
 
 /* ===== 상태 ===== */
 let cls = validClass(store.get('class', null));
+let shReclock = null;   // 소개 쇼케이스: 진짜 시계를 복제해 둔 카드도 1초마다 다시 복제 (introTick → showClock에서 부름)
 const S = { mealSlot: '', mealManual: false, sMealDay: null, heroPick: null, ttPick: null, mealDate: today(), ttWeek: mondayOf(today()), calMonth: new Date(today().getFullYear(), today().getMonth(), 1), homeMeal: null, homeWeek: mondayOf(addDays(today(), today().getDay() === 6 ? 2 : today().getDay() === 0 ? 1 : 0)) };
 const startDay = ymd(today());
 
@@ -1460,16 +1461,27 @@ const HTML = document.documentElement;
 const introOn = () => HTML.classList.contains('prelogin');
 // 홈 데이터(급식·시간표·일정·투표·공지)는 사이트가 실제로 보일 때 한 번만 불러옴 — 로그인 전 소개 화면에서는 안 받음(요청·그리기 절약)
 let homeBooted = false, cfgReady = false;
+// 로그인 전(소개 화면)에도 첫 화면을 미리 그려 둠: 소개의 둘러보기 쇼케이스가 소개 화면을 투명하게 해서 '진짜 첫 화면'을 그대로 보여 주기 때문.
+// 이때는 등장 애니메이션 없이 최종 모습으로 두고(quiet), 로그인하는 순간 등장 애니메이션을 처음부터 재생
+let homeEntered = false;
 function bootHome() {
-  if (homeBooted || !cfgReady || introOn()) return;
-  homeBooted = true;
+  if (!cfgReady) return;
+  const de = document.documentElement;
+  if (!homeBooted) { homeBooted = true; renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadNotice(); if (S.mealWk) loadHeroDay(); }
+  if (introOn()) {   // 소개 화면 뒤: 조용히 최종 모습
+    Promise.race([document.fonts?.ready, new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(() => {
+      if (!introOn() || homeEntered) return;
+      centerHero(true); de.classList.remove('pre'); $('#v-home').classList.add('calm');
+    }));
+    return;
+  }
+  if (homeEntered) return;
+  homeEntered = true;
+  de.classList.add('pre'); $('#v-home').classList.remove('calm');
   // 첫 등장 애니메이션: pre(숨김) → boot(등장). 끝나면 boot를 빼서 다른 화면 갔다 와도 다시 안 나옴
-  renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadNotice();
-  if (S.mealWk) loadHeroDay();
   const balP = loadBalance(); balP.then(pollBalance);
   // 첫 등장: 밸런스 티켓(아래 한계)·글꼴이 준비된 뒤 최종 자리를 먼저 잡고 시작 → 엉뚱한 곳에 떴다가 자리를 찾아가지 않게 (최대 1.5초 대기)
   // 등장 중엔 다시 재지 않음(크기 변화 때문에) → 등장 후에도 위치가 안 튐
-  const de = document.documentElement;
   Promise.race([Promise.all([balP, document.fonts?.ready]), new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(() => {
     centerHero(true); de.classList.remove('pre'); de.classList.add('boot');
     // 캐릭터는 첫 화면 동안 바닥에 있다가, 서비스 버튼이 올라오며 나타나는 순간(1.2초) 버튼과 같이 올라와 휘청 (스크롤로 돌아올 때와 같은 동작)
@@ -1484,7 +1496,7 @@ function intro(on) {
   HTML.classList.toggle('prelogin', on);
   $('#intro').inert = !on;
   if (on) { $('#intro').scrollTop = 0; introTick(); }
-  else { clearTimeout(inTimer); authPage(false); onScroll(); bootHome(); }
+  else { clearTimeout(inTimer); authPage(false); SOC.showOff?.(); onScroll(); bootHome(); }
 }
 // 소개 화면의 종 시계: 홈과 같은 종 시간(bellInfo)으로 실제 시각·남은 시간을 보여 줌 — 소개가 떠 있고 탭이 보일 때만 돌아감
 let inTimer = 0;
@@ -1597,6 +1609,7 @@ const SH_EX_TT = ['국어', '영상 제작', '영어', '체육', '수학', '미�
 let shTT = [];   // [[교시, 과목]]
 const secHM = sec => `${pad(Math.floor(sec / 3600))}:${pad(Math.floor(sec % 3600 / 60))}`;
 function showClock(n, b, left, pct, rest, sec) {
+  shReclock?.();
   if (!$('#shLeft')) return;
   setText('#shSay', sayLine(b)); setText('#shLbl', left == null ? '오늘 수업 끝' : b.cnt || b.label); setText('#shLeft', left == null ? `${n.getHours() % 12 || 12}:${pad(n.getMinutes())}` : fmtLeft(left));
   setText('#shTime', `${n.getHours() < 12 ? '오전' : '오후'} ${n.getHours() % 12 || 12}:${pad(n.getMinutes())}`);
@@ -1612,6 +1625,7 @@ async function fillShow() {
     getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),
     cls ? getTimetable(cls, today(), today()).then(r => r.filter(x => x.ALL_TI_YMD === day).sort((a, b) => a.PERIO - b.PERIO)).catch(() => []) : Promise.resolve([])]);
   const r = meal.length ? pickMeal(meal, mealSlot()) : null;
+  if (!$('#shTray') || !$('#shTt')) return;   // 진짜 첫 화면을 복제해 쓰는 중이면 직접 그린 카드는 안 씀
   let m = SH_EX_MEAL;
   if (r) { const t = splitTray(cleanDish(r.DDISH_NM)), rest = [...t.top[1], ...t.top[2], ...t.top[3]]; m = { main: t.top[0][0] || rest.shift(), sides: rest.slice(0, 4), rice: t.rice, soup: t.soup }; }
   $('#shMealK').textContent = r ? '오늘 ' + MEALS[r.MMEAL_SC_CODE] : '오늘 급식';
@@ -1625,56 +1639,94 @@ async function fillShow() {
   if (introOn()) introTick();
 }
 {
-  const sec = $('#inShow'), root = $('#intro'), objs = [...$$('#inShow .so')], N = objs.length;
-  const chrome = sec.querySelector('.sh-chrome'), cap = sec.querySelector('.sh-cap'), say = sec.querySelector('.sh-say'), skip = $('#shSkip'), dots = $('#shDots');
-  const T_IN = .07, T_HOLD = .15, T_ROW = .29, T_END = .96, STAG = .009;
-  const HOME = {   // 첫 화면 배치(디자인 캔버스 기준 중심 좌표·배율). 가로 화면·세로 화면 두 가지
-    land: { w: 1440, h: 860, at: [[225, 470, 1], [720, 440, 1], [1225, 470, 1], [720, 765, .7]] },
-    port: { w: 860, h: 1180, at: [[225, 790, .95], [430, 330, 1.15], [635, 790, .95], [430, 1085, .62]] } };
+  const sec = $('#inShow'), root = $('#intro'), stage = sec.querySelector('.sh-stage'), objs = [...$$('#inShow .so')], N = objs.length;
+  const cover = sec.querySelector('.sh-cover'), cap = sec.querySelector('.sh-cap'), say = sec.querySelector('.sh-say'), skip = $('#shSkip'), dots = $('#shDots'), de = document.documentElement;
+  // 진행도 구간: 문구만(0~T_IN) → 진짜 첫 화면이 드러남(~T_SHOW) → 감상 → 줄 서기(T_HOLD~T_ROW) → 하나씩 넘김(~T_END)
+  const T_IN = .03, T_SHOW = .1, T_HOLD = .17, T_ROW = .3, T_END = .96, STAG = .008;
+  // 진짜 첫 화면에서 각 오브젝트가 있는 자리 (밸런스 티켓은 로그인해야 보여서 로그인 전엔 없음 → 줄 자리에서 그냥 나타남)
+  const REAL = [['#bigclock .s-meal'], ['#bigclock .s-greet', '#bigclock .s-what', '#bigclock .clock', '#bigclock .s-info'], ['#bigclock .s-ttc'], ['#play']];
   const clamp = v => v < 0 ? 0 : v > 1 ? 1 : v, ease = t => t * t * (3 - 2 * t), easeO = t => 1 - Math.pow(1 - t, 3), lerp = (a, b, t) => a + (b - a) * t;
-  let L = null, target = 0, cur = 0, raf = 0, last = 0, idx = -1, on = false;
+  let L = null, real = [], target = 0, cur = 0, raf = 0, last = 0, idx = -1, on = false, vel = 0;
   dots.innerHTML = '<i></i>'.repeat(N);
-  function layout() {
-    const W = sec.querySelector('.sh-stage').clientWidth, H = root.clientHeight, hm = W >= H * 1.05 ? HOME.land : HOME.port;
-    const k = Math.min(W / hm.w, H / hm.h), ox = (W - hm.w * k) / 2, oy = (H - hm.h * k) / 2;
-    const sz = objs.map(o => [o.offsetWidth, o.offsetHeight]);
-    const home = objs.map((o, i) => { const [w, h] = sz[i]; const a = hm.at[i] || [hm.w + 260 + (i - 4) * 140, hm.h / 2, .8]; return { x: ox + k * (a[0] - w * a[2] / 2), y: oy + k * (a[1] - h * a[2] / 2), s: k * a[2], o: i < 4 ? 1 : 0 }; });
+  // 진짜 첫 화면의 급식판·시계 묶음·시간표를 그대로 복제해 같은 자리·같은 크기로 겹쳐 둠 → 줄 서기로 넘어갈 때 바뀌는 티가 안 남
+  // (복제본은 id를 지우고, 서랍 위치 이동(translate)만 빼고 회전 등은 그대로. 진짜가 없으면 직접 그린 카드를 씀)
+  function cloneGroup(i) {
+    const o = objs[i], box = o.querySelector('.so-in');
+    const els = (REAL[i] || []).map(q => $(q)).filter(e => e && !e.hidden && e.getClientRects().length);
+    const rs = els.map(e => e.getBoundingClientRect()).filter(r => r.width && r.height);
+    if (o._fb == null) o._fb = box.innerHTML;
+    const stowed = els.length === 1 && els[0].classList.contains('stow') && !els[0].classList.contains('open');   // 서랍이 들어가 있음(세로 화면 등): 포스트잇 탭만 보임
+    if (!rs.length || rs.length !== els.length || stowed) {
+      if (box.classList.contains('cl')) { box.classList.remove('cl'); box.innerHTML = o._fb; o.style.removeProperty('--w'); o.style.removeProperty('--h'); }
+      const tab = stowed && els[0].querySelector('.s-tab'), tr = tab && tab.getBoundingClientRect();   // 직접 그린 카드가 그 포스트잇 자리에서 커지며 나옴
+      real[i] = tr && tr.width ? { x: tr.left, y: tr.top, s: tr.height / o.offsetHeight, tab: 1 } : null;
+      return;
+    }
+    const x0 = Math.min(...rs.map(v => v.left)), y0 = Math.min(...rs.map(v => v.top)), x1 = Math.max(...rs.map(v => v.right)), y1 = Math.max(...rs.map(v => v.bottom));
+    const wrap = document.createElement('div'); wrap.className = 'stage sh-cl';
+    els.forEach((e, j) => {
+      const r = rs[j], cs = getComputedStyle(e), w = parseFloat(cs.width) + (cs.boxSizing === 'border-box' ? 0 : parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)) + .5, h = e.offsetHeight, c = e.cloneNode(true);
+      [c, ...c.querySelectorAll('[id]')].forEach(x => x.removeAttribute('id'));
+      c.removeAttribute('hidden');
+      const big = e.id === 'bigTime' ? e : e.querySelector('#bigTime'), cbig = big && (e.id === 'bigTime' ? c : c.querySelector('.s-big'));
+      if (cbig) cbig.style.fontSize = getComputedStyle(big).fontSize;
+      const m = cs.transform && cs.transform !== 'none' ? new DOMMatrix(cs.transform) : new DOMMatrix(); m.e = 0; m.f = 0;
+      Object.assign(c.style, { position: 'absolute', left: ((r.left + r.right) / 2 - x0 - w / 2) + 'px', top: ((r.top + r.bottom) / 2 - y0 - h / 2) + 'px', right: 'auto', bottom: 'auto',
+        width: w + 'px', height: h + 'px', maxWidth: 'none', maxHeight: 'none', minWidth: '0', margin: '0', boxSizing: 'border-box', translate: 'none', transform: m.toString(), animation: 'none', transition: 'none', opacity: '1', visibility: 'visible' });
+      wrap.appendChild(c);
+    });
+    box.classList.add('cl'); box.replaceChildren(wrap);
+    o.style.setProperty('--w', (x1 - x0) + 'px'); o.style.setProperty('--h', (y1 - y0) + 'px');
+    real[i] = { x: x0, y: y0, s: 1 };
+  }
+  function measureReal() { if (!L) return; [0, 1, 2].forEach(cloneGroup); rowLayout(); }
+  function rowLayout() {
+    const { W, H } = L, sz = objs.map(o => [o.offsetWidth, o.offsetHeight]);
     const rowH = Math.min(H * (W < 600 ? .46 : .52), 440), gap = Math.max(26, W * .035), cy = H * (W < 600 ? .44 : .47);
     let x = 0;
-    const row = objs.map((o, i) => { const [w, h] = sz[i], s = Math.min(rowH / h, W * .82 / w), r = { x, w: w * s, h: h * s, s, y: cy - h * s / 2 }; x += w * s + gap; return r; });
-    chrome.style.width = hm.w + 'px'; chrome.style.height = hm.h + 'px';
-    L = { W, H, k, ox, oy, home, row, range: Math.max(1, sec.offsetHeight - H) };
-    // 스냅 지점: 첫 화면 감상 · 오브젝트 하나씩
-    sec.querySelectorAll('.sh-snap').forEach(x => x.remove());
-    [(T_IN + T_HOLD) / 2, ...Array.from({ length: N }, (_, j) => T_ROW + j * (T_END - T_ROW) / (N - 1))].forEach(p => {
-      const m = document.createElement('i'); m.className = 'sh-snap'; m.style.top = Math.round(p * L.range) + 'px'; sec.appendChild(m); });
+    L.sz = sz;
+    L.row = sz.map(([w, h]) => { const s = Math.min(rowH / h, W * .82 / w, 1.5), r = { x, w: w * s, h: h * s, s, y: cy - h * s / 2 }; x += w * s + gap; return r; });
   }
-  function render(p) {
+  shReclock = () => { if (on && L && real[1] && cur > T_HOLD - .03 && cur < T_END + .03 && !document.hidden) cloneGroup(1); };
+  function layout() {
+    L = { W: stage.clientWidth, H: root.clientHeight, range: Math.max(1, sec.offsetHeight - root.clientHeight), capH: cap.offsetHeight, capW: cap.offsetWidth };
+    rowLayout();
+    measureReal();
+  }
+  function render(p, pinned) {
     if (!L) return;
-    const { W, k, ox, oy, home, row } = L;
-    const fin = easeO(clamp(p / T_IN)), zoom = lerp(.9, 1, fin);
+    const { W, H, row } = L;
+    // ① 진짜 첫 화면 드러내기: 덮개(.sh-cover)가 걷히면 소개 화면이 투명해져서 뒤의 실제 첫 화면이 보임
+    const show = pinned ? easeO(clamp((p - T_IN) / (T_SHOW - T_IN))) * (1 - ease(clamp((p - T_HOLD) / .05))) : 0;
+    cover.style.opacity = (1 - show).toFixed(3);
+    root.classList.toggle('sh-see', show > 0);
+    de.classList.toggle('sh-real', show > 0); de.style.setProperty('--shr', show.toFixed(3));
+    de.classList.toggle('sh-hand', show > 0 && p > T_HOLD);   // 줄 서기 시작: 진짜 급식판·시계·시간표는 바로 숨기고 똑같은 복제본이 이어받아 움직임
+    if (show > 0 && p < T_HOLD && !L.fresh) { measureReal(); L.fresh = true; }   // 첫 화면이 보일 때 한 번 복제 (데이터가 늦게 오면 감상 중 다시)
+    if (p < T_SHOW) L.fresh = false;
+    // 문구: 처음엔 화면 가운데 크게 → 첫 화면이 드러나며 위로 올라가 작아짐 → 줄 서기 시작하면 사라짐
+    const up = easeO(clamp((p - T_IN) / (T_SHOW - T_IN))), s0 = Math.min(1.15, W * .86 / L.capW), s1 = Math.min(W < 700 ? .48 : .74, W * .7 / L.capW);
+    const cs = lerp(s0, s1, up), topY = W < 700 ? H - L.capH * s1 - 88 : 14, cyY = lerp(H / 2 - L.capH * s0 / 2, topY, up);   // 폰은 위쪽이 헤더·말풍선으로 차 있어서 아래에 붙임
+    cap.style.transform = `translate3d(${(W / 2 - L.capW * cs / 2).toFixed(1)}px,${cyY.toFixed(1)}px,0) scale(${cs.toFixed(4)})`;
+    cap.style.opacity = ((1 - clamp((p - T_HOLD) / .03)) * (W < 700 ? 1 - clamp((up - .55) / .45) : 1)).toFixed(3);   // 폰은 화면이 좁아 첫 화면을 가리지 않게, 드러나는 동안 아래로 내려가며 사라짐
+    // ②③ 줄 서기 · 넘기기
     const t = clamp((p - T_ROW) / (T_END - T_ROW)) * (N - 1), i0 = Math.floor(t), f = Math.min(N - 1, i0 + ease(clamp((t - i0 - .2) / .6)));
     const cOf = v => { const a = Math.floor(v), b = Math.min(N - 1, a + 1), r = v - a; return lerp(row[a].x + row[a].w / 2, row[b].x + row[b].w / 2, r); };
-    const pan = W / 2 - cOf(f), zx = W / 2, zy = L.H / 2;
+    const pan = W / 2 - cOf(f);
     objs.forEach((o, i) => {
-      const q = ease(clamp((p - T_HOLD - i * STAG) / (T_ROW - T_HOLD - (N - 1) * STAG))), h = home[i], r = row[i];
+      const q = ease(clamp((p - T_HOLD - i * STAG) / (T_ROW - T_HOLD - (N - 1) * STAG))), r = row[i];
       const d = Math.min(1, Math.abs(i - f)), mul = 1 - .16 * d;
       const rs = r.s * mul, rx = pan + r.x + r.w * (1 - mul) / 2, ry = r.y + r.h * (1 - mul) / 2;
-      // 첫 화면: 가운데 기준으로 살짝 커지며 등장(zoom)
-      const hx = zx + (h.x - zx) * zoom, hy = zy + (h.y - zy) * zoom, hs = h.s * zoom;
-      const x = lerp(hx, rx, q), y = lerp(hy, ry, q), s = lerp(hs, rs, q);
-      const op = lerp(h.o * fin, .38 + .62 * (1 - d), q);
+      const h = real[i] || (i < 4 ? { x: rx, y: ry + 40, s: rs } : { x: W + 120 + (i - 4) * 160, y: ry, s: rs });   // 진짜 화면에 없는 건 오른쪽에서 줄줄이 들어옴
+      const x = lerp(h.x, rx, q), y = lerp(h.y, ry, q), s = lerp(h.s, rs, q);
+      const op = (real[i] && !real[i].tab ? (p > T_HOLD ? 1 : 0) : clamp(q * 4)) * lerp(1, .38 + .62 * (1 - d), q);   // 복제본은 진짜와 똑같아서 바로 겹쳐 나타나 움직이기 시작, 나머지는 서서히
       o.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) scale(${s.toFixed(4)})`;
       o.style.opacity = op.toFixed(3);
-      if (i === 1) { o.style.setProperty('--fr', q.toFixed(3)); o.style.setProperty('--sp', (1 - q).toFixed(3)); }
+      if (i === 1) { o.style.setProperty('--fr', clamp(q * 1.6 - .3).toFixed(3)); o.style.setProperty('--sp', (1 - q).toFixed(3)); }
     });
-    const gone = clamp((p - T_HOLD) / .035);
-    chrome.style.transform = `translate(${(zx + (ox - zx) * zoom).toFixed(1)}px,${(zy + (oy - zy) * zoom).toFixed(1)}px) scale(${(k * zoom).toFixed(4)})`;
-    chrome.style.opacity = (fin * (1 - gone)).toFixed(3);
-    cap.style.opacity = (1 - gone).toFixed(3);
     const ui = clamp((p - T_ROW + .04) / .04);
     say.style.opacity = dots.style.opacity = ui.toFixed(3);
-    skip.classList.toggle('on', p > T_HOLD && p < T_END);
+    skip.classList.toggle('on', p > T_SHOW && p < T_END);
     const ni = Math.round(f);
     if (ni !== idx) {
       idx = ni; $('#shN').textContent = `${pad(ni + 1)} / ${pad(N)}`; $('#shT').textContent = SH_INFO[ni][0]; $('#shD').textContent = SH_INFO[ni][1];
@@ -1682,26 +1734,37 @@ async function fillShow() {
       [...dots.children].forEach((x, j) => x.classList.toggle('on', j === ni));
     }
   }
-  const progress = () => L ? clamp(-sec.getBoundingClientRect().top / L.range) : 0;
+  const rawP = () => L ? -sec.getBoundingClientRect().top / L.range : 0;
+  // 스크롤을 확확 내려도 장면이 건너뛰지 않게: 진행도는 속도 제한이 있는 스프링으로 따라감 (한 장면 ≈ 0.5초).
+  // 스크롤 스냅은 안 씀 — 스냅이 스크롤을 되돌리면 애니메이션이 앞뒤로 왔다 갔다 해서
+  const VMAX = .2;
   function loop(ts) {
-    const dt = Math.min(64, ts - (last || ts)); last = ts;
-    cur += (target - cur) * (1 - Math.exp(-dt / 70));   // 스크롤을 부드럽게 따라감 (휠이 툭툭 끊겨도 애니메이션은 이어지게)
-    if (Math.abs(target - cur) < .0004) cur = target;
-    render(cur);
+    const dt = Math.min(50, ts - (last || ts)) / 1000; last = ts;
+    const d = target - cur, want = Math.max(-VMAX, Math.min(VMAX, d * 8));
+    vel += (want - vel) * Math.min(1, dt * 14);   // 가속도 완화 (출발·멈춤이 부드럽게)
+    cur += vel * dt;
+    if ((d > 0 && cur > target) || (d < 0 && cur < target) || Math.abs(target - cur) < .0003) { cur = target; vel = 0; }
+    const rp = rawP();
+    render(clamp(cur), rp >= -.002 && rp <= 1.002);
     raf = cur === target ? 0 : requestAnimationFrame(loop);
   }
-  const kick = () => { if (!on) return; target = progress(); if (!raf) { last = 0; raf = requestAnimationFrame(loop); } };
+  const kick = () => {
+    if (!on) return;
+    const rp = rawP(); target = clamp(rp);
+    if (rp < -.002 || rp > 1.002) { if (!raf) render(clamp(cur), false); }   // 붙어 있지 않을 땐 소개 화면을 바로 불투명하게
+    if (!raf) { last = 0; raf = requestAnimationFrame(loop); }
+  };
   function setup() {
     on = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-    sec.classList.toggle('sh-on', on); root.classList.toggle('sh-snapy', on);
-    if (!on) { objs.forEach(o => { o.style.transform = o.style.opacity = ''; }); sec.querySelectorAll('.sh-snap').forEach(x => x.remove()); return; }
-    sec.style.setProperty('--steps', 11);
-    layout(); cur = target = progress(); render(cur);
+    sec.classList.toggle('sh-on', on);
+    if (!on) { objs.forEach(o => { o.style.transform = o.style.opacity = ''; }); cap.style.transform = cap.style.opacity = ''; root.classList.remove('sh-see'); de.classList.remove('sh-real'); return; }
+    layout(); cur = target = clamp(rawP()); render(cur, false);
   }
   root.addEventListener('scroll', kick, { passive: true });
-  new ResizeObserver(() => { if (on && introOn()) { layout(); cur = target = progress(); render(cur); } }).observe(root);
+  new ResizeObserver(() => { if (on && introOn()) { layout(); target = clamp(rawP()); render(cur, false); kick(); } }).observe(root);
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', setup);
   skip.addEventListener('click', () => root.scrollTo({ top: root.scrollTop + sec.getBoundingClientRect().bottom - L.H + 2, behavior: 'smooth' }));
+  SOC.showOff = () => { root.classList.remove('sh-see'); de.classList.remove('sh-real'); };   // 로그인하면 소개와 함께 정리
   setup();
   fillShow();
 }
