@@ -1723,3 +1723,41 @@ loadConfig().finally(async () => {
   if (h && h !== 'home') { if (/^(me|u|dm|game)\b/.test(h)) await socReady; go(h); }
   if (!cls && !introOn()) setTimeout(openClass, 400);   // 소개 화면이면 닫힐 때 띄움
 });
+
+/* ===== 입력 안내 말풍선 (브라우저 기본 경고창 대신) ===== */
+// 폼 칸이 비었거나 날짜가 덜 골라졌을 때, 기본 회색 경고 대신 사이트 스티커 느낌의 말풍선을 칸 아래에 띄움
+let tipBusy = false;
+function fieldMsg(el) {
+  const v = el.validity;
+  if (el.type === 'date') return v.valueMissing && !v.badInput ? '날짜를 골라 주세요' : '날짜를 끝까지(연·월·일) 골라 주세요';
+  if (v.valueMissing) return el.tagName === 'SELECT' ? '하나를 골라 주세요' : '여기를 채워 주세요';
+  if (v.tooShort) return `${el.minLength}자 이상 적어 주세요`;
+  if (v.tooLong) return `${el.maxLength}자까지 적을 수 있어요`;
+  if (v.typeMismatch || v.patternMismatch) return '형식을 다시 확인해 주세요';
+  if (v.rangeUnderflow || v.rangeOverflow) return '범위를 벗어났어요';
+  return el.validationMessage || '다시 확인해 주세요';
+}
+function hideFieldTip() {
+  const t = $('#fTip'); if (!t) return;
+  t.classList.add('out'); setTimeout(() => t.remove(), 160);
+  $$('.f-bad').forEach(x => x.classList.remove('f-bad'));
+}
+document.addEventListener('invalid', e => {
+  e.preventDefault();
+  if (tipBusy) return;            // 한 번 제출에 첫 칸만 안내
+  tipBusy = true; requestAnimationFrame(() => { tipBusy = false; });
+  const el = e.target;
+  $('#fTip')?.remove(); $$('.f-bad').forEach(x => x.classList.remove('f-bad'));
+  const tip = document.createElement('div');
+  tip.id = 'fTip'; tip.className = 'ftip'; tip.setAttribute('role', 'alert');
+  tip.innerHTML = `<i aria-hidden="true">!</i><span>${esc(fieldMsg(el))}</span>`;
+  document.body.append(tip);
+  const r = el.getBoundingClientRect(), w = tip.offsetWidth;
+  tip.style.top = (r.bottom + scrollY + 12) + 'px';
+  tip.style.left = Math.max(12 + scrollX, Math.min(r.left + scrollX, scrollX + innerWidth - w - 12)) + 'px';
+  tip.style.setProperty('--ax', Math.max(14, Math.min(w - 26, r.left + scrollX + 22 - parseFloat(tip.style.left))) + 'px');
+  el.classList.add('f-bad'); el.focus({ preventScroll: true });
+  clearTimeout(hideFieldTip.t); hideFieldTip.t = setTimeout(hideFieldTip, 3500);
+}, true);
+['input', 'change'].forEach(ev => document.addEventListener(ev, e => { if (e.target.classList?.contains('f-bad')) hideFieldTip(); }, true));
+addEventListener('resize', hideFieldTip);

@@ -2356,3 +2356,13 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 @media (max-width:640px){.apps{padding-bottom:200px}footer{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
 .sh-snap{position:absolute;left:0;width:1px;height:1px;scroll-snap-align:start;pointer-events:none}
 #intro.sh-snapy{scroll-snap-type:y proximity}
+
+/* 입력 안내 말풍선 (브라우저 기본 경고창 대체) */
+.ftip{position:absolute;z-index:9999;display:flex;align-items:center;gap:9px;max-width:min(320px,calc(100vw - 24px));padding:9px 14px 9px 9px;border:var(--bd);border-radius:14px;background:var(--card);color:var(--text);box-shadow:var(--sh-s);font-weight:800;font-size:14px;line-height:1.35;transform-origin:var(--ax,22px) 0;animation:ftipIn .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.ftip::before{content:"";position:absolute;top:-9px;left:var(--ax,22px);width:13px;height:13px;background:var(--card);border-left:var(--bd);border-top:var(--bd);border-radius:3px 0 0 0;transform:translateX(-50%) rotate(45deg)}
+.ftip i{flex:none;width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);font-style:normal;font-family:var(--disp);font-size:16px;transform:rotate(-8deg)}
+.ftip.out{animation:ftipOut .16s ease-in forwards}
+@keyframes ftipIn{from{opacity:0;transform:translateY(-6px) scale(.85) rotate(-2deg)}}
+@keyframes ftipOut{to{opacity:0;transform:translateY(-4px) scale(.94)}}
+.f-bad{border-color:#e2483d!important;box-shadow:0 0 0 3px color-mix(in srgb,#e2483d 22%,transparent)!important;animation:shake .3s}
+@media (prefers-reduced-motion:reduce){.ftip,.ftip.out,.f-bad{animation:none}}
