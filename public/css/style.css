@@ -1406,6 +1406,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
   .authcard .btn.big{padding:11px 18px}
   .authcard .gbox.alt{margin-top:10px;gap:6px;margin-bottom:0}
   .ap-board{padding:30px 32px;gap:14px}
+  .ap-stk.s2{display:none}   /* 미리보기와 겹침 */
 }
 /* 더 낮은 화면(세로 760 이하): 위 탭과 겹치는 안내는 숨기고, 비밀번호 세기는 라벨 옆으로 */
 @media (min-width:901px) and (max-height:760px){
