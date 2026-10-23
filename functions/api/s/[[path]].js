@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { REWARDS, SHIELD_EVERY, SHIELD_MAX, unlockedOf, kstToday, missedDays, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
+import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, SHIELD_MAX, unlockedOf, kstToday, missedDays, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
@@ -102,9 +102,9 @@ async function devSession(req, db) {   // 보관된 개발자 세션이 아직 �
 }
 
 /* ===== 사용자 ===== */
-const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield';
+const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title';
 const pub = u => u && ({
-  handle: u.handle, name: u.name, bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
+  handle: u.handle, name: u.name, title: u.st_title || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
   stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
 });
 const card = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
@@ -113,7 +113,7 @@ const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -271,7 +271,7 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: me.st_best || 0 }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: me.st_best || 0, attTotal: me.st_total || 0 }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -280,17 +280,19 @@ const ROUTES = {
     if (isBad(name, body.bio, body.mood, body.club)) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
-    const avOk = [...AVATARS, ...unlockedOf(me.st_best, 'avatar')], stOk = [...STICKERS, ...unlockedOf(me.st_best, 'sticker')];
+    const ub = k => unlockedOf(me.st_best, me.st_total, k);
+    const avOk = [...AVATARS, ...ub('avatar')], stOk = [...STICKERS, ...ub('sticker')], coOk = [...COLORS, ...ub('color')];
     const avatar = avOk.includes(body.avatar) ? body.avatar : me.avatar;
-    const color = COLORS.includes(body.color) ? body.color : me.color;
+    const color = coOk.includes(body.color) ? body.color : me.color;
+    const title = body.title === '' || ub('title').includes(body.title) ? String(body.title) : (me.st_title || '');
     const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => stOk.includes(s)).slice(0, 6);
     const dev = me.handle === ADMIN_HANDLE, g = dev ? 0 : +body.grade, c = dev ? 0 : +body.cls;   // 개발자 계정은 학년·반 없음
     // 인스타 아이디: @·주소를 붙여 넣어도 아이디만 남김. 인스타 규칙(영문·숫자·._, 30자)에 안 맞으면 거절
     const insta = String(body.insta || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '').toLowerCase();
     if (insta && !/^(?!.*\.\.)(?!\.)[a-z0-9._]{1,30}(?<!\.)$/.test(insta)) return err('인스타 아이디는 영문·숫자·밑줄(_)·마침표(.)만 쓸 수 있어요');
-    await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9, insta = ?11 WHERE id = ?10')
+    await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9, insta = ?11, st_title = ?12 WHERE id = ?10')
       .bind(name, clean(body.bio, 80, true), avatar, color, g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 6 ? c : 0, clean(body.club, 16), clean(body.mood, 24),
-        JSON.stringify([...new Set(stickers)]), me.id, insta).run();
+        JSON.stringify([...new Set(stickers)]), me.id, insta, title).run();
     return json({ ok: true });
   }),
 
@@ -393,7 +395,7 @@ const ROUTES = {
     return json({
       user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r), counts: { following: fo.n, followers: fb.n },
       bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns,
-      streak: { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0 },
+      streak: { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
   }),
 
@@ -752,13 +754,13 @@ const ROUTES = {
   // 연속 출석 랭킹: 친구(맞팔 + 나) · 전체 (지금 살아 있는 기록 기준, 같으면 최고 기록 순)
   'GET attrank': needMe(async ({ env, db, me, url }) => {
     const scope = url.searchParams.get('scope') === 'all' ? 'all' : 'friends';
-    const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_best, u.st_last, u.st_shield';
+    const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_best, u.st_last, u.st_shield, u.st_pf, u.st_title';
     const since = (() => { const d = new Date(Date.now() + 9 * 3600e3 - 120 * 86400e3); return d.toISOString().slice(0, 10).replace(/-/g, ''); })();
     const rows = (scope === 'friends'
       ? await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND (u.id = ?1 OR u.id IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1)) ORDER BY u.st_cur DESC LIMIT ?2`).bind(me.id, 200, since).all()
       : await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND u.is_test = 0 AND u.handle <> ?1 ORDER BY u.st_cur DESC LIMIT ?2`).bind(ADMIN_HANDLE, 300, since).all()).results;
     const live = await liveMany(env, db, rows);
-    const list = rows.map((r, i) => ({ ...card(r), grade: r.grade, cls: r.cls, value: live[i], best: r.st_best, isMe: r.id === me.id, uid: r.id }))
+    const list = rows.map((r, i) => ({ ...card(r), grade: r.grade, cls: r.cls, value: live[i], best: r.st_best, pf: !!r.st_pf, title: r.st_title || '', isMe: r.id === me.id, uid: r.id }))
       .filter(x => x.value > 0).sort((a, b) => b.value - a.value || b.best - a.best).slice(0, 50);
     return json({ scope, list: list.map(({ uid, ...x }) => x) });
   }),
@@ -780,33 +782,39 @@ const ROUTES = {
 /* ===== 출석 상태 계산 · 오늘 출석 기록 ===== */
 async function attState(env, db, me, doCheck, quiet = false) {
   const today = kstToday();
-  let u = { st_cur: me.st_cur || 0, st_best: me.st_best || 0, st_last: me.st_last || '', st_total: me.st_total || 0, st_shield: me.st_shield || 0 };
+  const pick = x => ({ st_cur: x.st_cur || 0, st_best: x.st_best || 0, st_last: x.st_last || '', st_total: x.st_total || 0, st_shield: x.st_shield || 0, st_pf: x.st_pf ?? 1 });
+  let u = pick(me);
   const week = weekOf(today);
   const weekRows = async () => (await db.prepare(`SELECT ymd, kind FROM attendance WHERE uid = ?1 AND ymd >= ?2 AND ymd <= ?3`).bind(me.id, week[0], week[6]).all()).results;
-  const out = (extra = {}) => ({ today, done: u.st_last === today, cur: u.st_last === today ? u.st_cur : liveCur(u, extra.missed ?? []), best: u.st_best, total: u.st_total, shield: u.st_shield,
-    shieldMax: SHIELD_MAX, shieldEvery: SHIELD_EVERY, rewards: REWARDS.map(r => ({ ...r, on: u.st_best >= r.d })), week, ...extra, missed: undefined });
+  const out = (extra = {}) => {
+    const cur = u.st_last === today ? u.st_cur : liveCur(u, extra.missed ?? []);
+    return { today, done: u.st_last === today, cur, best: u.st_best, total: u.st_total, shield: u.st_shield, pf: !!u.st_pf && cur > 0,
+      shieldMax: SHIELD_MAX, shieldEvery: SHIELD_EVERY, week, ...extra, missed: undefined };
+  };
   if (u.st_last === today) return json(out({ new: false, weekDays: quiet ? undefined : await weekRows() }));
   const missed = await missedDays(env, db, u.st_last, today);
   if (!doCheck) return json(out({ new: false, missed }));
   const prevLive = liveCur(u, missed);
-  let cur, used = 0;
-  if (prevLive > 0) { used = missed.length; cur = u.st_cur + 1; } else cur = 1;
+  let cur, used = 0, pf = u.st_pf;
+  if (prevLive > 0) { used = missed.length; cur = u.st_cur + 1; if (used) pf = 0; } else { cur = 1; pf = 1; }
   let shield = (prevLive > 0 ? u.st_shield - used : u.st_shield);
   const gotShield = cur % SHIELD_EVERY === 0 && shield < SHIELD_MAX;
   if (gotShield) shield++;
-  const best = Math.max(u.st_best, cur), oldBest = u.st_best;
-  const r = await db.prepare(`UPDATE users SET st_cur = ?1, st_best = ?2, st_last = ?3, st_total = st_total + 1, st_shield = ?4 WHERE id = ?5 AND st_last = ?6 RETURNING st_total`)
-    .bind(cur, best, today, shield, me.id, u.st_last).first();
+  const best = Math.max(u.st_best, cur), old = { ...u };
+  const r = await db.prepare(`UPDATE users SET st_cur = ?1, st_best = ?2, st_last = ?3, st_total = st_total + 1, st_shield = ?4, st_pf = ?7 WHERE id = ?5 AND st_last = ?6 RETURNING st_total`)
+    .bind(cur, best, today, shield, me.id, u.st_last, pf).first();
   if (!r) {   // 다른 탭이 먼저 기록함 → 새로 읽어서 상태만
-    const f = await db.prepare('SELECT st_cur, st_best, st_last, st_total, st_shield FROM users WHERE id = ?1').bind(me.id).first();
-    u = f; return json(out({ new: false, weekDays: await weekRows() }));
+    u = pick(await db.prepare('SELECT st_cur, st_best, st_last, st_total, st_shield, st_pf FROM users WHERE id = ?1').bind(me.id).first());
+    return json(out({ new: false, weekDays: await weekRows() }));
   }
   const stmts = [db.prepare('INSERT OR IGNORE INTO attendance (uid, ymd, kind) VALUES (?1, ?2, 1)').bind(me.id, today)];
   if (used) for (const y of missed) stmts.push(db.prepare('INSERT OR IGNORE INTO attendance (uid, ymd, kind) VALUES (?1, ?2, 2)').bind(me.id, y));
   await db.batch(stmts);
-  const lost = prevLive === 0 && u.st_cur > 0 ? u.st_cur : 0;   // 끊긴 기록(있었다면)
-  u = { st_cur: cur, st_best: best, st_last: today, st_total: r.st_total, st_shield: shield };
-  return json(out({ new: true, prev: prevLive, lost, used, gotShield, unlocked: REWARDS.filter(x => x.d > oldBest && x.d <= best), weekDays: await weekRows() }));
+  const lost = prevLive === 0 && old.st_cur > 0 ? old.st_cur : 0;   // 끊긴 기록(있었다면)
+  u = { st_cur: cur, st_best: best, st_last: today, st_total: r.st_total, st_shield: shield, st_pf: pf };
+  // 새로 열린 보상: 연속은 최고 기록이 넘어선 것, 누적은 총 출석일이 넘어선 것
+  const unlocked = REWARDS.filter(x => !rwOn(x, old.st_best, old.st_total) && rwOn(x, best, r.st_total));
+  return json(out({ new: true, prev: prevLive, lost, used, gotShield, unlocked, milestone: unlocked.length > 0 || MILESTONES.includes(cur), weekDays: await weekRows() }));
 }
 
 async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 사람 수 + 1
