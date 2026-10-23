@@ -96,6 +96,9 @@ npx wrangler@4 pages dev --port 8788
 
 ## 구글 로그인 · DM 받는 범위 · 카톡
 - 구글(선택 사항 — 기본은 아이디·비밀번호, 구글 버튼은 폼 아래 '원하면'): `wrangler.jsonc`의 `vars.GOOGLE_CLIENT_ID`(공개 값)가 있어야 버튼이 보임. 화면은 `social.js`의 `.gbtn[data-gintent]`(login·link·withdraw) 자리에 GIS 버튼을 그림 → `POST /api/s/google`(처음이면 `need:'signup'` → 아이디·닉네임 받고 가입, 비밀번호는 무작위) · `google-link`(연결/해제) · 탈퇴는 구글로 본인 확인 가능. 서버는 tokeninfo로 aud·iss·exp 확인, `users.google_sub`만 저장(이메일 X). CSP에 accounts.google.com, COOP는 `same-origin-allow-popups`.
+- 아이디·비밀번호 찾기(2026-10-23): 로그인 폼 '아이디·비밀번호를 잊었어요'(`[data-forgot]`, 구글 켜졌을 때만) → 구글 버튼(`data-gintent="reset"`) → `POST /api/s/google-reset`: credential만 보내면 연결된 아이디 반환, `pw`도 보내면 새 비밀번호로 바꾸고 **그 계정 세션 전부 삭제** 후 이 기기만 로그인(구글 확인 후 IP당 1시간 60번, 계정당 1시간 5번 변경). 개발자(`developer`)·테스트 계정은 구글 연결·구글 로그인·구글 재설정 모두 서버에서 거부(`noGoogle`) — 구글이 털려도 관리자 권한이 넘어가지 않게. 구글로 처음 로그인한 기기에 '구글에서도 로그아웃' 안내 1회(`sg_gtip`).
+- 모든 기기에서 로그아웃: 계정 설정 버튼 → `POST /api/s/logout-all`(이 기기 포함 세션 전부 삭제).
+- 닉네임: 다른 사람과 같으면 가입·변경 불가(띄어쓰기·대소문자 무시, 테스트 계정 제외), '개발자·관리자·운영자·developer·admin' 등은 금지(`nameIssue`). 예전부터 겹쳐 있던 닉네임은 그대로 두고, 바꿀 때만 검사.
 - DM 받는 범위: `users.dm_pref` 0 맞팔만(기본) · 1 나를 팔로우한 사람 · 2 누구나. 서버 `dmAllowed()`, 계정 설정에서 학생이 고름. 차단은 항상 막음.
 - 카톡 안 브라우저로 열리면 `theme.js`가 `kakaotalk://web/openExternal`로 기본 브라우저로 넘김.
 

@@ -874,6 +874,8 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .authcard{max-width:420px;width:100%;margin:0 auto;transform:rotate(-.6deg)}
 .sform .ferr{margin:0;padding:10px 12px;border-radius:12px;border:2px solid #e2483d;background:color-mix(in srgb,#e2483d 12%,var(--card));color:#d23a30;font-weight:900;font-size:14px;line-height:1.4}
 :root[data-theme="dark"] .sform .ferr{color:#ff9a92}
+.sform .linkbtn{align-self:center;margin-top:-2px;padding:6px 10px;border:0;background:none;color:var(--sub);font:inherit;font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.sform .linkbtn:hover{color:var(--text)}
 .sform input.bad{border-color:#e2483d;background:color-mix(in srgb,#e2483d 10%,var(--chip));box-shadow:0 0 0 3px color-mix(in srgb,#e2483d 25%,transparent)}
 .sform.shake{animation:shake .3s}
 /* 고르기 (아바타 · 색 · 스티커) */

@@ -98,9 +98,10 @@ function authHtml(mode = 'login') {
       ${mode === 'signup' ? `
         <div class="two"><label>학년<select name="grade">${grades}</select></label><label>반<select name="cls">${classes}</select></label></div>
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
-        <p class="note">⚠️ 이메일이 없어서 비밀번호를 잊으면 찾을 수 없어요. 다른 사이트와 다른 비밀번호를 써 주세요.</p>` : ''}
+        <p class="note">⚠️ 이메일을 받지 않아요. 가입 뒤 프로필 → ⚙️에서 구글을 연결해 두면 아이디·비밀번호를 잊어도 찾을 수 있어요. 다른 사이트와 다른 비밀번호를 써 주세요.</p>` : ''}
       <p class="ferr" role="alert" hidden></p>
       <button class="btn big" type="submit">${mode === 'signup' ? '가입하고 시작하기' : '로그인'}</button>
+      ${mode === 'login' && S.google ? '<button class="linkbtn" type="button" data-forgot>아이디·비밀번호를 잊었어요</button>' : ''}
     </form>
     ${S.google ? `<div class="gbox alt"><p class="gor"><span>원하면 구글로도 ${mode === 'signup' ? '가입' : '로그인'}할 수 있어요</span></p><div class="gbtn" data-gintent="login"></div></div>` : ''}
   </div>`;
@@ -360,9 +361,9 @@ function openSettings() {
       <button class="btn ghost" type="submit">비밀번호 바꾸기</button></form>
     <p class="lbl">💬 DM 받는 범위</p>
     <div class="segs fbk" id="dmPref">${[['0', '서로 팔로우한 친구만'], ['1', '나를 팔로우한 사람'], ['2', '누구나']].map(([v, t]) => `<label><input type="radio" name="dmp" value="${v}" ${String(S.me?.dmPref || 0) === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
-    ${S.google ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><form class="sform" id="gUnlinkForm"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"><button class="btn ghost" type="submit">연결 해제</button></form>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요. 지금 비밀번호를 적고 구글 버튼을 눌러 주세요.</p><div class="sform"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"></div><div class="gbtn" data-gintent="link"></div>'}` : ''}
+    ${S.google && !S.me?.sw ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><form class="sform" id="gUnlinkForm"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"><button class="btn ghost" type="submit">연결 해제</button></form>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요. 지금 비밀번호를 적고 구글 버튼을 눌러 주세요.</p><div class="sform"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"></div><div class="gbtn" data-gintent="link"></div>'}` : ''}
     <p class="lbl">차단한 사람</p><ul class="plist" id="blkList"><li class="skel"></li></ul>
-    <div class="col">${S.me?.handle === ADMIN_HANDLE ? '<a class="btn" href="/admin/">🛠 관리자 페이지</a>' : ''}<button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
+    <div class="col">${S.me?.handle === ADMIN_HANDLE ? '<a class="btn" href="/admin/">🛠 관리자 페이지</a>' : ''}<button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost" id="btnLogoutAll" title="학교 태블릿 등에 로그인을 두고 왔을 때">모든 기기에서 로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   call('blocked').then(r => {
     $('#blkList').innerHTML = r.users.length ? r.users.map(u => personRow(u, `<button class="fbtn" data-block="${esc(u.handle)}" data-on="0">풀기</button>`)).join('') : '<li class="empty">없어요</li>';
   }).catch(() => { $('#blkList').innerHTML = ''; });
@@ -371,6 +372,11 @@ function openSettings() {
     try { await call('password', Object.fromEntries(new FormData(e.target))); toast('비밀번호를 바꿨어요'); e.target.reset(); } catch (err) { fail(err); }
   };
   $('#btnLogout').onclick = doLogout;
+  $('#btnLogoutAll').onclick = async () => {
+    if (!confirm('이 기기를 포함해 로그인된 모든 기기에서 로그아웃할까요?')) return;
+    try { await call('logout-all', {}); } catch (x) { return toast(x.message); }
+    S.me = null; S.unread = 0; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('모든 기기에서 로그아웃했어요');
+  };
   $('#dmPref').onchange = async e => { try { const r = await call('dmpref', { pref: +e.target.value }); S.me.dmPref = r.dmPref; toast('DM 받는 범위를 바꿨어요'); } catch (x) { toast(x.message); } };
   if ($('#gUnlinkForm')) $('#gUnlinkForm').onsubmit = async e => { e.preventDefault(); if (!confirm('구글 계정 연결을 해제할까요? 그 뒤로는 아이디·비밀번호로만 로그인해요.')) return; try { await call('google-link', { off: true, pw: $('#gPw').value }); S.me.google = false; toast('연결을 해제했어요'); openSettings(); } catch (x) { toast(x.message); } };
   $('#btnWithdraw').onclick = async () => {
@@ -723,7 +729,7 @@ export async function init(c) {
 }
 
 /* ===== 구글 로그인 (Google Identity Services) =====
-   .gbtn[data-gintent] 자리가 화면에 생기면 구글 버튼을 그려 넣음. 목적: login(로그인·가입) · link(계정 연결) · withdraw(탈퇴 본인 확인) */
+   .gbtn[data-gintent] 자리가 화면에 생기면 구글 버튼을 그려 넣음. 목적: login(로그인·가입) · link(계정 연결) · withdraw(탈퇴 본인 확인) · reset(아이디 찾기·비밀번호 재설정) */
 let gReady = null, gIntent = 'login';
 function loadGis() {
   return gReady ||= new Promise((ok, no) => {
@@ -747,6 +753,7 @@ async function onGoogle({ credential }) {
   try {
     if (gIntent === 'link') { await call('google-link', { credential, pw: $('#gPw')?.value || '' }); S.me.google = true; toast('구글 계정을 연결했어요 🔗'); openSettings(); return; }
     if (gIntent === 'withdraw') { await call('withdraw', { credential }); S.me = null; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('탈퇴했어요. 그동안 고마웠어요'); return; }
+    if (gIntent === 'reset') return googleReset(credential, await call('google-reset', { credential }));
     const r = await call('google', { credential });
     if (r.need === 'signup') return googleSignup(credential, r.name);
     await googleDone('login');
@@ -770,9 +777,35 @@ function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아�
     catch (x) { const box = e.target.querySelector('.ferr'); box.textContent = x.message; box.hidden = false; b.disabled = false; }
   };
 }
+// 아이디·비밀번호 찾기: 구글을 미리 연결해 둔 계정만 (구글 확인 → 아이디 보여 줌 → 원하면 새 비밀번호)
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-forgot]')) return;
+  sheet(`<h3>🔎 아이디·비밀번호 찾기</h3><p class="note">구글 계정을 <b>미리 연결해 둔</b> 경우에만 찾을 수 있어요. 연결한 구글로 확인해 주세요.</p>
+    <p class="note">⚠️ 학교 기기라면 구글 계정 선택 창에서 <b>내 계정이 맞는지</b> 꼭 확인하세요.</p>
+    <div class="gbtn" data-gintent="reset"></div><div class="row"><button class="btn ghost" data-close>닫기</button></div>`);
+});
+function googleReset(credential, r) {
+  sheet(`<h3>🔎 찾았어요</h3><p class="note">내 아이디는 <b>${esc(atH(r.handle))}</b> 예요.</p>
+    <form class="sform" id="grForm"><p class="lbl">비밀번호도 잊었다면 새로 정하기</p>
+      <input name="pw" type="password" placeholder="새 비밀번호 (6자 이상)" minlength="6" maxlength="64" required autocomplete="new-password">
+      <p class="ferr" role="alert" hidden></p>
+      <div class="row"><button class="btn" type="submit">바꾸고 로그인</button><button class="btn ghost" type="button" data-close>닫기</button></div></form>
+    <p class="note">비밀번호를 바꾸면 로그인돼 있던 다른 기기는 모두 로그아웃돼요.</p>`);
+  $('#grForm').onsubmit = async e => {
+    e.preventDefault();
+    const b = e.target.querySelector('[type=submit]'); b.disabled = true;
+    try {
+      const x = await call('google-reset', { credential, pw: e.target.pw.value });
+      closeSheet();
+      if (x.banned) return toast('비밀번호를 바꿨어요. 다만 지금은 이용이 정지된 계정이에요');
+      await googleDone('login');
+    } catch (x) { const box = e.target.querySelector('.ferr'); box.textContent = x.message; box.hidden = false; b.disabled = false; }
+  };
+}
 async function googleDone(mode) {
   await refreshMe();
   toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉` : `${S.me.name}, 반가워요!`);
+  if (!store.get('gtip', false)) { store.set('gtip', true); setTimeout(() => toast('학교 기기라면 다 쓴 뒤 구글에서도 로그아웃해 주세요 🔒'), 2600); }
   ctx.authed?.(S.me, true, mode);
   renderMe();
 }

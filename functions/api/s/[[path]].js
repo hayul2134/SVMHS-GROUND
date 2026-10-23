@@ -21,6 +21,17 @@ const RESERVED = h => h.startsWith('test_') || h === ADMIN_HANDLE || OLD_ADMIN_H
 // 너무 쉬운 비밀번호 (가장 먼저 시도되는 것들) · 아이디와 같은 비밀번호는 거절
 const WEAK = new Set(['123456', '1234567', '12345678', '123456789', '1234567890', '000000', '111111', '123123', '654321', 'password', 'qwerty', 'qwerty123', 'abc123', 'asdf1234', 'qwer1234', 'a12345', 'aa1234', '1q2w3e4r', '1q2w3e', 'iloveyou', 'svmhs', 'svmhs123']);
 const weakPw = (pw, handle) => WEAK.has(pw.toLowerCase()) || pw.toLowerCase() === handle || /^(.)\1+$/.test(pw);
+// 닉네임: 다른 사람과 같으면 안 됨(띄어쓰기·대소문자 무시) + 개발자·관리자로 보이는 이름 금지
+const nameKey = n => String(n || '').replace(/\s+/g, '').toLowerCase();
+const RESERVED_NAMES = new Set(['개발자', '관리자', '운영자', '운영진', 'developer', 'admin', 'administrator', 'svmhsground']);
+async function nameIssue(db, name, selfId = 0) {
+  const k = nameKey(name);
+  if (RESERVED_NAMES.has(k)) return '쓸 수 없는 닉네임이에요';
+  const r = await db.prepare("SELECT 1 FROM users WHERE lower(replace(name, ' ', '')) = ?1 AND id <> ?2 AND is_test = 0 LIMIT 1").bind(k, selfId).first();
+  return r ? '이미 다른 친구가 쓰는 닉네임이에요. 다른 걸로 해 주세요' : '';
+}
+// 구글 연결·구글 로그인·구글로 비밀번호 재설정을 쓸 수 없는 계정 (개발자 계정은 구글이 털려도 관리자 권한이 넘어가지 않게)
+const noGoogle = u => !u || u.handle === ADMIN_HANDLE || !!u.is_test;
 const SESSION_DAYS = 30;   // 로그인 후 30일이 지나면 다시 로그인 (연장 없음 — 공용 태블릿에 로그인이 무한히 남지 않게)
 const COOKIE = 'sg_s';
 const SECURITY_HEADERS = { 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer' };
@@ -203,6 +214,7 @@ const ROUTES = {
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
     if (pw.length < 6 || pw.length > 64) return err('비밀번호는 6~64자로 해 주세요');
+    { const ni = await nameIssue(db, name); if (ni) return err(ni); }
     if (weakPw(pw, handle)) return err('너무 쉬운 비밀번호예요. 다른 걸로 해 주세요');
     const st = await getSettings(db), code = joinCodeOf(env, st);
     if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
@@ -265,6 +277,7 @@ const ROUTES = {
     const name = clean(body.name, 12);
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (isBad(name, body.bio, body.mood, body.club)) return err('욕설이나 나쁜 말은 쓸 수 없어요');
+    if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     const avatar = AVATARS.includes(body.avatar) ? body.avatar : me.avatar;
     const color = COLORS.includes(body.color) ? body.color : me.color;
     const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => STICKERS.includes(s)).slice(0, 6);
@@ -531,18 +544,21 @@ const ROUTES = {
     if (await limited(db, 'gl:' + ik, 600, 600)) return err('로그인 시도가 너무 많아요. 잠시 뒤에 다시 해 주세요', 429);   // 구글 확인(바깥 요청) 전에 막음
     const g = await verifyGoogle(env, body.credential);
     if (!g) return err('구글 로그인을 확인하지 못했어요. 다시 해 주세요', 401);
-    const u = await db.prepare('SELECT id FROM users WHERE google_sub = ?1').bind(g.sub).first();
+    const u = await db.prepare('SELECT id, handle, is_test FROM users WHERE google_sub = ?1').bind(g.sub).first();
     if (u) {
+      if (noGoogle(u)) return err('이 계정은 구글로 로그인할 수 없어요. 아이디·비밀번호로 로그인해 주세요', 403);
       const ban = await db.prepare('SELECT until, reason FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first();
       if (ban) return err('이용이 정지된 계정이에요' + (ban.reason ? ' · ' + ban.reason : ''), 403);
-      return json({ ok: true }, 200, { 'set-cookie': await newSession(req, db, u.id) });
+      return json({ ok: true, handle: u.handle }, 200, { 'set-cookie': await newSession(req, db, u.id) });
     }
+    if (body.find) return err('이 구글 계정에 연결된 아이디가 없어요. 아이디·비밀번호로 로그인한 뒤 프로필 → ⚙️에서 연결해 주세요', 404);
     if (!body.handle) return json({ need: 'signup', name: clean(g.name, 12) });
     const handle = String(body.handle).trim().toLowerCase(), name = clean(body.name, 12);
     if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
     if (RESERVED(handle)) return err('쓸 수 없는 아이디예요');
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (isBad(handle, name)) return err('욕설이나 나쁜 말은 아이디·닉네임에 쓸 수 없어요');
+    { const ni = await nameIssue(db, name); if (ni) return err(ni); }
     const st = await getSettings(db), code = joinCodeOf(env, st);
     if (!signupOpen(st)) return err('지금은 새로 가입할 수 없어요', 403);
     if (await limited(db, 'su:' + ik, 300, 3600)) return err('가입 시도가 너무 많아요. 나중에 다시 해 주세요', 429);
@@ -559,6 +575,7 @@ const ROUTES = {
   // 이미 있는 계정에 구글 연결 / 해제
   // 연결·해제 모두 지금 비밀번호 확인 (로그인된 기기를 잠깐 빌린 사람이 자기 구글을 몰래 연결해 계정을 가져가지 못하게)
   'POST google-link': needMe(async ({ env, db, me, body }) => {
+    if (noGoogle(me) && !body.off) return err('개발자·테스트 계정은 구글을 연결할 수 없어요', 403);
     if (await limited(db, 'pw:' + me.id, 10, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
     const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
     if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) return err('지금 비밀번호가 맞지 않아요', 401);
@@ -569,6 +586,37 @@ const ROUTES = {
     if (other && other.id !== me.id) return err('이 구글 계정은 이미 다른 아이디에 연결돼 있어요');
     await db.prepare('UPDATE users SET google_sub = ?1 WHERE id = ?2').bind(g.sub, me.id).run();
     return json({ ok: true });
+  }),
+
+  // 비밀번호를 잊었을 때: 연결된 구글로 본인 확인 → (pw 없으면) 아이디만 알려 줌 / (pw 있으면) 새 비밀번호로 바꾸고 모든 기기 로그아웃 후 이 기기만 로그인
+  'POST google-reset': async ({ req, env, db, body }) => {
+    const ik = await ipKey(req);
+    if (await limited(db, 'gr:' + ik, 60, 3600)) return err('시도가 너무 많아요. 나중에 다시 해 주세요', 429);
+    const g = await verifyGoogle(env, body.credential);
+    if (!g) return err('구글 로그인을 확인하지 못했어요. 다시 해 주세요', 401);
+    const u = await db.prepare('SELECT id, handle, is_test FROM users WHERE google_sub = ?1').bind(g.sub).first();
+    if (!u) return err('이 구글 계정에 연결된 아이디가 없어요. 구글을 미리 연결해 둔 계정만 찾을 수 있어요', 404);
+    if (noGoogle(u)) return err('이 계정은 구글로 찾을 수 없어요', 403);
+    if (body.pw === undefined) return json({ handle: u.handle });
+    if (await limited(db, 'grp:' + u.id, 5, 3600)) return err('비밀번호를 너무 자주 바꿨어요. 1시간 뒤에 다시 해 주세요', 429);
+    const pw = String(body.pw || '');
+    if (pw.length < 6 || pw.length > 64) return err('새 비밀번호는 6~64자로 해 주세요');
+    if (weakPw(pw, u.handle)) return err('너무 쉬운 비밀번호예요. 다른 걸로 해 주세요');
+    const ban = await db.prepare('SELECT 1 FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first();
+    const salt = randHex(16);
+    await db.batch([
+      db.prepare('UPDATE users SET pw = ?1, salt = ?2 WHERE id = ?3').bind(await hashPw(pw, salt), salt, u.id),
+      db.prepare('DELETE FROM sessions WHERE uid = ?1').bind(u.id),   // 혹시 남이 로그인해 둔 기기도 모두 끊김
+    ]);
+    if (ban) return json({ ok: true, handle: u.handle, banned: true });
+    return json({ ok: true, handle: u.handle }, 200, { 'set-cookie': await newSession(req, db, u.id) });
+  },
+  // 모든 기기에서 로그아웃 (학교 태블릿에 로그인을 두고 왔을 때) — 이 기기 포함
+  'POST logout-all': needMe(async ({ req, db, me }) => {
+    await db.prepare('DELETE FROM sessions WHERE uid = ?1').bind(me.id).run();
+    const res = json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) });
+    if (cookieOf(req, DEV_COOKIE)) res.headers.append('set-cookie', devCookie(req, '', 0));
+    return endAdmin(db, req, me, res);
   }),
 
   /* ----- 오늘의 밸런스 게임: 월~금 하루 한 문제, 6시 공개 · 마지막 교시 끝 +10분 마감. 한 사람 한 표(로그인 계정 기준), 댓글은 고른 쪽이 같이 보임 ----- */
