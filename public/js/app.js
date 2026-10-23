@@ -1465,9 +1465,10 @@ function bootHome() {
   Promise.race([Promise.all([balP, document.fonts?.ready]), new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(() => {
     centerHero(true); de.classList.remove('pre'); de.classList.add('boot');
     // 캐릭터는 첫 화면 동안 바닥에 있다가, 서비스 버튼이 올라오며 나타나는 순간(1.2초) 버튼과 같이 올라와 휘청 (스크롤로 돌아올 때와 같은 동작)
-    setTimeout(() => { const m = $('#mascot'); if (m && !de.classList.contains('at-svc')) { m.classList.remove('m-drop', 'm-hello'); void m.offsetWidth; m.classList.add('m-rise'); } }, 1200);
+    // (캐릭터가 이 사이에 늦게 만들어져도 html.boot:not(.fab-in)에서는 바닥에 붙어 있음 → fab-in이 붙는 순간 올라감)
+    setTimeout(() => { de.classList.add('fab-in'); const m = $('#mascot'); if (m && !de.classList.contains('at-svc')) { m.classList.remove('m-drop', 'm-hello'); void m.offsetWidth; m.classList.add('m-rise'); } }, 1200);
     // boot를 빼는 순간 #v-home의 화면 페이드(.view.on fade)가 다시 재생되며 첫 화면이 깜빡이고 서랍이 튀던 문제(2026-10-23) → calm으로 막음
-    setTimeout(() => { $('#v-home').classList.add('calm'); de.classList.remove('boot'); heroLater(); }, 2600);
+    setTimeout(() => { $('#v-home').classList.add('calm'); de.classList.remove('boot', 'fab-in'); heroLater(); }, 2600);
   }));
   peekSides();
 }

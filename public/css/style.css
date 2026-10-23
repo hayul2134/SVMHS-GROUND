@@ -2051,8 +2051,7 @@ html.at-svc .mascot{transition:transform .3s cubic-bezier(.5,0,.9,.6) .32s}
 /* 첫 등장: 서비스 버튼은 스크롤로 돌아올 때처럼 아래에서 올라오며 나타나고, 캐릭터는 그때까지 바닥에 있다가 같이 올라옴(1.2초 뒤 app.js가 m-rise) */
 @keyframes fabUp{from{opacity:0;translate:0 14px}}
 @media (prefers-reduced-motion:no-preference){
-  html.pre .mascot{transform:none!important;transition:none!important}
-  html.boot:not(.at-svc):not(.prelogin) body[data-view="home"]:not(.playing) .mascot{transition:transform .4s cubic-bezier(.22,.8,.3,1) 1.2s}
+  html.pre .mascot,html.boot:not(.fab-in) .mascot{transform:none!important;transition:none!important}
 }
 
 /* ===== 서비스들 아래 여백 넓힘 (2026-10-23) ===== */
