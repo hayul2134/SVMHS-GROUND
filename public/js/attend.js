@@ -16,7 +16,8 @@ export const lockedOf = kind => REWARDS.filter(r => r.kind === kind);
 let api;   // social.js에서 받음: call · sheet · closeSheet · av · nameOf · devTag · classTxt · atOf · openModal · closeModal · onBest
 let st = null, checking = null, doneDay = '';
 const kstDay = () => { const d = new Date(Date.now() + 9 * 3600e3); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
-const DOW = ['월', '화', '수', '목', '금', '토', '일'];
+const DOW = ['월', '화', '수', '목', '금', '토', '일'];   // 이번 주 도장 줄(월~일)
+const DOW_S = ['일', '월', '화', '수', '목', '금', '토'];   // 달력(일요일 시작)
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ----- 불꽃 그림 (직접 그림, 규칙: tools/attend/ART_GUIDE.md '불꽃')
@@ -73,7 +74,7 @@ function paintChip() {
   const b = $('#btnStreak'); if (!b) return;
   b.hidden = !st;
   if (!st) return;
-  const lit = !!st.done && st.cur > 0, t = tierOf(st.cur);
+  const lit = (!!st.done || !!st.rest) && st.cur > 0, t = tierOf(st.cur);   // 쉬는 날엔 출석 안 해도 불꽃 그대로
   if (t !== chipTier || b.dataset.lit !== String(lit)) {   // 불꽃 그림은 단계·켜짐이 바뀔 때만 다시 그림
     const old = b.querySelector('svg'); old?.insertAdjacentHTML('afterend', flame('hst-f', { tier: t, off: !lit })); old?.remove();
     chipTier = t; b.dataset.lit = String(lit);
@@ -84,7 +85,7 @@ function paintChip() {
   b.classList.remove('t0', 't1', 't2', 't3'); b.classList.add('t' + t);
   b.classList.toggle('pf', !!st.pf && st.cur >= 3);
   $('#stN').textContent = st.cur;
-  const lbl = st.done ? `${st.cur}일 연속 출석 중` : '오늘 아직 출석 안 함';
+  const lbl = st.done ? `${st.cur}일 연속 출석 중` : st.rest ? `${st.cur}일 연속 · 오늘은 쉬는 날` : '오늘 아직 출석 안 함';
   b.setAttribute('aria-label', lbl + ' — 출석 체크 열기'); b.dataset.tip = lbl;
 }
 // 불꽃 한 번 타오르기 (애니메이션이 끝나면 클래스를 떼서 가만히)
@@ -152,7 +153,7 @@ function celebrate(r) {
   const big = !!r.milestone, first = r.total === 1, pw = perfectWeek(r) && r.week.indexOf(r.today) === 4;   // 금요일에 개근 완성
   const msg = first ? '첫 출석이에요! 등교하는 날마다 들러서 불꽃을 키워 보세요' : r.lost > 1 ? `아쉽게 ${r.lost}일 기록이 끊겼어요. 오늘부터 다시 키워요!` : CHEER[Math.floor(Math.random() * CHEER.length)];
   const notes = [
-    pw ? `<p class="att-note pwk">${ui('pw', 'ic')}<span><b>이번 주 개근!</b> 월~금 모두 출석했어요</span></p>` : '',
+    pw ? `<p class="att-note pwk">${ui('pw', 'ic')}<span><b>이번 주 개근!</b> 주말 푹 쉬고 월요일에 봐요</span></p>` : '',
     r.used ? `<p class="att-note sh">${shieldSvg('ic')}<span>방패 <b>${r.used}개</b>가 빠진 날을 지켜 줬어요</span></p>` : '',
     r.gotShield ? `<p class="att-note sh got">${shieldSvg('ic')}<span>연속 ${r.cur}일! <b>출석 방패 +1</b> <small>(${r.shield}/${r.shieldMax})</small></span></p>` : '',
     r.pf && [7, 14, 30, 50, 100].includes(r.cur) ? `<p class="att-note pfn">${ui('sparkle', 'ic')}<span><b>완벽한 연속</b> — 방패 없이 여기까지 왔어요</span></p>` : '',
@@ -228,10 +229,10 @@ export async function open(month) {
 function calHtml(r) {
   const y = +r.month.slice(0, 4), mo = +r.month.slice(4, 6), first = new Date(y, mo - 1, 1), n = new Date(y, mo, 0).getDate();
   const kinds = Object.fromEntries(r.days.map(x => [x.ymd, x.kind]));
-  const lead = (first.getDay() + 6) % 7;   // 월요일 시작
-  let h = DOW.map((d, i) => `<b class="ch${i >= 5 ? ' we' : ''}">${d}</b>`).join('') + '<i></i>'.repeat(lead);
+  const lead = first.getDay();   // 일요일 시작 (2026-10-23)
+  let h = DOW_S.map((d, i) => `<b class="ch${i % 6 === 0 ? ' we' : ''}${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${d}</b>`).join('') + '<i></i>'.repeat(lead);
   for (let d = 1; d <= n; d++) {
-    const ymd = `${r.month}${pad(d)}`, k = kinds[ymd], col = (lead + d - 1) % 7, we = col >= 5;
+    const ymd = `${r.month}${pad(d)}`, k = kinds[ymd], col = (lead + d - 1) % 7, we = col % 6 === 0;
     const jl = k && col > 0 && kinds[`${r.month}${pad(d - 1)}`];   // 같은 줄에서 전날과 이어지면 띠
     h += `<span class="${[k === 1 ? 'on' : k === 2 ? 'sh' : '', jl ? 'jl' : '', ymd === r.today ? 'today' : '', ymd > r.today ? 'fut' : '', we ? 'we' : ''].filter(Boolean).join(' ')}"${k ? ` data-tip="${k === 1 ? '출석' : '방패로 지킴'}"` : ''}>${k === 1 ? flame('cf') : k === 2 ? shieldSvg('cf') : ''}<em>${d}</em></span>`;
   }
@@ -253,10 +254,10 @@ function rewardsHtml(r, by) {
 }
 function sheetHtml(r, quiet = false) {
   const shields = Array.from({ length: r.shieldMax }, (_, i) => shieldSvg(i < r.shield ? 'on' : 'off')).join('');
-  const state = !r.done ? (r.cur ? '오늘은 아직 출석 전이에요' : '오늘부터 다시 불꽃을 키워 봐요') : r.pf && r.cur >= 3 ? `${ui('sparkle', 'ic')}완벽한 연속 — 방패 없이 이어 가는 중` : '내일도 와서 불꽃을 지켜 주세요';
+  const state = r.rest && !r.done ? (r.cur ? '오늘은 쉬는 날 — 출석 안 해도 기록 그대로예요' : '쉬는 날엔 출석을 세지 않아요. 등교하는 날 시작해요') : !r.done ? (r.cur ? '오늘은 아직 출석 전이에요' : '오늘부터 다시 불꽃을 키워 봐요') : r.pf && r.cur >= 3 ? `${ui('sparkle', 'ic')}완벽한 연속 — 방패 없이 이어 가는 중` : '내일도 와서 불꽃을 지켜 주세요';
   const md = `${+r.today.slice(4, 6)}.${+r.today.slice(6)}`;
   // 오늘 출석 도장: 완료면 초록 도장(한 번 쾅 찍힘), 아니면 점선 빈 도장
-  const stamp = `<div class="att-stamp${r.done ? ' ok' : ''}" role="img" aria-label="${r.done ? '오늘 출석 완료' : '오늘 아직 출석 전'}">${r.done ? ui('check', 'sc') : ''}<b>${r.done ? '출석 완료' : '출석 전'}</b><small>${md}</small></div>`;
+  const stamp = `<div class="att-stamp${r.done ? ' ok' : r.rest ? ' rest' : ''}" role="img" aria-label="${r.done ? '오늘 출석 완료' : r.rest ? '오늘은 쉬는 날' : '오늘 아직 출석 전'}">${r.done ? ui('check', 'sc') : ''}<b>${r.done ? '출석 완료' : r.rest ? '쉬는 날' : '출석 전'}</b><small>${md}</small></div>`;
   return `
     <div class="att-top">
       ${bigFire(r.cur, { sm: true, burn: !quiet, pf: r.pf && r.cur >= 3 })}
@@ -280,7 +281,7 @@ function sheetHtml(r, quiet = false) {
     <details class="att-rule"><summary>출석 규칙</summary>
       <ul><li>로그인한 채로 사이트를 열면 하루 한 번 자동으로 출석돼요.</li>
       <li><b>등교하는 날(월~금)</b>을 빠지면 연속 기록이 끊겨요. 주말·공휴일·방학은 쉬어도 괜찮아요.</li>
-      <li>주말·공휴일에 들러도 +1일이에요.</li>
+      <li>출석은 <b>등교하는 날만</b> 세요. 주말·공휴일에 들어와도 출석으로 치지 않으니, 쉬는 날은 마음 편히 쉬어요.</li>
       <li>연속 ${r.shieldEvery}일마다 <b>출석 방패</b>를 1개 받아요(최대 ${r.shieldMax}개). 빠진 등교일 하루를 방패가 자동으로 메워 줘요.</li>
       <li>방패를 한 번도 안 쓰고 이어 가면 <b>완벽한 연속</b> — 불꽃에 금빛 후광이 생겨요.</li>
       <li>불꽃은 7일·30일·100일에 색이 바뀌어요.</li>

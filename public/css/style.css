@@ -1917,6 +1917,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-stamp small{font:800 11px/1.2 var(--num);opacity:.85}
 .att-stamp.ok{border:3px solid #24a05f;color:#1c8a50;background:color-mix(in srgb,#2fbf71 12%,var(--card));box-shadow:inset 0 0 0 3px var(--card),inset 0 0 0 5px #24a05f;
   animation:stampIn .55s .35s cubic-bezier(.3,1.6,.5,1) both}
+.att-stamp.rest{border-style:dashed;color:var(--accent,#3e7bfa);opacity:.85}
 .att-stamp .sc{width:22px;height:22px;margin-bottom:1px}
 :root[data-theme="dark"] .att-stamp.ok{color:#6fe3a2;border-color:#3ccf85;box-shadow:inset 0 0 0 3px var(--card),inset 0 0 0 5px #3ccf85}
 @keyframes stampIn{0%{transform:scale(2.2) rotate(-28deg);opacity:0}55%{opacity:1;transform:scale(.92) rotate(-8deg)}100%{transform:rotate(-10deg)}}
@@ -1941,6 +1942,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .att-cal .ch{text-align:center;font-size:12px;color:var(--sub);padding-bottom:2px}
 .att-cal .ch.we{opacity:.6}
+.att-cal .ch.sun{color:#e5484d;opacity:.8}.att-cal .ch.sat{color:#3e7bfa;opacity:.8}
 .att-cal span{position:relative;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;background:var(--chip);border:2px solid transparent}
 .att-cal span em{font:800 12.5px/1 var(--num);font-style:normal;color:var(--sub)}
 .att-cal span.we{background:transparent}

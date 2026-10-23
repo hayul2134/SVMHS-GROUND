@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, SHIELD_MAX, unlockedOf, kstToday, missedDays, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
+import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, SHIELD_MAX, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
@@ -813,8 +813,8 @@ async function attState(env, db, me, doCheck, quiet = false) {
       shieldMax: SHIELD_MAX, shieldEvery: SHIELD_EVERY, week, ...extra, missed: undefined };
   };
   if (u.st_last === today) return json(out({ new: false, weekDays: quiet ? undefined : await weekRows() }));
-  const missed = await missedDays(env, db, u.st_last, today);
-  if (!doCheck) return json(out({ new: false, missed }));
+  const [missed, rest] = await Promise.all([missedDays(env, db, u.st_last, today), restDay(env, db, today)]);
+  if (!doCheck || rest) return json(out({ new: false, missed, rest }));   // 쉬는 날(주말·휴업일)은 출석을 세지 않음 — 기록도 그대로
   const prevLive = liveCur(u, missed);
   let cur, used = 0, pf = u.st_pf;
   if (prevLive > 0) { used = missed.length; cur = u.st_cur + 1; if (used) pf = 0; } else { cur = 1; pf = 1; }
