@@ -2015,7 +2015,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .ptitle{margin-top:-4px}
 .ptitle span{display:inline-block;padding:2px 12px;border-radius:8px;background:var(--ink);color:#fff;font-weight:900;font-size:12.5px;transform:rotate(-2deg);box-shadow:2px 2px 0 var(--gold)}
 :root[data-theme="dark"] .ptitle span{background:#f6f2e6;color:#173048}
-.pcard.hot .pbody > .av.big{box-shadow:0 0 0 5px #ffcf5a,var(--sh)}
+.pcard.hot .phead > .av.big{box-shadow:0 0 0 5px #ffcf5a,var(--sh)}
 /* 출석 보상 전용 배경 색: --pg(그라디언트)가 있으면 그걸로 */
 .c-xflame{--pc:#ff9a5a;--pg:linear-gradient(140deg,#ffe08a 0%,#ff9d3c 50%,#f2452e 100%)}
 .c-xsunset{--pc:#ff8fa3;--pg:linear-gradient(170deg,#ffd27a 0%,#ff8fa3 48%,#8a6cff 100%)}
@@ -2795,3 +2795,52 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .fbadd{width:64px;height:64px;flex:none;border-radius:12px;border:2px dashed var(--line);background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--sub)}
 .fbadd span{font-size:20px;line-height:1}
 .fbadd small{font-size:10.5px;font-weight:800;white-space:nowrap}
+
+/* ===== 프로필 카드 레이아웃 (2026-10-23) — 가운데 몰림 대신 비대칭 구성
+   원칙: 읽는 글은 왼쪽 정렬(시선 시작점 고정) · 정체성(사진·이름)과 행동(버튼)은 한 줄 양 끝 ·
+   본문(소개)과 숫자(통계·기록)는 좌우 단으로 나눠 무게 균형 · 스티커 감성은 서로 반대로 기운 카드로 */
+#v-me .soc,#v-u .soc{max-width:820px}
+.pbody{padding:0 26px 26px;text-align:left;display:grid;justify-items:stretch;gap:18px}
+.phead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:10px 18px}
+.phead > .av.big{margin-top:-58px;transform:rotate(-3deg)}
+.pid{display:grid;justify-items:start;gap:4px;min-width:0;padding-top:14px}
+.pid .pname{font-size:34px;overflow-wrap:anywhere}
+.pid .ptitle{margin-top:0}
+.pmood{margin:0 0 2px}
+.pmood span{position:relative;transform:rotate(-3deg)}
+.pmood span::before{content:"";position:absolute;left:-9px;bottom:6px;border:7px solid transparent;border-right:9px solid var(--ink);border-left:0}
+.pmood span::after{content:"";position:absolute;left:-5px;bottom:8px;border:5px solid transparent;border-right:7px solid var(--yellow);border-left:0}
+.phead .pact{margin:0;justify-content:flex-end;padding-top:14px}
+.phead .pact .btn{padding:10px 14px;font-size:14.5px}
+.pcols{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:22px;align-items:start}
+.pcols:has(.pmain:not(:has(*))){grid-template-columns:minmax(0,1fr)}
+.pmain{display:grid;justify-items:start;gap:12px;padding-top:4px}
+.pmain:not(:has(*)){display:none}
+.pmain .pdev{position:relative;margin:6px 0 0;max-width:none;width:100%;text-align:left;padding:16px 18px 14px;font-size:16px;transform:rotate(-1.2deg)}
+.pmain .pdev::before{content:"";position:absolute;top:-11px;left:22px;width:74px;height:22px;background:rgba(143,232,207,.85);border:1.5px dashed rgba(23,48,72,.35);transform:rotate(-6deg)}
+.pmain .pdev:hover{transform:rotate(0) scale(1.02)}
+.pmain .pbio{max-width:none;width:100%;padding:12px 16px;border-radius:16px;background:var(--chip);border-left:6px solid var(--pc,var(--accent))}
+.pmain .pchips,.pmain .pcrowns{display:flex;flex-wrap:wrap;justify-content:flex-start}
+.pside{position:relative;display:grid;gap:10px;padding:16px 14px 14px;border:2.5px solid var(--ink);border-radius:20px;background:var(--chip);box-shadow:var(--sh-s);transform:rotate(1.4deg)}
+.pside::before{content:"";position:absolute;top:-8px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:var(--accent);border:2.5px solid var(--ink);box-shadow:inset -3px -3px 0 rgba(0,0,0,.15)}
+.pside .pstreak{width:100%;justify-content:center;padding:6px 12px}
+.pside .pstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+.pside .pstats button{place-items:center;padding:8px 6px;background:var(--card);border:2px solid var(--ink);border-radius:14px}
+.pside .pstats button:hover{background:var(--yellow);color:var(--ink)}
+.pside .pstats button:hover b{color:var(--ink)}
+.pside .pbest{grid-template-columns:1fr;gap:6px;margin:0}
+.pside .pbest li{grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:7px 10px;background:var(--card);border-radius:12px;text-align:left}
+.pside .pbest span{font-size:18px}
+.pbody > .swbar{margin:0}
+@media (max-width:720px){
+  .pbody{padding:0 18px 22px;gap:16px}
+  .phead{grid-template-columns:auto minmax(0,1fr);gap:10px 14px}
+  .phead > .av.big{width:96px;height:96px;margin-top:-48px}
+  .pid{padding-top:10px}
+  .pid .pname{font-size:28px}
+  .phead .pact{grid-column:1/-1;justify-content:flex-start;padding:0}
+  .pcols{grid-template-columns:minmax(0,1fr)}
+  .pside{transform:rotate(.8deg)}
+}
+@media (prefers-reduced-motion:reduce){.pmain .pdev:hover{transform:rotate(-1.2deg)}}
+.pcard.dev .pban::after{left:auto;right:16px}

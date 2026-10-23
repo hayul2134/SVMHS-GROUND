@@ -232,7 +232,7 @@ document.addEventListener('input', e => {
 const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
-  const chips = (isDev(u) ? '<span class="chip dev">🛠 SVMHS GROUND 개발자</span>' : '') + [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
+  const chips = [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
@@ -240,8 +240,8 @@ function profileHtml(d) {
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn lime" data-act-s="edit">✏️ 꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>${swBar()}`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
-      : S.me?.sw ? swBar()   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만
+    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn lime" data-act-s="edit">✏️ 꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
+      : S.me?.sw ? ''   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만(아래 swBar)
       : `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
@@ -251,19 +251,30 @@ function profileHtml(d) {
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
-      ${av(u, 'big')}
-      ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-      <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}
-      <p class="phandle">${[isDev(u) ? '🛠 SVMHS GROUND 개발자' : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
-      ${isDev(u) ? '<button class="pdev" type="button" data-fb>💬 궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! 팔로우 안 해도 돼요</button>' : ''}
-      ${chips ? `<p class="pchips">${chips}</p>` : ''}
-      ${streak ? `<p class="pchips">${streak}</p>` : ''}
-      ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
-      ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
-      ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
-      ${`<div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
-      `}<div class="pact">${actions}</div>
-      ${isDev(u) ? '' : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
+      <div class="phead">
+        ${av(u, 'big')}
+        <div class="pid">
+          ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
+          <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}
+          <p class="phandle">${[isDev(u) ? '🛠 SVMHS GROUND 개발자' : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
+        </div>
+        ${actions ? `<div class="pact">${actions}</div>` : ''}
+      </div>
+      <div class="pcols">
+        <div class="pmain">
+          ${isDev(u) ? '<button class="pdev" type="button" data-fb>💬 궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! 팔로우 안 해도 돼요</button>' : ''}
+          ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
+          ${chips ? `<p class="pchips">${chips}</p>` : ''}
+          ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
+          ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
+        </div>
+        <aside class="pside">
+          ${streak}
+          <div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
+          ${isDev(u) ? '' : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
+        </aside>
+      </div>
+      ${self ? swBar() : ''}
     </div>
   </article>`;
 }

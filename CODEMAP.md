@@ -76,6 +76,7 @@ npx wrangler@4 pages dev --port 8788
 - 헤더 오른쪽은 테마 버튼 `#btnTheme` + 목록 버튼 `#btnMenu`(☰↔✕). 누르면 `#hMenu.open` → `#hList`가 서랍(카드)처럼 펼쳐지고 각 줄은 아이콘+이름+설명: 위에서부터 프로필(`#btnMe`, 로그인하면 `.mi` 안이 아바타) · 테마(`#btnSkin`) · 설정(`#btnClass`, 반 설정) · QR(`#btnShare`) · 신고(`#btnReport` → `social.js openReport()`: 아이디·이유 입력, 로그인 필요). 항목 누르면 닫힘, 바깥 클릭·Esc로도 닫힘. 로직은 `app.js` `menu()`.
 - DM은 헤더에 없음 → 오른쪽 아래 `#dmDock`. 900px 이상은 '메시지' 버튼(안 읽은 수 + 최근 대화 3명) → 떠 있는 창 `#dmPanel` 안에서 목록·대화(`renderDm(handle, box, panel)` 공용, 창 안 링크는 `data-pdm`). 900px 미만은 둥근 버튼 → `#dm` 화면. `#dm` 화면·게임 중엔 숨김(`body[data-view]`, `body.playing`).
 - 화면: `#me`(내 프로필/로그인) · `#u/아이디`(남의 프로필) · `#dm`, `#dm/아이디` · `#game`. `go()`가 `/` 뒤를 인자로 넘김.
+- 프로필 카드 레이아웃(2026-10-23): 가운데 정렬 대신 비대칭 — `.phead`(사진·말풍선 기분·이름·칭호·아이디 | 오른쪽 버튼 `.pact`) → `.pcols`(왼쪽 `.pmain`: 개발자 쪽지·소개·칩·왕관·인스타 / 오른쪽 핀 꽂힌 카드 `.pside`: 연속 출석·팔로워/팔로잉·게임 기록) → 개발자면 `swbar`. 720px 이하 한 단. `<header>` 태그는 전역 `header{position:fixed}` 때문에 쓰지 말 것. 프로필 화면 폭 820px.
 - 프로필 인스타 아이디(`users.insta`, 선택): 꾸미기에서 입력 → 서버가 @·인스타 주소를 떼고 아이디만 저장(영문·숫자·._ 30자 검사) → 프로필에 `.pinsta` 버튼(새 창으로 instagram.com/아이디). 인스타 API 연동은 개인 계정 불가라 링크 방식. 관리자 '프로필 정리'로 지울 수 있음.
 - D1 바인딩 `DB`가 없으면 `/api/s/config`가 `{enabled:false}` → 화면에 '준비 중'만 보임.
 - 선택: Pages 비밀 변수 `JOIN_CODE`를 넣으면 가입할 때 코드 필요(친구끼리만).
