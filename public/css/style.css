@@ -1359,7 +1359,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 /* 로그인 전엔 숨기는 첫 화면 버튼들도 이때만 똑같이 보이게(소개 화면 아래라 눌리진 않음) */
 html.sh-real .svcfab{display:flex!important}
 html.sh-real #dmDock{display:flex!important}
-html.sh-hand #bigclock :is(.s-meal,.s-greet,.s-what,.clock,.s-info){visibility:hidden}   /* 시간표는 예시 카드와 서로 엇갈려 사라짐 */
+html.sh-hand #bigclock :is(.s-meal,.s-greet,.s-what,.clock,.s-info),html.sh-ttx #bigclock .s-ttc{visibility:hidden}   /* 시간표는 예시 카드와 서로 엇갈려 사라짐 */
 html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-55px)}
 @media (max-width:560px){ html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-49px)} }
 /* '로그인하면 바로 이 화면이에요!' 스티커 — 처음엔 화면 가운데 크게, 첫 화면이 드러나면 위로 올라가 붙음 */

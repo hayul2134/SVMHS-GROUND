@@ -1709,7 +1709,7 @@ async function fillShow() {
      · 진짜 첫 화면 복제(무거움)는 스크롤 중이 아니라 한가할 때 미리 해 둠. 시계 복제본은 1초마다 글자만 옮겨 씀 */
   const put = (el, k, v) => { if (el && el['_' + k] !== v) { el['_' + k] = v; el.style[k] = v; } };
   const flag = (el, c, v) => { const key = c + (el === de ? 'd' : el === root ? 'r' : ''); if (flags[key] !== v) { flags[key] = v; el.classList.toggle(c.replace(/\d+$/, ''), v); } };
-  const idle = fn => (window.requestIdleCallback || (f => setTimeout(f, 60)))(fn, { timeout: 800 });
+  const idle = fn => (window.requestIdleCallback || (f => setTimeout(f, 60)))(fn, { timeout: 300 });
   // 진짜 첫 화면의 급식판·시계 묶음·시간표를 그대로 복제해 같은 자리·같은 크기로 겹쳐 둠 → 줄 서기로 넘어갈 때 바뀌는 티가 안 남
   // (복제본은 id를 지우고, 서랍 위치 이동(translate)만 빼고 회전 등은 그대로. 진짜가 없으면 직접 그린 카드를 씀)
   function cloneGroup(i) {
@@ -1719,14 +1719,18 @@ async function fillShow() {
     if (o._fb == null) o._fb = box.innerHTML;
     if (i === 1) ticking = [];
     const stowed = els.length === 1 && els[0].classList.contains('stow') && !els[0].classList.contains('open');   // 서랍이 들어가 있음(세로 화면 등): 포스트잇 탭만 보임
-    if (i === 2 && rs.length && !stowed) { const r = rs[0]; real[2] = { x: r.left, y: r.top, s: r.width / o.offsetWidth, tab: 1 }; return; }   // 시간표는 항상 예시 카드(2026-10-23) — 진짜 시간표 카드 자리에서 겹쳐 나타나며 출발
+    if (i === 2 && rs.length && !stowed) { const r = rs[0]; real[2] = { x: r.left, y: r.top, s: r.width / o.offsetWidth, ex: 1 }; return; }   // 시간표는 항상 예시 카드(2026-10-23) — 진짜 시간표 카드 자리에서 겹쳐 나타나며 출발
     if (!rs.length || rs.length !== els.length || stowed) {
       if (box.classList.contains('cl')) { box.classList.remove('cl'); box.innerHTML = o._fb; o.style.removeProperty('--w'); o.style.removeProperty('--h'); }
       const tab = stowed && els[0].querySelector('.s-tab'), tr = tab && tab.getBoundingClientRect();   // 직접 그린 카드가 그 포스트잇 자리에서 커지며 나옴
       real[i] = tr && tr.width ? { x: tr.left, y: tr.top, s: tr.height / o.offsetHeight, tab: 1 } : null;
       return;
     }
-    const x0 = Math.min(...rs.map(v => v.left)), y0 = Math.min(...rs.map(v => v.top)), x1 = Math.max(...rs.map(v => v.right)), y1 = Math.max(...rs.map(v => v.bottom));
+    let x0 = Math.min(...rs.map(v => v.left)), y0 = Math.min(...rs.map(v => v.top)), x1 = Math.max(...rs.map(v => v.right)), y1 = Math.max(...rs.map(v => v.bottom));
+    if (i === 1) {   // 시계 묶음: 테두리를 큰 시계 숫자 가운데 기준으로 좌우 대칭이 되게 넓힘 (말풍선이 왼쪽으로 삐져나와 있어도 카드 안 내용이 한쪽으로 쏠려 보이지 않게)
+      const ci = els.findIndex(e => e.classList.contains('clock')), cx = ci >= 0 ? (rs[ci].left + rs[ci].right) / 2 : (x0 + x1) / 2, half = Math.max(cx - x0, x1 - cx);
+      x0 = cx - half; x1 = cx + half;
+    }
     const wrap = document.createElement('div'); wrap.className = 'stage sh-cl';
     els.forEach((e, j) => {
       const r = rs[j], cs = getComputedStyle(e), w = parseFloat(cs.width) + (cs.boxSizing === 'border-box' ? 0 : parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)) + .5, h = e.offsetHeight, c = e.cloneNode(true);
@@ -1750,7 +1754,7 @@ async function fillShow() {
   let preparing = false;
   function prep() {   // 복제 + 줄 자리 계산: 무거워서 한가할 때, 그리고 복제본이 안 보일 때만
     if (preparing || !on || !L) return; preparing = true;
-    idle(() => { preparing = false; if (!on || !L || (cur > T_HOLD - .01 && cur < 1)) return; [0, 1, 2].forEach(cloneGroup); rowLayout(); });
+    idle(() => { preparing = false; if (!on || !L || (cur > T_HOLD - .01 && cur < 1)) return; [0, 1, 2].forEach(cloneGroup); rowLayout(); capSlot(); L.cloned = true; L.stale = false; });
   }
   function rowLayout() {
     const { W, H } = L, sz = objs.map(o => [o.offsetWidth, o.offsetHeight]);
@@ -1761,10 +1765,42 @@ async function fillShow() {
     const pad = i => i === 1 && real[1] && !real[1].tab ? [108, 56] : [0, 0];
     L.row = sz.map(([w, h], i) => { const [pw, ph] = pad(i), s = Math.min(rowH / (h + ph), W * .82 / (w + pw), 1.5); x += pw / 2 * s; const r = { x, w: w * s, h: h * s, s, y: cy - h * s / 2 + 2 * s }; x += w * s + pw / 2 * s + gap; return r; });
   }
+  // 스티커가 들어갈 빈자리 찾기: 진짜 첫 화면에서 헤더·공지 띠 아래 ~ 말풍선 위(위쪽 틈) 또는 상태 줄 아래 ~ 바닥 버튼 위(아래쪽 틈) 중
+  // 스티커가 더 크게 들어가는 곳. 테이프·👀가 위로 삐져나온 만큼(OV)까지 계산해서 어떤 화면 크기에서도 잘리거나 겹치지 않게
+  const OV_T = 26, OV_B = 8, OV_X = 26;
+  function capSlot() {
+    const { W, H, capW, capH } = L, vis = e => e && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden';
+    const tmp = !de.classList.contains('sh-real'); if (tmp) de.classList.add('sh-real');   // 첫 화면이 드러났을 때 보이는 버튼(서비스·메시지)까지 넣고 재야 함
+    try { capSlotIn(W, H, capW, capH, vis); } finally { if (tmp) de.classList.remove('sh-real'); }
+  }
+  function capSlotIn(W, H, capW, capH, vis) {
+    const rect = e => e.getBoundingClientRect(), smax = Math.min(.74, (W - 32) / (capW + OV_X * 2));
+    const obs = [...$$('#hdr .hd > *'), $('#notice'), $('#bigclock .s-greet'), $('#bigclock .s-what'), $('#bigclock .clock'), $('#bigclock .s-info'), $('#svcFab'), $('#dmDock'), $('.s-meal'), $('.s-ttc')].filter(vis).map(rect).filter(r => r.width);
+    const fit = (y0, y1) => {   // y0~y1 사이, 가운데 가로 범위를 막는 것들을 피해 가장 큰 배율
+      let best = null;
+      for (let s = smax; s >= .3; s -= .02) {
+        const w = (capW + OV_X * 2) * s, x0 = W / 2 - w / 2, x1 = W / 2 + w / 2, h = (capH + OV_T + OV_B) * s;
+        const hit = obs.filter(r => r.right > x0 && r.left < x1 && r.bottom > y0 && r.top < y1);
+        const top = Math.max(y0, ...hit.filter(r => r.top < (y0 + y1) / 2).map(r => r.bottom + 8)), bot = Math.min(y1, ...hit.filter(r => r.top >= (y0 + y1) / 2).map(r => r.top - 8));
+        // 틈 안에 다른 게 걸치면(가운데에 낀 것) 그 위·아래 중 큰 쪽만
+        const mid = hit.filter(r => r.top < bot && r.bottom > top && !(r.bottom + 8 <= top) && !(r.top - 8 >= bot));
+        let t = top, b = bot;
+        if (mid.length) { const m = mid.reduce((a, r) => ({ top: Math.min(a.top, r.top), bottom: Math.max(a.bottom, r.bottom) }), { top: 1e9, bottom: -1e9 }); if (m.top - t >= b - m.bottom) b = m.top - 8; else t = m.bottom + 8; }
+        if (b - t >= h) { best = { s, y: t + (b - t - h) / 2 + OV_T * s }; break; }
+      }
+      return best;
+    };
+    const greet = obs.length ? Math.min(...[$('#bigclock .s-greet'), $('#bigclock .s-what'), $('#bigclock .clock')].filter(vis).map(e => rect(e).top)) : H * .3;
+    const info = [$('#bigclock .s-info'), $('#play')].filter(vis).map(e => rect(e).bottom);
+    const a = fit(10, greet), b = info.length ? fit(Math.max(...info), H - 10) : null;
+    L.slot = !a ? b : !b ? a : (b.s > a.s + .06 ? b : a);
+  }
   function measureTop() { let t = 0, e = sec; while (e && e !== root) { t += e.offsetTop; e = e.offsetParent; } secTop = t; }
   function layout() {
+    const was = L;
     L = { W: stage.clientWidth, H: root.clientHeight, range: Math.max(1, sec.offsetHeight - root.clientHeight), capH: cap.offsetHeight, capW: cap.offsetWidth };
-    measureTop(); rowLayout(); prep();
+    if (was) { L.cloned = was.cloned; L.slot = was.slot; L.forced = was.forced; }
+    measureTop(); rowLayout(); L.stale = true; prep();
   }
   let fixedBtns = null;
   function render(p, pinned) {
@@ -1774,13 +1810,17 @@ async function fillShow() {
     const show = pinned ? easeO(clamp((p - T_IN) / (T_SHOW - T_IN))) * (1 - ease(clamp((p - T_HOLD) / .05))) : 0;
     put(cover, 'opacity', (1 - show).toFixed(3));
     flag(root, 'sh-see', show > 0); flag(de, 'sh-real', show > 0);
-    flag(de, 'sh-hand', show > 0 && p > T_HOLD);   // 줄 서기 시작: 진짜 급식판·시계·시간표는 바로 숨기고 똑같은 복제본이 이어받아 움직임
+    flag(de, 'sh-hand', show > 0 && p > T_HOLD);
+    flag(de, 'sh-ttx', show > 0 && !!real[2]?.ex);   // 첫 화면의 진짜 시간표 카드 대신 예시 카드를 보여 줌   // 줄 서기 시작: 진짜 급식판·시계·시간표는 바로 숨기고 똑같은 복제본이 이어받아 움직임
+    if (show > 0 && (!L.cloned || L.stale)) prep();   // 아직 복제 전이면(아주 빨리 내렸을 때) 지금 한가할 때 준비
+    if (p > T_HOLD && !L.cloned && !L.forced) { L.forced = true; [0, 1, 2].forEach(cloneGroup); rowLayout(); L.cloned = true; }   // 줄 서기까지 왔는데도 없으면 그 자리에서 한 번만 바로
     if (show > 0) { fixedBtns ||= [$('#svcFab'), $('#dmDock'), $('#mascot')]; if (!fixedBtns[2]) fixedBtns[2] = $('#mascot'); fixedBtns.forEach(e => put(e, 'opacity', show.toFixed(3))); }
     // 문구: 처음엔 화면 가운데 크게 → 첫 화면이 드러나며 위로 올라가 작아짐 → 줄 서기 시작하면 사라짐
-    const up = easeO(clamp((p - T_IN) / (T_SHOW - T_IN))), s0 = Math.min(1.15, W * .86 / L.capW), s1 = Math.min(W < 700 ? .48 : .74, W * .7 / L.capW);
-    const cs = lerp(s0, s1, up), topY = W < 700 ? H - L.capH * s1 - 88 : 22 + 16 * s1 + L.capW * s1 * .018, cyY = lerp(H / 2 - L.capH * s0 / 2, topY, up);   // 폰은 위쪽이 헤더·말풍선으로 차 있어서 아래에 붙임
+    const up = easeO(clamp((p - T_IN) / (T_SHOW - T_IN))), s0 = Math.min(1.15, (W - 32) / (L.capW + OV_X * 2), (H * .6) / L.capH);
+    const slot = L.slot, s1 = slot ? slot.s : s0 * .5, cs = lerp(s0, s1, up);
+    const cyY = lerp(H / 2 - L.capH * s0 / 2, slot ? slot.y : H * .7, up);
     put(cap, 'transform', `translate3d(${(W / 2 - L.capW * cs / 2).toFixed(1)}px,${cyY.toFixed(1)}px,0) scale(${cs.toFixed(4)})`);
-    put(cap, 'opacity', ((1 - clamp((p - T_HOLD) / .03)) * (W < 700 ? 1 - clamp((up - .55) / .45) : 1)).toFixed(3));   // 폰은 화면이 좁아 첫 화면을 가리지 않게, 드러나는 동안 아래로 내려가며 사라짐
+    put(cap, 'opacity', ((1 - clamp((p - T_HOLD) / .03)) * (slot ? 1 : 1 - clamp((up - .55) / .45))).toFixed(3));   // 들어갈 빈자리가 없는 화면(좁은 폰 등)이면 첫 화면을 가리지 않게 드러나는 동안 사라짐
     // ②③ 줄 서기 · 넘기기
     const t = clamp((p - T_ROW) / (T_END - T_ROW)) * (N - 1), i0 = Math.floor(t), f = Math.min(N - 1, i0 + ease(clamp((t - i0 - .2) / .6)));
     const cOf = v => { const a = Math.floor(v), b = Math.min(N - 1, a + 1), r = v - a; return lerp(row[a].x + row[a].w / 2, row[b].x + row[b].w / 2, r); };
@@ -1790,7 +1830,7 @@ async function fillShow() {
       const d = Math.min(1, Math.abs(i - f)), mul = 1 - .16 * d;
       const rs = r.s * mul, rx = pan + r.x + r.w * (1 - mul) / 2, ry = r.y + r.h * (1 - mul) / 2;
       const h = real[i] || (i < 4 ? { x: rx, y: ry + 40, s: rs } : { x: W + 120 + (i - 4) * 160, y: ry, s: rs });   // 진짜 화면에 없는 건 오른쪽에서 줄줄이 들어옴
-      const op = (real[i] && !real[i].tab ? (p > T_HOLD ? 1 : 0) : clamp(q * 4)) * lerp(1, .38 + .62 * (1 - d), q);   // 복제본은 진짜와 똑같아서 바로 겹쳐 나타나 움직이기 시작, 나머지는 서서히
+      const op = (i === 2 && real[2]?.ex ? (p > T_HOLD ? 1 : show) : real[i] && !real[i].tab ? (p > T_HOLD ? 1 : 0) : clamp(q * 4)) * lerp(1, .38 + .62 * (1 - d), q);   // 시간표 예시 카드는 첫 화면이 드러날 때부터 진짜 시간표 자리에 같이 보임   // 복제본은 진짜와 똑같아서 바로 겹쳐 나타나 움직이기 시작, 나머지는 서서히
       if (op < .002 && o._opacity === '0.000') continue;   // 안 보이는 건 위치 계산·쓰기 생략
       put(o, 'transform', `translate3d(${lerp(h.x, rx, q).toFixed(1)}px,${lerp(h.y, ry, q).toFixed(1)}px,0) scale(${lerp(h.s, rs, q).toFixed(4)})`);
       put(o, 'opacity', op.toFixed(3));
@@ -1835,7 +1875,7 @@ async function fillShow() {
   function setup() {
     on = !matchMedia('(prefers-reduced-motion: reduce)').matches;
     sec.classList.toggle('sh-on', on);
-    if (!on) { objs.forEach(o => { o.style.transform = o.style.opacity = ''; o._transform = o._opacity = undefined; }); cap.style.transform = cap.style.opacity = ''; root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand'); flags = {}; return; }
+    if (!on) { objs.forEach(o => { o.style.transform = o.style.opacity = ''; o._transform = o._opacity = undefined; }); cap.style.transform = cap.style.opacity = ''; root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand', 'sh-ttx'); flags = {}; return; }
     layout(); cur = target = clamp(rawP()); render(cur, false);
   }
   root.addEventListener('scroll', kick, { passive: true });
@@ -1852,7 +1892,7 @@ async function fillShow() {
   ['#sMeal', '#sTT'].forEach(q => $(q) && mo.observe($(q), { childList: true, subtree: true }));
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', setup);
   skip.addEventListener('click', () => root.scrollTo({ top: secTop + sec.offsetHeight - L.H + 2, behavior: 'smooth' }));
-  SOC.showOff = () => { root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand'); flags = {}; (fixedBtns || []).forEach(e => { if (e) { e.style.opacity = ''; e._opacity = undefined; } }); };   // 로그인하면 소개와 함께 정리
+  SOC.showOff = () => { root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand', 'sh-ttx'); flags = {}; (fixedBtns || []).forEach(e => { if (e) { e.style.opacity = ''; e._opacity = undefined; } }); };   // 로그인하면 소개와 함께 정리
   SOC.showPrep = () => { if (on && introOn()) { layout(); render(cur, false); } };   // 첫 화면을 미리 다 그린 뒤(bootHome) 복제 준비
   setup();
   fillShow();
