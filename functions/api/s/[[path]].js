@@ -145,7 +145,8 @@ async function rel(db, me, other) {
 }
 const friendIds = async (db, me) => (await db.prepare('SELECT f.b AS id FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1').bind(me).all()).results.map(r => r.id);
 // DM 보내도 되는지: 받는 사람(u)의 설정 — 0 서로 팔로우 · 1 받는 사람이 나를 팔로우 · 2 누구나. 차단은 항상 막음
-const dmAllowed = (u, r) => !r.blocked && !r.blockedMe && ((u.dm_pref || 0) === 2 || ((u.dm_pref || 0) === 1 && r.followsMe) || (r.following && r.followsMe));
+// 개발자에게는 누구나 팔로우 없이 DM 가능(학생 피드백 창구, 2026-10-23) — 차단은 그대로 존중
+const dmAllowed = (u, r) => !r.blocked && !r.blockedMe && (isAdm(u) || (u.dm_pref || 0) === 2 || ((u.dm_pref || 0) === 1 && r.followsMe) || (r.following && r.followsMe));
 const pairOf = (x, y) => x < y ? `${x}:${y}` : `${y}:${x}`;
 
 /* ===== 라우터 ===== */
@@ -536,7 +537,7 @@ const ROUTES = {
     const r = await rel(db, me.id, u.id);
     if (r.blocked || r.blockedMe) return err('메시지를 보낼 수 없어요', 403);
     if (!dmAllowed(u, r) && !isAdm(me)) return err(['서로 팔로우한 친구에게만', '나를 팔로우하는 사람에게만', ''][u.dm_pref || 0] + ' 보낼 수 있어요', 403);
-    if (!isAdm(me) && !dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);
+    if (!isAdm(me) && !isAdm(u) && !dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);   // DM을 꺼도 개발자와의 대화는 열림
     const text = clean(body.body, 500, true);
     if (!text) return err('내용을 적어 주세요');
     const se = stkErr(me, text); if (se) return err(se);

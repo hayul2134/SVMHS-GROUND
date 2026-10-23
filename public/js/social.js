@@ -242,7 +242,7 @@ function profileHtml(d) {
       : `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
-       <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 DM</button>
+       <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${g.em}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">
@@ -252,13 +252,13 @@ function profileHtml(d) {
       ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
       <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}
       <p class="phandle">${[isDev(u) ? '🛠 SVMHS GROUND 개발자' : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
-      ${isDev(u) ? '<button class="pdev" type="button" data-fb>💡 궁금한 점·원하는 기능은 헤더의 💡 의견으로 보내 주세요!</button>' : ''}
+      ${isDev(u) ? '<button class="pdev" type="button" data-fb>💬 궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! 팔로우 안 해도 돼요</button>' : ''}
       ${chips ? `<p class="pchips">${chips}</p>` : ''}
       ${streak ? `<p class="pchips">${streak}</p>` : ''}
       ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
       ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
       ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
-      ${isDev(u) ? '' : `<div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
+      ${`<div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
       `}<div class="pact">${actions}</div>
       ${isDev(u) ? '' : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
     </div>
