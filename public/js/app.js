@@ -657,6 +657,7 @@ function paintBalSheet() {
     + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : esc(c.avatar || '😎')}</a>`
     + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
     + `<p class="bc-b">${esc(c.body)}</p></div>`
+    + `<button class="bc-like${c.liked ? ' on' : ''}" type="button" data-clike="${c.id}" aria-pressed="${c.liked}" aria-label="좋아요 ${c.likes}개"><i>${c.liked ? '♥' : '♡'}</i>${c.likes ? `<b>${c.likes}</b>` : ''}</button>`
     + (c.me ? `<button class="bc-x" type="button" data-cdel="${c.id}" aria-label="내 댓글 지우기">지우기</button>` : `<button class="bc-x" type="button" data-crep="${c.id}" aria-label="댓글 신고">신고</button>`)
     + '</li>').join('');
 }
@@ -694,7 +695,17 @@ $('#bsForm').addEventListener('submit', async e => {
   balBusy = false;
 });
 $('#bsList').addEventListener('click', async e => {
-  const d = e.target.closest('[data-cdel]'), r = e.target.closest('[data-crep]');
+  const d = e.target.closest('[data-cdel]'), r = e.target.closest('[data-crep]'), lk = e.target.closest('[data-clike]');
+  if (lk) {
+    const c = BAL?.comments?.find(x => x.id === +lk.dataset.clike);
+    if (!c || lk.dataset.busy) return;
+    const on = !c.liked;
+    c.liked = on; c.likes += on ? 1 : -1; paintBalSheet();   // 화면 먼저 바꾸고 서버에 저장
+    if (on) $('#bsList').querySelector(`[data-clike="${c.id}"]`)?.classList.add('pop');
+    try { setBal(await balCall('/api/s/balclike', { id: c.id, on })); }
+    catch (err) { toast(err.message); await loadBalance(); }
+    return;
+  }
   if (d) {
     if (!confirm('내 댓글을 지울까요?')) return;
     try { setBal(await balCall('/api/s/balcdel', { id: +d.dataset.cdel })); toast('지웠어요'); } catch (err) { toast(err.message); }

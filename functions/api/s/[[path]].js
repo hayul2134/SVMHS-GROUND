@@ -185,12 +185,13 @@ async function balState(env, db, me) {
   const mine = mineRow.results[0]?.pick || '';
   let comments = null;
   if (mine || !open) {
-    comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color
+    comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color,
+      (SELECT COUNT(*) FROM balance_comment_likes l WHERE l.cid = c.id) AS likes, EXISTS (SELECT 1 FROM balance_comment_likes l WHERE l.cid = c.id AND l.uid = ?2) AS liked
       FROM balance_comments c JOIN users u ON u.id = c.uid LEFT JOIN balance_votes v ON v.ymd = c.ymd AND v.voter = 'u' || c.uid
       WHERE c.ymd = ?1 AND NOT EXISTS (SELECT 1 FROM blocks k WHERE (k.a = ?2 AND k.b = c.uid) OR (k.a = c.uid AND k.b = ?2))
       AND NOT EXISTS (SELECT 1 FROM bans x WHERE x.uid = c.uid AND (x.until = 0 OR x.until > ?3))
       ORDER BY (u.handle = ?4) DESC, c.id DESC LIMIT 100`).bind(ymd, me.id, now, ADMIN_HANDLE).all()).results
-      .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, avatar: r.avatar, color: r.color }));
+      .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, avatar: r.avatar, color: r.color, likes: r.likes, liked: !!r.liked }));
   }
   return { enabled: true, ymd, q, a, b, last, opens, closes, next: nextOpen(ymd), now, open, counts, mine, ncom: ncom.results[0].n, comments };
 }
@@ -653,6 +654,18 @@ const ROUTES = {
   'POST balcdel': needMe(async ({ env, db, me, body }) => {
     const r = await db.prepare('DELETE FROM balance_comments WHERE id = ?1 AND uid = ?2').bind(+body.id || 0, me.id).run();
     if (!r.meta.changes) return err('지울 수 없는 댓글이에요');
+    await db.prepare('DELETE FROM balance_comment_likes WHERE cid = ?1').bind(+body.id || 0).run();
+    return json(await balState(env, db, me));
+  }),
+  // 댓글 좋아요 켜기/끄기 (댓글이 보이는 사람만, 오늘 질문의 댓글만)
+  'POST balclike': needMe(async ({ env, db, me, body }) => {
+    const id = +body.id || 0, st = await balState(env, db, me);
+    if (!st.comments) return err('먼저 한쪽을 골라야 좋아요를 누를 수 있어요');
+    const c = await db.prepare('SELECT ymd FROM balance_comments WHERE id = ?1').bind(id).first();
+    if (!c || c.ymd !== st.ymd) return err('없는 댓글이에요');
+    if (await limited(db, 'bl:' + me.id, 60, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
+    if (body.on) await db.prepare('INSERT OR IGNORE INTO balance_comment_likes (cid, uid, at) VALUES (?1, ?2, ?3)').bind(id, me.id, Date.now()).run();
+    else await db.prepare('DELETE FROM balance_comment_likes WHERE cid = ?1 AND uid = ?2').bind(id, me.id).run();
     return json(await balState(env, db, me));
   }),
   'POST balcrep': needMe(async ({ db, me, body }) => {
