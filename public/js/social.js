@@ -98,7 +98,7 @@ function authHtml(mode = 'login', keep = {}) {
     <div class="ah"><h2 class="ah-t">${up ? '처음 왔군요! ✨' : '다시 왔네요 👋'}</h2><p class="ah-s">${up ? '아이디만 정하면 1분이면 끝나요. 이메일·전화번호는 안 받아요.' : '아이디와 비밀번호를 적어 주세요.'}</p></div>
     <form class="sform" id="authForm" data-mode="${mode}" autocomplete="on" novalidate>
       <label>아이디<span class="fld at"><span class="pre" aria-hidden="true">@</span><input name="handle" required minlength="3" maxlength="16" pattern="[a-z0-9_.]{3,16}" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username" placeholder="영어 소문자·숫자 3~16자" value="${esc(keep.handle || '')}"><i class="vok" aria-hidden="true">✓</i></span>${up ? '<small class="hint" data-hint="handle">🔑 로그인할 때 쓰는 이름이에요. 나중에 바꿀 수 없어요.</small>' : ''}</label>
-      ${up ? `<label><span class="lrow">이름 (닉네임)<small class="cnt" data-cnt>0/12</small></span><input name="name" required maxlength="12" placeholder="친구들에게 보일 이름"><small class="hint">👀 친구들 화면에 보이는 이름이에요. 언제든 바꿀 수 있어요.</small></label>` : ''}
+      ${up ? `<label><span class="lrow">이름 (닉네임)<small class="cnt" data-cnt>0/20</small></span><input name="name" required maxlength="20" placeholder="친구들에게 보일 이름"><small class="hint">👀 친구들 화면에 보이는 이름이에요. 언제든 바꿀 수 있어요.</small></label>` : ''}
       <label>비밀번호<span class="fld"><input name="pw" type="password" required minlength="6" maxlength="64" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="6자 이상" value="${esc(keep.pw || '')}"><button class="eye" type="button" data-eye aria-label="비밀번호 보기" aria-pressed="false">${EYE}</button></span>
         <small class="caps" hidden>⇪ Caps Lock이 켜져 있어요</small>
         ${up ? '<span class="pwm" data-lv="0" aria-live="polite"><i></i><i></i><i></i><em>6자 이상 적어 주세요</em></span>' : ''}</label>
@@ -133,6 +133,14 @@ function checkForm(f, mode) {
 function pwLevel(v) {
   if (v.length < 6) return 0;
   return Math.min(3, 1 + (v.length >= 10) + (/\d/.test(v) && /[a-z]/i.test(v) && (/[^a-z0-9]/i.test(v) || /[A-Z]/.test(v) || v.length >= 12)));
+}
+// 충전 게이지: 칸마다 0~1로 채움. 한 글자씩 칠 때마다 다음 단계 쪽으로 조금씩 참
+function pwFill(v) {
+  const lv = pwLevel(v), n = v.length;
+  if (lv === 3) return 3;
+  const kinds = [/\d/, /[a-z]/i, /[^a-z0-9]|[A-Z]/].filter(r => r.test(v)).length;
+  const frac = lv === 0 ? n / 6 : lv === 1 ? Math.min(.9, (n - 6) / 4 + .1) : Math.min(.9, .15 + kinds * .25 + Math.max(0, n - 10) * .1);
+  return lv + frac;
 }
 const PW_TXT = ['6자 이상 적어 주세요', '괜찮아요 · 숫자를 섞으면 더 좋아요', '좋아요 👍', '아주 튼튼해요 💪'];
 document.addEventListener('click', e => {
@@ -202,8 +210,8 @@ document.addEventListener('input', e => {
     if (v !== t.value) { const p = t.selectionStart - (t.value.length - v.length); t.value = v; try { t.setSelectionRange(p, p); } catch {} }
     t.closest('.fld').classList.toggle('valid', up && HANDLE_OK.test(v));
   }
-  if (t.name === 'name') f.querySelector('[data-cnt]').textContent = `${[...t.value].length}/12`;
-  if (t.name === 'pw' && up) { const m = f.querySelector('.pwm'), lv = t.value ? pwLevel(t.value) : 0; m.dataset.lv = lv; m.classList.toggle('short', !!t.value && !lv); m.querySelector('em').textContent = t.value && !lv ? `${6 - t.value.length}자 더 적어 주세요` : PW_TXT[lv]; }
+  if (t.name === 'name') f.querySelector('[data-cnt]').textContent = `${[...t.value].length}/20`;
+  if (t.name === 'pw' && up) { const m = f.querySelector('.pwm'), lv = t.value ? pwLevel(t.value) : 0; const fill = t.value ? pwFill(t.value) : 0; if (lv > +m.dataset.lv) { const seg = m.querySelectorAll('i')[lv - 1]; seg.classList.remove('pop'); void seg.offsetWidth; seg.classList.add('pop'); } m.querySelectorAll('i').forEach((x, k) => x.style.setProperty('--f', Math.max(0, Math.min(1, fill - k)).toFixed(3))); m.dataset.lv = lv; m.classList.toggle('short', !!t.value && !lv); m.querySelector('em').textContent = t.value && !lv ? `${6 - t.value.length}자 더 적어 주세요` : PW_TXT[lv]; }
   if (!f.querySelector('.bad')) f.querySelector('.ferr').hidden = true;
 });
 
@@ -361,7 +369,7 @@ function openEdit() {
   sheet(`<h3>프로필 꾸미기</h3>
     <form class="sform" id="editForm" autocomplete="off">
       <div class="preview c-${esc(u.color)}" id="edPrev">${av({ ...u, online: false }, 'big')}</div>
-      <label>이름 (닉네임)<input name="name" maxlength="12" required value="${esc(u.name)}"><small class="hint">${isDev(u) ? '🛠 개발자 계정은 이름·아이디 대신 어디서나 \'개발자\'로 표시돼요.' : `친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.`}</small></label>
+      <label>이름 (닉네임)<input name="name" maxlength="20" required value="${esc(u.name)}"><small class="hint">${isDev(u) ? '🛠 개발자 계정은 이름·아이디 대신 어디서나 \'개발자\'로 표시돼요.' : `친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.`}</small></label>
       <label>상태 메시지<input name="mood" maxlength="24" placeholder="예: 시험 끝나면 놀자🔥" value="${esc(u.mood)}"></label>
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
       ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0"><p class="hint">🛠 개발자 계정은 학년·반이 표시되지 않아요.</p>' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
@@ -827,7 +835,7 @@ function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아�
   sheet(`<h3>🎉 구글로 가입하기</h3><p class="note">아이디와 닉네임만 정하면 끝! 다음부터는 구글 버튼으로 로그인해요.</p>
     <form class="sform" id="gForm">
       <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" placeholder="영어 소문자·숫자 3~16자"><small class="hint">🔑 나중에 바꿀 수 없어요.</small></label>
-      <label>이름 (닉네임)<input name="name" required maxlength="12" value="${esc(name || '')}"></label>
+      <label>이름 (닉네임)<input name="name" required maxlength="20" value="${esc(name || '')}"></label>
       <div class="two"><label>학년<select name="grade">${[1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label><label>반<select name="cls">${Array.from({ length: CLS_N }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>
       ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40"></label>' : ''}
       <p class="ferr" role="alert" hidden></p>

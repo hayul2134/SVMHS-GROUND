@@ -208,7 +208,7 @@ const ROUTES = {
   },
 
   'POST signup': async ({ req, env, db, body }) => {
-    const handle = String(body.handle || '').trim().toLowerCase(), name = clean(body.name, 12), pw = String(body.pw || '');
+    const handle = String(body.handle || '').trim().toLowerCase(), name = clean(body.name, 20), pw = String(body.pw || '');
     if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
     if (RESERVED(handle)) return err('쓸 수 없는 아이디예요');
     if (!name) return err('이름(닉네임)을 적어 주세요');
@@ -274,7 +274,7 @@ const ROUTES = {
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
-    const name = clean(body.name, 12);
+    const name = clean(body.name, 20);
     if (!name) return err('이름(닉네임)을 적어 주세요');
     if (isBad(name, body.bio, body.mood, body.club)) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
@@ -552,8 +552,8 @@ const ROUTES = {
       return json({ ok: true, handle: u.handle }, 200, { 'set-cookie': await newSession(req, db, u.id) });
     }
     if (body.find) return err('이 구글 계정에 연결된 아이디가 없어요. 아이디·비밀번호로 로그인한 뒤 프로필 → ⚙️에서 연결해 주세요', 404);
-    if (!body.handle) return json({ need: 'signup', name: clean(g.name, 12) });
-    const handle = String(body.handle).trim().toLowerCase(), name = clean(body.name, 12);
+    if (!body.handle) return json({ need: 'signup', name: clean(g.name, 20) });
+    const handle = String(body.handle).trim().toLowerCase(), name = clean(body.name, 20);
     if (!HANDLE_RE.test(handle)) return err('아이디는 영어 소문자·숫자·_·. 로 3~16자예요');
     if (RESERVED(handle)) return err('쓸 수 없는 아이디예요');
     if (!name) return err('이름(닉네임)을 적어 주세요');
