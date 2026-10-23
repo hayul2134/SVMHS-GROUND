@@ -167,10 +167,10 @@ function tickClock() {
   hero.classList.toggle('rest', isRest);
   if (isRest && S.wasRest === false) { hero.classList.add('yay'); clearTimeout(S.yayT); S.yayT = setTimeout(() => calmDown(hero), 4000); }   // 쉬는 시간이 막 시작: 4초만 초록 두근두근 후 차분하게
   S.wasRest = isRest;
+  const hadGo = hero.classList.contains('go');   // ※ 반드시 아래 toggle·사용보다 먼저 선언 (순서가 바뀌면 app.js 전체가 멈춤)
+  hero.classList.toggle('go', / 수업 중$/.test(b.state) && left != null && left > 0 && left <= 60);   // 수업 마지막 1분: 초록 두근두근
   if (hadGo && !hero.classList.contains('go') && !hero.classList.contains('yay')) calmDown(hero);   // 쉬는 시간 아닌 상태로 끝나도 부드럽게
   if (hero.classList.contains('go') || hero.classList.contains('yay')) { const ms = bellNow().getMilliseconds(); $('#bigTime').getAnimations().forEach(a => { a.currentTime = ms; }); }   // 두근 박자를 종 기준 초가 바뀌는 순간에 맞춤
-  const hadGo = hero.classList.contains('go');
-  hero.classList.toggle('go', / 수업 중$/.test(b.state) && left != null && left > 0 && left <= 60);   // 수업 마지막 1분: 초록 두근두근
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
   const restBar = /쉬는|점심/.test(b.state);   // 쉬는 시간: 100%에서 줄어듦(남은 %), 수업: 0%에서 늘어남(지난 %)
