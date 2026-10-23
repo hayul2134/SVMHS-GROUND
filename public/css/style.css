@@ -1999,11 +1999,10 @@ html.at-svc .mascot{transition:transform .3s cubic-bezier(.5,0,.9,.6) .32s}
 .mascot.m-drop .mh{animation:m-headfall 1.3s cubic-bezier(.45,0,.55,1) 1}
 .mascot.m-drop .me{animation:m-eyefall 1.3s cubic-bezier(.45,0,.55,1) 1}
 .mascot.m-drop .ma{animation:m-armfall 1.3s cubic-bezier(.45,0,.55,1) 1}
-/* 올라타기(1.6초): 밑에서 밀려 올라가며 눌렸다 늘어남 → 도착하자마자 놀람(찌그러짐→늘어남) → 발을 축으로 휘청, 흔들림은 점점 작아짐(머리는 반대로 늦게, 팔은 균형 잡으려 휘저음) */
-.mascot.m-rise .mb{animation:m-rise 1.6s cubic-bezier(.45,0,.55,1) 1}
-.mascot.m-rise .mh{animation:m-headrise 1.6s cubic-bezier(.45,0,.55,1) 1}
-.mascot.m-rise .me{animation:m-eyerise 1.6s cubic-bezier(.45,0,.55,1) 1}
-.mascot.m-rise .ma{animation:m-armrise 1.6s cubic-bezier(.45,0,.55,1) 1}
+/* 올라타기(1.4초, 놀람 없음): 밑에서 밀려 올라가며 눌렸다 늘어남 → 발을 축으로 휘청, 흔들림은 점점 작아짐(머리는 반대로 늦게, 팔은 균형 잡으려 휘저음) */
+.mascot.m-rise .mb{animation:m-rise 1.4s cubic-bezier(.45,0,.55,1) 1}
+.mascot.m-rise .mh{animation:m-headrise 1.4s cubic-bezier(.45,0,.55,1) 1}
+.mascot.m-rise .ma{animation:m-armrise 1.4s cubic-bezier(.45,0,.55,1) 1}
 .mascot.m-drop .msh,.mascot.m-rise .msh{animation:none}
 @keyframes m-fall{
   0%{transform:translateY(0) scale(1,1)}
@@ -2028,31 +2027,25 @@ html.at-svc .mascot{transition:transform .3s cubic-bezier(.5,0,.9,.6) .32s}
 @keyframes m-armfall{0%,7%{transform:rotate(0)}17%{transform:rotate(-28deg)}30%{transform:rotate(22deg)}40%{transform:rotate(-24deg)}50%{transform:rotate(14deg)}62%{transform:rotate(-5deg)}75%,100%{transform:rotate(0)}}
 @keyframes m-rise{
   0%{transform:scale(1,1) rotate(0)}
-  6%{transform:scale(1.1,.9) rotate(0)}
-  18%{transform:scale(.93,1.08) rotate(0)}
-  25%{transform:scale(1.02,.98) rotate(0)}
-  30%{transform:scale(1.07,.93) rotate(0)}
-  37%{transform:translateY(-7%) scale(.92,1.1) rotate(0)}
-  43%{transform:translateY(-5%) scale(.96,1.05) rotate(-2deg)}
-  52%{transform:translateY(0) scale(1.03,.97) rotate(-9deg)}
-  62%{transform:scale(1,1) rotate(7deg)}
-  72%{transform:scale(1,1) rotate(-4.5deg)}
-  81%{transform:scale(1,1) rotate(2.5deg)}
-  90%{transform:scale(1,1) rotate(-1deg)}
+  7%{transform:scale(1.1,.9) rotate(0)}
+  20%{transform:scale(.94,1.07) rotate(0)}
+  30%{transform:scale(1.03,.97) rotate(-3deg)}
+  42%{transform:scale(1,1) rotate(-8deg)}
+  55%{transform:scale(1,1) rotate(6deg)}
+  67%{transform:scale(1,1) rotate(-3.5deg)}
+  78%{transform:scale(1,1) rotate(2deg)}
+  89%{transform:scale(1,1) rotate(-.8deg)}
   100%{transform:scale(1,1) rotate(0)}}
 @keyframes m-headrise{
   0%{transform:none}
-  8%{transform:translateY(4%)}
-  20%{transform:translateY(-4%)}
-  30%{transform:translateY(2%)}
-  39%{transform:translateY(-4%)}
-  54%{transform:rotate(6deg)}
-  64%{transform:rotate(-5deg)}
-  74%{transform:rotate(3deg)}
-  84%{transform:rotate(-1.5deg)}
+  9%{transform:translateY(4%)}
+  22%{transform:translateY(-3%)}
+  44%{transform:rotate(5deg)}
+  57%{transform:rotate(-4deg)}
+  69%{transform:rotate(2.5deg)}
+  80%{transform:rotate(-1deg)}
   100%{transform:none}}
-@keyframes m-eyerise{0%,25%{transform:scale(1)}30%{transform:scale(.85,.55)}37%,58%{transform:scale(1.16)}72%{transform:scale(.97)}84%,100%{transform:scale(1)}}
-@keyframes m-armrise{0%,43%{transform:rotate(0)}52%{transform:rotate(30deg)}62%{transform:rotate(-22deg)}72%{transform:rotate(13deg)}81%{transform:rotate(-6deg)}92%,100%{transform:rotate(0)}}
+@keyframes m-armrise{0%,30%{transform:rotate(0)}42%{transform:rotate(26deg)}55%{transform:rotate(-18deg)}67%{transform:rotate(10deg)}78%{transform:rotate(-4deg)}90%,100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.mascot{transition:none!important}}
 @media (prefers-reduced-motion:no-preference){html.pre .svcfab{opacity:0;animation:preFail 0s 5s forwards}.boot .svcfab{animation:hFade .4s ease-out 1.2s backwards}}
 
