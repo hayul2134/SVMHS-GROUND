@@ -1873,7 +1873,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .gbox.alt{margin:16px 0 0}
 /* 구글 버튼 자리: 구글 iframe이 뜨기 전(또는 못 뜰 때) 보이는 임시 버튼이 CSP(인라인 style 차단) 때문에
    모양을 잃고 G 로고가 칸 너비만큼 커지던 문제 → 크기를 고정하고 구글 버튼 모양으로 직접 그림 */
-.gbtn{width:100%;max-width:320px;min-height:44px;display:flex;justify-content:center;overflow:hidden}
+.gbtn{width:100%;max-width:320px;height:44px;flex:0 0 44px;display:flex;justify-content:center;overflow:hidden}
 .gbtn .nsm7Bb-HzV7m-LgbsSe{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:320px;height:40px;padding:0 14px;border:1px solid #dadce0;border-radius:20px;background:#fff;color:#1f1f1f;font:500 14px/1 system-ui,sans-serif;cursor:pointer;overflow:hidden}
 .gbtn .nsm7Bb-HzV7m-LgbsSe-MJoBVe{display:none}
 .gbtn .nsm7Bb-HzV7m-LgbsSe-bN97Pc-sM5MNb{display:flex;align-items:center;gap:10px;min-width:0}
@@ -1887,7 +1887,8 @@ html.away .mascot *{animation-play-state:paused!important}
 .gbtn[data-gintent="login"]::before{content:"Google 계정으로 계속하기"}
 .gbtn.gfail::before{display:none}
 .gbtn>*{position:relative}
-.gbtn .nsm7Bb-HzV7m-LgbsSe{opacity:0}
+/* 구글이 진짜 버튼(iframe)을 임시 버튼 아래에 붙였다가 한 프레임 뒤 임시 버튼을 지움 → 그 한 프레임 동안 칸이 44→80px로 늘어 폼 전체가 위로 튀었다 내려옴. 임시 버튼을 흐름에서 빼고 칸 높이를 44px로 고정 */
+.gbtn .nsm7Bb-HzV7m-LgbsSe{position:absolute!important;inset:0;opacity:0;pointer-events:none}
 .gbtn iframe{animation:fadeO .3s ease-out}
 .gbtn svg{max-width:24px;max-height:24px}
 /* 개발자: 학과별 테스트 계정 바꾸기 */
