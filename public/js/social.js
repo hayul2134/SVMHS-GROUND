@@ -9,6 +9,9 @@ const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥',
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const ALL_COLORS = [...COLORS, ...ATT_COLORS];   // 출석 보상 전용 배경 색 포함
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
+// 마우스를 올리면 뜨는 이름표(data-tip)용 이름
+const EMO_NAME = { '😎':'선글라스','🐶':'강아지','🐱':'고양이','🐰':'토끼','🦊':'여우','🐻':'곰','🐼':'판다','🐸':'개구리','🐥':'병아리','🐧':'펭귄','🦄':'유니콘','🐯':'호랑이','🐨':'코알라','🐹':'햄스터','👽':'외계인','🤖':'로봇','👻':'유령','🎃':'호박','🌝':'보름달','🍀':'네잎클로버','🔥':'불꽃','⚡':'번개','🌈':'무지개','🎬':'촬영 슬레이트','🎥':'영화 카메라','🎧':'헤드폰','🎮':'게임패드','🏀':'농구공','⚽':'축구공','🎸':'기타','🍓':'딸기','🍩':'도넛','🧋':'버블티','🍕':'피자','💜':'보라 하트','⭐':'별','✨':'반짝반짝','💖':'반짝 하트','💙':'파란 하트','📸':'사진기','☁️':'구름','🌙':'달','🐾':'발자국','👑':'왕관','💯':'백점','🎀':'리본','🫧':'비눗방울','🪐':'행성','🦋':'나비','🌷':'튤립','🍒':'체리','🎵':'음표','🌊':'파도' };
+const COLOR_KO = { sky:'하늘색', blue:'파란색', mint:'민트색', lime:'연두색', yellow:'노란색', peach:'살구색', pink:'분홍색', violet:'보라색', ink:'남색' };
 const MAX_STICKERS = 6;
 const stkMax = u => isDev(u) ? 12 : MAX_STICKERS;   // 개발자는 치장 제한 없음(배너 자리 12개)
 const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시용, 실제 권한은 서버가 검사)
@@ -392,14 +395,14 @@ function openEdit() {
       <label>인스타 아이디 (선택)<input name="insta" maxlength="60" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="예: svmhs_ground (@ 없이)" value="${esc(u.insta || '')}"><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <p class="lbl">프로필 사진</p>
-      <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
+      <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}" data-tip="${EMO_NAME[a] || a}" aria-label="${EMO_NAME[a] || a}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
       <p class="lbl">배경 색</p>
-      <div class="pick sw" id="pCo">${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}${attPicks('color', x => x === u.color)}</div>
+      <div class="pick sw" id="pCo">${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attPicks('color', x => x === u.color)}</div>
       ${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">개발자는 칭호를 마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
       <p class="lbl">스티커 <small id="stkN">${picked.size}/${stkMax(u)}</small></p>
-      <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}">${s}</button>`).join('')}${attPicks('sticker', x => picked.has(x))}</div>
+      <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}" data-tip="${EMO_NAME[s] || s}" aria-label="${EMO_NAME[s] || s}">${s}</button>`).join('')}${attPicks('sticker', x => picked.has(x))}</div>
       ${`<p class="lbl">대표 스티커 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small></p>
-      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}">없음</button>${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div>
+      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}" data-tip="대표 스티커 안 달기">없음</button>${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div>
       <small class="hint">이름 옆에 작게 붙어요 — 댓글·랭킹·DM·친구 목록 어디서나 보여요.</small>
       <p class="lbl">첫 화면 시계 스티커 <small id="decoN"></small></p>
       <div class="pick" id="pDeco">${attPicks('sticker', x => deco.includes(x))}</div>
@@ -464,7 +467,7 @@ function attPicks(kind, isOn) {
     const inner = kind === 'color' ? '' : artOf(r.v, 'pka');
     return attHave(r)
       ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
-      : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${r.d}" data-by="${r.by}" aria-label="${tip} (잠김)">${inner}<i>${r.d}</i></button>`;
+      : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${r.d}" data-by="${r.by}" data-tip="🔒 ${tip}" aria-label="${tip} (잠김)">${inner}<i>${r.d}</i></button>`;
   }).join('');
 }
 // 스티커 고르기 작은 창 (DM·밸런스 댓글 공용) — 받은 출석 보상 스티커만. 고르면 onPick('r:이름')

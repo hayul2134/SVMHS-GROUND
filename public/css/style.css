@@ -16,6 +16,7 @@
   --radius:22px;
   --num:"Outfit","Pretendard Variable",Pretendard,sans-serif;
   --disp:"Jua","Pretendard Variable",Pretendard,sans-serif;
+  --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
 :root[data-theme="dark"]{
   --bg:#0e2236; --dot:rgba(255,255,255,.07);
@@ -1646,7 +1647,8 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 @media (hover:hover){
   [data-tip]{position:relative}
   [data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 9px);left:50%;transform:translate(-50%,-4px);z-index:80;pointer-events:none;
-    padding:6px 10px;border-radius:9px;background:#173048;color:#fff;font:800 12.5px/1.1 var(--sans,inherit);letter-spacing:-.01em;white-space:nowrap;
+    padding:7px 11px;border-radius:10px;background:#173048;color:#fff;font:700 12.5px/1.2 var(--sans);letter-spacing:-.01em;word-spacing:normal;white-space:nowrap;
+    font-style:normal;font-synthesis:weight;font-variant-numeric:tabular-nums;text-transform:none;text-shadow:none;text-align:center;
     box-shadow:0 4px 12px rgba(23,48,72,.25);opacity:0;transition:opacity .12s ease,transform .12s ease}
   [data-tip]:hover::after,[data-tip]:focus-visible::after{opacity:1;transform:translate(-50%,0)}
   [data-tip-end]::after{left:auto;right:0;transform:translateY(-4px)}
@@ -1656,6 +1658,11 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
   .bs-list [data-tip]:hover::after,.bs-list [data-tip]:focus-visible::after{transform:translate(0,-50%)}
   .cal .dy[data-tip]:hover{z-index:5;opacity:1}   /* 학사일정 칸 이름표가 옆 칸에 가리거나 흐려지지 않게 */
   .cal .dy[data-tip]::after{white-space:normal;width:max-content;max-width:220px;line-height:1.35}
+  /* 프로필 고르기 칸: 버튼이 커지거나(hover) 기울어도(.on) 이름표는 똑바로·원래 크기로, 옆 칸 위에 뜨게 */
+  .pick [data-tip]:hover,.pick [data-tip]:focus-visible{z-index:3}
+  .pick button:hover::after{transform:translate(-50%,0) scale(.91)}
+  .pick button.on:hover::after,.pick button.on:focus-visible::after{transform:translate(-50%,0) rotate(6deg)}
+  .pick.sw button.on:hover::after,.pick.sw button.on:focus-visible::after{transform:translate(-50%,0)}
 }
 /* 식판 카툰 음식 그림(투명 배경): 칸 안에 잘리지 않게 담고(contain), 아래는 이름표 자리로 조금 비움 */
 .tray .fx.fximg{overflow:hidden;border-radius:inherit}
@@ -2005,9 +2012,10 @@ html.away .mascot *{animation-play-state:paused!important}
 /* 프로필 꾸미기: 출석 보상 칸 */
 .pick .att-pk{position:relative;background:var(--fire-bg)}
 .pick.sw .att-pk{background:var(--pg)}
-.pick .att-pk.lock{filter:grayscale(1);opacity:.5}
+/* 잠긴 칸 흐림은 버튼 자체(filter·opacity)가 아니라 덮개(::before)로 — 버튼에 걸면 마우스 이름표까지 흐려짐 */
+.pick .att-pk.lock::before{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;background:color-mix(in srgb,var(--card) 50%,transparent);-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1);pointer-events:none}
 .pick .att-pk.lock:hover{transform:none}
-.pick .att-pk i{position:absolute;right:2px;bottom:1px;font:900 10px/1 var(--num);font-style:normal;color:var(--ink);background:var(--card);border-radius:6px;padding:1px 3px}
+.pick .att-pk i{position:absolute;z-index:2;right:2px;bottom:1px;font:900 10px/1 var(--num);font-style:normal;color:var(--ink);background:var(--card);border-radius:6px;padding:1px 3px}
 .sform .att-hint{margin-top:-4px}
 .sform .att-sm{font-size:11.5px;color:var(--fire);font-weight:900}
 .att-ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.22em;flex:none;overflow:visible}
