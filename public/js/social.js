@@ -785,7 +785,7 @@ function play(game) {
   ({ reaction: playReaction, num25: playNum25, cut: playCut })[game]?.();
 }
 
-async function finish(game, value, detail = '') {
+async function finish(game, value, detail = '', rounds = []) {   // rounds: 판마다의 기록 (서버가 다시 계산·검사)
   const g = GAMES[game], area = $('#parea'); if (!area) return;
   area.innerHTML = `<div class="result"><p class="gem">${g.em}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요!'}</p>
     <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">🏆 랭킹</button></div></div>`;
@@ -793,7 +793,7 @@ async function finish(game, value, detail = '') {
   $('#toRank').addEventListener('click', endPlay);
   if (!S.me) return;
   try {
-    const r = await call('score', { game, value, ticket: await ticket });
+    const r = await call('score', { game, value, rounds, ticket: await ticket });
     ticket = null;
     $('#rMsg').innerHTML = (r.newBest ? '🎉 <b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' 👑' : '');
     if ($('#v-game').classList.contains('on')) renderGame();
@@ -820,8 +820,8 @@ function playReaction() {
       times.push(ms); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
       if (times.length >= 5) {
         state = 'done';
-        const avg = Math.max(100, Math.round(times.reduce((a, b) => a + b, 0) / times.length));
-        setTimeout(() => alive && finish('reaction', Math.min(avg, 1500), `<p class="rdet">${times.map(t => t + 'ms').join(' · ')}</p>`), 500);
+        const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+        setTimeout(() => alive && finish('reaction', Math.min(avg, 1500), `<p class="rdet">${times.map(t => t + 'ms').join(' · ')}</p>`, times.map(t => Math.min(t, 1500))), 500);
         pad.className = 'rx done'; pad.innerHTML = `<b>${ms}ms</b>`;
       } else { state = 'shown'; pad.className = 'rx shown'; pad.innerHTML = `<b>${ms}ms</b><small>탭해서 다음 (${times.length + 1} / 5)</small>`; }
     }
@@ -833,7 +833,7 @@ function playNum25() {
   const nums = Array.from({ length: 25 }, (_, i) => i + 1).sort(() => Math.random() - .5);
   const area = stage('🔢 1 to 25', `<div class="n25top"><span>다음 <b id="nNext">1</b></span><span id="nTime">0.00초</span></div>
     <div class="n25" id="n25">${nums.map(n => `<button data-n="${n}">${n}</button>`).join('')}</div><p class="note center">틀리게 누르면 +1초</p>`);
-  let next = 1, t0 = 0, pen = 0, raf = 0, alive = true;
+  let next = 1, t0 = 0, pen = 0, raf = 0, alive = true; const taps = [];
   quitGame = () => { alive = false; cancelAnimationFrame(raf); };
   const tick = () => { if (!alive) return; $('#nTime').textContent = ((performance.now() - t0 + pen) / 1000).toFixed(2) + '초'; raf = requestAnimationFrame(tick); };
   $('#n25').addEventListener('pointerdown', e => {
@@ -841,9 +841,10 @@ function playNum25() {
     e.preventDefault();
     if (+b.dataset.n === next) {
       if (next === 1) { t0 = performance.now(); tick(); }
+      taps.push(Math.round(performance.now() - t0));
       b.disabled = true; b.classList.add('ok'); next++;
       $('#nNext').textContent = next > 25 ? '끝!' : next;
-      if (next > 25) { cancelAnimationFrame(raf); const ms = Math.round(performance.now() - t0 + pen); setTimeout(() => alive && finish('num25', Math.max(2500, Math.min(ms, 600000))), 300); }
+      if (next > 25) { cancelAnimationFrame(raf); const ms = taps[24] + pen; setTimeout(() => alive && finish('num25', Math.min(ms, 600000), '', [...taps, pen]), 300); }
     } else if (next > 1) { pen += 1000; b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); }
   });
 }
@@ -881,7 +882,7 @@ function playCut() {
     errs.push(e); sum += e; $('#cSum').textContent = sum + 'ms';
     $('#cMsg').innerHTML = e <= 15 ? `<b class="perfect">PERFECT! ${e}ms</b>` : e <= 50 ? `<b class="great">GREAT ${e}ms</b>` : e <= 120 ? `<b>GOOD ${e}ms</b>` : `<b class="miss">${e >= 1000 ? 'MISS' : e + 'ms'}</b>`;
     round++;
-    if (round >= 5) { btn.disabled = true; setTimeout(() => alive && finish('cut', Math.min(sum, 6000), `<p class="rdet">${errs.map(x => x + 'ms').join(' · ')}</p>`), 700); }
+    if (round >= 5) { btn.disabled = true; setTimeout(() => alive && finish('cut', Math.min(sum, 6000), `<p class="rdet">${errs.map(x => x + 'ms').join(' · ')}</p>`, errs), 700); }
     else setTimeout(() => alive && start(), 650);
   };
   btn.addEventListener('pointerdown', e => { e.preventDefault(); if (running) stop(performance.now() - t0); });

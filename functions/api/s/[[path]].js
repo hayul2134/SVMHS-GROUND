@@ -10,10 +10,32 @@ const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥',
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
 const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 받은 뒤 기록을 내기까지 최소 걸리는 시간
-  reaction: { min: 100, max: 1500, play: 5000 },      // 반응속도 5번 평균 (매번 1초 이상 기다림)
-  num25: { min: 2500, max: 600000, play: 2000 },      // 1→25 순서대로 누르기
-  cut: { min: 0, max: 6000, play: 5000 },             // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
+  // 2026-10-24: 개발자 도구로 반응속도 100ms·1to25 2.5초·컷 0ms를 바로 보내 1등이 되던 문제 → 하한을 사람 기준으로 올리고
+  // 판마다의 기록(rounds)을 같이 받아 서버가 다시 계산·검사(checkRounds). 하한을 바꾸면 lib/db.js v19 정리 쿼리도 같이
+  reaction: { min: 140, max: 1500, play: 5000 },      // 반응속도 5번 평균 (매번 1초 이상 기다림)
+  num25: { min: 5000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기
+  cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
 };
+// 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
+function checkRounds(game, v, r, elapsed) {
+  if (!Array.isArray(r)) return '새로 고침한 뒤 다시 해 주세요';
+  const n = r.map(x => Math.round(+x));
+  if (n.some(x => !Number.isFinite(x))) return '기록이 이상해요';
+  const sum = n.reduce((a, b) => a + b, 0), spread = Math.max(...n) - Math.min(...n);
+  if (game === 'reaction') {   // 5번 각각 110ms 이상(예측해서 누르기 방지)·평균이 v·5번이 거의 같으면 기계
+    if (n.length !== 5 || n.some(x => x < 110 || x > 1500)) return '기록이 이상해요';
+    if (Math.abs(Math.round(sum / 5) - v) > 1 || spread < 6) return '기록이 이상해요';
+    if (elapsed < 5000 + sum) return '기록이 이상해요';   // 매번 1초 넘게 기다림
+  } else if (game === 'num25') {   // 25번 누른 시각(첫 탭 = 0) + 틀린 벌점: 순서대로 늘고, 탭 사이 60ms 이상
+    const pen = n.length === 26 ? n.pop() : -1;
+    if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] !== 0) return '기록이 이상해요';
+    for (let i = 1; i < 25; i++) if (n[i] - n[i - 1] < 60) return '기록이 이상해요';
+    if (Math.abs(n[24] + pen - v) > 5 || elapsed < n[24]) return '기록이 이상해요';
+  } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
+    if (n.length !== 5 || n.some(x => x < 0 || x > 1000) || sum !== v) return '기록이 이상해요';
+  }
+  return null;
+}
 const TICKET_RE = /^[0-9a-f]{32}$/;
 const TICKET_TTL = 3600e3;
 
@@ -747,7 +769,9 @@ const ROUTES = {
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
     const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
-    if (Date.now() - (tk.reset - TICKET_TTL) < g.play) return err('기록이 이상해요');
+    const elapsed = Date.now() - (tk.reset - TICKET_TTL);
+    if (elapsed < g.play) return err('기록이 이상해요');
+    { const bad = checkRounds(game, v, body.rounds, elapsed); if (bad) return err(bad); }
     const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const [prev, allPrev] = await Promise.all([
       db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),

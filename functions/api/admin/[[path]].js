@@ -398,15 +398,19 @@ const ROUTES = {
   /* ----- 게임 기록 ----- */
   'GET scores': async ({ db, url }) => {
     const game = GAMES.includes(url.searchParams.get('game')) ? url.searchParams.get('game') : GAMES[0];
-    const day = /^\d{8}$/.test(url.searchParams.get('day') || '') ? url.searchParams.get('day') : kstYmd();
-    const rows = (await db.prepare(`SELECT s.best, s.at, u.handle, u.name, u.avatar, u.grade, u.cls FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND s.day = ?2 ORDER BY s.best, s.at LIMIT 100`).bind(game, day).all()).results;
+    // day=all: 기간 전체 개인 최고 기록 (= 학생들이 보는 랭킹 순서) — 조작 기록이 어느 날 들어갔는지 몰라도 바로 찾아 지울 수 있게 (2026-10-24)
+    const day = url.searchParams.get('day') === 'all' ? 'all' : /^\d{8}$/.test(url.searchParams.get('day') || '') ? url.searchParams.get('day') : kstYmd();
+    const rows = (day === 'all'
+      ? await db.prepare(`SELECT MIN(s.best) AS best, MAX(s.at) AS at, u.handle, u.name, u.avatar, u.grade, u.cls FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 GROUP BY s.uid ORDER BY best LIMIT 100`).bind(game).all()
+      : await db.prepare(`SELECT s.best, s.at, u.handle, u.name, u.avatar, u.grade, u.cls FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND s.day = ?2 ORDER BY s.best, s.at LIMIT 100`).bind(game, day).all()).results;
     return json({ game, day, list: rows });
   },
 
   'POST delscore': async ({ db, body }) => {
     const u = await userOf(db, body.handle);
-    if (!u || !GAMES.includes(body.game) || !/^\d{8}$/.test(body.day || '')) return err('잘못된 요청이에요');
-    await db.prepare('DELETE FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(u.id, body.game, body.day).run();
+    if (!u || !GAMES.includes(body.game) || !(body.day === 'all' || /^\d{8}$/.test(body.day || ''))) return err('잘못된 요청이에요');
+    if (body.day === 'all') await db.prepare('DELETE FROM scores WHERE uid = ?1 AND game = ?2').bind(u.id, body.game).run();   // 그 사람 이 게임 기록 전부
+    else await db.prepare('DELETE FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(u.id, body.game, body.day).run();
     await log(db, '게임 기록 삭제', `@${u.handle} · ${body.game} · ${body.day}`);
     return json({ ok: true });
   },

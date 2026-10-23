@@ -7,9 +7,9 @@ const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ESC[c]);
 const GAMES = {
   // sus: 사람이 내기 어려운 기록(이 값 이하) → 게임 기록 화면에 '의심' 표시
-  reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 130 },
-  num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 4000 },
-  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 25 },
+  reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 160 },
+  num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 7000 },
+  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 40 },
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const pad = n => String(n).padStart(2, '0');
@@ -331,19 +331,20 @@ const SC = { game: 'reaction', day: kstYmd() };
 VIEWS.scores = async () => {
   const d = await call(`scores?game=${SC.game}&day=${SC.day}`);
   const g = GAMES[d.game];
-  const dayIso = `${d.day.slice(0, 4)}-${d.day.slice(4, 6)}-${d.day.slice(6)}`;
+  const all = d.day === 'all', dayIso = all ? '' : `${d.day.slice(0, 4)}-${d.day.slice(4, 6)}-${d.day.slice(6)}`;
   $('#main').innerHTML = `
     <div class="vh"><h2>게임 기록</h2></div>
     <div class="bar">
       <div class="seg">${Object.entries(GAMES).map(([k, x]) => `<button type="button" data-game="${k}" class="${k === d.game ? 'on' : ''}">${x.em} ${x.name}</button>`).join('')}</div>
       <input class="inp" type="date" id="scDay" value="${dayIso}" max="${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)}">
-      <button class="btn sm bad" type="button" data-act="resetday" ${d.list.length ? '' : 'disabled'}>이 날 ${g.name} 랭킹 전부 지우기</button>
+      <button class="btn sm${all ? ' on' : ''}" type="button" data-act="scall">전체 기간 랭킹</button>
+      ${all ? '' : `<button class="btn sm bad" type="button" data-act="resetday" ${d.list.length ? '' : 'disabled'}>이 날 ${g.name} 랭킹 전부 지우기</button>`}
     </div>
     <p class="sub sp-b">이상하게 빠른 기록(핵·매크로 의심)은 지울 수 있어요. 지워도 그 사람은 다시 도전할 수 있어요. ${g.fmt(g.sus)} 이하는 <b class="sus">의심</b> 표시${d.list.some(x => x.best <= g.sus) ? ` — 이 날 ${d.list.filter(x => x.best <= g.sus).length}건` : ''}.</p>
     <section class="card"><div class="scroll">${d.list.length ? `<table class="tbl"><thead><tr><th>#</th><th>사용자</th><th>반</th><th class="r">기록</th><th>시각</th><th></th></tr></thead><tbody>
       ${d.list.map((x, i) => `<tr><td class="num">${i + 1}</td><td>${who(x)}</td><td>${cls(x) || '-'}</td><td class="r num">${x.best <= g.sus ? '<b class="sus">의심</b> ' : ''}${esc(g.fmt(x.best))}</td><td>${when(x.at)}</td>
-        <td class="r"><button class="btn sm" type="button" data-act="delscore" data-h="${esc(x.handle)}">지우기</button></td></tr>`).join('')}
-      </tbody></table>` : `<p class="empty">${ymdLabel(d.day)} ${g.name} 기록이 없어요</p>`}</div></section>`;
+        <td class="r">${all ? '' : `<button class="btn sm" type="button" data-act="delscore" data-h="${esc(x.handle)}">지우기</button> `}<button class="btn sm bad" type="button" data-act="delscoreall" data-h="${esc(x.handle)}">이 게임 기록 전부</button></td></tr>`).join('')}
+      </tbody></table>` : `<p class="empty">${all ? '' : ymdLabel(d.day) + ' '}${g.name} 기록이 없어요</p>`}</div></section>`;
   $('#scDay').onchange = e => { if (e.target.value) { SC.day = e.target.value.replace(/-/g, ''); route(); } };
 };
 
@@ -520,6 +521,10 @@ document.addEventListener('click', async e => {
       case 'delscore':
         if (!confirm(`@${h}의 ${GAMES[SC.game].name} ${ymdLabel(SC.day)} 기록을 지울까요?`)) return;
         await call('delscore', { handle: h, game: SC.game, day: SC.day }); toast('기록을 지웠어요'); return route();
+      case 'delscoreall':
+        if (!confirm(`@${h}의 ${GAMES[SC.game].name} 기록을 모든 날짜에서 지울까요? (랭킹에서 빠져요)`)) return;
+        await call('delscore', { handle: h, game: SC.game, day: 'all' }); toast('기록을 모두 지웠어요'); return route();
+      case 'scall': SC.day = SC.day === 'all' ? new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '') : 'all'; return route();
       case 'resetday':
         if (!confirm(`${ymdLabel(SC.day)} ${GAMES[SC.game].name} 랭킹을 전부 지울까요?`)) return;
         await call('resetday', { game: SC.game, day: SC.day }); toast('랭킹을 비웠어요'); return route();
