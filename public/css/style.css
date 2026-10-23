@@ -1475,6 +1475,11 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .sform .fld{position:relative;display:block}
 .sform .fld.at input{padding-left:34px}
 .sform .fld .pre{position:absolute;left:14px;top:50%;transform:translateY(-52%);font-family:var(--num);font-weight:800;font-size:17px;color:var(--sub);pointer-events:none}
+/* 프로필 꾸미기 인스타 칸: 누르거나 값이 있을 때만 @가 칸 앞에 붙어 보임(값에는 안 들어가서 지울 수 없음) */
+.sform .fld.ig .pre{opacity:0;transform:translate(-4px,-52%);transition:opacity .12s,transform .12s}
+.sform .fld.ig input{transition:padding-left .12s}
+.sform .fld.ig:not(:focus-within):not(:has(input:not(:placeholder-shown))) input{padding-left:14px}
+.sform .fld.ig:focus-within .pre,.sform .fld.ig:has(input:not(:placeholder-shown)) .pre{opacity:1;transform:translateY(-52%);color:var(--text)}
 .sform .fld .vok{position:absolute;right:12px;top:50%;width:24px;height:24px;margin-top:-12px;display:grid;place-items:center;border-radius:50%;background:#3fc58f;color:#fff;font-style:normal;font-size:13px;font-weight:900;border:2px solid var(--ink);opacity:0;transform:scale(.4);transition:opacity .15s,transform .25s cubic-bezier(.3,1.6,.5,1);pointer-events:none}
 .sform .fld.valid .vok{opacity:1;transform:none}
 .sform .fld.valid input{padding-right:44px}

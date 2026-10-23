@@ -392,7 +392,7 @@ function openEdit() {
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
       ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0"><p class="hint">🛠 개발자 계정은 학년·반이 표시되지 않아요.</p>' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
         <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: CLS_N }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>`}
-      <label>인스타 아이디 (선택)<input name="insta" maxlength="60" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="예: svmhs_ground (@ 없이)" value="${esc(u.insta || '')}"><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
+      <label>인스타 아이디 (선택)<span class="fld at ig"><span class="pre" aria-hidden="true">@</span><input name="insta" maxlength="60" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="예: svmhs_ground" value="${esc(u.insta || '')}"></span><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <p class="lbl">프로필 사진</p>
       <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}" data-tip="${EMO_NAME[a] || a}" aria-label="${EMO_NAME[a] || a}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
@@ -449,6 +449,15 @@ function openEdit() {
     else deco.push(b.dataset.v);
     b.classList.toggle('on', deco.includes(b.dataset.v)); decoN();
   };
+  // 인스타 아이디: 앞의 @는 칸에 붙은 고정 글자(.pre)라 지울 수 없음 — 직접 친 @·붙여 넣은 인스타 주소는 아이디만 남김
+  const ig = $('#editForm [name=insta]');
+  ig.oninput = () => {
+    let v = ig.value.replace(/^\s+/, '');
+    if (/^(https?:\/\/)?(www\.)?instagram\.com\//i.test(v)) v = v.replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '');
+    v = v.replace(/^@+/, '');
+    if (v !== ig.value) ig.value = v;
+  };
+  ig.oninput();
   $('#editForm').onsubmit = async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
