@@ -1897,7 +1897,67 @@ async function fillShow() {
   let mT = 0; const mo = new MutationObserver(() => { clearTimeout(mT); mT = setTimeout(prep, 400); });
   ['#sMeal', '#sTT'].forEach(q => $(q) && mo.observe($(q), { childList: true, subtree: true }));
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', setup);
-  skip.addEventListener('click', () => root.scrollTo({ top: secTop + sec.offsetHeight - L.H + 2, behavior: 'smooth' }));
+  /* ── 한 번에 한 장면씩 (2026-10-23) ──
+     쇼케이스 안에서는 스크롤 양을 쓰지 않고 '몇 번 내렸나'만 셈: 휠을 길게 굴리든 짧게 굴리든, 트랙패드로 확 밀든 한 번 = 한 장면.
+     장면(STOPS): 스티커만 → 첫 화면 → 급식 → 시계 → … → 일정. 마지막 장면에서 한 번 더 내리면 쇼케이스를 빠져나가 그 아래는 평소처럼 스크롤.
+     맨 처음 장면에서 올리면 위(첫 화면)로 평소처럼 돌아감. 휠·트랙패드·터치·키보드(↓↑ PageDown/Up 스페이스) 모두 같은 규칙 */
+  const STOPS = [0, (T_SHOW + T_HOLD) / 2, ...Array.from({ length: N }, (_, j) => T_ROW + j * (T_END - T_ROW) / (N - 1))];
+  let stopI = -1, lockUntil = 0, lastWheel = 0, wheelMag = 0, leaving = 0, touchY = null, touchMoved = false;
+  const inShow = () => { const rp = rawP(); return rp > -.0005 && rp < 1.0005; };
+  const goStop = k => { stopI = k; root.scrollTop = secTop + STOPS[k] * L.range; kick(); };   // 화면은 붙어 있으니 스크롤 위치는 바로 옮기고, 움직임은 render가 부드럽게
+  const leave = dir => {   // 쇼케이스 밖으로: 아래면 다음 내용이 보이게, 위면 첫 화면으로 부드럽게
+    leaving = performance.now() + 900; stopI = -1;
+    root.scrollTo({ top: dir > 0 ? secTop + L.range + L.H * .55 : Math.max(0, secTop - L.H), behavior: 'smooth' });
+  };
+  function step(dir) {
+    if (!L) return;
+    const now = performance.now();
+    if (now < lockUntil) return;
+    lockUntil = now + 520;   // 한 장면 움직이는 동안은 다음 입력 무시
+    if (stopI < 0) stopI = nearestStop();
+    const k = stopI + dir;
+    if (k < 0 || k >= STOPS.length) return leave(dir);
+    goStop(k);
+  }
+  const nearestStop = () => { const p = clamp(rawP()); let b = 0; STOPS.forEach((v, i) => { if (Math.abs(v - p) < Math.abs(STOPS[b] - p)) b = i; }); return b; };
+  // 위에서 평소처럼 내려오다(또는 아래에서 올라오다) 쇼케이스에 들어오는 순간 첫(마지막) 장면에 딱 붙임
+  let wasIn = false;
+  root.addEventListener('scroll', () => {
+    if (!on || !L || !introOn()) return;
+    const inside = inShow();
+    if (inside && !wasIn && performance.now() > leaving) {
+      const fromBelow = rawP() > .5;
+      goStop(fromBelow ? STOPS.length - 1 : 0); lockUntil = performance.now() + 420;
+    }
+    if (!inside) stopI = -1;
+    wasIn = inside;
+  }, { passive: true });
+  // 휠·트랙패드: 이벤트가 끊김 없이 이어지면(관성 포함) 한 번으로 침. 잠깐 멈췄거나(160ms) 확 세게 다시 밀면 새로운 한 번
+  root.addEventListener('wheel', e => {
+    if (!on || !L || !inShow() || performance.now() < leaving || e.ctrlKey) return;
+    e.preventDefault();
+    const now = performance.now(), mag = Math.abs(e.deltaY) * (e.deltaMode ? 30 : 1), gap = now - lastWheel;
+    const fresh = gap > 160 || mag > wheelMag * 1.8 + 6;
+    wheelMag = gap > 160 ? mag : Math.max(mag, wheelMag * .9); lastWheel = now;
+    if (fresh && mag > .5) step(Math.sign(e.deltaY));
+    else lockUntil = Math.max(lockUntil, now + 60);   // 관성 꼬리가 이어지는 동안은 계속 잠금
+  }, { passive: false });
+  // 터치: 손가락을 떼는 순간 위·아래 중 어느 쪽으로 밀었는지만 봄
+  root.addEventListener('touchstart', e => { touchY = inShow() ? e.touches[0].clientY : null; touchMoved = false; }, { passive: true });
+  root.addEventListener('touchmove', e => { if (touchY == null || !inShow() || performance.now() < leaving) return; e.preventDefault(); touchMoved = true; }, { passive: false });
+  root.addEventListener('touchend', e => {
+    if (touchY == null || !touchMoved) { touchY = null; return; }
+    const dy = touchY - (e.changedTouches[0]?.clientY ?? touchY); touchY = null;
+    if (Math.abs(dy) > 24) { lockUntil = 0; step(Math.sign(dy)); }
+  }, { passive: true });
+  // 키보드
+  document.addEventListener('keydown', e => {
+    if (!on || !L || !introOn() || !$('#introAuth').hidden || $('.modal.open') || !inShow() || e.target.closest?.('input,textarea,select,button,a')) return;
+    const d = { ArrowDown: 1, PageDown: 1, ' ': e.shiftKey ? -1 : 1, ArrowUp: -1, PageUp: -1 }[e.key];
+    if (!d) return;
+    e.preventDefault(); lockUntil = 0; step(d);
+  });
+  skip.addEventListener('click', () => leave(1));
   SOC.showOff = () => { root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand', 'sh-ttx'); flags = {}; (fixedBtns || []).forEach(e => { if (e) { e.style.opacity = ''; e._opacity = undefined; } }); };   // 로그인하면 소개와 함께 정리
   SOC.showPrep = () => { if (on && introOn()) { layout(); render(cur, false); } };   // 첫 화면을 미리 다 그린 뒤(bootHome) 복제 준비
   setup();
