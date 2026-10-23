@@ -486,7 +486,7 @@ function paintHeroWeek() {
     const d = addDays(mon, i), k = ymd(d), r = rows.find(x => x.MLSV_YMD === k && x.MMEAL_SC_CODE === want);
     const om = r && orderMenu(cleanDish(r.DDISH_NM));
     return `<li class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd"><b>${d.getDate()}</b>${DOW[d.getDay()]}</span>`
-      + (om ? `<span class="ds">${om.list.map((x, j) => `<i${j === 0 && om.hasMain ? ' class="mn"' : ''}>${esc(x)}</i>`).join('')}</span>` : '<span class="ds no">급식 없음</span>') + '</li>';
+      + (om ? `<span class="ds">${om.list.map((x, j) => `<i${j === 0 && om.hasMain ? ' class="wkhl"' : ''}>${esc(x)}</i>`).join('')}</span>` : '<span class="ds no">급식 없음</span>') + '</li>';
   }).join('') + '</ul>';
   wkResize();
 }
