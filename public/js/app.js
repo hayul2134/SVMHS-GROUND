@@ -229,9 +229,17 @@ async function loadOffDays() {
   try {
     const rows = await loadUpcoming(), t = ymd(today());
     rows.filter(isOff).forEach(r => offDays.add(r.AA_YMD));
+    // 여름방학처럼 '방학식'·'개학식' 행사만 있고 매일 휴업일로 안 올라오는 방학: 방학식 다음 날 ~ 개학식 전날도 쉬는 날 (lib/attend.js와 같은 규칙)
+    const past = api.hasKey ? await getSchedule(addDays(today(), -80), addDays(today(), -1)).catch(() => []) : [];
+    const ev = [...past, ...rows].filter(r => /방학식|종업식|개학/.test(r.EVENT_NM)).sort((x, y) => x.AA_YMD < y.AA_YMD ? -1 : 1);
+    ev.forEach((r, i) => {
+      if (/개학/.test(r.EVENT_NM)) return;
+      const k = ev.slice(i + 1).find(x => /개학/.test(x.EVENT_NM));
+      for (let d = addDays(parseYmd(r.AA_YMD), 1), j = 0; j < 80 && (!k || ymd(d) < k.AA_YMD); d = addDays(d, 1), j++) offDays.add(ymd(d));
+    });
     // 오늘 학교 행사·시험이 있으면 시계 아래에 알림 (그런 날은 종 시간이 평소와 다를 수 있음)
-    const ev = rows.filter(r => r.AA_YMD === t && !isOff(r)).map(r => r.EVENT_NM);
-    if (ev.length) { const el = $('#todayNote'); el.textContent = `오늘 일정 · ${ev.slice(0, 2).join(', ')}${ev.length > 2 ? ' 외' : ''} — 종 시간이 평소와 다를 수 있어요`; el.hidden = false; }
+    const evT = rows.filter(r => r.AA_YMD === t && !isOff(r)).map(r => r.EVENT_NM);
+    if (evT.length) { const el = $('#todayNote'); el.textContent = `오늘 일정 · ${evT.slice(0, 2).join(', ')}${evT.length > 2 ? ' 외' : ''} — 종 시간이 평소와 다를 수 있어요`; el.hidden = false; }
   } catch {}
   nextKey = '';
   if (!S.ttPick && cls && S.ttShown && ymd(ttTarget()) !== S.ttShown) renderHomeTT();
