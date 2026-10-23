@@ -1464,6 +1464,8 @@ function bootHome() {
   const de = document.documentElement;
   Promise.race([Promise.all([balP, document.fonts?.ready]), new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(() => {
     centerHero(true); de.classList.remove('pre'); de.classList.add('boot');
+    // 캐릭터는 첫 화면 동안 바닥에 있다가, 서비스 버튼이 올라오며 나타나는 순간(1.2초) 버튼과 같이 올라와 휘청 (스크롤로 돌아올 때와 같은 동작)
+    setTimeout(() => { const m = $('#mascot'); if (m && !de.classList.contains('at-svc')) { m.classList.remove('m-drop', 'm-hello'); void m.offsetWidth; m.classList.add('m-rise'); } }, 1200);
     // boot를 빼는 순간 #v-home의 화면 페이드(.view.on fade)가 다시 재생되며 첫 화면이 깜빡이고 서랍이 튀던 문제(2026-10-23) → calm으로 막음
     setTimeout(() => { $('#v-home').classList.add('calm'); de.classList.remove('boot'); heroLater(); }, 2600);
   }));

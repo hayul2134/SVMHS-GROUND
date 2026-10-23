@@ -2047,7 +2047,13 @@ html.at-svc .mascot{transition:transform .3s cubic-bezier(.5,0,.9,.6) .32s}
   100%{transform:none}}
 @keyframes m-armrise{0%,30%{transform:rotate(0)}42%{transform:rotate(26deg)}55%{transform:rotate(-18deg)}67%{transform:rotate(10deg)}78%{transform:rotate(-4deg)}90%,100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.mascot{transition:none!important}}
-@media (prefers-reduced-motion:no-preference){html.pre .svcfab{opacity:0;animation:preFail 0s 5s forwards}.boot .svcfab{animation:hFade .4s ease-out 1.2s backwards}}
+@media (prefers-reduced-motion:no-preference){html.pre .svcfab{opacity:0;animation:preFail 0s 5s forwards}.boot .svcfab{animation:fabUp .4s cubic-bezier(.22,.8,.3,1) 1.2s backwards}}
+/* 첫 등장: 서비스 버튼은 스크롤로 돌아올 때처럼 아래에서 올라오며 나타나고, 캐릭터는 그때까지 바닥에 있다가 같이 올라옴(1.2초 뒤 app.js가 m-rise) */
+@keyframes fabUp{from{opacity:0;translate:0 14px}}
+@media (prefers-reduced-motion:no-preference){
+  html.pre .mascot{transform:none!important;transition:none!important}
+  html.boot:not(.at-svc):not(.prelogin) body[data-view="home"]:not(.playing) .mascot{transition:transform .4s cubic-bezier(.22,.8,.3,1) 1.2s}
+}
 
 /* ===== 서비스들 아래 여백 넓힘 (2026-10-23) ===== */
 /* 서비스 버튼과 아래 안내 줄 사이를 띄우고, 안내 줄이 아래 고정 버튼(서비스·메시지)에 가리지 않게 바닥 여백 확보 */
