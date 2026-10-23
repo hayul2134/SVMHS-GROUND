@@ -107,9 +107,14 @@ const pub = u => u && ({
   handle: u.handle, name: u.name, title: u.st_title || '', rep: u.st_rep || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
   stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
 });
+// 개발자(관리자) 계정은 제한을 모두 풂(2026-10-23 하율 지시): 출석 보상 전부 해금 · 시계 칸·방패 최대 · 내 행동 횟수 제한 없음 ·
+// 밸런스 투표 없이 댓글·결과 보기 · DM 받기 설정·DM 끄기 무시. 단 상대가 개발자를 차단했으면 존중, 비밀번호 시도 제한은 보안상 유지
+const isAdm = u => u?.handle === ADMIN_HANDLE;
+const ALL_OPEN = 1e6;
+const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
-const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !unlockedOf(me.st_best, me.st_total, 'sticker').includes(m[1]) ? '아직 받지 못한 스티커예요' : null; };
+const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !unlockedOf(effBest(me), effTotal(me), 'sticker').includes(m[1]) ? '아직 받지 못한 스티커예요' : null; };
 const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
@@ -187,7 +192,7 @@ async function balState(env, db, me) {
   for (const r of votes.results) if (r.pick in counts) counts[r.pick] = r.n;
   const mine = mineRow.results[0]?.pick || '';
   let comments = null;
-  if (mine || !open) {
+  if (mine || !open || isAdm(me)) {
     comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color, u.st_rep,
       (SELECT COUNT(*) FROM balance_comment_likes l WHERE l.cid = c.id) AS likes, EXISTS (SELECT 1 FROM balance_comment_likes l WHERE l.cid = c.id AND l.uid = ?2) AS liked
       FROM balance_comments c JOIN users u ON u.id = c.uid LEFT JOIN balance_votes v ON v.ymd = c.ymd AND v.voter = 'u' || c.uid
@@ -196,7 +201,7 @@ async function balState(env, db, me) {
       ORDER BY (u.handle = ?4) DESC, c.id DESC LIMIT 100`).bind(ymd, me.id, now, ADMIN_HANDLE).all()).results
       .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, rep: r.st_rep || '', avatar: r.avatar, color: r.color, likes: r.likes, liked: !!r.liked }));
   }
-  return { enabled: true, ymd, q, a, b, last, opens, closes, next: nextOpen(ymd), now, open, counts, mine, ncom: ncom.results[0].n, comments };
+  return { enabled: true, ymd, q, a, b, last, opens, closes, next: nextOpen(ymd), now, open, counts, mine, dev: isAdm(me), ncom: ncom.results[0].n, comments };
 }
 
 const needMe = fn => async ctx => {
@@ -275,7 +280,7 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: me.st_best || 0, attTotal: me.st_total || 0, deco: jsonArr(me.st_deco) }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco) }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -284,7 +289,7 @@ const ROUTES = {
     if (isBad(name, body.bio, body.mood, body.club)) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
-    const ub = k => unlockedOf(me.st_best, me.st_total, k);
+    const ub = k => unlockedOf(effBest(me), effTotal(me), k);
     const avOk = [...AVATARS, ...ub('avatar')], stOk = [...STICKERS, ...ub('sticker')], coOk = [...COLORS, ...ub('color')];
     const avatar = avOk.includes(body.avatar) ? body.avatar : me.avatar;
     const color = coOk.includes(body.color) ? body.color : me.color;
@@ -292,7 +297,7 @@ const ROUTES = {
     const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => stOk.includes(s)).slice(0, 6);
     // 대표 스티커·시계 스티커는 출석 보상 스티커만 (안 보냈으면 그대로 둠)
     const rep = body.rep === undefined ? (me.st_rep || '') : body.rep === '' || ub('sticker').includes(body.rep) ? String(body.rep) : (me.st_rep || '');
-    const deco = Array.isArray(body.deco) ? [...new Set(body.deco.filter(s => ub('sticker').includes(s)))].slice(0, decoSlots(me.st_best, me.st_total)) : jsonArr(me.st_deco);
+    const deco = Array.isArray(body.deco) ? [...new Set(body.deco.filter(s => ub('sticker').includes(s)))].slice(0, decoSlots(effBest(me), effTotal(me))) : jsonArr(me.st_deco);
     const dev = me.handle === ADMIN_HANDLE, g = dev ? 0 : +body.grade, c = dev ? 0 : +body.cls;   // 개발자 계정은 학년·반 없음
     // 인스타 아이디: @·주소를 붙여 넣어도 아이디만 남김. 인스타 규칙(영문·숫자·._, 30자)에 안 맞으면 거절
     const insta = String(body.insta || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '').toLowerCase();
@@ -400,7 +405,7 @@ const ROUTES = {
       topCrowns(db, u.id),
     ]);
     return json({
-      user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r), counts: { following: fo.n, followers: fb.n },
+      user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), counts: { following: fo.n, followers: fb.n },
       bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns,
       streak: { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
@@ -437,7 +442,7 @@ const ROUTES = {
   'POST follow': needMe(async ({ db, me, body }) => {
     const u = await byHandle(db, body.handle);
     if (!u || u.id === me.id) return err('팔로우할 수 없어요');
-    if (await limited(db, 'fo:' + me.id, 60, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
+    if (!isAdm(me) && await limited(db, 'fo:' + me.id, 60, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
     const r = await rel(db, me.id, u.id);
     if (body.on && (r.blocked || r.blockedMe)) return err('팔로우할 수 없어요');
     if (body.on) await db.prepare('INSERT OR IGNORE INTO follows (a, b, at) VALUES (?1, ?2, ?3)').bind(me.id, u.id, Date.now()).run();
@@ -448,7 +453,7 @@ const ROUTES = {
   'POST block': needMe(async ({ db, me, body }) => {
     const u = await byHandle(db, body.handle);
     if (!u || u.id === me.id) return err('차단할 수 없어요');
-    if (await limited(db, 'bk:' + me.id, 60, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
+    if (!isAdm(me) && await limited(db, 'bk:' + me.id, 60, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
     if (body.on) {
       await db.batch([
         db.prepare('INSERT OR IGNORE INTO blocks (a, b) VALUES (?1, ?2)').bind(me.id, u.id),
@@ -466,7 +471,7 @@ const ROUTES = {
   'POST report': needMe(async ({ db, me, body }) => {
     const u = await byHandle(db, body.handle);
     if (!u) return err('없는 사용자예요');
-    if (await limited(db, 'rp:' + me.id, 10, 3600)) return err('신고가 너무 많아요', 429);
+    if (!isAdm(me) && await limited(db, 'rp:' + me.id, 10, 3600)) return err('신고가 너무 많아요', 429);
     // 메시지 신고는 '나와 그 사람의 대화'에 있는 그 사람의 메시지만 (남의 대화를 관리자 화면에 끌어오지 못하게)
     let msg = null;
     if (Number.isInteger(body.msg)) {
@@ -516,7 +521,7 @@ const ROUTES = {
     // 상대가 읽은 내 마지막 메시지 (읽음 표시용)
     const read = await db.prepare('SELECT MAX(id) AS id FROM messages WHERE pair = ?1 AND a = ?2 AND seen = 1').bind(pair, me.id).first();
     return json({
-      user: card(u), rel: r, canSend: dmAllowed(u, r), readUpTo: read?.id || 0,
+      user: card(u), rel: r, canSend: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), readUpTo: read?.id || 0,
       messages: rows.map(m => ({ id: m.id, mine: m.a === me.id, body: m.del ? '' : m.body, del: !!m.del, at: m.at })),
     });
   }),
@@ -526,12 +531,12 @@ const ROUTES = {
     if (!u || u.id === me.id) return err('없는 사용자예요', 404);
     const r = await rel(db, me.id, u.id);
     if (r.blocked || r.blockedMe) return err('메시지를 보낼 수 없어요', 403);
-    if (!dmAllowed(u, r)) return err(['서로 팔로우한 친구에게만', '나를 팔로우하는 사람에게만', ''][u.dm_pref || 0] + ' 보낼 수 있어요', 403);
-    if (!dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);
+    if (!dmAllowed(u, r) && !isAdm(me)) return err(['서로 팔로우한 친구에게만', '나를 팔로우하는 사람에게만', ''][u.dm_pref || 0] + ' 보낼 수 있어요', 403);
+    if (!isAdm(me) && !dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);
     const text = clean(body.body, 500, true);
     if (!text) return err('내용을 적어 주세요');
     const se = stkErr(me, text); if (se) return err(se);
-    if (await limited(db, 'dm:' + me.id, 40, 60)) return err('너무 빨리 보내고 있어요. 잠깐만요!', 429);
+    if (!isAdm(me) && await limited(db, 'dm:' + me.id, 40, 60)) return err('너무 빨리 보내고 있어요. 잠깐만요!', 429);
     const m = await db.prepare('INSERT INTO messages (pair, a, b, body, at) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, at')
       .bind(pairOf(me.id, u.id), me.id, u.id, text, Date.now()).first();
     return json({ ok: true, message: { id: m.id, mine: true, body: text, del: false, at: m.at } });
@@ -641,7 +646,7 @@ const ROUTES = {
     const st = await balState(env, db, me);
     if (body.ymd && body.ymd !== st.ymd) return err('질문이 바뀌었어요. 새로 고침해 주세요', 409);
     if (!st.open) return err(Date.now() < st.opens ? '아직 투표 시작 전이에요 (6시 시작)' : '투표가 마감됐어요');
-    if (await limited(db, 'bv:' + me.id, 40, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
+    if (!isAdm(me) && await limited(db, 'bv:' + me.id, 40, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
     if (!pick) await db.prepare('DELETE FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(st.ymd, 'u' + me.id).run();
     else await db.prepare('INSERT INTO balance_votes (ymd, voter, pick, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (ymd, voter) DO UPDATE SET pick = excluded.pick, at = excluded.at')
       .bind(st.ymd, 'u' + me.id, pick, Date.now()).run();
@@ -654,8 +659,8 @@ const ROUTES = {
     if (isBad(text)) return err('욕설·비속어는 쓸 수 없어요');
     const st = await balState(env, db, me);
     if (body.ymd && body.ymd !== st.ymd) return err('질문이 바뀌었어요. 새로 고침해 주세요', 409);
-    if (st.open && !st.mine) return err('먼저 한쪽을 골라야 댓글을 달 수 있어요');
-    if (await limited(db, 'bc:' + me.id, 6, 300)) return err('댓글은 5분에 6개까지 달 수 있어요', 429);
+    if (st.open && !st.mine && !isAdm(me)) return err('먼저 한쪽을 골라야 댓글을 달 수 있어요');
+    if (!isAdm(me) && await limited(db, 'bc:' + me.id, 6, 300)) return err('댓글은 5분에 6개까지 달 수 있어요', 429);
     await db.prepare('INSERT INTO balance_comments (ymd, uid, pick, body, at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(st.ymd, me.id, st.mine || '', text, Date.now()).run();
     return json(await balState(env, db, me));
   }),
@@ -676,8 +681,8 @@ const ROUTES = {
     ]);
     const c = cr.results[0];
     if (!c || c.ymd !== ymd) return err('없는 댓글이에요', 404);
-    if (!vr.results.length && Date.now() < closeAt(ymd, await lastPeriod(env, db, ymd))) return err('먼저 한쪽을 골라야 좋아요를 누를 수 있어요', 403);
-    if (await limited(db, 'bl:' + me.id, 60, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
+    if (!isAdm(me) && !vr.results.length && Date.now() < closeAt(ymd, await lastPeriod(env, db, ymd))) return err('먼저 한쪽을 골라야 좋아요를 누를 수 있어요', 403);
+    if (!isAdm(me) && await limited(db, 'bl:' + me.id, 60, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
     const write = body.on
       ? db.prepare('INSERT OR IGNORE INTO balance_comment_likes (cid, uid, at) VALUES (?1, ?2, ?3)').bind(id, me.id, Date.now())
       : db.prepare('DELETE FROM balance_comment_likes WHERE cid = ?1 AND uid = ?2').bind(id, me.id);
@@ -688,7 +693,7 @@ const ROUTES = {
     const c = await db.prepare('SELECT uid, ymd, body FROM balance_comments WHERE id = ?1').bind(+body.id || 0).first();
     if (!c) return err('없는 댓글이에요');
     if (c.uid === me.id) return err('내 댓글은 신고할 수 없어요');
-    if (await limited(db, 'rp:' + me.id, 10, 3600)) return err('신고가 너무 많아요', 429);
+    if (!isAdm(me) && await limited(db, 'rp:' + me.id, 10, 3600)) return err('신고가 너무 많아요', 429);
     await db.prepare('INSERT INTO reports (reporter, target, msg, reason, at) VALUES (?1, ?2, NULL, ?3, ?4)')
       .bind(me.id, c.uid, `[밸런스 댓글 #${+body.id} · ${c.ymd}] ${c.body}` + (body.reason ? ` / 사유: ${clean(body.reason, 100)}` : ''), Date.now()).run();
     return json({ ok: true });
@@ -699,7 +704,7 @@ const ROUTES = {
     const kind = ['idea', 'bug', 'etc'].includes(body.kind) ? body.kind : 'etc';
     const text = clean(body.body, 500, true);
     if (text.length < 2) return err('내용을 조금 더 적어 주세요');
-    if (await limited(db, 'fb:' + me.id, 6, 3600)) return err('의견은 1시간에 6번까지 보낼 수 있어요', 429);
+    if (!isAdm(me) && await limited(db, 'fb:' + me.id, 6, 3600)) return err('의견은 1시간에 6번까지 보낼 수 있어요', 429);
     await db.prepare('INSERT INTO feedback (uid, kind, body, at) VALUES (?1, ?2, ?3, ?4)').bind(me.id, kind, text, Date.now()).run();
     return json({ ok: true });
   }),
@@ -710,7 +715,7 @@ const ROUTES = {
   'POST start': needMe(async ({ db, me, body }) => {
     const game = String(body.game || '');
     if (!GAMES[game]) return err('bad game');
-    if (await limited(db, 'gs:' + me.id, 60, 600)) return err('잠깐 쉬었다가 해요', 429);
+    if (!isAdm(me) && await limited(db, 'gs:' + me.id, 60, 600)) return err('잠깐 쉬었다가 해요', 429);
     const ticket = randHex(16);
     await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + TICKET_TTL).run();
     return json({ ticket });
@@ -720,7 +725,7 @@ const ROUTES = {
     const game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
     if (!g || !Number.isFinite(v) || v < g.min || v > g.max) return err('기록이 이상해요');
-    if (await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
+    if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
     const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
     if (Date.now() - (tk.reset - TICKET_TTL) < g.play) return err('기록이 이상해요');
@@ -818,7 +823,7 @@ async function attState(env, db, me, doCheck, quiet = false) {
   const out = (extra = {}) => {
     const cur = u.st_last === today ? u.st_cur : liveCur(u, extra.missed ?? []);
     return { today, done: u.st_last === today, cur, best: u.st_best, total: u.st_total, shield: u.st_shield, pf: !!u.st_pf && cur > 0,
-      shieldMax: shieldMaxOf(u.st_best, u.st_total), shieldEvery: SHIELD_EVERY, week, ...extra, missed: undefined };
+      shieldMax: shieldMaxOf(isAdm(me) ? ALL_OPEN : u.st_best, u.st_total), shieldEvery: SHIELD_EVERY, week, all: isAdm(me), ...extra, missed: undefined };   // all: 개발자는 보상 전부 받은 상태로 표시
   };
   if (u.st_last === today) return json(out({ new: false, weekDays: quiet ? undefined : await weekRows() }));
   const [missed, rest] = await Promise.all([missedDays(env, db, u.st_last, today), restDay(env, db, today)]);
@@ -827,7 +832,7 @@ async function attState(env, db, me, doCheck, quiet = false) {
   let cur, used = 0, pf = u.st_pf;
   if (prevLive > 0) { used = missed.length; cur = u.st_cur + 1; if (used) pf = 0; } else { cur = 1; pf = 1; }
   let shield = (prevLive > 0 ? u.st_shield - used : u.st_shield);
-  const gotShield = cur % SHIELD_EVERY === 0 && shield < shieldMaxOf(Math.max(u.st_best, cur), u.st_total + 1);
+  const gotShield = cur % SHIELD_EVERY === 0 && shield < shieldMaxOf(isAdm(me) ? ALL_OPEN : Math.max(u.st_best, cur), u.st_total + 1);
   if (gotShield) shield++;
   const best = Math.max(u.st_best, cur), old = { ...u };
   const r = await db.prepare(`UPDATE users SET st_cur = ?1, st_best = ?2, st_last = ?3, st_total = st_total + 1, st_shield = ?4, st_pf = ?7 WHERE id = ?5 AND st_last = ?6 RETURNING st_total`)

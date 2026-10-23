@@ -394,10 +394,10 @@ function openEdit() {
       <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
       <p class="lbl">배경 색</p>
       <div class="pick sw" id="pCo">${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}${attPicks('color', x => x === u.color)}</div>
-      ${isDev(u) ? '' : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
+      ${`<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
       <p class="lbl">스티커 <small id="stkN">${picked.size}/${MAX_STICKERS}</small></p>
       <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}">${s}</button>`).join('')}${attPicks('sticker', x => picked.has(x))}</div>
-      ${isDev(u) ? '' : `<p class="lbl">대표 스티커 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small></p>
+      ${`<p class="lbl">대표 스티커 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small></p>
       <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}">없음</button>${attPicks('sticker', x => x === u.rep)}</div>
       <small class="hint">이름 옆에 작게 붙어요 — 댓글·랭킹·DM·친구 목록 어디서나 보여요.</small>
       <p class="lbl">첫 화면 시계 스티커 <small id="decoN"></small></p>
@@ -437,7 +437,7 @@ function openEdit() {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
     try {
-      await call('me', { ...d, grade: +d.grade, cls: +d.cls, avatar: sel.avatar, color: sel.color, stickers: [...picked], ...(isDev(u) ? {} : { rep: sel.rep, deco }) });
+      await call('me', { ...d, grade: +d.grade, cls: +d.cls, avatar: sel.avatar, color: sel.color, stickers: [...picked], rep: sel.rep, deco });
       await refreshMe(); closeSheet(); renderMe(); toast('프로필을 저장했어요 ✨');
     } catch (err) { fail(err); }
   };

@@ -141,7 +141,7 @@ function nextOf(r) {
   return cand.sort((a, b) => a.left - b.left || a.d - b.d)[0] || null;
 }
 function progressHtml(r) {
-  const n = nextOf(r);
+  const n = r.all ? null : nextOf(r);
   if (!n) return `<p class="att-next done">${ui('party', 'ic')} 모든 출석 보상을 모았어요!</p>`;
   const lastD = Math.max(0, ...REWARDS.filter(x => x.by === n.by && x.d < n.d).map(x => x.d));
   const base = n.by === 'best' && r.cur < lastD ? 0 : lastD;
@@ -247,10 +247,11 @@ function calHtml(r) {
 // 보상 칸: 그림 칸(고정 크기) → 날짜 → 설명(2줄 자리 고정) 순서라 칸마다 줄이 똑같이 맞음. 받았으면 오른쪽 위 초록 체크, 아니면 자물쇠
 const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : x.kind === 'perk' ? (x.v === 'shield3' ? '방패 3개' : '시계 칸 +1') : KIND[x.kind];
 function rewardsHtml(r, by) {
-  const list = REWARDS.filter(x => x.by === by), have = list.filter(x => rwOn(x, r.best, r.total)).length;
+  const own = x => r.all || rwOn(x, r.best, r.total);   // r.all: 개발자 계정 = 전부 해금
+  const list = REWARDS.filter(x => x.by === by), have = list.filter(own).length;
   return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${r.best}일` : `총 ${r.total}일`} · ${have}/${list.length}개 받음</small></div>
     <ul class="att-rw">${list.map(x => {
-      const on = rwOn(x, r.best, r.total);
+      const on = own(x);
       return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${named(x.kind) ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
     }).join('')}</ul>`;
 }

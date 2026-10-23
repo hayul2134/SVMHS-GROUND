@@ -646,7 +646,7 @@ function balStatus() {
 // 결과: 'a' | 'b' | 'tie' | '' (투표 없음)
 const balWinner = c => !(c.a + c.b) ? '' : c.a === c.b ? 'tie' : c.a > c.b ? 'a' : 'b';
 function balOpt(k, big) {
-  const { counts, mine, open } = BAL, total = counts.a + counts.b, show = !!mine || !open, closed = !open;
+  const { counts, mine, open } = BAL, total = counts.a + counts.b, show = !!mine || !open || !!BAL.dev, closed = !open;
   const pct = total ? Math.round(counts[k] / total * 100) : 0, w = closed ? balWinner(counts) : '';
   const cls = ['bo', 'bo-' + k, mine === k && 'picked', show && 'shown', w === k && 'win', w && w !== k && w !== 'tie' && 'lose', w === 'tie' && 'tie'].filter(Boolean).join(' ');
   return `<button class="${cls}" type="button" data-pick="${k}" aria-pressed="${mine === k}"${closed ? ' aria-disabled="true"' : ''}>`
@@ -742,7 +742,7 @@ function paintBalSheet() {
     ? (w === 'tie' ? `🤝 <b>무승부!</b> ${total}명이 정확히 반반으로 갈렸어요` : w ? `🎉 <b>'${esc(BAL[w])}'</b> 승리! · ${total}명 참여` : '아무도 투표하지 않았어요')
     : mine ? `${total}명 참여 · 마감 전까지 바꾸거나 취소할 수 있어요` : `${total}명 참여 중 · 골라야 결과와 댓글이 보여요`;
   $('#bsCn').textContent = BAL.ncom;
-  const lock = open && !mine, form = $('#bsForm');
+  const lock = open && !mine && !BAL.dev, form = $('#bsForm');
   form.classList.toggle('lock', lock);
   $('#bsIn').disabled = lock;
   $('#bsIn').placeholder = lock ? '먼저 한쪽을 고르면 댓글을 달 수 있어요' : open ? '왜 그쪽을 골랐는지 한마디!' : '결과 보고 한마디!';
