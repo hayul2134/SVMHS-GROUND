@@ -1,5 +1,6 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
 import { $, $$, esc, toast, store } from './util.js';
+import * as ATT from './attend.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
@@ -54,7 +55,7 @@ const followBtn = u => u.isMe ? '' : `<button class="fbtn ${u.following ? 'on' :
 const needLogin = (msg) => `<div class="card soc-gate"><p class="gate-em">🔐</p><p><b>${msg}</b></p><p class="muted small">아이디만 있으면 1분이면 가입해요</p><button class="btn" data-go="me">로그인 / 가입하기</button></div>`;
 const offCard = () => `<div class="card soc-gate"><p class="gate-em">🛠️</p><p><b>소셜 기능을 준비하고 있어요</b></p><p class="muted small">곧 열려요! 조금만 기다려 주세요</p></div>`;
 
-function sheet(html) { $('#socSheet').classList.remove('wide'); $('#socSheet').innerHTML = html; ctx.openModal('#mSoc'); }
+function sheet(html) { $('#socSheet').classList.remove('wide', 'attw'); $('#socSheet').innerHTML = html; ctx.openModal('#mSoc'); }
 const closeSheet = () => ctx.closeModal($('#mSoc'));
 
 /* ===== 헤더 배지 · 주기적 확인 ===== */
@@ -62,6 +63,7 @@ function paintBadges() {
   const n = S.me ? S.unread : 0;
   $$('[data-badge="dm"]').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
   const dev = S.me?.handle === ADMIN_HANDLE;
+  if (!S.me) ATT.sync(null);   // 로그아웃: 🔥 버튼 숨김
   $('#btnOut').hidden = !S.me;   // 로그인돼 있을 때만 메뉴 맨 아래 빨간 로그아웃
   $('#btnAdmin').hidden = !dev;   // 관리자 계정일 때만 메뉴에 표시 (권한은 서버가 검사)
   ['#btnClass', '#btnShare', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·QR·신고 필요 없음
@@ -73,6 +75,7 @@ async function refreshMe() {
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
+  if (!S.meErr) ATT.sync(S.me);   // 하루 한 번 자동 출석 (첫 출석이면 축하 창)
   if (!panelOpen()) loadRecent();
 }
 function startPoll() {
@@ -220,6 +223,8 @@ const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
   const chips = (isDev(u) ? '<span class="chip dev">🛠 SVMHS GROUND 개발자</span>' : '') + [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
+  const sk = d.streak || {}, tier = sk.cur >= 100 ? ' t3' : sk.cur >= 30 ? ' t2' : sk.cur >= 7 ? ' t1' : '';
+  const streak = isDev(u) || !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}" ${self ? 'data-att-open' : ''} data-tip="최고 ${sk.best}일 · 총 ${sk.total}일 출석">${ATT.flame('fsm', !sk.cur)}<b>${sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const crowns = (d.crowns || []).map(g => `<span class="crown">👑 ${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
@@ -232,7 +237,7 @@ function profileHtml(d) {
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 DM</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${g.em}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
-  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}">
+  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, MAX_STICKERS).map((s, i) => `<i class="stk ${STK_POS[i]}">${esc(s)}</i>`).join('')}</div>
     <div class="pbody">
       ${av(u, 'big')}
@@ -241,6 +246,7 @@ function profileHtml(d) {
       <p class="phandle">${[isDev(u) ? '🛠 SVMHS GROUND 개발자' : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
       ${isDev(u) ? '<button class="pdev" type="button" data-fb>💡 궁금한 점·원하는 기능은 헤더의 💡 의견으로 보내 주세요!</button>' : ''}
       ${chips ? `<p class="pchips">${chips}</p>` : ''}
+      ${streak ? `<p class="pchips">${streak}</p>` : ''}
       ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
       ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
       ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
@@ -377,19 +383,21 @@ function openEdit() {
       <label>인스타 아이디 (선택)<input name="insta" maxlength="60" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="예: svmhs_ground (@ 없이)" value="${esc(u.insta || '')}"><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <p class="lbl">프로필 사진</p>
-      <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}">${a}</button>`).join('')}</div>
+      <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
       <p class="lbl">배경 색</p>
       <div class="pick sw" id="pCo">${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}</div>
       <p class="lbl">스티커 <small id="stkN">${picked.size}/${MAX_STICKERS}</small></p>
-      <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}">${s}</button>`).join('')}</div>
+      <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}">${s}</button>`).join('')}${attPicks('sticker', x => picked.has(x))}</div>
+      <p class="hint att-hint">🔥 표시는 연속 출석 보상이에요. 헤더의 불꽃 버튼에서 기록을 볼 수 있어요.</p>
       <div class="row"><button class="btn" type="submit">저장</button><button class="btn ghost" type="button" data-close>취소</button></div>
     </form>`);
   const sel = { avatar: u.avatar, color: u.color };
   const prev = () => { $('#edPrev').className = 'preview c-' + sel.color; $('#edPrev').innerHTML = av({ avatar: sel.avatar, color: sel.color }, 'big'); };
-  $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev(); };
+  $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(`연속 출석 ${b.dataset.lock}일을 달성하면 열려요 🔥`); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev(); };
   $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev(); };
   $('#pSt').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.lock) { toast(`연속 출석 ${b.dataset.lock}일을 달성하면 열려요 🔥`); return; }
     if (picked.has(b.dataset.v)) picked.delete(b.dataset.v);
     else if (picked.size >= MAX_STICKERS) { toast(`스티커는 ${MAX_STICKERS}개까지!`); return; }
     else picked.add(b.dataset.v);
@@ -403,6 +411,14 @@ function openEdit() {
       await refreshMe(); closeSheet(); renderMe(); toast('프로필을 저장했어요 ✨');
     } catch (err) { fail(err); }
   };
+}
+
+// 출석 보상 칸: 해금된 건 고를 수 있고, 아직이면 흐리게 + 자물쇠(누르면 필요한 일수 안내)
+function attPicks(kind, isOn) {
+  const best = S.me?.attBest || 0;
+  return ATT.lockedOf(kind).map(r => best >= r.d
+    ? `<button type="button" data-v="${r.v}" class="att-pk ${isOn(r.v) ? 'on' : ''}" data-tip="연속 출석 ${r.d}일 보상">${r.v}</button>`
+    : `<button type="button" class="att-pk lock" data-lock="${r.d}" aria-label="연속 출석 ${r.d}일 보상 (잠김)">${r.v}<i>${r.d}</i></button>`).join('');
 }
 
 /* ===== 계정 설정 ===== */
@@ -788,6 +804,9 @@ export async function init(c) {
   try { const r = await call('config'); S.enabled = r.enabled !== false; S.needCode = !!r.needCode; S.google = r.google || ''; } catch { S.enabled = false; }
   document.body.dataset.view = location.hash.slice(1).split('/')[0] || 'home';
   setupDock();
+  ATT.init({ call, av, nameOf, devTag, classTxt, atOf, closeSheet, openModal: c.openModal, closeModal: c.closeModal,
+    sheet: html => { sheet(html); $('#socSheet').classList.add('attw'); },
+    onBest: b => { if (S.me) S.me.attBest = Math.max(S.me.attBest || 0, b || 0); } });
   if (S.enabled) await refreshMe(); else paintBadges();
   if (S.google && !S.me) loadGis().catch(() => {});   // 로그인 전이면 구글 스크립트를 미리 받아 둠 → 로그인 페이지 열 때 버튼이 바로 뜸
   if (!S.meErr) c.authed?.(S.me, S.enabled);   // 로그인 전이면 소개 화면 유지, 로그인돼 있으면 닫음 (연결 문제면 지금 상태 그대로)

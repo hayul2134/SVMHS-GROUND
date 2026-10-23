@@ -296,6 +296,7 @@
     <div class="logo" aria-label="SVMHS GROUND"><img src="/logo-mark.svg?v=4" alt="" width="52" height="52"><span class="lt"><small>SVMHS</small><strong>GROUND</strong></span></div>
     <!-- 오른쪽: 테마 버튼 · 목록 버튼(☰ ↔ ✕) → 누르면 서랍처럼 목록이 펼쳐짐: 프로필 · 설정 · QR · 신고 -->
     <div class="hmenu" id="hMenu">
+      <button class="iconbtn hb-st" id="btnStreak" type="button" hidden data-tip="출석 체크" aria-label="출석 체크 열기"><svg class="hst-f" viewBox="0 0 48 56" aria-hidden="true"><path d="M24 2c1.4 6.6-2.6 10.2-5.8 13.8C15 19.3 11 23.6 11 30.5 11 42.4 17.2 53 24 53s13-10.6 13-22.5c0-5.4-2.4-9.4-5-12.6-.6 3-2 5.2-4.4 6.3C29 16.6 26.3 8 24 2z"/><path class="in" d="M24 26.5c-3.4 3-5.6 5.6-5.6 9.2 0 4.2 2.5 7.8 5.6 7.8s5.6-3.6 5.6-7.8c0-3.6-2.2-6.2-5.6-9.2z"/></svg><b id="stN">0</b></button>
       <button class="iconbtn hb-fb" id="btnFeedback" data-tip="개발자에게 의견 보내기" aria-label="개발자에게 의견 보내기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bulb"/></svg><span class="hb-tx">의견</span></button>
       <button class="iconbtn hb-nt" id="btnNotices" data-tip="공지 보기" aria-label="공지 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mega"/></svg><i class="hbadge dot" id="ntDot" hidden></i></button>
       <button class="iconbtn theme-btn" id="btnTheme" data-tip="밝은·어두운 테마" aria-label="밝은/어두운 테마 바꾸기"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sun"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moon"/></svg></button>
@@ -606,7 +607,7 @@
         <summary><i>🔒</i><span>개인정보<small>무엇을 저장하고 언제 지우나</small></span></summary>
         <ul class="ipriv">
           <li><b>이 기기에만</b> 반 설정·D-day·테마·캐릭터</li>
-          <li><b>서버에 저장</b> 아이디·닉네임·학년/반·동아리·소개·인스타 아이디(선택)·꾸민 프로필·팔로우·DM·게임 기록·밸런스 게임 선택과 댓글·보낸 의견(💡)·최근 접속 시각. 이메일·전화번호·실명은 받지 않아요</li>
+          <li><b>서버에 저장</b> 아이디·닉네임·학년/반·동아리·소개·인스타 아이디(선택)·꾸민 프로필·팔로우·DM·게임 기록·출석 기록(출석한 날짜·연속 기록)·밸런스 게임 선택과 댓글·보낸 의견(💡)·최근 접속 시각. 이메일·전화번호·실명은 받지 않아요</li>
           <li><b>비밀번호</b>는 복원할 수 없는 방식(해시)으로만 보관</li>
           <li><b>구글로 로그인</b>하면 구글 계정의 고유 번호만 저장(이메일·사진 X). 계정 설정에서 언제든 연결 해제</li>
           <li><b>누가 보나요?</b> 프로필과 접속 중 표시는 가입한 다른 학생에게 보여요. 의견은 개발자만 봐요</li>
@@ -614,7 +615,7 @@
           <li><b>급식 투표</b>는 이름 없이 기기마다 만든 무작위 번호로, <b>밸런스 투표</b>는 계정당 한 표로 세요. 투표 결과에 이름은 나오지 않아요</li>
           <li><b>보관 기간</b> 계정 정보는 탈퇴할 때까지 · 사이트 오류 기록(개인정보 없음) 14일 · 과도한 요청을 막는 IP 변환값 1시간</li>
           <li><b>저장 위치</b> Cloudflare(미국 회사) 서버라 해외 데이터센터에서 저장·처리될 수 있고, 가입하면 이에 동의하는 것으로 봐요</li>
-          <li><b>탈퇴</b>(프로필 → ⚙️)하면 계정·프로필·DM·게임 기록·내가 한 신고·의견이 바로 지워져요. 나를 신고한 기록은 괴롭힘 방지를 위해 남을 수 있어요</li>
+          <li><b>탈퇴</b>(프로필 → ⚙️)하면 계정·프로필·DM·게임 기록·출석 기록·내가 한 신고·의견이 바로 지워져요. 나를 신고한 기록은 괴롭힘 방지를 위해 남을 수 있어요</li>
           <li><b>만 14세 미만은 가입할 수 없어요</b></li>
         </ul>
         <button class="btn ghost" id="clearData">이 기기에 저장된 내용 지우기</button>
@@ -626,6 +627,8 @@
 </div>
 
 <!-- 소셜 공용 시트 -->
+<!-- 출석 축하 (그날 첫 출석, attend.js) -->
+<div class="modal att-m" id="mAtt" role="dialog" aria-modal="true" aria-labelledby="attT"><div class="sheet att-pop" id="attSheet"></div></div>
 <div class="modal" id="mSoc" role="dialog" aria-modal="true"><div class="sheet" id="socSheet"></div></div>
 <!-- 게임 플레이 화면 -->
 <div class="play" id="gamePlay" hidden></div>

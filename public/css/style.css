@@ -1729,6 +1729,142 @@ html.away .mascot *{animation-play-state:paused!important}
 @keyframes m-headhi{0%,30%{transform:rotate(0)}55%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.mascot *{animation:none!important}}
 
+/* ===== 출석 체크 (attend.js) — 듀오링고식 연속 출석: 헤더 🔥 · 축하 창 · 출석 창 · 프로필 칩 ===== */
+:root{--fire:#ff8a3d;--fire2:#ffd36a;--fire-bg:#fff0dc;--shield:#5aa9ef;--shield-bg:#e2f1ff}
+:root[data-theme="dark"]{--fire-bg:#4a2e1a;--shield-bg:#1d3d5e}
+.flm{display:block;overflow:visible}
+.flm.off .fo{fill:#c3ccd5}.flm.off .fi{fill:#e6ebf0}
+:root[data-theme="dark"] .flm.off .fo{fill:#55697d}:root[data-theme="dark"] .flm.off .fi{fill:#7b8fa3}
+.flm.fsm{width:13px;height:15px;flex:none}
+.shd{display:block;fill:var(--shield);stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
+.shd .tk{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}
+.shd.off{fill:var(--chip);stroke:var(--line)}.shd.off .tk{stroke:var(--line)}
+.shd.fsm{width:15px;height:15px}
+/* 헤더 버튼 */
+.iconbtn.hb-st{width:auto;padding:0 12px 0 9px;display:flex;align-items:center;gap:5px;font:900 16px/1 var(--num)}
+.hb-st .hst-f{width:17px;height:20px;transition:transform .2s}
+.hb-st .hst-f path{fill:#b9c5d0}.hb-st .hst-f .in{fill:#e8edf2}
+.hb-st:not(.lit) b{color:var(--sub)}
+.hb-st.lit{background:var(--fire-bg)}
+.hb-st.lit .hst-f path{fill:var(--fire)}.hb-st.lit .hst-f .in{fill:var(--fire2)}
+.hb-st.lit .hst-f{animation:flick 2.4s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes flick{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.06,.97) rotate(-3deg)}60%{transform:scale(.97,1.05) rotate(2deg)}}
+@media (max-width:520px){.iconbtn.hb-st{padding:0 9px 0 7px;gap:3px;font-size:15px}}
+/* 폰 폭: 🔥 버튼이 생기면 헤더가 넘쳐서 로고 글자를 숨김(로그인했을 때만) */
+@media (max-width:440px){body:has(#btnStreak:not([hidden])) .logo .lt{display:none}}
+/* 큰 불꽃 + 숫자 */
+.att-fire{position:relative;width:118px;height:136px;margin:4px auto 0}
+.att-fire .flm.big{width:100%;height:100%;filter:drop-shadow(3px 4px 0 var(--ink))}
+.att-fire .flm .fo{stroke:var(--ink);stroke-width:1.4}
+.att-fire .flm .fo,.att-fire .flm .fi{transform-origin:50% 95%;animation:flick 2.6s ease-in-out infinite}
+.att-fire .flm .fi{animation-duration:1.9s}
+.att-fire .flm.ign{animation:ign .75s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes ign{0%{transform:scale(.2) rotate(-14deg);opacity:0}60%{opacity:1}}
+.att-num{position:absolute;left:0;right:0;bottom:12px;text-align:center;font:900 40px/1 var(--num);color:#fff;
+  -webkit-text-stroke:2.5px var(--ink);paint-order:stroke fill;text-shadow:2px 3px 0 var(--ink)}
+.att-num.roll{animation:roll .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes roll{0%{transform:translateY(40%) scale(.6);opacity:0}100%{transform:none;opacity:1}}
+/* 축하 창 */
+.att-m{z-index:52}
+.att-pop{max-width:380px;overflow-x:hidden}
+.att-pop h3{font-size:28px;margin:6px 0 2px}
+.att-pop h3 span{font-family:var(--num);font-weight:900;color:var(--fire)}
+.att-msg{color:var(--sub);font-weight:800;font-size:14.5px}
+.att-hero{animation:none}
+.att-week{list-style:none;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:16px 0 4px;padding:10px 8px;background:var(--chip);border:2px solid var(--ink);border-radius:18px}
+.att-week li{display:grid;justify-items:center;gap:4px}
+.att-week .dw{font-size:12px;font-weight:900;color:var(--sub)}
+.att-week li.we .dw{opacity:.6}
+.att-week li.today .dw{color:var(--text)}
+.att-week .wd{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);background:var(--card)}
+.att-week li.we .wd{border-style:dashed}
+.att-week li.on .wd{background:var(--fire-bg);border-color:var(--ink)}
+.att-week li.on .wd .flm{width:16px;height:19px}
+.att-week li.sh .wd{background:var(--shield-bg);border-color:var(--ink)}
+.att-week li.miss .wd{opacity:.45}
+.att-week li.today .wd{box-shadow:0 0 0 3px var(--fire2)}
+.att-week li.stamp .wd{animation:stamp .55s .55s cubic-bezier(.3,1.7,.5,1) both}
+@keyframes stamp{0%{transform:scale(2.4) rotate(-25deg);opacity:0}60%{opacity:1}100%{transform:none}}
+.att-note{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:9px 12px;border-radius:14px;border:2px solid var(--ink);font-weight:800;font-size:14px;line-height:1.4;text-align:left}
+.att-note .ic{width:22px;height:22px;flex:none}
+.att-note.sh{background:var(--shield-bg)}
+.att-note.lost{background:color-mix(in srgb,var(--red) 22%,var(--card))}
+.att-note small{color:var(--sub)}
+.att-gift{display:flex;align-items:center;gap:12px;margin-top:12px;padding:12px 14px;border-radius:18px;background:var(--yellow);color:var(--ink);border:var(--bd);box-shadow:var(--sh-s);text-align:left;
+  animation:gift .6s .9s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes gift{0%{transform:scale(.6) rotate(-8deg);opacity:0}}
+.att-gift .rw-em{font-size:36px}
+.att-gift p{display:grid;font-weight:900;line-height:1.3}.att-gift small{font-weight:700;font-size:12.5px}
+/* 다음 보상 진행 막대 */
+.att-next{display:flex;align-items:center;gap:12px;margin-top:14px;text-align:left}
+.att-next.done{justify-content:center;font-weight:900}
+.att-next .rw-em{width:48px;height:48px;flex:none;display:grid;place-items:center;font-size:28px;border-radius:14px;background:var(--chip);border:2px solid var(--ink);transform:rotate(-5deg)}
+.att-bar{flex:1;min-width:0}
+.att-bar p{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:13.5px;font-weight:800;margin-bottom:5px}
+.att-bar small{color:var(--sub);font-weight:800;white-space:nowrap}
+.att-bar .track{display:block;height:14px;border-radius:99px;background:var(--chip);border:2px solid var(--ink);overflow:hidden}
+.att-bar .track i{display:block;height:100%;width:var(--p,4%);border-radius:99px;background:linear-gradient(90deg,var(--fire2),var(--fire));transition:width .8s .4s cubic-bezier(.2,1,.3,1)}
+/* 출석 창 */
+.sheet.attw{max-width:440px}
+.att-sheet{text-align:left}
+.att-top{display:flex;align-items:center;gap:14px}
+.att-fire.sm{width:74px;height:86px;margin:0;flex:none}
+.att-fire.sm .att-num{font-size:26px;bottom:7px;-webkit-text-stroke-width:2px}
+.att-tt h3{margin:0;font-size:26px}
+.att-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.att-stats > div{display:grid;justify-items:center;gap:2px;padding:10px 6px;border-radius:16px;background:var(--chip);border:2px solid var(--ink)}
+.att-stats b{font:900 22px/1.2 var(--num)}
+.att-stats small{font-size:12px;font-weight:800;color:var(--sub)}
+.att-stats .shs span{display:flex;gap:3px;height:26px;align-items:center}.att-stats .shs .shd{width:22px;height:22px}
+.att-sec{margin-top:20px}
+.att-sec h4{font-family:var(--disp);font-weight:400;font-size:19px;margin-bottom:8px}
+.att-sec h4 small{display:block;font-family:inherit;font-size:12px;font-weight:700;color:var(--sub);margin-top:2px}
+.att-cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.att-cal-h b{font-family:var(--disp);font-weight:400;font-size:19px}
+.att-cal-h small{font-family:var(--num);font-weight:800;font-size:13px;color:var(--sub)}
+.att-cal-h .pg{width:34px;height:34px;border-radius:10px;border:2px solid var(--ink);background:var(--card);font-weight:900;font-size:18px}
+.att-cal-h .pg:disabled{opacity:.3;cursor:default}
+.att-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.att-cal .ch{text-align:center;font-size:12px;color:var(--sub);padding-bottom:2px}
+.att-cal .ch.we{opacity:.6}
+.att-cal span{position:relative;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;background:var(--chip);border:2px solid transparent}
+.att-cal span em{font:800 12.5px/1 var(--num);font-style:normal;color:var(--sub)}
+.att-cal span.we{background:transparent}
+.att-cal span.fut{opacity:.4}
+.att-cal span.today{border-color:var(--ink)}
+.att-cal span.on{background:var(--fire-bg);border-color:var(--ink)}
+.att-cal span.sh{background:var(--shield-bg);border-color:var(--ink)}
+.att-cal span.on em,.att-cal span.sh em{position:absolute;top:3px;left:5px;font-size:10px;color:var(--text)}
+.att-cal .flm.cf{width:44%;height:52%;margin-top:14%}
+.att-cal .shd.cf{width:46%;height:46%;margin-top:14%}
+.att-rw{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}
+.att-rw li{position:relative;display:grid;justify-items:center;gap:1px;padding:10px 4px 8px;border-radius:16px;border:2px solid var(--ink);background:var(--card)}
+.att-rw .rw-em{font-size:30px;line-height:1.2}
+.att-rw b{font:900 15px/1.2 var(--num)}
+.att-rw small{font-size:11.5px;font-weight:800;color:var(--sub)}
+.att-rw li.on{background:var(--yellow);color:var(--ink)}.att-rw li.on small{color:#6b5a1d}
+.att-rw li:not(.on) .rw-em{filter:grayscale(1);opacity:.45}
+.att-rw .lk{position:absolute;top:4px;right:6px;font-style:normal;font-size:12px}
+.att-rv{display:flex;align-items:center;gap:4px;font:900 16px var(--num)}
+.att-rule{margin-top:18px;padding:10px 14px;border-radius:14px;background:var(--chip);font-size:13.5px}
+.att-rule summary{font-weight:900;cursor:pointer}
+.att-rule ul{margin:8px 0 2px 18px;display:grid;gap:4px;line-height:1.5}
+/* 프로필: 연속 출석 칩 · 30일 이상 금빛 테두리 */
+.pstreak{display:inline-flex;align-items:center;gap:6px;padding:3px 12px 3px 9px;border-radius:999px;border:2px solid var(--ink);background:var(--fire-bg);font-weight:900;font-size:13px;color:var(--text)}
+.pstreak .flm{width:13px;height:16px}
+.pstreak.off{background:var(--chip);color:var(--sub)}
+.pstreak.t1{background:linear-gradient(90deg,#ffe2bf,#ffc98f);color:#5c3200}
+.pstreak.t2{background:linear-gradient(90deg,#ffe58a,#ffbd3d);color:#553a00}
+.pstreak.t3{background:linear-gradient(90deg,#ffb3c7,#ffe58a,#a5f0cf,#9fd0ff);color:#2a2a2a}
+.pcard.hot .pbody > .av.big{box-shadow:0 0 0 5px #ffcf5a,var(--sh)}
+/* 프로필 꾸미기: 출석 보상 칸 */
+.pick .att-pk{position:relative;background:var(--fire-bg)}
+.pick .att-pk.lock{filter:grayscale(1);opacity:.5}
+.pick .att-pk.lock:hover{transform:none}
+.pick .att-pk i{position:absolute;right:2px;bottom:1px;font:900 10px/1 var(--num);font-style:normal;color:var(--ink);background:var(--card);border-radius:6px;padding:1px 3px}
+.sform .att-hint{margin-top:-4px}
+@media (prefers-reduced-motion:reduce){.hb-st.lit .hst-f,.att-fire .flm .fo,.att-fire .flm .fi{animation:none}}
+
 /* ===== 스킨 (자동 생성: tools/skins/gen.py — 직접 고치지 말고 생성기를 고칠 것) =====
    html[data-skin=…]이 색 토큰만 덮어씀 → 밝음/어두움(data-theme)과 따로 조합됨. 기본(파랑)은 스킨 없음 */
 :root[data-skin="pink"]{--bg:hsl(340 58.5% 95%);--dot:hsl(340 54.6% 40% / 0.16);--card:#ffffff;--chip:hsl(340 62.4% 92%);--line:hsl(340 42.9% 83%);--ink:hsl(340 50% 17%);--text:hsl(340 50% 17%);--sub:hsl(340 19.5% 42%);--on-bg:hsl(340 50% 17%);--onc:hsl(340 50% 17%);--accent:hsl(340 78% 55%);--sky:hsl(340 78% 74%);--hero:hsl(340 78% 62%);--next:hsl(340 78% 80%);--pink:hsl(15 78% 82%);--violet:hsl(310 78% 80%)}
