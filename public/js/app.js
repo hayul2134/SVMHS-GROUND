@@ -1782,8 +1782,12 @@ async function fillShow() {
     const stowed = els.length === 1 && els[0].classList.contains('stow') && !els[0].classList.contains('open');   // 서랍이 들어가 있음(세로 화면 등): 포스트잇 탭만 보임
     if (i === 2 && rs.length && !stowed) {   // 진짜 시간표 칸 자리에, 그 칸 너비·아래 버튼 위까지의 높이 안에 맞춰 예시 카드
       const r = rs[0], dock = [$('#dmDock'), $('#svcFab')].map(e => e && e.getClientRects().length ? e.getBoundingClientRect() : null).filter(b => b && b.right > r.left && b.left < r.right);
-      const floor = Math.min(L.H - 16, ...dock.map(b => b.top - 14)), sc = Math.min(r.width / o.offsetWidth, Math.max(80, floor - r.top) / o.offsetHeight);
-      real[2] = { x: (r.left + r.right) / 2 - o.offsetWidth * sc / 2, y: r.top, s: sc, ex: 1 }; return;
+      // 진짜 첫 화면에서 급식판·시간표는 시계 줄 가운데에 세로로 맞춰져 있음 → 예시 카드도 진짜 시간표 칸의 '가운데'에 맞춤
+      // (전엔 위쪽 끝에 맞춰서, 반을 안 정해 짧은 진짜 칸 위에 긴 예시 카드가 아래로 늘어져 급식판보다 한참 내려가 보였음 — 2026-10-23)
+      const hd = $('#hdr'), ceil = Math.max(16, hd && hd.getClientRects().length ? hd.getBoundingClientRect().bottom + 8 : 70);
+      const floor = Math.min(L.H - 16, ...dock.map(b => b.top - 14)), cy = Math.min(Math.max((r.top + r.bottom) / 2, ceil + 40), floor - 40);
+      const sc = Math.min(r.width / o.offsetWidth, Math.max(80, 2 * Math.min(cy - ceil, floor - cy)) / o.offsetHeight);
+      real[2] = { x: (r.left + r.right) / 2 - o.offsetWidth * sc / 2, y: cy - o.offsetHeight * sc / 2, s: sc, ex: 1 }; return;
     }   // 시간표는 항상 예시 카드(2026-10-23) — 진짜 시간표 카드 자리에서 겹쳐 나타나며 출발
     if (!rs.length || rs.length !== els.length || stowed) {
       if (box.classList.contains('cl')) { box.classList.remove('cl'); box.innerHTML = o._fb; o.style.removeProperty('--w'); o.style.removeProperty('--h'); }
