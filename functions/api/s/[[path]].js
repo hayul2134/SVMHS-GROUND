@@ -407,7 +407,7 @@ const ROUTES = {
     return json({
       user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), counts: { following: fo.n, followers: fb.n },
       bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns,
-      streak: { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
+      streak: isAdm(u) ? { cur: ALL_OPEN, best: ALL_OPEN, total: u.st_total || 0, pf: true } : { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
   }),
 
@@ -794,7 +794,7 @@ const ROUTES = {
       ? await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND (u.id = ?1 OR u.id IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1)) ORDER BY u.st_cur DESC LIMIT ?2`).bind(me.id, 200, since).all()
       : await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND u.is_test = 0 AND u.handle <> ?1 ORDER BY u.st_cur DESC LIMIT ?2`).bind(ADMIN_HANDLE, 300, since).all()).results;
     const live = await liveMany(env, db, rows);
-    const list = rows.map((r, i) => ({ ...card(r), grade: r.grade, cls: r.cls, value: live[i], best: r.st_best, pf: !!r.st_pf, title: r.st_title || '', isMe: r.id === me.id, uid: r.id }))
+    const list = rows.map((r, i) => ({ ...card(r), grade: r.grade, cls: r.cls, value: isAdm(r) ? ALL_OPEN : live[i], best: isAdm(r) ? ALL_OPEN : r.st_best, pf: !!r.st_pf, title: r.st_title || '', isMe: r.id === me.id, uid: r.id }))
       .filter(x => x.value > 0).sort((a, b) => b.value - a.value || b.best - a.best).slice(0, 50);
     return json({ scope, list: list.map(({ uid, ...x }) => x) });
   }),
@@ -823,7 +823,7 @@ async function attState(env, db, me, doCheck, quiet = false) {
   const out = (extra = {}) => {
     const cur = u.st_last === today ? u.st_cur : liveCur(u, extra.missed ?? []);
     return { today, done: u.st_last === today, cur, best: u.st_best, total: u.st_total, shield: u.st_shield, pf: !!u.st_pf && cur > 0,
-      shieldMax: shieldMaxOf(isAdm(me) ? ALL_OPEN : u.st_best, u.st_total), shieldEvery: SHIELD_EVERY, week, all: isAdm(me), ...extra, missed: undefined };   // all: 개발자는 보상 전부 받은 상태로 표시
+      shieldMax: shieldMaxOf(isAdm(me) ? ALL_OPEN : u.st_best, u.st_total), shieldEvery: SHIELD_EVERY, week, all: isAdm(me), ...extra, missed: undefined, ...(isAdm(me) ? { cur: ALL_OPEN, best: ALL_OPEN } : {}) };   // 개발자: 연속 출석 무한(화면엔 ∞)   // all: 개발자는 보상 전부 받은 상태로 표시
   };
   if (u.st_last === today) return json(out({ new: false, weekDays: quiet ? undefined : await weekRows() }));
   const [missed, rest] = await Promise.all([missedDays(env, db, u.st_last, today), restDay(env, db, today)]);

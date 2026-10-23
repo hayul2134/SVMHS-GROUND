@@ -24,6 +24,8 @@ const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
    두툼한 아래 → S자로 오른쪽으로 살짝 기울며 가늘어짐 · 크기가 다른 갈고리 끝 3개 · C자로 파인 가장자리 · 떨어져 나간 불씨 2개
    4겹(바깥·가운데·속·심지) + 남색 외곽선 + 두께(오른쪽 아래 진한 판) + 왼쪽 광택 = 로고와 같은 젤리 스티커.
    tier: 0 주황 · 1 붉은 주황 · 2 금빛 · 3 푸른 불꽃. 'burn' 클래스를 붙이면 한 번 활활 타오르고 가만히 멈춤 ----- */
+// 개발자 계정은 연속 출석 무한(서버가 1e6을 보냄) → 화면엔 ∞
+export const fmtN = n => n >= 1e6 ? '∞' : n;
 export const tierOf = n => n >= 100 ? 3 : n >= 30 ? 2 : n >= 7 ? 1 : 0;
 const FIRE = [   // [바깥 위, 바깥 아래, 가운데 위, 가운데 아래, 속 위, 속 아래, 심지, 두께]
   ['#ffa03e', '#ff5a36', '#ffc24c', '#ff8b3a', '#ffe68c', '#ffc64e', '#fff9df', '#cf4127'],
@@ -64,7 +66,7 @@ export function flame(cls = '', o = {}) {
 }
 const shieldSvg = (cls = '') => `<svg class="shd ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.3v6.2c0 4.7 3.2 8.6 7.5 10 4.3-1.4 7.5-5.3 7.5-10V5.3L12 2.5z"/><path class="tk" d="m8.6 12 2.4 2.4 4.6-4.8"/></svg>`;
 // 큰 불꽃 + 숫자 (+ 완벽한 연속이면 후광)
-const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tierOf(n)}${o.pf ? ' pf' : ''}">${o.pf ? '<i class="halo" aria-hidden="true"></i>' : ''}${flame('big' + (o.burn ? ' burn' : ''), { tier: tierOf(n), off: !n })}<b class="att-num${n >= 100 ? ' d3' : ''}"${o.id ? ` id="${o.id}"` : ''}>${o.from ?? n}</b></div>`;
+const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tierOf(n)}${o.pf ? ' pf' : ''}">${o.pf ? '<i class="halo" aria-hidden="true"></i>' : ''}${flame('big' + (o.burn ? ' burn' : ''), { tier: tierOf(n), off: !n })}<b class="att-num${n >= 100 && n < 1e6 ? ' d3' : ''}"${o.id ? ` id="${o.id}"` : ''}>${fmtN(o.from ?? n)}</b></div>`;
 // 보상 그림 (스티커·사진은 이모지, 배경 색은 동그란 견본, 칭호는 이름표)
 export const rwIcon = r => r.kind === 'color' ? `<i class="rw-sw c-${r.v}" aria-hidden="true"></i>` : r.kind === 'title' ? ui('tag', 'rw-tag')
   : r.kind === 'perk' ? (r.v === 'shield3' ? shieldSvg('on rw-tag') : ui('sparkle', 'rw-tag')) : artOf(r.v, 'rw-e');
@@ -76,7 +78,7 @@ function paintChip() {
   const b = $('#btnStreak'); if (!b) return;
   b.hidden = !st;
   if (!st) return;
-  const lit = (!!st.done || !!st.rest) && st.cur > 0, t = tierOf(st.cur);   // 쉬는 날엔 출석 안 해도 불꽃 그대로
+  const lit = !!st.all || ((!!st.done || !!st.rest) && st.cur > 0), t = tierOf(st.cur);   // 쉬는 날엔 출석 안 해도 불꽃 그대로
   if (t !== chipTier || b.dataset.lit !== String(lit)) {   // 불꽃 그림은 단계·켜짐이 바뀔 때만 다시 그림
     const old = b.querySelector('svg'); old?.insertAdjacentHTML('afterend', flame('hst-f', { tier: t, off: !lit })); old?.remove();
     chipTier = t; b.dataset.lit = String(lit);
@@ -86,8 +88,8 @@ function paintChip() {
   b.classList.toggle('lit', lit);
   b.classList.remove('t0', 't1', 't2', 't3'); b.classList.add('t' + t);
   b.classList.toggle('pf', !!st.pf && st.cur >= 3);
-  $('#stN').textContent = st.cur;
-  const lbl = st.done ? `${st.cur}일 연속 출석 중` : st.rest ? `${st.cur}일 연속 · 오늘은 쉬는 날` : '오늘 아직 출석 안 함';
+  $('#stN').textContent = fmtN(st.cur);
+  const lbl = st.all ? '무한 연속 출석 중' : st.done ? `${st.cur}일 연속 출석 중` : st.rest ? `${st.cur}일 연속 · 오늘은 쉬는 날` : '오늘 아직 출석 안 함';
   b.setAttribute('aria-label', lbl + ' — 출석 체크 열기'); b.dataset.tip = lbl;
 }
 // 불꽃 한 번 타오르기 (애니메이션이 끝나면 클래스를 떼서 가만히)
@@ -157,18 +159,18 @@ function celebrate(r) {
   const notes = [
     pw ? `<p class="att-note pwk">${ui('pw', 'ic')}<span><b>이번 주 개근!</b> 주말 푹 쉬고 월요일에 봐요</span></p>` : '',
     r.used ? `<p class="att-note sh">${shieldSvg('ic')}<span>방패 <b>${r.used}개</b>가 빠진 날을 지켜 줬어요</span></p>` : '',
-    r.gotShield ? `<p class="att-note sh got">${shieldSvg('ic')}<span>연속 ${r.cur}일! <b>출석 방패 +1</b> <small>(${r.shield}/${r.shieldMax})</small></span></p>` : '',
+    r.gotShield ? `<p class="att-note sh got">${shieldSvg('ic')}<span>연속 ${fmtN(r.cur)}일! <b>출석 방패 +1</b> <small>(${r.shield}/${r.shieldMax})</small></span></p>` : '',
     r.pf && [7, 14, 30, 50, 100].includes(r.cur) ? `<p class="att-note pfn">${ui('sparkle', 'ic')}<span><b>완벽한 연속</b> — 방패 없이 여기까지 왔어요</span></p>` : '',
   ].join('');
   const gifts = (r.unlocked || []).map((x, i) => `<div class="att-gift k-${x.kind}" data-i="${i}"><span class="rw-box">${rwIcon(x)}</span><p><b>${x.by === 'total' ? `총 ${x.d}일 출석 보상` : `${x.d}일 연속 보상`}</b><small>${x.kind === 'perk' ? `${esc(rwName(x))}!` : `새 ${KIND[x.kind]}${named(x.kind) ? ` ${esc(rwName(x))}` : ''} 해금!`}${x.kind === 'sticker' ? '<br>대표 스티커·첫 화면 시계·댓글·DM에 쓸 수 있어요' : ''}</small></p></div>`).join('');
-  const kick = big ? `<p class="att-kick">${r.unlocked?.length ? ui('gift') + '보상 도착!' : ui('party') + `${r.cur}일 달성!`}</p>` : '';
+  const kick = big ? `<p class="att-kick">${r.unlocked?.length ? ui('gift') + '보상 도착!' : ui('party') + `${fmtN(r.cur)}일 달성!`}</p>` : '';
   $('#attSheet').className = `sheet att-pop${big ? ' ms' : ''}`;
   $('#attSheet').innerHTML = `
     ${big ? '<div class="att-burst" aria-hidden="true"><i class="rays"></i></div>' : ''}
     <div class="att-hero">
       ${kick}
-      ${bigFire(r.cur, { burn: true, pf: r.pf && r.cur >= 3, id: 'attNum', from: Math.max(0, r.cur - 1) })}
-      <h3 id="attT"><span>${r.cur}</span>일 연속 출석!</h3>
+      ${bigFire(r.cur, { burn: true, pf: r.pf && r.cur >= 3, id: 'attNum', from: r.all ? r.cur : Math.max(0, r.cur - 1) })}
+      <h3 id="attT"><span>${fmtN(r.cur)}</span>일 연속 출석!</h3>
       ${big && !first && !(r.lost > 1) ? '' : `<p class="att-msg">${esc(msg)}</p>`}
     </div>
     ${weekStrip(r, true)}
@@ -179,7 +181,7 @@ function celebrate(r) {
   if (big) confetti($('#attSheet .att-burst'));
   // 숫자 올라가기: 어제 → 오늘
   const el = $('#attNum'), to = r.cur;
-  if (reduce()) { el.textContent = to; return; }
+  if (reduce() || r.all) { el.textContent = fmtN(to); return; }
   setTimeout(() => { el.classList.add('roll'); el.textContent = to; }, 650);
 }
 // 색종이: 위치·회전·색·늦게 시작은 CSSOM으로 (CSP가 style 속성을 막음)
@@ -249,7 +251,7 @@ const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `$
 function rewardsHtml(r, by) {
   const own = x => r.all || rwOn(x, r.best, r.total);   // r.all: 개발자 계정 = 전부 해금
   const list = REWARDS.filter(x => x.by === by), have = list.filter(own).length;
-  return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${r.best}일` : `총 ${r.total}일`} · ${have}/${list.length}개 받음</small></div>
+  return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${fmtN(r.best)}일` : `총 ${r.total}일`} · ${have}/${list.length}개 받음</small></div>
     <ul class="att-rw">${list.map(x => {
       const on = own(x);
       return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${named(x.kind) ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
@@ -265,13 +267,13 @@ function sheetHtml(r, quiet = false) {
     <div class="att-top">
       ${bigFire(r.cur, { sm: true, burn: !quiet, pf: r.pf && r.cur >= 3 })}
       <div class="att-tt">
-        <h3>${r.cur ? `${r.cur}일 연속 출석` : '오늘부터 시작!'}</h3>
+        <h3>${r.all ? '무한 연속 출석' : r.cur ? `${r.cur}일 연속 출석` : '오늘부터 시작!'}</h3>
         <p class="att-st">${state}</p>
       </div>
       ${stamp}
     </div>
     <div class="att-stats">
-      <div><b>${r.best}</b><small>최고 기록</small></div>
+      <div><b>${fmtN(r.best)}</b><small>최고 기록</small></div>
       <div><b>${r.total}</b><small>총 출석</small></div>
       <div class="shs" data-tip="연속 ${r.shieldEvery}일마다 1개 · 최대 ${r.shieldMax}개"><span>${shields}</span><small>출석 방패</small></div>
     </div>
@@ -296,7 +298,7 @@ function sheetHtml(r, quiet = false) {
 async function loadRank(scope) {
   const list = $('#attRank'); if (!list) return;
   const paint = r => {
-    list.innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${api.av(u)}<span class="pi"><b>${esc(api.nameOf(u))}${api.devTag(u)}</b><small>${u.title ? `${ui('tag', 'ic')}${esc(u.title)}` : esc(api.classTxt(u) || api.atOf(u))}</small></span></a><b class="rv att-rv t${tierOf(u.value)}${u.pf && u.value >= 3 ? ' pf' : ''}">${flame('fsm', { tier: tierOf(u.value) })}${u.value}</b></li>`).join('')
+    list.innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${api.av(u)}<span class="pi"><b>${esc(api.nameOf(u))}${api.devTag(u)}</b><small>${u.title ? `${ui('tag', 'ic')}${esc(u.title)}` : esc(api.classTxt(u) || api.atOf(u))}</small></span></a><b class="rv att-rv t${tierOf(u.value)}${u.pf && u.value >= 3 ? ' pf' : ''}">${flame('fsm', { tier: tierOf(u.value) })}${fmtN(u.value)}</b></li>`).join('')
       : `<li class="empty">${scope === 'friends' ? '아직 불꽃을 키우는 친구가 없어요. 맞팔 친구에게 같이 하자고 해 보세요!' : '아직 기록이 없어요'}</li>`;
   };
   if (rCache[scope]) paint(rCache[scope]); else list.innerHTML = '<li class="skel"></li>';
