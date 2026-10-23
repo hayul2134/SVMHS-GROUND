@@ -1726,7 +1726,7 @@ async function fillShow() {
     });
     const ui = clamp((p - T_ROW + .04) / .04);
     say.style.opacity = dots.style.opacity = ui.toFixed(3);
-    skip.classList.toggle('on', p > T_SHOW && p < T_END);
+    skip.classList.toggle('on', p > T_HOLD && p < T_END);   // 진짜 첫 화면이 보일 땐 메시지 버튼과 겹치지 않게 숨김
     const ni = Math.round(f);
     if (ni !== idx) {
       idx = ni; $('#shN').textContent = `${pad(ni + 1)} / ${pad(N)}`; $('#shT').textContent = SH_INFO[ni][0]; $('#shD').textContent = SH_INFO[ni][1];
