@@ -243,7 +243,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu'
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
 $('#goDown').onclick = () => $('#board').scrollIntoView({ behavior: 'smooth', block: 'start' });
-$('#goSvc').onclick = $('#svcFab').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
+$('#svcFab').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
 document.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) $(ACT[a.dataset.act]).click(); });
