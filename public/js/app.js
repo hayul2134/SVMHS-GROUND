@@ -1644,7 +1644,7 @@ async function fillShow() {
   // 진행도 구간: 문구만(0~T_IN) → 진짜 첫 화면이 드러남(~T_SHOW) → 감상 → 줄 서기(T_HOLD~T_ROW) → 하나씩 넘김(~T_END)
   const T_IN = .03, T_SHOW = .1, T_HOLD = .17, T_ROW = .3, T_END = .96, STAG = .008;
   // 진짜 첫 화면에서 각 오브젝트가 있는 자리 (밸런스 티켓은 로그인해야 보여서 로그인 전엔 없음 → 줄 자리에서 그냥 나타남)
-  const REAL = [['#bigclock .s-meal'], ['#bigclock .s-greet', '#bigclock .s-what', '#bigclock .clock', '#bigclock .s-info'], ['#bigclock .s-ttc'], ['#play']];
+  const REAL = [[() => $('#sMeal')?.closest('.s-tt')], ['#bigclock .s-greet', '#bigclock .s-what', '#bigclock .clock', '#bigclock .s-info'], [() => $('#sTT')?.closest('.s-tt')], ['#play']];   // 급식·시간표는 진짜 내용(#sMeal·#sTT)이 들어 있는 카드
   const clamp = v => v < 0 ? 0 : v > 1 ? 1 : v, ease = t => t * t * (3 - 2 * t), easeO = t => 1 - Math.pow(1 - t, 3), lerp = (a, b, t) => a + (b - a) * t;
   let L = null, real = [], target = 0, cur = 0, raf = 0, last = 0, idx = -1, on = false, vel = 0;
   dots.innerHTML = '<i></i>'.repeat(N);
@@ -1652,7 +1652,7 @@ async function fillShow() {
   // (복제본은 id를 지우고, 서랍 위치 이동(translate)만 빼고 회전 등은 그대로. 진짜가 없으면 직접 그린 카드를 씀)
   function cloneGroup(i) {
     const o = objs[i], box = o.querySelector('.so-in');
-    const els = (REAL[i] || []).map(q => $(q)).filter(e => e && !e.hidden && e.getClientRects().length);
+    const els = (REAL[i] || []).map(q => typeof q === 'function' ? q() : $(q)).filter(e => e && !e.hidden && e.getClientRects().length);
     const rs = els.map(e => e.getBoundingClientRect()).filter(r => r.width && r.height);
     if (o._fb == null) o._fb = box.innerHTML;
     const stowed = els.length === 1 && els[0].classList.contains('stow') && !els[0].classList.contains('open');   // 서랍이 들어가 있음(세로 화면 등): 포스트잇 탭만 보임
