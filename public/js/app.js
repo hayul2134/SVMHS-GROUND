@@ -902,14 +902,15 @@ function centerHero(force) {
   if (B + dy > bot) dy = bot - B;
   if (T + dy < top) dy = Math.min(0, top - T);
   dy = Math.round(dy);
-  if (!force && Math.abs(dx - hx) < 6 && Math.abs(dy - hy) < 6) return;
+  // 작은 차이는 무시하되, 서랍 높이(--hcy)는 아래에서 항상 다시 맞춤 (2026-10-23: 첫 계산이 등장 중 값으로 굳어 서랍이 위로 떠 있던 문제)
+  if (!force && Math.abs(dx - hx) < 6 && Math.abs(dy - hy) < 6) { dx = hx; dy = hy; }
   if (dx !== hx) st.setProperty('--hx', dx + 'px');
   if (dy !== hy) st.setProperty('--hy', dy + 'px');
   // 좌우 서랍도 같은 가운데 줄에. 서랍이 헤더·화면 아래에 걸리면 화면 가운데로
-  // 세로 기준은 말풍선을 뺀 큰 시계 + 상태 줄의 가운데 (말풍선까지 넣으면 카드가 위로 떠 보임 — 2026-10-23)
+  // 세로 기준은 말풍선을 뺀 큰 시계 + 상태 줄의 가운데 — 서랍 가운데를 정확히 같은 높이로 (말풍선까지 넣으면 카드가 위로 떠 보임 — 2026-10-23)
   let cT = Infinity, cB = -Infinity;
   for (const el of HERO.querySelectorAll('#bigTime, #more')) { const b = el.getBoundingClientRect(); if (b.height) { cT = Math.min(cT, b.top); cB = Math.max(cB, b.bottom); } }
-  const cy = Math.round(isFinite(cT) ? (cT + cB) / 2 + sy - hy + dy - 12 : (T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
+  const cy = Math.round(isFinite(cT) ? (cT + cB) / 2 + sy - hy + dy : (T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
 }
 let heroRaf = 0, heroForce = false;
