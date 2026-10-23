@@ -466,16 +466,36 @@ function pickMeal(rows, want) {
   return rows.find(r => r.MMEAL_SC_CODE === want) || rows.find(r => r.MMEAL_SC_CODE > want)
     || rows.find(r => r.MMEAL_SC_CODE === '2') || rows[rows.length - 1];
 }
+// 오늘 끼니가 다 끝났으면(석식 없는 날의 점심 뒤·석식 시간 뒤 석식 없음·급식 없는 날) 다음 급식 날의 첫 끼니를 보여 줌 (2026-10-23)
+let nextMeal = null, nextSeq = 0;   // { day, rows } — 다음 급식 날
+const mealsOver = () => S.homeLoaded && !S.mealFail && !homeRows.some(r => r.MMEAL_SC_CODE >= S.mealSlot);
+async function loadNextMeal() {
+  const seq = ++nextSeq, from = addDays(today(), 1);
+  nextMeal = { day: null, rows: null };
+  try {
+    const rows = (await getMealsRange(from, addDays(from, 20))).filter(r => MEALS[r.MMEAL_SC_CODE]);
+    if (seq !== nextSeq) return;
+    const k = rows.map(r => r.MLSV_YMD).sort()[0];
+    nextMeal = k ? { day: parseYmd(k), rows: rows.filter(r => r.MLSV_YMD === k).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE) } : { day: null, rows: [] };
+  } catch { if (seq !== nextSeq) return; nextMeal = { day: null, rows: [] }; }
+  paintHeroMeal();
+}
+const autoMealDay = () => (!S.mealWk && mealsOver() && nextMeal?.day) || null;   // ‹ › 기준이 되는 '지금' 급식 날
 // 첫 화면 급식 카드: 기본은 오늘(끼니 자동), ‹ › 로 다른 날(S.sMealDay)을 넘겨 봄. 끼니 칩으로 조식·중식·석식 바꿔 보기(S.heroPick)
 let heroRows = null, heroSeq = 0;
 function paintHeroMeal() {
-  const box = $('#sMeal'), lbl = $('#sMealLbl'), slots = $('#sMealSlots'), d = S.sMealDay, day = d || today();
+  const box = $('#sMeal'), lbl = $('#sMealLbl'), slots = $('#sMealSlots'), d = S.sMealDay;
   if (S.mealWk) { paintHeroWeek(); return; }
-  const rows = d ? heroRows : homeRows;
+  let rows = d ? heroRows : homeRows, day = d || today(), want = d ? '2' : S.mealSlot;
+  if (!d && mealsOver()) {   // 오늘 급식 끝 → 다음 급식 날 첫 끼니
+    if (!nextMeal) { loadNextMeal(); rows = null; }
+    else if (!nextMeal.rows) rows = null;
+    else if (nextMeal.day) { rows = nextMeal.rows; day = nextMeal.day; want = '1'; }
+  }
   setLbl(lbl, `${ttLabel(day)} 급식`, !!d, false);   // 하루 보기로 돌아올 때 한 주 카드 폭(.wk)도 같이 풂 (2026-10-23: 식판이 한 주 폭으로 커져 시계를 가리던 문제)
   if (!rows) { slots.innerHTML = ''; box.innerHTML = skel(2); return; }
   if (!rows.length) { slots.innerHTML = ''; box.innerHTML = empty((d ? S.heroFail : S.mealFail) ? '급식 정보를 불러오지 못했어요' : '급식이 없는 날이에요'); return; }
-  const r = (S.heroPick && rows.find(x => x.MMEAL_SC_CODE === S.heroPick)) || pickMeal(rows, d ? '2' : S.mealSlot);
+  const r = (S.heroPick && rows.find(x => x.MMEAL_SC_CODE === S.heroPick)) || pickMeal(rows, want);
   slots.innerHTML = rows.map(x => `<button type="button" data-m="${x.MMEAL_SC_CODE}" class="${x === r ? 'on' : ''}" aria-pressed="${x === r}">${MEALS[x.MMEAL_SC_CODE]}</button>`).join('');
   setTray(box, mealHtml(r, day, true));
 }
@@ -531,6 +551,7 @@ async function renderHomeMeal() {
   try {
     const [rows] = await Promise.all([getMeals(today()), loadVotes(today())]);
     homeRows = rows.filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
+    S.homeLoaded = true; S.mealFail = false; nextMeal = null; nextSeq++;   // 날짜가 바뀌면 다음 급식도 새로 찾음
     if (!homeRows.length) { tabs.innerHTML = ''; box.innerHTML = empty('오늘은 급식이 없어요'); paintHeroMeal(); return; }
     paintHomeMeal();
     const lunch = homeRows.find(r => r.MMEAL_SC_CODE === '2') || homeRows[0], ll = cleanDish(lunch.DDISH_NM);
@@ -1071,7 +1092,7 @@ $$('[data-nav]').forEach(b => b.addEventListener('click', e => {
   const k = +b.dataset.d;
   if (b.dataset.nav === 'meal' && S.mealWk) { S.mealWk = addDays(S.mealWk, 7 * k); loadHeroDay(); }
   else if (b.dataset.nav === 'tt' && S.ttWk) { S.ttWk = addDays(S.ttWk, 7 * k); renderHomeTT(); }
-  else if (b.dataset.nav === 'meal') { const nd = stepSchool(S.sMealDay || today(), k); S.sMealDay = ymd(nd) === ymd(today()) ? null : nd; S.heroPick = null; loadHeroDay(); }
+  else if (b.dataset.nav === 'meal') { const base = autoMealDay() || today(), nd = stepSchool(S.sMealDay || base, k); S.sMealDay = ymd(nd) === ymd(base) ? null : nd; S.heroPick = null; loadHeroDay(); }
   else { const auto = ttTarget(), nd = stepSchool(S.ttPick || auto, k); S.ttPick = ymd(nd) === ymd(auto) ? null : nd; renderHomeTT(); }
 }));
 $$('[data-home]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); stopPeek(); armReset(); if (b.classList.contains('off')) homeSide(b.dataset.home); else homeMode(b.dataset.home); }));
@@ -1163,7 +1184,7 @@ $$('#mAll [data-all]').forEach(b => b.onclick = () => { ALL.tab = b.dataset.all;
 $('#allPrev').onclick = () => { ALL.mon = addDays(ALL.mon, -7); renderAll(); };
 $('#allNext').onclick = () => { ALL.mon = addDays(ALL.mon, 7); renderAll(); };
 weekPick('#allLbl', () => ALL.mon, m => { ALL.mon = m; renderAll(); });
-$('#goMeal').onclick = e => { e.stopPropagation(); openAll('meal', S.mealWk || S.sMealDay || today()); };
+$('#goMeal').onclick = e => { e.stopPropagation(); openAll('meal', S.mealWk || S.sMealDay || autoMealDay() || today()); };
 $('#goWeek').onclick = e => { e.stopPropagation(); openAll('tt', S.ttWk || S.ttPick || ttTarget()); };
 async function renderTTView() {
   const mon = S.ttWeek;
