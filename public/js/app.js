@@ -1994,7 +1994,21 @@ async function fillShow() {
     }
     if (!inside) stopI = -1;
     wasIn = inside;
+    settle();
   }, { passive: true });
+  // 안전장치(2026-10-23): 어떤 경로로 스크롤됐든(빠져나가는 중 다시 굴림·스크롤바 끌기·관성 등) 움직임이 멈췄을 때
+  // 쇼케이스 안인데 장면 사이에 걸쳐 있으면 가장 가까운 장면으로 딱 붙임 → 스티커와 반쯤 걷힌 화면이 겹친 채 애매하게 멈추지 않게
+  let settleT = 0;
+  function settle() {
+    clearTimeout(settleT);
+    settleT = setTimeout(() => {
+      if (!on || !L || !introOn() || !inShow()) return;
+      const wait = leaving - performance.now();
+      if (wait > 0) return settle();
+      const k = nearestStop();
+      if (Math.abs(rawP() - STOPS[k]) * L.range > 2) goStop(k); else stopI = k;
+    }, Math.max(180, leaving - performance.now() + 80));
+  }
   // 휠·트랙패드: 한 번 미는 동작의 '시작'만 잡음 (2026-10-23 맥북 트랙패드 대응)
   //  · 새로 민 것으로 보는 경우: 입력이 잠깐(120ms) 끊겼다 다시 옴 / 방향이 바뀜 / 관성으로 줄어들던 값이 두 번 연속 다시 커짐(관성 중에 또 민 것)
   //  · 관성 꼬리(점점 작아지는 값)는 무시. 장면이 넘어간 직후 0.26초만 다음 입력을 막음 (예전엔 관성이 이어지는 내내 막혀서 맥북에서 잘 안 먹었음)
