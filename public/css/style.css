@@ -168,12 +168,12 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 /* 초록 두근두근: 수업 마지막 1분(.go, 쉬는 시간까지) + 쉬는 시간이 막 시작된 4초(.yay) */
 .stage.go .s-what,.stage.yay .s-what{background:linear-gradient(transparent 58%,#9df0bb 58% 88%,transparent 88%)}
 .stage.go .s-big,.stage.yay .s-big{display:inline-block;color:#1faa5c;text-shadow:6px 6px 0 #a8efc4;transform-origin:50% 55%;animation:goPulse 1s cubic-bezier(.4,0,.3,1) infinite}
-.stage.go.soon2 .s-big{animation:goPulse2 .7s cubic-bezier(.4,0,.3,1) infinite}
-.stage.go.soon3 .s-big{animation:goPulse3 .45s cubic-bezier(.4,0,.3,1) infinite;text-shadow:7px 7px 0 #7fe3a6}
+.stage.go.soon2 .s-big{animation:goPulse2 1s cubic-bezier(.4,0,.3,1) infinite}
+.stage.go.soon3 .s-big{animation:goPulse3 1s cubic-bezier(.4,0,.3,1) infinite;text-shadow:7px 7px 0 #7fe3a6}
 .stage.go .m-bar i{background:repeating-linear-gradient(-45deg,#3cc77a 0 10px,#6fdc9c 10px 20px)}
-@keyframes goPulse{0%,100%{transform:scale(1)}18%{transform:scale(1.08) rotate(-1.2deg)}36%{transform:scale(.97) rotate(.6deg)}54%{transform:scale(1.03)}72%{transform:scale(1)}}
-@keyframes goPulse2{0%,100%{transform:scale(1.01)}20%{transform:scale(1.12) rotate(-1.8deg)}40%{transform:scale(.96) rotate(1deg)}60%{transform:scale(1.05)}}
-@keyframes goPulse3{0%,100%{transform:scale(1.03)}25%{transform:scale(1.16) rotate(-2.4deg)}50%{transform:scale(.97) rotate(1.4deg)}75%{transform:scale(1.08)}}
+@keyframes goPulse{0%,45%,100%{transform:scale(1)}10%{transform:scale(1.08) rotate(-1.2deg)}20%{transform:scale(.98)}30%{transform:scale(1.04) rotate(.6deg)}}
+@keyframes goPulse2{0%,45%,100%{transform:scale(1.01)}10%{transform:scale(1.12) rotate(-1.8deg)}20%{transform:scale(.97)}30%{transform:scale(1.06) rotate(1deg)}}
+@keyframes goPulse3{0%,45%,100%{transform:scale(1.03)}10%{transform:scale(1.17) rotate(-2.4deg)}20%{transform:scale(.98)}30%{transform:scale(1.09) rotate(1.4deg)}}
 :root[data-theme="dark"] .stage.go .s-big,:root[data-theme="dark"] .stage.yay .s-big{color:#5fe39a;text-shadow:3px 3px 0 #000}
 @media (max-width:560px){.stage.go .s-big,.stage.yay .s-big{text-shadow:4px 4px 0 #a8efc4}}
 @media (prefers-reduced-motion:reduce){.stage.go .s-big,.stage.yay .s-big{animation:none}}

@@ -166,6 +166,7 @@ function tickClock() {
   hero.classList.toggle('rest', isRest);
   if (isRest && S.wasRest === false) { hero.classList.add('yay'); clearTimeout(S.yayT); S.yayT = setTimeout(() => hero.classList.remove('yay'), 4000); }   // 쉬는 시간이 막 시작: 4초만 초록 두근두근 후 차분하게
   S.wasRest = isRest;
+  if (hero.classList.contains('go') || hero.classList.contains('yay')) { const ms = bellNow().getMilliseconds(); $('#bigTime').getAnimations().forEach(a => { a.currentTime = ms; }); }   // 두근 박자를 종 기준 초가 바뀌는 순간에 맞춤
   hero.classList.toggle('go', / 수업 중$/.test(b.state) && left != null && left > 0 && left <= 60);   // 수업 마지막 1분: 초록 두근두근
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
