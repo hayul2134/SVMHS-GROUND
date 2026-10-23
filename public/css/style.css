@@ -1367,7 +1367,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
    z-index:49 → 화면의 모든 카드·띠보다 위(사용자 요청), 창(.modal 50)·소개(55)·게임(70)보다는 아래. pointer-events:none이라 겹쳐도 아래 버튼은 그대로 눌림. will-change로 자기 층을 따로 가져서, 캐릭터가 움직여도 페이지 나머지는 다시 그리지 않음.
    애니메이션 원칙(tools/skins/ANIMATION_GUIDE.md): 숨쉬기(아주 작은 늘고 줄기) → 예비동작(찌그러짐) → 점프(늘어남) → 착지(찌그러짐) → 출렁임,
    머리는 몸보다 늦게 따라오고(겹침), 그림자는 뜰 때 작아짐. 한 사이클 9초 중 대부분은 쉬는 동작이라 수업 화면에 거슬리지 않게. */
-.mascot{position:fixed;left:18px;bottom:18px;width:min(112px,22vw);aspect-ratio:1;z-index:49;pointer-events:none;will-change:transform;contain:layout style}
+.mascot{position:fixed;left:26px;bottom:18px;width:min(112px,22vw);aspect-ratio:1;z-index:49;pointer-events:none;will-change:transform;contain:layout style}
 .mascot svg,.mascot img{display:block;width:100%;height:100%;object-fit:contain;object-position:left bottom;overflow:visible}
 .mascot g{transform-box:fill-box}
 .mascot .mb{transform-origin:50% 100%;animation:m-idle 9s infinite}
@@ -1985,12 +1985,13 @@ html.at-svc .svcfab{opacity:0;translate:0 14px;pointer-events:none}
   .svcfab b{display:none}
   .sf-ic{border:0;background:none;width:auto;height:auto}.sf-ic svg{width:24px;height:24px}
 }
-/* 서비스 버튼이 보일 땐 왼쪽 아래 캐릭터가 크기 그대로 버튼 위로 올라가 걸터앉음(발끝이 버튼 뒤로 살짝) — 버튼이 사라지면 원래 자리로.
+/* 캐릭터는 서비스 버튼과 가로 중심을 맞춰 두고 위아래로만 움직임. 서비스 버튼이 보일 땐 왼쪽 아래 캐릭터가 크기 그대로 버튼 위로 올라가 걸터앉음(발끝이 버튼 뒤로 살짝) — 버튼이 사라지면 원래 자리로.
    위치는 .mascot 자체의 transform으로만 옮김(자기 층 → 페이지 다시 그리기 없음). 몸짓은 tools/skins/ANIMATION_GUIDE.md '버튼 위에서 떨어지기·올라타기' */
-html:not(.at-svc):not(.prelogin) body[data-view="home"]:not(.playing) .mascot{transform:translate(8px,-55px);transition:transform .4s cubic-bezier(.22,.8,.3,1)}
+html:not(.at-svc):not(.prelogin) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-55px);transition:transform .4s cubic-bezier(.22,.8,.3,1)}
 html.at-svc .mascot{transition:transform .3s cubic-bezier(.5,0,.9,.6) .32s}
 @media (max-width:899px){
-  html:not(.at-svc):not(.prelogin) body[data-view="home"]:not(.playing) .mascot{transform:translate(calc(27px - min(56px,11vw)),-49px)}
+  html:not(.at-svc):not(.prelogin) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-49px)}
+  .mascot{left:calc(45px - min(56px,11vw))}
 }
 /* 떨어지기(1.3초): 놀람 예비동작(찌그러짐) → 깜짝 놀라 늘어나며 폴짝(눈 커짐) → 잠깐 멈칫 → 중력처럼 점점 빨라지며 낙하(.32초~.62초, 몸은 늘어나고 팔은 허우적, 머리는 늦게 따라와 위로 뜸)
    → 착지 순간 크게 찌그러짐(머리는 계속 내려감) → 튀지 않고 천천히 펴지며 제자리 */
