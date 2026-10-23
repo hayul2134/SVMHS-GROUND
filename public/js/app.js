@@ -585,6 +585,7 @@ $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealVie
 let BAL = null, balBusy = false, balTimer = 0, balSkew = 0, balAuto = 0;
 const balNow = () => Date.now() + balSkew;
 const BAL_API = '/api/s/bal';
+const balDayOn = () => isSchoolDay(new Date(now()));   // 오늘이 등교일일 때만 밸런스 게임 표시
 async function balCall(path, body) {
   const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {});
   const j = await r.json().catch(() => ({}));
@@ -626,7 +627,7 @@ function balOpt(k, big) {
 const fillBars = root => root.querySelectorAll('.bo-fill').forEach(el => { el.style.transform = `scaleX(${(+el.dataset.pct / 100).toFixed(3)})`; });
 function paintBalance() {
   const box = $('#play');
-  box.hidden = !BAL;
+  box.hidden = !BAL || !balDayOn();   // 학교 안 가는 날(주말·휴업일·공휴일)엔 밸런스 티켓을 아예 안 보임 (2026-10-23)
   if (!BAL) { clearInterval(balAuto); return; }
   const st = balStatus();
   box.className = 'bal-t st-' + st.cls;
@@ -644,6 +645,7 @@ function paintBalance() {
 // 1초마다 남은 시간만 바꾸고, 마감·시작 시각이 지나면 서버에서 다시 받아옴
 function balTick() {
   if (!BAL || document.hidden) return;
+  if ($('#play').hidden === balDayOn()) { paintBalance(); return; }   // 자정이 지나 쉬는 날이 되거나(금→토) 등교일이 되면 바로 숨김/표시
   const n = balNow();
   if ((BAL.open && n >= BAL.closes) || (!BAL.open && n >= BAL.opens && n < BAL.closes) || (!BAL.open && n >= BAL.next)) { clearInterval(balAuto); setTimeout(loadBalance, 1500); return; }
   const st = balStatus();
