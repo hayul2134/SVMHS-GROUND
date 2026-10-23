@@ -789,6 +789,7 @@ export async function init(c) {
   document.body.dataset.view = location.hash.slice(1).split('/')[0] || 'home';
   setupDock();
   if (S.enabled) await refreshMe(); else paintBadges();
+  if (S.google && !S.me) loadGis().catch(() => {});   // 로그인 전이면 구글 스크립트를 미리 받아 둠 → 로그인 페이지 열 때 버튼이 바로 뜸
   if (!S.meErr) c.authed?.(S.me, S.enabled);   // 로그인 전이면 소개 화면 유지, 로그인돼 있으면 닫음 (연결 문제면 지금 상태 그대로)
   startPoll();
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) refreshMe(); });
@@ -817,7 +818,7 @@ function mountGoogle() {
     el.dataset.done = '1';
     google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', text: el.dataset.gintent === 'login' ? 'continue_with' : 'signin_with', locale: 'ko', width: Math.min(320, el.clientWidth || 280) });
     el.addEventListener('pointerdown', () => { gIntent = el.dataset.gintent; }, true);   // 어느 버튼을 눌렀는지 기억
-  })).catch(() => els.forEach(el => { el.textContent = '구글 로그인을 불러오지 못했어요'; }));
+  })).catch(() => els.forEach(el => { el.classList.add('gfail'); el.textContent = '구글 로그인을 불러오지 못했어요'; }));
 }
 new MutationObserver(mountGoogle).observe(document.body, { childList: true, subtree: true });
 async function onGoogle({ credential }) {
