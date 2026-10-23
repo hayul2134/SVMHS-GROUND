@@ -1826,7 +1826,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-fire .halo::after{content:"";position:absolute;inset:16%;border-radius:50%;border:3px dashed color-mix(in srgb,var(--gold) 80%,var(--ink))}
 @keyframes halo{from{transform:scale(.4);opacity:0}}
 @keyframes spin{to{transform:rotate(1turn)}}
-.att-num{position:absolute;left:0;right:0;bottom:12px;text-align:center;font:900 40px/1 var(--num);color:#fff;
+.att-num{position:absolute;left:0;right:0;top:66%;translate:0 -50%;text-align:center;font:900 38px/1 var(--num);color:#fff;
   -webkit-text-stroke:2.5px var(--ink);paint-order:stroke fill;text-shadow:2px 3px 0 var(--ink)}
 .att-num.roll{animation:roll .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes roll{0%{transform:translateY(40%) scale(.6);opacity:0}100%{transform:none;opacity:1}}
@@ -1902,7 +1902,9 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-bar .track{display:block;height:14px;border-radius:99px;background:var(--chip);border:2px solid var(--ink);overflow:hidden}
 .att-bar .track i{display:block;height:100%;width:var(--p,4%);border-radius:99px;background:linear-gradient(90deg,var(--fire2),var(--fire));transition:width .8s .4s cubic-bezier(.2,1,.3,1)}
 /* 출석 창 */
-.sheet.attw{max-width:440px}
+.sheet.attw{max-width:580px}
+.sheet.attw .att-cal span{aspect-ratio:1.3}
+.sheet.attw .att-rw{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
 .att-sheet{text-align:left}
 .att-top{position:relative;display:flex;align-items:center;gap:14px;padding-right:96px;min-height:90px}
 .att-tt{min-width:0}
@@ -1920,7 +1922,8 @@ html.away .mascot *{animation-play-state:paused!important}
 @keyframes stampIn{0%{transform:scale(2.2) rotate(-28deg);opacity:0}55%{opacity:1;transform:scale(.92) rotate(-8deg)}100%{transform:rotate(-10deg)}}
 @media (max-width:420px){.att-top .att-tt h3{font-size:20px}.att-top{padding-right:80px}.att-stamp{width:72px;height:72px;margin-top:-36px}.att-stamp b{font-size:14px}}
 .att-fire.sm{width:74px;height:86px;margin:0;flex:none}
-.att-fire.sm .att-num{font-size:26px;bottom:7px;-webkit-text-stroke-width:2px}
+.att-fire.sm .att-num{font-size:25px;-webkit-text-stroke-width:2px;text-shadow:1.5px 2px 0 var(--ink)}
+.att-num.d3{font-size:28px}.att-fire.sm .att-num.d3{font-size:19px}   /* 세 자리(100일~)도 불꽃 안에 */
 .att-tt h3{margin:0;font-size:26px}
 .att-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 .att-stats > div{display:grid;justify-items:center;gap:2px;padding:10px 6px;border-radius:16px;background:var(--chip);border:2px solid var(--ink)}
@@ -1963,7 +1966,8 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-rw small{font-size:11px;font-weight:800;color:var(--sub)}
 .att-rw li.on{background:var(--yellow);color:var(--ink)}.att-rw li.on .rw-cap{color:#6b5a1d}.att-rw li.on.k-title .rw-cap{color:var(--ink)}
 .att-rw li.on.k-color{background:#ffe0ef}.att-rw li.on.k-title{background:#dff4ff}.att-rw li.on.k-avatar{background:#e6f9da}
-.att-rw li:not(.on) .rw-e,.att-rw li:not(.on) .rw-tag{filter:grayscale(1);opacity:.45}
+.att-rw li:not(.on) .art.rw-e{filter:grayscale(1) brightness(1.08) drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff) drop-shadow(0 -1.6px 0 #fff) drop-shadow(1.5px 2px 0 rgba(23,48,72,.2));opacity:.62}
+.att-rw li:not(.on) .rw-tag{filter:grayscale(1);opacity:.55}
 .att-rw li:not(.on) .rw-sw{filter:grayscale(.85);opacity:.55}
 .att-rv{display:flex;align-items:center;gap:4px;font:900 16px var(--num)}
 .att-rv.pf .flm{filter:drop-shadow(0 0 3px var(--gold))}
@@ -2007,12 +2011,13 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-tt .att-ic,.att-rank .att-ic{margin-right:3px}
 .rank .rk .att-ic.md{width:26px;height:26px;vertical-align:middle}
 .art{display:block;overflow:visible}
-.av .ava{width:96%;height:96%}
-.av.big .ava{width:94%;height:94%}
+.av .ava{width:82%;height:82%}
+.av.big .ava{width:80%;height:80%}
 .stk .stka{width:1.15em;height:1.15em;display:inline-block}
-.pick button .pka{width:78%;height:78%;margin:auto}
-.att-rw .art.rw-e{width:54px;height:54px}
+.pick button .pka{width:72%;height:72%;margin:auto}
+.att-rw .art.rw-e{width:46px;height:46px}
 .att-gift .art.rw-e,.att-next .art.rw-e{width:30px;height:30px}
+.rw-box > *{margin:auto}
 .att-rw .att-ic.rw-tag{width:36px;height:36px}
 .att-gift .att-ic.rw-tag,.att-next .att-ic.rw-tag{width:26px;height:26px}
 .att-rw .lk{position:absolute;top:6px;right:6px;width:17px;height:17px}

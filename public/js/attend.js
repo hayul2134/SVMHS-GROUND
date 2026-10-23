@@ -63,7 +63,7 @@ export function flame(cls = '', o = {}) {
 }
 const shieldSvg = (cls = '') => `<svg class="shd ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.3v6.2c0 4.7 3.2 8.6 7.5 10 4.3-1.4 7.5-5.3 7.5-10V5.3L12 2.5z"/><path class="tk" d="m8.6 12 2.4 2.4 4.6-4.8"/></svg>`;
 // 큰 불꽃 + 숫자 (+ 완벽한 연속이면 후광)
-const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tierOf(n)}${o.pf ? ' pf' : ''}">${o.pf ? '<i class="halo" aria-hidden="true"></i>' : ''}${flame('big' + (o.burn ? ' burn' : ''), { tier: tierOf(n), off: !n })}<b class="att-num"${o.id ? ` id="${o.id}"` : ''}>${o.from ?? n}</b></div>`;
+const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tierOf(n)}${o.pf ? ' pf' : ''}">${o.pf ? '<i class="halo" aria-hidden="true"></i>' : ''}${flame('big' + (o.burn ? ' burn' : ''), { tier: tierOf(n), off: !n })}<b class="att-num${n >= 100 ? ' d3' : ''}"${o.id ? ` id="${o.id}"` : ''}>${o.from ?? n}</b></div>`;
 // 보상 그림 (스티커·사진은 이모지, 배경 색은 동그란 견본, 칭호는 이름표)
 export const rwIcon = r => r.kind === 'color' ? `<i class="rw-sw c-${r.v}" aria-hidden="true"></i>` : r.kind === 'title' ? ui('tag', 'rw-tag') : artOf(r.v, 'rw-e');
 

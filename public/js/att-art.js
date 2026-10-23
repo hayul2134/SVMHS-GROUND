@@ -30,7 +30,7 @@ const jelly = (d, g, dark, inner = '', o = {}) => {
 };
 const gloss = (d, w = 2.6, op = .85) => `<path d="${d}" fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" opacity="${op}"/>`;
 const shade = (d, c, op = 1) => `<path d="${d}" fill="${c}" opacity="${op}"/>`;
-const twinkle = (x, y, s = 3, c = '#fff') => `<path d="M${x} ${n1(y - s)}Q${n1(x + s * .18)} ${n1(y - s * .18)} ${n1(x + s)} ${y}Q${n1(x + s * .18)} ${n1(y + s * .18)} ${x} ${n1(y + s)}Q${n1(x - s * .18)} ${n1(y + s * .18)} ${n1(x - s)} ${y}Q${n1(x - s * .18)} ${n1(y - s * .18)} ${x} ${n1(y - s)}Z" fill="${c}" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>`;
+const twinkle = (x, y, s = 3, c = '#fff') => `<path d="M${x} ${n1(y - s)}Q${n1(x + s * .18)} ${n1(y - s * .18)} ${n1(x + s)} ${y}Q${n1(x + s * .18)} ${n1(y + s * .18)} ${x} ${n1(y + s)}Q${n1(x - s * .18)} ${n1(y + s * .18)} ${n1(x - s)} ${y}Q${n1(x - s * .18)} ${n1(y - s * .18)} ${x} ${n1(y - s)}Z" fill="${c}" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round" class="tw"/>`;   // 반짝이(.tw)는 가운데 맞춤 계산에서 뺌
 // 캐릭터 얼굴 부품 (CHARACTER_GUIDE)
 const EYE = '#3b2a2e';
 const eye = (x, y, rx = 2.5, ry = 3.1) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${EYE}"/><circle cx="${n1(x + rx * .38)}" cy="${n1(y - ry * .42)}" r="${n1(rx * .36)}" fill="#fff" opacity=".9"/>`;
@@ -185,6 +185,9 @@ export const medal = i => {
   return `<svg class="att-ic md" viewBox="-1 -1 26 26" aria-label="${i + 1}위">${uj('M6.4 1.8H10.6L13 8.6H8.8Z', MR[i][0], MR[i][1])}${uj('M17.6 1.8H13.4L11 8.6H15.2Z', MR[i][0], MR[i][1])}${uj('M12 7.6A7.4 7.4 0 1 1 11.99 7.6Z', MD[i][0], MD[i][1])}<text x="12" y="18.4" text-anchor="middle" font-family="Outfit,sans-serif" font-weight="900" font-size="9" fill="${MD[i][2]}">${i + 1}</text>${ug('M7.4 13.4Q8 11 10 10.2')}</svg>`;
 };
 
+// 그림마다 실제 그려진 범위(반짝이 제외, 헤드리스 브라우저 getBBox로 잰 값)를 가운데에 둔 정사각 viewBox → 어느 칸에서도 정가운데·같은 크기
+// 그림을 고치면 다시 잴 것: 그림 범위를 재서 (가로·세로 중 큰 값 + 5.2) 정사각형, 중심 = 범위 중심
+const VB = {"sprout": "2.4 3.6 45.8 45.8", "medal": "0.3 0.4 49.0 49.0", "gem": "2.4 4.5 44.8 44.8", "trophy": "1.3 3.0 45.4 45.4", "volcano": "1.5 1.8 46.6 46.6", "pencil": "1.1 0.9 48.1 48.1", "badge": "0.6 0.4 48.4 48.4", "lion": "2.4 4.3 44.2 44.2", "dragon": "0.6 0.1 46.8 46.8", "star": "1.4 2.3 46.2 46.2", "firework": "1.0 1.0 46.0 46.0", "owl": "3.1 2.6 41.8 41.8", "whale": "2.4 -0.1 45.5 45.5"};
 /* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) ===== */
 let done = false;
 export function ensureSprite() {
@@ -192,7 +195,7 @@ export function ensureSprite() {
   done = true;
   const box = document.createElement('div');
   box.className = 'att-sprite'; box.setAttribute('aria-hidden', 'true');
-  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => `<symbol id="art-${k}" viewBox="-3 -3 54 54">${v}</symbol>`).join('')}</svg>`;
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => `<symbol id="art-${k}" viewBox="${VB[k] || '-3 -3 54 54'}">${v}</symbol>`).join('')}</svg>`;
   document.body.appendChild(box);
 }
 if (typeof document !== 'undefined') { if (document.body) ensureSprite(); else document.addEventListener('DOMContentLoaded', ensureSprite, { once: true }); }
@@ -200,7 +203,7 @@ if (typeof document !== 'undefined') { if (document.body) ensureSprite(); else d
 /* ===== 내보내기 ===== */
 export const ART_KEYS = Object.keys(ART);
 export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[v.slice(2)];
-export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); return `<svg class="art ${cls}" viewBox="-3 -3 54 54" aria-hidden="true"><use href="#art-${v.slice(2)}"/></svg>`; };
+export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); return `<svg class="art ${cls}" aria-hidden="true"><use href="#art-${v.slice(2)}" width="100%" height="100%"/></svg>`; };
 // 프로필 사진·스티커 값 → 그림(직접 그린 것) 또는 글자(예전 이모지)
 export const emo = (v, cls = '') => isArt(v) ? artOf(v, cls) : esc(v);
 export const ui = (k, cls = '') => { ensureSprite(); return `<svg class="att-ic ${cls}" viewBox="-1 -1 26 26" aria-hidden="true">${UI[k]}</svg>`; };
