@@ -1257,7 +1257,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 .authpage.out{animation:apOut .22s ease-in forwards}
 @keyframes apIn{from{opacity:0;transform:translateY(24px)}}
 @keyframes apOut{to{opacity:0;transform:translateY(18px)}}
-.ap-board{position:sticky;top:24px;align-self:start;height:calc(100dvh - 48px);min-height:520px;margin:24px 0 24px 24px;padding:44px 38px;background:var(--hero);color:#fff;
+.ap-board{position:sticky;top:24px;align-self:start;min-height:calc(100dvh - 48px);margin:24px 0 24px 24px;padding:44px 38px;background:var(--hero);color:#fff;
   background-image:radial-gradient(rgba(255,255,255,.16) 1.4px,transparent 1.5px);background-size:18px 18px;
   border:3px solid var(--ink);border-radius:32px;box-shadow:7px 7px 0 var(--ink);rotate:-1deg;display:flex;flex-direction:column;justify-content:center;gap:18px;animation:inPop .55s .05s cubic-bezier(.34,1.4,.6,1) both}
 .ap-tape{position:absolute;top:-12px;left:50%;width:130px;height:30px;margin-left:-65px;background:rgba(255,224,138,.9);border:2px solid rgba(23,48,72,.25);rotate:3deg}
@@ -1275,12 +1275,43 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 .ap-live .dot{width:9px;height:9px;border-radius:50%;background:#7dffb0;animation:inLive 1.6s ease-out infinite}
 .ap-live b{font-family:var(--num);font-weight:800;font-size:16px;font-variant-numeric:tabular-nums;margin-left:2px}
 .ap-sep{opacity:.6}
-.ap-perks{list-style:none;display:grid;gap:10px;margin-top:10px}
-.ap-perks li{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.95);color:var(--ink);border:var(--bd);border-radius:16px;box-shadow:var(--sh-s);width:fit-content;max-width:100%}
-.ap-perks li:nth-child(1){rotate:-1.5deg}.ap-perks li:nth-child(2){rotate:1.2deg;margin-left:18px}.ap-perks li:nth-child(3){rotate:-.6deg;margin-left:6px}
-.ap-perks span{display:flex;flex-direction:column;font-size:12.5px;font-weight:700;color:var(--sub);line-height:1.3}
-.ap-perks b{font-size:14.5px;font-weight:900;color:var(--ink)}
-.ap-ic{width:30px;height:30px;flex:0 0 30px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;color:var(--ink);overflow:visible}
+.ap-board > .ap-live{display:none}   /* 미리보기 안 시계가 같은 걸 보여 줌 (폰에서만 칩으로) */
+/* 미리보기: 로그인하면 보이는 첫 화면 축소판 */
+.ap-pv{margin-top:8px}
+.ap-pv-k{font-weight:900;font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ap-pv-k span{display:inline-block;animation:inFloat 2.6s ease-in-out infinite}
+.ap-scr{position:relative;background:var(--bg);background-image:radial-gradient(var(--dot) 1.2px,transparent 1.3px);background-size:12px 12px;color:var(--text);
+  border:3px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink);padding:8px 10px 10px;rotate:1deg;display:grid;gap:8px;font-size:10.5px;line-height:1.3}
+.pv-bar{display:flex;align-items:center;gap:5px;font-family:var(--disp);font-size:12px;color:var(--on-bg)}
+.pv-bar img{width:18px;height:18px;rotate:-6deg}
+.pv-bar b{font-weight:400;margin-right:auto;text-shadow:1px 1px 0 var(--sky)}
+.pv-bar i{width:16px;height:16px;border-radius:5px;background:var(--card);border:1.5px solid var(--ink)}
+.pv-row{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:7px;align-items:center}
+.pv-card{background:var(--card);border:2px solid var(--ink);border-radius:11px;box-shadow:2px 2px 0 var(--ink);padding:6px 6px 7px;min-width:0;align-self:stretch}
+.pv-meal{rotate:-2deg}.pv-tt{rotate:1.5deg}
+.pv-t{display:flex;align-items:center;gap:3px;font-weight:900;font-size:10px;margin-bottom:4px;white-space:nowrap}
+.pv-t svg{width:14px;height:14px;flex:0 0 14px;fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--ink);overflow:visible}
+.pv-card ul,.pv-card ol{list-style:none;display:grid;gap:2px}
+.pv-card li{display:flex;align-items:center;gap:4px;min-width:0;font-weight:700;padding:1px 3px;border-radius:5px}
+.pv-card li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-meal li img{width:17px;height:17px;flex:0 0 17px;object-fit:contain}
+.pv-meal li > i{width:6px;height:6px;margin:0 5.5px;flex:0 0 6px;border-radius:50%;background:var(--line)}
+.pv-meal li.main{background:var(--yellow);color:#173048;font-weight:900}
+.pv-tt li b{font-family:var(--num);font-weight:800;width:10px;flex:0 0 10px;text-align:center;color:var(--sub)}
+.pv-tt li .sic{width:13px;height:13px;flex:0 0 13px}
+.pv-tt li.cur{background:var(--lime);color:#173048;font-weight:900}
+.pv-tt li.cur b{color:#173048}
+.pv-clock{background:var(--hero);color:#fff;border:2.5px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:8px 4px 9px;text-align:center;display:grid;gap:4px;justify-items:center;rotate:-1deg}
+.pv-st{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:999px;background:rgba(0,0,0,.18);font-weight:900;font-size:9.5px;white-space:nowrap}
+.pv-st .dot{width:6px;height:6px;border-radius:50%;background:#7dffb0}
+.pv-time{font-family:var(--num);font-weight:800;font-size:30px;line-height:1;letter-spacing:-.02em;text-shadow:2px 2px 0 var(--ink);font-variant-numeric:tabular-nums}
+.pv-cd{display:flex;align-items:center;gap:4px;background:#fff;color:#173048;border:2px solid var(--ink);border-radius:8px;padding:2px 6px;font-size:9px;font-weight:800;white-space:nowrap}
+.pv-cd b{font-family:var(--num);font-size:12px;font-variant-numeric:tabular-nums}
+.pv-low{display:grid;grid-template-columns:auto repeat(4,1fr);align-items:center;gap:5px}
+.pv-h{font-family:var(--disp);font-size:11px;color:var(--on-bg);margin-right:2px}
+.pv-low i{height:18px;border-radius:6px;background:var(--card);border:1.5px solid var(--line)}
+.pv-card{position:relative}
+.pv-card.ex::after{content:"예시";position:absolute;top:-8px;right:-4px;padding:0 6px;border-radius:6px;background:var(--yellow);color:#173048;border:1.5px solid var(--ink);font-weight:900;font-size:9px;rotate:6deg}
 .ap-main{position:relative;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:16px;padding:84px 28px 40px}
 .ap-back{position:absolute;top:24px;left:28px;display:inline-flex;align-items:center;gap:6px;padding:9px 16px 9px 11px;border-radius:999px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);font-weight:900;font-size:14px;transition:transform .1s,box-shadow .1s}
 .ap-back svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
@@ -1386,11 +1417,12 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 }
 @media (max-width:900px){
   .authpage{grid-template-columns:1fr;align-content:start}
-  .ap-board{position:relative;top:0;height:auto;min-height:0;margin:26px 16px 0;padding:20px 22px;rotate:-.6deg;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:6px 16px}
-  .ap-logo{width:60px;height:60px;grid-row:span 2}
+  .ap-board{position:relative;top:0;min-height:0;margin:26px 16px 0;padding:20px 22px;rotate:-.6deg;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:6px 16px}
+  .ap-logo{width:60px;height:60px}
   .ap-name{font-size:34px;text-shadow:3px 3px 0 var(--ink)}.ap-name small{font-size:11px;margin-bottom:4px}
-  .ap-say,.ap-perks,.ap-stk.s2,.ap-stk.s3{display:none}
+  .ap-say,.ap-stk.s2,.ap-stk.s3{display:none}
   .ap-live{grid-column:2;font-size:13px;padding:4px 12px}
+  .ap-pv{grid-column:1 / -1;margin-top:10px;justify-self:center;width:min(100%,460px)}
   .ap-stk.s1{top:14%;right:6%;font-size:26px}
   .ap-main{min-height:0;padding:22px 16px 40px;justify-content:flex-start}
   .ap-back{position:static;align-self:flex-start;margin:-4px 0 2px}
@@ -1399,6 +1431,8 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
   .apicks{grid-template-columns:1fr;gap:10px}
   .authcard{padding:18px 16px 20px}
   .ap-live .ap-sep,.ap-live #apLbl{display:none}
+  .ap-pv{display:none}
+  .ap-board > .ap-live{display:inline-flex}
 }
 @media (prefers-reduced-motion:reduce){
   .authpage,.authpage.out,.ap-board,.ap-logo,.ap-stk,.authcard.swap .segs-pill,.authcard.ok .astamp b,.sb-w i{animation:none}

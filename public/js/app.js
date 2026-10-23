@@ -1543,14 +1543,36 @@ introTick();
 // 로그인·가입 페이지(소개 화면 위 전체 화면): 열면 뒤로 가기 한 칸을 만들어, 태블릿 뒤로 가기 제스처가 사이트를 떠나지 않고 이 페이지만 닫게 함
 let apTimer = 0;
 function apLive() {   // 왼쪽 보드의 말풍선·상태는 소개 화면 종 시계(introTick)가 그린 값을 그대로 옮겨 씀
-  [['#inSay', '#apSay'], ['#inState', '#apState'], ['#inLbl', '#apLbl'], ['#inLeft', '#apLeft']].forEach(([a, b]) => { const t = $(a)?.textContent; if (t && $(b).textContent !== t) $(b).textContent = t; });
+  [['#inSay', '#apSay'], ['#inState', '#apState'], ['#inLbl', '#apLbl'], ['#inLeft', '#apLeft'], ['#inState', '#pvState'], ['#inLbl', '#pvLbl'], ['#inLeft', '#pvLeft'], ['#inTime', '#pvTime']].forEach(([a, b]) => { const t = $(a)?.textContent; if (t && $(b).textContent !== t) $(b).textContent = t; });
+  const cur = curPeriod(); $$('#pvTt li').forEach(li => li.classList.toggle('cur', +li.dataset.p === cur));
   $('#apLeft').closest('.ap-live').hidden = !$('#inCdBox') || $('#inCdBox').hidden;
+}
+// 미리보기(로그인하면 보이는 첫 화면): 오늘 실제 급식(지금 끼니)·반을 정해 둔 기기면 실제 시간표, 없으면 예시
+const curPeriod = () => { const n = bellNow(), sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(); return (BELL.find(x => typeof x.p === 'number' && sec >= x.start && sec < x.end) || {}).p || 0; };
+const PV_MEAL = ['탕수육', '잡채', '미역국', '배추김치', '잡곡밥'], PV_TT = ['국어', '영상 제작', '영어', '체육', '수학', '미술'];
+let pvDone = '';
+async function apPreview() {
+  const day = ymd(today()); if (pvDone === day) return; pvDone = day;
+  const dish = (x, i) => { const k = foodImg(x); return `<li${i ? '' : ' class="main"'}>${k ? `<img src="/food/c/${k}.webp" alt="" width="20" height="20" loading="lazy">` : '<i></i>'}<span>${esc(x)}</span></li>`; };
+  const tt = list => list.map(([p, n]) => `<li data-p="${p}"><b>${p}</b>${subjIcon(n)}<span>${esc(n)}</span></li>`).join('');
+  const [meal, rows] = await Promise.all([
+    getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),
+    cls ? getTimetable(cls, today(), today()).then(r => r.filter(x => x.ALL_TI_YMD === day).sort((a, b) => a.PERIO - b.PERIO)).catch(() => []) : Promise.resolve([])
+  ]);
+  const r = meal.length ? pickMeal(meal, mealSlot()) : null;
+  if (r) { $('#pvMealK').textContent = '오늘 ' + MEALS[r.MMEAL_SC_CODE]; $('#pvMeal').innerHTML = orderMenu(cleanDish(r.DDISH_NM)).list.slice(0, 5).map(dish).join(''); }
+  else { $('#pvMealK').textContent = '오늘 급식'; $('#pvMeal').innerHTML = PV_MEAL.map(dish).join(''); }
+  if (rows.length) { $('#pvTtK').textContent = `${cls.g}-${cls.c} 시간표`; $('#pvTt').innerHTML = tt(rows.slice(0, 7).map(x => [+x.PERIO, subjName(x.ITRT_CNTNT)])); }
+  else { $('#pvTtK').textContent = '우리 반 시간표'; $('#pvTt').innerHTML = tt(PV_TT.map((n, i) => [i + 1, n])); }
+  $('#pvTt').parentElement.classList.toggle('ex', !rows.length);
+  $('#pvMeal').parentElement.classList.toggle('ex', !r);
+  apLive();
 }
 function authPage(k, fromPop) {
   const p = $('#introAuth'), slot = $('#authSlot');
   if (k) {
     slot.innerHTML = SOC.authForm(k);
-    if (p.hidden) { p.hidden = false; p.classList.remove('out'); p.scrollTop = 0; try { history.pushState({ ap: 1 }, ''); } catch {} apLive(); apTimer = setInterval(apLive, 1000); }
+    if (p.hidden) { p.hidden = false; p.classList.remove('out'); p.scrollTop = 0; try { history.pushState({ ap: 1 }, ''); } catch {} apLive(); apTimer = setInterval(apLive, 1000); apPreview(); }
     setTimeout(() => slot.querySelector('input')?.focus({ preventScroll: true }), 380);
     return;
   }

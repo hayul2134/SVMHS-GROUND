@@ -249,11 +249,19 @@
       <p class="ap-name"><small>SVMHS</small>GROUND</p>
       <p class="ap-say" id="apSay">오늘도 가보자</p>
       <p class="ap-live"><i class="dot"></i><span id="apState">지금</span><span class="ap-sep">·</span><span id="apLbl">쉬는 시간까지</span><b id="apLeft">--:--</b></p>
-      <ul class="ap-perks">
-        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-tray"/></svg><span><b>급식·시간표</b>교시 맞춰 자동으로</span></li>
-        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-heart"/></svg><span><b>맞팔 DM</b>쉬는 시간에 수다</span></li>
-        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-flag"/></svg><span><b>미니게임 랭킹</b>반 대항전까지</span></li>
-      </ul>
+      <!-- 로그인하면 보이는 첫 화면 미리보기: 시계는 소개 시계 값, 급식은 오늘 실제 메뉴, 시간표는 반을 정해 둔 기기면 실제(아니면 예시) — app.js apPreview() -->
+      <div class="ap-pv">
+        <p class="ap-pv-k">로그인하면 이렇게 보여요 <span>👀</span></p>
+        <div class="ap-scr">
+          <div class="pv-bar"><img src="/logo-mark.svg?v=4" alt="" width="18" height="18"><b>GROUND</b><i></i><i></i></div>
+          <div class="pv-row">
+            <div class="pv-card pv-meal"><p class="pv-t"><svg viewBox="0 0 24 24"><use href="#sj-tray"/></svg><span id="pvMealK">오늘 급식</span></p><ul id="pvMeal"></ul></div>
+            <div class="pv-clock"><p class="pv-st"><i class="dot"></i><span id="pvState">지금</span></p><p class="pv-time" id="pvTime">--:--</p><p class="pv-cd"><span id="pvLbl">쉬는 시간까지</span><b id="pvLeft">--:--</b></p></div>
+            <div class="pv-card pv-tt"><p class="pv-t"><svg viewBox="0 0 24 24"><use href="#sj-ttab"/></svg><span id="pvTtK">시간표</span></p><ol id="pvTt"></ol></div>
+          </div>
+          <div class="pv-low"><span class="pv-h">한눈에 보기</span><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
     </aside>
     <div class="ap-main">
       <button class="ap-back" type="button" data-auth-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>소개로 돌아가기</button>
