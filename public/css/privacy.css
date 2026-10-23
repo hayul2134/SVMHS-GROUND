@@ -1,0 +1,15 @@
+/* 개인정보 처리 안내 (/privacy.html) — 구글 동의 화면에 연결되는 단독 페이지 */
+:root { --bg: #eef6ff; --card: #fff; --text: #173048; --sub: #5b7186; --line: #cfe0f2; --accent: #3d7bd9; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f1a26; --card: #16263a; --text: #eef8ff; --sub: #9db8cf; --line: #2a4058; --accent: #7fb2ff; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.7 system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+main { max-width: 720px; margin: 24px auto; padding: 28px 24px; background: var(--card); border: 2px solid var(--line); border-radius: 20px; }
+h1 { margin: 0; font-size: 26px; }
+.sub { margin: 4px 0 20px; color: var(--sub); font-size: 14px; }
+h2 { margin: 26px 0 8px; font-size: 18px; }
+ul { margin: 0; padding-left: 20px; }
+li { margin: 4px 0; }
+p { margin: 0; }
+.back { margin-top: 28px; }
+a { color: var(--accent); font-weight: 700; }
+@media (max-width: 760px) { main { margin: 16px; padding: 22px 16px; } }
