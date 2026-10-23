@@ -1121,7 +1121,9 @@ async function renderCalView() {
     const rows = await getSchedule(m, end);
     if (m !== S.calMonth) return;
     grid.innerHTML = calHtml(m, rows);
-    box.innerHTML = rows.length ? evHtml(rows) : empty('이 달에는 일정이 없어요');
+    // 목록은 오늘(D-DAY)·다가오는 일정부터 위→아래, 지난 일정은 맨 아래에 최근 것부터
+    const t = today(), up = rows.filter(r => parseYmd(r.AA_YMD) >= t), past = rows.filter(r => parseYmd(r.AA_YMD) < t).reverse();
+    box.innerHTML = rows.length ? (up.length ? evHtml(up) : '') + (past.length ? `<p class="ev-sep">지난 일정</p>${evHtml(past)}` : '') : empty('이 달에는 일정이 없어요');
   } catch { box.innerHTML = empty('일정을 불러오지 못했어요'); }
 }
 $('#cPrev').onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() - 1, 1); renderCalView(); };

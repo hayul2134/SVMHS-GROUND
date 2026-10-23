@@ -634,6 +634,8 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .ev li{display:flex;gap:14px;align-items:center;padding:8px;border-radius:16px;border:2px solid transparent;transition:.15s}
 .ev li:hover{border-color:var(--ink);background:var(--chip);transform:rotate(-.5deg)}
 .ev li.past{opacity:.45}
+.ev-sep{margin:14px 8px 6px;font-size:12.5px;font-weight:900;color:var(--sub)}
+.ev-sep:first-child{margin-top:0}
 .ev .d{width:56px;height:56px;flex:none;text-align:center;border-radius:14px;display:flex;flex-direction:column;justify-content:center;background:var(--yellow)!important;color:var(--ink);border:var(--bd);box-shadow:var(--sh-s)}
 .ev li:nth-child(3n+2) .d{background:var(--sky)!important}.ev li:nth-child(3n) .d{background:var(--pink)!important}
 .ev .d b{display:block;font-family:var(--disp);font-weight:400;font-size:21px;line-height:1}
