@@ -1618,6 +1618,8 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .iconbtn.hb-fb{width:auto;padding:0 13px 0 11px;display:flex;align-items:center;gap:6px;background:var(--lime);color:#173048;font-weight:900;font-size:14.5px}
 :root[data-theme="dark"] .iconbtn.hb-fb{background:#5fd4b3;color:#0e2236}
 .hb-fb .hb-tx{line-height:1}
+.bulb-g{fill:var(--bulb-fill,none)}
+.hb-fb{--bulb-fill:#ffd84d}
 @media (max-width:520px){.iconbtn.hb-fb{width:44px;padding:0}.hb-fb .hb-tx{display:none}}
 .hbadge.dot{min-width:13px;width:13px;height:13px;padding:0;top:-4px;right:-4px}
 .ntlist{list-style:none;display:flex;flex-direction:column;gap:8px;margin:6px 0 12px;padding:0;max-height:60vh;overflow:auto;text-align:left}
