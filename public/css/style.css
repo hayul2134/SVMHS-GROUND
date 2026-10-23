@@ -1119,7 +1119,9 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 .in-tape{position:absolute;z-index:3;top:-10px;left:50%;width:120px;height:30px;margin-left:-60px;background:rgba(255,224,138,.88);border:2px solid rgba(23,48,72,.25);rotate:-4deg;box-shadow:0 2px 0 rgba(0,0,0,.08)}
 .in-live .in-tape{top:52px}
 .in-state{position:relative;display:inline-flex;justify-self:center;align-items:center;gap:7px;padding:5px 13px;border-radius:999px;background:rgba(0,0,0,.18);font-weight:900;font-size:14px}
-.in-state .dot{width:9px;height:9px;border-radius:50%;background:#7dffb0;box-shadow:0 0 0 0 rgba(125,255,176,.7);animation:inLive 1.6s ease-out infinite}
+.in-state .dot,.ap-live .dot{position:relative;width:9px;height:9px;border-radius:50%;background:#7dffb0}
+/* 퍼지는 고리: box-shadow 대신 transform·opacity로 (매 프레임 다시 그리지 않게) */
+.in-state .dot::after,.ap-live .dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(125,255,176,.7);animation:inLive 1.6s ease-out infinite}
 .in-time{position:relative;font-family:var(--num);font-weight:800;line-height:1;display:flex;align-items:baseline;justify-content:center;gap:6px;text-shadow:4px 4px 0 var(--ink)}
 .in-time b{font-weight:800;font-size:clamp(64px,9vw,92px);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .in-time .ap{font-family:var(--disp);font-weight:400;font-size:20px;text-shadow:2px 2px 0 var(--ink)}
@@ -1239,7 +1241,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 @keyframes inUp{from{opacity:0;transform:translateY(18px)}}
 @keyframes inPop{from{opacity:0;transform:scale(.85) rotate(-6deg)}}
 @keyframes inFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes inLive{70%{box-shadow:0 0 0 9px rgba(125,255,176,0)}100%{box-shadow:0 0 0 0 rgba(125,255,176,0)}}
+@keyframes inLive{0%{transform:scale(1);opacity:1}70%{transform:scale(3);opacity:0}100%{transform:scale(3);opacity:0}}
 @keyframes inNudge{0%,86%,100%{transform:none}90%{transform:rotate(-2deg) scale(1.03)}94%{transform:rotate(2deg) scale(1.03)}}
 @keyframes inGrow{from{flex:50}}
 
@@ -1257,7 +1259,8 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 .so-game{--w:340px;--h:360px}.so-dm{--w:320px;--h:340px}.so-prof{--w:320px;--h:380px}.so-cal{--w:340px;--h:340px}
 .so-in{position:relative;width:100%;height:100%;background:var(--card);border:3px solid var(--ink);border-radius:26px;box-shadow:5px 5px 0 var(--ink);padding:18px;display:flex;flex-direction:column;gap:12px}
 .so-clock .so-in{background:none;border-color:transparent;box-shadow:none;align-items:center;justify-content:center;gap:6px;padding:12px}
-.so-clock .so-in::before{content:"";position:absolute;inset:0;border-radius:26px;background:var(--card);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);opacity:var(--fr,1);z-index:-1}
+.so-fr{position:absolute;inset:0;border-radius:26px;background:var(--card);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}   /* 시계 카드 테두리: 줄 서기 때 서서히 생김 (JS가 opacity만 바꿈) */
+.so-clock .so-in{position:relative}
 .so-tape{position:absolute;top:-15px;left:50%;width:118px;height:28px;margin-left:-59px;background:rgba(255,224,138,.88);border:2px solid rgba(23,48,72,.2);rotate:-2deg}
 .so-tape.g{background:rgba(143,232,207,.9);rotate:2deg}
 .so-h{display:flex;align-items:center;gap:8px;font-weight:900;font-size:17px;padding:4px 2px 0}
@@ -1352,9 +1355,8 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 #intro.sh-see{background:transparent}
 #intro.sh-see .sh-stage{pointer-events:auto}
 /* 로그인 전엔 숨기는 첫 화면 버튼들도 이때만 똑같이 보이게(소개 화면 아래라 눌리진 않음) */
-html.sh-real .svcfab{display:flex!important;opacity:var(--shr,1)}
-html.sh-real #dmDock{display:flex!important;opacity:var(--shr,1)}
-html.sh-real .mascot{opacity:var(--shr,1)}
+html.sh-real .svcfab{display:flex!important}
+html.sh-real #dmDock{display:flex!important}
 html.sh-hand #bigclock :is(.s-meal,.s-ttc,.s-greet,.s-what,.clock,.s-info){visibility:hidden}
 html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-55px)}
 @media (max-width:560px){ html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform:translateY(-49px)} }
@@ -1369,8 +1371,14 @@ html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform
 .so-in.cl{background:none;border:0;box-shadow:none;padding:0;display:block}
 .so-in.cl .so-ex{display:none}
 .sh-cl{position:relative!important;width:100%!important;height:100%!important;min-height:0!important;padding:0!important;margin:0!important;display:block!important;text-align:center}
-.sh-on .so{position:absolute;left:0;top:0;width:var(--w);transform-origin:0 0;will-change:transform,opacity;opacity:0}
-.sh-on .shk-sp{display:block;opacity:var(--sp,1)}
+/* 성능: 움직이는 것들은 각자 레이어(will-change)로, 안쪽 배치는 밖으로 안 번지게(contain) */
+/* 성능: 화면에 안 보이는 반복 애니메이션은 멈춤 — 소개 화면에서 지나간 구역(.ip), 소개에 가려진 첫 화면, 안 보이는 쇼케이스 카드(.zz) */
+.ip,.ip *,.so.zz *{animation-play-state:paused!important}
+html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh-real) .mascot{animation-play-state:paused!important}
+.sh-on .sh-cover,.sh-on .sh-say,.sh-on .sh-dots,.so-fr{will-change:opacity}
+.sh-on .sh-stage{contain:layout style size}
+.sh-on .so{position:absolute;contain:layout style;left:0;top:0;width:var(--w);transform-origin:0 0;will-change:transform,opacity;opacity:0}
+.sh-on .shk-sp{display:block}
 .sh-on .sh-say{display:grid;justify-items:center;gap:4px;position:absolute;left:16px;right:16px;bottom:max(26px,4.5vh);text-align:center;pointer-events:none;opacity:0}
 .shs-n{font-family:var(--num);font-weight:800;font-size:13px;letter-spacing:.12em;color:var(--accent)}
 .shs-t{font-family:var(--disp);font-size:clamp(24px,3vw,34px);line-height:1.1;color:var(--on-bg)}
@@ -1406,7 +1414,6 @@ html.sh-real:not(.at-svc) body[data-view="home"]:not(.playing) .mascot{transform
 .ap-say{position:relative;align-self:flex-start;background:var(--card);color:var(--text);border:var(--bd);box-shadow:var(--sh-s);border-radius:18px;padding:8px 15px;font-weight:900;font-size:15px;rotate:-2deg;margin-top:4px}
 .ap-say::after{content:"";position:absolute;left:24px;top:-10px;width:15px;height:15px;background:var(--card);border-left:var(--bd);border-top:var(--bd);transform:rotate(45deg);border-radius:4px 0 0 0}
 .ap-live{display:inline-flex;align-self:flex-start;align-items:center;flex-wrap:wrap;gap:6px;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.2);font-weight:900;font-size:14px}
-.ap-live .dot{width:9px;height:9px;border-radius:50%;background:#7dffb0;animation:inLive 1.6s ease-out infinite}
 .ap-live b{font-family:var(--num);font-weight:800;font-size:16px;font-variant-numeric:tabular-nums;margin-left:2px}
 .ap-sep{opacity:.6}
 .ap-perks{list-style:none;display:grid;gap:10px;margin-top:10px}
