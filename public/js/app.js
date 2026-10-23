@@ -1680,13 +1680,14 @@ async function fillShow() {
     getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),
     Promise.resolve([])]);
   const r = meal.length ? pickMeal(meal, mealSlot()) : null;
-  if (!$('#shTray') || !$('#shTt')) return;   // 진짜 첫 화면을 복제해 쓰는 중이면 직접 그린 카드는 안 씀
   let m = SH_EX_MEAL;
   if (r) { const t = splitTray(cleanDish(r.DDISH_NM)), rest = [...t.top[1], ...t.top[2], ...t.top[3]]; m = { main: t.top[0][0] || rest.shift(), sides: rest.slice(0, 4), rice: t.rice, soup: t.soup }; }
+  if ($('#shTray')) {   // (급식은 진짜 첫 화면을 복제해 쓰는 중이면 직접 그린 카드가 없음 — 시간표는 항상 예시라 따로 채움)
   $('#shMealK').textContent = r ? '오늘 ' + MEALS[r.MMEAL_SC_CODE] : '오늘 급식';
   $('#shTray').innerHTML = cell(m.main, 'm') + cell(m.sides[0], 'a') + cell(m.sides[1], 'a') + cell(m.sides[2], 'a') + cell(m.sides[3], 'a') + cell(m.rice, 'b') + cell(m.soup, 'r');
   $('#shKcal').hidden = !r?.CAL_INFO; if (r?.CAL_INFO) $('#shKcal').textContent = '🔥 ' + r.CAL_INFO;
   $('#shMealEx').hidden = !!r;
+  }
   shTT = SH_EX_TT.map((x, i) => [i + 1, x]);   // 쇼케이스 시간표는 항상 예시 (반 설정과 무관하게 똑같이 보이게)
   $('#shTtK').textContent = '오늘 시간표';
   $('#shTt').innerHTML = shTT.map(([p, nm]) => { const bl = BELL.find(x => x.p === p); return `<li data-p="${p}"><b>${p}</b><small>${bl ? secHM(bl.start) : ''}</small>${subjIcon(nm)}<span>${esc(nm)}</span></li>`; }).join('');
@@ -1720,7 +1721,11 @@ async function fillShow() {
     if (o._fb == null) o._fb = box.innerHTML;
     if (i === 1) ticking = [];
     const stowed = els.length === 1 && els[0].classList.contains('stow') && !els[0].classList.contains('open');   // 서랍이 들어가 있음(세로 화면 등): 포스트잇 탭만 보임
-    if (i === 2 && rs.length && !stowed) { const r = rs[0]; real[2] = { x: r.left, y: r.top, s: r.width / o.offsetWidth, ex: 1 }; return; }   // 시간표는 항상 예시 카드(2026-10-23) — 진짜 시간표 카드 자리에서 겹쳐 나타나며 출발
+    if (i === 2 && rs.length && !stowed) {   // 진짜 시간표 칸 자리에, 그 칸 너비·아래 버튼 위까지의 높이 안에 맞춰 예시 카드
+      const r = rs[0], dock = [$('#dmDock'), $('#svcFab')].map(e => e && e.getClientRects().length ? e.getBoundingClientRect() : null).filter(b => b && b.right > r.left && b.left < r.right);
+      const floor = Math.min(L.H - 16, ...dock.map(b => b.top - 14)), sc = Math.min(r.width / o.offsetWidth, Math.max(80, floor - r.top) / o.offsetHeight);
+      real[2] = { x: (r.left + r.right) / 2 - o.offsetWidth * sc / 2, y: r.top, s: sc, ex: 1 }; return;
+    }   // 시간표는 항상 예시 카드(2026-10-23) — 진짜 시간표 카드 자리에서 겹쳐 나타나며 출발
     if (!rs.length || rs.length !== els.length || stowed) {
       if (box.classList.contains('cl')) { box.classList.remove('cl'); box.innerHTML = o._fb; o.style.removeProperty('--w'); o.style.removeProperty('--h'); }
       const tab = stowed && els[0].querySelector('.s-tab'), tr = tab && tab.getBoundingClientRect();   // 직접 그린 카드가 그 포스트잇 자리에서 커지며 나옴
@@ -1755,7 +1760,7 @@ async function fillShow() {
   let preparing = false;
   function prep() {   // 복제 + 줄 자리 계산: 무거워서 한가할 때, 그리고 복제본이 안 보일 때만
     if (preparing || !on || !L) return; preparing = true;
-    idle(() => { preparing = false; if (!on || !L || (cur > T_HOLD - .01 && cur < 1)) return; [0, 1, 2].forEach(cloneGroup); rowLayout(); capSlot(); L.cloned = true; L.stale = false; });
+    idle(() => { preparing = false; if (!on || !L || (cur > T_HOLD - .01 && cur < 1)) return; const tmp = !de.classList.contains('sh-real'); if (tmp) de.classList.add('sh-real'); try { [0, 1, 2].forEach(cloneGroup); } finally { if (tmp) de.classList.remove('sh-real'); } rowLayout(); capSlot(); L.cloned = true; L.stale = false; });   // (드러났을 때만 보이는 버튼 위치까지 재려고 잠깐 sh-real)
   }
   function rowLayout() {
     const { W, H } = L, sz = objs.map(o => [o.offsetWidth, o.offsetHeight]);

@@ -1155,6 +1155,19 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 
 /* 공통 제목 */
 .in-sec{padding:64px 0 6px}
+/* 부가 기능 카드 (이것도 다 있어요) */
+.in-feats{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.ft{--fc:var(--sky);position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;gap:4px 12px;align-items:start;padding:16px 16px 18px;background:var(--card);border:var(--bd);border-radius:20px;box-shadow:var(--sh-s);transition:transform .2s cubic-bezier(.3,1.4,.5,1),box-shadow .2s}
+.ft:nth-child(4n+1){rotate:-.8deg}.ft:nth-child(4n+2){rotate:.6deg}.ft:nth-child(4n+3){rotate:-.4deg}.ft:nth-child(4n){rotate:.9deg}
+.ft:hover{transform:translate(-2px,-3px);box-shadow:5px 6px 0 var(--ink)}
+.ft-ic{grid-row:span 2;width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:var(--fc);border:2.5px solid var(--ink);box-shadow:2px 2px 0 var(--ink);rotate:-6deg;transition:rotate .25s cubic-bezier(.3,1.6,.5,1)}
+.ft:hover .ft-ic{rotate:6deg}
+.ft-ic svg{width:24px;height:24px;color:#173048}
+.ft b{font-family:var(--disp);font-weight:400;font-size:19px;line-height:1.2;padding-top:2px}
+.ft span{font-size:13.5px;font-weight:600;color:var(--sub);line-height:1.5}
+.ft.c-y{--fc:var(--yellow)}.ft.c-r{--fc:var(--red)}.ft.c-b{--fc:var(--sky)}.ft.c-g{--fc:var(--lime)}.ft.c-v{--fc:var(--violet)}.ft.c-p{--fc:#ffc4dd}
+.intro.rv-on .in-feats .rv:nth-child(4n+2){transition-delay:.06s}.intro.rv-on .in-feats .rv:nth-child(4n+3){transition-delay:.12s}.intro.rv-on .in-feats .rv:nth-child(4n){transition-delay:.18s}
+@media (max-width:520px){.in-feats{grid-template-columns:1fr 1fr;gap:12px}.ft{grid-template-columns:1fr;padding:14px}.ft-ic{grid-row:auto;width:40px;height:40px}.ft b{font-size:17px}.ft span{font-size:12.5px}}
 .in-h{text-wrap:balance;font-family:var(--disp);font-weight:400;font-size:clamp(28px,4.4vw,40px);line-height:1.15;color:var(--on-bg);margin-bottom:22px;display:flex;flex-direction:column;gap:6px}
 .in-h small{font-family:inherit;font-size:15px;color:var(--accent);display:inline-flex;align-items:center;gap:6px}
 .in-h small::before{content:"";width:18px;height:3px;border-radius:2px;background:currentColor}
