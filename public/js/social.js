@@ -194,10 +194,12 @@ document.addEventListener('submit', async e => {
     await call(mode, d);
     await refreshMe();
     if (card.closest('#introAuth')) { card.classList.add('ok'); await new Promise(r => setTimeout(r, 760)); }   // 소개 화면: '입장!' 도장 찍히고 닫힘
-    toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉 프로필을 꾸며 보세요` : `${S.me.name}, 반가워요!`);
-    ctx.authed?.(S.me, true, mode);   // 소개 화면이면 닫힘
+    ctx.authed?.(S.me, true, mode);   // 소개 화면이면 닫힘 (가입 때 고른 학년·반은 여기서 이 기기 반 설정으로 들어감)
     renderMe();
-    if (mode === 'signup') setTimeout(openEdit, 500);
+    // 가입 직후 창을 연달아 띄우지 않음(2026-10-24): 프로필 꾸미기 창은 자동으로 안 열고, 첫 출석 축하 창 하나만 뜸.
+    // 환영 인사는 출석 창이 닫힌 뒤(또는 바로) 짧게
+    const hi = () => toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉` : `${S.me.name}, 반가워요!`);
+    setTimeout(() => { const m = document.querySelector('.modal.open'); if (!m) return hi(); const ob = new MutationObserver(() => { if (!m.classList.contains('open')) { ob.disconnect(); setTimeout(hi, 250); } }); ob.observe(m, { attributes: true, attributeFilter: ['class'] }); }, 1200);
   } catch (err) { authErr(f, err, mode); btn.disabled = false; }
   finally { btn.classList.remove('busy'); card.classList.remove('busy'); }
 });
@@ -474,7 +476,7 @@ function openEdit() {
     const d = Object.fromEntries(new FormData(e.target));
     try {
       await call('me', { ...d, grade: +d.grade, cls: +d.cls, avatar: sel.avatar, color: sel.color, stickers: [...picked], rep: sel.rep, deco });
-      await refreshMe(); closeSheet(); renderMe(); toast('프로필을 저장했어요 ✨');
+      await refreshMe(); ctx.adoptClass?.(S.me, true); closeSheet(); renderMe(); toast('프로필을 저장했어요 ✨');
     } catch (err) { fail(err); }
   };
 }

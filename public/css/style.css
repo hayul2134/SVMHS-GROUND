@@ -43,6 +43,9 @@ a{color:inherit}
 
 /* ===== 3. 헤더 (위에 떠 있는 버튼들) ===== */
 header{position:fixed;top:0;left:0;right:0;z-index:45;pointer-events:none}
+/* 스크롤하면 헤더 뒤에 반투명 바탕 (2026-10-24: 버튼이 아래 카드·리본 위에 그냥 떠서 겹쳐 보이던 문제) */
+header{transition:background .2s,box-shadow .2s,backdrop-filter .2s}
+html.hbg:not(.prelogin) header{background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 2px 0 var(--line)}
 .hd{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:8px}
 .hd > *{pointer-events:auto}
 .logo{display:flex;align-items:center;gap:10px;line-height:1;margin-right:auto;color:var(--on-bg)}
@@ -299,7 +302,6 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .tray.mini .it > span{font-size:15px}
 .tray.mini .vc{top:3px;right:3px;padding:2px 5px;font-size:10px;border-radius:6px}
 .tray.mini .it .vc{margin:0 0 0 2px}
-  background:var(--chip);color:var(--text);font-weight:900;font-size:15px;text-align:left;box-shadow:var(--sh-s);transition:transform .1s,box-shadow .1s}
 @media (max-width:699px){
   .s-row{display:flex;flex-direction:column;align-items:center;gap:30px}
   .s-row .s-side{width:min(420px,100%);align-items:stretch}
@@ -310,14 +312,14 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
   .s-side .s-tt{width:100%}
   .s-meal{transform:rotate(.6deg)}
   .tray.mini{grid-template-rows:112px 88px}
-  .s-tt .tt{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
-  .s-tt .tt li .s{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .s-tt .tt li.now::after,.s-tt .tt li.next::after,.s-tt .tt li .tm{display:none}
+  .s-tt .tt li .s{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 }
 /* 서랍 크기: 시계 양옆에 남는 공간만큼 자동으로 커지고 작아짐 (시계는 항상 가림 없이) */
 .drawers{--clockw:calc(2.95 * clamp(84px,13.5vw,200px));--free:calc((100vw - var(--clockw)) / 2 - 56px)}
 .drawers .s-big{--bf:clamp(84px,13.5vw,200px)}
 @media (min-width:1280px){.drawers{--clockw:calc(2.95 * clamp(96px,10.5vw,170px))}.drawers .s-big{--bf:clamp(96px,10.5vw,170px)}}
+/* 1000~1199px 가로 화면(1024×768 태블릿 등): 시계를 조금 줄여 양옆 서랍 폭을 넓힘 (2026-10-24: 서랍이 220px라 과목·라벨이 다 잘리던 문제) */
+@media (max-width:1199px){.drawers{--clockw:calc(2.95 * clamp(84px,11vw,200px))}.drawers .s-big{--bf:clamp(84px,11vw,200px)}}
 .s-ttc.stow{width:clamp(220px,calc(var(--free) - 40px),320px);container-type:inline-size}
 .s-meal.stow{width:clamp(250px,calc(var(--free) - 20px),380px);container-type:inline-size}
 .s-ttc.stow .tt li.now{transform:rotate(-1deg)}
@@ -2239,6 +2241,10 @@ html.away .mascot *{animation-play-state:paused!important}
    ▾·↺는 ::before(order로 글자 뒤) — ::after는 이름표([data-tip])가 씀. overflow:hidden 쓰면 이름표가 잘려서 안 씀 */
 .s-lbl{display:inline-flex;align-items:center;gap:4px;min-width:0;height:32px;padding:0 10px;border:0;border-radius:10px;background:none;font:inherit;font-weight:900;color:var(--text);white-space:nowrap;cursor:pointer;transition:background .1s}
 .s-lbl::before{content:"▾";order:1;font-size:.75em;color:var(--sub)}
+.s-lbl{overflow:hidden;flex-shrink:1}
+.s-lbl .lt{overflow:hidden;text-overflow:ellipsis;min-width:0}.s-lbl .lw{white-space:pre}
+.s-lbl::before{flex:none}
+@container (max-width:270px){.s-lbl .lw{display:none}.s-lbl{padding:0 5px;gap:2px}.s-lbl::before{display:none}.s-nb{width:24px}}
 .s-lbl:hover,.s-lbl.wkon{background:var(--chip);color:var(--text)}
 .s-lbl.off{background:var(--yellow);color:#3b3220}
 .s-lbl.off::before{content:"↺";font-size:.85em;color:inherit}
@@ -2482,10 +2488,27 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 @media (max-width:560px){.bal-t{margin-top:44px}}
 /* 밸런스 티켓: 시계 묶음과 떨어뜨려 첫 화면 맨 아래(▼ 위)에 따로 — 시계 묶음은 혼자 화면 가운데 */
 @media (min-width:700px) and (min-height:760px){
-  .bal-t{position:absolute;left:50%;bottom:clamp(58px,7vh,84px);margin:0;translate:-50% 0}
+  .drawers .bal-t{position:absolute;left:50%;bottom:clamp(58px,7vh,84px);margin:0;translate:-50% 0}
   /* 시계 묶음('N교시 시작까지'~상태 줄)을 한 덩어리로 보고 화면 세로 정가운데(=좌우 서랍 카드 중심)에 맞춤.
      위아래 여백을 같게 하고, 말풍선 높이+간격(약 60px)만큼 위로 빼서 가운데 계산에서 제외 */
   .stage{padding-top:76px;padding-bottom:76px}
+}
+/* 서랍이 아닐 때(세로 태블릿·좁은 창·휴대폰, 2026-10-24): 시계 묶음(말풍선·라벨·시계·상태 줄)을 한 덩어리로 먼저 보여 주고 그 아래에 카드.
+   .s-row를 풀어(display:contents) 카드 두 장이 상태 줄 아래로 오게 함 — 예전엔 상태 줄이 카드 밑으로 떨어져 시계와 따로 놀았음.
+   700px 이상은 급식(왼쪽)·시간표(오른쪽) 2단, 그보다 좁으면 시간표 → 급식 한 줄씩 */
+.stage:not(.drawers){display:grid;grid-template-columns:repeat(2,minmax(0,420px));justify-content:center;justify-items:center;align-content:center;column-gap:clamp(16px,3vw,28px)}
+.stage:not(.drawers) > *,.stage:not(.drawers) .clock{grid-area:auto;grid-column:1/-1}
+.stage:not(.drawers) .s-row{display:contents}
+.stage:not(.drawers) .s-greet{order:1}.stage:not(.drawers) .s-what{order:2}
+.stage:not(.drawers) .clock{order:3}
+.stage:not(.drawers) .s-info{order:4}
+.stage:not(.drawers) :is(.s-lside,.s-side){order:6;grid-area:auto;width:100%;justify-self:stretch;margin-top:clamp(28px,4vh,44px);display:flex;flex-direction:column;align-items:stretch}
+.stage:not(.drawers) .s-side{order:7}
+.stage:not(.drawers) .s-tt{width:100%}
+.stage:not(.drawers) .bal-t{order:8}
+@media (max-width:699px){
+  .stage:not(.drawers){grid-template-columns:minmax(0,420px)}
+  .stage:not(.drawers) .s-side{order:6}.stage:not(.drawers) .s-lside{order:7;margin-top:30px}
 }
 /* 시계 묶음(말풍선 포함) 한 덩어리 정가운데 — 이동량은 app.js centerHero()가 재서 --hx/--hy로 넣음 */
 .drawers :is(.s-greet,.s-what,.clock,.s-info){translate:var(--hx,0) var(--hy,0)}

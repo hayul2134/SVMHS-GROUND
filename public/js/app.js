@@ -954,10 +954,12 @@ function renderHomeWeek() {
   $('#hwNote').textContent = cls && !api.hasKey ? '지금은 하루 5교시까지만 표시돼요. (인증키 등록 전)' : '';
   fillWeek($('#hWeek'), mon, () => mon !== S.homeWeek);
 }
-/* ===== 첫 화면 급식판·시간표: 가장자리 서랍 (700px 이상) ===== */
+/* ===== 첫 화면 급식판·시간표: 가장자리 서랍 (가로 화면 1000px 이상) =====
+   2026-10-24: 세로 태블릿(800×1280)·좁은 창에서 서랍 카드가 시계 상태 줄을 덮던 문제 → 시계 양옆 자리가 넉넉한 가로 화면에서만 서랍,
+   그 밖(세로 태블릿 등)은 시계 아래 2단(700~1279px CSS) · 700px 미만은 세로 한 줄 */
 // 핀 = 꺼낸 그 자리에 고정(기기별 저장). 핀이 없으면 탭으로 꺼내고, 바깥을 누르면 들어감. 첫 화면 아래로 내려가면 잠시 접힘.
 const SIDE = { meal: { el: $('.s-meal'), name: '급식판' }, tt: { el: $('.s-ttc'), name: '시간표' } };
-const wideMQ = matchMedia('(min-width:700px)');
+const wideMQ = matchMedia('(min-width:1000px) and (min-aspect-ratio:1/1)');
 function paintSide(k) {
   const { el, name } = SIDE[k], open = el.classList.contains('open');
   const t = el.querySelector('.s-tab'); t.setAttribute('aria-expanded', String(open));
@@ -1052,6 +1054,8 @@ new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, 
 new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
 document.fonts?.ready.then(heroResize); heroResize();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
+// 조금이라도 내려가면 헤더에 바탕을 깔아 아래 내용과 겹쳐 보이지 않게 (2026-10-24)
+{ let q = 0; const f = () => { q = 0; document.documentElement.classList.toggle('hbg', scrollY > 24); }; addEventListener('scroll', () => { if (!q) q = requestAnimationFrame(f); }, { passive: true }); f(); }
 // 서비스들이 화면에 들어오면 왼쪽 아래 '서비스' 버튼을 숨김
 new IntersectionObserver(([e]) => {
   const H = document.documentElement, was = H.classList.contains('at-svc');
@@ -1066,7 +1070,12 @@ new IntersectionObserver(([e]) => {
 /* ===== 첫 화면 카드에서 다른 날 넘겨 보기 (‹ ›) — 라벨을 누르면 오늘로, 3분 동안 안 만지면 자동으로 오늘로 ===== */
 // 홈 카드 라벨: 지금(오늘·이번 주)이면 눌러서 하루↔한 주 전환, 다른 날·다른 주면 눌러서 지금으로
 function setLbl(el, text, off, wk) {
-  el.textContent = text; el.classList.toggle('off', off); el.classList.toggle('wkon', wk);
+  // 끝 낱말(' 시간표'·' 급식')은 따로 감싸서, 서랍이 좁으면 CSS가 숨김 → 라벨이 넘쳐 '다음 ›' 버튼을 덮던 문제(2026-10-24) 방지
+  const m = /^(.*?)( (?:시간표|급식))$/.exec(text);
+  el.textContent = '';
+  const a = document.createElement('span'); a.className = 'lt'; a.textContent = m ? m[1] : text; el.append(a);
+  if (m) { const b = document.createElement('span'); b.className = 'lw'; b.textContent = m[2]; el.append(b); }
+  el.classList.toggle('off', off); el.classList.toggle('wkon', wk);
   const tip = off ? (wk ? '이번 주로 돌아가기' : '오늘로 돌아가기') : (wk ? '하루씩 보기' : '한 주씩 보기');
   el.dataset.tip = tip; el.setAttribute('aria-label', `${text} · 눌러서 ${tip}`);
   const card = el.closest('.s-tt'), what = card?.classList.contains('s-meal') ? '급식' : '시간표';
@@ -1382,6 +1391,18 @@ function openClass() {
   fillClasses($('#selG').value, cls ? cls.c : '');
   openModal('#mClass');
 }
+/* 가입·로그인한 계정에 학년·반이 있으면 이 기기 반 설정으로 그대로 씀 (2026-10-24: 가입 때 고른 반이 시간표에 안 들어가고
+   다음 접속 때 반 설정 창이 1학년 1반으로 뜨던 문제). 기기에 이미 반이 있으면 건드리지 않음. 프로필에서 학년·반을 바꾸면 force로 따라감 */
+function adoptClass(me, force) {
+  if (!me || (cls && !force)) return;
+  const next = validClass({ g: String(me.grade || ''), c: String(me.cls || '') });
+  if (!next || (cls && cls.g === next.g && cls.c === next.c)) return;
+  cls = next; store.set('class', cls);
+  if ($('#mClass').classList.contains('open')) closeModal($('#mClass'));
+  renderClassChip(); renderHomeTT();
+  if ($('#v-tt').classList.contains('on')) renderTTView();
+}
+SOC.adoptClass = adoptClass;
 $('#btnClass').onclick = openClass;
 document.addEventListener('click', e => { if (e.target.closest('[data-open-class]')) openClass(); });
 $('#saveClass').onclick = () => {
@@ -1669,7 +1690,7 @@ $('#intro').addEventListener('click', e => { const a = e.target.closest('[data-i
 SOC.authed = (me, on = true, how) => {
   try { if (me) localStorage.setItem('sg_in', '1'); else localStorage.removeItem('sg_in'); } catch {}
   if (!on) return;                                   // 서버 확인 불가: 지금 상태 유지 (로그인 안 된 기기는 소개 화면 그대로)
-  if (me) { if (introOn()) { intro(false); if (how === 'login' && !cls) setTimeout(openClass, 400); } }
+  if (me) { adoptClass(me); if (introOn()) { intro(false); if (how === 'login' && !cls) setTimeout(openClass, 400); } }
   else intro(true);                                  // 로그인 안 했으면 사이트는 안 보이고 소개 화면만
 };
 $('#intro').inert = !introOn();
@@ -2087,7 +2108,7 @@ loadConfig().finally(async () => {
   cfgReady = true; bootHome();
   const h = location.hash.slice(1);
   if (h && h !== 'home') { if (/^(me|u|dm|game)\b/.test(h)) await socReady; go(h); }
-  if (!cls && !introOn()) setTimeout(openClass, 400);   // 소개 화면이면 닫힐 때 띄움
+  if (!cls && !introOn()) setTimeout(() => { if (!cls) openClass(); }, 1500);   // 소개 화면이면 닫힐 때 띄움 · 로그인 확인(adoptClass)을 기다렸다가 그래도 반이 없을 때만
 });
 
 /* ===== 입력 안내 말풍선 (브라우저 기본 경고창 대신) ===== */
