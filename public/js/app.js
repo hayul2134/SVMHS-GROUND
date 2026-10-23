@@ -1158,14 +1158,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#cPick'
 
 /* ===== D-day ===== */
 const byDate = (a, b) => a.date.localeCompare(b.date);
-function ddayListHtml(list) {   // list: [{ name, date, i? }] — i가 있으면 삭제 버튼 표시
+function ddayListHtml(list) {   // list: [{ name, date, i?, off? }] — 홈 '다가오는 일정'과 같은 스티커 카드(첫 개만 큰 카드), i가 있으면 삭제 버튼
   const t = today();
   if (!list.length) return empty('아직 D-day가 없어요');
-  return `<ul class="dlist">${list.map(x => {
+  return `<div class="uprow dd">${list.map((x, k) => {
     const d = parseYmd(x.date);
     const del = x.i == null ? '' : `<button class="x" data-del="${x.i}" aria-label="${esc(x.name)} 삭제">✕</button>`;
-    return `<li><span class="num">${ddayText(diffDays(d, t))}</span><span class="nm">${esc(x.name)}<br><span class="dt">${fmtDay(d)}</span></span>${del}</li>`;
-  }).join('')}</ul>`;
+    const tag = x.off ? '<em class="tag off">쉬는 날</em>' : '';
+    return `<div class="up${k === 0 ? ' first' : ''}"><b class="num">${ddayText(diffDays(d, t))}</b><div class="txt"><p class="nm">${esc(x.name)}</p><span class="dt">${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</span></div>${tag}${del}</div>`;
+  }).join('')}</div>`;
 }
 // 홈 '다가오는 일정': 학교 일정 + 내 D-day를 날짜순으로 한 줄에 (큰 D-숫자 타일)
 async function renderHomeDday() {
@@ -1194,7 +1195,7 @@ async function renderDdayView() {
   $('#dMine').innerHTML = ddayListHtml(myDdays().map((x, i) => ({ ...x, i })).sort(byDate));
   $('#dSchool').innerHTML = skel(3);
   try {
-    $('#dSchool').innerHTML = ddayListHtml((await loadUpcoming()).slice(0, 8).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD })));
+    $('#dSchool').innerHTML = ddayListHtml((await loadUpcoming()).slice(0, 8).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: isOff(r) })));
   } catch { $('#dSchool').innerHTML = empty('일정을 불러오지 못했어요'); }
 }
 $('#dForm').addEventListener('submit', e => {

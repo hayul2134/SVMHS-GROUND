@@ -668,6 +668,9 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .up.first .nm{font-size:17px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .up.first .dt{font-size:12.5px;opacity:.85}
 .up.mine:not(.first){background:var(--lime)}
+.uprow.dd{margin:-4px -8px 0;padding:10px 8px 14px}
+.uprow.dd .up .x{flex:0 0 auto;width:32px;height:32px;border-radius:10px;font-weight:900;color:var(--ink);opacity:.55;margin-right:-4px}
+.uprow.dd .up .x:hover{opacity:1;background:var(--red)}
 .dlist{list-style:none;display:flex;flex-direction:column;gap:10px}
 .dlist li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:2px solid var(--ink)}
 :root[data-theme="dark"] .dlist li{border-color:var(--line)}
