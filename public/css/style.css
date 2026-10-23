@@ -1779,6 +1779,17 @@ html.away .mascot *{animation-play-state:paused!important}
 .gor::before,.gor::after{content:"";flex:1;border-top:2px dashed var(--line)}
 #socSheet .gbtn{margin:6px auto 10px}
 .gbox.alt{margin:16px 0 0}
+/* 구글 버튼 자리: 구글 iframe이 뜨기 전(또는 못 뜰 때) 보이는 임시 버튼이 CSP(인라인 style 차단) 때문에
+   모양을 잃고 G 로고가 칸 너비만큼 커지던 문제 → 크기를 고정하고 구글 버튼 모양으로 직접 그림 */
+.gbtn{width:100%;max-width:320px;min-height:44px;display:flex;justify-content:center;overflow:hidden}
+.gbtn .nsm7Bb-HzV7m-LgbsSe{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:320px;height:40px;padding:0 14px;border:1px solid #dadce0;border-radius:20px;background:#fff;color:#1f1f1f;font:500 14px/1 system-ui,sans-serif;cursor:pointer;overflow:hidden}
+.gbtn .nsm7Bb-HzV7m-LgbsSe-MJoBVe{display:none}
+.gbtn .nsm7Bb-HzV7m-LgbsSe-bN97Pc-sM5MNb{display:flex;align-items:center;gap:10px;min-width:0}
+.gbtn .nsm7Bb-HzV7m-LgbsSe-Bz112c{flex:0 0 18px;width:18px;height:18px;display:grid;place-items:center}
+.gbtn .nsm7Bb-HzV7m-LgbsSe-Bz112c svg{width:18px;height:18px;display:block}
+.gbtn .nsm7Bb-HzV7m-LgbsSe-BPrWId{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gbtn .L6cTce{display:none}
+.gbtn svg{max-width:24px;max-height:24px}
 /* 개발자: 학과별 테스트 계정 바꾸기 */
 .swbar{flex-basis:100%;display:flex;flex-direction:column;gap:8px;margin-top:6px;padding:12px;border:2px dashed var(--line);border-radius:16px;background:var(--chip)}
 .swbar p{margin:0;font-weight:800;font-size:14px}
