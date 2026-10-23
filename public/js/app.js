@@ -283,7 +283,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu'
 // 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
-$('#goDown').onclick = () => $('#board').scrollIntoView({ behavior: 'smooth', block: 'start' });
+// 맨 위·맨 아래로 (2026-10-23): 첫 화면 아래 화살표 = 페이지 맨 아래로, 맨 아래 화살표 = 맨 위로
+$('#goDown').onclick = () => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+$('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
 $('#svcFab').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
@@ -2040,6 +2042,12 @@ async function fillShow() {
     e.preventDefault(); lockUntil = 0; step(d);
   });
   skip.addEventListener('click', () => leave(1));
+  // 소개 화면 맨 위·맨 아래로: 쇼케이스를 그냥 지나가야 하니 이동하는 동안엔 장면 붙이기를 끔 (leaving), 다 가면 다시 켬
+  const travel = top => { stopI = -1; leaving = performance.now() + 4000; root.scrollTo({ top, behavior: 'smooth' });
+    const done = () => { leaving = performance.now() + 60; root.removeEventListener('scrollend', done); };
+    root.addEventListener('scrollend', done); };
+  $('#inGoBot').addEventListener('click', () => travel(root.scrollHeight));
+  $('#inGoTop').addEventListener('click', () => travel(0));
   SOC.showOff = () => { root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand', 'sh-ttx'); flags = {}; (fixedBtns || []).forEach(e => { if (e) { e.style.opacity = ''; e._opacity = undefined; } }); };   // 로그인하면 소개와 함께 정리
   SOC.showPrep = () => { if (on && introOn()) { layout(); render(cur, false); } };   // 첫 화면을 미리 다 그린 뒤(bootHome) 복제 준비
   setup();

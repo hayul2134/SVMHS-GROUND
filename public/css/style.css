@@ -220,6 +220,12 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .stage.soon .m-bar i{background:repeating-linear-gradient(-45deg,#ff6b7a 0 10px,#ff8a95 10px 20px)}
 .s-down{position:absolute;bottom:10px;left:50%;margin-left:-22px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--on-bg);animation:hop 1.8s ease-in-out infinite}
 .s-down svg{width:22px;height:22px}
+/* 맨 위로·맨 아래로 화살표 버튼 (2026-10-23): 스티커 동그라미 + 화살표, 아래 작은 글씨 */
+.go-end{display:flex;flex-direction:column;align-items:center;gap:6px;margin:44px auto 0;font-weight:900;font-size:12.5px;color:var(--on-bg)}
+.go-end svg{box-sizing:content-box;width:22px;height:22px;padding:11px;border-radius:50%;background:var(--card);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transition:transform .15s,box-shadow .15s}
+.go-end:hover svg{transform:translateY(-2px)}.go-end:active svg,.go-end.is-pressed svg{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.in-bot{position:absolute;left:0;bottom:12px;margin:0;z-index:2;color:var(--sub)}
+.in-bot svg{animation:hop 1.8s ease-in-out infinite}
 @keyframes hop{50%{transform:translateY(6px)}}
 @media (max-width:560px){.s-info{gap:10px 10px;margin-top:20px}.s-info .mini.now{width:100%}.s-date .d-md b{font-size:24px}.s-big{text-shadow:4px 4px 0 var(--sky)}}
 
