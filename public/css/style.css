@@ -532,7 +532,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
   background:var(--chip);border:2px solid var(--ink);color:var(--text)}
 :root[data-theme="dark"] .tt li .p{border-color:var(--line)}
 .tt li .s{font-weight:800;font-size:16px}
-.tt li.done{opacity:.38}
+.tt li.done{opacity:.38;text-decoration:line-through 2px;text-decoration-color:color-mix(in srgb,var(--sub) 70%,transparent)}
 /* 교시 시작 시각: 번호 바로 옆 고정 폭 열 (카드가 기울어 있어 오른쪽 끝에 두면 줄마다 어긋나 보임) */
 .tt li .tm{flex:none;width:3.3em;margin-left:-4px;font-family:var(--num);font-weight:800;font-size:12px;line-height:1;color:var(--sub);font-variant-numeric:tabular-nums}
 .tt li.now .tm,.tt li.next .tm{color:var(--ink);opacity:.7}
@@ -549,7 +549,8 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .week th .wd-d{display:block;font-family:var(--num);font-weight:800;font-size:12px;opacity:.75}
 .week th .wd-w{display:inline-block;margin-top:4px;font-family:var(--disp);font-size:19px;color:var(--text)}
 .week th:first-child{width:44px}
-.week th.past{opacity:.85}
+.week th.past{opacity:.55}
+.week th.past .wd-w{text-decoration:line-through 2px;text-decoration-color:color-mix(in srgb,var(--sub) 70%,transparent)}
 .week th.today .wd-d{color:var(--text);opacity:1}
 .week th.today .wd-w{background:var(--yellow);color:var(--onc);border:2px solid var(--ink);border-radius:10px;padding:2px 10px;box-shadow:var(--sh-s);transform:rotate(-3deg)}
 .week th.today .wd-w::after{content:"★";color:var(--red);margin-left:3px;font-size:.75em}
@@ -558,7 +559,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .week td .si{display:block;font-style:normal;font-size:21px;line-height:1;margin-bottom:3px}
 .week td .si .sic{display:block;margin:0 auto;filter:drop-shadow(1.5px 1.5px 0 color-mix(in srgb,var(--ink) 22%,transparent))}
 .week td.dbl .si{font-size:27px;margin-bottom:5px}
-.week td.done .si,.week td.past .si{filter:grayscale(.7)}
+.week td.done .si,.week td.past .si{filter:grayscale(1)}
 .week td.now .si{animation:siBob 1.6s ease-in-out infinite}
 @keyframes siBob{50%{transform:translateY(-2px) rotate(-8deg)}}
 @media (prefers-reduced-motion:reduce){.week td.now .si{animation:none}}
@@ -569,13 +570,16 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .week td.pn{border:0;width:44px;padding:0;background:none;line-height:1}
 .week td.pn b{display:block;font-family:var(--disp);font-weight:400;font-size:18px;color:var(--text)}
 .week td.pn small{display:block;margin-top:3px;font-family:var(--num);font-size:11.5px;font-weight:800;color:var(--sub)}
-.week td.past{border-style:dashed;color:color-mix(in srgb,var(--text) 80%,var(--card))}
-.week td.past .si{opacity:.7}
+/* 끝난 교시(지난 요일 전체 + 오늘 끝난 칸): 회색 바탕 · 흐린 글씨 · 취소선 · 오른쪽 위 체크 도장 */
+.week td.past:not(.e),.week td.today.done{background:var(--chip);border:2px dashed var(--line);color:color-mix(in srgb,var(--text) 45%,var(--card));box-shadow:none}
+.week td.past:not(.e) .si,.week td.today.done .si{opacity:.4}
+.week td.past:not(.e) .sj,.week td.today.done .sj{text-decoration:line-through 2px;text-decoration-color:color-mix(in srgb,var(--sub) 75%,transparent)}
+.week td.past:not(.e) .x2,.week td.today.done .x2{opacity:.5;border-color:var(--line);color:var(--sub)}
+.week td.past:not(.e)::after,.week td.today.done::after{content:"";position:absolute;top:5px;right:5px;width:16px;height:16px;border-radius:50%;background:var(--sub) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.3l2.6 2.5L12 5.4' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat;opacity:.75}
 .week td.today{background:color-mix(in srgb,var(--lime) 20%,var(--card));color:var(--ink);border:2px solid var(--ink)}
 :root[data-theme="dark"] .week td.today:not(.e){background:color-mix(in srgb,var(--lime) 14%,var(--card));color:var(--text)}
+:root[data-theme="dark"] .week td.today.done:not(.e){background:var(--chip);color:color-mix(in srgb,var(--text) 45%,var(--card))}
 .week td.today .x2{border-color:var(--ink);color:var(--ink)}
-.week td.today.done{opacity:.8;background:var(--chip);color:color-mix(in srgb,var(--text) 75%,var(--card));border-color:var(--line)}
-.week td.today.done .sj{text-decoration:line-through 2px;text-decoration-color:color-mix(in srgb,var(--sub) 60%,transparent)}
 .week td.now,:root[data-theme="dark"] .week td.today.now:not(.e){background:var(--yellow);color:#173048;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);transform:scale(1.07) rotate(-1deg);z-index:1;font-weight:900;overflow:visible}
 .week td.now .sic{color:#173048}
 .week td.now .x2{bottom:13px;background:#fff;color:#173048;border-color:#173048}
