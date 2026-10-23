@@ -995,11 +995,13 @@ function paintSide(k) {
   const b = el.querySelector('.s-put'); b.dataset.tip = '옆으로 넣기'; b.setAttribute('aria-label', `${name} 옆으로 넣기`);
 }
 // 꺼낸 서랍은 '옆으로 넣기' 버튼(또는 포스트잇 탭)을 누를 때까지 그대로 둠. 상태는 기기에 기억(side_meal·side_tt: open/closed)
+var heroReady;
 function setSide(k, open) {
   SIDE[k].el.classList.toggle('open', open);
   store.set('side_' + k, open ? 'open' : 'closed'); paintSide(k);
+  if (heroReady) heroLater(true);   // 카드를 꺼내고 넣으면 덩어리 크기가 바뀌므로 다시 가운데로
 }
-function openSide(k, on) { const el = SIDE[k].el; if (el.classList.contains('stow')) { el.classList.toggle('open', on); paintSide(k); } }
+function openSide(k, on) { const el = SIDE[k].el; if (el.classList.contains('stow')) { el.classList.toggle('open', on); paintSide(k); if (heroReady) heroLater(true); } }
 function applyDrawers() {
   const on = wideMQ.matches;
   $('#bigclock').classList.toggle('drawers', on);
@@ -1061,8 +1063,18 @@ function centerHero(force) {
   let bot = Math.min(HERO.getBoundingClientRect().bottom + sy, innerHeight);
   for (const el of [$('#play'), $('#goDown')]) if (!el.hidden && el.offsetParent) bot = Math.min(bot, el.getBoundingClientRect().top + sy);
   bot -= 14;
-  // 세로: 눈에 보이는 빈 공간(헤더~티켓)의 가운데 → 위아래 여백이 같아 보이게
-  let dx = Math.round(innerWidth / 2 - (L + R) / 2), dy = (top + bot) / 2 - (T + B) / 2;
+  // 세로 (2026-10-24 다시 맞춤): 사람 눈엔 '시계 묶음 + 꺼내 둔 좌우 카드' 전체가 한 덩어리로 보이므로
+  // 그 덩어리 전체의 가운데를 화면(헤더 아래~화면 끝, 밸런스 티켓이 있으면 티켓 위)의 가운데에 둠.
+  // 기하학적 가운데는 눈에 낮아 보이므로 영역 높이의 3%만큼 위로(광학 중심). 단 시계 묶음은 헤더·티켓·▼와 안 겹치게 제한
+  let cT = Infinity, cB = -Infinity;
+  for (const el of HERO.querySelectorAll('#bigTime, #more')) { const b = el.getBoundingClientRect(), oy = offOf(el)[1]; if (b.height) { cT = Math.min(cT, b.top - oy); cB = Math.max(cB, b.bottom - oy); } }
+  const cMid = isFinite(cT) ? (cT + cB) / 2 + sy : (T + B) / 2;   // 카드 가운데가 맞춰질 높이(옮기기 전, 문서 기준)
+  const dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
+  const anyOpen = SIDE.meal.el.classList.contains('open') || SIDE.tt.el.classList.contains('open');
+  const uT = anyOpen ? Math.min(T, cMid - dh) : T, uB = anyOpen ? Math.max(B, cMid + dh) : B;
+  const ticket = $('#play'), hasT = !ticket.hidden && ticket.offsetParent;
+  const zT = hdr + sy, zB = hasT ? ticket.getBoundingClientRect().top + sy - 14 : innerHeight + sy;
+  let dx = Math.round(innerWidth / 2 - (L + R) / 2), dy = (zT + zB) / 2 - (zB - zT) * .03 - (uT + uB) / 2;
   if (B + dy > bot) dy = bot - B;
   if (T + dy < top) dy = Math.min(0, top - T);
   dy = Math.round(dy);
@@ -1070,14 +1082,12 @@ function centerHero(force) {
   if (!force && Math.abs(dx - hx) < 6 && Math.abs(dy - hy) < 6) { dx = hx; dy = hy; }
   if (dx !== hx) st.setProperty('--hx', dx + 'px');
   if (dy !== hy) st.setProperty('--hy', dy + 'px');
-  // 좌우 서랍도 같은 가운데 줄에. 서랍이 헤더·화면 아래에 걸리면 화면 가운데로
-  // 세로 기준은 말풍선을 뺀 큰 시계 + 상태 줄의 가운데 — 서랍 가운데를 정확히 같은 높이로 (말풍선까지 넣으면 카드가 위로 떠 보임 — 2026-10-23)
-  let cT = Infinity, cB = -Infinity;
-  for (const el of HERO.querySelectorAll('#bigTime, #more')) { const b = el.getBoundingClientRect(), oy = offOf(el)[1]; if (b.height) { cT = Math.min(cT, b.top - oy); cB = Math.max(cB, b.bottom - oy); } }
-  const cy = Math.round(isFinite(cT) ? (cT + cB) / 2 + sy + dy : (T + B) / 2 + dy), dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
+  // 좌우 서랍은 큰 시계 + 상태 줄의 가운데와 같은 높이 (말풍선까지 넣으면 카드가 위로 떠 보임 — 2026-10-23). 헤더·화면 아래에 걸리면 화면 가운데로
+  const cy = Math.round(cMid + dy);
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
 }
 let heroRaf = 0, heroForce = false;
+heroReady = true;   // var(호이스팅) — 이 줄 전에 setSide가 불려도 오류 없이 건너뜀
 const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(() => { const f = heroForce; heroForce = false; centerHero(f); }); };
 const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
