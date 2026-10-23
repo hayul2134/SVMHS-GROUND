@@ -46,7 +46,7 @@ export const store = {
 export const skel = n => '<div class="skel"></div>'.repeat(n);
 export const empty = msg => `<p class="empty">${msg}</p>`;
 let toastTimer;
-export const toast = msg => {
+export const toast = (msg, ms = 1800) => {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 };

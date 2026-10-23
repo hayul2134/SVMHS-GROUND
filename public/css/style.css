@@ -2867,3 +2867,26 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 }
 @media (prefers-reduced-motion:reduce){.pmain .pdev:hover{transform:rotate(-1.2deg)}}
 .pcard.dev .pban::after{left:auto;right:16px}
+
+/* 마지막 10초 '7.39초': 단위 '초'는 작게 (2026-10-24) */
+#bigTime .u{display:inline-block;font-size:.3em;margin-left:.06em;letter-spacing:0}
+/* 홈 시간표: 같은 과목이 이어지면 한 줄로 묶음 '1~2' + 'N시간' (2026-10-24) */
+.tt li .s{display:flex;align-items:center;gap:0}
+.tt li .s .sn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt li .p small{font-size:.78em;letter-spacing:-.02em;margin-left:1px;opacity:.85}
+.tt li.multi .p{display:flex;align-items:center;justify-content:center;width:auto;min-width:var(--pw,30px);padding:0 6px;white-space:nowrap}
+.tt li .s .x2{flex:none;margin-left:6px;font-style:normal;font-size:11px;font-weight:900;line-height:1.5;padding:0 5px;border-radius:6px;border:1.5px solid var(--line);background:var(--card);color:var(--sub)}
+.tt li.now .s .x2{border-color:currentColor;color:inherit;background:transparent}
+/* 휴대폰: 아래 고정 버튼이 마지막 내용을 가리지 않게 여백 + 내리는 동안 숨김 (2026-10-24) */
+@media (max-width:699px){
+  main.wrap{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+  .svcfab,.dmdock{transition:translate .25s cubic-bezier(.3,.9,.3,1),opacity .2s,transform .1s,box-shadow .1s}
+  html.fabhide .svcfab,html.fabhide .dmdock:not(.open){translate:0 calc(100% + 40px);opacity:0;pointer-events:none}
+}
+/* 가입 폼 반 칩 아래 학과 표시: 1·2 콘텐츠 · 3·4 미디어 · 5·6 프로듀스 (2026-10-24, 1학년이 학과·반 번호를 헷갈리지 않게) */
+.dephint{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:5px 0 0;font-size:10.5px;font-weight:800;color:var(--sub);text-align:center;line-height:1.2}
+.dephint span{border-top:2px solid var(--line);padding-top:3px}
+/* 작은 버튼의 누르는 영역만 넓힘 — 보이는 크기는 그대로, 태블릿 손가락으로 40px 이상 (2026-10-24: ‹ › 26px·끼니 칩 27px·넣기 30px) */
+.s-nb,.s-slots button,.drawers .s-put,.s-ttmore{position:relative}
+.s-nb::after,.s-slots button::after,.drawers .s-put::after,.s-ttmore::after{content:"";position:absolute;inset:-8px -4px}
+.s-slots button::after{inset:-8px -3px}

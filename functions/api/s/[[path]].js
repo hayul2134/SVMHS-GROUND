@@ -72,6 +72,7 @@ const clean = (s, max, multiline = false) => {
 /* ===== 욕설 기본 필터 (프로필에 공개되는 글: 아이디·닉네임·소개·상태·동아리) =====
    띄어쓰기·특수문자·숫자를 빼고 검사 ('시 발', '씨1발' 등). 완벽하진 않음 → 나머지는 신고로 처리. DM은 사적인 대화라 검사하지 않음 */
 const BAD = /씨발|시발|씨빨|씌발|ㅅㅂ|ㅆㅂ|병신|븅신|ㅂㅅ|좆|좃|존나|졸라|개새|개색|개세끼|새끼|쌔끼|썅|니애미|느금|니미|애미|애비|지랄|ㅈㄹ|미친놈|미친년|닥쳐|꺼져|엠창|창녀|걸레|섹스|fuck|shit|bitch/i;
+const BAD_G = new RegExp(BAD.source, 'gi');
 const isBad = (...xs) => xs.some(x => BAD.test(String(x || '').replace(/[\s\d_.\-~!@#$%^&*()+=|\\/?,'"`:;<>[\]{}·ㆍ]/g, '')));
 
 /* ===== 구글 ID 토큰 확인: 구글 tokeninfo로 서명·만료를 확인하고 우리 사이트용(aud)인지 검사 ===== */
@@ -306,7 +307,7 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco) }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -561,10 +562,15 @@ const ROUTES = {
     if (r.blocked || r.blockedMe) return err('메시지를 보낼 수 없어요', 403);
     if (!dmAllowed(u, r) && !isAdm(me)) return err(['서로 팔로우한 친구에게만', '나를 팔로우하는 사람에게만', ''][u.dm_pref || 0] + ' 보낼 수 있어요', 403);
     if (!isAdm(me) && !isAdm(u) && !dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);   // DM을 꺼도 개발자와의 대화는 열림
-    const text = clean(body.body, 500, true);
+    // 욕설은 막지 않고 ＊로 가림(친구끼리 대화라 거절하면 거부감 큼) · 1분 15개 · 같은 말 3번 연속 금지 (2026-10-24: 1분 40개 도배 확인)
+    const text = clean(body.body, 500, true).replace(BAD_G, m => '＊'.repeat(m.length));
     if (!text) return err('내용을 적어 주세요');
     const se = stkErr(me, text); if (se) return err(se);
-    if (!isAdm(me) && await limited(db, 'dm:' + me.id, 40, 60)) return err('너무 빨리 보내고 있어요. 잠깐만요!', 429);
+    if (!isAdm(me) && await limited(db, 'dm:' + me.id, 15, 60)) return err('너무 빨리 보내고 있어요. 잠깐만요!', 429);
+    if (!isAdm(me)) {
+      const last = (await db.prepare('SELECT body FROM messages WHERE pair = ?1 AND a = ?2 ORDER BY id DESC LIMIT 2').bind(pairOf(me.id, u.id), me.id).all()).results;
+      if (last.length === 2 && last.every(x => x.body === text)) return err('같은 메시지를 계속 보내고 있어요', 429);
+    }
     const m = await db.prepare('INSERT INTO messages (pair, a, b, body, at) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, at')
       .bind(pairOf(me.id, u.id), me.id, u.id, text, Date.now()).first();
     return json({ ok: true, message: { id: m.id, mine: true, body: text, del: false, at: m.at } });

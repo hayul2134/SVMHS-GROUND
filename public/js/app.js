@@ -85,12 +85,18 @@ function bellInfo(n) {
 // 지금 상태에 맞춘 G의 한마디 (시간대가 아니라 종 시간 기준이라 '수업 중인데 점심 인사' 같은 어긋남이 없음)
 function sayLine(b) {
   const p = +((b.state.match(/^(\d)교시/) || [])[1] || 0);
+  const hr = bellNow().getHours();
+  // 새벽(23시~5시)에 들어온 건 공부·작업하다 등교까지 얼마나 남았나 보려는 것 → 응원 문구 (2026-10-24 하율 요청). 10분마다 바뀜
+  if ((hr >= 23 || hr < 5) && b.target != null && (b.eve || b.state === '등교 전' || b.state === '방과 후')) {
+    const L = ['새벽 공부 중? 등교 전까지 시간 아껴 쓰자 📚', '작업 중이구나! 지금 집중력 최고일 때야 🔥', '조금만 더 하고 꼭 눈 붙이자 😴', '이 시간까지 깨어 있는 너, 진짜 대단해 ✨', '끝내고 몇 시간 잘 수 있는지 시계 한번 보자 ⏰', '새벽 집중 모드 ON 💪 마무리까지 화이팅', '물 한 잔 마시고 다시 달려 보자 💧', '오늘 한 만큼 내일이 편해질 거야 🌙'];
+    return L[Math.floor(bellNow().getMinutes() / 10 + hr * 6) % L.length];
+  }
   if (b.eve) return '내일 학교… 마음의 준비 하자 🫠';
   if (b.state === '주말') return '주말이다! 푹 쉬자 😴';
   if (b.state === '쉬는 날') return '오늘은 쉬는 날! 푹 쉬자 😴';
   if (b.state === '방과 후' && b.free) return b.wkNext ? '주말이다!!! 🎉 일주일 고생했어' : '내일은 쉬는 날! 🎉';
   if (b.state === '방과 후') return '오늘도 수고했어 👋';
-  if (b.state === '등교 전') return '좋은 아침! 오늘도 가보자 ☀️';
+  if (b.state === '등교 전') return hr < 7 ? '일찍 일어났네! 오늘도 가보자 ☀️' : '좋은 아침! 오늘도 가보자 ☀️';
   if (b.state === '조회 중') return '조회 시간, 정신 차려~ 🫡';
   if (b.state === '점심시간') return '점심시간! 맛있게 먹고 와 🍚';
   if (b.state === '쉬는 시간') return '쉬는 시간! 잠깐 숨 돌리자 🙌';
@@ -128,7 +134,7 @@ function startMs(target) {
     const nb = bellNow(), sec = nb.getHours() * 3600 + nb.getMinutes() * 60 + nb.getSeconds() + nb.getMilliseconds() / 1000;
     const l = msTarget - sec;
     if (document.hidden || !heroVisible || l <= 0 || l > 10) { msRaf = 0; return; }
-    setHtml('#bigTime', dg(l.toFixed(2)));
+    setHtml('#bigTime', dg(l.toFixed(2)) + '<span class="u">초</span>');   // '7.39'가 7분 39초로 읽히지 않게 '초'를 붙임
     msRaf = requestAnimationFrame(step);
   };
   msRaf = requestAnimationFrame(step);
@@ -156,7 +162,7 @@ function tickClock() {
     const live = S.ttShown === ymd(n);
     // 지금 교시 · (쉬는 시간이면) 다음 교시 · 끝난 교시 표시
     markWeek(n.getDay() % 6 && isSchoolDay(n) ? pi : null);
-    $$('#sTT li').forEach(li => { const p = +li.dataset.p; li.classList.toggle('now', live && p === pi.cur); li.classList.toggle('next', live && !pi.cur && p === pi.nxt); li.classList.toggle('done', live && p < pi.done && p !== pi.cur); });
+    $$('#sTT li').forEach(li => { const p = +li.dataset.p, z = +li.dataset.p2 || p, inn = x => x >= p && x <= z; li.classList.toggle('now', live && inn(pi.cur)); li.classList.toggle('next', live && !pi.cur && inn(pi.nxt)); li.classList.toggle('done', live && z < pi.done && !inn(pi.cur)); });
   }
   weekProg(secNow);
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
@@ -192,7 +198,7 @@ function tickClock() {
   const restPct = Math.ceil((1 - prog) * 100);   // 배터리처럼: 40% 이하 노랑, 20% 이하 빨강
   $('#bellBarBox').classList.toggle('low', bar && restBar && restPct <= 40 && restPct > 20);
   $('#bellBarBox').classList.toggle('crit', bar && restBar && restPct <= 20);
-  setText('#bellPct', bar ? (restBar ? `${Math.ceil((1 - prog) * 100)}% 남음` : `${Math.floor(prog * 100)}% 지남`) : b.eve ? '내일 학교 가는 날' : b.state === '주말' ? '즐거운 주말' : b.state === '쉬는 날' ? '푹 쉬는 날' : b.free ? (b.wkNext ? '주말 시작!' : '내일 쉬는 날') : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
+  setText('#bellPct', bar ? (restBar ? `${Math.ceil((1 - prog) * 100)}% 남음` : `${Math.floor(prog * 100)}% 지남`) : b.eve ? '내일 학교 가는 날' : b.state === '주말' ? '즐거운 주말' : b.state === '쉬는 날' ? '푹 쉬는 날' : b.free ? (b.wkNext ? '주말 시작!' : '내일 쉬는 날') : b.state === '방과 후' ? '오늘 수업 끝' : b.state === '등교 전' && n.getHours() < 5 ? '새벽 집중 중' : b.target != null && left > 3600 ? '아직 여유 있어요' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
   tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
 // 초록 두근두근이 끝날 때: 한 번 작게 뛰며 색이 원래대로 서서히 돌아감(페이드 아웃)
@@ -458,10 +464,12 @@ const mealListHtml = (r, d) => {
 };
 let homeRows = [];
 // 지금 보여 줄 끼니: 7시 50분까지 조식 → 5교시 시작(점심 끝)까지 중식 → 그 뒤로 석식
-const MEAL_AT = { b: 7 * 3600 + 50 * 60, d: BELL.find(x => x.p === 5).start };
+// 끼니가 끝나는 시각: 조식 7:50 · 중식 = 5교시 시작 · 석식 18:00 (석식 끝나는 시각이 바뀌면 e만 고칠 것)
+// 끝난 끼니는 바로 다음 끼니로: 조식 → 중식 → 석식 → (다음 급식 날) 조식. 석식이 없는 날은 중식이 끝나면 바로 다음 조식 (2026-10-24 하율 요청)
+const MEAL_AT = { b: 7 * 3600 + 50 * 60, d: BELL.find(x => x.p === 5).start, e: 18 * 3600 };
 function mealSlot(n = now()) {
   const sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
-  return sec < MEAL_AT.b ? '1' : sec < MEAL_AT.d ? '2' : '3';
+  return sec < MEAL_AT.b ? '1' : sec < MEAL_AT.d ? '2' : sec < MEAL_AT.e ? '3' : '4';   // '4' = 오늘 끼니 다 끝남 → mealsOver
 }
 // 그 끼니가 없는 날(석식 없는 날 등)은 다음 끼니 → 중식 → 아무거나 순서로 대신 보여 줌
 function pickMeal(rows, want) {
@@ -542,7 +550,7 @@ function paintHeroWeek() {
 }
 $('#sMealSlots').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { e.stopPropagation(); S.heroPick = b.dataset.m; armReset(); paintHeroMeal(); } });
 function paintHomeMeal() {
-  if (!S.mealManual && homeRows.length) S.homeMeal = pickMeal(homeRows, S.mealSlot).MMEAL_SC_CODE;
+  if (!S.mealManual && homeRows.length) S.homeMeal = (S.mealSlot === '4' ? homeRows[homeRows.length - 1] : pickMeal(homeRows, S.mealSlot)).MMEAL_SC_CODE;   // '한눈에 보기' 오늘 급식: 다 끝났으면 마지막 끼니
   paintHeroMeal();
   const sel = S.homeMeal;
   $('#hMealTabs').innerHTML = homeRows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
@@ -827,7 +835,10 @@ const SUBJ_IC = [[/편집|포스트\s*프로덕션/, 'cut'], [/CG|VFX|모션|애
   [/화법|언어|국어|문학|독서|작문|매체/, 'ko'], [/사회|윤리|지리|정치|법/, 'globe'], [/과학|물리|화학|생명|지구/, 'flask'],
   [/스포츠|체육|운동/, 'ball'], [/음악/, 'music'], [/기술|가정/, 'tool'], [/진로/, 'compass'], [/동아리/, 'flag'], [/자율|자치|학급/, 'vote'], [/봉사/, 'heart'], [/시험|평가/, 'test']];
 const subjIcon = n => `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${(SUBJ_IC.find(([re]) => re.test(n)) || [, 'book'])[1]}"/></svg>`;
-const subjName = s => String(s || '').replace(/^[\s*#·-]+/, '').trim();   // 나이스 원문의 '* 영상 CG작업' 같은 기호 제거
+// 나이스 원문 정리: '* 영상 CG작업' 같은 앞 기호·'[보강]' 꼬리표 제거, 끝의 '(3학년)' 제거,
+// '대수능 모의학력평가' → '수능 모의평가'(수능 모의고사라는 뜻은 살리고 짧게, 2026-10-24)
+const subjName = s => String(s || '').replace(/^\s*\[[^\]]*\]/, '').replace(/^[\s*#·-]+/, '').replace(/\s*\(\d학년\)\s*$/, '')
+  .replace(/^대(?:학)?수(?:학)?능(?:력시험)?\s*모의\s*(?:학력)?평가$/, '수능 모의평가').trim();
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
 function ttTarget(n = now()) {
@@ -871,10 +882,19 @@ async function renderHomeTT() {
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     if (S.ttWk) { nextKey = ''; await fillWeek(box, S.ttWk, () => seq !== ttSeq || !S.ttWk); wkResize(); return; }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${rows.map(r => `<li data-p="${esc(r.PERIO)}"><span class="p">${esc(r.PERIO)}</span>${bellAt(r.PERIO)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(subjName(r.ITRT_CNTNT))}</i>${esc(subjName(r.ITRT_CNTNT))}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
+      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm]) => `<li data-p="${a}" data-p2="${z}"${z > a ? ' class="multi"' : ''}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
+}
+// 같은 과목이 이어지면 한 줄로 묶음 (점심 앞뒤 4·5교시는 안 묶음) — 주간 표와 같은 규칙. [시작 교시, 끝 교시, 과목]
+function ttBlocks(rows) {
+  const out = [];
+  for (const r of rows) {
+    const p = +r.PERIO, nm = subjName(r.ITRT_CNTNT), last = out[out.length - 1];
+    if (last && last[2] === nm && last[1] === p - 1 && p !== 5) last[1] = p; else out.push([p, p, nm]);
+  }
+  return out;
 }
 // 월~금 시간표 표 (홈 아래쪽 카드와 시간표 화면이 같이 씀)
 const weekLbl = mon => { const fri = addDays(mon, 4); return `${mon.getMonth() + 1}/${mon.getDate()} ~ ${fri.getMonth() + 1}/${fri.getDate()}`; };
@@ -1055,7 +1075,10 @@ new MutationObserver(() => heroLater()).observe(document.documentElement, { attr
 document.fonts?.ready.then(heroResize); heroResize();
 new IntersectionObserver(([e]) => document.documentElement.classList.toggle('tuck', !e.isIntersecting), { threshold: .6 }).observe($('#bigclock'));
 // 조금이라도 내려가면 헤더에 바탕을 깔아 아래 내용과 겹쳐 보이지 않게 (2026-10-24)
-{ let q = 0; const f = () => { q = 0; document.documentElement.classList.toggle('hbg', scrollY > 24); }; addEventListener('scroll', () => { if (!q) q = requestAnimationFrame(f); }, { passive: true }); f(); }
+// 휴대폰 폭에선 아래로 내리는 동안 아래 고정 버튼(서비스·메시지)을 숨겨 내용을 가리지 않게, 올리면 다시 보임
+{ let q = 0, lastY = scrollY; const de = document.documentElement, narrow = matchMedia('(max-width:699px)');
+  const f = () => { q = 0; const y = scrollY; de.classList.toggle('hbg', y > 24); if (Math.abs(y - lastY) > 6) { de.classList.toggle('fabhide', narrow.matches && y > lastY && y > 80); lastY = y; } };
+  addEventListener('scroll', () => { if (!q) q = requestAnimationFrame(f); }, { passive: true }); f(); }
 // 서비스들이 화면에 들어오면 왼쪽 아래 '서비스' 버튼을 숨김
 new IntersectionObserver(([e]) => {
   const H = document.documentElement, was = H.classList.contains('at-svc');

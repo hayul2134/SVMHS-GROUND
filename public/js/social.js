@@ -116,7 +116,7 @@ function authHtml(mode = 'login', keep = {}) {
       <div class="fgrp"><p class="fgt"><b>2</b>친구들에게 보일 정보</p>
         <label><span class="lrow">이름 (닉네임)<small class="cnt" data-cnt>0/20</small></span><input name="name" required maxlength="20" placeholder="언제든 바꿀 수 있어요"></label>
         <div class="apicks"><fieldset class="apick"><legend>학년</legend><div class="pchips g3">${grades}</div></fieldset>
-        <fieldset class="apick"><legend>반</legend><div class="pchips g6">${classes}</div></fieldset></div>
+        <fieldset class="apick"><legend>반</legend><div class="pchips g6">${classes}</div><p class="dephint" aria-hidden="true"><span>콘텐츠</span><span>미디어</span><span>프로듀스</span></p></fieldset></div>
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
       </div>
       <p class="note">💡 가입 뒤 ⚙️에서 구글을 연결하면 비밀번호를 잊어도 찾을 수 있어요</p>` : ''}
@@ -890,6 +890,15 @@ function playCut() {
 }
 
 /* ===== 시작 ===== */
+// 로그인 만료 예고 (2026-10-24): 30일 유지·연장 없음이라 어느 날 갑자기 소개 화면으로 튕기지 않게, 3일 안으로 남으면 하루 한 번 알림
+function expWarn() {
+  const exp = S.me?.sessExp; if (!exp) return;
+  const left = exp - Date.now(), day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  if (left <= 0 || left > 3 * 86400e3) return;
+  try { if (localStorage.getItem('sg_expwarn') === day) return; localStorage.setItem('sg_expwarn', day); } catch {}
+  const d = Math.ceil(left / 86400e3);
+  setTimeout(() => toast(`${d <= 1 ? '하루 안에' : d + '일 뒤'} 자동으로 로그아웃돼요 · 다시 로그인하면 30일 더 유지돼요`, 6000), 2500);
+}
 export async function init(c) {
   ctx = c; c.stkTray = stkTray;   // app.js 밸런스 댓글에서도 씀
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
@@ -908,6 +917,7 @@ export async function init(c) {
   if (S.enabled) await refreshMe(); else paintBadges();
   if (S.google && !S.me) loadGis().catch(() => {});   // 로그인 전이면 구글 스크립트를 미리 받아 둠 → 로그인 페이지 열 때 버튼이 바로 뜸
   if (!S.meErr) c.authed?.(S.me, S.enabled);   // 로그인 전이면 소개 화면 유지, 로그인돼 있으면 닫음 (연결 문제면 지금 상태 그대로)
+  expWarn();
   startPoll();
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) refreshMe(); });
   $('#btnFeedback').onclick = openFeedback;
