@@ -111,6 +111,8 @@ const pub = u => u && ({
 // 밸런스 투표 없이 댓글·결과 보기 · DM 받기 설정·DM 끄기 무시. 단 상대가 개발자를 차단했으면 존중, 비밀번호 시도 제한은 보안상 유지
 const isAdm = u => u?.handle === ADMIN_HANDLE;
 const ALL_OPEN = 1e6;
+// 개발자는 어떤 랭킹·1등 표시에도 안 나옴 (scores 쿼리에 붙이는 조건)
+const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE}')`;
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
@@ -286,18 +288,20 @@ const ROUTES = {
   'POST me': needMe(async ({ db, me, body }) => {
     const name = clean(body.name, 20);
     if (!name) return err('이름(닉네임)을 적어 주세요');
-    if (isBad(name, body.bio, body.mood, body.club)) return err('욕설이나 나쁜 말은 쓸 수 없어요');
+    if (isBad(name, body.bio, body.mood, body.club, isAdm(me) ? body.title : '')) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
     const ub = k => unlockedOf(effBest(me), effTotal(me), k);
     const avOk = [...AVATARS, ...ub('avatar')], stOk = [...STICKERS, ...ub('sticker')], coOk = [...COLORS, ...ub('color')];
     const avatar = avOk.includes(body.avatar) ? body.avatar : me.avatar;
     const color = coOk.includes(body.color) ? body.color : me.color;
-    const title = body.title === '' || ub('title').includes(body.title) ? String(body.title) : (me.st_title || '');
-    const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => stOk.includes(s)).slice(0, 6);
+    const adm = isAdm(me);   // 개발자: 치장 제한 없음 — 스티커 12개 · 시계 5칸 · 대표 스티커 3개 · 칭호 직접 쓰기
+    const title = adm ? clean(body.title, 12) : body.title === '' || ub('title').includes(body.title) ? String(body.title) : (me.st_title || '');
+    const stickers = (Array.isArray(body.stickers) ? body.stickers : []).filter(s => stOk.includes(s)).slice(0, adm ? 12 : 6);
     // 대표 스티커·시계 스티커는 출석 보상 스티커만 (안 보냈으면 그대로 둠)
-    const rep = body.rep === undefined ? (me.st_rep || '') : body.rep === '' || ub('sticker').includes(body.rep) ? String(body.rep) : (me.st_rep || '');
-    const deco = Array.isArray(body.deco) ? [...new Set(body.deco.filter(s => ub('sticker').includes(s)))].slice(0, decoSlots(effBest(me), effTotal(me))) : jsonArr(me.st_deco);
+    const repIn = body.rep === undefined ? null : String(body.rep).split(',').filter(Boolean);
+    const rep = repIn === null ? (me.st_rep || '') : repIn.every(v => ub('sticker').includes(v)) ? [...new Set(repIn)].slice(0, adm ? 3 : 1).join(',') : (me.st_rep || '');
+    const deco = Array.isArray(body.deco) ? [...new Set(body.deco.filter(s => ub('sticker').includes(s)))].slice(0, adm ? 5 : decoSlots(effBest(me), effTotal(me))) : jsonArr(me.st_deco);
     const dev = me.handle === ADMIN_HANDLE, g = dev ? 0 : +body.grade, c = dev ? 0 : +body.cls;   // 개발자 계정은 학년·반 없음
     // 인스타 아이디: @·주소를 붙여 넣어도 아이디만 남김. 인스타 규칙(영문·숫자·._, 30자)에 안 맞으면 거절
     const insta = String(body.insta || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '').toLowerCase();
@@ -747,7 +751,7 @@ const ROUTES = {
     const game = url.searchParams.get('game'), scope = url.searchParams.get('scope') || 'all';
     if (!GAMES[game]) return err('bad game');
     const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.st_rep';
-    const BEST = 'SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 GROUP BY uid';
+    const BEST = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid`;
     if (scope === 'class') {   // 반 대항전: 반마다 최고 기록 상위 3명 평균
       const rows = (await db.prepare(`SELECT t.best, u.grade, u.cls FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE u.grade > 0 AND u.cls > 0 ORDER BY t.best`).bind(game).all()).results;
       const by = new Map();
@@ -791,7 +795,7 @@ const ROUTES = {
     const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_best, u.st_last, u.st_shield, u.st_pf, u.st_title, u.st_rep';
     const since = (() => { const d = new Date(Date.now() + 9 * 3600e3 - 120 * 86400e3); return d.toISOString().slice(0, 10).replace(/-/g, ''); })();
     const rows = (scope === 'friends'
-      ? await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND (u.id = ?1 OR u.id IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1)) ORDER BY u.st_cur DESC LIMIT ?2`).bind(me.id, 200, since).all()
+      ? await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND u.handle <> '${ADMIN_HANDLE}' AND (u.id = ?1 OR u.id IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1)) ORDER BY u.st_cur DESC LIMIT ?2`).bind(me.id, 200, since).all()
       : await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND u.is_test = 0 AND u.handle <> ?1 ORDER BY u.st_cur DESC LIMIT ?2`).bind(ADMIN_HANDLE, 300, since).all()).results;
     const live = await liveMany(env, db, rows);
     const list = rows.map((r, i) => ({ ...card(r), grade: r.grade, cls: r.cls, value: isAdm(r) ? ALL_OPEN : live[i], best: isAdm(r) ? ALL_OPEN : r.st_best, pf: !!r.st_pf, title: r.st_title || '', isMe: r.id === me.id, uid: r.id }))
@@ -803,7 +807,7 @@ const ROUTES = {
     const out = {};
     await Promise.all(Object.keys(GAMES).map(async game => {
       const [top, ma] = await Promise.all([
-        db.prepare('SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 ORDER BY s.best, s.at LIMIT 1').bind(game).first(),
+        db.prepare(`SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND u.handle <> '${ADMIN_HANDLE}' ORDER BY s.best, s.at LIMIT 1`).bind(game).first(),
         db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first(),
       ]);
       const best = ma?.b ?? null;
@@ -852,11 +856,11 @@ async function attState(env, db, me, doCheck, quiet = false) {
 }
 
 async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 사람 수 + 1
-  return (await db.prepare('SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 GROUP BY uid) WHERE b < ?2').bind(game, best).first()).r;
+  return (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid) WHERE b < ?2`).bind(game, best).first()).r;
 }
 
 async function topCrowns(db, uid) {   // 역대 1등인 게임 목록
   const games = Object.keys(GAMES);
-  const tops = await Promise.all(games.map(game => db.prepare('SELECT uid FROM scores WHERE game = ?1 ORDER BY best, at LIMIT 1').bind(game).first()));
+  const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid FROM scores WHERE game = ?1 AND ${NOT_DEV} ORDER BY best, at LIMIT 1`).bind(game).first()));
   return games.filter((_, i) => tops[i]?.uid === uid);
 }

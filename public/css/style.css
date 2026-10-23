@@ -2743,3 +2743,17 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .bc-stk .stkm{width:72px;height:72px;display:block;margin-top:2px;transform:rotate(-4deg)}
 /* 프로필 꾸미기 '없음' 칸 */
 .pick .att-none{font-size:13px;font-weight:900;color:var(--text)}
+
+/* 개발자 치장 (2026-10-23): 시계 스티커 4·5칸, 프로필 배너 스티커 7~12, 무지개 칭호, 대표 스티커 여러 개 */
+.dk.du4{width:clamp(30px,4.8vw,52px);height:clamp(30px,4.8vw,52px);left:-2%;bottom:-16%;transform:rotate(-8deg)}
+.dk.du5{width:clamp(24px,3.8vw,42px);height:clamp(24px,3.8vw,42px);left:-16%;top:38%;transform:rotate(12deg)}
+.clock:has(#bigTime.long) .dk.du4,.clock:has(#bigTime.long2) .dk.du4{bottom:-28%}
+.clock:has(#bigTime.long) .dk.du5,.clock:has(#bigTime.long2) .dk.du5{left:-17%}
+@media (prefers-reduced-motion:no-preference){.boot .dk.du4{animation:dkIn .55s cubic-bezier(.3,1.8,.5,1) .8s backwards}.boot .dk.du5{animation:dkIn .55s cubic-bezier(.3,1.8,.5,1) .88s backwards}}
+.stk.s7{left:34%;top:78%;font-size:20px;animation-delay:.2s;transform:rotate(8deg)}.stk.s8{right:12%;top:74%;font-size:22px;animation-delay:.6s;transform:rotate(-10deg)}
+.stk.s9{left:58%;top:30%;font-size:20px;animation-delay:1s}.stk.s10{left:30%;top:24%;font-size:18px;animation-delay:1.4s;transform:rotate(-6deg)}
+.stk.s11{right:34%;top:8%;font-size:18px;animation-delay:1.8s}.stk.s12{left:50%;top:70%;font-size:18px;animation-delay:2.2s;transform:rotate(14deg)}
+.rep+.rep{margin-left:1px}
+.ptitle.dev span{background:linear-gradient(90deg,#ff7aa8,#ffb35c,#ffe066,#7ee0a1,#6fc6f4,#a98bff,#ff7aa8);background-size:200% 100%;color:#173048;box-shadow:2px 2px 0 var(--ink);animation:devTitle 4s linear infinite}
+@keyframes devTitle{to{background-position:200% 0}}
+@media (prefers-reduced-motion:reduce){.ptitle.dev span{animation:none}}

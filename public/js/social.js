@@ -10,6 +10,7 @@ const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink
 const ALL_COLORS = [...COLORS, ...ATT_COLORS];   // 출석 보상 전용 배경 색 포함
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
 const MAX_STICKERS = 6;
+const stkMax = u => isDev(u) ? 12 : MAX_STICKERS;   // 개발자는 치장 제한 없음(배너 자리 12개)
 const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시용, 실제 권한은 서버가 검사)
 const GAMES = {
   reaction: { name: '반응속도', em: '⚡', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
@@ -225,13 +226,13 @@ document.addEventListener('input', e => {
 });
 
 /* ===== 프로필 카드 ===== */
-const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6'];
+const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
   const chips = (isDev(u) ? '<span class="chip dev">🛠 SVMHS GROUND 개발자</span>' : '') + [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
-  const ttl = !isDev(u) && u.title ? `<p class="ptitle"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
+  const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
   const crowns = (d.crowns || []).map(g => `<span class="crown">👑 ${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
@@ -245,7 +246,7 @@ function profileHtml(d) {
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${g.em}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">
-    <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, MAX_STICKERS).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
+    <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
       ${av(u, 'big')}
       ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
@@ -379,7 +380,7 @@ function openMore(h) {
 function openEdit() {
   const u = S.me; if (!u) return;
   const picked = new Set(u.stickers || []);
-  const deco = [...(u.deco || [])], slots = decoSlots(u.attBest, u.attTotal);
+  const deco = [...(u.deco || [])], slots = isDev(u) ? 5 : decoSlots(u.attBest, u.attTotal);
   sheet(`<h3>프로필 꾸미기</h3>
     <form class="sform" id="editForm" autocomplete="off">
       <div class="preview c-${esc(u.color)}" id="edPrev">${av({ ...u, online: false }, 'big')}</div>
@@ -394,11 +395,11 @@ function openEdit() {
       <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
       <p class="lbl">배경 색</p>
       <div class="pick sw" id="pCo">${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}${attPicks('color', x => x === u.color)}</div>
-      ${`<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
-      <p class="lbl">스티커 <small id="stkN">${picked.size}/${MAX_STICKERS}</small></p>
+      ${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">개발자는 칭호를 마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
+      <p class="lbl">스티커 <small id="stkN">${picked.size}/${stkMax(u)}</small></p>
       <div class="pick" id="pSt">${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}">${s}</button>`).join('')}${attPicks('sticker', x => picked.has(x))}</div>
       ${`<p class="lbl">대표 스티커 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small></p>
-      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}">없음</button>${attPicks('sticker', x => x === u.rep)}</div>
+      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}">없음</button>${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div>
       <small class="hint">이름 옆에 작게 붙어요 — 댓글·랭킹·DM·친구 목록 어디서나 보여요.</small>
       <p class="lbl">첫 화면 시계 스티커 <small id="decoN"></small></p>
       <div class="pick" id="pDeco">${attPicks('sticker', x => deco.includes(x))}</div>
@@ -414,16 +415,28 @@ function openEdit() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.lock) { toast(`${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`); return; }
     if (picked.has(b.dataset.v)) picked.delete(b.dataset.v);
-    else if (picked.size >= MAX_STICKERS) { toast(`스티커는 ${MAX_STICKERS}개까지!`); return; }
+    else if (picked.size >= stkMax(u)) { toast(`스티커는 ${stkMax(u)}개까지!`); return; }
     else picked.add(b.dataset.v);
-    b.classList.toggle('on', picked.has(b.dataset.v)); $('#stkN').textContent = `${picked.size}/${MAX_STICKERS}`;
+    b.classList.toggle('on', picked.has(b.dataset.v)); $('#stkN').textContent = `${picked.size}/${stkMax(u)}`;
   };
   // 대표 스티커(하나) · 시계 스티커(칸 수만큼, 고른 순서대로 왼쪽 위 → 오른쪽 아래 → 오른쪽 위)
   sel.rep = u.rep || '';
   const lockTip = b => toast(`${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`);
   const decoN = () => { const el = $('#decoN'); if (el) el.textContent = `${deco.length}/${slots}칸`; };
   decoN();
-  if ($('#pRep')) $('#pRep').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) return lockTip(b); $$('#pRep .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.rep = b.dataset.v; };
+  // 대표 스티커: 보통 1개(누르면 바꿈), 개발자는 3개까지 골라 붙임
+  const repMax = isDev(u) ? 3 : 1;
+  if ($('#pRep')) $('#pRep').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) return lockTip(b);
+    let cur = sel.rep ? sel.rep.split(',') : [];
+    if (!b.dataset.v) cur = [];
+    else if (cur.includes(b.dataset.v)) cur = cur.filter(x => x !== b.dataset.v);
+    else if (repMax === 1) cur = [b.dataset.v];
+    else if (cur.length >= repMax) { toast(`대표 스티커는 ${repMax}개까지!`); return; }
+    else cur.push(b.dataset.v);
+    sel.rep = cur.join(',');
+    $$('#pRep button').forEach(x => x.classList.toggle('on', x.dataset.v ? cur.includes(x.dataset.v) : !cur.length));
+  };
   if ($('#pDeco')) $('#pDeco').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.lock) return lockTip(b);

@@ -2029,11 +2029,12 @@ async function fillShow() {
 }
 
 /* ===== 첫 화면 시계 스티커 (출석 보상) =====
-   프로필 꾸미기에서 고른 보상 스티커가 시계의 별 자리를 차례로 대신함: 1칸 왼쪽 위(k1) · 2칸 오른쪽 아래(k4) · 3칸 오른쪽 위(k2). 나만 보임 */
+   프로필 꾸미기에서 고른 보상 스티커가 시계의 별 자리를 차례로 대신함: 1칸 왼쪽 위(k1) · 2칸 오른쪽 아래(k4) · 3칸 오른쪽 위(k2).
+   개발자는 5칸까지: 4칸 왼쪽 아래(k3 자리) · 5칸 왼쪽 가운데(k5 자리). 나만 보임 */
 SOC.setDeco = list => {
   const clk = $('#bigclock .clock'); if (!clk) return;
   const key = (list || []).join(','); if (clk.dataset.deco === key) return; clk.dataset.deco = key;
-  [1, 2, 3].forEach(i => {
+  [1, 2, 3, 4, 5].forEach(i => {
     const el = clk.querySelector('.du' + i), v = (list || [])[i - 1];
     el.innerHTML = v ? emo(v, 'dua') : ''; el.classList.toggle('on', !!v); clk.classList.toggle('d' + i, !!v);
   });

@@ -211,5 +211,6 @@ export const emo = (v, cls = '') => isArt(v) ? artOf(v, cls) : esc(v);
 export const stkOf = t => { const m = STK_MSG.exec(String(t || '')); return m && isArt(m[1]) ? m[1] : ''; };
 export const stkMsg = (t, cls = 'stkm') => { const v = stkOf(t); return v ? artOf(v, cls) : ''; };
 // 이름 옆 대표 스티커
-export const repTag = u => isArt(u?.rep) ? `<i class="rep" data-tip="대표 스티커">${artOf(u.rep, 'repa')}</i>` : '';
+// 이름 옆 대표 스티커 (보통 1개, 개발자는 쉼표로 최대 3개)
+export const repTag = u => String(u?.rep || '').split(',').filter(isArt).map(v => `<i class="rep" data-tip="대표 스티커">${artOf(v, 'repa')}</i>`).join('');
 export const ui = (k, cls = '') => { ensureSprite(); return `<svg class="att-ic ${cls}" viewBox="-1 -1 26 26" aria-hidden="true">${UI[k]}</svg>`; };
