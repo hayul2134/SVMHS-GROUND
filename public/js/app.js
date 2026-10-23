@@ -709,7 +709,7 @@ function paintBalSheet() {
     + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
     + `<p class="bc-b">${esc(c.body)}</p></div>`
     + likeBtn(c)
-    + (c.me ? `<button class="bc-x" type="button" data-cdel="${c.id}" aria-label="내 댓글 지우기">지우기</button>` : `<button class="bc-x" type="button" data-crep="${c.id}" aria-label="댓글 신고">신고</button>`)
+    + (c.me ? `<button class="bc-x bc-del" type="button" data-cdel="${c.id}" aria-label="내 댓글 지우기" data-tip="지우기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trash"/></svg></button>` : `<button class="bc-x" type="button" data-crep="${c.id}" aria-label="댓글 신고">신고</button>`)
     + '</li>').join('');
 }
 const balAgo = t => { const s = (balNow() - t) / 1000; return s < 60 ? '방금' : s < 3600 ? Math.floor(s / 60) + '분 전' : s < 86400 ? Math.floor(s / 3600) + '시간 전' : `${new Date(t).getMonth() + 1}/${new Date(t).getDate()}`; };

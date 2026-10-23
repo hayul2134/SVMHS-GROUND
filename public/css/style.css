@@ -2306,6 +2306,9 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 @media (prefers-reduced-motion:reduce){.bc-like.pop,.bc-like.pop .bl-h,.bc-like.pop::after,.bc-like.unpop .bl-h,.bc-like .bl-n.roll{animation:none}}
 .bc-x{flex:none;align-self:center;padding:3px 8px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--sub);font:inherit;font-weight:800;font-size:11.5px;cursor:pointer}
 .bc-x:hover{color:#e2483d;border-color:#e2483d}
+.bc-x.bc-del{width:30px;height:30px;padding:0;display:grid;place-items:center;border-radius:8px}
+.bc-del svg{width:16px;height:16px}
+.bc-del:hover{background:#ffe8ea}
 .bc-empty{padding:16px 10px;text-align:center;color:var(--sub);font-weight:800;font-size:13.5px;border-radius:14px;border:2px dashed var(--line)}
 @media (max-width:560px){.bal-sheet{padding:16px 14px 14px}.bs-opts{flex-direction:column}.bs-opts .bo-vs{margin:-4px 0}.bs-opts .bo{min-height:60px}}
 
