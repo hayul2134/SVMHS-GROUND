@@ -485,7 +485,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .tray .food{position:absolute;inset:0;width:100%;height:100%;display:block}
 .tray .lbl{--fmax:14px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;max-width:100%;
   padding:3px 7px 2px;border-radius:9px;background:#fff;color:#0f2236;font-weight:900;border:1.5px solid rgba(23,48,72,.55);font-style:normal;line-height:1.15;letter-spacing:-.04em;text-align:center;
-  font-size:var(--fmax);font-size:min(var(--fmax),calc((100cqi - 14px) / var(--n,4)));box-shadow:0 1px 0 rgba(23,48,72,.25),0 2px 6px rgba(23,48,72,.22)}
+  font-size:var(--fmax);font-size:max(10.5px,min(var(--fmax),calc((100cqi - 14px) / var(--n,4))));box-shadow:0 1px 0 rgba(23,48,72,.25),0 2px 6px rgba(23,48,72,.22)}
 .tray .lbl .ln{display:block;white-space:nowrap}
 .lbl.c1,.lbl.c2{--n:2.4}.lbl.c3{--n:3.1}.lbl.c4{--n:4.1}.lbl.c5{--n:5.1}.lbl.c6{--n:6.1}.lbl.c7{--n:7.1}.lbl.c8{--n:8.1}.lbl.c9{--n:9.1}.lbl.c10{--n:10.1}
 .tray .big .lbl{--fmax:15px}
@@ -2890,3 +2890,44 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .s-nb,.s-slots button,.drawers .s-put,.s-ttmore{position:relative}
 .s-nb::after,.s-slots button::after,.drawers .s-put::after,.s-ttmore::after{content:"";position:absolute;inset:-8px -4px}
 .s-slots button::after{inset:-8px -3px}
+/* 프로필 사진 캐릭터(k:이름): 테마 캐릭터 그림의 얼굴 부분만 (viewBox 10 -4 80 80 과 같은 자르기) */
+.kav{display:inline-block;width:1.2em;height:1.2em;border-radius:50%;background:var(--art) 50% -20%/125% no-repeat;vertical-align:middle;flex:none}
+.av .kav,.av .kav.ava{width:100%;height:100%}
+/* 식판: 메뉴가 적은 날 빈 칸 없애기 (2026-10-24) — 비어 있는 칸은 숨기고 옆 칸이 그 자리를 차지 */
+.tray > .cell.empty:not(.big),.tray .mid > .cell.empty{display:none}
+.tray .mid:has(> .cell.empty){grid-template-rows:1fr}
+.tray.nomid .mid{display:none}
+.tray.nomid > .cell:not(.big){grid-column:span 3}
+.tray.one.nomid > .cell:not(.big):not(.empty){grid-column:span 6}
+.tray.onebig > .big.empty{display:none}
+.tray.onebig > .big:not(.empty){grid-column:span 6}
+.tray .lbl .ln{overflow-wrap:anywhere}
+/* 다크 모드: 직접 그린 아이콘 선이 남색(배경과 같은 색)이라 안 보이던 문제 → 밝은 선, 지난 교시도 조금 더 보이게 (2026-10-24) */
+:root[data-theme="dark"] .sic{color:#9ec3e6}
+:root[data-theme="dark"] .week td.now .sic{color:#173048}
+:root[data-theme="dark"] .tt li.done{opacity:.55}
+/* 프로필: 소개·왕관·인스타가 없으면 왼쪽 단이 텅 비어 보이던 문제 → 한 단으로 펴고 기록 카드를 가로 3칸으로 (2026-10-24) */
+.pcols.slim{grid-template-columns:minmax(0,1fr)}
+.pcols.slim .pmain{grid-auto-flow:column;justify-content:start;align-items:center}
+.pcols.slim .pside{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1.3fr);align-items:stretch;transform:rotate(.6deg)}
+.pcols.slim .pside .pstreak{align-self:stretch;display:flex;align-items:center;justify-content:center}
+@media (max-width:720px){.pcols.slim .pmain{grid-auto-flow:row}.pcols.slim .pside{grid-template-columns:minmax(0,1fr)}}
+/* 테마 창: 스크롤해도 보이는 닫기 ✕ · 색깔 7개는 4+3 가운데 정렬 (2026-10-24) */
+.sheet-x{position:sticky;top:0;float:right;z-index:2;width:40px;height:40px;margin:-8px -8px 0 0;display:grid;place-items:center;border-radius:12px;background:var(--card);color:var(--text);border:2px solid var(--ink);box-shadow:var(--sh-s);cursor:pointer}
+.sheet-x svg{width:18px;height:18px}
+.sheet-x:active{transform:translate(2px,2px);box-shadow:none}
+#skColors{display:flex;flex-wrap:wrap;justify-content:center}
+#skColors > *{flex:0 0 calc((100% - 30px) / 4);min-width:72px}
+.go-end[hidden]{display:none}
+/* 이모지 대신 직접 그린 아이콘 자리 (2026-10-24) */
+.gem .sic{width:1.15em;height:1.15em;filter:drop-shadow(2px 2px 0 color-mix(in srgb,var(--ink) 22%,transparent))}
+.btn .sic{width:1.15em;height:1.15em;margin-right:5px;vertical-align:-.22em}
+.gtop .sic,.crown .sic,.rmsg .sic,.vnote .sic,.kcal .sic,.vc .sic,.bo-crown .sic,.st .sic,#plSt .sic,h3 .sic{width:1.2em;height:1.2em;margin-right:3px;vertical-align:-.25em}
+.gtop .av.xs{width:22px;height:22px;border-width:1.5px;display:inline-grid;vertical-align:-.35em;font-size:12px}
+.ptop b .sic{width:1.2em;height:1.2em;vertical-align:-.22em}
+.kcal .sic{color:inherit}
+.mdl{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;font:900 14px var(--num,inherit);font-style:normal;color:#3b2a10;border:2px solid var(--ink);box-shadow:inset -2px -3px 0 rgba(0,0,0,.14),inset 2px 2px 0 rgba(255,255,255,.55)}
+.mdl.m1{background:linear-gradient(160deg,#ffe58a,#f4b829)}.mdl.m2{background:linear-gradient(160deg,#f1f5f9,#b9c6d3)}.mdl.m3{background:linear-gradient(160deg,#ffcfa1,#d98a4e)}
+/* 작은 밸런스 티켓에선 WIN 도장 대신 왕관만 — 이긴 쪽 이름이 '지금 당…'으로 잘리던 문제 */
+.bal-t .bo-stamp{display:none}
+.btn.icb{padding-left:12px;padding-right:12px}.btn.icb svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;display:block}

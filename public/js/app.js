@@ -17,6 +17,7 @@ const myDdays = () => {
   return Array.isArray(l) ? l.filter(x => x && typeof x.name === 'string' && isYmd(x.date)).slice(0, MAX_DDAY) : [];
 };
 
+const sji = k => `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;   // 직접 그린 아이콘(이모지 대신, 2026-10-24)
 /* ===== 상태 ===== */
 let cls = validClass(store.get('class', null));
 let shReclock = null;   // 소개 쇼케이스: 진짜 시계를 복제해 둔 카드도 1초마다 다시 복제 (introTick → showClock에서 부름)
@@ -292,6 +293,8 @@ addEventListener('scroll', onScroll, { passive: true });
 // 맨 위·맨 아래로 (2026-10-23): 첫 화면 아래 화살표 = 페이지 맨 아래로, 맨 아래 화살표 = 맨 위로
 $('#goDown').onclick = () => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
+// 짧은 화면(게임 등)엔 '맨 위로'가 필요 없음 → 페이지가 화면 1.5배보다 짧으면 숨김 (2026-10-24)
+{ const f = () => { $('#goTop').hidden = document.documentElement.scrollHeight < innerHeight * 1.5; }; if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(document.body); addEventListener('resize', f); f(); }
 $('#svcFab').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
@@ -314,7 +317,7 @@ const isSoup = n => /(국|탕|찌개|수프|스프|개장)$/.test(n);
 const isExtra = n => /타르트|케이크|쿠키|머핀|마카롱|브라우니|잼|시럽|소스/.test(n) || ['🥬', '🥤', '🥐', '🍉', '🍨'].includes(dishEmoji(n));   // 김치·음료·빵·과일·디저트는 메인 후보에서 뺌
 // 메인 반찬 고르기: 학생들이 좋아할 만한 순서로 점수 (0 = 메인 후보 아님). 같은 점수면 원래 순서가 앞선 것
 const isKimchi = n => dishEmoji(n) === '🥬';
-const isSeaweed = n => /김$/.test(n) && !isKimchi(n);   // 구이김·조미김
+const isSeaweed = n => n === '김' || /(구이|조미|맨|돌|파래|재래|전장|도시락|곱창)김$/.test(n);   // 구이김·조미김 ('고기튀김'처럼 '김'으로 끝나는 튀김은 아님 — 2026-10-24 메인 반찬에서 빠지던 문제)
 function mainScore(n) {
   if (isExtra(n) || isSeaweed(n)) return 0;
   if (/나물|무침|샐러드|겉절|장아찌|피클|단무지/.test(n)) return 1;
@@ -345,11 +348,14 @@ function splitTray(all) {
   if (!rice && rest.length > 3) rice = rest.pop();     // 밥·국이 없는 날은 남는 메뉴로 아래 칸 채움
   if (!soup && rest.length > 3) soup = rest.pop();
   // 위 칸: [왼쪽(메인), 가운데 위, 가운데 아래, 오른쪽] — 메인은 첫 칸에 혼자, 나머지는 남은 칸에 나눠 담기
-  const top = [[], [], [], []], others = mi >= 0 ? rest.slice(1) : rest.slice();
+  const top = [[], [], [], []], others = (mi >= 0 ? rest.slice(1) : rest.slice()).map((n, i) => [n, i]).sort((a, b) => mainScore(b[0]) - mainScore(a[0]) || a[1] - b[1]).map(([n]) => n);   // 맛있는(점수 높은) 반찬부터 넓은 칸에
   if (mi >= 0) top[0].push(rest[0]);
   // 위아래로 나뉜 가운데 칸은 하나씩만, 남는 메뉴는 넓은 오른쪽 칸에 모아 담음 (작은 칸에 두 개씩 넣으면 글자가 잘림)
-  const slots = mi >= 0 ? [1, 2, 3] : [0, 1, 2, 3];
-  others.forEach((n, i) => top[slots[Math.min(i, slots.length - 1)]].push(n));
+  // 메뉴가 적은 날 빈 칸이 생기지 않게 채우는 순서를 개수에 따라 바꿈 (2026-10-24): 넓은 오른쪽 칸 먼저, 가운데는 그다음
+  // (가운데 칸이 하나만 차면 CSS가 그 칸을 위아래로 늘리고, 위 칸 하나가 통째로 비면 tray 클래스로 남은 칸을 넓힘)
+  const k = others.length;
+  const slots = mi >= 0 ? (k === 1 ? [3] : k === 2 ? [3, 1] : [3, 1, 2]) : (k === 1 ? [0] : k === 2 ? [0, 3] : k === 3 ? [0, 3, 1] : [0, 3, 1, 2]);
+  others.forEach((n, i) => top[i < slots.length ? slots[i] : 3].push(n));   // 칸보다 많으면 넓은 오른쪽 칸에 모음
   return { main: mi >= 0 ? rest[0] : (rest[0] || rice || ''), top, rice, soup, drinks, hasMain: mi >= 0 };
 }
 /* 급식 인기투표: 음식을 누르면 한 표 (끼니마다 한 표, 다시 누르면 취소) */
@@ -381,7 +387,7 @@ const voteMark = (name, v) => {
   if (!v) return '';
   const n = v.counts[name] || 0;
   if (!n) return '';   // 표 없는 메뉴는 숫자 숨김 (화면이 덜 복잡하게)
-  return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? '👑 ' : '♥ '}${n}</i>`;
+  return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? sji('crown') : '♥ '}${n}</i>`;
 };
 const dishAttr = (name, v) => v && v.open ? ` data-dish="${esc(name)}" role="button" tabindex="0" aria-label="${esc(name)}에 투표"` : '';
 // 메뉴 이름: 6글자 이상이면 두 줄로. 재료·조리법 단어(고추장|조림…) 경계 중 가운데에 가장 가까운 곳에서 나눔
@@ -441,26 +447,28 @@ const mealHtml = (r, d, mini = false) => {
   if (!r) return empty('급식 정보가 없어요');
   const t = splitTray(cleanDish(r.DDISH_NM)), v = d ? voteOf(ymd(d), r.MMEAL_SC_CODE) : null;
   const info = !v ? '' : mini
-    ? `<p class="vnote">🗳️ ${v.open ? (v.mine ? `내 픽 <b>${esc(v.mine)}</b>` : '맛있는 메뉴 눌러서 투표') : '인기투표 결과'} · ${v.total}명</p>`
+    ? `<p class="vnote">${sji('vote')}${v.open ? (v.mine ? `내 픽 <b>${esc(v.mine)}</b>` : '맛있는 메뉴 눌러서 투표') : '인기투표 결과'} · ${v.total}명</p>`
     : v.open
-    ? `<p class="vnote">🗳️ ${v.mine ? `내 픽 <b>${esc(v.mine)}</b> · 다시 누르면 취소` : '제일 맛있는 메뉴를 눌러 투표!'} · ${v.total}명 참여</p>`
-    : `<p class="vnote">🗳️ 인기투표 결과 · ${v.total}명 참여</p>`;
+    ? `<p class="vnote">${sji('vote')}${v.mine ? `내 픽 <b>${esc(v.mine)}</b> · 다시 누르면 취소` : '제일 맛있는 메뉴를 눌러 투표!'} · ${v.total}명 참여</p>`
+    : `<p class="vnote">${sji('vote')}인기투표 결과 · ${v.total}명 참여</p>`;
   const at = `data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d || today())}"`;
-  return `<div class="tray-set${mini ? ' sm' : ''}${t.drinks.length ? ' has-drink' : ''}" ${at}><div class="tray${mini ? ' mini' : ''}" role="list" aria-label="급식 식판" ${at}>`
+  const fill = [!!t.top[0].length, !!(t.top[1].length || t.top[2].length), !!t.top[3].length];
+  const lay = (fill[1] ? '' : ' nomid') + (fill.filter(Boolean).length === 1 ? ' one' : '') + (!t.rice !== !t.soup ? ' onebig' : '');
+  return `<div class="tray-set${mini ? ' sm' : ''}${t.drinks.length ? ' has-drink' : ''}" ${at}><div class="tray${mini ? ' mini' : ''}${lay}" role="list" aria-label="급식 식판" ${at}>`
     + cellHtml(t.top[0], '', v)
     + `<div class="mid">${cellHtml(t.top[1], 'half', v)}${cellHtml(t.top[2], 'half', v)}</div>`
     + cellHtml(t.top[3], '', v)
     + cellHtml(t.rice ? [t.rice] : [], 'big', v) + cellHtml(t.soup ? [t.soup] : [], 'big soup', v)
-    + `</div>${drinksHtml(t.drinks, v)}</div>` + info + (r.CAL_INFO ? `<div class="kcal">🔥 ${esc(r.CAL_INFO)}</div>` : '');   // 홈 작은 식판도 아래 카드와 같게 칼로리 표시
+    + `</div>${drinksHtml(t.drinks, v)}</div>` + info + (r.CAL_INFO ? `<div class="kcal">${sji('fire')}${esc(r.CAL_INFO)}</div>` : '');   // 홈 작은 식판도 아래 카드와 같게 칼로리 표시
 };
 // 홈 '오늘 급식' 카드: 큰 식판 대신 작은 그림 + 이름 목록 (식판은 첫 화면 서랍·급식 화면에 있음). 누르면 투표(식판과 같은 data-dish)
 const mealListHtml = (r, d) => {
   if (!r) return empty('급식 정보가 없어요');
   const om = orderMenu(cleanDish(r.DDISH_NM)), all = om.list, v = voteOf(ymd(d), r.MMEAL_SC_CODE);
   const at = `data-meal="${r.MMEAL_SC_CODE}" data-ymd="${ymd(d)}"`;
-  const info = !v ? '' : `<p class="vnote">🗳️ ${v.open ? (v.mine ? `내 픽 <b>${esc(v.mine)}</b>` : '맛있는 메뉴 눌러서 투표') : '인기투표 결과'} · ${v.total}명</p>`;
+  const info = !v ? '' : `<p class="vnote">${sji('vote')}${v.open ? (v.mine ? `내 픽 <b>${esc(v.mine)}</b>` : '맛있는 메뉴 눌러서 투표') : '인기투표 결과'} · ${v.total}명</p>`;
   return `<div class="tray-set mlist" ${at}><ul class="ml${om.hasMain ? '' : ' nomain'}" role="list" aria-label="급식 메뉴">${all.map(x => `<li class="${v && v.open ? 'vote' : ''}${v && v.mine === x ? ' picked' : ''}"${dishAttr(x, v)}><span class="mth">${isDrink(x) ? drinkSvg(x) : fx(x)}</span><span class="mn">${esc(x)}</span>${voteMark(x, v)}</li>`).join('')}</ul></div>`
-    + `<div class="mfoot">${info}${r.CAL_INFO ? `<span class="kcal">🔥 ${esc(r.CAL_INFO)}</span>` : ''}</div>`;
+    + `<div class="mfoot">${info}${r.CAL_INFO ? `<span class="kcal">${sji('fire')}${esc(r.CAL_INFO)}</span>` : ''}</div>`;
 };
 let homeRows = [];
 // 지금 보여 줄 끼니: 7시 50분까지 조식 → 5교시 시작(점심 끝)까지 중식 → 그 뒤로 석식
@@ -647,11 +655,11 @@ function balStatus() {
   const n = balNow();
   if (BAL.open) {
     const left = Math.max(0, Math.round((BAL.closes - n) / 1000));
-    return { cls: left <= 600 ? 'hot' : 'live', txt: `⏳ 마감까지 ${fmtLeft(left)}`, long: `${hhmm(BAL.closes)} 마감 · ${fmtLeft(left)} 남음` };
+    return { cls: left <= 600 ? 'hot' : 'live', txt: `마감까지 ${fmtLeft(left)}`, ic: 'clock', long: `${hhmm(BAL.closes)} 마감 · ${fmtLeft(left)} 남음` };
   }
-  if (n < BAL.opens) return { cls: 'wait', txt: `🌅 ${hhmm(BAL.opens)} 시작`, long: `${hhmm(BAL.opens)}부터 투표 시작` };
+  if (n < BAL.opens) return { cls: 'wait', txt: `${hhmm(BAL.opens)} 시작`, long: `${hhmm(BAL.opens)}부터 투표 시작` };
   const w = balWinner(BAL.counts);
-  return { cls: 'done', txt: w === 'tie' ? '🤝 무승부!' : w ? `🏆 '${BAL[w]}' 승리` : '🏁 투표 마감', long: `투표 마감 · 다음 질문은 ${balDow(BAL.next)} ${hhmm(BAL.next)}` };
+  return { cls: 'done', txt: w === 'tie' ? '무승부!' : w ? `'${BAL[w]}' 승리` : '투표 마감', ic: w && w !== 'tie' ? 'trophy' : '', long: `투표 마감 · 다음 질문은 ${balDow(BAL.next)} ${hhmm(BAL.next)}` };
 }
 // 결과: 'a' | 'b' | 'tie' | '' (투표 없음)
 const balWinner = c => !(c.a + c.b) ? '' : c.a === c.b ? 'tie' : c.a > c.b ? 'a' : 'b';
@@ -660,7 +668,7 @@ function balOpt(k, big) {
   const pct = total ? Math.round(counts[k] / total * 100) : 0, w = closed ? balWinner(counts) : '';
   const cls = ['bo', 'bo-' + k, mine === k && 'picked', show && 'shown', w === k && 'win', w && w !== k && w !== 'tie' && 'lose', w === 'tie' && 'tie'].filter(Boolean).join(' ');
   return `<button class="${cls}" type="button" data-pick="${k}" aria-pressed="${mine === k}"${closed ? ' aria-disabled="true"' : ''}>`
-    + `<i class="bo-fill" aria-hidden="true" data-pct="${show ? pct : 0}"></i>${w === k ? '<i class="bo-crown" aria-hidden="true">👑</i>' : ''}`
+    + `<i class="bo-fill" aria-hidden="true" data-pct="${show ? pct : 0}"></i>${w === k ? `<i class="bo-crown" aria-hidden="true">${sji('crown')}</i>` : ''}`
     + `<span class="bo-t">${esc(BAL[k])}</span>${mine === k ? '<i class="bo-ck" aria-hidden="true">✔</i>' : ''}${w === k ? '<span class="bo-stamp">WIN</span>' : ''}${show ? `<b class="bo-p">${pct}%${big ? `<small>${counts[k]}표</small>` : ''}</b>` : ''}</button>`;
 }
 const fillBars = root => root.querySelectorAll('.bo-fill').forEach(el => { el.style.transform = `scaleX(${(+el.dataset.pct / 100).toFixed(3)})`; });
@@ -671,7 +679,7 @@ function paintBalance() {
   const st = balStatus();
   box.className = 'bal-t st-' + st.cls;
   $('#plQ').textContent = BAL.q;
-  $('#plSt').textContent = st.txt;
+  $('#plSt').innerHTML = (st.ic ? sji(st.ic) : '') + esc(st.txt);
   $('#plC').textContent = BAL.ncom;
   $('#plComN').textContent = BAL.ncom;
   $('#plComT').textContent = BAL.open && !BAL.mine ? '한쪽 고르고 댓글 달기' : BAL.ncom ? '댓글 보고 한마디 남기기' : '첫 댓글 남기기';
@@ -688,7 +696,7 @@ function balTick() {
   const n = balNow();
   if ((BAL.open && n >= BAL.closes) || (!BAL.open && n >= BAL.opens && n < BAL.closes) || (!BAL.open && n >= BAL.next)) { clearInterval(balAuto); setTimeout(loadBalance, 1500); return; }
   const st = balStatus();
-  setText('#plSt', st.txt);
+  setHtml('#plSt', (st.ic ? sji(st.ic) : '') + esc(st.txt));
   if ($('#mBal').classList.contains('open')) setText('#bsSt', st.long);
   $('#play').classList.toggle('st-hot', st.cls === 'hot');
 }
@@ -760,7 +768,7 @@ function paintBalSheet() {
   if (!BAL.comments) { list.innerHTML = `<li class="bc-empty">🙈 한쪽을 고르면 댓글 ${BAL.ncom}개가 보여요</li>`; return; }
   if (!BAL.comments.length) { list.innerHTML = `<li class="bc-empty">${open ? '첫 댓글의 주인공이 되어 보세요 ✍️' : '댓글이 없어요'}</li>`; return; }
   list.innerHTML = BAL.comments.map(c => `<li class="bc${c.pick ? ' side-' + c.pick : ''}">`
-    + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : emo(c.avatar || '😎', 'ava')}</a>`
+    + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : emo(c.avatar || 'k:cat', 'ava')}</a>`
     + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.dev ? '' : repTag(c)}${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
     + (stkMsg(c.body) ? `<p class="bc-b bc-stk">${stkMsg(c.body)}</p></div>` : `<p class="bc-b">${esc(c.body)}</p></div>`)
     + likeBtn(c)

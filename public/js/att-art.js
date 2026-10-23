@@ -206,7 +206,12 @@ export const ART_KEYS = Object.keys(ART);
 export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[v.slice(2)];
 export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); return `<svg class="art ${cls}" aria-hidden="true"><use href="#art-${v.slice(2)}" width="100%" height="100%"/></svg>`; };
 // 프로필 사진·스티커 값 → 그림(직접 그린 것) 또는 글자(예전 이모지)
-export const emo = (v, cls = '') => isArt(v) ? artOf(v, cls) : esc(v);
+// 프로필 사진 캐릭터 16종 'k:이름' (2026-10-24, 동물 이모지 대신) — 테마 캐릭터 그림(style.css .sk-* 의 --art)을 얼굴만 잘라 씀
+const KAV = { cat: '고양이', dog: '강아지', bear: '곰돌이', bunny: '토끼', frog: '개구리', chick: '병아리', hamster: '햄찌', penguin: '펭귄', fox: '여우', panda: '판다', dino: '공룡', ghost: '유령', slime: '슬라임', sheep: '양', whale: '고래', axolotl: '우파루파' };
+export const KAV_KEYS = Object.keys(KAV).map(k => 'k:' + k);
+export const kavName = v => KAV[String(v || '').slice(2)] || '';
+const isKav = v => typeof v === 'string' && v.startsWith('k:') && !!KAV[v.slice(2)];
+export const emo = (v, cls = '') => isArt(v) ? artOf(v, cls) : isKav(v) ? `<i class="kav sk-${v.slice(2)}${cls ? ' ' + cls : ''}" role="img" aria-label="${KAV[v.slice(2)]}" data-n="${KAV[v.slice(2)]}"></i>` : esc(v);
 // 스티커만 보낸 댓글·DM('::r:이름') → 큰 스티커 그림, 아니면 ''
 export const stkOf = t => { const m = STK_MSG.exec(String(t || '')); return m && isArt(m[1]) ? m[1] : ''; };
 export const stkMsg = (t, cls = 'stkm') => { const v = stkOf(t); return v ? artOf(v, cls) : ''; };

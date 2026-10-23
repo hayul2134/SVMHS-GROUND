@@ -2,10 +2,10 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots } from './att-rewards.js';
-import { emo, artOf, ui, stkOf, stkMsg, repTag } from './att-art.js';
+import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
-const AVATARS = ['😎','🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐥','🐧','🦄','🐯','🐨','🐹','👽','🤖','👻','🎃','🌝','🍀','🔥','⚡','🌈','🎬','🎥','🎧','🎮','🏀','⚽','🎸','🍓','🍩','🧋','🍕','💜','⭐'];
+const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const ALL_COLORS = [...COLORS, ...ATT_COLORS];   // 출석 보상 전용 배경 색 포함
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
@@ -15,10 +15,12 @@ const COLOR_KO = { sky:'하늘색', blue:'파란색', mint:'민트색', lime:'�
 const MAX_STICKERS = 6;
 const stkMax = u => isDev(u) ? 12 : MAX_STICKERS;   // 개발자는 치장 제한 없음(배너 자리 12개)
 const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시용, 실제 권한은 서버가 검사)
+// 직접 그린 스티커 아이콘(index.html 스프라이트 #sj-*) — 이모지 대신 (2026-10-24)
+const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
-  reaction: { name: '반응속도', em: '⚡', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
-  num25: { name: '1 to 25', em: '🔢', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
-  cut: { name: '컷 타이밍', em: '🎬', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
+  reaction: { name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
+  num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
+  cut: { name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
 };
 
 /* ===== 상태 ===== */
@@ -43,7 +45,7 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 
 /* ===== 작은 조각들 ===== */
 // 개발자 계정은 이모지 대신 사이트 로고 + 무지개 링 아바타 (어디서나 같게)
-const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${emo(u.avatar || '😎', 'ava')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
+const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${emo(u.avatar || 'k:cat', 'ava')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
 const devTag = u => (isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '') + repTag(u);   // 이름 옆 작은 배지 + 대표 스티커
 // 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
@@ -119,7 +121,7 @@ function authHtml(mode = 'login', keep = {}) {
         <fieldset class="apick"><legend>반</legend><div class="pchips g6">${classes}</div><p class="dephint" aria-hidden="true"><span>콘텐츠</span><span>미디어</span><span>프로듀스</span></p></fieldset></div>
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
       </div>
-      <p class="note">💡 가입 뒤 ⚙️에서 구글을 연결하면 비밀번호를 잊어도 찾을 수 있어요</p>` : ''}
+      <p class="note">가입 뒤 프로필의 계정 설정에서 구글을 연결하면 비밀번호를 잊어도 찾을 수 있어요</p>` : ''}
       <p class="ferr" role="alert" hidden></p>
       <button class="btn big sbtn" type="submit"><span class="sb-t">${up ? '가입하고 시작하기' : '로그인'}</span><span class="sb-w" aria-hidden="true"><i></i><i></i><i></i></span></button>
       ${!up && S.google ? '<button class="linkbtn" type="button" data-forgot>아이디·비밀번호를 잊었어요</button>' : ''}
@@ -238,18 +240,18 @@ function profileHtml(d) {
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
-  const crowns = (d.crowns || []).map(g => `<span class="crown">👑 ${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
+  const crowns = (d.crowns || []).map(g => `<span class="crown">${ic('crown')}${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn lime" data-act-s="edit">✏️ 꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
+    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
       : S.me?.sw ? ''   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만(아래 swBar)
-      : `<button class="btn" data-act-s="edit">✏️ 프로필 꾸미기</button><button class="btn ghost" data-act-s="settings" aria-label="계정 설정">⚙️</button>`
+      : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button><button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
-  const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${g.em}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
+  const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
@@ -262,7 +264,7 @@ function profileHtml(d) {
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
       </div>
-      <div class="pcols">
+      <div class="pcols${!isDev(u) && !u.bio && !crowns && !u.insta ? ' slim' : ''}">
         <div class="pmain">
           ${isDev(u) ? '<button class="pdev" type="button" data-fb>💬 궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! 팔로우 안 해도 돼요</button>' : ''}
           ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
@@ -408,7 +410,7 @@ function openEdit() {
       <label>인스타 아이디 (선택)<span class="fld at ig"><span class="pre" aria-hidden="true">@</span><input name="insta" maxlength="60" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="예: svmhs_ground" value="${esc(u.insta || '')}"></span><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <p class="lbl">프로필 사진</p>
-      <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}" data-tip="${EMO_NAME[a] || a}" aria-label="${EMO_NAME[a] || a}">${a}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
+      <div class="pick" id="pAv">${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}" data-tip="${kavName(a)}" aria-label="${kavName(a)}">${emo(a)}</button>`).join('')}${attPicks('avatar', x => x === u.avatar)}</div>
       <p class="lbl">배경 색</p>
       <div class="pick sw" id="pCo">${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attPicks('color', x => x === u.color)}</div>
       ${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">개발자는 칭호를 마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
@@ -730,10 +732,10 @@ async function renderGame() {
   box.innerHTML = `<div class="ggrid">${Object.entries(GAMES).map(([k, g], i) => {
     const x = info?.[k];
     return `<article class="card gcard g-${k}">
-      <p class="gem">${g.em}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
+      <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
       ${x ? `<div class="gstat"><span>내 최고 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
-        <p class="gtop">${x.top ? `👑 1등 <a href="#u/${esc(x.top.handle)}">${esc(x.top.avatar)} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '👑 1등 자리가 비어 있어요!'}</p>` : ''}
-      <div class="gbtns"><button class="btn big" data-play="${k}">▶ 플레이</button><button class="btn ghost" data-rank="${k}">🏆 랭킹</button></div>
+        <p class="gtop">${ic('crown')}${x.top ? `1등 <a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '1등 자리가 비어 있어요!'}</p>` : ''}
+      <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost" data-rank="${k}">${ic('trophy')}랭킹</button></div>
     </article>`;
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
@@ -744,11 +746,11 @@ async function openRank(game, scope = 'all') {
   if (!S.me) { toast('랭킹은 로그인하면 볼 수 있어요'); ctx.go('me'); return; }
   const g = GAMES[game];
   const tabs = [['all', '전체'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
-  sheet(`<h3>${g.em} ${g.name} 랭킹</h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
-    <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">▶ 도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
+  sheet(`<h3>${ic(g.ic)} ${g.name} 랭킹</h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
+    <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
     const r = await call(`rank?game=${game}&scope=${scope}`);
-    const medal = i => ['🥇', '🥈', '🥉'][i] || i + 1;
+    const medal = i => i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1;   // 1~3등 금·은·동 배지 (이모지 대신)
     if (scope === 'class') {
       $('#rankList').innerHTML = r.list.length ? r.list.map((c, i) => `<li class="${r.mine && r.mine.grade === c.grade && r.mine.cls === c.cls ? 'me' : ''}"><span class="rk">${medal(i)}</span><span class="pi"><b>${c.grade}학년 ${c.cls}반</b><small>${c.players}명 참가</small></span><b class="rv">${esc(g.fmt(c.value))}</b></li>`).join('')
         : '<li class="empty">아직 아무 반도 기록이 없어요</li>';
@@ -787,15 +789,15 @@ function play(game) {
 
 async function finish(game, value, detail = '', rounds = []) {   // rounds: 판마다의 기록 (서버가 다시 계산·검사)
   const g = GAMES[game], area = $('#parea'); if (!area) return;
-  area.innerHTML = `<div class="result"><p class="gem">${g.em}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요!'}</p>
-    <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">🏆 랭킹</button></div></div>`;
+  area.innerHTML = `<div class="result"><p class="gem">${ic(g.ic)}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요!'}</p>
+    <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">${ic('trophy')}랭킹</button></div></div>`;
   $('#again').onclick = () => play(game);
   $('#toRank').addEventListener('click', endPlay);
   if (!S.me) return;
   try {
     const r = await call('score', { game, value, rounds, ticket: await ticket });
     ticket = null;
-    $('#rMsg').innerHTML = (r.newBest ? '🎉 <b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' 👑' : '');
+    $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('crown') : '');
     if ($('#v-game').classList.contains('on')) renderGame();
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
 }
@@ -803,7 +805,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 
 /* 1) 반응속도: 5번 평균 */
 function playReaction() {
-  const area = stage('⚡ 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol>`);
+  const area = stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol>`);
   const pad = $('#rx'), log = $('#rxlog');
   const times = []; let state = 'idle', t0 = 0, timer = 0, alive = true;
   quitGame = () => { alive = false; clearTimeout(timer); };
@@ -831,7 +833,7 @@ function playReaction() {
 /* 2) 1 to 25: 틀리면 +1초 */
 function playNum25() {
   const nums = Array.from({ length: 25 }, (_, i) => i + 1).sort(() => Math.random() - .5);
-  const area = stage('🔢 1 to 25', `<div class="n25top"><span>다음 <b id="nNext">1</b></span><span id="nTime">0.00초</span></div>
+  const area = stage(ic('n25') + ' 1 to 25', `<div class="n25top"><span>다음 <b id="nNext">1</b></span><span id="nTime">0.00초</span></div>
     <div class="n25" id="n25">${nums.map(n => `<button data-n="${n}">${n}</button>`).join('')}</div><p class="note center">틀리게 누르면 +1초</p>`);
   let next = 1, t0 = 0, pen = 0, raf = 0, alive = true; const taps = [];
   quitGame = () => { alive = false; cancelAnimationFrame(raf); };
@@ -851,7 +853,7 @@ function playNum25() {
 
 /* 3) 컷 타이밍: 움직이는 플레이헤드를 컷 지점에서 멈추기 (5번, 점점 빨라짐) */
 function playCut() {
-  const area = stage('🎬 컷 타이밍', `<p class="cutinfo"><span id="cRound">1 / 5</span> · 누적 오차 <b id="cSum">0ms</b></p>
+  const area = stage(ic('clap') + ' 컷 타이밍', `<p class="cutinfo"><span id="cRound">1 / 5</span> · 누적 오차 <b id="cSum">0ms</b></p>
     <div class="tl" id="tl"><div class="tl-ruler"></div><i class="tl-mark" id="cMark"></i><i class="tl-head" id="cHead"></i></div>
     <p class="cutmsg" id="cMsg">빨간 컷 지점에 플레이헤드가 오면 CUT!</p>
     <button class="btn big cutbtn" id="cBtn">✂ CUT</button>`);
