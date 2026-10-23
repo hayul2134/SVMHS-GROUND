@@ -105,6 +105,7 @@ async function check() {
     try {
       const r = await api.call('att', {});
       st = r; doneDay = r.today; paintChip(); api.onBest?.(r.best, r.total);
+      setTimeout(prefetch, r.new ? 2500 : 600);   // 출석 창을 바로 열 수 있게 미리 받아 둠
       if (r.new) whenFree(() => celebrate(r));
     } catch {}
     finally { checking = null; }
@@ -193,16 +194,36 @@ function confetti(box) {
 }
 
 /* ----- 출석 창 (헤더 🔥) ----- */
+// 출석 창은 누르는 즉시 그려야 함(빈 회색 줄이 먼저 보이면 안 됨) → 달별 데이터·순위를 미리 받아 두고(prefetch),
+// 열 때는 가진 것으로 바로 그린 뒤 뒤에서 새로 받아 바뀐 게 있을 때만 조용히 고침
+const mCache = {}, rCache = {};
+function prefetch() {
+  const m = kstDay().slice(0, 6);
+  api.call('att?m=' + m).then(r => { mCache[m] = r; }).catch(() => {});
+  api.call('attrank?scope=friends').then(r => { rCache.friends = r; }).catch(() => {});
+}
+// 미리 받은 게 없을 때: 오늘 출석 결과(st)로 이번 주 칸만 채워서라도 바로 그림
+const fromSt = m => st && { ...st, month: m, days: (st.weekDays || []).filter(x => x.ymd.startsWith(m)) };
+const sig = r => JSON.stringify([r.cur, r.best, r.total, r.shield, r.done, r.pf, r.days]);
 export async function open(month) {
-  const today = kstDay(), viewM = month || today.slice(0, 6);
-  if (!month || !$('#attBox')) api.sheet(`<div class="att-sheet" id="attBox"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>`);
+  const today = kstDay(), viewM = month || today.slice(0, 6), fresh = !month || !$('#attBox');
+  const have = mCache[viewM] || (viewM === today.slice(0, 6) ? fromSt(viewM) : null);
+  if (fresh) {
+    api.sheet(`<div class="att-sheet" id="attBox">${have ? sheetHtml(have) : '<div class="skel"></div><div class="skel"></div><div class="skel"></div>'}</div>`);
+    if (have) { bars($('#attBox')); loadRank('friends'); }
+  } else if (have && $('#attCal')) $('#attCal').innerHTML = calHtml(have);
   try {
     const r = await api.call('att?m=' + viewM);
+    mCache[viewM] = r;
     st = { ...st, ...r, weekDays: st?.weekDays }; paintChip();
-    if (month && $('#attCal')) { $('#attCal').innerHTML = calHtml(r); return; }   // 달만 넘길 땐 달력만 다시
-    $('#attBox').innerHTML = sheetHtml(r); bars($('#attBox'));
-    loadRank('friends');
-  } catch (e) { $('#attBox').innerHTML = `<p class="empty">${esc(e.message)}</p>`; }
+    if (!$('#attBox')) return;   // 그 사이 창을 닫음
+    if (!fresh) { $('#attCal').innerHTML = calHtml(r); return; }   // 달만 넘길 땐 달력만 다시
+    if (have && sig(have) === sig(r)) return;                       // 바뀐 게 없으면 그대로(애니메이션 다시 안 함)
+    if (have) {   // 바뀐 부분만: 위쪽 통계·달력·보상 (불꽃은 다시 타오르지 않게)
+      const sc = $('#socSheet').scrollTop;
+      $('#attBox').innerHTML = sheetHtml(r, true); bars($('#attBox')); $('#socSheet').scrollTop = sc; loadRank($('[data-att-rank].on')?.dataset.attRank || 'friends');
+    } else { $('#attBox').innerHTML = sheetHtml(r); bars($('#attBox')); loadRank('friends'); }
+  } catch (e) { if (!have && $('#attBox')) $('#attBox').innerHTML = `<p class="empty">${esc(e.message)}</p>`; }
 }
 function calHtml(r) {
   const y = +r.month.slice(0, 4), mo = +r.month.slice(4, 6), first = new Date(y, mo - 1, 1), n = new Date(y, mo, 0).getDate();
@@ -230,7 +251,7 @@ function rewardsHtml(r, by) {
       return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${x.kind === 'title' || x.kind === 'color' ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
     }).join('')}</ul>`;
 }
-function sheetHtml(r) {
+function sheetHtml(r, quiet = false) {
   const shields = Array.from({ length: r.shieldMax }, (_, i) => shieldSvg(i < r.shield ? 'on' : 'off')).join('');
   const state = !r.done ? (r.cur ? '오늘은 아직 출석 전이에요' : '오늘부터 다시 불꽃을 키워 봐요') : r.pf && r.cur >= 3 ? `${ui('sparkle', 'ic')}완벽한 연속 — 방패 없이 이어 가는 중` : '내일도 와서 불꽃을 지켜 주세요';
   const md = `${+r.today.slice(4, 6)}.${+r.today.slice(6)}`;
@@ -238,7 +259,7 @@ function sheetHtml(r) {
   const stamp = `<div class="att-stamp${r.done ? ' ok' : ''}" role="img" aria-label="${r.done ? '오늘 출석 완료' : '오늘 아직 출석 전'}">${r.done ? ui('check', 'sc') : ''}<b>${r.done ? '출석 완료' : '출석 전'}</b><small>${md}</small></div>`;
   return `
     <div class="att-top">
-      ${bigFire(r.cur, { sm: true, burn: true, pf: r.pf && r.cur >= 3 })}
+      ${bigFire(r.cur, { sm: true, burn: !quiet, pf: r.pf && r.cur >= 3 })}
       <div class="att-tt">
         <h3>${r.cur ? `${r.cur}일 연속 출석` : '오늘부터 시작!'}</h3>
         <p class="att-st">${state}</p>
@@ -268,12 +289,15 @@ function sheetHtml(r) {
 }
 async function loadRank(scope) {
   const list = $('#attRank'); if (!list) return;
-  list.innerHTML = '<li class="skel"></li>';
+  const paint = r => {
+    list.innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${api.av(u)}<span class="pi"><b>${esc(api.nameOf(u))}${api.devTag(u)}</b><small>${u.title ? `${ui('tag', 'ic')}${esc(u.title)}` : esc(api.classTxt(u) || api.atOf(u))}</small></span></a><b class="rv att-rv t${tierOf(u.value)}${u.pf && u.value >= 3 ? ' pf' : ''}">${flame('fsm', { tier: tierOf(u.value) })}${u.value}</b></li>`).join('')
+      : `<li class="empty">${scope === 'friends' ? '아직 불꽃을 키우는 친구가 없어요. 맞팔 친구에게 같이 하자고 해 보세요!' : '아직 기록이 없어요'}</li>`;
+  };
+  if (rCache[scope]) paint(rCache[scope]); else list.innerHTML = '<li class="skel"></li>';
   try {
     const r = await api.call('attrank?scope=' + scope);
-        list.innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${api.av(u)}<span class="pi"><b>${esc(api.nameOf(u))}${api.devTag(u)}</b><small>${u.title ? `${ui('tag', 'ic')}${esc(u.title)}` : esc(api.classTxt(u) || api.atOf(u))}</small></span></a><b class="rv att-rv t${tierOf(u.value)}${u.pf && u.value >= 3 ? ' pf' : ''}">${flame('fsm', { tier: tierOf(u.value) })}${u.value}</b></li>`).join('')
-      : `<li class="empty">${scope === 'friends' ? '아직 불꽃을 키우는 친구가 없어요. 맞팔 친구에게 같이 하자고 해 보세요!' : '아직 기록이 없어요'}</li>`;
-  } catch (e) { list.innerHTML = `<li class="empty">${esc(e.message)}</li>`; }
+    if (JSON.stringify(r) !== JSON.stringify(rCache[scope])) { rCache[scope] = r; if ($('#attRank') === list) paint(r); }
+  } catch (e) { if (!rCache[scope]) list.innerHTML = `<li class="empty">${esc(e.message)}</li>`; }
 }
 
 /* ----- 시작 ----- */
