@@ -579,6 +579,8 @@ async function balCall(path, body) {
 }
 function setBal(j) {
   BAL = j && j.enabled ? j : null;
+  // 좋아요를 저장하는 중에 새 상태가 오면, 누른 결과가 되돌아가 보이지 않게 내 쪽 값을 유지
+  if (BAL?.comments && likeWant.size) for (const c of BAL.comments) if (likeWant.has(c.id)) { const w = likeWant.get(c.id); if (c.liked !== w) { c.liked = w; c.likes = Math.max(0, c.likes + (w ? 1 : -1)); } }
   if (BAL) balSkew = BAL.now - Date.now();
   paintBalance();
 }
@@ -635,6 +637,55 @@ function balTick() {
   if ($('#mBal').classList.contains('open')) setText('#bsSt', st.long);
   $('#play').classList.toggle('st-hot', st.cls === 'hot');
 }
+/* ----- 댓글 좋아요 ----- */
+// 버튼 하나만 바꾸고(목록 전체를 다시 그리지 않음 → 깜빡임·애니메이션 끊김 없음),
+// 연타해도 마지막으로 원한 상태 하나만 서버에 맞춤 (요청은 댓글마다 한 번에 하나)
+const likeWant = new Map(), likeBusy = new Set();
+const likeBtn = c => `<button class="bc-like${c.liked ? ' on' : ''}" type="button" data-clike="${c.id}" aria-pressed="${c.liked}" aria-label="좋아요 ${c.likes}개">`
+  + `<span class="bl-h" aria-hidden="true">${c.liked ? '♥' : '♡'}</span><b class="bl-n">${c.likes || ''}</b></button>`;
+function paintLike(btn, c, burst) {
+  btn.classList.toggle('on', c.liked);
+  btn.setAttribute('aria-pressed', c.liked);
+  btn.setAttribute('aria-label', `좋아요 ${c.likes}개`);
+  btn.querySelector('.bl-h').textContent = c.liked ? '♥' : '♡';
+  const n = btn.querySelector('.bl-n'), txt = c.likes ? String(c.likes) : '';
+  if (n.textContent !== txt) { n.textContent = txt; n.classList.remove('roll'); void n.offsetWidth; n.classList.add('roll'); }
+  if (burst === undefined) return;
+  btn.classList.remove('pop', 'unpop'); void btn.offsetWidth;
+  btn.classList.add(burst ? 'pop' : 'unpop');
+  if (burst && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    btn.querySelectorAll('.bl-p').forEach(p => p.remove());
+    for (let i = 0; i < 7; i++) {   // 작은 하트가 사방으로 톡 튀어나감
+      const p = document.createElement('i'), a = (i / 7) * Math.PI * 2 - Math.PI / 2, r = 20 + (i % 2) * 7;
+      p.className = 'bl-p'; p.textContent = i % 3 ? '♥' : '✦';
+      p.style.setProperty('--x', (Math.cos(a) * r).toFixed(1) + 'px');
+      p.style.setProperty('--y', (Math.sin(a) * r).toFixed(1) + 'px');
+      p.style.animationDelay = (i % 3) * 25 + 'ms';
+      btn.appendChild(p); setTimeout(() => p.remove(), 750);
+    }
+  }
+}
+function toggleLike(btn) {
+  const id = +btn.dataset.clike, c = BAL?.comments?.find(x => x.id === id);
+  if (!c) return;
+  c.liked = !c.liked; c.likes = Math.max(0, c.likes + (c.liked ? 1 : -1));
+  likeWant.set(id, c.liked);
+  paintLike(btn, c, c.liked);
+  syncLike(id);
+}
+async function syncLike(id) {
+  if (likeBusy.has(id)) return;   // 진행 중인 요청이 끝나면 아래에서 마지막 상태로 다시 맞춤
+  likeBusy.add(id);
+  let want, res = null;
+  try {
+    do { want = likeWant.get(id); res = await balCall('/api/s/balclike', { id, on: want }); } while (likeWant.get(id) !== want);
+  } catch (err) { toast(err.message); res = null; }
+  likeBusy.delete(id); likeWant.delete(id);
+  const c = BAL?.comments?.find(x => x.id === id), btn = $('#bsList').querySelector(`[data-clike="${id}"]`);
+  if (!c) return;
+  if (res) { c.liked = res.liked; c.likes = res.likes; } else { await loadBalance(); return; }   // 실패하면 서버 값으로 되돌림
+  if (btn) paintLike(btn, c);
+}
 function paintBalSheet() {
   const st = balStatus(), { counts, open, mine } = BAL, total = counts.a + counts.b, w = !open ? balWinner(counts) : '';
   $('#mBal .bal-sheet').className = 'sheet bal-sheet st-' + st.cls;
@@ -657,7 +708,7 @@ function paintBalSheet() {
     + `<a class="av xs c-${esc(c.color || 'sky')}${c.dev ? ' avdev' : ''}" href="#u/${esc(c.handle)}" data-close aria-label="${esc(c.name)} 프로필">${c.dev ? '<img src="/logo-mark.svg?v=4" alt="">' : esc(c.avatar || '😎')}</a>`
     + `<div class="bc-m"><p class="bc-h"><b>${esc(c.dev ? '개발자' : c.name)}</b>${c.pick ? `<span class="bc-side">${esc(BAL[c.pick])}</span>` : '<span class="bc-side none">구경</span>'}<small>${balAgo(c.at)}</small></p>`
     + `<p class="bc-b">${esc(c.body)}</p></div>`
-    + `<button class="bc-like${c.liked ? ' on' : ''}" type="button" data-clike="${c.id}" aria-pressed="${c.liked}" aria-label="좋아요 ${c.likes}개"><i>${c.liked ? '♥' : '♡'}</i>${c.likes ? `<b>${c.likes}</b>` : ''}</button>`
+    + likeBtn(c)
     + (c.me ? `<button class="bc-x" type="button" data-cdel="${c.id}" aria-label="내 댓글 지우기">지우기</button>` : `<button class="bc-x" type="button" data-crep="${c.id}" aria-label="댓글 신고">신고</button>`)
     + '</li>').join('');
 }
@@ -696,16 +747,7 @@ $('#bsForm').addEventListener('submit', async e => {
 });
 $('#bsList').addEventListener('click', async e => {
   const d = e.target.closest('[data-cdel]'), r = e.target.closest('[data-crep]'), lk = e.target.closest('[data-clike]');
-  if (lk) {
-    const c = BAL?.comments?.find(x => x.id === +lk.dataset.clike);
-    if (!c || lk.dataset.busy) return;
-    const on = !c.liked;
-    c.liked = on; c.likes += on ? 1 : -1; paintBalSheet();   // 화면 먼저 바꾸고 서버에 저장
-    if (on) $('#bsList').querySelector(`[data-clike="${c.id}"]`)?.classList.add('pop');
-    try { setBal(await balCall('/api/s/balclike', { id: c.id, on })); }
-    catch (err) { toast(err.message); await loadBalance(); }
-    return;
-  }
+  if (lk) { toggleLike(lk); return; }
   if (d) {
     if (!confirm('내 댓글을 지울까요?')) return;
     try { setBal(await balCall('/api/s/balcdel', { id: +d.dataset.cdel })); toast('지웠어요'); } catch (err) { toast(err.message); }

@@ -658,15 +658,23 @@ const ROUTES = {
     return json(await balState(env, db, me));
   }),
   // 댓글 좋아요 켜기/끄기 (댓글이 보이는 사람만, 오늘 질문의 댓글만)
+  // 댓글 좋아요 켜기/끄기 — 가볍게: 전체 상태 대신 그 댓글의 좋아요 수만 돌려줌
+  // 누를 수 있는 사람: 오늘 질문에 투표했거나, 마감된 뒤(댓글이 보이는 사람과 같은 조건)
   'POST balclike': needMe(async ({ env, db, me, body }) => {
-    const id = +body.id || 0, st = await balState(env, db, me);
-    if (!st.comments) return err('먼저 한쪽을 골라야 좋아요를 누를 수 있어요');
-    const c = await db.prepare('SELECT ymd FROM balance_comments WHERE id = ?1').bind(id).first();
-    if (!c || c.ymd !== st.ymd) return err('없는 댓글이에요');
+    const id = +body.id || 0, ymd = balDay();
+    const [cr, vr] = await db.batch([
+      db.prepare('SELECT ymd FROM balance_comments WHERE id = ?1').bind(id),
+      db.prepare('SELECT 1 FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(ymd, 'u' + me.id),
+    ]);
+    const c = cr.results[0];
+    if (!c || c.ymd !== ymd) return err('없는 댓글이에요', 404);
+    if (!vr.results.length && Date.now() < closeAt(ymd, await lastPeriod(env, db, ymd))) return err('먼저 한쪽을 골라야 좋아요를 누를 수 있어요', 403);
     if (await limited(db, 'bl:' + me.id, 60, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
-    if (body.on) await db.prepare('INSERT OR IGNORE INTO balance_comment_likes (cid, uid, at) VALUES (?1, ?2, ?3)').bind(id, me.id, Date.now()).run();
-    else await db.prepare('DELETE FROM balance_comment_likes WHERE cid = ?1 AND uid = ?2').bind(id, me.id).run();
-    return json(await balState(env, db, me));
+    const write = body.on
+      ? db.prepare('INSERT OR IGNORE INTO balance_comment_likes (cid, uid, at) VALUES (?1, ?2, ?3)').bind(id, me.id, Date.now())
+      : db.prepare('DELETE FROM balance_comment_likes WHERE cid = ?1 AND uid = ?2').bind(id, me.id);
+    const [, n] = await db.batch([write, db.prepare('SELECT COUNT(*) AS n FROM balance_comment_likes WHERE cid = ?1').bind(id)]);
+    return json({ id, liked: !!body.on, likes: n.results[0].n });
   }),
   'POST balcrep': needMe(async ({ db, me, body }) => {
     const c = await db.prepare('SELECT uid, ymd, body FROM balance_comments WHERE id = ?1').bind(+body.id || 0).first();
