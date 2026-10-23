@@ -22,11 +22,12 @@ def mochi(c, l, top=16, bot=74, w=37):
 
 
 def eyes(y=54, dx=11, rx=4.3, ry=5.3):
+    # 2026-10-23: '너무 초롱초롱하다' → 눈을 20% 작게, 하이라이트는 작은 것 하나만(아래쪽 점 제거)
+    rx, ry = rx * .8, ry * .8
     o = "<g class='me'>"
     for x in (50 - dx, 50 + dx):
-        o += (f"<ellipse cx='{x}' cy='{y}' rx='{rx}' ry='{ry}' fill='{F}'/>"
-              f"<circle cx='{x+1.4:.1f}' cy='{y-2:.1f}' r='{rx*.45:.1f}' fill='#fff'/>"
-              f"<circle cx='{x-1.5:.1f}' cy='{y+2.3:.1f}' r='.8' fill='#fff'/>")
+        o += (f"<ellipse cx='{x}' cy='{y}' rx='{rx:.2f}' ry='{ry:.2f}' fill='{F}'/>"
+              f"<circle cx='{x+rx*.32:.1f}' cy='{y-ry*.36:.1f}' r='{rx*.3:.1f}' fill='#fff' opacity='.9'/>")
     return o + '</g>'
 
 
