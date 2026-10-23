@@ -164,9 +164,11 @@ function tickClock() {
   hero.classList.toggle('soon3', left != null && left <= 10);  // 10초: 가장 크게 + 1/100초
   const isRest = /쉬는|점심/.test(b.state);
   hero.classList.toggle('rest', isRest);
-  if (isRest && S.wasRest === false) { hero.classList.add('yay'); clearTimeout(S.yayT); S.yayT = setTimeout(() => hero.classList.remove('yay'), 4000); }   // 쉬는 시간이 막 시작: 4초만 초록 두근두근 후 차분하게
+  if (isRest && S.wasRest === false) { hero.classList.add('yay'); clearTimeout(S.yayT); S.yayT = setTimeout(() => calmDown(hero), 4000); }   // 쉬는 시간이 막 시작: 4초만 초록 두근두근 후 차분하게
   S.wasRest = isRest;
+  if (hadGo && !hero.classList.contains('go') && !hero.classList.contains('yay')) calmDown(hero);   // 쉬는 시간 아닌 상태로 끝나도 부드럽게
   if (hero.classList.contains('go') || hero.classList.contains('yay')) { const ms = bellNow().getMilliseconds(); $('#bigTime').getAnimations().forEach(a => { a.currentTime = ms; }); }   // 두근 박자를 종 기준 초가 바뀌는 순간에 맞춤
+  const hadGo = hero.classList.contains('go');
   hero.classList.toggle('go', / 수업 중$/.test(b.state) && left != null && left > 0 && left <= 60);   // 수업 마지막 1분: 초록 두근두근
   const bar = b.from != null && left != null, prog = bar ? Math.min(1, (secNow - b.from) / (b.target - b.from)) : 0;
   $('#bellBarBox').hidden = !bar;
@@ -178,6 +180,8 @@ function tickClock() {
   setText('#bellPct', bar ? (restBar ? `${Math.ceil((1 - prog) * 100)}% 남음` : `${Math.floor(prog * 100)}% 지남`) : b.state === '쉬는 날' ? '푹 쉬는 날' : b.state === '방과 후' ? '오늘 수업 끝' : b.target != null ? '곧 시작해요' : '오늘 수업 끝');
   tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5);   // 초가 바뀌는 순간에 맞춰 갱신
 }
+// 초록 두근두근이 끝날 때: 한 번 작게 뛰며 색이 원래대로 서서히 돌아감(페이드 아웃)
+function calmDown(hero) { hero.classList.remove('yay'); hero.classList.add('calm'); clearTimeout(S.calmT); S.calmT = setTimeout(() => hero.classList.remove('calm'), 1400); }
 // 다음 수업 카드 (첫 화면 오른쪽 작은 카드)
 function renderNext(b, pi) {
   const box = $('#hNext'), rows = S.todayTT;

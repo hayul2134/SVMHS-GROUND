@@ -177,6 +177,10 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 :root[data-theme="dark"] .stage.go .s-big,:root[data-theme="dark"] .stage.yay .s-big{color:#5fe39a;text-shadow:3px 3px 0 #000}
 @media (max-width:560px){.stage.go .s-big,.stage.yay .s-big{text-shadow:4px 4px 0 #a8efc4}}
 @media (prefers-reduced-motion:reduce){.stage.go .s-big,.stage.yay .s-big{animation:none}}
+/* 두근두근이 끝날 때 페이드 아웃: 색·그림자는 1.2초에 걸쳐 원래대로, 움직임은 한 번 작게 뛰고 멈춤 */
+.stage.calm .s-big{display:inline-block;transform-origin:50% 55%;transition:color 1.2s ease,text-shadow 1.2s ease;animation:goFade 1.2s ease-out}
+@keyframes goFade{0%{transform:scale(1)}12%{transform:scale(1.04) rotate(-.6deg)}28%{transform:scale(.99)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.stage.calm .s-big{animation:none}}
 /* 쉬는 시간 남은 % 막대: 배터리처럼 40% 이하 노랑, 20% 이하 빨강 */
 .m-bar.low i{background:repeating-linear-gradient(-45deg,#ffc83d 0 10px,#ffd970 10px 20px)}
 .m-bar.crit i{background:repeating-linear-gradient(-45deg,#ff5a6a 0 10px,#ff8a95 10px 20px)}
