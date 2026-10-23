@@ -141,7 +141,86 @@
       <img class="in-st s2" src="/food/c/watermelon.webp" alt="" width="70" height="76">
       <svg class="in-st s3" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-cg"/></svg>
       <svg class="in-st s4" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-clap"/></svg>
-      <a class="in-down" href="#inF" data-intro-go="inF"><span>뭐가 있는지 구경하기</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></a>
+      <a class="in-down" href="#inShow" data-intro-go="inShow"><span>뭐가 있는지 구경하기</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></a>
+    </section>
+
+    <!-- 둘러보기 쇼케이스(스크롤 연출): 내리면 로그인 후 첫 화면이 통째로 페이드 인 → 화면 속 오브젝트만 한 줄로 쭈르륵 늘어서고 → 스크롤할 때마다 하나씩 가운데로 넘어오며 설명.
+         화면은 한 곳에 붙어 있고(sticky) 스크롤 양만 애니메이션 진행도로 씀. 로직은 app.js '둘러보기 쇼케이스'. 스크립트가 없거나 움직임 줄이기 설정이면 카드 목록으로 보임 -->
+    <section class="in-show" id="inShow" aria-labelledby="inF">
+      <div class="sh-stage">
+        <h2 class="sh-cap" id="inF"><small>로그인하면</small><span>바로 이 화면이에요 <i aria-hidden="true">👀</i></span></h2>
+        <div class="sh-chrome" aria-hidden="true">
+          <p class="shc-logo"><img src="/logo-mark.svg?v=4" alt="" width="44" height="44"><span><small>SVMHS</small>GROUND</span></p>
+          <p class="shc-btns"><span class="fb"><svg viewBox="0 0 24 24"><use href="#i-bulb"/></svg>의견</span><span><svg viewBox="0 0 24 24"><use href="#i-mega"/></svg></span><span><svg viewBox="0 0 24 24"><use href="#i-sun"/></svg></span><span><svg viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h15M4.5 17h15"/></svg></span></p>
+          <p class="shc-pill l"><i><svg viewBox="0 0 24 24"><use href="#i-apps"/></svg></i>서비스</p>
+          <p class="shc-pill r"><i><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg></i>메시지</p>
+        </div>
+
+        <div class="so so-meal" data-k="0" aria-hidden="true"><div class="so-in">
+          <i class="so-tape"></i>
+          <p class="so-h"><span>‹</span><b id="shMealK">오늘 급식</b><span>›</span><em>전체</em></p>
+          <div class="sh-tray" id="shTray"></div>
+          <p class="so-kcal" id="shKcal" hidden></p>
+          <span class="so-ex" id="shMealEx" hidden>메뉴 예시</span>
+        </div></div>
+
+        <div class="so so-clock" data-k="1" aria-hidden="true"><div class="so-in">
+          <p class="shk-say" id="shSay">오늘도 가보자</p>
+          <p class="shk-lbl" id="shLbl">쉬는 시간까지</p>
+          <p class="shk-big" id="shLeft">--:--</p>
+          <div class="shk-info"><b class="t" id="shTime">--:--</b><span class="d" id="shDate"></span><span class="w" id="shDow"></span><span class="st"><span id="shState">지금</span><b id="shPct"></b><i class="bar"><i id="shBar"></i></i></span></div>
+          <i class="shk-sp a">✦</i><i class="shk-sp b">✦</i><i class="shk-sp c">✦</i>
+        </div></div>
+
+        <div class="so so-tt" data-k="2" aria-hidden="true"><div class="so-in">
+          <i class="so-tape g"></i>
+          <p class="so-h"><span>‹</span><b id="shTtK">오늘 시간표</b><span>›</span><em>전체</em></p>
+          <ol class="sh-tt" id="shTt"></ol>
+          <span class="so-ex" id="shTtEx" hidden>예시</span>
+        </div></div>
+
+        <div class="so so-bal" data-k="3" aria-hidden="true"><div class="so-in">
+          <p class="shb-h"><span>⚖️ 오늘의 밸런스</span><em>⏳ 마감까지 4:11:15</em></p>
+          <p class="shb-q"><b>Q.</b> 평생 짜장면만 vs 평생 짬뽕만</p>
+          <div class="mk-vs"><span class="a">짜장 <b>58%</b></span><span class="b">짬뽕 <b>42%</b></span></div>
+          <p class="shb-c">💬 한쪽 고르고 댓글 달기<b>12 ›</b></p>
+          <span class="so-ex">예시</span>
+        </div></div>
+
+        <div class="so so-game" data-k="4" aria-hidden="true"><div class="so-in">
+          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#i-game"/></svg>미니게임 랭킹</p>
+          <p class="shg-chips"><span class="on">⚡ 반응속도</span><span>🔢 1 to 25</span><span>🎬 컷 타이밍</span></p>
+          <ol class="shg-rank"><li><b>1</b><i class="av c1"></i><span>2-3 김영상</span><em>0.182초</em></li><li><b>2</b><i class="av c2"></i><span>1-5 컷장인</span><em>0.197초</em></li><li class="me"><b>3</b><i class="av c3"></i><span>나</span><em>0.204초</em></li></ol>
+          <p class="shg-cls">🏆 반 대항전 · 우리 반 <b>2위</b></p>
+          <span class="so-ex">예시</span>
+        </div></div>
+
+        <div class="so so-dm" data-k="5" aria-hidden="true"><div class="so-in">
+          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg>친구랑 DM</p>
+          <div class="mk-chat"><p class="l">점심 뭐 나와?</p><p class="r">닭갈비 ㄷㄷ</p><p class="l">4교시 왜 이렇게 기냐…</p><p class="r">5분 남음 ㅋㅋ</p></div>
+        </div></div>
+
+        <div class="so so-prof" data-k="6" aria-hidden="true"><div class="so-in">
+          <div class="shp-ban"><i>⭐</i><i>🎬</i><i>🍓</i></div>
+          <span class="shp-av"><svg viewBox="0 0 24 24"><use href="#sj-cg"/></svg></span>
+          <p class="shp-mood"><span>오늘도 편집 중 ✂️</span></p>
+          <p class="shp-n">나만의 프로필</p>
+          <p class="shp-c"><span>2학년 3반</span><span>🎬 동아리</span></p>
+          <p class="shp-s"><span><b>48</b>팔로워</span><span><b>52</b>팔로잉</span></p>
+          <p class="shp-b"><span class="f">팔로우</span><span class="d">💬 DM</span></p>
+        </div></div>
+
+        <div class="so so-cal" data-k="7" aria-hidden="true"><div class="so-in">
+          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#sj-test"/></svg>다가오는 일정</p>
+          <div class="shd-big"><b>D-7</b><span><strong>2학기 기말고사</strong><small>12월 1일 (화)</small></span></div>
+          <ul class="shd-list"><li><b>D-12</b><span>체육대회</span></li><li><b>D-20</b><span>영상제</span></li><li><b>D-31</b><span>겨울방학</span></li></ul>
+          <span class="so-ex">예시</span>
+        </div></div>
+
+        <div class="sh-say" aria-live="polite"><p class="shs-n" id="shN">01 / 08</p><p class="shs-t" id="shT">오늘 급식</p><p class="shs-d" id="shD"></p></div>
+        <button class="sh-skip" type="button" id="shSkip">건너뛰기<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></button>
+        <div class="sh-dots" aria-hidden="true" id="shDots"></div>
+      </div>
     </section>
 
     <div class="in-tick" aria-hidden="true"><div class="tk">
@@ -149,58 +228,6 @@
       <span>오늘 급식 뭐야?</span><i>✦</i><span>다음 쉬는 시간까지 몇 분?</span><i>✦</i><span>반응속도 반 대항전</span><i>✦</i><span>맞팔 친구랑 DM</span><i>✦</i><span>평일마다 새 밸런스 게임</span><i>✦</i><span>내 프로필 꾸미기</span><i>✦</i>
     </div></div>
 
-    <section class="in-sec" aria-labelledby="inF">
-      <h2 class="in-h" id="inF"><small>들어오면 이런 게 있어요</small>쉬는 시간 10분, 여기서 다 돼요</h2>
-      <ul class="in-bento">
-        <li class="bx meal rv">
-          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-tray"/></svg>오늘 급식</p>
-          <p class="bx-d">조식·중식·석식이 시간 맞춰 바뀌고, 메뉴가 식판 그림으로 보여요</p>
-          <div class="mk-tray" aria-hidden="true">
-            <span class="c main"><img src="/food/c/tangsuyuk.webp" alt="" loading="lazy" width="64" height="56"></span>
-            <span class="c"><img src="/food/c/japchae.webp" alt="" loading="lazy" width="64" height="43"></span>
-            <span class="c"><img src="/food/c/kimchi_cabbage.webp" alt="" loading="lazy" width="64" height="63"></span>
-            <span class="c rice"><img src="/food/c/rice_multigrain.webp" alt="" loading="lazy" width="64" height="61"></span>
-            <span class="c soup"><img src="/food/c/soup_miyeok.webp" alt="" loading="lazy" width="64" height="62"></span>
-          </div>
-          <span class="bx-tag">메뉴 예시</span>
-        </li>
-        <li class="bx ttc rv">
-          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-ttab"/></svg>우리 반 시간표</p>
-          <ol class="mk-tt" aria-hidden="true">
-            <li><b>1</b><svg viewBox="0 0 24 24"><use href="#sj-ko"/></svg>국어</li>
-            <li class="cur"><b>2</b><svg viewBox="0 0 24 24"><use href="#sj-cam"/></svg>영상 제작<em>지금</em></li>
-            <li><b>3</b><svg viewBox="0 0 24 24"><use href="#sj-en"/></svg>영어</li>
-            <li><b>4</b><svg viewBox="0 0 24 24"><use href="#sj-ball"/></svg>체육</li>
-            <li class="lunch">점심시간</li>
-            <li><b>5</b><svg viewBox="0 0 24 24"><use href="#sj-ruler"/></svg>수학</li>
-            <li><b>6</b><svg viewBox="0 0 24 24"><use href="#sj-palette"/></svg>미술</li>
-          </ol>
-          <p class="bx-d">학년·반만 고르면 끝. 7교시 끝나면 내일 시간표로</p>
-        </li>
-        <li class="bx bal rv">
-          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-vote"/></svg>오늘의 밸런스 게임</p>
-          <p class="mk-q">평생 짜장면만 vs 평생 짬뽕만</p>
-          <div class="mk-vs" aria-hidden="true"><span class="a">짜장 <b>58%</b></span><span class="b">짬뽕 <b>42%</b></span></div>
-          <p class="bx-d">평일마다 새 질문 하나, 마지막 교시 끝나면 결과 공개</p>
-          <span class="bx-tag">예시</span>
-        </li>
-        <li class="bx dm rv">
-          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg>친구랑 DM</p>
-          <div class="mk-chat" aria-hidden="true"><p class="l">점심 뭐 나와?</p><p class="r">탕수육 ㄷㄷ</p><p class="l">4교시 왜 이렇게 기냐…</p></div>
-          <p class="bx-d">맞팔한 친구끼리만 주고받아요</p>
-        </li>
-        <li class="bx prof rv">
-          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-user"/></svg>프로필 꾸미기</p>
-          <div class="mk-prof" aria-hidden="true"><span class="av"><svg viewBox="0 0 24 24"><use href="#sj-cg"/></svg></span><span class="pn"><b>나만의 프로필</b><small>아바타 · 색 · 스티커 · 인스타</small></span></div>
-          <p class="bx-d">친구 찾아서 팔로우하고, 반 친구들 프로필 구경</p>
-        </li>
-        <li class="bx cal rv">
-          <p class="bx-t"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-test"/></svg>학사일정 · D-day</p>
-          <div class="mk-dd" aria-hidden="true"><b>D-7</b><span>다음 시험·행사까지<br>남은 날이 바로 보여요</span></div>
-          <p class="bx-d">달력으로 보는 학교 일정</p>
-        </li>
-      </ul>
-    </section>
 
     <section class="in-sec in-play rv" aria-labelledby="inG">
       <div class="in-pl-txt">
@@ -249,19 +276,11 @@
       <p class="ap-name"><small>SVMHS</small>GROUND</p>
       <p class="ap-say" id="apSay">오늘도 가보자</p>
       <p class="ap-live"><i class="dot"></i><span id="apState">지금</span><span class="ap-sep">·</span><span id="apLbl">쉬는 시간까지</span><b id="apLeft">--:--</b></p>
-      <!-- 로그인하면 보이는 첫 화면 미리보기: 시계는 소개 시계 값, 급식은 오늘 실제 메뉴, 시간표는 반을 정해 둔 기기면 실제(아니면 예시) — app.js apPreview() -->
-      <div class="ap-pv">
-        <p class="ap-pv-k">로그인하면 이렇게 보여요 <span>👀</span></p>
-        <div class="ap-scr">
-          <div class="pv-bar"><img src="/logo-mark.svg?v=4" alt="" width="18" height="18"><b>GROUND</b><i></i><i></i></div>
-          <div class="pv-row">
-            <div class="pv-card pv-meal"><p class="pv-t"><svg viewBox="0 0 24 24"><use href="#sj-tray"/></svg><span id="pvMealK">오늘 급식</span></p><ul id="pvMeal"></ul></div>
-            <div class="pv-clock"><p class="pv-st"><i class="dot"></i><span id="pvState">지금</span></p><p class="pv-time" id="pvTime">--:--</p><p class="pv-cd"><span id="pvLbl">쉬는 시간까지</span><b id="pvLeft">--:--</b></p></div>
-            <div class="pv-card pv-tt"><p class="pv-t"><svg viewBox="0 0 24 24"><use href="#sj-ttab"/></svg><span id="pvTtK">시간표</span></p><ol id="pvTt"></ol></div>
-          </div>
-          <div class="pv-low"><span class="pv-h">한눈에 보기</span><i></i><i></i><i></i><i></i></div>
-        </div>
-      </div>
+      <ul class="ap-perks">
+        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-tray"/></svg><span><b>급식·시간표</b>교시 맞춰 자동으로</span></li>
+        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-heart"/></svg><span><b>맞팔 DM</b>쉬는 시간에 수다</span></li>
+        <li><svg class="ap-ic" viewBox="0 0 24 24"><use href="#sj-flag"/></svg><span><b>미니게임 랭킹</b>반 대항전까지</span></li>
+      </ul>
     </aside>
     <div class="ap-main">
       <button class="ap-back" type="button" data-auth-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>소개로 돌아가기</button>

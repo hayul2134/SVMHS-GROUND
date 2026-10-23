@@ -1501,6 +1501,7 @@ function introTick() {
   $('#inBarBox').hidden = !bar;
   if (bar) $('#inBar').style.transform = `scaleX(${(rest ? 1 - prog : prog).toFixed(4)})`;
   $('.in-clock').classList.toggle('rest', rest);
+  showClock(n, b, left, bar ? (rest ? 1 - prog : prog) : null, rest, secNow);
   inTimer = setTimeout(introTick, 1000 - bellNow().getMilliseconds() + 5);
 }
 // 스크롤하면 카드가 하나씩 등장 (IntersectionObserver가 없으면 그냥 다 보임)
@@ -1545,36 +1546,14 @@ introTick();
 // 로그인·가입 페이지(소개 화면 위 전체 화면): 열면 뒤로 가기 한 칸을 만들어, 태블릿 뒤로 가기 제스처가 사이트를 떠나지 않고 이 페이지만 닫게 함
 let apTimer = 0;
 function apLive() {   // 왼쪽 보드의 말풍선·상태는 소개 화면 종 시계(introTick)가 그린 값을 그대로 옮겨 씀
-  [['#inSay', '#apSay'], ['#inState', '#apState'], ['#inLbl', '#apLbl'], ['#inLeft', '#apLeft'], ['#inState', '#pvState'], ['#inLbl', '#pvLbl'], ['#inLeft', '#pvLeft'], ['#inTime', '#pvTime']].forEach(([a, b]) => { const t = $(a)?.textContent; if (t && $(b).textContent !== t) $(b).textContent = t; });
-  const cur = curPeriod(); $$('#pvTt li').forEach(li => li.classList.toggle('cur', +li.dataset.p === cur));
+  [['#inSay', '#apSay'], ['#inState', '#apState'], ['#inLbl', '#apLbl'], ['#inLeft', '#apLeft']].forEach(([a, b]) => { const t = $(a)?.textContent; if (t && $(b).textContent !== t) $(b).textContent = t; });
   $('#apLeft').closest('.ap-live').hidden = !$('#inCdBox') || $('#inCdBox').hidden;
-}
-// 미리보기(로그인하면 보이는 첫 화면): 오늘 실제 급식(지금 끼니)·반을 정해 둔 기기면 실제 시간표, 없으면 예시
-const curPeriod = () => { const n = bellNow(), sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(); return (BELL.find(x => typeof x.p === 'number' && sec >= x.start && sec < x.end) || {}).p || 0; };
-const PV_MEAL = ['탕수육', '잡채', '미역국', '배추김치', '잡곡밥'], PV_TT = ['국어', '영상 제작', '영어', '체육', '수학', '미술'];
-let pvDone = '';
-async function apPreview() {
-  const day = ymd(today()); if (pvDone === day) return; pvDone = day;
-  const dish = (x, i) => { const k = foodImg(x); return `<li${i ? '' : ' class="main"'}>${k ? `<img src="/food/c/${k}.webp" alt="" width="20" height="20" loading="lazy">` : '<i></i>'}<span>${esc(x)}</span></li>`; };
-  const tt = list => list.map(([p, n]) => `<li data-p="${p}"><b>${p}</b>${subjIcon(n)}<span>${esc(n)}</span></li>`).join('');
-  const [meal, rows] = await Promise.all([
-    getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),
-    cls ? getTimetable(cls, today(), today()).then(r => r.filter(x => x.ALL_TI_YMD === day).sort((a, b) => a.PERIO - b.PERIO)).catch(() => []) : Promise.resolve([])
-  ]);
-  const r = meal.length ? pickMeal(meal, mealSlot()) : null;
-  if (r) { $('#pvMealK').textContent = '오늘 ' + MEALS[r.MMEAL_SC_CODE]; $('#pvMeal').innerHTML = orderMenu(cleanDish(r.DDISH_NM)).list.slice(0, 5).map(dish).join(''); }
-  else { $('#pvMealK').textContent = '오늘 급식'; $('#pvMeal').innerHTML = PV_MEAL.map(dish).join(''); }
-  if (rows.length) { $('#pvTtK').textContent = `${cls.g}-${cls.c} 시간표`; $('#pvTt').innerHTML = tt(rows.slice(0, 7).map(x => [+x.PERIO, subjName(x.ITRT_CNTNT)])); }
-  else { $('#pvTtK').textContent = '우리 반 시간표'; $('#pvTt').innerHTML = tt(PV_TT.map((n, i) => [i + 1, n])); }
-  $('#pvTt').parentElement.classList.toggle('ex', !rows.length);
-  $('#pvMeal').parentElement.classList.toggle('ex', !r);
-  apLive();
 }
 function authPage(k, fromPop) {
   const p = $('#introAuth'), slot = $('#authSlot');
   if (k) {
     slot.innerHTML = SOC.authForm(k);
-    if (p.hidden) { p.hidden = false; p.classList.remove('out'); p.scrollTop = 0; try { history.pushState({ ap: 1 }, ''); } catch {} apLive(); apTimer = setInterval(apLive, 1000); apPreview(); }
+    if (p.hidden) { p.hidden = false; p.classList.remove('out'); p.scrollTop = 0; try { history.pushState({ ap: 1 }, ''); } catch {} apLive(); apTimer = setInterval(apLive, 1000); }
     setTimeout(() => slot.querySelector('input')?.focus({ preventScroll: true }), 380);
     return;
   }
@@ -1593,6 +1572,133 @@ $('#intro').addEventListener('click', e => {
 });
 window.addEventListener('popstate', () => { if (!$('#introAuth').hidden) authPage(false, true); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#introAuth').hidden && !$('.modal.open')) authPage(false); });
+
+/* ===== 둘러보기 쇼케이스 (소개 화면 #inShow) =====
+   화면(.sh-stage)은 sticky로 붙어 있고, 섹션을 스크롤한 양(0~1)을 진행도로 써서 오브젝트(.so)를 옮김.
+   ① 로그인 후 첫 화면(급식판·종 시계·시간표·밸런스 + 헤더·버튼)이 통째로 페이드 인 → ② 헤더·버튼은 사라지고 오브젝트만 한 줄로 쭈르륵(나머지 서비스는 오른쪽에서 줄줄이 들어옴)
+   → ③ 스크롤할 때마다 다음 오브젝트가 가운데로 넘어오며 아래에 설명. 급식은 오늘 실제 메뉴, 시간표는 반을 정한 기기면 실제(아니면 예시), 시계는 소개 종 시계 값. */
+const SH_INFO = [
+  ['오늘 급식', '조식·중식·석식이 시간 맞춰 바뀌고, 식판 그림으로 보여요. 맛있는 메뉴엔 투표도!'],
+  ['진짜 종 시계', '우리 학교 종 시간 그대로. 쉬는 시간까지 남은 시간이 1초 단위로 줄어요'],
+  ['우리 반 시간표', '학년·반만 고르면 끝. 지금 교시를 짚어 주고, 7교시가 끝나면 내일 시간표로'],
+  ['오늘의 밸런스 게임', '평일마다 새 질문 하나. 마지막 교시가 끝나면 결과 공개, 댓글로 토론'],
+  ['미니게임 랭킹', '반응속도 · 1 to 25 · 컷 타이밍. 반 대항전으로 우리 반 순위까지'],
+  ['맞팔 친구랑 DM', '맞팔한 친구끼리만 주고받아요. 쉬는 시간 수다는 여기서'],
+  ['프로필 꾸미기', '아바타·색·스티커·인스타 아이디까지. 친구 찾아서 팔로우'],
+  ['학사일정 · D-day', '다음 시험·행사까지 남은 날이 바로 보여요. 달력으로 보는 학교 일정']];
+const SH_EX_MEAL = { main: '탕수육', sides: ['잡채', '배추김치', '오이무침', '요구르트'], rice: '잡곡밥', soup: '미역국' };
+const SH_EX_TT = ['국어', '영상 제작', '영어', '체육', '수학', '미술'];
+let shTT = [];   // [[교시, 과목]]
+const secHM = sec => `${pad(Math.floor(sec / 3600))}:${pad(Math.floor(sec % 3600 / 60))}`;
+function showClock(n, b, left, pct, rest, sec) {
+  if (!$('#shLeft')) return;
+  setText('#shSay', sayLine(b)); setText('#shLbl', left == null ? '오늘 수업 끝' : b.cnt || b.label); setText('#shLeft', left == null ? `${n.getHours() % 12 || 12}:${pad(n.getMinutes())}` : fmtLeft(left));
+  setText('#shTime', `${n.getHours() < 12 ? '오전' : '오후'} ${n.getHours() % 12 || 12}:${pad(n.getMinutes())}`);
+  setText('#shDate', `${n.getMonth() + 1}월 ${n.getDate()}일`); setText('#shDow', DOW[n.getDay()] + '요일');
+  setText('#shState', b.state); setText('#shPct', pct == null ? '' : `${Math.round(pct * 100)}% ${rest ? '남음' : '지남'}`);
+  $('#shBar').parentElement.hidden = pct == null;
+  if (pct != null) $('#shBar').style.transform = `scaleX(${pct.toFixed(4)})`;
+  $$('#shTt li').forEach(li => { const bl = BELL.find(x => x.p === +li.dataset.p); li.classList.toggle('done', !!bl && sec >= bl.end); li.classList.toggle('cur', !!bl && sec >= bl.start && sec < bl.end); });
+}
+async function fillShow() {
+  const day = ymd(today()), cell = (x, cls) => { if (!x) return `<span class="c ${cls}"></span>`; const k = foodImg(x); return `<span class="c ${cls}">${k ? `<img src="/food/c/${k}.webp" alt="" loading="lazy">` : '<i></i>'}<b>${esc(x)}</b></span>`; };
+  const [meal, rows] = await Promise.all([
+    getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),
+    cls ? getTimetable(cls, today(), today()).then(r => r.filter(x => x.ALL_TI_YMD === day).sort((a, b) => a.PERIO - b.PERIO)).catch(() => []) : Promise.resolve([])]);
+  const r = meal.length ? pickMeal(meal, mealSlot()) : null;
+  let m = SH_EX_MEAL;
+  if (r) { const t = splitTray(cleanDish(r.DDISH_NM)), rest = [...t.top[1], ...t.top[2], ...t.top[3]]; m = { main: t.top[0][0] || rest.shift(), sides: rest.slice(0, 4), rice: t.rice, soup: t.soup }; }
+  $('#shMealK').textContent = r ? '오늘 ' + MEALS[r.MMEAL_SC_CODE] : '오늘 급식';
+  $('#shTray').innerHTML = cell(m.main, 'm') + cell(m.sides[0], 'a') + cell(m.sides[1], 'a') + cell(m.sides[2], 'a') + cell(m.sides[3], 'a') + cell(m.rice, 'b') + cell(m.soup, 'r');
+  $('#shKcal').hidden = !r?.CAL_INFO; if (r?.CAL_INFO) $('#shKcal').textContent = '🔥 ' + r.CAL_INFO;
+  $('#shMealEx').hidden = !!r;
+  shTT = rows.length ? rows.slice(0, 7).map(x => [+x.PERIO, subjName(x.ITRT_CNTNT)]) : SH_EX_TT.map((x, i) => [i + 1, x]);
+  $('#shTtK').textContent = rows.length ? `${cls.g}-${cls.c} 시간표` : '오늘 시간표';
+  $('#shTt').innerHTML = shTT.map(([p, nm]) => { const bl = BELL.find(x => x.p === p); return `<li data-p="${p}"><b>${p}</b><small>${bl ? secHM(bl.start) : ''}</small>${subjIcon(nm)}<span>${esc(nm)}</span></li>`; }).join('');
+  $('#shTtEx').hidden = !!rows.length;
+  if (introOn()) introTick();
+}
+{
+  const sec = $('#inShow'), root = $('#intro'), objs = [...$$('#inShow .so')], N = objs.length;
+  const chrome = sec.querySelector('.sh-chrome'), cap = sec.querySelector('.sh-cap'), say = sec.querySelector('.sh-say'), skip = $('#shSkip'), dots = $('#shDots');
+  const T_IN = .07, T_HOLD = .15, T_ROW = .29, T_END = .96, STAG = .009;
+  const HOME = {   // 첫 화면 배치(디자인 캔버스 기준 중심 좌표·배율). 가로 화면·세로 화면 두 가지
+    land: { w: 1440, h: 860, at: [[225, 470, 1], [720, 440, 1], [1225, 470, 1], [720, 765, .7]] },
+    port: { w: 860, h: 1180, at: [[225, 790, .95], [430, 330, 1.15], [635, 790, .95], [430, 1085, .62]] } };
+  const clamp = v => v < 0 ? 0 : v > 1 ? 1 : v, ease = t => t * t * (3 - 2 * t), easeO = t => 1 - Math.pow(1 - t, 3), lerp = (a, b, t) => a + (b - a) * t;
+  let L = null, target = 0, cur = 0, raf = 0, last = 0, idx = -1, on = false;
+  dots.innerHTML = '<i></i>'.repeat(N);
+  function layout() {
+    const W = sec.querySelector('.sh-stage').clientWidth, H = root.clientHeight, hm = W >= H * 1.05 ? HOME.land : HOME.port;
+    const k = Math.min(W / hm.w, H / hm.h), ox = (W - hm.w * k) / 2, oy = (H - hm.h * k) / 2;
+    const sz = objs.map(o => [o.offsetWidth, o.offsetHeight]);
+    const home = objs.map((o, i) => { const [w, h] = sz[i]; const a = hm.at[i] || [hm.w + 260 + (i - 4) * 140, hm.h / 2, .8]; return { x: ox + k * (a[0] - w * a[2] / 2), y: oy + k * (a[1] - h * a[2] / 2), s: k * a[2], o: i < 4 ? 1 : 0 }; });
+    const rowH = Math.min(H * (W < 600 ? .46 : .52), 440), gap = Math.max(26, W * .035), cy = H * (W < 600 ? .44 : .47);
+    let x = 0;
+    const row = objs.map((o, i) => { const [w, h] = sz[i], s = Math.min(rowH / h, W * .82 / w), r = { x, w: w * s, h: h * s, s, y: cy - h * s / 2 }; x += w * s + gap; return r; });
+    chrome.style.width = hm.w + 'px'; chrome.style.height = hm.h + 'px';
+    L = { W, H, k, ox, oy, home, row, range: Math.max(1, sec.offsetHeight - H) };
+    // 스냅 지점: 첫 화면 감상 · 오브젝트 하나씩
+    sec.querySelectorAll('.sh-snap').forEach(x => x.remove());
+    [(T_IN + T_HOLD) / 2, ...Array.from({ length: N }, (_, j) => T_ROW + j * (T_END - T_ROW) / (N - 1))].forEach(p => {
+      const m = document.createElement('i'); m.className = 'sh-snap'; m.style.top = Math.round(p * L.range) + 'px'; sec.appendChild(m); });
+  }
+  function render(p) {
+    if (!L) return;
+    const { W, k, ox, oy, home, row } = L;
+    const fin = easeO(clamp(p / T_IN)), zoom = lerp(.9, 1, fin);
+    const t = clamp((p - T_ROW) / (T_END - T_ROW)) * (N - 1), i0 = Math.floor(t), f = Math.min(N - 1, i0 + ease(clamp((t - i0 - .2) / .6)));
+    const cOf = v => { const a = Math.floor(v), b = Math.min(N - 1, a + 1), r = v - a; return lerp(row[a].x + row[a].w / 2, row[b].x + row[b].w / 2, r); };
+    const pan = W / 2 - cOf(f), zx = W / 2, zy = L.H / 2;
+    objs.forEach((o, i) => {
+      const q = ease(clamp((p - T_HOLD - i * STAG) / (T_ROW - T_HOLD - (N - 1) * STAG))), h = home[i], r = row[i];
+      const d = Math.min(1, Math.abs(i - f)), mul = 1 - .16 * d;
+      const rs = r.s * mul, rx = pan + r.x + r.w * (1 - mul) / 2, ry = r.y + r.h * (1 - mul) / 2;
+      // 첫 화면: 가운데 기준으로 살짝 커지며 등장(zoom)
+      const hx = zx + (h.x - zx) * zoom, hy = zy + (h.y - zy) * zoom, hs = h.s * zoom;
+      const x = lerp(hx, rx, q), y = lerp(hy, ry, q), s = lerp(hs, rs, q);
+      const op = lerp(h.o * fin, .38 + .62 * (1 - d), q);
+      o.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) scale(${s.toFixed(4)})`;
+      o.style.opacity = op.toFixed(3);
+      if (i === 1) { o.style.setProperty('--fr', q.toFixed(3)); o.style.setProperty('--sp', (1 - q).toFixed(3)); }
+    });
+    const gone = clamp((p - T_HOLD) / .035);
+    chrome.style.transform = `translate(${(zx + (ox - zx) * zoom).toFixed(1)}px,${(zy + (oy - zy) * zoom).toFixed(1)}px) scale(${(k * zoom).toFixed(4)})`;
+    chrome.style.opacity = (fin * (1 - gone)).toFixed(3);
+    cap.style.opacity = (1 - gone).toFixed(3);
+    const ui = clamp((p - T_ROW + .04) / .04);
+    say.style.opacity = dots.style.opacity = ui.toFixed(3);
+    skip.classList.toggle('on', p > T_HOLD && p < T_END);
+    const ni = Math.round(f);
+    if (ni !== idx) {
+      idx = ni; $('#shN').textContent = `${pad(ni + 1)} / ${pad(N)}`; $('#shT').textContent = SH_INFO[ni][0]; $('#shD').textContent = SH_INFO[ni][1];
+      say.classList.remove('swap'); void say.offsetWidth; say.classList.add('swap');
+      [...dots.children].forEach((x, j) => x.classList.toggle('on', j === ni));
+    }
+  }
+  const progress = () => L ? clamp(-sec.getBoundingClientRect().top / L.range) : 0;
+  function loop(ts) {
+    const dt = Math.min(64, ts - (last || ts)); last = ts;
+    cur += (target - cur) * (1 - Math.exp(-dt / 70));   // 스크롤을 부드럽게 따라감 (휠이 툭툭 끊겨도 애니메이션은 이어지게)
+    if (Math.abs(target - cur) < .0004) cur = target;
+    render(cur);
+    raf = cur === target ? 0 : requestAnimationFrame(loop);
+  }
+  const kick = () => { if (!on) return; target = progress(); if (!raf) { last = 0; raf = requestAnimationFrame(loop); } };
+  function setup() {
+    on = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    sec.classList.toggle('sh-on', on); root.classList.toggle('sh-snapy', on);
+    if (!on) { objs.forEach(o => { o.style.transform = o.style.opacity = ''; }); sec.querySelectorAll('.sh-snap').forEach(x => x.remove()); return; }
+    sec.style.setProperty('--steps', 11);
+    layout(); cur = target = progress(); render(cur);
+  }
+  root.addEventListener('scroll', kick, { passive: true });
+  new ResizeObserver(() => { if (on && introOn()) { layout(); cur = target = progress(); render(cur); } }).observe(root);
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', setup);
+  skip.addEventListener('click', () => root.scrollTo({ top: root.scrollTop + sec.getBoundingClientRect().bottom - L.H + 2, behavior: 'smooth' }));
+  setup();
+  fillShow();
+}
 
 /* ===== 시작 ===== */
 if (store.get('wk_meal', false)) S.mealWk = weekOf(today());   // 홈 카드 하루/한 주 보기 기억
