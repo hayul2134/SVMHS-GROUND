@@ -1318,22 +1318,63 @@ const calHtml = (m, rows) => {
   }
   return h;
 };
-async function renderCalView() {
+// 달 넘김 애니메이션(2026-10-25): 칸들이 넘기는 방향으로 빠지고 → 새 달 칸들이 반대쪽에서 줄마다 살짝 늦게 들어옴. 요일 머리(.dh)는 고정
+const calRM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+let calSeq = 0, calOut = null;
+const calCells = g => [...g.querySelectorAll('.dy')];
+// 이미 있는 칸은 그대로 두고 내용·속성만 바꿈 → 들어오는 애니메이션이 끊기지 않음
+function calPatch(grid, html) {
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  if (tmp.children.length !== grid.children.length) { grid.innerHTML = html; return; }
+  [...grid.children].forEach((el, i) => {
+    const n = tmp.children[i];
+    [...el.attributes].forEach(a => { if (!n.hasAttribute(a.name)) el.removeAttribute(a.name); });
+    [...n.attributes].forEach(a => { if (el.getAttribute(a.name) !== a.value) el.setAttribute(a.name, a.value); });
+    if (el.innerHTML !== n.innerHTML) el.innerHTML = n.innerHTML;
+  });
+}
+async function calSwap(grid, getHtml, dir) {
+  const seq = ++calSeq, anim = dir && !calRM() && !document.hidden;
+  if (anim) {
+    if (!calOut) {   // 빠지는 중에 또 누르면 다시 빼지 않고 이어서 새 달로
+      calOut = Promise.all(calCells(grid).filter(c => !c.classList.contains('pad')).map(c =>
+        c.animate([{ transform: 'none', opacity: 1 }, { transform: `translateX(${-dir * 26}px)`, opacity: 0 }],
+          { duration: 140, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }).finished.catch(() => {})));
+    }
+    await calOut; calOut = null;
+    if (seq !== calSeq) return;
+  }
+  grid.innerHTML = getHtml();
+  if (!anim) return;
+  calCells(grid).forEach((c, i) => {
+    if (c.classList.contains('pad')) return;
+    c.animate([{ transform: `translateX(${dir * 34}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
+      { duration: 320, delay: Math.floor(i / 7) * 24, easing: 'cubic-bezier(.2,.9,.25,1)', fill: 'backwards' });
+  });
+}
+async function renderCalView(dir) {
+  dir = typeof dir === 'number' ? dir : 0;   // 화면 이동(go)에선 문자열 인자가 옴 → 애니메이션 없음
   const m = S.calMonth, end = new Date(m.getFullYear(), m.getMonth() + 1, 0), box = $('#cList'), grid = $('#cGrid');
   $('#cLbl').textContent = `${m.getFullYear()}년 ${m.getMonth() + 1}월`;
-  grid.innerHTML = calHtml(m, []);
+  if (dir && !calRM()) $('#cLbl').animate([{ transform: `translateX(${dir * 10}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.2,.9,.25,1)' });
+  let rows = null;
+  const req = getSchedule(m, end).then(r => (rows = r));
+  req.catch(() => {});
+  const swap = calSwap(grid, () => calHtml(m, rows || []), dir);
   box.innerHTML = skel(4);
   try {
-    const rows = await getSchedule(m, end);
+    await req;
+    await swap;
     if (m !== S.calMonth) return;
-    grid.innerHTML = calHtml(m, rows);
+    calPatch(grid, calHtml(m, rows));
     // 목록은 오늘(D-DAY)·다가오는 일정부터 위→아래, 지난 일정은 맨 아래에 최근 것부터
     const t = today(), up = rows.filter(r => parseYmd(r.AA_YMD) >= t), past = rows.filter(r => parseYmd(r.AA_YMD) < t).reverse();
     box.innerHTML = rows.length ? (up.length ? evHtml(up) : '') + (past.length ? `<p class="ev-sep">지난 일정</p>${evHtml(past)}` : '') : empty('이 달에는 일정이 없어요');
-  } catch { box.innerHTML = empty('일정을 불러오지 못했어요'); }
+  } catch { if (m === S.calMonth) box.innerHTML = empty('일정을 불러오지 못했어요'); }
 }
-$('#cPrev').onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() - 1, 1); renderCalView(); };
-$('#cNext').onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() + 1, 1); renderCalView(); };
+const calGo = n => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() + n, 1); renderCalView(Math.sign(n)); };
+$('#cPrev').onclick = () => calGo(-1);
+$('#cNext').onclick = () => calGo(1);
 // 'YYYY년 M월'을 누르면 해를 넘기며 달을 골라 바로 이동
 function closeMonthPick() { $('#cPick')?.remove(); $('#cLbl').setAttribute('aria-expanded', 'false'); }
 $('#cLbl').onclick = e => {
@@ -1353,8 +1394,9 @@ $('#cLbl').onclick = e => {
     ev.stopPropagation();
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.y) { y += +b.dataset.y; paint(); return; }
+    const prev = S.calMonth;
     S.calMonth = b.dataset.today ? new Date(t.getFullYear(), t.getMonth(), 1) : new Date(y, +b.dataset.m, 1);
-    closeMonthPick(); renderCalView();
+    closeMonthPick(); renderCalView(Math.sign(S.calMonth - prev));
   };
   $('#cLbl').after(box); $('#cLbl').setAttribute('aria-expanded', 'true');
   box.querySelector('.on, .now, [data-m]').focus();
