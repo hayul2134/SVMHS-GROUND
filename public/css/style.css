@@ -3286,7 +3286,7 @@ html.away .an-plane,html.away .an-trail,html.away .an-ring,html.away .an-ball,ht
 .pv-clk small{font-size:10.5px;font-weight:900;color:var(--sub)}
 .pv-tm{font:900 40px/1 var(--num,inherit);letter-spacing:-.04em;color:var(--text);text-shadow:3px 3px 0 color-mix(in srgb,var(--pc,#7cc4f5) 55%,transparent)}
 .pv-clk.neon{background:var(--chip)}
-.pv-clk.neon .pv-tm{color:color-mix(in srgb,var(--ne) 14%,transparent);-webkit-text-stroke:.034em var(--ne-core);text-shadow:none;filter:drop-shadow(0 0 1px var(--ne)) drop-shadow(0 0 4px var(--ne)) drop-shadow(1px 1.5px 0 var(--ne-deep))}
+.pv-clk.neon .pv-tm{color:transparent;-webkit-text-stroke:.03em var(--ne-core);text-shadow:none;filter:drop-shadow(0 0 1px var(--ne)) drop-shadow(0 0 4px var(--ne))}
 .pv-dk{position:absolute;width:32px;height:32px;display:grid;place-items:center;pointer-events:none}
 .pv-dk > *{width:32px !important;height:32px !important;display:block}
 .pv-dk.k1{left:-9px;top:-11px;transform:rotate(-12deg)}.pv-dk.k2{right:-9px;bottom:-11px;transform:rotate(10deg)}.pv-dk.k3{right:-9px;top:-11px;transform:rotate(12deg)}.pv-dk.k4{left:-9px;bottom:-11px;transform:rotate(-8deg)}.pv-dk.k5{left:50%;top:-14px;margin-left:-16px}
@@ -3341,13 +3341,12 @@ html[data-neon=pink]{--ne:#ff3fb4}html[data-neon=red]{--ne:#ff3448}html[data-neo
    안쪽은 살짝 색이 비치는 유리 느낌. 깜빡임(켤 때 한 번·가끔 한 글자)은 2차 그대로 */
 html{--ne-core:color-mix(in srgb,#fff 55%,var(--ne));--ne-deep:color-mix(in srgb,var(--ne) 70%,#2a0e3a)}
 html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{
-  color:color-mix(in srgb,var(--ne) 14%,transparent);-webkit-text-stroke:.034em var(--ne-core);paint-order:stroke fill;
+  color:transparent;-webkit-text-stroke:.03em var(--ne-core);
   text-shadow:none;animation:neOn 1.3s steps(1,end) both;
-  filter:drop-shadow(0 0 .012em var(--ne)) drop-shadow(0 0 .045em var(--ne)) drop-shadow(0 0 .12em color-mix(in srgb,var(--ne) 75%,transparent)) drop-shadow(.025em .03em 0 var(--ne-deep))}
-html[data-ckfx=neon] .s-big .ap{-webkit-text-stroke-width:.045em}
+  filter:drop-shadow(0 0 .01em var(--ne)) drop-shadow(0 0 .035em var(--ne)) drop-shadow(0 0 .09em color-mix(in srgb,var(--ne) 60%,transparent))}
+html[data-ckfx=neon] .s-big .ap,html[data-ckfx=neon] .s-big .sec{color:transparent;-webkit-text-stroke:.045em var(--ne-core);text-shadow:none}
 html[data-ckfx=neon] .s-big .c{animation:neColon 2s steps(1,end) infinite}
 html[data-ckfx=neon] .s-big .n:nth-of-type(3){animation:neDip 11s steps(1,end) 3s infinite}   /* 가끔 한 글자만 지지직 */
-html[data-ckfx=neon] .s-big .sec{-webkit-text-stroke-width:.05em}
 html.neon-on[data-ckfx=neon] .stage .s-big{animation:neOn 1.3s steps(1,end) both}
 @keyframes neOn{0%{opacity:.18}8%{opacity:1}12%{opacity:.18}22%{opacity:1}26%{opacity:.45}40%,100%{opacity:1}}
 @keyframes neDip{0%,93%,100%{opacity:1}94%{opacity:.35}95%{opacity:1}96.5%{opacity:.6}97%{opacity:1}}
