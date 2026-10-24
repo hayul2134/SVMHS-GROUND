@@ -3924,3 +3924,13 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .cf:nth-child(34){left:21%;animation-delay:0.54s;animation-duration:3.1s}
 .cf:nth-child(35){left:58%;animation-delay:0.63s;animation-duration:3.4s}
 .cf:nth-child(36){left:95%;animation-delay:0.72s;animation-duration:2.2s}
+/* 프로필: 학년·반 · 학과 · 동아리를 이름 아래 크게 (2026-10-25) */
+.pinfo{display:flex;flex-wrap:wrap;gap:6px 8px;margin:8px 0 0}
+.pi-c{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 8px;border-radius:12px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-weight:900;font-size:14.5px;line-height:1.2;box-shadow:2px 2px 0 var(--ink)}
+.pi-c .sic{width:20px;height:20px}
+.pi-c small{font-size:11px;font-weight:800;color:var(--sub);margin-left:2px}
+.pi-cls{background:var(--chip)}
+.pi-dep.d-con{background:#ffe1dc}.pi-dep.d-med{background:#e9e1ff}.pi-dep.d-pro{background:#d9f7ea}
+:root[data-theme="dark"] .pi-dep.d-con{background:#5a3530}:root[data-theme="dark"] .pi-dep.d-med{background:#40355e}:root[data-theme="dark"] .pi-dep.d-pro{background:#244a3c}
+.pi-club{background:#fff1c2}:root[data-theme="dark"] .pi-club{background:#4a3d14}
+.pi-c:nth-child(odd){rotate:-1deg}.pi-c:nth-child(even){rotate:.8deg}

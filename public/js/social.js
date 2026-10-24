@@ -283,7 +283,11 @@ const tierChips = tr => !tr ? '' : (tr.cur ? tierBadge(tr.cur.k, '', `이번 라
 const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
-  const chips = [classTxt(u), u.club && '🎬 ' + u.club].filter(Boolean).map(x => `<span class="chip">${esc(x)}</span>`).join('');
+  // 학년·반 · 학과 · 동아리를 이름 바로 아래 눈에 띄게 (2026-10-25 하율) — 학과는 반 번호로(1·2 콘텐츠, 3·4 미디어, 5·6 프로듀스 — 가입 화면 dephint와 같음)
+  const dep = !isDev(u) && u.cls ? [null, ['con', '콘텐츠과', 'clap'], ['con', '콘텐츠과', 'clap'], ['med', '미디어과', 'palette'], ['med', '미디어과', 'palette'], ['pro', '프로듀스과', 'cut'], ['pro', '프로듀스과', 'cut']][+u.cls] : null;
+  const chips = [classTxt(u) && `<span class="pi-c pi-cls">${ic('book')}${esc(classTxt(u))}</span>`,
+    dep && `<span class="pi-c pi-dep d-${dep[0]}">${ic(dep[2])}${dep[1]}</span>`,
+    u.club && `<span class="pi-c pi-club">${ic('cam')}${esc(u.club)}<small>동아리</small></span>`].filter(Boolean).join('');
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
@@ -307,7 +311,7 @@ function profileHtml(d) {
         ${av(u, 'big', avWear(u.mfx) + (isDev(u) ? pdBurst() : ''))}
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-          <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}${tch ? `<p class="ptier">${tch}</p>` : ''}
+          <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}${tch ? `<p class="ptier">${tch}</p>` : ''}
           <p class="phandle">${[isDev(u) ? `<span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span>` : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
@@ -316,7 +320,6 @@ function profileHtml(d) {
         <div class="pmain">
           ${isDev(u) ? '<button class="pdev" type="button" data-fb><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg><span>궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! <span class="nw">팔로우 안 해도 돼요</span></span></button>' : ''}
           ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
-          ${chips ? `<p class="pchips">${chips}</p>` : ''}
           ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
           ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
         </div>
