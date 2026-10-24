@@ -1,40 +1,47 @@
-# 주간 업데이트 소식(패치노트) 절차 — 일요일 초안·컨펌 → 월요일 게시
+# 업데이트·공지 절차 (2026-10-25 하율 결정)
 
-Claude Code·Claude 일반 대화 어디서 작업했든 모두 이 저장소 main에 커밋되므로, **커밋 기록이 유일한 근거**입니다.
+업데이트는 **크기에 따라 두 갈래**입니다. 보고는 항상 claude.ai 프로젝트 "SVMHS GROUND"의 해당 채팅(예약 메시지가 오는 대화)에서 합니다.
 
-| 단계 | 언제 | 무엇을 |
-|---|---|---|
-| A. 초안 | 매주 **일요일 21:00** 예약 작업 | 초안 파일을 만들고 하율에게 보여 주며 컨펌 요청 |
-| B. 컨펌 | 하율이 답할 때(아무 세션이든) | 수정 반영 후 `"approved": true`로 바꿔 커밋 |
-| C. 게시 | 매주 **월요일 06:00** 예약 작업 | 승인된 초안만 `public/patchnotes.json`에 게시 |
+| 종류 | 예 | 반영 | 공지 |
+|---|---|---|---|
+| **작은 수정** | 버그 수정, 편의성 개선 등 **원래 있던 것**을 조금 고치는 것 | `main`에 바로 반영 | 반영 직후 바로 공지(D) → 하율에게 보고 |
+| **큰 업데이트** | 새 기능·새 화면·새 게임 등 **무언가를 추가하거나 새로 만드는 것** | `next` 브랜치에 모아 둠 → **월요일 06:00**에 `main`으로 합침 | 월요일 06:00 반영과 **동시에** 공지(A→B→C) |
+
+헷갈리면: 학생이 "새로 생겼다"고 느낄 변화면 큰 업데이트, "원래 있던 게 나아졌다/고쳐졌다"면 작은 수정. 그래도 애매하면 하율에게 묻는다.
+
+## 브랜치
+- `main` = 실제 사이트(push하면 Cloudflare Pages 자동 배포). 작은 수정만 바로 올림.
+- `next` = 다음 월요일에 나갈 큰 업데이트 모음. 없으면 `git push origin main:next`로 만든다. 작업 전 `git fetch origin main next && git checkout -B next origin/next && git merge -q origin/main`(작은 수정이 next에도 들어가게).
+- next를 미리 보려면 Cloudflare 미리보기 주소 `https://next.svmhs-ground.pages.dev`(계정명 들어간 주소 금지 규칙과 무관).
 
 ## 파일
-- 초안: `tools/patchnotes/draft-YYYY-wWW.json`
-  `{ "id", "date", "title", "items": [...], "since", "until", "approved": false }`
-- 게시본: `public/patchnotes.json` — **최신이 맨 앞**인 배열 `{ id, date, title, items, until }`.
-- `since`/`until`은 한국 시간 ISO(`2026-10-25T21:00:00+09:00`). 다음 초안의 `since` = 직전 게시본(또는 직전 초안)의 `until`, 없으면 지난주 월요일 00:00. 이렇게 이어 붙여 **일요일 21시 이후 커밋도 다음 주에 빠짐없이** 들어갑니다.
+- 게시본: `public/patchnotes.json` — **최신이 맨 앞**인 배열 `{ id, date, title, items, until }`. 작은 수정 공지와 월요일 공지가 모두 여기 쌓임.
+- 월요일 초안: `tools/patchnotes/draft-YYYY-wWW.json` `{ "id", "date", "title", "items": [...], "approved": false }` (next 브랜치가 아니라 main에 커밋 — tools/는 사이트에 노출되지 않음).
 
-## A. 초안 만들기 (일요일 21:00)
-1. `git fetch -q --depth=1000 origin main && git reset -q --hard origin/main`
-2. id: 그 주(월~일)의 ISO 주차 `YYYY-wWW`. 게시본이나 초안에 같은 id가 이미 있으면 새로 만들지 않고, 미승인 초안이 있으면 그 초안으로 컨펌만 다시 요청.
-3. `until` = 지금. 근거:
-   `git log --since="<since>" --until="<until>" --format='%ad %s%n%b' --date=format:'%m-%d %H:%M'`
-   제목만으로 애매하면 `git show --stat <커밋>`으로 확인. 추측으로 쓰지 않음.
-4. 아래 '넣고 뺄 것'·'문구 스타일'대로 작성. 사이트 관련 커밋이 하나도 없으면 초안을 만들지 않고 "이번 주는 소식 없음"만 알림.
-5. 커밋(`초안: 업데이트 소식 YYYY-wWW`) → `git pull -q --rebase origin main` → `git push -q origin HEAD:main`. (tools/는 사이트에 노출되지 않음)
-6. **SendUserMessage**로 하율에게 보냄: 기간, 제목, 항목 번호 목록, 그리고 안내 —
-   "이대로 올릴까요? '올려' / 'N번 빼' / 'N번 이렇게 바꿔'처럼 답해 주세요. 월요일 오전 6시 전까지 컨펌이 없으면 게시하지 않고 다음 컨펌을 기다립니다."
+## D. 작은 수정 공지 (반영 직후, 그때그때)
+1. 수정을 main에 push하고 배포 반영을 확인한 뒤 공지한다.
+2. `public/patchnotes.json` 맨 앞에 추가: id `fix-YYYYMMDD-HHMM`, date `10/25 (일)`처럼, title은 '날짜 요일 패치' 형식(예: `10월 25일 일요일 패치 🔧`), items는 그 수정만(1~3개). 같은 날 이미 작은 수정 공지가 있고 아직 하루가 안 지났으면 새로 만들지 말고 그 항목에 이어 붙인다.
+3. JSON 검사 → 커밋(`공지: <요약>`) → pull --rebase → push → 이 채팅에 "무엇을 고쳤고 공지 문구는 이렇다"고 짧게 보고.
+4. 컨펌을 기다리지 않는다(하율 결정: 반영 후 보고). 하율이 문구를 고치라고 하면 그대로 고쳐 다시 올린다.
 
-## B. 컨펌 처리 (하율이 답했을 때 — 이 예약 세션이든, 프로젝트의 다른 대화든)
-- 요청대로 초안을 고치고, 하율이 올리라고 했으면 `"approved": true`로 커밋·푸시(`컨펌: 업데이트 소식 YYYY-wWW`).
-- 하율이 "지금 바로 올려"라고 하면 C를 즉시 수행해도 됨.
-- 수정만 하고 승인 안 했으면 고친 목록을 다시 보여 주고 컨펌을 기다림.
+## A. 월요일 초안 (일요일 21:00)
+1. `git fetch -q --depth=1000 origin main next`
+2. 근거: `git log origin/main..origin/next --format='%ad %s%n%b' --date=format:'%m-%d %H:%M'` (next에만 있는 = 월요일에 나갈 것). 애매하면 `git show --stat`. 추측 금지.
+3. next에 새 커밋이 없으면 초안을 만들지 않고 "이번 주 월요일 업데이트 없음"만 보고.
+4. 아래 '넣고 뺄 것'·'문구 스타일'대로 작성. title은 '날짜 요일 패치'(예: `10월 26일 월요일 패치 ✨`). 커밋(`초안: 업데이트 소식 YYYY-wWW`) → main에 push.
+5. 이 채팅에 기간·제목·번호 목록과 안내를 보냄: "이대로 올릴까요? '올려' / 'N번 빼' / 'N번 이렇게 바꿔'처럼 답해 주세요. 월요일 오전 6시 전까지 컨펌이 없으면 업데이트와 공지 모두 미루고 다음 컨펌을 기다립니다."
 
-## C. 게시 (월요일 06:00)
-1. 최신 main에서 `approved: true`인 초안을 찾음. 없으면 **게시하지 않고** 끝냄(미승인 초안은 그대로 둠 — 하율이 나중에 컨펌하면 그때 B에서 바로 게시).
-2. 게시본 맨 앞에 `{id, date, title, items, until}` 추가(같은 id가 이미 있으면 건너뜀), 기존 항목은 그대로.
-3. `python3 -c "import json;json.load(open('public/patchnotes.json'))"`로 확인 → 그 초안 파일 삭제 → 커밋(`업데이트 소식 YYYY-wWW 게시`) → pull --rebase → push.
-4. 1~3분 뒤 WebFetch로 `https://svmhs-ground.pages.dev/patchnotes.json`에 새 id가 보이는지 확인(셸 curl은 프록시에 막힐 수 있음).
+## B. 컨펌 처리 (하율이 답했을 때)
+- 요청대로 초안을 고치고, 올리라고 했으면 `"approved": true`로 커밋·푸시(`컨펌: 업데이트 소식 YYYY-wWW`).
+- 하율이 특정 기능을 빼라고 하면 그 기능은 이번 주에 내보내지 않는다(next에서 되돌리거나 다음 주로 미룸 — 하율에게 어느 쪽인지 확인).
+- "지금 바로 올려"라고 하면 C를 즉시 수행.
+
+## C. 월요일 반영 + 공지 (월요일 06:00)
+1. `approved: true` 초안이 없으면 **반영도 공지도 하지 않고** 끝냄(next는 그대로 둠). 보고: "컨펌된 업데이트 없음".
+2. 있으면 `git checkout -B main origin/main && git merge --no-ff origin/next -m "월요일 업데이트 YYYY-wWW"`. 충돌이 나면 멈추고 하율에게 보고.
+3. 같은 커밋 흐름에서 `public/patchnotes.json` 맨 앞에 `{id, date, title, items, until: 지금}` 추가, 초안 파일 삭제, JSON 검사 → 커밋 → pull --rebase → push(main). 기능과 공지가 한 번의 배포로 함께 나간다.
+4. `git push origin main:next --force-with-lease`로 next를 main과 맞춤.
+5. 1~3분 뒤 WebFetch로 `https://svmhs-ground.pages.dev/patchnotes.json`에 새 id가 보이는지 확인 → 이 채팅에 한 줄 보고.
 
 ## 넣고 뺄 것 (2026-10-22 하율 결정: 사이트 관련 변경은 전부 넣고, 하율이 컨펌 때 고름)
 - **전부 넣음**: 그 기간 커밋 중 사이트와 관련된 변경 모두 — 학생 화면, 관리자 페이지·개발자 계정, 서버·성능·보안, 급식 그림 같은 데이터 작업까지.
@@ -48,5 +55,5 @@ Claude Code·Claude 일반 대화 어디서 작업했든 모두 이 저장소 ma
 - 어디서 쓰는지 알려 주기: "☰ 메뉴 → [테마]", "홈 급식판 ‹ › 버튼" 처럼.
 - 항목 수 제한 없음(빠짐없이). 눈에 띄는 것부터. 과장·사실 아닌 약속 금지.
 - date 예: `10월 셋째 주 (10/19 ~ 10/25)` — 'N째 주'는 그 주 월요일이 그 달의 몇 번째 월요일인지.
-- title 예: `✨ 이번 주 업데이트 소식 ✨ (๑˃ᴗ˂)ﻭ` — 매주 조금씩 다르게.
+- title: '날짜 요일 패치' 형식(예: `10월 26일 월요일 패치 ✨`), 뒤 이모지는 매번 조금씩 다르게. 📢는 쓰지 않음(공지 창 '📢 공지'와 겹침).
 - 커밋 작성자: `-c user.name=hayul2134 -c user.email=hayulbusiness@gmail.com`.
