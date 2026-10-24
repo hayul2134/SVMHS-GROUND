@@ -3221,16 +3221,24 @@ html.away .an-plane,html.away .an-trail,html.away .an-ring,html.away .an-ball,ht
 .pcard{position:relative}
 .pfx-star{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;border-radius:inherit}
 /* 진짜 별똥별: 방향을 한 번 정하면 돌지 않고(머리=진행 방향 앞, 꼬리=뒤), 대각선으로 빠르게 그으며 꼬리가 늘어났다 사라짐 */
-.pfx-star i{position:absolute;left:var(--x);top:var(--y);width:var(--l,90px);height:var(--h,2.5px);opacity:0;transform-origin:100% 50%;transform:rotate(148deg) translateX(0);animation:pfxShoot var(--u,.95s) cubic-bezier(.45,.05,.8,.5) var(--d,0s) forwards;filter:drop-shadow(0 0 1px rgba(170,105,0,.55)) drop-shadow(0 0 5px rgba(255,200,60,.9))}
+.pfx-star i{position:absolute;left:var(--x);top:var(--y);width:var(--l,90px);height:var(--h,2.5px);opacity:0;transform-origin:100% 50%;transform:rotate(148deg) translateX(0);animation:pfxShoot var(--u,.95s) cubic-bezier(.45,.05,.8,.5) var(--d,0s) forwards;filter:drop-shadow(0 0 1px rgba(150,90,0,.7)) drop-shadow(0 0 7px rgba(255,195,50,1))}
 .pfx-star i::after{content:"";position:absolute;inset:0;border-radius:3px;background:linear-gradient(90deg,transparent,rgba(255,196,40,.75) 45%,#ffe27a 80%,#fff);transform-origin:100% 50%;transform:scaleX(.15);animation:pfxTail var(--u,.95s) ease-out var(--d,0s) forwards}
 .pfx-star i::before{content:"";position:absolute;right:calc(var(--k,9px) / -2);top:50%;width:var(--k,9px);height:var(--k,9px);margin-top:calc(var(--k,9px) / -2);background:radial-gradient(circle,#fff 30%,#ffd34a 75%);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);filter:drop-shadow(0 0 2px #ffd34a)}
-.pfx-star i:nth-child(1){--x:58%;--y:-6%;--l:150px;--h:4px;--k:18px;--u:1s;--t:380px;--d:.05s}
-.pfx-star i:nth-child(2){--x:88%;--y:12%;--l:110px;--h:3px;--k:13px;--u:.85s;--t:320px;--d:.35s}
-.pfx-star i:nth-child(3){--x:22%;--y:-10%;--l:90px;--h:2.5px;--k:11px;--u:.8s;--t:220px;--d:.6s}
-.pfx-star i:nth-child(4){--x:96%;--y:40%;--l:140px;--h:3.5px;--k:16px;--u:1.05s;--t:420px;--d:.78s}
-.pfx-star i:nth-child(5){--x:70%;--y:-12%;--l:90px;--h:2.5px;--k:11px;--u:.75s;--t:260px;--d:1.05s}
-.pfx-star i:nth-child(6){--x:40%;--y:22%;--l:120px;--h:3px;--k:14px;--u:.9s;--t:300px;--d:1.25s}
-.pfx-star i:nth-child(n+7){display:none}
+.pfx-star i:nth-child(1){--x:55%;--y:-8%;--l:190px;--h:5px;--k:22px;--u:1.0s;--t:420px;--d:0.0s}
+.pfx-star i:nth-child(2){--x:90%;--y:6%;--l:140px;--h:4px;--k:17px;--u:0.85s;--t:360px;--d:0.15s}
+.pfx-star i:nth-child(3){--x:20%;--y:-12%;--l:120px;--h:3.5px;--k:15px;--u:0.8s;--t:260px;--d:0.3s}
+.pfx-star i:nth-child(4){--x:100%;--y:35%;--l:180px;--h:4.5px;--k:20px;--u:1.0s;--t:440px;--d:0.42s}
+.pfx-star i:nth-child(5){--x:72%;--y:-14%;--l:130px;--h:3.5px;--k:15px;--u:0.75s;--t:300px;--d:0.55s}
+.pfx-star i:nth-child(6){--x:38%;--y:15%;--l:160px;--h:4px;--k:18px;--u:0.9s;--t:340px;--d:0.7s}
+.pfx-star i:nth-child(7){--x:85%;--y:-10%;--l:170px;--h:4.5px;--k:20px;--u:0.9s;--t:400px;--d:0.85s}
+.pfx-star i:nth-child(8){--x:62%;--y:28%;--l:120px;--h:3.5px;--k:14px;--u:0.8s;--t:300px;--d:1.0s}
+.pfx-star i:nth-child(9){--x:30%;--y:-6%;--l:150px;--h:4px;--k:17px;--u:0.85s;--t:320px;--d:1.12s}
+.pfx-star i:nth-child(10){--x:98%;--y:10%;--l:190px;--h:5px;--k:22px;--u:1.0s;--t:460px;--d:1.25s}
+.pfx-star i:nth-child(11){--x:48%;--y:-12%;--l:130px;--h:3.5px;--k:15px;--u:0.8s;--t:300px;--d:1.4s}
+.pfx-star i:nth-child(12){--x:78%;--y:22%;--l:160px;--h:4px;--k:18px;--u:0.9s;--t:380px;--d:1.55s}
+.pfx-star i:nth-child(13){--x:15%;--y:8%;--l:110px;--h:3px;--k:13px;--u:0.75s;--t:240px;--d:1.68s}
+.pfx-star i:nth-child(14){--x:66%;--y:-10%;--l:180px;--h:4.5px;--k:20px;--u:0.95s;--t:420px;--d:1.8s}
+.pfx-star i:nth-child(n+15){display:none}
 @keyframes pfxShoot{0%{opacity:0;transform:rotate(148deg) translateX(0)}12%{opacity:1}70%{opacity:1}100%{opacity:0;transform:rotate(148deg) translateX(var(--t,320px))}}
 @keyframes pfxTail{0%{transform:scaleX(.15)}55%{transform:scaleX(1)}100%{transform:scaleX(.55)}}
 @media (prefers-reduced-motion:reduce){.pfx-star{display:none}}
