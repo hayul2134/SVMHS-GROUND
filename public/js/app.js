@@ -295,7 +295,7 @@ addEventListener('scroll', onScroll, { passive: true });
 // ▼ → 바로 아래 '한눈에 보기' (2026-10-24): 제목~시간표가 한 화면에 다 들어오는 자리로. 화면이 짧으면 시간표 끝이 보이는 쪽을 우선
 const boardY = () => {
   const b = $('#board'), w = $('#weekTT'), sy = scrollY;
-  const top = b.getBoundingClientRect().top + sy - 84, end = Math.max(w.getBoundingClientRect().bottom, $('.board .k-up').getBoundingClientRect().bottom) + sy + 24;
+  const top = b.getBoundingClientRect().top + sy - 84, end = Math.max(w.getBoundingClientRect().bottom, $('.board .k-up').getBoundingClientRect().bottom) + sy + 36;
   return Math.max(top, Math.min(end - innerHeight, b.getBoundingClientRect().top + sy + 40));
 };
 $('#goDown').onclick = () => scrollTo({ top: boardY(), behavior: 'smooth' });
