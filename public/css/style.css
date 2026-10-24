@@ -2305,7 +2305,7 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .all-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .all-head h3{margin:0 auto 0 0}
 .all-head .mealtabs{margin:0}
-.pager button.all-wk{width:auto;padding:0 12px;display:flex;align-items:center;gap:6px;font:inherit;font-weight:900;font-variant-numeric:tabular-nums;color:var(--text);cursor:pointer}
+.pager button.all-wk{width:auto;min-width:212px;justify-content:center;padding:0 12px;display:flex;align-items:center;gap:6px;font:inherit;font-weight:900;font-variant-numeric:tabular-nums;color:var(--text);cursor:pointer}
 .all-wk small{font-size:11px;font-weight:800;color:var(--sub)}
 .all-wk::before{content:"▾";order:1;font-size:.75em;color:var(--sub)}
 .pager button.all-wk[aria-expanded="true"]{background:var(--yellow);color:var(--ink)}
