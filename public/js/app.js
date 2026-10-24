@@ -1987,7 +1987,7 @@ let inPk = 'home';
   const coarse = matchMedia('(pointer:coarse)').matches;
   const fit = () => {   // 한 도트 = 기기 픽셀 정수배 (도트가 고르게)
     if (!RUN) return;
-    const w = scr.parentElement.clientWidth, dpr = devicePixelRatio || 1, k = w / RUN.W, snap = Math.floor(k * dpr) / dpr;
+    const cs = getComputedStyle(box), w = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), dpr = devicePixelRatio || 1, k = w / RUN.W, snap = Math.floor(k * dpr) / dpr;
     scr.style.width = Math.min(w, (snap >= k * .85 ? snap : k) * RUN.W) + 'px';   // 정수배로 맞추면 너무 작아질 땐(작은 칸) 칸에 맞춤
   };
   const grade = m => m >= 1500 ? '이 정도면 라운드 1등 노려볼 만해요' : m >= 800 ? '꽤 멀리 왔는데요?' : m >= 300 ? '이제 감 잡았다!' : '한 번만 더…';

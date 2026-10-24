@@ -1251,7 +1251,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 /* 나 집에 갈래! 맛보기 */
 .in-hr{position:relative;display:grid;justify-items:center;gap:10px;padding:12px;border-radius:24px;background:var(--card);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);rotate:1deg;outline:none;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .in-hr:focus-visible{box-shadow:5px 5px 0 var(--ink),0 0 0 4px color-mix(in srgb,var(--accent) 45%,transparent)}
-.in-hr canvas{display:block;width:100%;aspect-ratio:320/104;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:12px;border:2.5px solid var(--ink);background:#bfe6ff;cursor:pointer}
+.in-hr canvas{display:block;box-sizing:border-box;width:100%;aspect-ratio:320/104;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:12px;border:2.5px solid var(--ink);background:#bfe6ff;cursor:pointer}
 .in-hr-scr{position:relative;width:100%;max-width:100%}
 .in-hr-ov{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:4px;text-align:center;border-radius:12px;background:rgba(23,48,72,.38);color:#fff;cursor:pointer;pointer-events:auto}
 .in-hr-ov b{font-family:var(--disp);font-weight:400;font-size:clamp(22px,3vw,30px);text-shadow:2px 2px 0 #173048}
@@ -1426,7 +1426,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 .sha-wk li{position:relative;display:grid;justify-items:center;gap:5px;font-size:12px;font-weight:900;color:var(--sub)}
 .sha-wk li i{position:relative;z-index:1;width:30px;height:30px;border-radius:50%;border:2.5px dashed var(--line);background:var(--card)}
 .sha-wk li.ok i{border:2.5px solid var(--ink);background:radial-gradient(circle at 35% 30%,#ffd36a,#ff8a3d);box-shadow:2px 2px 0 var(--ink)}
-.sha-wk li.ok i::after{content:"";position:absolute;left:8px;top:6px;width:8px;height:12px;border:solid #173048;border-width:0 3px 3px 0;rotate:42deg}
+.sha-wk li.ok i::after{content:"";position:absolute;left:50%;top:50%;width:7px;height:12px;box-sizing:border-box;border:solid #173048;border-width:0 3px 3px 0;transform:translate(-50%,-62%) rotate(42deg)}   /* 동그라미 정가운데 (꺾인 모양이라 살짝 위로) */
 .sha-wk li.ok+li.ok::before{content:"";position:absolute;right:50%;width:100%;bottom:12px;height:8px;background:#ffb86b;border-block:2px solid var(--ink)}
 .sha-wk li.now b{color:var(--accent)}
 .sha-wk li.now i{animation:shaStamp 2.6s ease-in-out infinite}
