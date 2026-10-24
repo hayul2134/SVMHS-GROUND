@@ -21,11 +21,11 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 // 직접 그린 스티커 아이콘(index.html 스프라이트 #sj-*) — 이모지 대신 (2026-10-24)
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
+  // 나 집에 갈래!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
+  home: { name: '나 집에 갈래!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 최대한 멀리. 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   reaction: { name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
   cut: { name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
-  // 나 집에 갈래!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
-  home: { name: '나 집에 갈래!', ic: 'home', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 최대한 멀리. 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
 };
 
 /* ===== 상태 ===== */
@@ -1163,7 +1163,7 @@ function playCut() {
 /* 4) 나 집에 갈래!: 공룡 게임 방식 픽셀 러너 (js/runner.js) + 캐릭터 꾸미기 */
 let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
 async function playHome() {
-  const area = stage(ic('home') + ' 나 집에 갈래!', `<div class="hr" id="hr">
+  const area = stage(ic('run') + ' 나 집에 갈래!', `<div class="hr" id="hr">
       <div class="hr-scr" id="hrScr"><canvas id="hrCv" aria-label="게임 화면"></canvas>
         <div class="hr-ov" id="hrOv"><b>나 집에 갈래!</b><span>종 쳤다! 장애물을 피해 집까지 달려요</span><small>${matchMedia('(pointer:coarse)').matches ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · ↑ · 화면 클릭으로 출발'}</small></div></div>
       <div class="hr-touch"><button type="button" class="btn big" id="hrJ">점프</button><button type="button" class="btn big ghost" id="hrD">숙이기</button></div>
