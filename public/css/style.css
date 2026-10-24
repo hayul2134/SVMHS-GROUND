@@ -911,8 +911,8 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .pick button{aspect-ratio:1;border-radius:12px;font-size:22px;background:var(--chip);border:2px solid transparent;transition:transform .1s}
 .pick button:hover{transform:scale(1.1)}
 .pick button.on{border-color:var(--ink);background:var(--yellow);transform:rotate(-6deg)}
-.pick.sw button{background:var(--pc);border:2.5px solid var(--ink)}
-.pick.sw button.on{box-shadow:inset 0 0 0 4px var(--card);transform:none}
+.pick.csw button{background:var(--pc);border:2.5px solid var(--ink)}
+.pick.csw button.on{box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--accent);transform:none}   /* 고른 색: 색은 그대로, 바깥에 테두리 */
 .preview{display:grid;place-items:center;padding:16px;border-radius:18px;background:var(--pc);border:var(--bd);background-image:radial-gradient(rgba(255,255,255,.35) 2px,transparent 2.5px);background-size:16px 16px}
 /* 프로필 카드 */
 .pcard{background:var(--card);border:var(--bd);border-radius:26px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;transform:rotate(-.4deg)}
@@ -1810,7 +1810,7 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
   .htip.on{opacity:1}
   .htip.wrap{white-space:normal;width:max-content;max-width:220px;line-height:1.35}
   :root[data-theme="dark"] .htip{background:#f3f7fb;color:var(--onc)}
-  .pick.sw button.on:hover::after,.pick.sw button.on:focus-visible::after{transform:translate(-50%,0)}
+  .pick.csw button.on:hover::after,.pick.csw button.on:focus-visible::after{transform:translate(-50%,0)}
 }
 /* 식판 카툰 음식 그림(투명 배경): 칸 안에 잘리지 않게 담고(contain), 아래는 이름표 자리로 조금 비움 */
 .tray .fx.fximg{overflow:hidden;border-radius:inherit}
@@ -2157,7 +2157,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .c-xsakura{--pc:#ffc3d6;--pg:radial-gradient(ellipse 5.5px 3.6px at 30% 30%,#fff 88%,transparent) 0 0/22px 22px,radial-gradient(ellipse 5px 3.2px at 72% 68%,#ff86ad 88%,transparent) 0 0/26px 26px,linear-gradient(160deg,#fff2f6 0%,#ffcadb 55%,#ff9ec0 100%)}
 .c-xholo{--pc:#d5c6ff;--pg:radial-gradient(circle at 30% 30%,#fff 0 1.2px,transparent 1.8px) 0 0/16px 16px,linear-gradient(115deg,#ffc6ec 0%,#b8ecff 26%,#d9c8ff 50%,#fff1b8 74%,#c4ffe6 100%)}
 .c-xgold{--pc:#ffd25a;--pg:linear-gradient(135deg,#fff3b0 0%,#ffd25a 40%,#e9a90d 75%,#fff0a0 100%)}
-.av[class*=" c-x"],.pick.sw button[class*=" c-x"],.pick.sw button[class^="c-x"]{background:var(--pg)}
+.av[class*=" c-x"],.pick.csw button[class*=" c-x"],.pick.csw button[class^="c-x"]{background:var(--pg)}
 .c-xgalaxy.av{color:#fff}
 .pcard[class*=" c-x"] .pban,.preview[class*=" c-x"]{background:radial-gradient(rgba(255,255,255,.35) 2.5px,transparent 3px) 0 0/20px 20px,var(--pg)}
 .pcard.c-xaurora .pban,.preview.c-xaurora{background-size:20px 20px,300% 300%;animation:aur 9s ease-in-out infinite alternate}
@@ -2165,12 +2165,12 @@ html.away .mascot *{animation-play-state:paused!important}
 @keyframes aur{to{background-position:0 0,100% 50%}}
 /* 프로필 꾸미기: 출석 보상 칸 */
 .pick .att-pk{position:relative;background:var(--fire-bg)}
-.pick.sw .att-pk{background:var(--pg)}
+.pick.csw .att-pk{background:var(--pg)}
 /* 잠긴 칸 흐림은 버튼 자체(filter·opacity)가 아니라 덮개(::before)로 — 버튼에 걸면 마우스 이름표까지 흐려짐 */
 .pick .att-pk.lock::before{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;background:color-mix(in srgb,var(--card) 50%,transparent);-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1);pointer-events:none}
 /* 잠긴 그림은 그림(.pka) 자체를 흑백으로 — 덮개만으로는 브라우저에 따라 색이 남음. 칸 배경도 회색 */
 .pick .att-pk.lock{background:var(--chip);cursor:not-allowed}
-.pick.sw .att-pk.lock{background:var(--pg)}
+.pick.csw .att-pk.lock{background:var(--pg)}
 .pick .att-pk.lock .pka{filter:grayscale(1) contrast(.85);opacity:.55}
 .pick .att-pk .pk-lk{position:absolute;z-index:2;left:50%;top:50%;width:46%;height:46%;transform:translate(-50%,-50%);display:grid;place-items:center;pointer-events:none;filter:drop-shadow(0 1px 1.5px rgba(15,34,54,.35))}
 .pick .att-pk .pk-lk .att-ic{width:100%;height:100%;vertical-align:0}
