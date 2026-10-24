@@ -89,6 +89,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 :root[data-theme="dark"] .hi .mi{color:var(--text)}
 .hi:hover .mi{transform:rotate(-8deg)}
 .hi .mi svg{width:18px;height:18px}
+.hi .mi svg.sic{width:22px;height:22px}   /* 직접 그린 스프라이트(sj-*)는 여백이 있어 선 아이콘보다 작아 보임 → 살짝 크게 */
 .hi .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hi small{font-size:11.5px;font-weight:700;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:560px){.hd{padding:12px 16px;gap:6px}.iconbtn{width:40px;height:40px;border-radius:12px}.logo img{width:44px;height:44px}.logo strong{font-size:19px}}
@@ -3289,11 +3290,7 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .pk-use{grid-column:1/-1;display:flex;align-items:flex-start;gap:5px;margin:0;padding:6px 9px;border-radius:10px;background:var(--chip);font-size:12.5px;font-weight:800;line-height:1.4;color:var(--text)}
 .pk-use svg{flex:none;width:14px;height:14px;margin-top:2px;color:var(--fire,#e8742b)}
 .pk-sec .pick .pk-div{font-size:11.5px}
-/* 메뉴: 프로필 바로 아래 '꾸미기' — 프로필에 딸린 항목처럼 살짝 들여쓰고 작게 */
-.hi.sub{padding:5px 10px 7px 30px;margin-top:-4px;font-size:14px;position:relative}
-.hi.sub::before{content:"";position:absolute;left:28px;top:-2px;width:10px;height:22px;border-left:2px dashed var(--line);border-bottom:2px dashed var(--line);border-bottom-left-radius:8px;transform:translateX(-10px)}
-.hi.sub .mi{width:32px;height:32px;border-radius:10px}
-.hi.sub .mi svg{width:20px;height:20px}
+/* 메뉴 '꾸미기': 2026-10-25 하율 요청으로 프로필에 딸린 하위 항목(들여쓰기·점선 연결) 대신 테마처럼 독립 항목 */
 /* 프로필 꾸미기 실시간 미리보기(2026-10-24 · 2차: 더 크게, 실제 시계 글씨·켜 둔 뽑기 효과까지) — 창 위에 붙어 있음(sticky), 바뀐 부분은 반짝(.pv-hit) */
 .sheet .pv{position:sticky;top:-26px;z-index:5;margin:-26px -26px 6px;padding:14px 18px 14px;background:var(--card);border-bottom:2.5px solid var(--ink);box-shadow:0 10px 16px -12px rgba(15,34,54,.4);text-align:left}
 .pv-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
