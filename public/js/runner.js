@@ -899,8 +899,10 @@ export function createRunner(canvas, char, opt = {}) {
 /* ===== 캐릭터 미리보기 (꾸미기 화면용, 크게) ===== */
 export function drawPreview(canvas, char, frame = 'run1') {
   const s = buildSprites(char), g = canvas.getContext('2d');
-  canvas.width = SPR_W; canvas.height = SPR_H;
-  g.clearRect(0, 0, SPR_W, SPR_H); g.drawImage(s[frame], 0, 0);
+  // 여백을 둬서 캐릭터가 칸에 꽉 끼어 보이지 않게 (2026-10-25). 발은 CSS 배경의 땅선(80%)에 맞춤 — 크기 바꾸면 .hd-pv canvas aspect-ratio도 같이
+  const PW = 38, PH = 34;
+  canvas.width = PW; canvas.height = PH;
+  g.clearRect(0, 0, PW, PH); g.drawImage(s[frame], (PW - SPR_W) >> 1, Math.round(PH * .8) - SPR_H);
   return s;
 }
 export const optSwatch = (o, i) => o.colors[i][0];

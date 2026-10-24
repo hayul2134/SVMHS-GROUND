@@ -1065,13 +1065,31 @@ async function loadTier() {
     <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;
 }
 
+/* 축하 트로피 (2026-10-25 하율 요청): 1등 금 · 2등 은 · 3등 동 — 색은 CSS .ch-tro.r1~r3 */
+function trophySvg(rank) {
+  return `<svg class="ch-tro r${rank}" viewBox="0 0 120 132" aria-hidden="true">
+    <path class="t-ol" d="M30 26c-14 0-20 8-18 18 2 11 12 18 24 20" fill="none" stroke-width="13" stroke-linecap="round"/>
+    <path class="t-ol" d="M90 26c14 0 20 8 18 18-2 11-12 18-24 20" fill="none" stroke-width="13" stroke-linecap="round"/>
+    <path class="t-d" d="M30 26c-14 0-20 8-18 18 2 11 12 18 24 20" fill="none" stroke-width="6" stroke-linecap="round"/>
+    <path class="t-d" d="M90 26c14 0 20 8 18 18-2 11-12 18-24 20" fill="none" stroke-width="6" stroke-linecap="round"/>
+    <path class="t-ol t-f" stroke-width="4" stroke-linejoin="round" d="M51 82h18l3 18H48z"/>
+    <path class="t-ol t-f" stroke-width="4" stroke-linejoin="round" d="M26 12h68v34c0 22-15 38-34 38S26 68 26 46z"/>
+    <path class="t-d" d="M80 14h12v32c0 20-13 35-30 37 13-6 18-20 18-36z"/>
+    <path class="t-l" d="M33 18h9v26c0 10 3 18 8 24-11-4-17-14-17-26z"/>
+    <rect class="t-ol t-d" x="36" y="100" width="48" height="10" rx="3" stroke-width="4"/>
+    <rect class="t-ol t-base" x="28" y="110" width="64" height="16" rx="4" stroke-width="4"/>
+    <rect class="t-f" x="50" y="114" width="20" height="8" rx="2"/>
+    <text class="t-n" x="60" y="56" text-anchor="middle">${rank}</text>
+  </svg>`;
+}
+
 /* ===== 1~3등 축하 (2026-10-25): 새 최고 기록으로 전체 1~3등에 처음 들거나 순위가 오르면 화면 전체 검정 블러 + 축하 ===== */
 function cheer(game, rank, value) {
   document.querySelector('.cheer')?.remove();
   const g = GAMES[game], el = document.createElement('div');
-  el.className = 'cheer'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '축하');
+  el.className = 'cheer r' + rank; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '축하');
   const conf = Array.from({ length: 36 }, (_, i) => `<i class="cf c${i % 6}"></i>`).join('');
-  el.innerHTML = `<div class="ch-conf" aria-hidden="true">${conf}</div><div class="ch-box"><i class="ch-rays" aria-hidden="true"></i><i class="mdl m${rank} ch-mdl">${rank}</i>
+  el.innerHTML = `<div class="ch-conf" aria-hidden="true">${conf}</div><div class="ch-box"><i class="ch-rays" aria-hidden="true"></i>${trophySvg(rank)}
     <p class="ch-t">전체 ${rank}등!</p><p class="ch-s">${ic(g.ic)} ${esc(g.name)} · ${esc(g.fmt(value))}</p><p class="ch-m">${['', '학교 1등이에요! 이 자리 지켜 봐요', '1등이 코앞이에요! 한 번만 더?', '시상대 입성! 이제 더 위로'][rank]}</p>
     <small class="ch-go">아무 데나 누르면 닫혀요</small></div>`;
   document.body.appendChild(el);
