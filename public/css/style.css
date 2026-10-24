@@ -3527,3 +3527,48 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .ed .pk-sec{margin-top:16px}
 .ed .pk-sec .pick .pk-div{margin-top:6px}
 @media (max-width:460px){.ed-pv .pv-tm .pv-ap{display:none}.ed-pv .pv-tm{padding:0 .08em;font-size:25px}}   /* 휴대폰 폭 좁은 미리보기 시계: 오전/오후를 빼야 숫자가 안 잘림 */
+
+/* ===== 개발자 프로필 전용 꾸밈(2026-10-25 하율: 내 프로필의 모든 오브젝트를 일반 계정엔 없는 것으로) =====
+   테마: 밤하늘(남색 #0f2236~보라 #6b4bd8) + 금빛 별(#ffe08a) + 무지개 홀로그램 테두리 — 배너·카드 테두리와 같은 말
+   일반 계정엔 이 규칙이 하나도 안 걸림(.pcard.dev · .pv-card.dev · .pdevtag 아래만) */
+.pcard.dev,.pv-card.dev{--dv-sky:linear-gradient(135deg,#0f2236,#2a4f7a 45%,#5a46c8);--dv-holo:linear-gradient(90deg,#ff8f8f,#ffe08a,#8fe8cf,#6fc6f4,#9bb8ff,#ff8fd0,#ff8f8f);--dv-stars:radial-gradient(rgba(255,224,138,.9) 1.3px,transparent 1.7px),radial-gradient(rgba(255,255,255,.5) 1px,transparent 1.4px)}
+.pdevtag{display:inline-flex;align-items:center;gap:5px;padding:3px 11px 3px 8px;border-radius:999px;background:var(--dv-sky,linear-gradient(135deg,#0f2236,#5a46c8));color:#ffe08a;font-weight:900;font-size:12.5px;letter-spacing:.02em;border:2px solid transparent;background-clip:padding-box;box-shadow:0 0 0 2px #ffe08a55,0 0 12px rgba(155,184,255,.45)}
+.pdevtag .sic{width:14px;height:14px;filter:drop-shadow(0 0 3px #ffe08a)}
+/* 기분 말풍선: 남색 밤하늘 + 금색 글씨 + 반짝 */
+.pcard.dev .pmood span{background:var(--dv-sky);background-image:var(--dv-stars),var(--dv-sky);background-size:14px 14px,9px 9px,auto;color:#ffe08a;text-shadow:0 0 8px rgba(255,224,138,.6);box-shadow:0 0 12px rgba(155,184,255,.5)}
+.pcard.dev .pmood span::after{border-right-color:#0f2236}
+/* 버튼: 관리자 = 남색+금 · 꾸미기 = 무지개 홀로 · 로그아웃 = 별 테두리 */
+.pcard.dev .pact .btn{border-color:var(--ink)}
+.pcard.dev .pact .dv-adm{background:var(--dv-sky);color:#ffe08a;text-decoration:none}
+.pcard.dev .pact .dv-adm .sic{filter:drop-shadow(0 0 3px #ffe08a)}
+.pcard.dev .pact .btn.lime{background:var(--dv-holo);background-size:200% auto;color:#1d1f55;animation:devname 5s linear infinite}
+.pcard.dev .pact .btn.ghost{background:linear-gradient(var(--card),var(--card)) padding-box,var(--dv-holo) border-box;border-color:transparent}
+/* DM 안내 쪽지: 밤하늘 쪽지 + 홀로그램 테이프 */
+.pcard.dev .pdev{background:var(--dv-sky);background-image:var(--dv-stars),var(--dv-sky);background-size:18px 18px,11px 11px,auto;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.25);box-shadow:var(--sh-s),0 0 18px rgba(155,184,255,.45);display:flex;align-items:flex-start;gap:8px;text-align:left}
+.pcard.dev .pdev .sic{flex:none;width:20px;height:20px;margin-top:1px;color:#ffe08a;filter:drop-shadow(0 0 4px #ffe08a)}
+.pcard.dev .pmain .pdev::before{background:var(--dv-holo);opacity:.85;border-color:rgba(255,255,255,.6)}
+/* 인스타 버튼: 무지개 테두리 */
+.pcard.dev .pinsta{background:linear-gradient(var(--card),var(--card)) padding-box,var(--dv-holo) border-box;border-color:transparent;box-shadow:var(--sh-s),0 0 10px rgba(255,143,208,.35)}
+/* 오른쪽 출석·팔로워 판: 밤하늘 판 + 금빛 압정 */
+.pcard.dev .pside{background:var(--dv-sky);background-image:var(--dv-stars),var(--dv-sky);background-size:20px 20px,13px 13px,auto;box-shadow:var(--sh-s),0 0 22px rgba(155,184,255,.5)}
+.pcard.dev .pside::before{background:radial-gradient(circle at 35% 35%,#fff6c9,#ffe08a 45%,#e8a23a);box-shadow:0 0 10px #ffe08a}
+.pcard.dev .pside .pstreak{background:var(--dv-holo);background-size:200% auto;color:#1d1f55;animation:devname 5s linear infinite}
+.pcard.dev .pside .pstats button{background:rgba(255,255,255,.1);border-color:rgba(255,224,138,.7);color:#d9e4ff}
+.pcard.dev .pside .pstats b{color:#ffe08a;text-shadow:0 0 8px rgba(255,224,138,.55)}
+.pcard.dev .pside .pstats button:hover{background:#ffe08a;color:#1d1f55}
+.pcard.dev .pside .pstats button:hover b{color:#1d1f55;text-shadow:none}
+/* 학과별로 보기(테스트 계정 바꾸기): 홀로그램 점선 판 */
+.pcard.dev .swbar{border:2px dashed #9bb8ff;background:color-mix(in srgb,#9bb8ff 12%,var(--card))}
+.pcard.dev .swbar p{display:flex;align-items:center;gap:6px}
+.pcard.dev .swbar p .sic{width:18px;height:18px}
+.pcard.dev .swbar .btn:not(.ghost):not(.lime){background:var(--dv-sky);color:#ffe08a}
+.pcard.dev .swbar .btn.ghost{background:linear-gradient(var(--card),var(--card)) padding-box,var(--dv-holo) border-box;border-color:transparent}
+.pcard .btn .sic{width:17px;height:17px;vertical-align:-3px;margin-right:4px}
+/* 꾸미기 미리보기도 실제 개발자 프로필처럼 */
+.pv-card.dev{border-color:transparent;background:linear-gradient(var(--card),var(--card)) padding-box,conic-gradient(from var(--devang,0deg),#ff8f8f,#ffe08a,#8fe8cf,#6fc6f4,#9bb8ff,#ff8fd0,#ff8f8f) border-box;box-shadow:4px 4px 0 var(--ink),0 0 18px rgba(155,184,255,.55);animation:devspin 6s linear infinite}
+.pv-card.dev .pban{position:relative;background-image:radial-gradient(rgba(255,224,138,.95) 1.4px,transparent 1.8px),radial-gradient(rgba(255,255,255,.6) 1px,transparent 1.4px),linear-gradient(120deg,#0f2236,#2a4f7a 30%,#6b4bd8 55%,#38a5ea 80%,#0f2236);background-size:24px 24px,15px 15px,200% 200%}
+.pv-card.dev .pban::after{content:"</> DEVELOPER";position:absolute;right:10px;bottom:7px;font:900 10px/1 var(--num);letter-spacing:.16em;color:#ffe08a;opacity:.9}
+.pv-card.dev .pv-hint{color:#ffe08a}
+.pv-card.dev .pv-name{background:linear-gradient(90deg,#2f8fe0,#6b4bd8,#e8667a,#e8a23a,#2f8fe0);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:devname 4s linear infinite}
+.pv-card.dev .pdevtag{font-size:11px;padding:2px 9px 2px 7px}
+@media (prefers-reduced-motion:reduce){.pcard.dev .pact .btn.lime,.pcard.dev .pside .pstreak,.pv-card.dev,.pv-card.dev .pv-name{animation:none}}

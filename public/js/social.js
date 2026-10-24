@@ -272,7 +272,7 @@ function profileHtml(d) {
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? isDev(u) ? `<a class="btn" href="/admin/#monitor">🛠 관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
+    ? isDev(u) ? `<a class="btn dv-adm" href="/admin/#monitor">${ic('tool')}관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
       : S.me?.sw ? ''   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만(아래 swBar)
       : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button><button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
@@ -288,13 +288,13 @@ function profileHtml(d) {
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
           <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}
-          <p class="phandle">${[isDev(u) ? '🛠 SVMHS GROUND 개발자' : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
+          <p class="phandle">${[isDev(u) ? `<span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span>` : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
       </div>
       <div class="pcols${!isDev(u) && !u.bio && !crowns && !u.insta ? ' slim' : ''}">
         <div class="pmain">
-          ${isDev(u) ? '<button class="pdev" type="button" data-fb>💬 궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! 팔로우 안 해도 돼요</button>' : ''}
+          ${isDev(u) ? '<button class="pdev" type="button" data-fb><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg>궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! 팔로우 안 해도 돼요</button>' : ''}
           ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
           ${chips ? `<p class="pchips">${chips}</p>` : ''}
           ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
@@ -432,13 +432,13 @@ function pvHtml(u, st) {
   const dk = st.deco.map((v, i) => `<i class="pv-dk k${i + 1}">${artOf(v, 'pka')}</i>`).join('');
   // 켜 둔 뽑기 효과(전설·시크릿): 미리보기에도 그대로 + 무엇이 켜져 있는지 칩으로(끄는 곳 안내)
   const fxOn = Object.keys(FX).filter(k => fx[k]);
-  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로예요 · 개발자는 실제로 G 로고' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
+  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '실제 내 프로필과 똑같이 보여요' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
     <div class="pv-body">
-      <div class="pv-card c-${esc(col)}" data-pv="co">
+      <div class="pv-card c-${esc(col)}${dev ? ' dev' : ''}" data-pv="co">
         <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
         <div class="pv-id">
-          <span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}${avWear(fx.masc)}</span>
-          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
+          ${dev ? av({ handle: ADMIN_HANDLE }, 'big', avWear(fx.masc)).replace('<span class="av', '<span data-pv="av co" class="av') : `<span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}${avWear(fx.masc)}</span>`}
+          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : dev ? `<p class="pv-sub" data-pv="title"><span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
         </div>
       </div>
       <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm"><span class="pv-ap">${t.getHours() < 12 ? '오전' : '오후'}</span>${hm}${dk}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small></div>
@@ -683,9 +683,9 @@ function titleOpts(cur) {
 /* ===== 계정 설정 ===== */
 /* ----- 개발자: 학과별 테스트 계정으로 바꿔 보기 (콘 1반 · 미 3반 · 프 5반, 2학년) ----- */
 const SW = [['con', '콘텐츠과'], ['mi', '미디어과'], ['pro', '프로듀스과']];
-const swBar = () => !S.me?.sw ? '' : `<div class="swbar"><p>🧪 학과별로 보기 ${S.me.sw === 'dev' ? '' : `<b>· 지금 ${esc(SW.find(x => x[0] === S.me.sw)?.[1] || '')} 테스트 계정</b>`}</p>
+const swBar = () => !S.me?.sw ? '' : `<div class="swbar"><p>${ic('flask')}학과별로 보기 ${S.me.sw === 'dev' ? '' : `<b>· 지금 ${esc(SW.find(x => x[0] === S.me.sw)?.[1] || '')} 테스트 계정</b>`}</p>
   <div class="swbtns">${SW.map(([k, n]) => `<button class="btn ${S.me.sw === k ? '' : 'ghost'}" type="button" data-sw="${k}" ${S.me.sw === k ? 'disabled' : ''}>${n}</button>`).join('')}</div>
-  ${S.me.sw === 'dev' ? '' : '<button class="btn lime" type="button" data-sw="back">🛠 개발자로 돌아가기</button>'}</div>`;
+  ${S.me.sw === 'dev' ? '' : `<button class="btn lime" type="button" data-sw="back">${ic('tool')}개발자로 돌아가기</button>`}</div>`;
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-sw]'); if (!b) return;
   b.disabled = true;
