@@ -5,6 +5,7 @@ import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '.
 import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, FX, objName, SHN, RK, rkOf, rkRange } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
+import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
@@ -256,6 +257,16 @@ const needMe = fn => async ctx => {
 };
 
 const ROUTES = {
+  /* ----- 업데이트 공지: 게시본은 모두에게, 다음 공지 초안은 개발자에게만 (lib/patch.js) ----- */
+  'GET patch': async ({ req, db }) => {
+    const s = await patchState(db), me = await auth(req, db);
+    return json({ list: (s.pub || []).map(({ id, date, title, items, ff }) => ({ id, date, title, items, ff: ff || [] })), draft: isAdm(me) ? draftOut(s.d) : undefined });
+  },
+  'POST patch': needMe(async ({ db, me, body }) => {
+    if (!isAdm(me)) return err('개발자만 고칠 수 있어요', 403);
+    try { const s = await patchSave(db, body); return json({ ok: true, draft: draftOut(s.d), published: !!s.published }); }
+    catch (e) { if (e.status) return err(e.message, e.status); throw e; }
+  }),
   /* ----- 계정 ----- */
   'GET config': async ({ env, db }) => {
     const st = await getSettings(db);

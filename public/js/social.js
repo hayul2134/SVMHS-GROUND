@@ -1451,20 +1451,51 @@ const pad2 = n => String(n).padStart(2, '0');
 const dt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 const NT_IC = { warn: '⚠️', fun: '🎉' };   // 일반(info) 공지는 아이콘 없음 — 창 맨 위 '📢 공지'와 겹쳐 보여서
 let ntList = null;
-// 업데이트 소식(패치노트): public/patchnotes.json — 개발자가 확인한 주간 패치노트가 쌓임 (최신이 맨 앞)
-let ptList = null;
+// 업데이트 소식(패치노트): /api/s/patch 게시본(lib/patch.js — 컨펌된 초안이 월요일 06:00에 공개) + 옛 public/patchnotes.json (최신이 맨 앞)
+// 개발자 계정에는 '다음 공지 초안'(pnDraft)도 같이 와서 공지 창에서 바로 고칠 수 있음 — 학생에겐 안 보임
+let ptList = null, pnDraft = null;
 async function checkNotices() {   // 새 공지·새 업데이트 소식이 있으면 📢 버튼에 빨간 점 (본 것: sg_notice_seen · sg_patch_seen)
-  const [n, p] = await Promise.all([
+  const [n, p, old] = await Promise.all([
     fetch('/api/notices').then(r => r.json()).then(j => j.list || []).catch(() => []),
+    fetch('/api/s/patch', { credentials: 'same-origin', cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('/patchnotes.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).then(j => Array.isArray(j) ? j : []).catch(() => []),
   ]);
-  ntList = n; ptList = p;
+  ntList = n; ptList = [...(p.list || []), ...old]; pnDraft = p.draft || null;
   $('#ntDot').hidden = !((ntList.length && store.get('notice_seen') !== ntList[0].id) || (ptList.length && store.get('patch_seen') !== ptList[0].id));
+}
+const dueTxt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} (${'일월화수목금토'[d.getDay()]}) ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+// 개발자 전용: 다음 공지 초안 편집 카드
+function draftCard(d) {
+  const row = (x = {}) => `<li data-id="${esc(x.id || '')}" data-pf="${esc(x.ff || '')}"><textarea rows="2" maxlength="300" placeholder="공지 한 줄 (이모지·이모티콘 환영)">${esc(x.t || '')}</textarea>${x.ff ? `<small class="pdff">새 기능 · ${esc(x.ff)}</small>` : ''}<button type="button" class="pdx" aria-label="이 줄 빼기" data-tip="이 줄 빼기">✕</button></li>`;
+  return `<div class="pdraft" id="pnDraft"><p class="pdh"><b>📝 다음 공지 초안</b><span class="pdme">나만 보여요</span></p>
+    <p class="note">수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.</p>
+    <input class="pdt" maxlength="60" placeholder="${esc(d.defTitle)}" value="${esc(d.title || '')}">
+    <ol class="pdl">${d.items.map(row).join('')}</ol>${d.items.length ? '' : '<p class="empty">아직 쌓인 공지가 없어요</p>'}
+    <button type="button" class="btn ghost pdadd">＋ 한 줄 추가</button>
+    <label class="pdok"><input type="checkbox" ${d.approved ? 'checked' : ''}><span>${esc(dueTxt(d.due))}에 모두에게 공개</span></label>
+    <div class="row"><button type="button" class="btn pdsave">저장</button></div></div>`;
+}
+function bindDraft() {
+  const box = $('#pnDraft'); if (!box) return;
+  const list = box.querySelector('.pdl');
+  const rowHtml = () => { const t = document.createElement('template'); t.innerHTML = draftCard({ ...pnDraft, items: [{}] }); return t.content.querySelector('.pdl li'); };
+  box.addEventListener('click', e => { if (e.target.closest('.pdx')) e.target.closest('li').remove(); });
+  box.querySelector('.pdadd').onclick = () => { const li = rowHtml(); list.append(li); box.querySelector('.empty')?.remove(); li.querySelector('textarea').focus(); };
+  box.querySelector('.pdsave').onclick = async e => {
+    const b = e.currentTarget; b.disabled = true;
+    try {
+      const j = await call('patch', { title: box.querySelector('.pdt').value, ok: box.querySelector('.pdok input').checked,
+        items: [...list.children].map(li => ({ id: li.dataset.id, ff: li.dataset.pf, t: li.querySelector('textarea').value })) });
+      pnDraft = j.draft; ptList = null;
+      toast(j.published ? '공개 시각이 지나서 바로 모두에게 올렸어요 🎉' : '초안을 저장했어요');
+      if (j.published) openNotices(); else b.disabled = false;
+    } catch (x) { fail(x); b.disabled = false; }
+  };
 }
 async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 공지의 자세한 내용을 펼쳐 보임
   sheet('<h3>📢 공지</h3><ul class="ntlist"><li class="skel"></li><li class="skel"></li></ul>');
   $('#socSheet').classList.add('wide');   // 공지는 넓게: 접힌 공지 제목이 2줄 안에 들어가게
-  if (!ntList || !ptList) await checkNotices();
+  if (!ntList || !ptList || (isDev(S.me) && !pnDraft)) await checkNotices();
   if (ntList.length) store.set('notice_seen', ntList[0].id);   // 다 봤음 (✕로 닫은 띠 공지는 다시 띄우지 않음)
   if (ptList.length) store.set('patch_seen', ptList[0].id);
   $('#ntDot').hidden = true;
@@ -1477,7 +1508,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
   $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => card(n.live, NT_IC[n.tone] || '',
       n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text), n.body ? esc(n.body) : '',
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
-    ${patches ? `<h3 class="sp">🛠 업데이트 소식</h3><ul class="ntlist">${patches}</ul>` : ''}
+    ${patches || pnDraft ? `<h3 class="sp">🛠 업데이트 소식</h3>${pnDraft && isDev(S.me) ? draftCard(pnDraft) : ''}${patches ? `<ul class="ntlist">${patches}</ul>` : ''}` : ''}
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
   $$('#socSheet .ntb').forEach(b => {   // 2줄 안에 다 들어가는 짧은 내용은 '자세히 보기' 버튼을 숨김
     const t = b.querySelector('.nb-txt');
@@ -1485,6 +1516,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
     b.querySelector('.nb-more').onclick = () => b.classList.add('open');
     b.querySelector('.nb-fold').onclick = () => { b.classList.remove('open'); b.closest('li').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
   });
+  bindDraft();
   if (focus) $(`#socSheet [data-nid="${CSS.escape(focus)}"] .ntb:not(.short)`)?.classList.add('open');
 }
 const FB_KIND = [['idea', '💡 이런 기능 있으면 좋겠어요'], ['bug', '🐞 이상하거나 안 돼요'], ['etc', '💬 그 밖의 말']];
