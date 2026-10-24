@@ -31,10 +31,9 @@ function place(el, animate = true) {
   pill.dataset.at = at; last.set(k, r);
 }
 function wire(el) {
-  if (seen.has(el)) { place(el); return; }
-  seen.add(el); el.classList.add('sw');
+  if (!seen.has(el)) { seen.add(el); el.classList.add('sw'); ro?.observe(el); }
+  // 묶음 안을 innerHTML로 다시 그리면 알약도 같이 지워짐 → 매번 확인해 다시 넣음(2026-10-25 급식 칩 알약 사라짐 버그)
   if (!el.querySelector(':scope > .sw-pill')) el.insertAdjacentHTML('afterbegin', '<i class="sw-pill" aria-hidden="true"></i>');
-  ro?.observe(el);
   place(el);
 }
 let raf = 0; const dirty = new Set();

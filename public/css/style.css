@@ -3780,6 +3780,7 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .s-slots.sw{display:inline-flex;gap:2px;padding:2px;background:var(--chip);border:2px solid var(--line);border-radius:999px;--pl-r:999px}
 .s-slots.sw > button{background:none;border-color:transparent}
 .pk-seg.sw,.ed-sub.sw{--pl-r:999px}
+.s-slots.sw:not(:has(> button)),.mealtabs.sw:not(:has(> button)){display:none}   /* 알약만 남은 빈 묶음 숨김(:empty가 알약 때문에 안 먹음) */
 .ed-tabs.sw{--pl-r:999px;--pl-bg:var(--yellow);--pl-bd:2.5px solid var(--ink);--pl-sh:3px 3px 0 var(--ink)}
 .ed-tabs.sw > button{background:none;border-color:var(--line)}
 .ed-tabs.sw > button[aria-selected="true"]{color:var(--onc,#1d2a3a)}
