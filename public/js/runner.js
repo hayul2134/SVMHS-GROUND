@@ -529,11 +529,11 @@ export function createRunner(canvas, char, opt = {}) {
   let spr = buildSprites(char);
   const A = art();
   const st = {};
-  let rand, raf = 0, last = 0, acc = 0, alive = true, sound = !!opt.sound, actx = null, jv = null;   // jv: 지금 나는 점프 소리
+  let rand, raf = 0, last = 0, acc = 0, alive = true, sound = !!opt.sound, actx = null;
   const keys = { jump: false, duck: false };
 
   function reset(seed = (Math.random() * 1e9) | 0) {
-    rand = rng(seed); jvStop(.02);
+    rand = rng(seed);
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, speed: V0, scroll: 0,
       y: 0, vy: 0, onGround: true, jumpHeld: 0, ducking: false, anim: 0,
@@ -556,64 +556,13 @@ export function createRunner(canvas, char, opt = {}) {
       o.connect(v).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
     } catch {}
   }
-  /* 점프 소리 (2026-10-25 2차): 고전 8비트 게임식 '뿌웅'(3차: 한 옥타브 낮춤, 130→330~500Hz) — 펄스파(25%)로 음이 빠르게 위로 미끄러짐.
-     톡 = 짧게(0.16초) · 길게 누르면 올라가는 동안 계속 위로, 내려올 땐 그 음에서 잦아들다 착지 때 끝 (떨림·음 내려가기 없음) */
-  const JV_TAP = .16, JV_LONG = .06;
-  let pulse = null;
-  function pulseWave() {   // 듀티 25% 펄스파 (패미컴 소리 결)
-    if (pulse) return pulse;
-    const N = 32, re = new Float32Array(N), im = new Float32Array(N);
-    for (let n = 1; n < N; n++) im[n] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * .25);
-    return (pulse = actx.createPeriodicWave(re, im));
-  }
-  function jvStart() {
-    jvStop(.01);
-    if (!sound) return;
-    try {
-      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-      const t = actx.currentTime, o = actx.createOscillator(), v = actx.createGain();
-      o.setPeriodicWave(pulseWave());
-      o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(330, t + .07);
-      v.gain.setValueAtTime(.06, t);
-      o.connect(v).connect(actx.destination); o.start(t);
-      jv = { o, v, t0: t, tap: false, peak: 330 };
-    } catch { jv = null; }
-  }
-  function jvStop(fade = .04, at) {
-    if (!jv) return;
-    const { o, v } = jv; jv = null;
-    try {
-      const t = actx.currentTime, end = Math.max(t + .012, at ?? t + fade);
-      v.gain.cancelScheduledValues(t); v.gain.setValueAtTime(Math.max(v.gain.value, .0001), t); v.gain.exponentialRampToValueAtTime(.0001, end);
-      o.stop(end + .02);
-    } catch {}
-  }
-  function jvTick() {   // 매 판: 올라가는 동안만 음을 더 올림
-    if (!jv || jv.tap) return;
-    const t = actx.currentTime;
-    if (t - jv.t0 < .07) return;
-    if (st.vy < 0) {
-      jv.peak = Math.max(jv.peak, 330 + (-st.y) * 4);
-      jv.o.frequency.cancelScheduledValues(t); jv.o.frequency.setTargetAtTime(jv.peak, t, .03);
-    } else if (!jv.fall) {   // 꼭대기: 음은 그대로, 소리만 잦아듦
-      jv.fall = true; jv.o.frequency.cancelScheduledValues(t); jv.o.frequency.setValueAtTime(jv.o.frequency.value, t);
-      jv.v.gain.cancelScheduledValues(t); jv.v.gain.setValueAtTime(jv.v.gain.value, t); jv.v.gain.setTargetAtTime(.012, t, .12);
-    }
-  }
-  function jvRelease() {   // 톡 누른 거면 짧은 '쀼'로 마무리
-    if (!jv || jv.tap || st.jumpHeld >= JV_LONG || actx.currentTime - jv.t0 > .1) return;
-    jv.tap = true;
-    const t = jv.t0; jv.o.frequency.cancelScheduledValues(actx.currentTime); jv.o.frequency.setValueAtTime(130, t); jv.o.frequency.exponentialRampToValueAtTime(420, t + JV_TAP);
-    jvStop(0, t + JV_TAP);
-  }
-
   /* --- 판 --- */
   const JUMP_V = 270, G_HOLD = 820, G_FALL = 1500, G_FAST = 3200, HOLD_MAX = .2;
   function jump() {
     if (st.scene === 'ready') { st.scene = 'play'; opt.onStart?.(); }
     if (st.scene !== 'play' || !st.onGround) return false;
     st.vy = -JUMP_V; st.onGround = false; st.jumpHeld = 0; st.ducking = false;
-    jvStart(); if (!keys.jump) jvRelease(); return true;
+    beep(520, 880, .09); return true;
   }
   /* 간격 설계 (2026-10-25): 일정한 간격 대신 '리듬' — 보통 · 짧게 · 숨 돌리기 · 연타(2~3개 바짝) 를 섞어 긴장감을 준다.
      못 피하는 배치는 만들지 않는다: 모든 간격은 FAIR 이상.
@@ -703,9 +652,9 @@ export function createRunner(canvas, char, opt = {}) {
     if (!st.onGround) {
       if (keys.jump && st.vy < 0 && st.jumpHeld < HOLD_MAX) st.jumpHeld += dt;
       const gr = keys.duck ? G_FAST : (keys.jump && st.vy < 0 && st.jumpHeld < HOLD_MAX) ? G_HOLD : G_FALL;
-      st.vy += gr * dt; st.y += st.vy * dt; jvTick();
+      st.vy += gr * dt; st.y += st.vy * dt;
       if (st.y >= 0) {
-        st.y = 0; st.vy = 0; st.onGround = true; jvStop(.04);
+        st.y = 0; st.vy = 0; st.onGround = true;
         for (let i = 0; i < 4; i++) st.dust.push({ x: PX + 6 + rand() * 10, y: GROUND - 1, vx: -10 + rand() * 30, vy: -8 - rand() * 10, t: .25 + rand() * .15 });
         if (keys.jump) jump();   // 누르고 있으면 바로 다시
       }
@@ -723,11 +672,11 @@ export function createRunner(canvas, char, opt = {}) {
     for (const o of st.obs) if (hits(o)) return die();
   }
   function arrive() {
-    jvStop(.03); st.scene = 'home'; st.score = GOAL; st.flash = 0; st.lastHundred = GOAL / 100; st.homeT = 0; st.homeDone = false; st.obs = []; st.ducking = false;
+    st.scene = 'home'; st.score = GOAL; st.flash = 0; st.lastHundred = GOAL / 100; st.homeT = 0; st.homeDone = false; st.obs = []; st.ducking = false;
     beep(523, 523, .12); setTimeout(() => beep(659, 659, .12), 130); setTimeout(() => beep(784, 1046, .3), 260);
   }
   function die() {
-    st.scene = 'dead'; st.deadT = 0; st.shake = .25; jvStop(.02);
+    st.scene = 'dead'; st.deadT = 0; st.shake = .25;
     beep(300, 70, .35, 'sawtooth', .06);
     opt.onOver?.(st.score, st.ms);
   }
@@ -921,7 +870,7 @@ export function createRunner(canvas, char, opt = {}) {
   function frame(t) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
-    if (document.hidden) { last = t; jvStop(.02); return; }
+    if (document.hidden) { last = t; return; }
     const dt = Math.min(.1, (t - (last || t)) / 1000); last = t;
     acc += dt;
     while (acc >= STEP) { update(STEP); acc -= STEP; }
@@ -932,12 +881,12 @@ export function createRunner(canvas, char, opt = {}) {
   const api = {
     st, reset, jump,
     input(name, down) {
-      if (name === 'jump') { if (down && !keys.jump) { keys.jump = true; jump(); } keys.jump = down; if (!down) jvRelease(); }
+      if (name === 'jump') { if (down && !keys.jump) jump(); keys.jump = down; }
       if (name === 'duck') { keys.duck = down; if (down && st.scene === 'ready') { st.scene = 'play'; opt.onStart?.(); } }
     },
     setChar(c) { spr = buildSprites(c); },
-    setSound(v) { sound = v; if (!v) jvStop(.02); },
-    destroy() { alive = false; jvStop(.01); cancelAnimationFrame(raf); try { actx?.close(); } catch {} },
+    setSound(v) { sound = v; },
+    destroy() { alive = false; cancelAnimationFrame(raf); try { actx?.close(); } catch {} },
     step(n = 1, quiet = false) { for (let i = 0; i < n; i++) update(STEP); if (!quiet) draw(); },   // 테스트용
     draw,
     snap: () => ({ st: structuredClone(st), r: rand.s, keys: { ...keys } }),   // 테스트용 저장·복원
