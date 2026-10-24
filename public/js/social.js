@@ -1095,7 +1095,7 @@ function openFeedback() {
   let busy = 0;
   const paint = () => {
     box.innerHTML = pics.map((d, i) => `<span class="fbpic"><img src="${d}" alt="첨부 사진 ${i + 1}"><button type="button" data-rm="${i}" aria-label="사진 빼기">✕</button></span>`).join('')
-      + (pics.length + busy < FB_MAX ? `<button type="button" class="fbadd" id="fbAdd"><span>📷</span><small>${busy ? '줄이는 중…' : `사진 ${pics.length}/${FB_MAX}`}</small></button>` : '');
+      + (pics.length + busy < FB_MAX ? `<button type="button" class="fbadd" id="fbAdd">${ic('attach')}<small>${busy ? '줄이는 중…' : '사진 첨부'}</small><small class="fbn">${pics.length}/${FB_MAX}</small></button>` : '');
   };
   const add = async files => {
     const list = [...files].filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));

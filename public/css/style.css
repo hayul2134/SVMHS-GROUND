@@ -2824,7 +2824,8 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .fbpic img{width:100%;height:100%;object-fit:cover;border-radius:12px;border:var(--bd);display:block}
 .fbpic button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--ink,#173048);color:#fff;font-size:11px;font-weight:900;line-height:22px;text-align:center}
 .fbadd{width:64px;height:64px;flex:none;border-radius:12px;border:2px dashed var(--line);background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--sub)}
-.fbadd span{font-size:20px;line-height:1}
+.fbadd .sic{width:24px;height:24px;stroke-width:1.6;margin-bottom:1px}
+.fbadd .fbn{font-size:9.5px;font-weight:700;opacity:.75}
 .fbadd small{font-size:10.5px;font-weight:800;white-space:nowrap}
 
 /* ===== 프로필 카드 레이아웃 (2026-10-23) — 가운데 몰림 대신 비대칭 구성
