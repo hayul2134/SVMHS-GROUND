@@ -4,6 +4,7 @@ import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetab
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
 import './tip.js';
+import { wearG, wearSvg, spotPref, resolveSpot, anchorOf } from './wear.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
@@ -1635,14 +1636,54 @@ function applySkin(k) {
 // 마스코트 그림은 js/mascots.js(tools/skins/gen.py가 생성)를 캐릭터 테마일 때만 불러옴. hi=true면 고른 순간 깡충 인사 한 번.
 const CHAR_SET = new Set(SKINS.char.map(c => c[0]));
 let mascotMod = null;
-// 머리 위에 떠 있는 왕관(마스코트 100×100 좌표, 머리 모양이 캐릭터마다 달라서 살짝 띄움)
-const CROWN = `<g class="mfx"><path d="M37.4 7.6 43.6 12.6 50 2.4 56.4 12.6 62.6 7.6 60.4 20.4H39.6Z" transform="translate(1.2 2)" fill="#173048"/><path d="M37.4 7.6 43.6 12.6 50 2.4 56.4 12.6 62.6 7.6 60.4 20.4H39.6Z" fill="#ffc83d" stroke="#173048" stroke-width="2" stroke-linejoin="round"/><path d="M39.9 17.2H60.1" stroke="#d98a10" stroke-width="1.4"/><circle cx="50" cy="14.6" r="2.2" fill="#f0646d" stroke="#173048" stroke-width="1.1"/><circle cx="37.4" cy="7.6" r="1.8" fill="#fff3b0" stroke="#173048" stroke-width="1.1"/><circle cx="50" cy="2.4" r="1.9" fill="#fff3b0" stroke="#173048" stroke-width="1.1"/><circle cx="62.6" cy="7.6" r="1.8" fill="#fff3b0" stroke="#173048" stroke-width="1.1"/><path d="M42 16V12.8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g>`;
+// 착용 소품(뽑기 전설 '떠 있는 왕관' 등, wear.js): 소품과 부착 지점을 나눔 — 캐릭터 머리 · 큰 시계 첫 숫자 · 로고 G.
+// '자동'이면 캐릭터(테마 캐릭터·내 그림)가 있으면 머리, 없으면 시계. html[data-mfx]=켠 소품 값(social.js applyFx), html[data-wear-spot]=실제 지점(버튼 data-wear-at과 이름이 겹치면 클릭 위임이 html까지 잡으므로 다르게).
+const mfxV = () => document.documentElement.dataset.mfx || '';
+const hasChar = () => !!lsGet(MYART) || CHAR_SET.has(document.documentElement.dataset.skin || '');
+const wearSpot = () => mfxV() ? resolveSpot(spotPref(), hasChar()) : '';
 document.addEventListener('sg:mfx', () => syncMascot());
+function syncWear(spot) {
+  const v = mfxV(), h = document.documentElement;
+  if (spot) h.dataset.wearSpot = spot; else delete h.dataset.wearSpot;
+  for (const [host, at, cls] of [[$('#bigclock .clock'), 'clock', 'wear-ck'], [$('.logo'), 'logo', 'wear-lg']]) {
+    if (!host) continue;
+    let w = host.querySelector(':scope > .' + cls);
+    if (spot !== at) { w?.remove(); continue; }
+    if (!w || w.dataset.v !== v) { w?.remove(); host.insertAdjacentHTML('beforeend', `<i class="${cls}" data-v="${esc(v)}" aria-hidden="true">${wearSvg(v)}</i>`); }
+  }
+  if (spot === 'clock') placeClockWear();
+}
+// 시계: 첫 숫자 위에 비스듬히 얹음. 숫자 자리는 '오후' 글자·카운트다운 형식·글씨 크기에 따라 바뀌어서 잼(offset 계산 = 흔들림 애니메이션 영향 없음)
+let ckRaf = 0;
+function placeClockWear() {
+  cancelAnimationFrame(ckRaf);
+  ckRaf = requestAnimationFrame(() => {
+    const c = $('#bigclock .clock'), w = c?.querySelector(':scope > .wear-ck'), n = $('#bigTime .n');
+    if (!w || !n || !n.offsetWidth) return;
+    let x = 0, y = 0;
+    for (let e = n; e && e !== c; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; if (!c.contains(e.offsetParent)) break; }
+    const fs = parseFloat(getComputedStyle(n).fontSize) || 100;
+    w.style.setProperty('--cx', x + n.offsetWidth / 2 + 'px');
+    w.style.setProperty('--cy', y + 'px');
+    w.style.setProperty('--cf', fs + 'px');
+  });
+}
+{ const bt = $('#bigTime');
+  if (bt) { new MutationObserver(() => { if (wearSpot() === 'clock') placeClockWear(); }).observe(bt, { childList: true });
+    new ResizeObserver(() => { if (wearSpot() === 'clock') placeClockWear(); }).observe(bt); }
+  document.fonts?.ready?.then(() => { if (wearSpot() === 'clock') placeClockWear(); }); }
+// 내 그림 캐릭터: 머리 자리(자동 감지 또는 손으로 맞춘 위치)에 소품을 겹쳐 둠
+async function placeArtWear(el, art) {
+  const w = el.querySelector(':scope > .m-wear'); if (!w) return;
+  const p = await anchorOf(art);
+  w.style.setProperty('--wx', p.x * 100 + '%'); w.style.setProperty('--wy', p.y * 100 + '%');
+}
 async function syncMascot(hi) {
   const k = document.documentElement.dataset.skin || '', art = lsGet(MYART);
   let el = document.getElementById('mascot');
-  const mfx = document.documentElement.dataset.mfx || '';   // 뽑기 전설 '떠 있는 왕관'(social.js applyFx)
-  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) : CHAR_SET.has(k) ? k + (mfx ? ':' + mfx : '') : '';
+  const spot = wearSpot(), mfx = spot === 'mascot' ? mfxV() : '';
+  syncWear(spot);
+  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) + (mfx ? ':' + mfx : '') : CHAR_SET.has(k) ? k + (mfx ? ':' + mfx : '') : '';
   if (!key) { if (el) el.remove(); return; }
   if (!art) {
     try { mascotMod = mascotMod || await import('./mascots.js'); } catch { return; }
@@ -1651,9 +1692,10 @@ async function syncMascot(hi) {
   if (!el) { el = document.createElement('div'); el.id = 'mascot'; el.className = 'mascot'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
   if (el.dataset.key !== key) {
     el.dataset.key = key; el.dataset.k = art ? '' : k;
-    if (art) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.src = art; el.replaceChildren(im); }
-    else { el.innerHTML = mascotMod.MASCOT[k] || ''; if (mfx === 'crown') el.querySelector('.mb')?.insertAdjacentHTML('beforeend', CROWN); }
+    if (art) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.src = art; el.replaceChildren(im); if (mfx) el.insertAdjacentHTML('beforeend', `<i class="m-wear">${wearSvg(mfx)}</i>`); }
+    else { el.innerHTML = mascotMod.MASCOT[k] || ''; if (mfx) (el.querySelector('.mh') || el.querySelector('.mb'))?.insertAdjacentHTML('beforeend', wearG(mfx)); }   // 머리(.mh)에 넣어 고개 짓을 같이 탐(머리 묶음이 없는 캐릭터는 몸)
   }
+  if (art && mfx) placeArtWear(el, art);   // 손으로 맞춘 위치가 바뀌어도 다시 그리지 않고 자리만
   if (hi && !art) { el.classList.remove('m-hello'); void el.offsetWidth; el.classList.add('m-hello'); }  // .hi는 메뉴 항목 클래스라 쓰면 안 됨
 }
 document.addEventListener('animationend', e => {

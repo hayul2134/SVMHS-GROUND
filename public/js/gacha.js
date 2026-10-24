@@ -8,6 +8,7 @@
 import { $, esc, toast, store } from './util.js';
 import { GACHA, RAR, GC, FX, GC_TITLE, objName, neonPick } from './att-rewards.js';
 import { artOf, ensureSprite } from './att-art.js';
+import { SPOTS, spotPref, setSpotPref, resolveSpot, wearSvg, anchorOf, setAdj } from './wear.js';
 
 let api;   // social.js에서 받음: call · refreshMe · me() · setGc(g)
 let busy = false, view = 'all';
@@ -95,6 +96,7 @@ function paint() {
       <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(3·7·14·30일…)에 1장 더 받아요. 최대 ${GC.max}장까지 모여요.</li>
       <li>돈으로 사는 건 없어요. 결과는 서버에서 정해지고, 창을 닫아도 그대로 남아요.</li></ul>
     </details>`;
+  tuneInit();
 }
 const TIER = { 1: '스티커', 2: '움직이는 스티커', 3: '효과', 4: '도감엔 ?로만 보여요' };
 const isSecHidden = (x, n) => x.rar === 4 && !n;
@@ -116,10 +118,31 @@ function fxBox(g) {
   return `<section class="gc-fxw card"><h3>내 효과</h3><ul class="gc-fxs">${Object.entries(FX).map(([slot, nm]) => {
     const mine = GACHA.filter(x => x.fx === slot && g.own[x.v]), on = fx[slot];
     const show = GACHA.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
-    const np = slot === 'clock' && on === 'r:fxneon' ? `<div class="gc-neon"><small>네온 색</small>${neonPick(store.get('neon_c', 'pink'))}</div>` : '';
+    const np = slot === 'clock' && on === 'r:fxneon' ? `<div class="gc-neon"><small>네온 색</small>${neonPick(store.get('neon_c', 'pink'))}</div>` : slot === 'masc' && on ? wearBox(on) : '';
     return `<li class="${on ? 'on' : mine.length ? '' : 'none'}"><span class="gc-ic">${mine.length ? artOf(show.v) : ''}</span><b>${nm}</b><small>${mine.length ? esc(objName(show.v)) + (on ? ' · 켜짐' : ' · 꺼짐') : '전설에서 나와요 — ' + esc(show.d)}</small>
       ${mine.length ? `<div class="gc-fxb">${mine.map(x => `<button type="button" class="btn ghost${on === x.v ? ' on' : ''}" data-gc-fx="${slot}" data-v="${on === x.v ? '' : x.v}">${on === x.v ? esc(objName(x.v)) + ' 끄기' : esc(objName(x.v)) + ' 켜기'}</button>`).join('')}</div>` : ''}${np}</li>`;
   }).join('')}</ul></section>`;
+}
+// 착용 소품(왕관): 어디에 씌울지 + '그림 넣기' 캐릭터면 머리 위치 맞추기(끌어서) — wear.js
+const myArt = () => { try { return localStorage.getItem('sg_myart'); } catch { return null; } };
+const SPOT_N = Object.fromEntries(SPOTS);
+function wearBox(v) {
+  const pref = spotPref(), art = myArt(), hasChar = !!document.getElementById('mascot'), at = resolveSpot(pref, hasChar);
+  const why = pref === 'mascot' && !hasChar ? '캐릭터 테마가 아니라서 지금은 <b>큰 시계</b> 위에 씌웠어요'
+    : pref === 'auto' ? `지금은 <b>${SPOT_N[at]}</b> 위에 있어요 (캐릭터가 없으면 큰 시계로)` : `<b>${SPOT_N[at]}</b> 위에 있어요`;
+  return `<div class="gc-wear"><small>씌울 곳</small><div class="wear-pick" role="radiogroup" aria-label="왕관 씌울 곳">${SPOTS.map(([k, n]) => `<button type="button" role="radio" aria-checked="${pref === k}" class="${pref === k ? 'on' : ''}" data-wear-at="${k}">${n}</button>`).join('')}</div>
+    <p class="wear-why">${why} · 프로필 사진 위엔 항상 보여요</p>
+    ${art && at === 'mascot' ? `<div class="wear-tune"><div class="wt-box" data-wt aria-label="왕관을 끌어서 내 그림 머리에 맞추기"><img src="${esc(art)}" alt=""><i class="wt-cr">${wearSvg(v)}</i></div><p><small>내 그림이라 머리 위치를 자동으로 잡았어요. 어긋나면 왕관을 <b>끌어서</b> 맞춰 주세요.</small><button type="button" class="btn ghost" data-wt-auto>자동 위치로</button></p></div>` : ''}</div>`;
+}
+async function tuneInit() {
+  const box = document.querySelector('[data-wt]'), art = myArt(); if (!box || !art) return;
+  const cr = box.querySelector('.wt-cr'), put = p => { cr.style.setProperty('--wx', p.x * 100 + '%'); cr.style.setProperty('--wy', p.y * 100 + '%'); };
+  put(await anchorOf(art));
+  let drag = null;
+  const at = e => { const r = box.getBoundingClientRect(); return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }; };
+  box.onpointerdown = e => { drag = at(e); box.setPointerCapture(e.pointerId); box.classList.add('drag'); put(drag); e.preventDefault(); };
+  box.onpointermove = e => { if (!drag) return; drag = at(e); put(drag); };
+  box.onpointerup = box.onpointercancel = () => { if (!drag) return; box.classList.remove('drag'); setAdj(art, drag); drag = null; toast('왕관 위치를 맞췄어요'); };
 }
 function giftBox() {
   const fr = gift.list;
@@ -218,6 +241,8 @@ function onClick(e) {
   if (t.closest('[data-gc-ex]')) { exchange(); return; }
   if (t.closest('[data-gc-sec]')) { secret(); return; }
   const fb = t.closest('[data-gc-fx]'); if (fb) { setFx(fb.dataset.gcFx, fb.dataset.v); return; }
+  const wa = t.closest('[data-wear-at]'); if (wa) { setSpotPref(wa.dataset.wearAt); paint(); return; }
+  if (t.closest('[data-wt-auto]')) { const a = myArt(); if (a) setAdj(a, null); paint(); toast('자동 위치로 돌렸어요'); return; }
   const gb = t.closest('[data-gc-gift]'); if (gb) { openGift(gb.dataset.gcGift); return; }
   if (t.closest('[data-gc-gift-x]')) { gift = null; paint(); return; }
   const to = t.closest('[data-gc-to]'); if (to) { sendGift(to.dataset.gcTo); return; }

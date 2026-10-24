@@ -3229,10 +3229,53 @@ html.away .an-plane,html.away .an-trail,html.away .an-ring,html.away .an-ball,ht
 .pcard.gcm .phead .av{position:relative}
 .pcard.gcm .phead .av::before{content:"";position:absolute;inset:-7px;z-index:1;border-radius:inherit;padding:4px;background:conic-gradient(#ff7ad9,#5ab8ff,#9b7bff,#ffc93c,#ff7ad9);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
 /* 전설 ③ 시계 테마: 네온 */
-/* 전설 ④ 마스코트 소품: 머리 위에 떠 있는 왕관 */
-.mascot .mfx{transform-box:fill-box;transform-origin:center;animation:mfxFloat 2.8s ease-in-out infinite}
+/* 전설 ④ 착용 소품(떠 있는 왕관) — wear.js. 부착 지점: 캐릭터 머리(.mascot) · 큰 시계 첫 숫자(.wear-ck) · 로고 G(.wear-lg) · 프로필 사진(.avwear, 항상) */
+.mfx{transform-box:fill-box;transform-origin:50% 100%;animation:mfxFloat 2.8s ease-in-out infinite}
 @keyframes mfxFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-3px) rotate(4deg)}}
-@media (prefers-reduced-motion:reduce){.mascot .mfx{animation:none}}
+/* 단독 그림: 흰 스티커 테두리 + 옅은 그림자 → 밝음·어두움·색깔 테마·네온 어디서든 바탕에 안 묻힘 */
+svg.wear{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 1.5px 0 rgba(23,48,72,.22))}
+svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
+:root[data-theme="dark"] svg.wear{filter:drop-shadow(0 0 3px rgba(255,214,90,.35))}
+/* 캐릭터: 떨어질 때·올라탈 때 왕관이 머리보다 살짝 늦게 따라옴(2차 동작) — 머리(.mh) 안이라 고개 짓은 같이 탐 */
+.mascot.m-drop .mfx{animation:mfxLagFall 1.3s cubic-bezier(.45,0,.55,1) 1}
+.mascot.m-rise .mfx{animation:mfxLagRise 1.4s cubic-bezier(.45,0,.55,1) 1}
+@keyframes mfxLagFall{0%,7%{transform:none}15%{transform:translateY(2px) rotate(-2deg)}25%{transform:translateY(-2px) rotate(3deg)}47%{transform:translateY(-6px) rotate(-8deg)}56%{transform:translateY(2.5px) rotate(5deg)}68%{transform:translateY(-1px) rotate(-2deg)}82%,100%{transform:none}}
+@keyframes mfxLagRise{0%{transform:none}9%{transform:translateY(2px)}22%{transform:translateY(-4px) rotate(2deg)}44%{transform:rotate(-7deg)}57%{transform:rotate(6deg)}69%{transform:rotate(-3deg)}82%{transform:rotate(1deg)}100%{transform:none}}
+/* 내 그림 캐릭터: 자동으로 잡은(또는 끌어서 맞춘) 정수리 자리에 겹침 — .mascot 안이라 움직임을 같이 탐 */
+.mascot .m-wear{position:absolute;left:var(--wx,50%);top:var(--wy,8%);width:28%;transform:translate(-50%,-82%);pointer-events:none}
+/* 큰 시계: 첫 숫자 위에 비스듬히(위치는 app.js placeClockWear가 잼) — 숫자가 떨리면(종 직전) 같이 떨림 */
+.clock > .wear-ck{position:absolute;z-index:3;left:var(--cx,20%);top:var(--cy,0);width:calc(var(--cf,120px) * .46);transform:translate(-56%,calc(-76% + var(--cf,120px) * .13)) rotate(-15deg);transform-origin:50% 100%;pointer-events:none}
+.stage.soon .clock > .wear-ck{animation:bellQuake .62s infinite}
+.stage.soon2 .clock > .wear-ck{animation:bellQuake2 .42s infinite}
+.stage.soon3 .clock > .wear-ck{animation:bellQuake3 .3s infinite}
+.boot .stage .clock > .wear-ck{animation:wearDrop .7s cubic-bezier(.3,1.5,.5,1) .7s backwards}
+@keyframes wearDrop{from{opacity:0;translate:0 -40px}to{opacity:1;translate:0 0}}
+/* 로고 G: 왼쪽 위에 비스듬히 */
+.logo{position:relative}
+.logo > .wear-lg{position:absolute;left:3px;top:-16px;width:30px;transform:rotate(-16deg);z-index:2;pointer-events:none}
+@media (max-width:560px){.logo > .wear-lg{left:2px;top:-14px;width:26px}}
+/* 프로필 사진(남에게 보이는 자리): 사진 위 가운데에 살짝 기울여 — 홀로 테두리(z 1)보다 위 */
+.av .avwear{position:absolute;z-index:3;left:50%;top:0;width:50%;transform:translate(-42%,-64%) rotate(-12deg);pointer-events:none;font-size:0}
+.av .avwear svg.wear{width:100%}
+/* 뽑기 › 내 효과: 씌울 곳 고르기 + 내 그림 머리 위치 맞추기(끌기) */
+.gc-fxs li:has(.gc-wear){grid-column:1 / -1}   /* 왕관을 켜면 씌울 곳·위치 맞추기가 들어가서 한 줄 전체 */
+.gc-wear{grid-column:1 / -1;display:grid;gap:6px;margin-top:4px}
+.gc-wear > small{font-size:12px;font-weight:900;color:var(--sub)}
+.wear-pick{display:flex;flex-wrap:wrap;gap:5px}
+.wear-pick button{padding:5px 11px;border:2px solid var(--ink);border-radius:999px;background:var(--card);color:var(--text);font-family:inherit;font-weight:900;font-size:12.5px;line-height:1.2;cursor:pointer}
+.wear-pick button.on{background:var(--yellow);color:var(--onc,#1d2a3a)}
+.wear-why{margin:0;font-size:12px;font-weight:700;color:var(--sub);line-height:1.4}
+.wear-why b{color:var(--text)}
+.wear-tune{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center;margin-top:2px}
+.wt-box{position:relative;width:96px;height:96px;outline:2px dashed var(--line);outline-offset:4px;border-radius:6px;background:var(--chip);touch-action:none;cursor:grab;user-select:none}
+.wt-box.drag{cursor:grabbing;outline-color:var(--ink)}
+.wt-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:left bottom;pointer-events:none}
+.wt-cr{position:absolute;left:var(--wx,50%);top:var(--wy,8%);width:28%;transform:translate(-50%,-82%);pointer-events:none}
+.wear-tune{margin-top:14px}
+.wear-tune p{margin:0;display:grid;gap:6px;justify-items:start}
+.wear-tune small{font-size:12px;font-weight:700;color:var(--sub);line-height:1.4}
+.wear-tune .btn{padding:5px 10px;font-size:12px}
+@media (prefers-reduced-motion:reduce){.mfx,.clock > .wear-ck{animation:none!important}}
 
 .att-note.gck{background:color-mix(in srgb,var(--violet) 28%,var(--card))}
 .att-note.gck a{margin-left:4px;padding:3px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:13px;text-decoration:none;white-space:nowrap}

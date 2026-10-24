@@ -2,6 +2,7 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
+import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, gcDone } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
@@ -49,7 +50,9 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 
 /* ===== 작은 조각들 ===== */
 // 개발자 계정은 이모지 대신 사이트 로고 + 무지개 링 아바타 (어디서나 같게)
-const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${emo(u.avatar || 'k:cat', 'ava')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
+const av = (u, cls = '', x = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${x}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${emo(u.avatar || 'k:cat', 'ava')}${x}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
+// 착용 소품(왕관 등)을 프로필 사진 위에 — 큰 사진(프로필 카드·꾸미기 미리보기)에만
+const avWear = v => wearOf(v) ? `<i class="avwear">${wearSvg(v)}</i>` : '';
 const isDev = u => u?.handle === ADMIN_HANDLE;
 // 뽑기 전설 '별똥별 등장': 프로필을 열 때 한 번 쏟아지는 별(위치·크기·시간을 조금씩 다르게)
 const pfxStars = () => `<div class="pfx-star" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`;   // 위치·크기·시간은 style.css nth-child (CSP: style 속성 금지)
@@ -92,10 +95,10 @@ document.addEventListener('click', e => {
   store.set('neon_c', b.dataset.neonC); document.documentElement.dataset.neon = b.dataset.neonC;
   $$('[data-neon-c]').forEach(x => { const on = x.dataset.neonC === b.dataset.neonC; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
 });
-// 내가 켠 뽑기 효과 중 내 화면에만 보이는 것: 시계 테마(html[data-ckfx]) · 마스코트 소품(html[data-mfx] → app.js가 캐릭터에 붙임)
+// 내가 켠 뽑기 효과 중 내 화면에만 보이는 것: 시계 테마(html[data-ckfx]) · 착용 소품(html[data-mfx] → app.js가 캐릭터 머리·시계·로고 중 한 곳에 붙임). 착용 소품은 프로필 사진 위에도(남에게 보임, 서버 mfx)
 function applyFx() {
   const fx = S.me?.gc?.fx || {}, h = document.documentElement;
-  const ck = fx.clock === 'r:fxneon' ? 'neon' : '', mf = fx.masc === 'r:fxcrown' ? 'crown' : '';
+  const ck = fx.clock === 'r:fxneon' ? 'neon' : '', mf = wearOf(fx.masc) ? fx.masc : '';   // 착용 소품 값 그대로(wear.js)
   if (ck) h.dataset.ckfx = ck; else delete h.dataset.ckfx;
   h.dataset.neon = neonC();
   if ((h.dataset.mfx || '') !== mf) { if (mf) h.dataset.mfx = mf; else delete h.dataset.mfx; document.dispatchEvent(new Event('sg:mfx')); }
@@ -279,7 +282,7 @@ function profileHtml(d) {
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
       <div class="phead">
-        ${av(u, 'big')}
+        ${av(u, 'big', avWear(u.mfx))}
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
           <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}
@@ -432,7 +435,7 @@ function pvHtml(u, st) {
       <div class="pv-card c-${esc(col)}" data-pv="co">
         <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
         <div class="pv-id">
-          <span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}</span>
+          <span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}${avWear(fx.masc)}</span>
           <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
         </div>
       </div>

@@ -152,7 +152,7 @@ const gcStk = u => isAdm(u) ? GACHA_ALL.filter(g => !g.fx).map(g => g.v) : gcHav
 const gcFx = u => { let o; try { o = JSON.parse(u?.gc_fx || '{}'); } catch { o = {}; } const own = gcOwn(u), out = {};
   for (const k of Object.keys(FX)) if (o && fxOk(k, o[k]) && (isAdm(u) || own[o[k]] > 0)) out[k] = o[k]; return out; };
 // 남에게 보이는 효과만(닉네임·프로필 등장) — 랭킹·댓글·DM·프로필로 나감
-const fxPub = u => { const f = gcFx(u); return { nfx: f.name || '', pfx: f.prof || '' }; };
+const fxPub = u => { const f = gcFx(u); return { nfx: f.name || '', pfx: f.prof || '', mfx: f.masc || '' }; };   // mfx: 착용 소품(프로필 사진 위 왕관)
 // 쓸 수 있는 보상 스티커 = 출석 보상 스티커 + 뽑기 스티커
 const rwStk = u => [...unlockedOf(effBest(u), effTotal(u), 'sticker'), ...gcStk(u)];
 const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.map(g => [g.v, 1])) : gcOwn(u), fx: gcFx(u) });
