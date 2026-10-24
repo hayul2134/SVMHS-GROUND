@@ -365,6 +365,9 @@ const UI = {
   pw: uj('M5.4 4.5H18.6Q21 4.5 21 6.9V18.6Q21 21 18.6 21H5.4Q3 21 3 18.6V6.9Q3 4.5 5.4 4.5Z', 'gW', '#aebccb',
       `<path d="M3 6.9Q3 4.5 5.4 4.5H18.6Q21 4.5 21 6.9V9.6H3Z" fill="url(#gY)"/><path d="m8 14.8 2.8 2.8 5.4-5.4" fill="none" stroke="#ef8a50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`)
     + `<path d="M8 2.6V6.4M16 2.6V6.4" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>`,
+  // 스티커 떼기: 귀퉁이가 말려 올라간 스티커(모두 떼기 버튼)
+  peel: uj('M5.4 3H18.6Q21 3 21 5.4V13L13 21H5.4Q3 21 3 18.6V5.4Q3 3 5.4 3Z', 'gB', '#2a7fc4', `<path d="M8 8.6 9 10.6 11.2 10.9 9.6 12.4 10 14.6 8 13.5 6 14.6 6.4 12.4 4.8 10.9 7 10.6Z" fill="#fff" opacity=".9"/>`)
+    + `<path d="M21 13 13 21Q12.4 15.6 14 14 15.6 12.4 21 13Z" fill="url(#gW)" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>` + ug('M5.6 9.2V6.6Q5.6 5.6 6.6 5.6H9'),
 };
 // 순위 메달 1·2·3 (금·은·동)
 const MD = [['gY', '#d98a10', '#a8650a'], ['gS', '#8d9aa8', '#5d6b7a'], ['gP', '#b5622c', '#8a451a']], MR = [['gB', '#2a7fc4'], ['gV', '#5d47d6'], ['gR', '#c4424f']];

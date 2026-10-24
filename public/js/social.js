@@ -419,7 +419,7 @@ function pvHtml(u, st) {
   const dk = st.deco.map((v, i) => `<i class="pv-dk k${i + 1}">${artOf(v, 'pka')}</i>`).join('');
   // 켜 둔 뽑기 효과(전설·시크릿): 미리보기에도 그대로 + 무엇이 켜져 있는지 칩으로(끄는 곳 안내)
   const fxOn = Object.keys(FX).filter(k => fx[k]).map(k => `<span class="pv-fx" data-tip="${esc(FX[k])} · 서비스 › 뽑기 › 내 효과에서 켜고 꺼요">${artOf(fx[k], 'pka')}${esc(objName(fx[k]))}</span>`).join('');
-  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로예요 · 개발자 계정은 실제로 G 로고로 보여요' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
+  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로예요 · 개발자 계정은 실제로 G 로고로 보여요' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-clr" data-clr="all" data-tip="카드·대표·시계 스티커를 한 번에 떼요 · 저장해야 반영돼요">${ui('peel', 'ic')}스티커 전부 떼기</button><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
     <div class="pv-body">
       <div class="pv-card c-${esc(col)}" data-pv="co">
         <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
@@ -454,11 +454,11 @@ function openEdit() {
       ${pkSec('배경 색', '프로필 사진 뒤 동그라미 · 프로필 카드 윗부분 색', '')}
       <div class="pick sw" id="pCo">${pkDiv('기본')}${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attDiv('color')}${attPicks('color', x => x === u.color)}</div></section>
       ${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">개발자는 칭호를 마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
-      ${pkSec('프로필 카드 스티커', '내 프로필 카드 윗부분(별 배경)에 붙어요 · 여러 개 고르기', `<b id="stkN">${picked.size}/${stkMax(u)}</b>`)}
+      ${pkSec('프로필 카드 스티커', '내 프로필 카드 윗부분(별 배경)에 붙어요 · 여러 개 고르기', `<b id="stkN">${picked.size}/${stkMax(u)}</b><button type="button" class="pk-clr" data-clr="st">모두 떼기</button>`)}
       <div class="pick" id="pSt">${pkDiv('기본')}${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}" data-tip="${EMO_NAME[s] || s}" aria-label="${EMO_NAME[s] || s}">${s}</button>`).join('')}${attDiv('sticker')}${attPicks('sticker', x => picked.has(x))}</div></section>
-      ${`${pkSec('대표 스티커', '이름 바로 옆에 작게 붙어요 · 댓글 · 랭킹 · DM · 친구 목록 어디서나', `<b>${isDev(u) ? '3개까지' : '1개'}</b>`)}
+      ${`${pkSec('대표 스티커', '이름 바로 옆에 작게 붙어요 · 댓글 · 랭킹 · DM · 친구 목록 어디서나', `<b>${isDev(u) ? '3개까지' : '1개'}</b><button type="button" class="pk-clr" data-clr="rep">떼기</button>`)}
       <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}" data-tip="대표 스티커 안 달기">없음</button>${attDiv('sticker')}${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div></section>
-      ${pkSec('첫 화면 시계 스티커', '내 첫 화면 큰 시계 둘레에 붙어요 · 나만 보여요', '<b id="decoN"></b>')}
+      ${pkSec('첫 화면 시계 스티커', '내 첫 화면 큰 시계 둘레에 붙어요 · 나만 보여요', '<b id="decoN"></b><button type="button" class="pk-clr" data-clr="deco">모두 떼기</button>')}
       <div class="pick" id="pDeco">${attDiv('sticker')}${attPicks('sticker', x => deco.includes(x))}</div>
       <small class="hint">칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small></section>`}
       <p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p>
@@ -470,15 +470,17 @@ function openEdit() {
   // 실시간 미리보기: 고르는 즉시 프로필 카드·이름 옆·시계에 어떻게 붙는지 보여 줌(바뀐 곳은 반짝)
   $('#socSheet').classList.add('edw');   // 꾸미기 창은 미리보기가 잘 보이게 넓게
   const F = $('#editForm');
+  let clrSync = () => {};
   const prev = part => {
     const box = $('#edPrev'); if (!box) return;
     box.innerHTML = pvHtml(u, { ...sel, stickers: [...picked], deco, name: F.elements.name.value.trim() || u.name, title: F.elements.title?.value || '', max: stkMax(u), slots });
-    if (part) box.querySelectorAll(`[data-pv~="${part}"]`).forEach(x => { x.classList.remove('pv-hit'); void x.offsetWidth; x.classList.add('pv-hit'); });
+    if (part) part.split(' ').forEach(pt => box.querySelectorAll(`[data-pv~="${pt}"]`).forEach(x => { x.classList.remove('pv-hit'); void x.offsetWidth; x.classList.add('pv-hit'); }));
+    clrSync();
   };
   prev();
   F.elements.name.addEventListener('input', () => prev('name'));
   F.elements.title?.addEventListener(F.elements.title.tagName === 'SELECT' ? 'change' : 'input', () => prev('title'));
-  $('#edPrev').addEventListener('click', e => { if (!e.target.closest('[data-pv-fold]')) return; const f = !$('#edPrev').classList.contains('fold'); $('#edPrev').classList.toggle('fold', f); store.set('pv_fold', f ? 1 : 0); });
+  $('#edPrev').addEventListener('click', e => { if (e.target.closest('[data-clr]')) return clearStk('all'); if (!e.target.closest('[data-pv-fold]')) return; const f = !$('#edPrev').classList.contains('fold'); $('#edPrev').classList.toggle('fold', f); store.set('pv_fold', f ? 1 : 0); });
   $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev('av'); };
   $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev('co'); };
   $('#pSt').onclick = e => {
@@ -515,6 +517,22 @@ function openEdit() {
     else deco.push(b.dataset.v);
     b.classList.toggle('on', deco.includes(b.dataset.v)); decoN(); prev('deco');
   };
+  // 스티커 한 번에 떼기 — 칸마다 '모두 떼기' + 미리보기 '스티커 전부 떼기'(카드·대표·시계). 저장 전까지는 취소로 되돌릴 수 있음
+  clrSync = () => {
+    const has = { st: picked.size > 0, rep: !!sel.rep, deco: deco.length > 0 };
+    $$('#editForm .pk-clr').forEach(b => { b.disabled = !has[b.dataset.clr]; });
+    const all = $('#edPrev .pv-clr'); if (all) all.disabled = !(has.st || has.rep || has.deco);
+  };
+  const clearStk = k => {
+    const parts = [];
+    if ((k === 'st' || k === 'all') && picked.size) { picked.clear(); $$('#pSt .on').forEach(x => x.classList.remove('on')); $('#stkN').textContent = `0/${stkMax(u)}`; parts.push('st'); }
+    if ((k === 'rep' || k === 'all') && sel.rep) { sel.rep = ''; $$('#pRep button').forEach(x => x.classList.toggle('on', !x.dataset.v)); parts.push('rep'); }
+    if ((k === 'deco' || k === 'all') && deco.length) { deco.length = 0; $$('#pDeco .on').forEach(x => x.classList.remove('on')); decoN(); parts.push('deco'); }
+    if (!parts.length) return;
+    prev(parts.join(' ')); toast(k === 'all' ? '스티커를 전부 뗐어요 · 저장하면 반영돼요' : '뗐어요 · 저장하면 반영돼요');
+  };
+  F.addEventListener('click', e => { const b = e.target.closest('.pk-clr'); if (b) clearStk(b.dataset.clr); });
+  clrSync();
   // 인스타 아이디: 앞의 @는 칸에 붙은 고정 글자(.pre)라 지울 수 없음 — 직접 친 @·붙여 넣은 인스타 주소는 아이디만 남김
   const ig = $('#editForm [name=insta]');
   ig.oninput = () => {
