@@ -556,42 +556,55 @@ export function createRunner(canvas, char, opt = {}) {
       o.connect(v).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
     } catch {}
   }
-  /* 점프 소리 (2026-10-25): 톡 누르면 예전 그대로 짧은 '뽀'(0.09초),
-     길게 누르면 착지할 때까지 '뽀잉~' — 높이 따라 음이 올라갔다 내려오고, 떨림(스프링 느낌)이 점점 커짐 */
-  const JV_TAP = .09, JV_LONG = .06;   // 짧은 소리 길이 · 이만큼 넘게 누르면 '길게'
+  /* 점프 소리 (2026-10-25 2차): 고전 8비트 게임식 '쀼웅' — 펄스파(25%)로 음이 빠르게 위로 미끄러짐.
+     톡 = 짧게(0.16초) · 길게 누르면 올라가는 동안 계속 위로, 내려올 땐 그 음에서 잦아들다 착지 때 끝 (떨림·음 내려가기 없음) */
+  const JV_TAP = .16, JV_LONG = .06;
+  let pulse = null;
+  function pulseWave() {   // 듀티 25% 펄스파 (패미컴 소리 결)
+    if (pulse) return pulse;
+    const N = 32, re = new Float32Array(N), im = new Float32Array(N);
+    for (let n = 1; n < N; n++) im[n] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * .25);
+    return (pulse = actx.createPeriodicWave(re, im));
+  }
   function jvStart() {
-    jvStop(.02);
+    jvStop(.01);
     if (!sound) return;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-      const t = actx.currentTime, o = actx.createOscillator(), lfo = actx.createOscillator(), dep = actx.createGain(), v = actx.createGain();
-      o.type = 'square'; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(880, t + JV_TAP);
-      lfo.frequency.value = 15; dep.gain.setValueAtTime(0, t); dep.gain.linearRampToValueAtTime(0, t + JV_TAP); dep.gain.linearRampToValueAtTime(34, t + .3);
-      lfo.connect(dep).connect(o.frequency);
-      v.gain.setValueAtTime(.05, t);
-      o.connect(v).connect(actx.destination); o.start(t); lfo.start(t);
-      jv = { o, lfo, v, t0: t, tap: false };
+      const t = actx.currentTime, o = actx.createOscillator(), v = actx.createGain();
+      o.setPeriodicWave(pulseWave());
+      o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(700, t + .07);
+      v.gain.setValueAtTime(.06, t);
+      o.connect(v).connect(actx.destination); o.start(t);
+      jv = { o, v, t0: t, tap: false, peak: 700 };
     } catch { jv = null; }
   }
-  function jvStop(fade = .05, at) {
+  function jvStop(fade = .04, at) {
     if (!jv) return;
-    const { o, lfo, v } = jv; jv = null;
+    const { o, v } = jv; jv = null;
     try {
-      const t = actx.currentTime, end = Math.max(t + .015, at ?? t + fade);
+      const t = actx.currentTime, end = Math.max(t + .012, at ?? t + fade);
       v.gain.cancelScheduledValues(t); v.gain.setValueAtTime(Math.max(v.gain.value, .0001), t); v.gain.exponentialRampToValueAtTime(.0001, end);
-      o.stop(end + .02); lfo.stop(end + .02);
+      o.stop(end + .02);
     } catch {}
   }
-  function jvTick() {   // 매 판(1/60초): 공중 높이 → 음높이
+  function jvTick() {   // 매 판: 올라가는 동안만 음을 더 올림
     if (!jv || jv.tap) return;
     const t = actx.currentTime;
-    if (t - jv.t0 < JV_TAP) return;   // 처음 0.09초는 예전 '뽀'와 같게
-    const f = 640 + (-st.y) * 9 - (st.vy > 0 ? 40 : 0);   // 올라갈 땐 높게, 내려올 땐 낮게
-    jv.o.frequency.cancelScheduledValues(t); jv.o.frequency.setTargetAtTime(f, t, .02);
-    jv.v.gain.setTargetAtTime(.045, t, .05);
+    if (t - jv.t0 < .07) return;
+    if (st.vy < 0) {
+      jv.peak = Math.max(jv.peak, 700 + (-st.y) * 9);
+      jv.o.frequency.cancelScheduledValues(t); jv.o.frequency.setTargetAtTime(jv.peak, t, .03);
+    } else if (!jv.fall) {   // 꼭대기: 음은 그대로, 소리만 잦아듦
+      jv.fall = true; jv.o.frequency.cancelScheduledValues(t); jv.o.frequency.setValueAtTime(jv.o.frequency.value, t);
+      jv.v.gain.cancelScheduledValues(t); jv.v.gain.setValueAtTime(jv.v.gain.value, t); jv.v.gain.setTargetAtTime(.012, t, .12);
+    }
   }
-  function jvRelease() {   // 키를 뗌: 톡 누른 거면 짧은 소리로 마무리
-    if (jv && !jv.tap && st.jumpHeld < JV_LONG && actx.currentTime - jv.t0 < JV_TAP + .02) { jv.tap = true; jvStop(0, jv.t0 + JV_TAP); }
+  function jvRelease() {   // 톡 누른 거면 짧은 '쀼'로 마무리
+    if (!jv || jv.tap || st.jumpHeld >= JV_LONG || actx.currentTime - jv.t0 > .1) return;
+    jv.tap = true;
+    const t = jv.t0; jv.o.frequency.cancelScheduledValues(actx.currentTime); jv.o.frequency.setValueAtTime(240, t); jv.o.frequency.exponentialRampToValueAtTime(900, t + JV_TAP);
+    jvStop(0, t + JV_TAP);
   }
 
   /* --- 판 --- */
