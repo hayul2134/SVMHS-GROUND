@@ -26,9 +26,9 @@ const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 
 const GAMES = {
   // 나 집에 갈래!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
   home: { name: '나 집에 갈래!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 — 100,000m면 집 도착! 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
-  reaction: { name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
-  num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
-  cut: { name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
+  reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
+  num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
+  cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
 };
 
 /* ===== 상태 ===== */
@@ -1018,7 +1018,7 @@ async function renderGame() {
   if (S.me) { try { info = (await call('games')).games; } catch {} }
   box.innerHTML = `${rkBand()}${S.me ? '<section class="card tier-card" id="tierBox"><div class="skel"></div></section>' : ''}<div class="ggrid">${Object.entries(GAMES).map(([k, g], i) => {
     const x = info?.[k];
-    return `<article class="card gcard g-${k}">
+    return `<article class="card gcard g-${k}">${g.beta ? '<b class="beta">Beta</b>' : ''}
       <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
       ${x ? `<div class="gstat"><span>내 최고 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
         <p class="gtop">${ic('crown')}${x.top ? `1등 <a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '1등 자리가 비어 있어요!'}</p>` : ''}

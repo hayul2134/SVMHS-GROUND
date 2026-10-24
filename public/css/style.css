@@ -3953,3 +3953,10 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 :root[data-theme="dark"] .cp-i input:checked + span{background:#4a3d14}
 .cp-i input:focus-visible + span{outline:3px solid var(--yellow);outline-offset:2px}
 .pi-c .pi-logo{width:26px;height:26px;margin:-3px 0 -3px -3px;border-radius:7px;background:#fff;object-fit:contain;box-shadow:0 0 0 1.5px var(--ink)}
+
+/* 2026-10-25 Beta 표시: 반응속도·1 to 25·컷 타이밍 (나중에 아이디어와 결합해 디벨롭 예정) — 스킨과 상관없이 항상 파란색 */
+.app,.gcard{position:relative}
+.beta{position:absolute;top:0;left:50%;transform:translate(-50%,-55%) rotate(-3deg);z-index:2;padding:3px 10px 4px;border-radius:999px;background:#2f8fe0;color:#fff;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);font:900 11px/1 var(--font,system-ui),system-ui,sans-serif;letter-spacing:.06em;pointer-events:none;white-space:nowrap}
+.gcard .beta{font-size:13px;padding:4px 12px 5px}
+:root[data-theme="dark"] .beta{background:#3a9bf0;border-color:#0b1a2a}
+@media (max-width:560px){.beta{font-size:10px;padding:3px 8px}}
