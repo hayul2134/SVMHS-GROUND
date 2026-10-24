@@ -411,19 +411,18 @@ function openEdit() {
       <label>인스타 아이디 (선택)<span class="fld at ig"><span class="pre" aria-hidden="true">@</span><input name="insta" maxlength="60" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="예: svmhs_ground" value="${esc(u.insta || '')}"></span><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
       <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
       <div class="pk-view" role="group" aria-label="꾸미기 목록 보기"><span>꾸미기 목록</span><div class="pk-seg">${[['all', '모두 보기'], ['own', '보유한 것만 보기']].map(([k, n]) => `<button type="button" data-view="${k}" class="${pkView() === k ? 'on' : ''}" aria-pressed="${pkView() === k}">${n}</button>`).join('')}</div></div>
-      <p class="lbl">프로필 사진</p>
-      <div class="pick" id="pAv">${pkDiv('기본')}${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}" data-tip="${kavName(a)}" aria-label="${kavName(a)}">${emo(a)}</button>`).join('')}${attDiv('avatar')}${attPicks('avatar', x => x === u.avatar)}</div>
-      <p class="lbl">배경 색</p>
-      <div class="pick sw" id="pCo">${pkDiv('기본')}${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attDiv('color')}${attPicks('color', x => x === u.color)}</div>
+      ${pkSec('프로필 사진', '내 프로필 · 친구 목록 · DM · 랭킹에 보이는 내 얼굴', '')}
+      <div class="pick" id="pAv">${pkDiv('기본')}${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}" data-tip="${kavName(a)}" aria-label="${kavName(a)}">${emo(a)}</button>`).join('')}${attDiv('avatar')}${attPicks('avatar', x => x === u.avatar)}</div></section>
+      ${pkSec('배경 색', '프로필 사진 뒤 동그라미 · 프로필 카드 윗부분 색', '')}
+      <div class="pick sw" id="pCo">${pkDiv('기본')}${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attDiv('color')}${attPicks('color', x => x === u.color)}</div></section>
       ${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">개발자는 칭호를 마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
-      <p class="lbl">스티커 <small id="stkN">${picked.size}/${stkMax(u)}</small></p>
-      <div class="pick" id="pSt">${pkDiv('기본')}${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}" data-tip="${EMO_NAME[s] || s}" aria-label="${EMO_NAME[s] || s}">${s}</button>`).join('')}${attDiv('sticker')}${attPicks('sticker', x => picked.has(x))}</div>
-      ${`<p class="lbl">대표 스티커 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small></p>
-      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}" data-tip="대표 스티커 안 달기">없음</button>${attDiv('sticker')}${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div>
-      <small class="hint">이름 옆에 작게 붙어요 — 댓글·랭킹·DM·친구 목록 어디서나 보여요.</small>
-      <p class="lbl">첫 화면 시계 스티커 <small id="decoN"></small></p>
+      ${pkSec('프로필 카드 스티커', '내 프로필 카드 윗부분(별 배경)에 붙어요 · 여러 개 고르기', `<b id="stkN">${picked.size}/${stkMax(u)}</b>`)}
+      <div class="pick" id="pSt">${pkDiv('기본')}${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}" data-tip="${EMO_NAME[s] || s}" aria-label="${EMO_NAME[s] || s}">${s}</button>`).join('')}${attDiv('sticker')}${attPicks('sticker', x => picked.has(x))}</div></section>
+      ${`${pkSec('대표 스티커', '이름 바로 옆에 작게 붙어요 · 댓글 · 랭킹 · DM · 친구 목록 어디서나', `<b>${isDev(u) ? '3개까지' : '1개'}</b>`)}
+      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}" data-tip="대표 스티커 안 달기">없음</button>${attDiv('sticker')}${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div></section>
+      ${pkSec('첫 화면 시계 스티커', '내 첫 화면 큰 시계 둘레에 붙어요 · 나만 보여요', '<b id="decoN"></b>')}
       <div class="pick" id="pDeco">${attDiv('sticker')}${attPicks('sticker', x => deco.includes(x))}</div>
-      <small class="hint">내 첫 화면 큰 시계에 붙어요(나만 보여요). 칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small>`}
+      <small class="hint">칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small></section>`}
       <p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p>
       <div class="row"><button class="btn" type="submit">저장</button><button class="btn ghost" type="button" data-close>취소</button></div>
     </form>`);
@@ -495,6 +494,8 @@ const rwList = kind => kind === 'sticker' ? [...ATT.lockedOf('sticker'), ...GC_S
 const lockMsg = b => b.dataset.by === 'gacha' ? '뽑기에서 나오는 스티커예요 — 서비스 › 뽑기에서 뽑아 보세요' : `${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`;
 // 꾸미기 목록 보기: 모두 보기 / 보유한 것만 보기 (이 기기에 기억 edit_view)
 const pkView = () => store.get('edit_view', 'all') === 'own' ? 'own' : 'all';
+// 꾸미기 한 묶음(카드): 큰 제목 + '어디에 쓰여요' 한 줄 + 오른쪽 개수 — </section>은 부르는 쪽에서 닫음
+const pkSec = (t, use, right) => `<section class="pk-sec"><div class="pk-hd"><p class="pk-t">${t}</p>${right ? `<span class="pk-n">${right}</span>` : ''}<p class="pk-use"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="9.6" r="2.4" fill="currentColor"/></svg>${use}</p></div>`;
 const pkDiv = (t, extra = '') => `<p class="pk-div${extra}">${t}</p>`;
 // 출석 보상 구분선: 받은 개수 / 전체 + '보유한 것만'일 때 받은 게 없으면 안내
 function attDiv(kind) {

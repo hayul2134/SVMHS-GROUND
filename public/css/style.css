@@ -3116,3 +3116,13 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 @media (prefers-reduced-motion:reduce){.gc-mc.spin,.gc-mc.spin *,.gc-cap,.gc-got.in,.gc-rays{animation:none!important}}
 .att-note.gck{background:color-mix(in srgb,var(--violet) 28%,var(--card))}
 .att-note.gck a{margin-left:4px;padding:3px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:13px;text-decoration:none;white-space:nowrap}
+/* 프로필 꾸미기 묶음 카드(2026-10-24): 제목 + 어디에 쓰이는지 한 줄을 목록 위에 — 구분선(출석 보상·뽑기)과 섞여 '이게 어디 쓰는 스티커인지' 안 보이던 문제 */
+.pk-sec{margin:14px 0 0;padding:12px 12px 12px;border:2.5px solid var(--ink);border-radius:18px;background:var(--card);box-shadow:3px 3px 0 var(--ink)}
+.pk-sec .pick{margin-top:10px}
+.pk-sec > .hint{display:block;margin-top:8px}
+.pk-hd{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 8px}
+.pk-hd .pk-t{margin:0;text-align:left;font-family:"Jua",var(--font,sans-serif);font-weight:400;font-size:19px;line-height:1.2;color:var(--text)}
+.pk-hd .pk-n b{display:inline-block;padding:3px 9px;border-radius:999px;background:var(--yellow);border:2px solid var(--ink);font:900 12px/1.2 var(--num,inherit);color:var(--onc,#1d2a3a)}
+.pk-use{grid-column:1/-1;display:flex;align-items:flex-start;gap:5px;margin:0;padding:6px 9px;border-radius:10px;background:var(--chip);font-size:12.5px;font-weight:800;line-height:1.4;color:var(--text)}
+.pk-use svg{flex:none;width:14px;height:14px;margin-top:2px;color:var(--fire,#e8742b)}
+.pk-sec .pick .pk-div{font-size:11.5px}
