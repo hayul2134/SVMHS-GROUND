@@ -12,11 +12,12 @@ const keyOf = el => el.className.split(' ')[0] + '|' + [...el.children].filter(b
 function place(el, animate = true) {
   const pill = el.querySelector(':scope > .sw-pill'); if (!pill) return;
   const b = el.querySelector(ACT);
-  if (!b || !b.offsetWidth) { pill.style.opacity = '0'; return; }
+  // 숨겨진 동안(서랍 넣기·display:none)엔 위치 기록도 지움 → 다시 보일 때 같은 자리라도 알약을 다시 켬 (2026-10-25 급식 칩 알약 안 보이던 버그)
+  if (!b || !b.offsetWidth) { pill.style.opacity = '0'; delete pill.dataset.at; return; }
   const r = { x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight };
   const k = keyOf(el), prev = last.get(k), cur = pill.dataset.at;
   const at = `${r.x},${r.y},${r.w},${r.h}`;
-  if (cur === at) return;
+  if (cur === at && pill.style.opacity === '1') return;
   const set = p => { pill.style.transform = `translate(${p.x}px,${p.y}px)`; pill.style.width = p.w + 'px'; pill.style.height = p.h + 'px'; };
   if (!cur) {   // 새로 생긴 묶음: 같은 묶음의 이전 위치가 있으면 거기서 출발
     pill.classList.add('no-tr');
