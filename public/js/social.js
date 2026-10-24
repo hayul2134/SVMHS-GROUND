@@ -153,6 +153,11 @@ function startPoll() {
 // keep: 탭(로그인↔가입)을 바꿀 때 적던 아이디·비밀번호를 그대로 옮겨 줌
 const CLS_N = 6;   // 서울영상고는 학년마다 6반까지
 const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="e-open" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle class="e-open" cx="12" cy="12" r="3"/><path class="e-shut" d="M3.5 9.5Q12 16.5 20.5 9.5M7 13.4 5.4 15.8M12 15.2v2.8M17 13.4l1.6 2.4"/></svg>';
+// 동아리 고르기 칸 (가입·구글 가입) — 값은 동아리 이름, '없음'은 빈 값. 가입 땐 하나는 꼭 고르게(없으면 '없음')
+const clubPickHtml = () => `<fieldset class="clubpick su"><legend>동아리 <small>프로필에 로고로 보여요 · 나중에 바꿀 수 있어요</small></legend><div class="cp-grid">
+  <label class="cp-i none"><input type="radio" name="club" value=""><span><i class="cp-x" aria-hidden="true">없음</i><b>없음</b></span></label>
+  ${CLUBS.map(([k, n]) => `<label class="cp-i"><input type="radio" name="club" value="${esc(n)}"><span><img src="/clubs/${k}.webp" alt="" loading="lazy" width="128" height="128"><b>${esc(n)}</b></span></label>`).join('')}
+</div></fieldset>`;
 function authHtml(mode = 'login', keep = {}) {
   const c = ctx.getClass?.() || null, up = mode === 'signup';
   const radio = (name, v, txt, on) => `<label class="pchip"><input type="radio" name="${name}" value="${v}" required ${on ? 'checked' : ''}><span>${txt}</span></label>`;
@@ -172,6 +177,7 @@ function authHtml(mode = 'login', keep = {}) {
         <label><span class="lrow">이름 (닉네임)<small class="cnt" data-cnt>0/20</small></span><input name="name" required maxlength="20" placeholder="언제든 바꿀 수 있어요"></label>
         <div class="apicks"><fieldset class="apick"><legend>학년</legend><div class="pchips g3">${grades}</div></fieldset>
         <fieldset class="apick"><legend>반</legend><div class="pchips g6">${classes}</div><p class="dephint" aria-hidden="true"><span>콘텐츠</span><span>미디어</span><span>프로듀스</span></p></fieldset></div>
+        ${clubPickHtml()}
         ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40" placeholder="친구에게 받은 코드"></label>' : ''}
       </div>
       <p class="note">가입 뒤 프로필의 계정 설정에서 구글을 연결하면 비밀번호를 잊어도 찾을 수 있어요</p>` : ''}
@@ -195,6 +201,7 @@ function checkForm(f, mode) {
   if (mode === 'signup' && !el.name.value.trim()) return ['친구들에게 보일 이름을 적어 주세요', 'name'];
   if (mode === 'signup' && !f.querySelector('[name=grade]:checked')) return ['학년을 골라 주세요', 'grade'];
   if (mode === 'signup' && !f.querySelector('[name=cls]:checked')) return ['반을 골라 주세요', 'cls'];
+  if (mode === 'signup' && !f.querySelector('[name=club]:checked')) return ['동아리를 골라 주세요 (없으면 \'없음\')', 'club'];
   if (el.code && !el.code.value.trim()) return ['가입 코드를 적어 주세요', 'code'];
   return null;
 }
@@ -264,7 +271,7 @@ function authErr(f, err, mode) {
   const hit = err.field ? [err.field] : mode === 'login' && err.status === 401 ? ['handle', 'pw']
     : /아이디/.test(msg) ? ['handle'] : /비밀번호/.test(msg) ? ['pw'] : /코드/.test(msg) ? ['code'] : [];
   f.querySelectorAll('.bad').forEach(x => x.classList.remove('bad'));
-  hit.forEach(n => { const x = f.elements[n]; if (x instanceof RadioNodeList) x[0]?.closest('.apick')?.classList.add('bad'); else x?.classList.add('bad'); });
+  hit.forEach(n => { const x = f.elements[n]; if (x instanceof RadioNodeList) x[0]?.closest('.apick,.clubpick')?.classList.add('bad'); else x?.classList.add('bad'); });
   box.textContent = '⚠️ ' + msg; box.hidden = false;
   f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake');
   const pw = f.elements.pw;
@@ -274,7 +281,7 @@ function authErr(f, err, mode) {
 document.addEventListener('input', e => {
   const f = e.target.closest?.('#authForm'); if (!f) return;
   const t = e.target, up = f.dataset.mode === 'signup';
-  t.classList.remove('bad'); t.closest('.apick')?.classList.remove('bad');
+  t.classList.remove('bad'); t.closest('.apick,.clubpick')?.classList.remove('bad');
   if (t.name === 'handle') {   // 아이디: 치는 대로 소문자, 띄어쓰기 없앰 (커서 위치 유지)
     const v = t.value.toLowerCase().replace(/\s+/g, '');
     if (v !== t.value) { const p = t.selectionStart - (t.value.length - v.length); t.value = v; try { t.setSelectionRange(p, p); } catch {} }
@@ -299,7 +306,7 @@ function profileHtml(d) {
   const dep = !isDev(u) && u.cls ? [null, ['con', '콘텐츠과', 'clap'], ['con', '콘텐츠과', 'clap'], ['med', '미디어과', 'palette'], ['med', '미디어과', 'palette'], ['pro', '프로듀스과', 'cut'], ['pro', '프로듀스과', 'cut']][+u.cls] : null;
   const chips = [classTxt(u) && `<span class="pi-c pi-cls">${ic('book')}${esc(classTxt(u))}</span>`,
     dep && `<span class="pi-c pi-dep d-${dep[0]}">${ic(dep[2])}${dep[1]}</span>`,
-    u.club && `<span class="pi-c pi-club">${clubLogo(u.club, 'pi-logo') || ic('cam')}${esc(u.club)}<small>동아리</small></span>`].filter(Boolean).join('');
+    u.club && `<span class="pi-c pi-club">${clubLogo(u.club, 'pi-logo') || ic('cam')}${esc(u.club)}</span>`].filter(Boolean).join('');
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}${u.title === HOME_TITLE ? ' first' : ''}"><span>${ui('tag', 'ic')}${ttlHtml(u.title)}</span></p>` : '';
@@ -1470,20 +1477,23 @@ async function onGoogle({ credential }) {
     await googleDone('login');
   } catch (x) { toast(x.message); }
 }
-function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아이디·닉네임·학년·반만 정하고 가입 (비밀번호 없음)
+function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아이디·닉네임·학년·반·동아리만 정하고 가입 (비밀번호 없음)
   const c = ctx.getClass?.() || null;
   sheet(`<h3>🎉 구글로 가입하기</h3><p class="note">아이디와 닉네임만 정하면 끝! 다음부터는 구글 버튼으로 로그인해요.</p>
     <form class="sform" id="gForm">
       <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" placeholder="영어 소문자·숫자 3~16자"><small class="hint">🔑 나중에 바꿀 수 없어요.</small></label>
       <label>이름 (닉네임)<input name="name" required maxlength="20" value="${esc(name || '')}"></label>
       <div class="two"><label>학년<select name="grade">${[1, 2, 3].map(g => `<option value="${g}" ${c && +c.g === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label><label>반<select name="cls">${Array.from({ length: CLS_N }, (_, i) => `<option value="${i + 1}" ${c && +c.c === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>
+      ${clubPickHtml()}
       ${S.needCode ? '<label>가입 코드<input name="code" required maxlength="40"></label>' : ''}
       <p class="ferr" role="alert" hidden></p>
       <div class="row"><button class="btn" type="submit">가입하고 시작하기</button><button class="btn ghost" type="button" data-close>취소</button></div>
     </form>`);
   $('#gForm').onsubmit = async e => {
     e.preventDefault();
-    const d = Object.fromEntries(new FormData(e.target)), b = e.target.querySelector('[type=submit]'); b.disabled = true;
+    const d = Object.fromEntries(new FormData(e.target)), b = e.target.querySelector('[type=submit]');
+    if (!e.target.querySelector('[name=club]:checked')) { const box = e.target.querySelector('.ferr'); box.textContent = '동아리를 골라 주세요 (없으면 \'없음\')'; box.hidden = false; return; }
+    b.disabled = true;
     try { await call('google', { credential, ...d, handle: d.handle.trim().toLowerCase(), grade: +d.grade, cls: +d.cls }); closeSheet(); await googleDone('signup'); }
     catch (x) { const box = e.target.querySelector('.ferr'); box.textContent = x.message; box.hidden = false; b.disabled = false; }
   };
