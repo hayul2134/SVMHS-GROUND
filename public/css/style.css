@@ -4007,46 +4007,47 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .ch-m{margin:0;font-size:15px;font-weight:700;opacity:.9}
 .ch-go{margin-top:14px;font-size:12.5px;opacity:.6}
 .ch-conf{position:absolute;inset:0;pointer-events:none}
-.cf{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;animation:chFall 2.6s cubic-bezier(.3,.6,.5,1) forwards}
-.cf.c0{background:#ff8f8f}.cf.c1{background:#ffe08a}.cf.c2{background:#8fe8cf}.cf.c3{background:#6fc6f4}.cf.c4{background:#9bb8ff}.cf.c5{background:#fff}
+/* .cf는 출석 달력 불꽃·방패(.flm.cf·.shd.cf)와 출석 색종이도 쓰는 이름 → 축하 색종이는 .ch-conf 안으로만 (전역 .cf에 chFall이 걸려 달력 불꽃이 아래로 떨어지던 버그, 2026-10-25) */
+.ch-conf .cf{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;animation:chFall 2.6s cubic-bezier(.3,.6,.5,1) forwards}
+.ch-conf .cf.c0{background:#ff8f8f}.ch-conf .cf.c1{background:#ffe08a}.ch-conf .cf.c2{background:#8fe8cf}.ch-conf .cf.c3{background:#6fc6f4}.ch-conf .cf.c4{background:#9bb8ff}.ch-conf .cf.c5{background:#fff}
 @keyframes chFall{from{transform:translateY(0) rotate(0)}to{transform:translateY(110vh) rotate(720deg)}}
 @media (prefers-reduced-motion:reduce){.ch-rays,.ch-mdl.mdl{animation:none}.ch-conf{display:none}}
-.cf:nth-child(1){left:0%;animation-delay:0.00s;animation-duration:2.2s}
-.cf:nth-child(2){left:37%;animation-delay:0.09s;animation-duration:2.5s}
-.cf:nth-child(3){left:74%;animation-delay:0.18s;animation-duration:2.8s}
-.cf:nth-child(4){left:11%;animation-delay:0.27s;animation-duration:3.1s}
-.cf:nth-child(5){left:48%;animation-delay:0.36s;animation-duration:3.4s}
-.cf:nth-child(6){left:85%;animation-delay:0.45s;animation-duration:2.2s}
-.cf:nth-child(7){left:22%;animation-delay:0.54s;animation-duration:2.5s}
-.cf:nth-child(8){left:59%;animation-delay:0.63s;animation-duration:2.8s}
-.cf:nth-child(9){left:96%;animation-delay:0.72s;animation-duration:3.1s}
-.cf:nth-child(10){left:33%;animation-delay:0.00s;animation-duration:3.4s}
-.cf:nth-child(11){left:70%;animation-delay:0.09s;animation-duration:2.2s}
-.cf:nth-child(12){left:7%;animation-delay:0.18s;animation-duration:2.5s}
-.cf:nth-child(13){left:44%;animation-delay:0.27s;animation-duration:2.8s}
-.cf:nth-child(14){left:81%;animation-delay:0.36s;animation-duration:3.1s}
-.cf:nth-child(15){left:18%;animation-delay:0.45s;animation-duration:3.4s}
-.cf:nth-child(16){left:55%;animation-delay:0.54s;animation-duration:2.2s}
-.cf:nth-child(17){left:92%;animation-delay:0.63s;animation-duration:2.5s}
-.cf:nth-child(18){left:29%;animation-delay:0.72s;animation-duration:2.8s}
-.cf:nth-child(19){left:66%;animation-delay:0.00s;animation-duration:3.1s}
-.cf:nth-child(20){left:3%;animation-delay:0.09s;animation-duration:3.4s}
-.cf:nth-child(21){left:40%;animation-delay:0.18s;animation-duration:2.2s}
-.cf:nth-child(22){left:77%;animation-delay:0.27s;animation-duration:2.5s}
-.cf:nth-child(23){left:14%;animation-delay:0.36s;animation-duration:2.8s}
-.cf:nth-child(24){left:51%;animation-delay:0.45s;animation-duration:3.1s}
-.cf:nth-child(25){left:88%;animation-delay:0.54s;animation-duration:3.4s}
-.cf:nth-child(26){left:25%;animation-delay:0.63s;animation-duration:2.2s}
-.cf:nth-child(27){left:62%;animation-delay:0.72s;animation-duration:2.5s}
-.cf:nth-child(28){left:99%;animation-delay:0.00s;animation-duration:2.8s}
-.cf:nth-child(29){left:36%;animation-delay:0.09s;animation-duration:3.1s}
-.cf:nth-child(30){left:73%;animation-delay:0.18s;animation-duration:3.4s}
-.cf:nth-child(31){left:10%;animation-delay:0.27s;animation-duration:2.2s}
-.cf:nth-child(32){left:47%;animation-delay:0.36s;animation-duration:2.5s}
-.cf:nth-child(33){left:84%;animation-delay:0.45s;animation-duration:2.8s}
-.cf:nth-child(34){left:21%;animation-delay:0.54s;animation-duration:3.1s}
-.cf:nth-child(35){left:58%;animation-delay:0.63s;animation-duration:3.4s}
-.cf:nth-child(36){left:95%;animation-delay:0.72s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(1){left:0%;animation-delay:0.00s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(2){left:37%;animation-delay:0.09s;animation-duration:2.5s}
+.ch-conf .cf:nth-child(3){left:74%;animation-delay:0.18s;animation-duration:2.8s}
+.ch-conf .cf:nth-child(4){left:11%;animation-delay:0.27s;animation-duration:3.1s}
+.ch-conf .cf:nth-child(5){left:48%;animation-delay:0.36s;animation-duration:3.4s}
+.ch-conf .cf:nth-child(6){left:85%;animation-delay:0.45s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(7){left:22%;animation-delay:0.54s;animation-duration:2.5s}
+.ch-conf .cf:nth-child(8){left:59%;animation-delay:0.63s;animation-duration:2.8s}
+.ch-conf .cf:nth-child(9){left:96%;animation-delay:0.72s;animation-duration:3.1s}
+.ch-conf .cf:nth-child(10){left:33%;animation-delay:0.00s;animation-duration:3.4s}
+.ch-conf .cf:nth-child(11){left:70%;animation-delay:0.09s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(12){left:7%;animation-delay:0.18s;animation-duration:2.5s}
+.ch-conf .cf:nth-child(13){left:44%;animation-delay:0.27s;animation-duration:2.8s}
+.ch-conf .cf:nth-child(14){left:81%;animation-delay:0.36s;animation-duration:3.1s}
+.ch-conf .cf:nth-child(15){left:18%;animation-delay:0.45s;animation-duration:3.4s}
+.ch-conf .cf:nth-child(16){left:55%;animation-delay:0.54s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(17){left:92%;animation-delay:0.63s;animation-duration:2.5s}
+.ch-conf .cf:nth-child(18){left:29%;animation-delay:0.72s;animation-duration:2.8s}
+.ch-conf .cf:nth-child(19){left:66%;animation-delay:0.00s;animation-duration:3.1s}
+.ch-conf .cf:nth-child(20){left:3%;animation-delay:0.09s;animation-duration:3.4s}
+.ch-conf .cf:nth-child(21){left:40%;animation-delay:0.18s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(22){left:77%;animation-delay:0.27s;animation-duration:2.5s}
+.ch-conf .cf:nth-child(23){left:14%;animation-delay:0.36s;animation-duration:2.8s}
+.ch-conf .cf:nth-child(24){left:51%;animation-delay:0.45s;animation-duration:3.1s}
+.ch-conf .cf:nth-child(25){left:88%;animation-delay:0.54s;animation-duration:3.4s}
+.ch-conf .cf:nth-child(26){left:25%;animation-delay:0.63s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(27){left:62%;animation-delay:0.72s;animation-duration:2.5s}
+.ch-conf .cf:nth-child(28){left:99%;animation-delay:0.00s;animation-duration:2.8s}
+.ch-conf .cf:nth-child(29){left:36%;animation-delay:0.09s;animation-duration:3.1s}
+.ch-conf .cf:nth-child(30){left:73%;animation-delay:0.18s;animation-duration:3.4s}
+.ch-conf .cf:nth-child(31){left:10%;animation-delay:0.27s;animation-duration:2.2s}
+.ch-conf .cf:nth-child(32){left:47%;animation-delay:0.36s;animation-duration:2.5s}
+.ch-conf .cf:nth-child(33){left:84%;animation-delay:0.45s;animation-duration:2.8s}
+.ch-conf .cf:nth-child(34){left:21%;animation-delay:0.54s;animation-duration:3.1s}
+.ch-conf .cf:nth-child(35){left:58%;animation-delay:0.63s;animation-duration:3.4s}
+.ch-conf .cf:nth-child(36){left:95%;animation-delay:0.72s;animation-duration:2.2s}
 /* 프로필: 학년·반 · 학과 · 동아리를 이름 아래 크게 (2026-10-25) */
 .pinfo{display:flex;flex-wrap:wrap;gap:6px 8px;margin:8px 0 0}
 .pi-c{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 8px;border-radius:12px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-weight:900;font-size:14.5px;line-height:1.2;box-shadow:2px 2px 0 var(--ink)}
