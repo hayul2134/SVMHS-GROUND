@@ -1062,13 +1062,13 @@ function centerHero(force) {
   const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, top = hdr + 14;
   let bot = Math.min(HERO.getBoundingClientRect().bottom + sy, innerHeight);
   // 밸런스 티켓 자리는 티켓이 숨어 있어도(주말·휴업일) 항상 비워 둔 것으로 계산 → 평일·주말 모두 '원래 위치'에 고정 (2026-10-24 하율 요청)
-  // 숨은 티켓은 .ghost(안 보이게 자리만 차지)로 잠깐 잰 뒤 바로 되돌림 — 화면엔 그려지지 않음
-  const tk = $('#play'), ghost = tk.hidden;
-  if (ghost) tk.classList.add('ghost');
-  const tkTop = tk.offsetParent ? tk.getBoundingClientRect().top + sy : Infinity, tkH = tk.offsetHeight;
-  if (ghost) tk.classList.remove('ghost');
-  if (tkH) TK_H = Math.max(TK_H, tkH);
-  if (isFinite(tkTop)) bot = Math.min(bot, tkTop - Math.max(0, TK_H - tkH));   // 내용이 아직 비어 키가 작으면 마지막으로 잰 키만큼
+  // 숨은 요소는 잴 수 없으므로(전역 [hidden]{display:none!important}) 티켓 자리를 '첫 화면 아래 끝 - 티켓 아래 여백 - 티켓 키'로 계산.
+  // 티켓 키는 보였을 때 잰 값을 기억(localStorage), 한 번도 못 쟀으면 기본값 146px(1512×862에서 실측)
+  const tk = $('#play');
+  if (!tk.hidden && tk.offsetHeight) { TK_H = tk.offsetHeight; store.set('tk_h', TK_H); }
+  if (!TK_H) TK_H = +store.get('tk_h', 0) || 146;
+  const tkGap = parseFloat(getComputedStyle(tk).bottom) || 60;
+  bot = Math.min(bot, HERO.getBoundingClientRect().bottom + sy - tkGap - TK_H);
   const dn = $('#goDown'); if (dn.offsetParent) bot = Math.min(bot, dn.getBoundingClientRect().top + sy);
   bot -= 14;
   // 세로: 헤더 아래 ~ 티켓 위 빈 공간의 가운데에 시계 묶음(말풍선~상태 줄)의 가운데 — 원래 규칙 그대로
