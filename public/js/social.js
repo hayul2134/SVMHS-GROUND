@@ -2,7 +2,7 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, RAR } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA_ALL, RAR } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 
@@ -495,7 +495,7 @@ function openEdit() {
 // 출석 보상 칸: 해금된 건 고를 수 있고, 아직이면 흐리게 + 자물쇠(누르면 필요한 일수 안내)
 const attHave = r => r.by === 'gacha' ? !!S.me?.gc?.own?.[r.v] : rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
 // 스티커 = 출석 보상 스티커 + 뽑기 스티커(by 'gacha')
-const GC_STK = GACHA.map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
+const GC_STK = GACHA_ALL.map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
 const rwList = kind => kind === 'sticker' ? [...ATT.lockedOf('sticker'), ...GC_STK] : ATT.lockedOf(kind);
 const lockMsg = b => b.dataset.by === 'gacha' ? '뽑기에서 나오는 스티커예요 — 서비스 › 뽑기에서 뽑아 보세요' : `${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`;
 // 꾸미기 목록 보기: 모두 보기 / 보유한 것만 보기 (이 기기에 기억 edit_view)

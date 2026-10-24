@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, RAR, GC, gcHave, gcEarn, gcRar } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
@@ -147,7 +147,7 @@ const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 뽑기: 가진 스티커 {값: 나온 횟수}. 개발자는 전부 가진 것으로
 const gcOwn = u => { try { const o = JSON.parse(u?.gc_own || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
-const gcStk = u => isAdm(u) ? GACHA.map(g => g.v) : gcHave(gcOwn(u));
+const gcStk = u => isAdm(u) ? GACHA_ALL.map(g => g.v) : gcHave(gcOwn(u));
 // 쓸 수 있는 보상 스티커 = 출석 보상 스티커 + 뽑기 스티커
 const rwStk = u => [...unlockedOf(effBest(u), effTotal(u), 'sticker'), ...gcStk(u)];
 const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.map(g => [g.v, 1])) : gcOwn(u) });

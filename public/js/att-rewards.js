@@ -94,16 +94,22 @@ export const rwName = r => r.kind === 'color' ? `‘${COLOR_NAME[r.v]}’` : r.k
    확률은 화면에 그대로 공개. 천장: 희귀 이상이 10번 연속 안 나오면 10번째는 희귀 확정, 전설은 50번째 확정. 5연뽑은 희귀 이상 1개 확정.
    이미 가진 스티커가 또 나오면 조각(일반 1 · 희귀 3 · 전설 10) → 조각 10개 = 뽑기권 1장. 돈으로 사는 것 없음(사이트 수익 없음). */
 export const GACHA = [
+  // 일반(2026-10-24 하율: "진짜로 학생이 가지고 있을 만한 물건") — 필통·가방·책상 위 물건
   { v: 'r:eraser', rar: 1 }, { v: 'r:hilite', rar: 1 }, { v: 'r:postit', rar: 1 }, { v: 'r:ruler', rar: 1 },
-  { v: 'r:tape', rar: 1 }, { v: 'r:sdcard', rar: 1 }, { v: 'r:banana', rar: 1 }, { v: 'r:earbud', rar: 1 },
-  { v: 'r:popcorn', rar: 2 }, { v: 'r:ramen', rar: 2 }, { v: 'r:mic', rar: 2 }, { v: 'r:joypad', rar: 2 },
-  { v: 'r:gholo', rar: 3 }, { v: 'r:diploma', rar: 3 },
+  { v: 'r:sharp', rar: 1 }, { v: 'r:correct', rar: 1 }, { v: 'r:tape', rar: 1 }, { v: 'r:earbud', rar: 1 },
+  // 희귀 — 쉬는 시간·매점
+  { v: 'r:popcorn', rar: 2 }, { v: 'r:ramen', rar: 2 }, { v: 'r:banana', rar: 2 }, { v: 'r:mic', rar: 2 }, { v: 'r:joypad', rar: 2 },
+  // 전설 — 학생들이 진짜 갖고 싶어 할 것
+  { v: 'r:gholo', rar: 3 }, { v: 'r:diploma', rar: 3 }, { v: 'r:phone', rar: 3 }, { v: 'r:sneaker', rar: 3 }, { v: 'r:ticket', rar: 3 }, { v: 'r:laptop', rar: 3 },
 ];
-Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포스트잇', ruler: '자', tape: '마스킹테이프', sdcard: 'SD 카드', banana: '바나나우유', earbud: '무선 이어폰', popcorn: '팝콘', ramen: '컵라면', mic: '마이크', joypad: '게임패드', gholo: '홀로그램 G', diploma: '졸업장' });
+// 뽑기에서 빠진 스티커: 이미 뽑은 사람은 계속 가지고 쓰지만 더는 안 나오고 도감에도 안 보임
+export const GACHA_OLD = [{ v: 'r:sdcard', rar: 1 }];
+export const GACHA_ALL = [...GACHA, ...GACHA_OLD];
+Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포스트잇', ruler: '자', tape: '마스킹테이프', sdcard: 'SD 카드', banana: '바나나우유', earbud: '무선 이어폰', sharp: '샤프', correct: '수정테이프', popcorn: '팝콘', ramen: '컵라면', mic: '마이크', joypad: '게임패드', gholo: '홀로그램 G', diploma: '졸업장', phone: '스마트폰', sneaker: '한정판 운동화', ticket: '콘서트 티켓', laptop: '노트북' });
 export const RAR = { 1: { n: '일반', p: 75 }, 2: { n: '희귀', p: 21 }, 3: { n: '전설', p: 4 } };   // p: % (합 100)
 export const GC = { start: 3, max: 99, pityRare: 10, pityLeg: 50, shard: { 1: 1, 2: 3, 3: 10 }, shardPerTix: 10, bonusEvery: 5 };
-export const gcRar = v => GACHA.find(g => g.v === v)?.rar || 0;
+export const gcRar = v => GACHA_ALL.find(g => g.v === v)?.rar || 0;
 // 가진 뽑기 스티커 목록: own = {'r:eraser': 2, …} (나온 횟수)
-export const gcHave = own => GACHA.filter(g => own && own[g.v] > 0).map(g => g.v);
+export const gcHave = own => GACHA_ALL.filter(g => own && own[g.v] > 0).map(g => g.v);
 // 출석 하루에 받는 뽑기권: 1 + 연속 5일마다 1 + 기념일 1
 export const gcEarn = cur => 1 + (cur % GC.bonusEvery === 0 ? 1 : 0) + (MILESTONES.includes(cur) ? 1 : 0);
