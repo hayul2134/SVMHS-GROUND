@@ -7,7 +7,8 @@ import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 import { ffOn } from './flags.js';
-import { TIERS, tierOfK } from './att-rewards.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
+import { TIERS, tierOfK } from './att-rewards.js';
+import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -287,7 +288,7 @@ function profileHtml(d) {
   const dep = !isDev(u) && u.cls ? [null, ['con', '콘텐츠과', 'clap'], ['con', '콘텐츠과', 'clap'], ['med', '미디어과', 'palette'], ['med', '미디어과', 'palette'], ['pro', '프로듀스과', 'cut'], ['pro', '프로듀스과', 'cut']][+u.cls] : null;
   const chips = [classTxt(u) && `<span class="pi-c pi-cls">${ic('book')}${esc(classTxt(u))}</span>`,
     dep && `<span class="pi-c pi-dep d-${dep[0]}">${ic(dep[2])}${dep[1]}</span>`,
-    u.club && `<span class="pi-c pi-club">${ic('cam')}${esc(u.club)}<small>동아리</small></span>`].filter(Boolean).join('');
+    u.club && `<span class="pi-c pi-club">${clubLogo(u.club, 'pi-logo') || ic('cam')}${esc(u.club)}<small>동아리</small></span>`].filter(Boolean).join('');
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
@@ -493,8 +494,13 @@ function openEdit() {
       ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0">' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
         <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: CLS_N }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>`}
       <div class="two"><label>인스타 아이디<span class="fld at ig"><span class="pre" aria-hidden="true">@</span><input name="insta" maxlength="60" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="선택" value="${esc(u.insta || '')}"></span></label>
-      <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label></div>
+      </div>
       <small class="hint">인스타 아이디를 적으면 프로필에 버튼이 생겨요.${isDev(u) ? ' 개발자 계정은 학년·반이 표시되지 않아요.' : ''}</small>
+      <fieldset class="clubpick"><legend>동아리 <small>고르면 프로필에 로고로 보여요</small></legend><div class="cp-grid">
+        <label class="cp-i none"><input type="radio" name="club" value="" ${u.club ? '' : 'checked'}><span><i class="cp-x" aria-hidden="true">없음</i><b>없음</b></span></label>
+        ${CLUBS.map(([k, n]) => `<label class="cp-i"><input type="radio" name="club" value="${esc(n)}" ${u.club === n ? 'checked' : ''}><span><img src="/clubs/${k}.webp" alt="" loading="lazy" width="128" height="128"><b>${esc(n)}</b></span></label>`).join('')}
+        ${u.club && !clubOf(u.club) ? `<label class="cp-i"><input type="radio" name="club" value="${esc(u.club)}" checked><span><i class="cp-x" aria-hidden="true">${esc(u.club.slice(0, 2))}</i><b>${esc(u.club)}</b></span></label>` : ''}
+      </div></fieldset>
       </div>
       <div class="ed-pane" data-pane="face">
       ${viewSeg}
