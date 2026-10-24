@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, isHidden, FX, objName, SHN, RK, rkOf, rkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -347,7 +347,7 @@ const ROUTES = {
     if (isBad(name, body.bio, body.mood, body.club, isAdm(me) ? body.title : '')) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
-    const ub = k => k === 'sticker' ? rwStk(me) : [...unlockedOf(effBest(me), effTotal(me), k), ...(k === 'title' && gcDone(gcOwn(me)) ? [GC_TITLE] : []), ...(k === 'title' && gcOwn(me)['r:fxkey'] > 0 ? [HOME_TITLE] : [])];   // 스티커는 뽑기 스티커도
+    const ub = k => k === 'sticker' ? rwStk(me) : [...unlockedOf(effBest(me), effTotal(me), k), ...(k === 'title' && gcDone(gcOwn(me)) ? [GC_TITLE] : []), ...(k === 'title' && gcOwn(me)['r:fxkey'] > 0 ? [HOME_TITLE] : []), ...(k === 'title' && (gcOwn(me)[HOME_MARK] > 0 || gcOwn(me)['r:fxkey'] > 0) ? [HOME_TITLE2] : [])];   // 스티커는 뽑기 스티커도
     // 예전 보상 이름(r:lion 등)은 새 이름으로 바꿔서 검사 (2026-10-24 그림 교체)
     body.avatar = rwNorm(body.avatar);
     if (Array.isArray(body.stickers)) body.stickers = body.stickers.map(rwNorm);
@@ -843,8 +843,11 @@ const ROUTES = {
     const newBest = allPrev.b == null || v < allPrev.b;
     tierMemo.clear();
     // 히든 보상(2026-10-25 하율): 100,000m에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
-    let first = false;
+    let first = false, arrived = false;
     if (game === 'home' && v === HOME_MAX - GOAL && !isAdm(me)) {
+      // 도착한 사람 모두: 칭호 '하교 성공' (처음 한 번만 표시)
+      { const fr = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(me.id).first(), o = gcOwn(fr);
+        if (!(o[HOME_MARK] > 0)) { arrived = true; o[HOME_MARK] = 1; await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2').bind(JSON.stringify(o), me.id).run(); } }
       const won = await db.prepare("INSERT INTO settings (k, v) VALUES ('home_first', ?1) ON CONFLICT (k) DO NOTHING RETURNING k")
         .bind(JSON.stringify({ uid: me.id, at: Date.now() })).first();
       if (won) {
@@ -866,7 +869,7 @@ const ROUTES = {
       }
     }
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, arrived, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {

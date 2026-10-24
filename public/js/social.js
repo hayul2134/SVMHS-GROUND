@@ -3,7 +3,7 @@ import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
 import { wearOf, wearSvg } from './wear.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, gcDone, SHN, RK, rkOf } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 import { ffOn } from './flags.js';
@@ -302,7 +302,7 @@ function profileHtml(d) {
     u.club && `<span class="pi-c pi-club">${clubLogo(u.club, 'pi-logo') || ic('cam')}${esc(u.club)}<small>동아리</small></span>`].filter(Boolean).join('');
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
-  const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
+  const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}${u.title === HOME_TITLE ? ' first' : ''}"><span>${ui('tag', 'ic')}${ttlHtml(u.title)}</span></p>` : '';
   const tch = tierChips(d.tier);
   const crowns = (d.crowns || []).map(g => `<span class="crown">${ic('crown')}${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
@@ -473,7 +473,7 @@ function pvHtml(u, st) {
         <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
         <div class="pv-id">
           ${dev ? av({ handle: ADMIN_HANDLE }, 'big', avWear(fx.masc)).replace('<span class="av', '<span data-pv="av co" class="av') : `<span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}${avWear(fx.masc)}</span>`}
-          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : dev ? `<p class="pv-sub" data-pv="title"><span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
+          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}${st.title === HOME_TITLE ? ' first' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${ttlHtml(st.title)}</span></p>` : dev ? `<p class="pv-sub" data-pv="title"><span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
         </div>
       </div>
       <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm"><span class="pv-ap">${t.getHours() < 12 ? '오전' : '오후'}</span>${hm}${dk}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small></div>
@@ -717,10 +717,13 @@ function stkTray(btn, onPick) {
   setTimeout(() => { document.addEventListener('pointerdown', close, true); document.addEventListener('keydown', close, true); });
   t.onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; t.remove(); off(); onPick(b.dataset.v); };
 }
+// 칭호 글자: 첫 10만 m 도착자 칭호는 '인류 최초' 부분을 금빛 도장으로 강조
+const ttlHtml = t => t === HOME_TITLE ? `<em class="t-first">${esc(HOME_FIRST)}</em>${esc(HOME_TITLE2)}` : esc(t);
 function titleOpts(cur) {
   const have = ATT.lockedOf('title').filter(attHave), gcT = gcDone(S.me?.gc?.own);   // 뽑기 시리즈 완성 칭호
-  const hT = S.me?.gc?.own?.['r:fxkey'] > 0;   // 히든 칭호: 가진 사람만 보임(잠긴 칸으로도 안 보여 줌)
-  return `<option value="">없음</option>${hT ? `<option value="${esc(HOME_TITLE)}" ${HOME_TITLE === cur ? 'selected' : ''}>${esc(HOME_TITLE)}</option>` : ''}${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}`;
+  const own = S.me?.gc?.own || {}, hT = own['r:fxkey'] > 0, h2 = hT || own[HOME_MARK] > 0;   // 히든 칭호: 가진 사람만 보임(잠긴 칸으로도 안 보여 줌)
+  const opt = t => `<option value="${esc(t)}" ${t === cur ? 'selected' : ''}>${esc(t)}</option>`;
+  return `<option value="">없음</option>${hT ? opt(HOME_TITLE) : ''}${h2 ? opt(HOME_TITLE2) : ''}${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}`;
 }
 
 /* ===== 계정 설정 ===== */
@@ -1293,8 +1296,9 @@ async function playHome() {
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
         if (no !== runNo || !$('#hrMsg')) return;
         $('#hrMsg').innerHTML = r.first ? `<b>히든 보상!</b> 처음으로 집에 온 단 한 사람 — 착용 소품 ‘집 열쇠’ · 칭호 ‘${esc(HOME_TITLE)}’를 받았어요`
+          : r.arrived ? `<b>집 도착!</b> 칭호 ‘${esc(HOME_TITLE2)}’를 받았어요 — 프로필 꾸미기에서 달 수 있어요`
           : (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
-        if (r.first) refreshMe();
+        if (r.first || r.arrived) refreshMe();
         if (r.cheer) cheer('home', r.rank, r.best);
         paintRk(true);
       }).catch(e => { if (no === runNo && $('#hrMsg')) $('#hrMsg').textContent = e.message; });
