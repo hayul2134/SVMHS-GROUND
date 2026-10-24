@@ -53,7 +53,7 @@ export function flame(cls = '', o = {}) {
   const bit = (d, k) => `<g class="bit ${k}"><path d="${d}" transform="translate(.8 1.4)" fill="${c[7]}" stroke="${INKC}" stroke-width="1.8" stroke-linejoin="round"/><path d="${d}" fill="url(#fb${i})" stroke="${INKC}" stroke-width="1.8" stroke-linejoin="round"/></g>`;
   return `<svg class="flm ${cls}${o.off ? ' off' : ''}" viewBox="-1 -1 50 62" aria-hidden="true">
     <defs>${lg('fa', c[0], c[1])}${lg('fb', c[2], c[3])}${lg('fc', c[4], c[5])}</defs>
-    <g class="sps"><path class="sp s1" d="${F_BIT1}" fill="${c[2]}" stroke="${INKC}" stroke-width="1.6" transform="translate(-9 14) scale(.8)"/><path class="sp s2" d="${F_BIT2}" fill="${c[0]}" stroke="${INKC}" stroke-width="1.6" transform="translate(6 6)"/><path class="sp s3" d="${F_BIT1}" fill="${c[4]}" stroke="${INKC}" stroke-width="1.6" transform="translate(-14 2) scale(.7)"/></g>
+    <g class="sps"><g transform="translate(-9 14) scale(.8)"><path class="sp s1" d="${F_BIT1}" fill="${c[2]}" stroke="${INKC}" stroke-width="1.6"/></g><g transform="translate(6 6)"><path class="sp s2" d="${F_BIT2}" fill="${c[0]}" stroke="${INKC}" stroke-width="1.6"/></g><g transform="translate(-14 2) scale(.7)"><path class="sp s3" d="${F_BIT1}" fill="${c[4]}" stroke="${INKC}" stroke-width="1.6"/></g></g>
     <g class="fw">
       <path class="fx" d="${OUT}" transform="translate(1.2 2.2)" fill="${c[7]}" stroke="${INKC}" stroke-width="2.2" stroke-linejoin="round"/>
       <g class="fl"><path class="l1" d="${OUT}" fill="url(#fa${i})"/><path class="l2" d="${MID}" fill="url(#fb${i})"/><path class="l3" d="${IN}" fill="url(#fc${i})"/><path class="l4" d="${F_CORE}" fill="${c[6]}"/>
@@ -95,7 +95,9 @@ function paintChip() {
 // 불꽃 한 번 타오르기 (애니메이션이 끝나면 클래스를 떼서 가만히)
 export function burn(el, delay = 0) {
   if (!el || reduce()) return;
-  setTimeout(() => { el.classList.remove('burn'); void el.getBoundingClientRect(); el.classList.add('burn'); setTimeout(() => el.classList.remove('burn'), 2200); }, delay);
+  // 이미 그려진 불꽃을 기다렸다가 0%(바닥에 납작)로 줄이면 '툭 떨어졌다가' 다시 크는 것처럼 보임 → 기다리는 동안도 시작 모양(꺼진 상태)으로 둠
+  el.classList.add('pre');
+  setTimeout(() => { el.classList.remove('burn'); void el.getBoundingClientRect(); el.classList.add('burn'); el.classList.remove('pre'); setTimeout(() => el.classList.remove('burn'), 2200); }, delay);
 }
 
 /* ----- 오늘 출석 (자동) ----- */

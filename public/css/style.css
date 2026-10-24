@@ -1828,6 +1828,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .flm.fsm .bit,.flm.cf .bit,.flm.fsm .fh,.flm.cf .fh{display:none}   /* 아주 작을 땐 불씨·광택 빼서 또렷하게 */
 /* 접속했을 때 한 번: 활활 (ART_GUIDE '불꽃 애니메이션') — 예비동작(눌림) → 솟음 → 바람 세 번(진폭 줄어듦, 가운데·속불은 늦게 따라옴)
    → 끝 조각이 떨어져 나가 위로 사라짐 → 제자리에서 멈춤. 크기만 키웠다 줄이지 않고 기울기·밀림·흐름으로 표현 */
+.flm.pre .fw{opacity:0;transform:translateY(4%) scale(.25,.08)}.flm.pre .bit{opacity:0}   /* burn() 대기 중 = 타오르기 시작 모양 */
 .flm.burn .fw{animation:burnW 1.8s cubic-bezier(.35,0,.25,1) both}
 .flm.burn .l2{animation:burnM 1.8s .07s cubic-bezier(.35,0,.25,1) both}
 .flm.burn .l3,.flm.burn .l4{animation:burnI 1.8s .13s cubic-bezier(.35,0,.25,1) both}
