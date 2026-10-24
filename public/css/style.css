@@ -3812,3 +3812,5 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .hr-snd svg{width:26px;height:26px}
 .hr-snd:not(.on){color:var(--sub)}
 .hr-snd.on{background:var(--yellow);color:var(--onc,#1d2a3a)}
+/* 새 기능 미리보기 (flags.js): 개발자 계정이 아니면 data-ff 요소 숨김 — 월요일 공개 때 data-ff를 지움 */
+html:not(.dev-pv) [data-ff]{display:none!important}

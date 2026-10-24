@@ -6,6 +6,7 @@ import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, gcDone, SHN, RK, rkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
+import { ffOn } from './flags.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -112,6 +113,7 @@ async function refreshMe() {
   try {
     const r = await call('me');
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
+    document.documentElement.classList.toggle('dev-pv', isDev(S.me));   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();

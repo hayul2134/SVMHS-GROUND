@@ -5,18 +5,22 @@
 | 종류 | 예 | 반영 | 공지 |
 |---|---|---|---|
 | **작은 수정** | 버그 수정, 편의성 개선 등 **원래 있던 것**을 조금 고치는 것 | `main`에 바로 반영 | 반영 직후 바로 공지(D) → 하율에게 보고 |
-| **큰 업데이트** | 새 기능·새 화면·새 게임 등 **무언가를 추가하거나 새로 만드는 것** | `next` 브랜치에 모아 둠 → **월요일 06:00**에 `main`으로 합침 | 월요일 06:00 반영과 **동시에** 공지(A→B→C) |
+| **큰 업데이트** | 새 기능·새 화면·새 게임 등 **무언가를 추가하거나 새로 만드는 것** | `main`에 바로 올리되 **미리보기 깃발**(`public/js/flags.js`)로 **개발자 계정에서만** 켜짐 → **월요일 06:00**에 깃발을 빼서 모두에게 공개 | 월요일 06:00 공개와 **동시에** 공지(A→B→C) |
 
 헷갈리면: 학생이 "새로 생겼다"고 느낄 변화면 큰 업데이트, "원래 있던 게 나아졌다/고쳐졌다"면 작은 수정. 그래도 애매하면 하율에게 묻는다.
 
-## 브랜치
-- `main` = 실제 사이트(push하면 Cloudflare Pages 자동 배포). 작은 수정만 바로 올림.
-- `next` = 다음 월요일에 나갈 큰 업데이트 모음. 없으면 `git push origin main:next`로 만든다. 작업 전 `git fetch origin main next && git checkout -B next origin/next && git merge -q origin/main`(작은 수정이 next에도 들어가게).
-- next를 미리 보려면 Cloudflare 미리보기 주소 `https://next.svmhs-ground.pages.dev`(계정명 들어간 주소 금지 규칙과 무관).
+## 미리보기 깃발 (2026-10-25 하율 결정: "내 화면에서는 바로, 다른 사용자는 공지와 함께")
+- 브랜치를 나누지 않는다(`next` 브랜치 방식 폐지). 큰 업데이트도 `main`에 바로 올린다.
+- 새 기능마다 `public/js/flags.js`의 `PREVIEW_LIST`에 `['이름', '한 줄 설명', '추가한 날짜']`를 넣고:
+  - 화면(HTML·JS로 만드는 새 요소)에 `data-ff="이름"` → 개발자가 아니면 CSS로 숨김(`html:not(.dev-pv) [data-ff]`).
+  - 기존 동작을 바꾸는 JS는 `ffOn('이름', isDev(S.me))`로 분기, 서버는 `ffOn('이름', isAdm(me))`(서버도 flags.js를 import).
+  - 커밋 메시지 맨 앞에 `[미리보기:이름]`을 붙인다(초안 근거로 씀).
+- 미리보기 중인 기능을 고치는 건 공지하지 않는다(아직 학생에게 안 보임).
+- 하율 화면(개발자 계정)에서는 push 후 1~2분이면 바로 보인다.
 
 ## 파일
 - 게시본: `public/patchnotes.json` — **최신이 맨 앞**인 배열 `{ id, date, title, items, until }`. 작은 수정 공지와 월요일 공지가 모두 여기 쌓임.
-- 월요일 초안: `tools/patchnotes/draft-YYYY-wWW.json` `{ "id", "date", "title", "items": [...], "approved": false }` (next 브랜치가 아니라 main에 커밋 — tools/는 사이트에 노출되지 않음).
+- 월요일 초안: `tools/patchnotes/draft-YYYY-wWW.json` `{ "id", "date", "title", "items": [{ "t": "문구", "ff": "깃발 이름" }], "approved": false }` (main에 커밋 — tools/는 사이트에 노출되지 않음). 게시할 때 items는 문구 배열로 바꿔 넣는다.
 
 ## D. 작은 수정 공지 (반영 직후, 그때그때)
 1. 수정을 main에 push하고 배포 반영을 확인한 뒤 공지한다.
@@ -25,23 +29,22 @@
 4. 컨펌을 기다리지 않는다(하율 결정: 반영 후 보고). 하율이 문구를 고치라고 하면 그대로 고쳐 다시 올린다.
 
 ## A. 월요일 초안 (일요일 21:00)
-1. `git fetch -q --depth=1000 origin main next`
-2. 근거: `git log origin/main..origin/next --format='%ad %s%n%b' --date=format:'%m-%d %H:%M'` (next에만 있는 = 월요일에 나갈 것). 애매하면 `git show --stat`. 추측 금지.
-3. next에 새 커밋이 없으면 초안을 만들지 않고 "이번 주 월요일 업데이트 없음"만 보고.
-4. 아래 '넣고 뺄 것'·'문구 스타일'대로 작성. title은 '날짜 요일 패치'(예: `10월 26일 월요일 패치 ✨`). 커밋(`초안: 업데이트 소식 YYYY-wWW`) → main에 push.
-5. 이 채팅에 기간·제목·번호 목록과 안내를 보냄: "이대로 올릴까요? '올려' / 'N번 빼' / 'N번 이렇게 바꿔'처럼 답해 주세요. 월요일 오전 6시 전까지 컨펌이 없으면 업데이트와 공지 모두 미루고 다음 컨펌을 기다립니다."
+1. `git pull` 후 `public/js/flags.js`의 `PREVIEW_LIST`를 본다 — 여기 남아 있는 것 = 월요일에 공개할 것.
+2. 근거: `git log --since='8 days ago' --grep='\[미리보기:' --format='%ad %s%n%b' --date=format:'%m-%d %H:%M'`로 각 기능의 최종 상태 확인. 애매하면 `git show --stat`. 추측 금지.
+3. `PREVIEW_LIST`가 비어 있으면 초안을 만들지 않고 "이번 주 월요일 업데이트 없음"만 보고.
+4. 아래 '넣고 뺄 것'·'문구 스타일'대로 작성(항목마다 어느 깃발인지 `"ff": "이름"`을 함께 적음). title은 '날짜 요일 패치'(예: `10월 26일 월요일 패치 ✨`). 커밋(`초안: 업데이트 소식 YYYY-wWW`) → main에 push.
+5. 이 채팅에 기간·제목·번호 목록과 안내를 보냄: "이대로 올릴까요? '올려' / 'N번 빼' / 'N번 이렇게 바꿔'처럼 답해 주세요. 월요일 오전 6시 전까지 컨펌이 없으면 공개와 공지 모두 미루고 다음 컨펌을 기다립니다."
 
 ## B. 컨펌 처리 (하율이 답했을 때)
 - 요청대로 초안을 고치고, 올리라고 했으면 `"approved": true`로 커밋·푸시(`컨펌: 업데이트 소식 YYYY-wWW`).
-- 하율이 특정 기능을 빼라고 하면 그 기능은 이번 주에 내보내지 않는다(next에서 되돌리거나 다음 주로 미룸 — 하율에게 어느 쪽인지 확인).
+- 하율이 특정 항목을 빼라고 하면 그 깃발은 이번 주에 공개하지 않는다(깃발은 그대로 두고 다음 주로 미룸 — 기능을 아예 없앨지는 하율에게 확인).
 - "지금 바로 올려"라고 하면 C를 즉시 수행.
 
-## C. 월요일 반영 + 공지 (월요일 06:00)
-1. `approved: true` 초안이 없으면 **반영도 공지도 하지 않고** 끝냄(next는 그대로 둠). 보고: "컨펌된 업데이트 없음".
-2. 있으면 `git checkout -B main origin/main && git merge --no-ff origin/next -m "월요일 업데이트 YYYY-wWW"`. 충돌이 나면 멈추고 하율에게 보고.
-3. 같은 커밋 흐름에서 `public/patchnotes.json` 맨 앞에 `{id, date, title, items, until: 지금}` 추가, 초안 파일 삭제, JSON 검사 → 커밋 → pull --rebase → push(main). 기능과 공지가 한 번의 배포로 함께 나간다.
-4. `git push origin main:next --force-with-lease`로 next를 main과 맞춤.
-5. 1~3분 뒤 WebFetch로 `https://svmhs-ground.pages.dev/patchnotes.json`에 새 id가 보이는지 확인 → 이 채팅에 한 줄 보고.
+## C. 월요일 공개 + 공지 (월요일 06:00)
+1. `approved: true` 초안이 없으면 **공개도 공지도 하지 않고** 끝냄(깃발 그대로). 보고: "컨펌된 업데이트 없음".
+2. 있으면 초안 항목의 `ff` 이름들을 `PREVIEW_LIST`에서 지우고, 그 이름의 `data-ff="이름"` 속성을 모두 지운다(`grep -rn 'data-ff="이름"' public`). `ffOn('이름', …)` 분기는 남겨도 동작은 같지만, 가능하면 정리한다.
+3. 같은 커밋에서 `public/patchnotes.json` 맨 앞에 `{id, date, title, items, until: 지금}` 추가(items에서 `ff`는 빼고 문구만), 초안 파일 삭제, JSON·문법 검사(`node --input-type=module --check`) → 커밋 → pull --rebase → push(main). 공개와 공지가 한 번의 배포로 함께 나간다.
+4. 1~3분 뒤 WebFetch로 `https://svmhs-ground.pages.dev/patchnotes.json`에 새 id가 보이는지 확인 → 이 채팅에 한 줄 보고.
 
 ## 넣고 뺄 것 (2026-10-22 하율 결정: 사이트 관련 변경은 전부 넣고, 하율이 컨펌 때 고름)
 - **전부 넣음**: 그 기간 커밋 중 사이트와 관련된 변경 모두 — 학생 화면, 관리자 페이지·개발자 계정, 서버·성능·보안, 급식 그림 같은 데이터 작업까지.
