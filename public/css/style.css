@@ -3329,7 +3329,7 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .pv-clk small{font-size:10.5px;font-weight:900;color:var(--sub)}
 .pv-tm{font:900 40px/1 var(--num,inherit);letter-spacing:-.04em;color:var(--text);text-shadow:3px 3px 0 color-mix(in srgb,var(--pc,#7cc4f5) 55%,transparent)}
 .pv-clk.neon{background:var(--chip)}
-.pv-clk.neon .pv-tm{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:.075em var(--ne-tube);paint-order:stroke fill;text-shadow:none;filter:drop-shadow(0 0 1px var(--ne)) drop-shadow(0 0 4px var(--ne))}
+.pv-clk.neon .pv-tm{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:0;text-shadow:.0375em .0em 0 var(--ne-tube),.0346em .0144em 0 var(--ne-tube),.0265em .0265em 0 var(--ne-tube),.0144em .0346em 0 var(--ne-tube),.0em .0375em 0 var(--ne-tube),-.0144em .0346em 0 var(--ne-tube),-.0265em .0265em 0 var(--ne-tube),-.0346em .0144em 0 var(--ne-tube),-.0375em .0em 0 var(--ne-tube),-.0346em -.0144em 0 var(--ne-tube),-.0265em -.0265em 0 var(--ne-tube),-.0144em -.0346em 0 var(--ne-tube),-.0em -.0375em 0 var(--ne-tube),.0144em -.0346em 0 var(--ne-tube),.0265em -.0265em 0 var(--ne-tube),.0346em -.0144em 0 var(--ne-tube);filter:drop-shadow(0 0 1px var(--ne)) drop-shadow(0 0 4px var(--ne))}
 .pv-dk{position:absolute;width:32px;height:32px;display:grid;place-items:center;pointer-events:none}
 .pv-dk > *{width:32px !important;height:32px !important;display:block}
 .pv-dk.k1{left:-9px;top:-11px;transform:rotate(-12deg)}.pv-dk.k2{right:-9px;bottom:-11px;transform:rotate(10deg)}.pv-dk.k3{right:-9px;top:-11px;transform:rotate(12deg)}.pv-dk.k4{left:-9px;bottom:-11px;transform:rotate(-8deg)}.pv-dk.k5{left:50%;top:-14px;margin-left:-16px}
@@ -3379,10 +3379,10 @@ html[data-neon=pink]{--ne:#ff3fb4}html[data-neon=red]{--ne:#ff3448}html[data-neo
    안쪽은 살짝 색이 비치는 유리 느낌. 깜빡임(켤 때 한 번·가끔 한 글자)은 2차 그대로 */
 html{--ne-core:color-mix(in srgb,#fff 55%,var(--ne));--ne-tube:color-mix(in srgb,#fff 12%,var(--ne));--ne-deep:color-mix(in srgb,var(--ne) 70%,#2a0e3a)}
 html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{
-  color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:.075em var(--ne-tube);paint-order:stroke fill;   /* 속은 배경색 유리(글꼴 윤곽 겹침선 가림) + 바깥 절반만 보이는 관 */
-  text-shadow:none;animation:none;
+  color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:0;   /* 관 = 둥근 테두리: text-stroke는 모서리가 뾰족하게 튀어나와서(miter) 16방향 그림자 고리로 대신 그림(2026-10-25) */
+  text-shadow:.0375em .0em 0 var(--ne-tube),.0346em .0144em 0 var(--ne-tube),.0265em .0265em 0 var(--ne-tube),.0144em .0346em 0 var(--ne-tube),.0em .0375em 0 var(--ne-tube),-.0144em .0346em 0 var(--ne-tube),-.0265em .0265em 0 var(--ne-tube),-.0346em .0144em 0 var(--ne-tube),-.0375em .0em 0 var(--ne-tube),-.0346em -.0144em 0 var(--ne-tube),-.0265em -.0265em 0 var(--ne-tube),-.0144em -.0346em 0 var(--ne-tube),-.0em -.0375em 0 var(--ne-tube),.0144em -.0346em 0 var(--ne-tube),.0265em -.0265em 0 var(--ne-tube),.0346em -.0144em 0 var(--ne-tube);animation:none;
   filter:drop-shadow(0 0 .006em var(--ne-deep)) drop-shadow(0 0 .03em var(--ne)) drop-shadow(0 0 .08em color-mix(in srgb,var(--ne) 55%,transparent))}   /* 맨 앞 겹: 관 바깥 진한 테두리 → 크림 배경 위에서도 또렷 */
-html[data-ckfx=neon] .s-big .ap,html[data-ckfx=neon] .s-big .sec{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:.09em var(--ne-tube);paint-order:stroke fill;text-shadow:none}
+html[data-ckfx=neon] .s-big .ap,html[data-ckfx=neon] .s-big .sec{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:0;text-shadow:.045em .0em 0 var(--ne-tube),.0416em .0172em 0 var(--ne-tube),.0318em .0318em 0 var(--ne-tube),.0172em .0416em 0 var(--ne-tube),.0em .045em 0 var(--ne-tube),-.0172em .0416em 0 var(--ne-tube),-.0318em .0318em 0 var(--ne-tube),-.0416em .0172em 0 var(--ne-tube),-.045em .0em 0 var(--ne-tube),-.0416em -.0172em 0 var(--ne-tube),-.0318em -.0318em 0 var(--ne-tube),-.0172em -.0416em 0 var(--ne-tube),-.0em -.045em 0 var(--ne-tube),.0172em -.0416em 0 var(--ne-tube),.0318em -.0318em 0 var(--ne-tube),.0416em -.0172em 0 var(--ne-tube)}
 @media (prefers-reduced-motion:reduce){html[data-ckfx=neon] .s-big,html[data-ckfx=neon] .s-big *{animation:none !important}}
 /* 꾸미기 미리보기 시계도 같은 규칙 */
 /* 네온 색 고르기 */
