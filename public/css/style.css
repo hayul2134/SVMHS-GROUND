@@ -3342,15 +3342,15 @@ html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[
   position:relative;isolation:isolate;font-family:"Pretendard Variable",Pretendard,sans-serif;font-weight:250;letter-spacing:.02em;
   color:var(--ne-core);-webkit-text-stroke:0;text-shadow:var(--ne-glow);padding:.06em .2em .1em;animation:neOn 1.3s steps(1,end) both}
 /* 아크릴 판: 거의 검은 남보라 + 위쪽이 살짝 밝은 반사 + 판 안쪽으로 번진 색 + 벽(크림 배경)에 비친 빛 */
-html[data-ckfx=neon] .stage .s-big::before{content:"";position:absolute;inset:-.02em -.06em -.04em;z-index:-1;border-radius:.16em;
+html[data-ckfx=neon] .stage .s-big::before{content:"";position:absolute;inset:.13em -.06em .03em;z-index:-1;border-radius:.16em;
   background:linear-gradient(180deg,rgba(255,255,255,.07),transparent 38%),radial-gradient(120% 90% at 50% 55%,color-mix(in srgb,var(--ne) 16%,#120c1c),#0d0a14 70%);
   box-shadow:inset 0 0 0 2px rgba(255,255,255,.06),inset 0 0 .5em color-mix(in srgb,var(--ne) 22%,transparent),0 .05em 0 #000,0 0 .5em color-mix(in srgb,var(--ne) 30%,transparent),0 0 1.4em color-mix(in srgb,var(--ne) 18%,transparent)}
 /* 판 모서리 볼트 4개(스탠드오프) */
-html[data-ckfx=neon] .stage .s-big::after{content:"";position:absolute;inset:.05em .02em .03em;z-index:-1;pointer-events:none;
+html[data-ckfx=neon] .stage .s-big::after{content:"";position:absolute;inset:.17em -.03em .06em;z-index:-1;pointer-events:none;
   --b:radial-gradient(circle at center,#dfe5ee 0 32%,#8b95a3 45%,transparent 60%);
   background:var(--b) left top/.09em .09em no-repeat,var(--b) right top/.09em .09em no-repeat,var(--b) left bottom/.09em .09em no-repeat,var(--b) right bottom/.09em .09em no-repeat}
 html[data-ckfx=neon] .s-big .ap{color:var(--ne-core);text-shadow:var(--ne-glow);font-weight:300}
-html[data-ckfx=neon] .s-big .c{animation:neColon 2s steps(1,end) infinite;opacity:.95}   /* 콜론: 1초마다 아주 살짝 숨 쉼(관 하나가 따로 노는 느낌) */
+html[data-ckfx=neon] .s-big .c{animation:neColon 2s steps(1,end) infinite;color:color-mix(in srgb,#fff 45%,var(--ne));text-shadow:var(--ne-glow),0 0 .1em var(--ne)}   /* 콜론: 1초마다 아주 살짝 숨 쉼(관 하나가 따로 노는 느낌) */
 html[data-ckfx=neon] .s-big .n:nth-of-type(3){animation:neDip 11s steps(1,end) 3s infinite}   /* 가끔 한 글자만 지지직 */
 html[data-ckfx=neon] .s-big .sec{color:var(--ne-core);text-shadow:var(--ne-glow);font-weight:250}
 html[data-ckfx=neon] .stage .s-big.long,html[data-ckfx=neon] .stage .s-big.long2{font-weight:250}
