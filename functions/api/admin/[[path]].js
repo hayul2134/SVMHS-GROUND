@@ -6,7 +6,7 @@ import { defaultBalance, balDay } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
 const SESSION_H = 12;
-const GAMES = ['reaction', 'num25', 'cut'];
+const GAMES = ['reaction', 'num25', 'cut', 'home'];
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), { status, headers: { ...HEADERS, ...extra } });
 const err = (msg, status = 400) => json({ error: msg }, status);

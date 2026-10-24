@@ -2096,6 +2096,48 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-rw .art,.att-gift .art,.att-next .art,.stk .art{filter:drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff) drop-shadow(0 -1.6px 0 #fff) drop-shadow(1.5px 2px 0 rgba(23,48,72,.28))}
 @media (prefers-reduced-motion:reduce){.att-fire .halo,.att-burst{animation:none}.att-burst .cf{display:none}}
 
+/* ===== 나 집에 갈래! (픽셀 러너, social.js playHome · js/runner.js) ===== */
+.ptop.wide,.parea.wide{max-width:1000px}
+.parea.wide{justify-content:flex-start;padding-top:8px;overflow:auto}
+.hr{display:flex;flex-direction:column;gap:12px;position:relative}
+.hr-scr{position:relative;display:flex;align-self:center;max-width:100%;border:var(--bd);border-radius:18px;box-shadow:var(--sh);background:#8fd3ff;overflow:hidden;cursor:pointer;touch-action:none}
+.hr-scr canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.hr-ov{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:4px;text-align:center;pointer-events:none;background:linear-gradient(transparent 30%,rgba(255,255,255,.35))}
+.hr-ov b{font-family:var(--disp);font-weight:400;font-size:clamp(20px,5vw,44px);color:#fff;-webkit-text-stroke:2px #2a2846;paint-order:stroke;text-shadow:3px 3px 0 #2a2846;animation:hrBob 1.2s steps(2) infinite}
+.hr-ov span{font-weight:900;color:#2a2846;background:#fff;border:2px solid #2a2846;border-radius:10px;padding:3px 10px;font-size:14px}
+.hr-ov small{font-weight:800;color:#2a2846;font-size:13px;margin-top:2px;animation:hrBlink 1s steps(1) infinite}
+.hr-ov.dead{background:rgba(42,40,70,.18)}
+.hr-ov.dead b{animation:none;transform:rotate(-3deg)}
+@keyframes hrBob{50%{transform:translateY(-3px)}}
+@keyframes hrBlink{50%{opacity:0}}
+.hr-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hr-bar .btn .sic{width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:4px}
+.hr-keys{flex:1;min-width:200px;margin:0;color:var(--on-bg);font-weight:700;font-size:13px;opacity:.85}
+.hr-keys kbd{display:inline-block;font-weight:800;font-size:12px;line-height:1;padding:4px 7px;margin:0 2px;border:2px solid var(--ink);border-bottom-width:3px;border-radius:7px;background:var(--card);color:var(--ink)}
+.hr.on .hr-bar #hrDress{visibility:hidden}
+.hr-touch{display:none;gap:10px}
+.hr-touch .btn{flex:1;min-height:64px;font-size:18px;touch-action:none;-webkit-user-select:none;user-select:none}
+@media (pointer:coarse){.hr-touch{display:flex}.hr-keys{display:none}}
+@media (max-width:520px){.hr-ov span{font-size:11px;padding:2px 7px}.hr-ov small{font-size:11px}.hr-ov b{-webkit-text-stroke-width:1.5px;text-shadow:2px 2px 0 #2a2846}}
+.hr-dress{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:16px;padding:16px;background:var(--card);border:var(--bd);border-radius:20px;box-shadow:var(--sh);color:var(--text);animation:fade .15s}
+.hr-dress[hidden]{display:none}
+.hd-pv{display:flex;flex-direction:column;align-items:center;gap:10px}
+.hd-pv canvas{width:100%;max-width:200px;aspect-ratio:24/23;image-rendering:pixelated;background:linear-gradient(#cfeeff 78%,#e9e2d3 78%,#e9e2d3 80%,#d8cfbd 80%);border:var(--bd);border-radius:16px}
+.hd-frs{display:flex;gap:4px;background:var(--chip);border-radius:12px;padding:3px}
+.hd-frs button{padding:6px 10px;border-radius:9px;font-weight:800;font-size:13px;color:var(--sub)}
+.hd-frs button.on{background:var(--card);color:var(--text);box-shadow:0 0 0 2px var(--ink)}
+.hd-pv .row{display:flex;gap:8px}
+.hd-opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 16px;align-content:start}
+.hd-g p{margin:0 0 5px;font-weight:900;font-size:13px;color:var(--sub)}
+.hd-ch{display:flex;flex-wrap:wrap;gap:6px}
+.hd-sw{width:30px;height:30px;border-radius:9px;border:2px solid var(--ink);transition:transform .1s}
+.hd-sw.none{background:repeating-linear-gradient(45deg,var(--chip) 0 4px,var(--card) 4px 8px)}
+.hd-sw:hover{transform:translateY(-2px)}
+.hd-sw.on{box-shadow:0 0 0 2px var(--card),0 0 0 4.5px var(--accent);transform:scale(1.06)}
+.hd-tx{padding:6px 10px;border-radius:10px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-weight:800;font-size:13px}
+.hd-tx.on{background:var(--accent);color:#fff}
+@media (max-width:640px){.hr-dress{grid-template-columns:1fr}.hd-pv canvas{max-width:150px}.hd-opts{grid-template-columns:1fr}}
+
 /* ===== 스킨 (자동 생성: tools/skins/gen.py — 직접 고치지 말고 생성기를 고칠 것) =====
    html[data-skin=…]이 색 토큰만 덮어씀 → 밝음/어두움(data-theme)과 따로 조합됨. 기본(파랑)은 스킨 없음 */
 :root[data-skin="pink"]{--bg:hsl(340 58.5% 95%);--dot:hsl(340 54.6% 40% / 0.16);--card:#ffffff;--chip:hsl(340 62.4% 92%);--line:hsl(340 42.9% 83%);--ink:hsl(340 50% 17%);--text:hsl(340 50% 17%);--sub:hsl(340 19.5% 42%);--on-bg:hsl(340 50% 17%);--onc:hsl(340 50% 17%);--accent:hsl(340 78% 55%);--sky:hsl(340 78% 74%);--hero:hsl(340 78% 62%);--next:hsl(340 78% 80%);--pink:hsl(15 78% 82%);--violet:hsl(310 78% 80%)}

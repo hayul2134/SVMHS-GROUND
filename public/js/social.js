@@ -4,6 +4,7 @@ import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, RAR } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
+import { HOME_MAX } from './home-score.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -22,6 +23,8 @@ const GAMES = {
   reaction: { name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
   cut: { name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
+  // 나 집에 갈래!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
+  home: { name: '나 집에 갈래!', ic: 'home', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 최대한 멀리. 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
 };
 
 /* ===== 상태 ===== */
@@ -801,9 +804,9 @@ document.addEventListener('click', e => {
 
 /* ----- 게임 화면 ----- */
 let quitGame = null;
-function stage(title, html) {
+function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop"><b>${title}</b><button class="iconbtn" id="pQuit" data-tip="그만하기" data-tip-end aria-label="그만하기">✕</button></div><div class="parea" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="iconbtn" id="pQuit" data-tip="그만하기" data-tip-end aria-label="그만하기">✕</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   return $('#parea');
@@ -813,16 +816,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gameP
 
 let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, 한 판에 한 번)
 function play(game) {
+  quitGame?.(); quitGame = null;
   ticket = S.me ? call('start', { game }).then(r => r.ticket).catch(() => '') : null;
-  ({ reaction: playReaction, num25: playNum25, cut: playCut })[game]?.();
+  ({ reaction: playReaction, num25: playNum25, cut: playCut, home: playHome })[game]?.();
 }
 
 async function finish(game, value, detail = '', rounds = []) {   // rounds: 판마다의 기록 (서버가 다시 계산·검사)
   const g = GAMES[game], area = $('#parea'); if (!area) return;
+  area.classList.remove('wide'); $('#gamePlay .ptop')?.classList.remove('wide');
   area.innerHTML = `<div class="result"><p class="gem">${ic(g.ic)}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요!'}</p>
     <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">${ic('trophy')}랭킹</button></div></div>`;
   $('#again').onclick = () => play(game);
   $('#toRank').addEventListener('click', endPlay);
+  if (game === 'home') {   // 공룡 게임처럼 스페이스·↑로 바로 다시
+    const k = e => { if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'Enter') && !e.repeat && $('#again')) { e.preventDefault(); play(game); } };
+    setTimeout(() => { if ($('#again')) { document.addEventListener('keydown', k); quitGame = () => document.removeEventListener('keydown', k); } }, 350);
+  }
   if (!S.me) return;
   try {
     const r = await call('score', { game, value, rounds, ticket: await ticket });
@@ -919,6 +928,106 @@ function playCut() {
   };
   btn.addEventListener('pointerdown', e => { e.preventDefault(); if (running) stop(performance.now() - t0); });
   start();
+}
+
+/* 4) 나 집에 갈래!: 공룡 게임 방식 픽셀 러너 (js/runner.js) + 캐릭터 꾸미기 */
+let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
+async function playHome() {
+  const area = stage(ic('home') + ' 나 집에 갈래!', `<div class="hr" id="hr">
+      <div class="hr-scr" id="hrScr"><canvas id="hrCv" aria-label="게임 화면"></canvas>
+        <div class="hr-ov" id="hrOv"><b>나 집에 갈래!</b><span>종 쳤다! 장애물을 피해 집까지 달려요</span><small>${matchMedia('(pointer:coarse)').matches ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · ↑ · 화면 클릭으로 출발'}</small></div></div>
+      <div class="hr-touch"><button type="button" class="btn big" id="hrJ">점프</button><button type="button" class="btn big ghost" id="hrD">숙이기</button></div>
+      <div class="hr-bar"><button type="button" class="btn" id="hrDress">${ic('brush')}캐릭터 꾸미기</button>
+        <p class="hr-keys"><kbd>Space</kbd><kbd>↑</kbd> 점프 (길게 누르면 더 높이) · <kbd>↓</kbd> 숙이기</p>
+        <button type="button" class="btn ghost" id="hrSnd" aria-pressed="false">소리 끔</button></div>
+      <div class="hr-dress" id="hrDressBox" hidden></div>
+    </div>`, true);
+  if (!RUN) { try { RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!$('#hrCv')) return;   // 불러오는 사이 그만둠
+  const cv = $('#hrCv'), ov = $('#hrOv'), scr = $('#hrScr');
+  let char = RUN.loadChar(), sound = store.get('home_snd', false);
+  let best = store.get('home_best', 0);
+  const fit = () => {   // 320×104를 정수 배로 (좁으면 꽉 채움)
+    const w = $('#hr').clientWidth - 6, k = Math.floor(w / RUN.W);   // 테두리 빼고
+    cv.style.width = (k >= 2 ? k * RUN.W : w) + 'px';
+  };
+  let over = false;
+  const R = RUN.createRunner(cv, char, {
+    sound, best: () => best,
+    onStart() { ov.hidden = true; $('#hr').classList.add('on'); closeDress(); },
+    onOver(score, ms) {
+      over = true;
+      if (score > best) { best = score; store.set('home_best', best); }
+      ov.hidden = false; ov.classList.add('dead');
+      ov.innerHTML = `<b>앗, 집에 못 갔다…</b><span>${score.toLocaleString('ko-KR')}m 달렸어요</span>`;
+      setTimeout(() => {
+        if (!$('#hrCv')) return;
+        cleanup();
+        finish('home', HOME_MAX - Math.max(1, score), `<p class="rdet">${(ms / 1000).toFixed(1)}초 동안 ${score.toLocaleString('ko-KR')}m 달렸어요</p><p class="note center">스페이스·↑로 바로 다시</p>`, [Math.max(1, score), ms]);
+      }, 1100);
+    },
+  });
+  window.__home = R;   // 테스트용 (헤드리스 점검)
+  fit();
+  const ro = new ResizeObserver(fit); ro.observe($('#hr'));
+  // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)
+  const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck' };
+  const kd = e => {
+    const a = KEY[e.key]; if (!a || over || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea')) return;
+    e.preventDefault(); if (!e.repeat) R.input(a, true);
+  };
+  const ku = e => { const a = KEY[e.key]; if (a) R.input(a, false); };
+  document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
+  const hold = (el, a) => {
+    el.addEventListener('pointerdown', e => { e.preventDefault(); if (!over && $('#hrDressBox').hidden) R.input(a, true); try { el.setPointerCapture(e.pointerId); } catch {} });
+    const up = () => R.input(a, false);
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+    el.addEventListener('contextmenu', e => e.preventDefault());
+  };
+  hold(scr, 'jump'); hold($('#hrJ'), 'jump'); hold($('#hrD'), 'duck');
+  const blur = () => { R.input('jump', false); R.input('duck', false); };
+  window.addEventListener('blur', blur);
+  function cleanup() { R.destroy(); ro.disconnect(); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__home === R) delete window.__home; }
+  quitGame = cleanup;
+  const sndBtn = $('#hrSnd');
+  const paintSnd = () => { sndBtn.textContent = sound ? '소리 켬' : '소리 끔'; sndBtn.setAttribute('aria-pressed', sound); };
+  paintSnd();
+  sndBtn.onclick = () => { sound = !sound; store.set('home_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
+
+  /* --- 캐릭터 꾸미기 --- */
+  const box = $('#hrDressBox');
+  let pvTimer = 0;
+  function closeDress() { box.hidden = true; clearInterval(pvTimer); $('#hr').classList.remove('dressing'); }
+  function paintDress() {
+    const sw = (o, i) => o.colors[i][0];
+    box.innerHTML = `<div class="hd-pv"><canvas id="hdCv" aria-label="내 캐릭터"></canvas><div class="hd-frs">${['run1', 'jump', 'duck1'].map((f, i) => `<button type="button" data-hf="${f}" class="${i ? '' : 'on'}">${['달리기', '점프', '숙이기'][i]}</button>`).join('')}</div>
+        <div class="row"><button type="button" class="btn ghost" id="hdRnd">무작위</button><button type="button" class="btn" id="hdDone">완료</button></div></div>
+      <div class="hd-opts">${RUN.OPTS.map(o => `<div class="hd-g"><p>${o.name}</p><div class="hd-ch">${o.colors
+        ? o.colors.map((c, i) => `<button type="button" class="hd-sw${char[o.k] === i ? ' on' : ''}${c[0] ? '' : ' none'}" data-hk="${o.k}" data-hv="${i}" data-tip="${c[1]}" aria-label="${o.name} ${c[1]}"${c[0] ? ` data-c="${c[0]}"` : ''}></button>`).join('')
+        : o.list.map(([v, t]) => `<button type="button" class="hd-tx${char[o.k] === v ? ' on' : ''}" data-hk="${o.k}" data-hv="${v}">${t}</button>`).join('')}</div></div>`).join('')}</div>`;
+    box.querySelectorAll('.hd-sw[data-c]').forEach(b => { b.style.background = b.dataset.c; });   // CSP: style 속성 대신 스크립트로
+    let fr = 'run1', tk = 0;
+    const pv = () => { const f = fr === 'run1' ? (tk++ % 2 ? 'run2' : 'run1') : fr === 'duck1' ? (tk++ % 2 ? 'duck2' : 'duck1') : fr; RUN.drawPreview($('#hdCv'), char, f); };
+    pv(); clearInterval(pvTimer); pvTimer = setInterval(() => { if (!$('#hdCv')) return clearInterval(pvTimer); pv(); }, 180);
+    box.onclick = e => {
+      const f = e.target.closest('[data-hf]');
+      if (f) { fr = f.dataset.hf; box.querySelectorAll('[data-hf]').forEach(x => x.classList.toggle('on', x === f)); pv(); return; }
+      const b = e.target.closest('[data-hk]');
+      if (b) {
+        const o = RUN.OPTS.find(x => x.k === b.dataset.hk);
+        char = { ...char, [o.k]: o.colors ? +b.dataset.hv : b.dataset.hv };
+        box.querySelectorAll(`[data-hk="${o.k}"]`).forEach(x => x.classList.toggle('on', x === b));
+        RUN.saveChar(char); R.setChar(char); pv(); return;
+      }
+      if (e.target.closest('#hdRnd')) { char = RUN.randomChar(); RUN.saveChar(char); R.setChar(char); const keep = fr; paintDress(); box.querySelector(`[data-hf="${keep}"]`)?.click(); return; }
+      if (e.target.closest('#hdDone')) { closeDress(); $('#hrDress').focus(); }
+    };
+  }
+  $('#hrDress').onclick = () => {
+    if (R.st.scene !== 'ready') return;
+    if (!box.hidden) return closeDress();
+    paintDress(); box.hidden = false; $('#hr').classList.add('dressing');
+  };
 }
 
 /* ===== 시작 ===== */

@@ -3,6 +3,7 @@
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
 import { rwNorm, GACHA, RAR, GC, gcHave, gcEarn, gcRar } from '../../../public/js/att-rewards.js';
+import { HOME_MAX, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
@@ -16,6 +17,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   reaction: { min: 140, max: 1500, play: 5000 },      // 반응속도 5번 평균 (매번 1초 이상 기다림)
   num25: { min: 5000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
+  home: { min: 1, max: HOME_MAX - 1, play: 1000 },     // 나 집에 갈래!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 function checkRounds(game, v, r, elapsed) {
@@ -32,6 +34,10 @@ function checkRounds(game, v, r, elapsed) {
     if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] !== 0) return '기록이 이상해요';
     for (let i = 1; i < 25; i++) if (n[i] - n[i - 1] < 60) return '기록이 이상해요';
     if (Math.abs(n[24] + pen - v) > 5 || elapsed < n[24]) return '기록이 이상해요';
+  } else if (game === 'home') {   // [거리 m, 달린 시간 ms]: 거리는 시간으로만 정해짐(home-score.js) + 실제로 흐른 시간보다 오래 달릴 수 없음
+    if (n.length !== 2) return '기록이 이상해요';
+    const [m, ms] = n;
+    if (m < 1 || ms < 300 || ms > 6 * 3600e3 || HOME_MAX - m !== v || scoreAt(ms) !== m || ms > elapsed + 1000) return '기록이 이상해요';
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5 || n.some(x => x < 0 || x > 1000) || sum !== v) return '기록이 이상해요';
   }
