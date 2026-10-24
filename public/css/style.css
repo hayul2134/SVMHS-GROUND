@@ -3256,41 +3256,48 @@ html[data-ckfx=neon] .s-big .sec{-webkit-text-stroke:0;text-shadow:0 0 8px #6fe3
 .hi.sub::before{content:"";position:absolute;left:28px;top:-2px;width:10px;height:22px;border-left:2px dashed var(--line);border-bottom:2px dashed var(--line);border-bottom-left-radius:8px;transform:translateX(-10px)}
 .hi.sub .mi{width:32px;height:32px;border-radius:10px}
 .hi.sub .mi svg{width:20px;height:20px}
-/* 프로필 꾸미기 실시간 미리보기(2026-10-24): 창 위에 붙어 있어서(sticky) 아래 칸을 고르면서 바로 확인 — 바뀐 부분은 반짝(.pv-hit) */
-.sheet .pv{position:sticky;top:-26px;z-index:5;margin:-26px -26px 4px;padding:14px 18px 12px;background:var(--card);border-bottom:2.5px solid var(--ink);box-shadow:0 8px 14px -10px rgba(15,34,54,.35);text-align:left}
-.pv-top{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
-.pv-top b{font-family:"Jua",sans-serif;font-weight:400;font-size:17px;flex:none}
-.pv-top small{flex:1;min-width:0;font-size:11px;font-weight:800;color:var(--sub);line-height:1.3}
-.pv-fold{flex:none;padding:3px 9px;border-radius:999px;border:2px solid var(--ink);background:var(--chip);font-family:inherit;font-size:11.5px;font-weight:900;line-height:1.2;color:var(--text);cursor:pointer}
+/* 프로필 꾸미기 실시간 미리보기(2026-10-24 · 2차: 더 크게, 실제 시계 글씨·켜 둔 뽑기 효과까지) — 창 위에 붙어 있음(sticky), 바뀐 부분은 반짝(.pv-hit) */
+.sheet .pv{position:sticky;top:-26px;z-index:5;margin:-26px -26px 6px;padding:14px 18px 14px;background:var(--card);border-bottom:2.5px solid var(--ink);box-shadow:0 10px 16px -12px rgba(15,34,54,.4);text-align:left}
+.pv-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.pv-top b{font-family:"Jua",sans-serif;font-weight:400;font-size:19px;flex:none}
+.pv-top small{flex:1;min-width:0;font-size:11.5px;font-weight:800;color:var(--sub);line-height:1.3}
+.pv-fold{flex:none;padding:4px 11px;border-radius:999px;border:2px solid var(--ink);background:var(--chip);font-family:inherit;font-size:12px;font-weight:900;line-height:1.2;color:var(--text);cursor:pointer}
 .pv-fold .c,.pv.fold .pv-fold .o{display:none}.pv.fold .pv-fold .c{display:inline}
-.pv.fold .pv-body{display:none}.pv.fold .pv-top{margin-bottom:0}
-.pv-body{display:grid;grid-template-columns:1fr 104px;gap:10px;align-items:stretch}
-.pv-card{position:relative;background:var(--card);border:2.5px solid var(--ink);border-radius:16px;overflow:hidden;box-shadow:3px 3px 0 var(--ink);min-width:0}
-.pv-card .pban{height:58px;border-bottom:2.5px solid var(--ink);overflow:hidden}
-.pv-card .pban .stk{font-size:20px}
-.pv-card .pban .stk .stka{width:1.25em;height:1.25em}
-.pv-card .pban .stk.s2{font-size:19px}
-.pv-hint{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:900;color:rgba(255,255,255,.95);text-shadow:0 1px 2px rgba(15,34,54,.5)}
-.pv-id{display:flex;align-items:center;gap:8px;padding:0 10px 9px;margin-top:-20px}
-.pv-id .av.big{width:52px;height:52px;flex:none;border:2.5px solid var(--ink);border-radius:50%;box-shadow:0 0 0 3px var(--card)}
-.pv-nm{min-width:0;padding-top:20px}
-.pv-name{margin:0;font-weight:900;font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px}
-.pv-name .rep .repa{width:18px;height:18px}
-.pv-nm .ptitle{margin:3px 0 0;font-size:11px}
-.pv-sub{margin:3px 0 0;font-size:11px;font-weight:800;color:var(--sub)}
-.pv-clk{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:112px;border:2.5px dashed color-mix(in srgb,var(--sub) 55%,transparent);border-radius:16px;background:var(--chip);padding:8px 4px}
-.pv-clk small{font-size:10px;font-weight:900;color:var(--sub)}
-.pv-tm{font:900 27px/1 var(--num,inherit);letter-spacing:-.03em;color:var(--text)}
-.pv-dk{position:absolute;width:26px;height:26px;display:grid;place-items:center;pointer-events:none}
-.pv-dk > *{width:26px !important;height:26px !important;display:block}
-.pv-dk.nil{border:2px dashed color-mix(in srgb,var(--sub) 45%,transparent);border-radius:8px;width:18px;height:18px}
-.pv-dk.k1{left:4px;top:4px;transform:rotate(-12deg)}.pv-dk.k2{right:4px;bottom:4px;transform:rotate(10deg)}.pv-dk.k3{right:4px;top:4px;transform:rotate(12deg)}.pv-dk.k4{left:4px;bottom:4px;transform:rotate(-8deg)}.pv-dk.k5{left:50%;top:4px;margin-left:-13px}
-.pv-dk.nil.k5{margin-left:-9px}
-.pv-clk small{order:2}
+.pv.fold .pv-body,.pv.fold .pv-fxs{display:none}.pv.fold .pv-top{margin-bottom:0}
+.pv-body{display:grid;grid-template-columns:minmax(0,1fr) 138px;gap:12px;align-items:stretch}
+.pv-card{position:relative;background:var(--card);border:2.5px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:4px 4px 0 var(--ink);min-width:0}
+.pv-card .pban{height:82px;border-bottom:2.5px solid var(--ink);overflow:hidden}
+.pv-card .pban .stk{font-size:26px}
+.pv-card .pban .stk .stka{width:1.2em;height:1.2em}
+.pv-card .pban .stk.s2{font-size:28px}
+.pv-hint{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(15,34,54,.55)}
+.pv-id{display:flex;align-items:flex-end;gap:10px;padding:0 12px 11px;margin-top:-28px}
+.pv-id .av.big{width:68px;height:68px;flex:none;border:3px solid var(--ink);border-radius:50%;box-shadow:0 0 0 3px var(--card)}
+.pv-nm{min-width:0;padding-bottom:2px}
+.pv-name{margin:0;font-weight:900;font-size:18px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.pv-name .rep .repa{width:22px;height:22px}
+.pv-nm .ptitle{margin:4px 0 0;font-size:11.5px}
+.pv-sub{margin:4px 0 0;font-size:11.5px;font-weight:800;color:var(--sub)}
+/* 시계: 첫 화면 큰 시계와 같은 글씨·그림자, 네온 효과를 켰으면 네온 */
+.pv-clk{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:130px;border:2.5px solid var(--ink);border-radius:18px;background:var(--bg,var(--chip));box-shadow:4px 4px 0 var(--ink);padding:10px 4px;overflow:visible}
+.pv-clk small{font-size:10.5px;font-weight:900;color:var(--sub)}
+.pv-tm{font:900 40px/1 var(--num,inherit);letter-spacing:-.04em;color:var(--text);text-shadow:3px 3px 0 color-mix(in srgb,var(--pc,#7cc4f5) 55%,transparent)}
+.pv-clk.neon{background:#1d1530}
+.pv-clk.neon small{color:#e8c9ff}
+.pv-clk.neon .pv-tm{color:#fff;-webkit-text-stroke:1.2px #ff4fd8;text-shadow:0 0 5px #ff7ae2,0 0 14px #ff4fd8,3px 3px 0 color-mix(in srgb,#6fe3ff 55%,transparent)}
+.pv-dk{position:absolute;width:32px;height:32px;display:grid;place-items:center;pointer-events:none}
+.pv-dk > *{width:32px !important;height:32px !important;display:block}
+.pv-dk.k1{left:-9px;top:-11px;transform:rotate(-12deg)}.pv-dk.k2{right:-9px;bottom:-11px;transform:rotate(10deg)}.pv-dk.k3{right:-9px;top:-11px;transform:rotate(12deg)}.pv-dk.k4{left:-9px;bottom:-11px;transform:rotate(-8deg)}.pv-dk.k5{left:50%;top:-14px;margin-left:-16px}
+/* 켜 둔 뽑기 효과 칩 */
+.pv-fxs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px}
+.pv-fxs small{font-size:11px;font-weight:900;color:var(--sub);margin-right:2px}
+.pv-fx{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 4px;border-radius:999px;background:var(--chip);border:2px solid var(--ink);font-size:11.5px;font-weight:900}
+.pv-fx .pka{width:18px;height:18px}
 .pv-hit{animation:pvHit .6s ease-out}
 @keyframes pvHit{0%{filter:brightness(1.35);transform:scale(1.04)}100%{filter:none;transform:none}}
 .pv-dk.pv-hit,.pv-clk .pv-hit{animation:none}
 @media (prefers-reduced-motion:reduce){.pv-hit{animation:none}}
+@media (max-width:460px){.pv-body{grid-template-columns:1fr}.pv-clk{min-height:96px}}
 
 /* ===== 서비스 카테고리 (2026-10-24): 게임 · 학교생활 · 보상 — 게임 아이콘을 누르면 그 게임 바로 시작 ===== */
 .svcat{width:100%;max-width:640px;margin:0 auto}
@@ -3318,3 +3325,4 @@ html[data-ckfx=neon] .s-big .sec{-webkit-text-stroke:0;text-shadow:0 0 8px #6fe3
 @media (max-width:560px){.svcat + .svcat{margin-top:26px}.cat-h h3{font-size:18px}.apps .gapp .ai{width:52px;height:52px;border-radius:15px}.apps .gapp .ai .sic{width:32px;height:32px}}
 .catgrid .app{text-align:center;word-break:keep-all;line-height:1.25}
 @media (max-width:380px){.appgrid.catgrid{gap:12px 6px}.app{font-size:11.5px}}
+.sheet.edw{max-width:560px}

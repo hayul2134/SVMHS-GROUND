@@ -2,7 +2,7 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, GC_TITLE, gcDone } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, GC_TITLE, gcDone } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 
@@ -70,7 +70,7 @@ const followBtn = u => u.isMe ? '' : `<button class="fbtn ${u.following ? 'on' :
 const needLogin = (msg) => `<div class="card soc-gate"><p class="gate-em">🔐</p><p><b>${msg}</b></p><p class="muted small">아이디만 있으면 1분이면 가입해요</p><button class="btn" data-go="me">로그인 / 가입하기</button></div>`;
 const offCard = () => `<div class="card soc-gate"><p class="gate-em">🛠️</p><p><b>소셜 기능을 준비하고 있어요</b></p><p class="muted small">곧 열려요! 조금만 기다려 주세요</p></div>`;
 
-function sheet(html) { $('#socSheet').classList.remove('wide', 'attw'); $('#socSheet').innerHTML = html; ctx.openModal('#mSoc'); }
+function sheet(html) { $('#socSheet').classList.remove('wide', 'attw', 'edw'); $('#socSheet').innerHTML = html; ctx.openModal('#mSoc'); }
 const closeSheet = () => ctx.closeModal($('#mSoc'));
 
 /* ===== 헤더 배지 · 주기적 확인 ===== */
@@ -413,22 +413,24 @@ function openMore(h) {
 // 꾸미기 미리보기 그림 — 실제 프로필 카드(배너 스티커·사진·배경 색·이름 옆 대표 스티커·칭호)와 첫 화면 시계(시계 스티커)를 작게
 // data-pv: 어떤 설정이 바꾸는 부분인지(av·co·st·rep·deco·name·title) → 바뀐 곳만 반짝
 function pvHtml(u, st) {
-  const dev = isDev(u), col = ALL_COLORS.includes(st.color) ? st.color : 'sky';
+  const dev = isDev(u), col = ALL_COLORS.includes(st.color) ? st.color : 'sky', fx = S.me?.gc?.fx || {};
   const t = new Date(), hm = `${t.getHours() % 12 || 12}:${String(t.getMinutes()).padStart(2, '0')}`;
   const stk = st.stickers.slice(0, st.max).map((v, i) => `<i class="stk ${STK_POS[i]}">${emo(v, 'stka')}</i>`).join('');
   const dk = st.deco.map((v, i) => `<i class="pv-dk k${i + 1}">${artOf(v, 'pka')}</i>`).join('');
-  const empty = Array.from({ length: Math.max(0, st.slots - st.deco.length) }, (_, i) => `<i class="pv-dk k${st.deco.length + i + 1} nil"></i>`).join('');
-  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로 보여 줘요 · 개발자 계정은 실제로 G 로고·개발자 배너로 보여요' : '다른 친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
+  // 켜 둔 뽑기 효과(전설·시크릿): 미리보기에도 그대로 + 무엇이 켜져 있는지 칩으로(끄는 곳 안내)
+  const fxOn = Object.keys(FX).filter(k => fx[k]).map(k => `<span class="pv-fx" data-tip="${esc(FX[k])} · 서비스 › 뽑기 › 내 효과에서 켜고 꺼요">${artOf(fx[k], 'pka')}${esc(objName(fx[k]))}</span>`).join('');
+  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로예요 · 개발자 계정은 실제로 G 로고로 보여요' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
     <div class="pv-body">
       <div class="pv-card c-${esc(col)}" data-pv="co">
         <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
         <div class="pv-id">
           <span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}</span>
-          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
+          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
         </div>
       </div>
-      <div class="pv-clk" data-pv="deco"><small>첫 화면 시계</small><span class="pv-tm">${hm}</span>${dk}${empty}</div>
-    </div>`;
+      <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm">${hm}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small>${dk}</div>
+    </div>
+    ${fxOn ? `<div class="pv-fxs"><small>켜 둔 뽑기 효과</small>${fxOn}</div>` : ''}`;
 }
 // 메뉴의 '꾸미기': 내 프로필로 가서 바로 꾸미기 창
 document.getElementById('btnEdit')?.addEventListener('click', () => { if (!S.me) return; if (location.hash !== '#me') location.hash = 'me'; setTimeout(openEdit, 60); });
@@ -466,6 +468,7 @@ function openEdit() {
   $('#editForm .pk-seg').onclick = e => { const b = e.target.closest('[data-view]'); if (!b) return; store.set('edit_view', b.dataset.view); pkApply(); };
   const sel = { avatar: u.avatar, color: u.color, rep: u.rep || '' };
   // 실시간 미리보기: 고르는 즉시 프로필 카드·이름 옆·시계에 어떻게 붙는지 보여 줌(바뀐 곳은 반짝)
+  $('#socSheet').classList.add('edw');   // 꾸미기 창은 미리보기가 잘 보이게 넓게
   const F = $('#editForm');
   const prev = part => {
     const box = $('#edPrev'); if (!box) return;
