@@ -2,7 +2,7 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA_ALL, RAR } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 
@@ -400,6 +400,26 @@ function openMore(h) {
 }
 
 /* ===== 프로필 꾸미기 ===== */
+// 꾸미기 미리보기 그림 — 실제 프로필 카드(배너 스티커·사진·배경 색·이름 옆 대표 스티커·칭호)와 첫 화면 시계(시계 스티커)를 작게
+// data-pv: 어떤 설정이 바꾸는 부분인지(av·co·st·rep·deco·name·title) → 바뀐 곳만 반짝
+function pvHtml(u, st) {
+  const dev = isDev(u), col = ALL_COLORS.includes(st.color) ? st.color : 'sky';
+  const t = new Date(), hm = `${t.getHours() % 12 || 12}:${String(t.getMinutes()).padStart(2, '0')}`;
+  const stk = st.stickers.slice(0, st.max).map((v, i) => `<i class="stk ${STK_POS[i]}">${emo(v, 'stka')}</i>`).join('');
+  const dk = st.deco.map((v, i) => `<i class="pv-dk k${i + 1}">${artOf(v, 'pka')}</i>`).join('');
+  const empty = Array.from({ length: Math.max(0, st.slots - st.deco.length) }, (_, i) => `<i class="pv-dk k${st.deco.length + i + 1} nil"></i>`).join('');
+  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로 보여 줘요 · 개발자 계정은 실제로 G 로고·개발자 배너로 보여요' : '다른 친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
+    <div class="pv-body">
+      <div class="pv-card c-${esc(col)}" data-pv="co">
+        <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
+        <div class="pv-id">
+          <span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}</span>
+          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
+        </div>
+      </div>
+      <div class="pv-clk" data-pv="deco"><small>첫 화면 시계</small><span class="pv-tm">${hm}</span>${dk}${empty}</div>
+    </div>`;
+}
 // 메뉴의 '꾸미기': 내 프로필로 가서 바로 꾸미기 창
 document.getElementById('btnEdit')?.addEventListener('click', () => { if (!S.me) return; if (location.hash !== '#me') location.hash = 'me'; setTimeout(openEdit, 60); });
 function openEdit() {
@@ -408,7 +428,7 @@ function openEdit() {
   const deco = [...(u.deco || [])], slots = isDev(u) ? 5 : decoSlots(u.attBest, u.attTotal);
   sheet(`<h3>프로필 꾸미기</h3>
     <form class="sform" id="editForm" autocomplete="off">
-      <div class="preview c-${esc(u.color)}" id="edPrev">${av({ ...u, online: false }, 'big')}</div>
+      <div class="pv${store.get('pv_fold', 0) ? ' fold' : ''}" id="edPrev" aria-live="polite"></div>
       <label>이름 (닉네임)<input name="name" maxlength="20" required value="${esc(u.name)}"><small class="hint">${isDev(u) ? '🛠 개발자 계정은 이름·아이디 대신 어디서나 \'개발자\'로 표시돼요.' : `친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.`}</small></label>
       <label>상태 메시지<input name="mood" maxlength="24" placeholder="예: 시험 끝나면 놀자🔥" value="${esc(u.mood)}"></label>
       <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
@@ -434,20 +454,29 @@ function openEdit() {
     </form>`);
   pkApply();
   $('#editForm .pk-seg').onclick = e => { const b = e.target.closest('[data-view]'); if (!b) return; store.set('edit_view', b.dataset.view); pkApply(); };
-  const sel = { avatar: u.avatar, color: u.color };
-  const prev = () => { $('#edPrev').className = 'preview c-' + sel.color; $('#edPrev').innerHTML = av({ avatar: sel.avatar, color: sel.color }, 'big'); };
-  $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev(); };
-  $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev(); };
+  const sel = { avatar: u.avatar, color: u.color, rep: u.rep || '' };
+  // 실시간 미리보기: 고르는 즉시 프로필 카드·이름 옆·시계에 어떻게 붙는지 보여 줌(바뀐 곳은 반짝)
+  const F = $('#editForm');
+  const prev = part => {
+    const box = $('#edPrev'); if (!box) return;
+    box.innerHTML = pvHtml(u, { ...sel, stickers: [...picked], deco, name: F.elements.name.value.trim() || u.name, title: F.elements.title?.value || '', max: stkMax(u), slots });
+    if (part) box.querySelectorAll(`[data-pv~="${part}"]`).forEach(x => { x.classList.remove('pv-hit'); void x.offsetWidth; x.classList.add('pv-hit'); });
+  };
+  prev();
+  F.elements.name.addEventListener('input', () => prev('name'));
+  F.elements.title?.addEventListener(F.elements.title.tagName === 'SELECT' ? 'change' : 'input', () => prev('title'));
+  $('#edPrev').addEventListener('click', e => { if (!e.target.closest('[data-pv-fold]')) return; const f = !$('#edPrev').classList.contains('fold'); $('#edPrev').classList.toggle('fold', f); store.set('pv_fold', f ? 1 : 0); });
+  $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev('av'); };
+  $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev('co'); };
   $('#pSt').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.lock) { toast(lockMsg(b)); return; }
     if (picked.has(b.dataset.v)) picked.delete(b.dataset.v);
     else if (picked.size >= stkMax(u)) { toast(`스티커는 ${stkMax(u)}개까지!`); return; }
     else picked.add(b.dataset.v);
-    b.classList.toggle('on', picked.has(b.dataset.v)); $('#stkN').textContent = `${picked.size}/${stkMax(u)}`;
+    b.classList.toggle('on', picked.has(b.dataset.v)); $('#stkN').textContent = `${picked.size}/${stkMax(u)}`; prev('st');
   };
   // 대표 스티커(하나) · 시계 스티커(칸 수만큼, 고른 순서대로 왼쪽 위 → 오른쪽 아래 → 오른쪽 위)
-  sel.rep = u.rep || '';
   const lockTip = b => toast(lockMsg(b));
   const decoN = () => { const el = $('#decoN'); if (el) el.textContent = `${deco.length}/${slots}칸`; };
   decoN();
@@ -462,7 +491,7 @@ function openEdit() {
     else if (cur.length >= repMax) { toast(`대표 스티커는 ${repMax}개까지!`); return; }
     else cur.push(b.dataset.v);
     sel.rep = cur.join(',');
-    $$('#pRep button').forEach(x => x.classList.toggle('on', x.dataset.v ? cur.includes(x.dataset.v) : !cur.length));
+    $$('#pRep button').forEach(x => x.classList.toggle('on', x.dataset.v ? cur.includes(x.dataset.v) : !cur.length)); prev('rep');
   };
   if ($('#pDeco')) $('#pDeco').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -471,7 +500,7 @@ function openEdit() {
     if (i >= 0) deco.splice(i, 1);
     else if (deco.length >= slots) { toast(slots < 3 ? `지금은 ${slots}칸까지! 연속 14일·총 30일 출석하면 칸이 늘어나요` : '시계 스티커는 3개까지!'); return; }
     else deco.push(b.dataset.v);
-    b.classList.toggle('on', deco.includes(b.dataset.v)); decoN();
+    b.classList.toggle('on', deco.includes(b.dataset.v)); decoN(); prev('deco');
   };
   // 인스타 아이디: 앞의 @는 칸에 붙은 고정 글자(.pre)라 지울 수 없음 — 직접 친 @·붙여 넣은 인스타 주소는 아이디만 남김
   const ig = $('#editForm [name=insta]');
@@ -495,8 +524,10 @@ function openEdit() {
 // 출석 보상 칸: 해금된 건 고를 수 있고, 아직이면 흐리게 + 자물쇠(누르면 필요한 일수 안내)
 const attHave = r => r.by === 'gacha' ? !!S.me?.gc?.own?.[r.v] : rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
 // 스티커 = 출석 보상 스티커 + 뽑기 스티커(by 'gacha')
-const GC_STK = GACHA_ALL.map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
-const rwList = kind => kind === 'sticker' ? [...ATT.lockedOf('sticker'), ...GC_STK] : ATT.lockedOf(kind);
+// 뽑기에서 빠진 스티커(GACHA_OLD)는 이미 가진 사람에게만 보임 — 더는 못 얻는 걸 잠금으로 보여 주지 않음(개발자도 '전부 보유'는 현재 뽑기 목록 기준)
+const GC_ITEMS = [...GACHA, ...GACHA_OLD].map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
+const gcList = () => GC_ITEMS.filter(g => !GACHA_OLD.some(o => o.v === g.v) || S.me?.gc?.own?.[g.v]);
+const rwList = kind => kind === 'sticker' ? [...ATT.lockedOf('sticker'), ...gcList()] : ATT.lockedOf(kind);
 const lockMsg = b => b.dataset.by === 'gacha' ? '뽑기에서 나오는 스티커예요 — 서비스 › 뽑기에서 뽑아 보세요' : `${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`;
 // 꾸미기 목록 보기: 모두 보기 / 보유한 것만 보기 (이 기기에 기억 edit_view)
 const pkView = () => store.get('edit_view', 'all') === 'own' ? 'own' : 'all';
@@ -517,15 +548,15 @@ function pkApply() {
 }
 // 뽑기 스티커 구분선 (스티커 목록에서 출석 보상 뒤)
 function gcDiv() {
-  const n = GC_STK.filter(attHave).length;
-  return pkDiv(`뽑기 스티커 <small>${n}/${GC_STK.length} 뽑음</small><span class="pk-none">아직 뽑은 스티커가 없어요 · 서비스 › 뽑기</span>`, n ? '' : ' zero');
+  const L = gcList(), n = L.filter(attHave).length;
+  return pkDiv(`뽑기 스티커 <small>${n}/${L.length} 뽑음</small><span class="pk-none">아직 뽑은 스티커가 없어요 · 서비스 › 뽑기</span>`, n ? '' : ' zero');
 }
 function attPicks(kind, isOn) {
   return rwList(kind).map(r => {
     const gc = r.by === 'gacha';
     const tip = gc ? `뽑기 ${RAR[r.rar].n} · ${objName(r.v)}` : `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상 · ${kind === 'color' ? COLOR_NAME[r.v] : objName(r.v)}`;
     const inner = kind === 'color' ? '' : artOf(r.v, 'pka');
-    return (r === GC_STK[0] ? gcDiv() : '') + (attHave(r)
+    return (r === GC_ITEMS[0] ? gcDiv() : '') + (attHave(r)
       ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
       : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${gc ? 'g' : r.d}" data-by="${r.by}" data-tip="🔒 ${tip}" aria-label="${tip} (잠김)">${inner}<span class="pk-lk">${ui('lock')}</span><i>${gc ? '뽑기' : r.d}</i></button>`);
   }).join('');
