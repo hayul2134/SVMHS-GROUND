@@ -3257,13 +3257,13 @@ html.away .an-plane,html.away .an-trail,html.away .an-ring,html.away .an-ball,ht
 .pv-top b{font-family:"Jua",sans-serif;font-weight:400;font-size:19px;flex:none}
 .pv-top small{flex:1;min-width:0;font-size:11.5px;font-weight:800;color:var(--sub);line-height:1.3}
 .pv-fold{flex:none;padding:4px 11px;border-radius:999px;border:2px solid var(--ink);background:var(--chip);font-family:inherit;font-size:12px;font-weight:900;line-height:1.2;color:var(--text);cursor:pointer}
-.pv-clr{flex:none;display:inline-flex;align-items:center;gap:4px;padding:4px 10px 4px 7px;border-radius:999px;border:2px solid var(--ink);background:var(--card,#fff);font-family:inherit;font-size:12px;font-weight:900;line-height:1.2;color:var(--text);cursor:pointer}
-.pv-clr .att-ic{width:16px;height:16px}
+.pv-clr,.pk-clr{flex:none;display:inline-flex;align-items:center;gap:4px;padding:5px 12px 5px 8px;border-radius:999px;border:2px solid var(--ink);background:#f0646d;box-shadow:2px 2px 0 var(--ink);font-family:inherit;font-size:13px;font-weight:900;line-height:1.2;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.18);cursor:pointer;transition:transform .12s,box-shadow .12s,background .12s}
+.pk-clr{padding:4px 11px 4px 7px;font-size:12.5px}
+.pv-clr .att-ic,.pk-clr .att-ic{width:17px;height:17px;flex:none}
 .pk-n{display:inline-flex;align-items:center;gap:6px}
-.pk-clr{padding:3px 9px;border-radius:999px;border:2px solid var(--ink);background:var(--chip);font-family:inherit;font-size:12px;font-weight:900;line-height:1.2;color:var(--text);cursor:pointer}
-.pv-clr:not(:disabled):hover,.pk-clr:not(:disabled):hover{background:#ffe1e1;color:#1d2a3a}
-.pv-clr:not(:disabled):active,.pk-clr:not(:disabled):active{transform:translateY(1px)}
-.pv-clr:disabled,.pk-clr:disabled{opacity:.4;cursor:default}
+.pv-clr:not(:disabled):hover,.pk-clr:not(:disabled):hover{background:#e04f59;transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+.pv-clr:not(:disabled):active,.pk-clr:not(:disabled):active{transform:translate(1px,1px);box-shadow:0 0 0 var(--ink)}
+.pv-clr:disabled,.pk-clr:disabled{background:var(--chip);color:var(--sub);text-shadow:none;box-shadow:none;opacity:.55;cursor:default}
 @media (max-width:520px){.pv-top small{display:none}}
 .pv-fold .c,.pv.fold .pv-fold .o{display:none}.pv.fold .pv-fold .c{display:inline}
 .pv.fold .pv-body,.pv.fold .pv-fxs{display:none}.pv.fold .pv-top{margin-bottom:0}
