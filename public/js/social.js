@@ -3,7 +3,7 @@ import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
 import { wearOf, wearSvg } from './wear.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 import { ffOn } from './flags.js';
@@ -1076,21 +1076,23 @@ function cheer(game, rank, value) {
 
 // 2주 라운드(att-rewards.js RK): 마감까지 남은 날 + 보상 안내 띠
 const kstNow = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
-function rkInfo() {
-  const r = rkOf(kstNow()), started = r.n >= 0, cur = started ? r : rkOf(RK.start.replace(/-/g, ''));
+function rkInfo(wk = false) {   // wk: 뽑기권 주(1주) · 아니면 점수·티어 라운드(2주)
+  const of = wk ? wkOf : rkOf;
+  const r = of(kstNow()), started = r.n >= 0, cur = started ? r : of(RK.start.replace(/-/g, ''));
   const day = y => Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8)) / 864e5;
   const left = day(cur.to) - day(kstNow());   // 마지막 날(이 날 밤 12시에 마감)까지 남은 날
   return { started, from: cur.from, to: cur.to, left, md: `${+cur.to.slice(4, 6)}/${+cur.to.slice(6, 8)}` };
 }
-function rkBand() {
-  const k = rkInfo();
-  return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${k.started ? `라운드 마감 ${k.left ? 'D-' + k.left : '오늘 밤 12시'}` : `${+k.from.slice(4, 6)}/${+k.from.slice(6, 8)} 첫 라운드 시작`}</b><small>${RK.days}일마다 랭킹을 새로 시작해요 · 게임마다 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장 (${k.md} 밤 12시 마감)</small></p></div>`;
+const ddl = k => k.left ? 'D-' + k.left : '오늘 밤 12시';
+function rkBand() {   // 두 주기 안내: 1주 = 뽑기권 · 2주 = 점수·티어 (2026-10-25)
+  const w = rkInfo(true), r = rkInfo();
+  return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${w.started ? `이번 주 마감 ${ddl(w)} · 라운드 마감 ${ddl(r)}` : `${+w.from.slice(4, 6)}/${+w.from.slice(6, 8)} 첫 주·첫 라운드 시작`}</b><small>매주 게임마다 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장 (${w.md} 밤 12시 마감) · ${RK.days}일마다 점수·티어를 새로 매겨요 (${r.md} 밤 12시 마감)</small></p></div>`;
 }
-async function openRank(game, scope = 'round') {
+async function openRank(game, scope = 'week') {
   if (S.enabled === false) { toast('랭킹을 준비하고 있어요'); return; }
   if (!S.me) { toast('랭킹은 로그인하면 볼 수 있어요'); ctx.go('me'); return; }
   const g = GAMES[game];
-  const tabs = [['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
+  const tabs = [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   sheet(`<h3>${ic(g.ic)} ${g.name} 랭킹</h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
     <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
@@ -1103,11 +1105,11 @@ async function openRank(game, scope = 'round') {
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'round' ? '이번 라운드에 낸 기록 중 각자 최고 기록으로 매겨요' : '각자 최고 기록으로 순위를 매겨요';
-      if (scope === 'round') {   // 라운드 안내 + 지난 라운드 1~3등
-        const k = rkInfo();
-        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${k.left ? 'D-' + k.left : '오늘 밤 12시'}` : '첫 라운드 준비 중'}</b> · 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장</p>${r.last?.length ? `<p class="rk-last"><small>지난 라운드</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
-        if (!r.list.length) $('#rankList').innerHTML = '<li class="empty">이번 라운드 기록이 아직 없어요. 지금 하면 1등!</li>';
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요 · 주가 끝나면 1~3등 뽑기권' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
+      if (scope === 'week' || scope === 'round') {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
+        const wk = scope === 'week', k = rkInfo(wk);
+        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? `1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장` : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
+        if (!r.list.length) $('#rankList').innerHTML = `<li class="empty">${wk ? '이번 주' : '이번 라운드'} 기록이 아직 없어요. 지금 하면 1등!</li>`;
       }
     }
   } catch (e) { $('#rankList').innerHTML = `<li class="empty">${esc(e.message)}</li>`; }

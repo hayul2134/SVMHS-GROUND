@@ -128,12 +128,16 @@ export const isShn = v => typeof v === 'string' && v.endsWith(SHN);
 export const baseOf = v => isShn(v) ? v.slice(0, -SHN.length) : v;
 // 게임 랭킹 라운드(2026-10-25 하율: "2주에 한 번 마감해서 새로 경쟁, 1~3등 뽑기권, 게임 랭커만"):
 //   start(월요일 0시, KST)부터 14일씩. 라운드가 끝나면 게임마다 1~3등에게 tix[등수-1]장 — 서버 settleRounds가 한 번만 지급
-export const RK = { start: '2026-10-26', days: 14, tix: [3, 2, 1] };
+// 2026-10-25 2차(하율): 주기를 둘로 — 1주(wdays) = 게임별 1~3등 뽑기권 · 2주(days) = 라운드 점수·티어. 큰 시즌(한 달)은 나중에
+export const RK = { start: '2026-10-26', days: 14, wdays: 7, tix: [3, 2, 1] };
 const dnum = ymd => Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)) / 864e5;
 const ymdOf = n => new Date(n * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
 // 라운드 번호(시작 전이면 -1)와 그 라운드의 첫날·마지막 날(YYYYMMDD) — today도 YYYYMMDD(KST)
 export const rkOf = today => { const s = dnum(RK.start.replace(/-/g, '')), n = Math.floor((dnum(today) - s) / RK.days); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
 export const rkRange = n => { const s = dnum(RK.start.replace(/-/g, '')); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
+// 뽑기권 주(1주) 번호·기간 — 라운드와 같은 시작일, 라운드 n = 주 2n·2n+1
+export const wkOf = today => { const s = dnum(RK.start.replace(/-/g, '')), n = Math.floor((dnum(today) - s) / RK.wdays); return { n, from: ymdOf(s + n * RK.wdays), to: ymdOf(s + n * RK.wdays + RK.wdays - 1) }; };
+export const wkRange = n => { const s = dnum(RK.start.replace(/-/g, '')); return { n, from: ymdOf(s + n * RK.wdays), to: ymdOf(s + n * RK.wdays + RK.wdays - 1) }; };
 // 라운드 티어 (2026-10-25 하율: 순위로 점수 → 티어). 라운드(RK, 2주) 안에서 게임마다 순위 점수(참가자 전원이 받음: 1등 100 ~ 꼴찌 100/n),
 // 4게임 합으로 줄 세워 백분위로 티어. 라운드가 끝나면 users.tier_last에 남기고 새로 시작.
 // 2026-10-25 2차(하율): 롤 티어(아이언~챌린저)로. 챌린저 = 1등(참가 3명 이상) · 그랜드마스터 = 2·3등(6명 이상) · 나머지는 백분위

@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -337,7 +337,7 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
-    const rkGift = (await db.prepare("SELECT round, game, place, tix FROM rank_rewards WHERE uid = ?1 AND seen = 0 AND game <> '*' ORDER BY round, game").bind(me.id).all()).results;
+    const rkGift = (await db.prepare("SELECT round, substr(game, 3) AS game, place, tix FROM rank_rewards WHERE uid = ?1 AND seen = 0 AND game LIKE 'w:%' ORDER BY round, game").bind(me.id).all()).results;
     return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length }, rkGift });
   },
 
@@ -886,8 +886,8 @@ const ROUTES = {
       return json({ scope, list, mine: me.grade && me.cls ? { grade: me.grade, cls: me.cls } : null });
     }
     let rows;
-    if (scope === 'round') {   // 이번 라운드(2주, att-rewards.js RK): 라운드 안 기록 중 개인 최고 — 끝나면 1~3등 뽑기권
-      const rd = rkOf(kstYmd()), cur = rd.n < 0 ? rkRange(0) : rd;
+    if (scope === 'round' || scope === 'week') {   // round = 이번 라운드(2주, 점수·티어) · week = 이번 주(1주, 끝나면 1~3등 뽑기권)
+      const wk = scope === 'week', rd = wk ? wkOf(kstYmd()) : rkOf(kstYmd()), cur = rd.n < 0 ? (wk ? wkRange(0) : rkRange(0)) : rd;
       const BR = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid`;
       rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BR}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 50`).bind(game, cur.from, cur.to).all()).results;
       const list = rows.map(r => ({ ...card(r), grade: r.grade, cls: r.cls, value: r.value, isMe: r.uid === me.id }));
@@ -896,8 +896,8 @@ const ROUTES = {
         const s2 = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2 AND day BETWEEN ?3 AND ?4').bind(me.id, game, cur.from, cur.to).first();
         if (s2?.b != null) { myValue = s2.b; mine = (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (${BR}) WHERE best < ?4`).bind(game, cur.from, cur.to, s2.b).first()).r; }
       }
-      // 지난 라운드 1~3등(보상 받은 사람)
-      const last = (await db.prepare(`SELECT k.place, k.tix, ${U} FROM rank_rewards k JOIN users u ON u.id = k.uid WHERE k.round = ?1 AND k.game = ?2 ORDER BY k.place`).bind(cur.n - 1, game).all()).results
+      // 지난주 1~3등(뽑기권 받은 사람) — 주 보상은 game 'w:게임'
+      const last = !wk ? [] : (await db.prepare(`SELECT k.place, k.tix, ${U} FROM rank_rewards k JOIN users u ON u.id = k.uid WHERE k.round = ?1 AND k.game = ?2 ORDER BY k.place`).bind(cur.n - 1, 'w:' + game).all()).results
         .map(r => ({ ...card(r), place: r.place, tix: r.tix }));
       return json({ scope, list, mine, myValue, round: { n: cur.n, from: cur.from, to: cur.to, started: rd.n >= 0, tix: RK.tix }, last });
     }
@@ -1109,27 +1109,36 @@ async function attState(env, db, me, doCheck, quiet = false) {
 
 // 게임 랭킹 라운드 정산(att-rewards.js RK, 2026-10-25): 끝난 라운드마다 게임별 1~3등에게 뽑기권 RK.tix장.
 // rank_rewards 기본키(round, game, place)로 한 번만 — 동시에 여러 요청이 와도 INSERT OR IGNORE가 성공한 쪽만 지급. game '*' 줄 = 그 라운드 정산 끝 표시
-let rkChecked = -2;   // 이 워커에서 이미 정산을 확인한 마지막 라운드(매 요청 DB를 안 보려고)
+let rkChecked = -2, wkChecked = -2;   // 이 워커에서 이미 정산을 확인한 마지막 라운드·주(매 요청 DB를 안 보려고)
 async function settleRounds(db) {
-  const cur = rkOf(kstYmd()).n;
-  if (cur < 1 || rkChecked >= cur - 1) return;
-  for (let n = Math.max(0, cur - 2); n < cur; n++) {
-    if (await db.prepare("SELECT 1 AS x FROM rank_rewards WHERE round = ?1 AND game = '*'").bind(n).first()) continue;
-    const { from, to } = rkRange(n);
-    for (const game of Object.keys(GAMES)) {
-      const top = (await db.prepare(`SELECT uid, MIN(best) AS b, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid ORDER BY b, at LIMIT 3`).bind(game, from, to).all()).results;
-      for (let i = 0; i < top.length; i++) {
-        const t = RK.tix[i];
-        const ins = await db.prepare('INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6)').bind(n, game, i + 1, top[i].uid, t, Date.now()).run();
-        if (ins.meta?.changes) await db.prepare(`UPDATE users SET gc_tix = MIN(${GC.max}, gc_tix + ?1) WHERE id = ?2`).bind(t, top[i].uid).run();
+  const today = kstYmd(), wcur = wkOf(today).n, cur = rkOf(today).n;
+  // 1주 정산: 끝난 주마다 게임별 1~3등에게 뽑기권 RK.tix장 (rank_rewards game 'w:게임', 끝 표시 'w*')
+  if (wcur >= 1 && wkChecked < wcur - 1) {
+    for (let n = Math.max(0, wcur - 2); n < wcur; n++) {
+      if (await db.prepare("SELECT 1 AS x FROM rank_rewards WHERE round = ?1 AND game = 'w*'").bind(n).first()) continue;
+      const { from, to } = wkRange(n);
+      for (const game of Object.keys(GAMES)) {
+        const top = (await db.prepare(`SELECT uid, MIN(best) AS b, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid ORDER BY b, at LIMIT 3`).bind(game, from, to).all()).results;
+        for (let i = 0; i < top.length; i++) {
+          const t = RK.tix[i];
+          const ins = await db.prepare('INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6)').bind(n, 'w:' + game, i + 1, top[i].uid, t, Date.now()).run();
+          if (ins.meta?.changes) await db.prepare(`UPDATE users SET gc_tix = MIN(${GC.max}, gc_tix + ?1) WHERE id = ?2`).bind(t, top[i].uid).run();
+        }
       }
+      await db.prepare("INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, 'w*', 0, 0, 0, 1, ?2)").bind(n, Date.now()).run();
     }
-    // 그 라운드 최종 티어를 지난 라운드 배지로 남김
-    const tb = await tierBoard(db, n);
-    for (let i = 0; i < tb.list.length; i += 50) await db.batch(tb.list.slice(i, i + 50).map(x => db.prepare('UPDATE users SET tier_last = ?1 WHERE id = ?2').bind(n + ':' + x.tier, x.uid)));
-    await db.prepare("INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, '*', 0, 0, 0, 1, ?2)").bind(n, Date.now()).run();
+    wkChecked = wcur - 1;
   }
-  rkChecked = cur - 1;
+  // 2주 정산: 끝난 라운드의 최종 티어를 지난 라운드 배지로 (끝 표시 '*')
+  if (cur >= 1 && rkChecked < cur - 1) {
+    for (let n = Math.max(0, cur - 2); n < cur; n++) {
+      if (await db.prepare("SELECT 1 AS x FROM rank_rewards WHERE round = ?1 AND game = '*'").bind(n).first()) continue;
+      const tb = await tierBoard(db, n);
+      for (let i = 0; i < tb.list.length; i += 50) await db.batch(tb.list.slice(i, i + 50).map(x => db.prepare('UPDATE users SET tier_last = ?1 WHERE id = ?2').bind(n + ':' + x.tier, x.uid)));
+      await db.prepare("INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, '*', 0, 0, 0, 1, ?2)").bind(n, Date.now()).run();
+    }
+    rkChecked = cur - 1;
+  }
 }
 
 // 라운드 티어판: 게임마다 라운드 안 개인 최고로 순위 → 순위 점수(gamePts) 합 → 줄 세워 백분위로 티어(tierAt). 개발자 제외.

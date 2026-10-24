@@ -2,7 +2,7 @@
 // 시즌 1 「쉬는 시간」(2026-10-24 개편): 일반 8 스티커 · 희귀 4 움직이는 스티커 · 전설 4 효과 · 시크릿 1 (att-rewards.js GACHA, 그림 att-art.js GA).
 // 효과는 '내 효과'에서 켬(서버 gcfx) · 중복 스티커는 맞팔 친구에게 선물(gcgift) · 다 모으면 칭호 + 프로필 홀로 테두리.
 // 조각 상점(2026-10-25 하율: 조각 → 뽑기권은 메리트 없음): 없는 것 골라 받기(gcpick, 시크릿 포함) · 가진 스티커 반짝이 강화(gcshine, 값 끝 '_s').
-// 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물) + 2주 라운드 게임 랭킹 1~3등(3·2·1장, 서버 settleRounds).
+// 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물) + 매주 게임 랭킹 1~3등(3·2·1장, 서버 settleRounds).
 // 연출 순서: 손잡이 한 바퀴 → 기계가 덜컹 → 캡슐이 굴러 나옴 → 캡슐을 누르면(또는 차례로 저절로) 열림.
 //   캡슐 색이 등급 힌트(일반 하늘 · 희귀 보라 · 전설 금빛 홀로) — 희귀·전설은 열리기 전 더 오래 흔들리고 빛줄기가 나옴(두근거림).
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
@@ -70,7 +70,7 @@ function paint() {
         </div>
         <p class="gc-pity">희귀 확정까지 <b>${GC.pityRare - g.pity}</b>번 · 전설 확정까지 <b>${GC.pityLeg - g.leg}</b>번</p>
         <div class="gc-shard"><span><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span><button type="button" class="btn ghost" data-gc-shop>조각 상점</button></div>
-        <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장 · 연속 5일마다 1장 더 · <a href="#game" data-go="game">게임 랭킹 1~3등</a>은 2주마다 ${RK.tix.join('·')}장!</p>
+        <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장 · 연속 5일마다 1장 더 · <a href="#game" data-go="game">게임 랭킹 1~3등</a>은 매주 ${RK.tix.join('·')}장!</p>
       </div>
     </section>
     <section class="gc-stage" id="gcStage" aria-live="polite">${keep || ''}</section>
@@ -93,7 +93,7 @@ function paint() {
       <li>이미 가진 게 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]} · 시크릿 ${GC.shard[4]}개).</li>
       <li>조각 상점: 아직 없는 걸 <b>골라서 받기</b>(일반 ${GC.pick[1]} · 희귀 ${GC.pick[2]} · 전설 ${GC.pick[3]} · 시크릿 ${GC.pick[4]}개) · 가진 스티커를 <b>반짝이로 바꾸기</b>(일반 ${GC.shine[1]} · 희귀 ${GC.shine[2]}개). 조각을 뽑기권으로 바꿀 수는 없어요.</li>
       <li>시즌 1을 전부 모으면 칭호 <b>‘${GC_TITLE}’</b>과 프로필 사진 <b>홀로그램 테두리</b>를 받아요.</li>
-      <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(3·7·14·30일…)에 1장 더 받아요. 게임 랭킹은 ${RK.days}일마다 마감해서 게임마다 1등 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장을 줘요. 최대 ${GC.max}장까지 모여요.</li>
+      <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(3·7·14·30일…)에 1장 더 받아요. 게임 랭킹은 ${RK.wdays}일(매주)마다 마감해서 게임마다 1등 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장을 줘요. 최대 ${GC.max}장까지 모여요.</li>
       <li>돈으로 사는 건 없어요. 결과는 서버에서 정해지고, 창을 닫아도 그대로 남아요.</li></ul>
     </details>`;
   tuneInit();
