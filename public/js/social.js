@@ -103,6 +103,8 @@ function applyFx() {
   h.dataset.neon = neonC();
   if ((h.dataset.mfx || '') !== mf) { if (mf) h.dataset.mfx = mf; else delete h.dataset.mfx; document.dispatchEvent(new Event('sg:mfx')); }
 }
+// 뽑기 상태 받기(뽑기 화면·꾸미기 효과 탭 공용)
+function setGc(g) { if (S.me && g) { S.me.gc = { ...S.me.gc, tix: g.tix ?? S.me.gc?.tix, shard: g.shard ?? S.me.gc?.shard, pity: g.pity ?? S.me.gc?.pity, leg: g.leg ?? S.me.gc?.leg, own: g.own || S.me.gc?.own, fx: g.fx || S.me.gc?.fx || {} }; applyFx(); } }
 async function refreshMe() {
   try {
     const r = await call('me');
@@ -429,8 +431,8 @@ function pvHtml(u, st) {
   const stk = st.stickers.slice(0, st.max).map((v, i) => `<i class="stk ${STK_POS[i]}">${emo(v, 'stka')}</i>`).join('');
   const dk = st.deco.map((v, i) => `<i class="pv-dk k${i + 1}">${artOf(v, 'pka')}</i>`).join('');
   // 켜 둔 뽑기 효과(전설·시크릿): 미리보기에도 그대로 + 무엇이 켜져 있는지 칩으로(끄는 곳 안내)
-  const fxOn = Object.keys(FX).filter(k => fx[k]).map(k => `<span class="pv-fx" data-tip="${esc(FX[k])} · 서비스 › 뽑기 › 내 효과에서 켜고 꺼요">${artOf(fx[k], 'pka')}${esc(objName(fx[k]))}</span>`).join('');
-  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로예요 · 개발자 계정은 실제로 G 로고로 보여요' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-clr" data-clr="all" data-tip="카드·대표·시계 스티커를 한 번에 떼요 · 저장해야 반영돼요">${ui('peel', 'ic')}스티커 전부 떼기</button><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
+  const fxOn = Object.keys(FX).filter(k => fx[k]);
+  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '고른 그대로예요 · 개발자는 실제로 G 로고' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
     <div class="pv-body">
       <div class="pv-card c-${esc(col)}" data-pv="co">
         <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
@@ -441,8 +443,7 @@ function pvHtml(u, st) {
       </div>
       <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm">${hm}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small>${dk}</div>
     </div>
-    ${fxOn ? `<div class="pv-fxs"><small>켜 둔 뽑기 효과</small>${fxOn}</div>` : ''}
-    ${fx.clock === 'r:fxneon' ? `<div class="pv-neon"><small>네온 색</small>${neonPick(neonC())}</div>` : ''}`;
+    <button type="button" class="pv-fxs" data-ed-go="fx">${fxOn.length ? `${fxOn.map(k => artOf(fx[k], 'pka')).join('')}<span>효과 <b>${fxOn.length}개</b> 켜짐</span>` : '<span>켜 둔 뽑기 효과 없음</span>'}<i aria-hidden="true">›</i></button>`;
 }
 // 메뉴의 '꾸미기': 내 프로필로 가서 바로 꾸미기 창
 document.getElementById('btnEdit')?.addEventListener('click', () => { if (!S.me) return; if (location.hash !== '#me') location.hash = 'me'; setTimeout(openEdit, 60); });
@@ -450,34 +451,88 @@ function openEdit() {
   const u = S.me; if (!u) return;
   const picked = new Set(u.stickers || []);
   const deco = [...(u.deco || [])], slots = isDev(u) ? 5 : decoSlots(u.attBest, u.attTotal);
-  sheet(`<h3>프로필 꾸미기</h3>
-    <form class="sform" id="editForm" autocomplete="off">
-      <div class="pv${store.get('pv_fold', 0) ? ' fold' : ''}" id="edPrev" aria-live="polite"></div>
+  const tab0 = ['info', 'face', 'stk', 'fx'].includes(store.get('ed_tab')) ? store.get('ed_tab') : 'face';
+  const sub0 = ['st', 'rep', 'deco'].includes(store.get('ed_sub')) ? store.get('ed_sub') : 'st';
+  const TABS = [['info', '기본 정보'], ['face', '사진·색'], ['stk', '스티커'], ['fx', '효과']];
+  const SUBS = [['st', '카드'], ['rep', '대표'], ['deco', '시계']];
+  const viewSeg = `<div class="pk-view" role="group" aria-label="꾸미기 목록 보기"><div class="pk-seg">${[['all', '모두 보기'], ['own', '보유한 것만']].map(([k, n]) => `<button type="button" data-view="${k}" class="${pkView() === k ? 'on' : ''}" aria-pressed="${pkView() === k}">${n}</button>`).join('')}</div></div>`;
+  sheet(`<div class="ed-hd"><h3>프로필 꾸미기</h3><button type="button" class="ed-x" data-ed-x aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>
+    <form class="sform ed" id="editForm" autocomplete="off" data-tab="${tab0}" data-sub="${sub0}">
+     <div class="ed-main">
+      <aside class="ed-pv"><div class="pv${store.get('pv_fold', 0) ? ' fold' : ''}" id="edPrev" aria-live="polite"></div></aside>
+      <div class="ed-side">
+       <div class="ed-tabs" role="tablist">${TABS.map(([k, n]) => `<button type="button" role="tab" data-ed-tab="${k}" aria-selected="${k === tab0}">${n}</button>`).join('')}</div>
+       <div class="ed-body">
+      <div class="ed-pane" data-pane="info">
       <label>이름 (닉네임)<input name="name" maxlength="20" required value="${esc(u.name)}"><small class="hint">${isDev(u) ? '🛠 개발자 계정은 이름·아이디 대신 어디서나 \'개발자\'로 표시돼요.' : `친구들에게 보이는 이름이에요. 로그인은 아이디 @${esc(u.handle)}로 해요.`}</small></label>
       <label>상태 메시지<input name="mood" maxlength="24" placeholder="예: 시험 끝나면 놀자🔥" value="${esc(u.mood)}"></label>
-      <label>소개<textarea name="bio" maxlength="80" rows="3" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
-      ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0"><p class="hint">🛠 개발자 계정은 학년·반이 표시되지 않아요.</p>' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
+      <label>소개<textarea name="bio" maxlength="80" rows="2" placeholder="나를 한 줄로 소개해 보세요">${esc(u.bio)}</textarea></label>
+      ${isDev(u) ? '<input type="hidden" name="grade" value="0"><input type="hidden" name="cls" value="0">' : `<div class="two"><label>학년<select name="grade"><option value="0">비공개</option>${[1, 2, 3].map(g => `<option value="${g}" ${u.grade === g ? 'selected' : ''}>${g}학년</option>`).join('')}</select></label>
         <label>반<select name="cls"><option value="0">비공개</option>${Array.from({ length: CLS_N }, (_, i) => `<option value="${i + 1}" ${u.cls === i + 1 ? 'selected' : ''}>${i + 1}반</option>`).join('')}</select></label></div>`}
-      <label>인스타 아이디 (선택)<span class="fld at ig"><span class="pre" aria-hidden="true">@</span><input name="insta" maxlength="60" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="예: svmhs_ground" value="${esc(u.insta || '')}"></span><small class="hint">적으면 프로필에 버튼이 생기고, 누르면 내 인스타로 가요. 비워 두면 안 보여요.</small></label>
-      <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label>
-      <div class="pk-view" role="group" aria-label="꾸미기 목록 보기"><span>꾸미기 목록</span><div class="pk-seg">${[['all', '모두 보기'], ['own', '보유한 것만 보기']].map(([k, n]) => `<button type="button" data-view="${k}" class="${pkView() === k ? 'on' : ''}" aria-pressed="${pkView() === k}">${n}</button>`).join('')}</div></div>
+      <div class="two"><label>인스타 아이디<span class="fld at ig"><span class="pre" aria-hidden="true">@</span><input name="insta" maxlength="60" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="선택" value="${esc(u.insta || '')}"></span></label>
+      <label>동아리<input name="club" maxlength="16" placeholder="예: 영상제작부" value="${esc(u.club)}"></label></div>
+      <small class="hint">인스타 아이디를 적으면 프로필에 버튼이 생겨요.${isDev(u) ? ' 개발자 계정은 학년·반이 표시되지 않아요.' : ''}</small>
+      </div>
+      <div class="ed-pane" data-pane="face">
+      ${viewSeg}
       ${pkSec('프로필 사진', '내 프로필 · 친구 목록 · DM · 랭킹에 보이는 내 얼굴', '')}
       <div class="pick" id="pAv">${pkDiv('기본')}${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === u.avatar ? 'on' : ''}" data-tip="${kavName(a)}" aria-label="${kavName(a)}">${emo(a)}</button>`).join('')}${attDiv('avatar')}${attPicks('avatar', x => x === u.avatar)}</div></section>
       ${pkSec('배경 색', '프로필 사진 뒤 동그라미 · 프로필 카드 윗부분 색', '')}
       <div class="pick sw" id="pCo">${pkDiv('기본')}${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attDiv('color')}${attPicks('color', x => x === u.color)}</div></section>
-      ${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">개발자는 칭호를 마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}
-      ${pkSec('프로필 카드 스티커', '내 프로필 카드 윗부분(별 배경)에 붙어요 · 여러 개 고르기', `<b id="stkN">${picked.size}/${stkMax(u)}</b><button type="button" class="pk-clr" data-clr="st">${ui('peel', 'ic')}모두 떼기</button>`)}
-      <div class="pick" id="pSt">${pkDiv('기본')}${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}" data-tip="${EMO_NAME[s] || s}" aria-label="${EMO_NAME[s] || s}">${s}</button>`).join('')}${attDiv('sticker')}${attPicks('sticker', x => picked.has(x))}</div></section>
-      ${`${pkSec('대표 스티커', '이름 바로 옆에 작게 붙어요 · 댓글 · 랭킹 · DM · 친구 목록 어디서나', `<b>${isDev(u) ? '3개까지' : '1개'}</b><button type="button" class="pk-clr" data-clr="rep">${ui('peel', 'ic')}떼기</button>`)}
-      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}" data-tip="대표 스티커 안 달기">없음</button>${attDiv('sticker')}${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div></section>
-      ${pkSec('첫 화면 시계 스티커', '내 첫 화면 큰 시계 둘레에 붙어요 · 나만 보여요', `<b id="decoN"></b><button type="button" class="pk-clr" data-clr="deco">${ui('peel', 'ic')}모두 떼기</button>`)}
+      <section class="pk-sec">${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}</section>
+      </div>
+      <div class="ed-pane" data-pane="stk">
+      <div class="ed-subbar"><div class="ed-sub" role="tablist">${SUBS.map(([k, n]) => `<button type="button" role="tab" data-ed-sub="${k}" aria-selected="${k === sub0}">${n}<b data-subn="${k}"></b></button>`).join('')}</div><button type="button" class="pv-clr" data-clr="all" data-tip="카드·대표·시계 스티커를 한 번에 떼요 · 저장해야 반영돼요">${ui('peel', 'ic')}전부 떼기</button></div>
+      ${viewSeg}
+      <div class="ed-sp" data-sp="st">${pkSec('프로필 카드 스티커', '내 프로필 카드 윗부분(별 배경)에 붙어요 · 여러 개 고르기', `<b id="stkN">${picked.size}/${stkMax(u)}</b><button type="button" class="pk-clr" data-clr="st">${ui('peel', 'ic')}모두 떼기</button>`)}
+      <div class="pick" id="pSt">${pkDiv('기본')}${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}" data-tip="${EMO_NAME[s] || s}" aria-label="${EMO_NAME[s] || s}">${s}</button>`).join('')}${attDiv('sticker')}${attPicks('sticker', x => picked.has(x))}</div></section></div>
+      <div class="ed-sp" data-sp="rep">${pkSec('대표 스티커', '이름 바로 옆에 작게 붙어요 · 댓글 · 랭킹 · DM · 친구 목록 어디서나', `<b>${isDev(u) ? '3개까지' : '1개'}</b><button type="button" class="pk-clr" data-clr="rep">${ui('peel', 'ic')}떼기</button>`)}
+      <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}" data-tip="대표 스티커 안 달기">없음</button>${attDiv('sticker')}${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div></section></div>
+      <div class="ed-sp" data-sp="deco">${pkSec('첫 화면 시계 스티커', '내 첫 화면 큰 시계 둘레에 붙어요 · 나만 보여요', `<b id="decoN"></b><button type="button" class="pk-clr" data-clr="deco">${ui('peel', 'ic')}모두 떼기</button>`)}
       <div class="pick" id="pDeco">${attDiv('sticker')}${attPicks('sticker', x => deco.includes(x))}</div>
-      <small class="hint">칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small></section>`}
+      <small class="hint">칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small></section></div>
       <p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p>
-      <div class="row"><button class="btn" type="submit">저장</button><button class="btn ghost" type="button" data-close>취소</button></div>
+      </div>
+      <div class="ed-pane" data-pane="fx" id="edFx"></div>
+       </div>
+      </div>
+     </div>
+     <div class="ed-ft"><button class="btn ghost" type="button" data-ed-x>취소</button><button class="btn" type="submit">저장</button></div>
     </form>`);
   pkApply();
-  $('#editForm .pk-seg').onclick = e => { const b = e.target.closest('[data-view]'); if (!b) return; store.set('edit_view', b.dataset.view); pkApply(); };
+  $$('#editForm .pk-seg').forEach(g => { g.onclick = e => { const b = e.target.closest('[data-view]'); if (!b) return; store.set('edit_view', b.dataset.view); pkApply(); }; });
+  // 탭(기본 정보·사진·색·스티커·효과) + 스티커 안 작은 탭(카드·대표·시계) — 한 번에 한 묶음만 보여서 스크롤이 짧음, 마지막 탭은 기억
+  const goTab = k => { const f = $('#editForm'); f.dataset.tab = k; store.set('ed_tab', k); $$('#editForm [data-ed-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.edTab === k)); $('#editForm .ed-body').scrollTop = 0; if (k === 'fx') paintFx(); };
+  const goSub = k => { const f = $('#editForm'); f.dataset.sub = k; store.set('ed_sub', k); $$('#editForm [data-ed-sub]').forEach(b => b.setAttribute('aria-selected', b.dataset.edSub === k)); $('#editForm .ed-body').scrollTop = 0; };
+  $('#socSheet .ed-x').onclick = () => closeSheet();
+  $('#editForm').addEventListener('click', e => {
+    if (e.target.closest('[data-ed-x]')) { e.preventDefault(); return closeSheet(); }
+    const t = e.target.closest('[data-ed-tab]'); if (t) return goTab(t.dataset.edTab);
+    const sb = e.target.closest('[data-ed-sub]'); if (sb) return goSub(sb.dataset.edSub);
+    const g = e.target.closest('[data-ed-go]'); if (g) return goTab(g.dataset.edGo);
+    const fb = e.target.closest('[data-ed-fx]'); if (fb) return edSetFx(fb.dataset.edFx, fb.dataset.v);
+  });
+  // 효과 탭: 켜 둔 뽑기 효과(칸마다 가진 것 중 하나 켜기/끄기 — 바로 저장) + 네온 색(이 기기)
+  const paintFx = () => {
+    const box = $('#edFx'); if (!box) return;
+    const g = S.me?.gc || {}, fx = g.fx || {}, own = g.own || {};
+    box.innerHTML = `<p class="ed-note">뽑기 전설·시크릿으로 받은 효과예요. 누르면 <b>바로 켜지고 꺼져요</b>(저장 안 눌러도 돼요).</p><ul class="ed-fxl">${Object.entries(FX).map(([slot, nm]) => {
+      const mine = GACHA.filter(x => x.fx === slot && own[x.v]), on = fx[slot];
+      const show = GACHA.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
+      return `<li class="${on ? 'on' : mine.length ? '' : 'none'}"><div class="ed-fxh"><span class="ed-fxi">${mine.length ? artOf(show.v, 'pka') : ui('lock', 'ic')}</span><p><b>${esc(nm)}</b><small>${mine.length ? (on ? `${esc(objName(on))} 켜짐` : '꺼짐') : `아직 없어요 · 뽑기 전설에서 나와요`}</small></p></div>
+        ${mine.length ? `<div class="ed-fxb"><button type="button" class="${on ? '' : 'on'}" data-ed-fx="${slot}" data-v="">끄기</button>${mine.map(x => `<button type="button" class="${on === x.v ? 'on' : ''}" data-ed-fx="${slot}" data-v="${x.v}">${artOf(x.v, 'pka')}${esc(objName(x.v))}</button>`).join('')}</div>` : ''}
+        ${slot === 'clock' && on === 'r:fxneon' ? `<div class="ed-neon"><small>네온 색 <em>이 기기에 저장</em></small><div class="ed-ncs" role="radiogroup" aria-label="네온 색">${NEON.map(([k, n]) => `<button type="button" role="radio" aria-checked="${neonC() === k}" class="ed-nc nc-${k}${neonC() === k ? ' on' : ''}" data-neon-c="${k}"><i></i>${n}</button>`).join('')}</div></div>` : ''}
+        ${slot === 'masc' && on ? '<p class="ed-note sm">씌울 곳(캐릭터·시계·로고)은 서비스 › 뽑기 › 내 효과에서 골라요.</p>' : ''}</li>`;
+    }).join('')}</ul>`;
+  };
+  let fxBusy = false;
+  const edSetFx = async (slot, v) => {
+    if (fxBusy || (S.me?.gc?.fx?.[slot] || '') === v) return; fxBusy = true;
+    try { const r = await call('gcfx', { slot, v }); setGc(r); paintFx(); prev(); toast(v ? `${objName(v)} 켰어요` : '효과를 껐어요'); }
+    catch (err) { fail(err); } finally { fxBusy = false; }
+  };
+  $('#editForm').addEventListener('click', e => { if (e.target.closest('[data-neon-c]')) setTimeout(prev, 0); });   // 네온 색 → 미리보기 시계
+  if (tab0 === 'fx') paintFx();
   const sel = { avatar: u.avatar, color: u.color, rep: u.rep || '' };
   // 실시간 미리보기: 고르는 즉시 프로필 카드·이름 옆·시계에 어떻게 붙는지 보여 줌(바뀐 곳은 반짝)
   $('#socSheet').classList.add('edw');   // 꾸미기 창은 미리보기가 잘 보이게 넓게
@@ -487,12 +542,13 @@ function openEdit() {
     const box = $('#edPrev'); if (!box) return;
     box.innerHTML = pvHtml(u, { ...sel, stickers: [...picked], deco, name: F.elements.name.value.trim() || u.name, title: F.elements.title?.value || '', max: stkMax(u), slots });
     if (part) part.split(' ').forEach(pt => box.querySelectorAll(`[data-pv~="${pt}"]`).forEach(x => { x.classList.remove('pv-hit'); void x.offsetWidth; x.classList.add('pv-hit'); }));
-    clrSync();
+    clrSync(); subN();
   };
+  const subN = () => { const n = { st: `${picked.size}/${stkMax(u)}`, rep: sel.rep ? `${sel.rep.split(',').length}` : '', deco: `${deco.length}/${slots}` }; $$('#editForm [data-subn]').forEach(b => { b.textContent = n[b.dataset.subn]; }); };
   prev();
   F.elements.name.addEventListener('input', () => prev('name'));
   F.elements.title?.addEventListener(F.elements.title.tagName === 'SELECT' ? 'change' : 'input', () => prev('title'));
-  $('#edPrev').addEventListener('click', e => { if (e.target.closest('[data-clr]')) return clearStk('all'); if (!e.target.closest('[data-pv-fold]')) return; const f = !$('#edPrev').classList.contains('fold'); $('#edPrev').classList.toggle('fold', f); store.set('pv_fold', f ? 1 : 0); });
+  $('#edPrev').addEventListener('click', e => { if (!e.target.closest('[data-pv-fold]')) return; const f = !$('#edPrev').classList.contains('fold'); $('#edPrev').classList.toggle('fold', f); store.set('pv_fold', f ? 1 : 0); });
   $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev('av'); };
   $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev('co'); };
   $('#pSt').onclick = e => {
@@ -533,7 +589,7 @@ function openEdit() {
   clrSync = () => {
     const has = { st: picked.size > 0, rep: !!sel.rep, deco: deco.length > 0 };
     $$('#editForm .pk-clr').forEach(b => { b.disabled = !has[b.dataset.clr]; });
-    const all = $('#edPrev .pv-clr'); if (all) all.disabled = !(has.st || has.rep || has.deco);
+    const all = $('#editForm .pv-clr'); if (all) all.disabled = !(has.st || has.rep || has.deco);
   };
   const clearStk = k => {
     const parts = [];
@@ -543,7 +599,7 @@ function openEdit() {
     if (!parts.length) return;
     prev(parts.join(' ')); toast(k === 'all' ? '스티커를 전부 뗐어요 · 저장하면 반영돼요' : '뗐어요 · 저장하면 반영돼요');
   };
-  F.addEventListener('click', e => { const b = e.target.closest('.pk-clr'); if (b) clearStk(b.dataset.clr); });
+  F.addEventListener('click', e => { const b = e.target.closest('.pk-clr,.pv-clr'); if (b) clearStk(b.dataset.clr); });
   clrSync();
   // 인스타 아이디: 앞의 @는 칸에 붙은 고정 글자(.pre)라 지울 수 없음 — 직접 친 @·붙여 넣은 인스타 주소는 아이디만 남김
   const ig = $('#editForm [name=insta]');
@@ -1121,7 +1177,7 @@ export async function init(c) {
   ctx = c; c.stkTray = stkTray;   // app.js 밸런스 댓글에서도 씀
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
   c.RENDER.gacha = () => GCH.render();
-  GCH.init({ call, refreshMe, me: () => S.me, setGc: g => { if (S.me) { S.me.gc = { ...S.me.gc, tix: g.tix, shard: g.shard, pity: g.pity, leg: g.leg, own: g.own, fx: g.fx || S.me.gc?.fx || {} }; applyFx(); } } });
+  GCH.init({ call, refreshMe, me: () => S.me, setGc });
   c.report = openReport;
   c.authForm = authHtml;   // 소개 화면의 로그인/가입 폼
   c.onLeave = v => {
