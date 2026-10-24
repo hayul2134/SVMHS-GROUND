@@ -2026,7 +2026,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .c-xgalaxy{--pc:#2b2a6b;--pg:radial-gradient(circle at 30% 30%,#fff 0 1px,transparent 1.5px) 0 0/18px 18px,radial-gradient(circle at 70% 60%,#cfe6ff 0 1px,transparent 1.6px) 0 0/26px 26px,linear-gradient(150deg,#14163f,#3b2a7a 55%,#7a3fa8)}
 /* 2026-10-24 추가: 솜사탕 하늘(구름) · 벚꽃(꽃잎) · 홀로그램(반짝이며 흐름) */
 .c-xsky{--pc:#bfe0ff;--pg:radial-gradient(ellipse 13px 7px at 30% 40%,#fff 92%,transparent) 0 0/46px 34px,radial-gradient(ellipse 9px 5px at 72% 70%,#ffffffd0 92%,transparent) 0 0/38px 30px,linear-gradient(170deg,#ffd3ec 0%,#d6e8ff 52%,#a9d2ff 100%)}
-.c-xsakura{--pc:#ffc3d6;--pg:radial-gradient(ellipse 4px 2.6px at 30% 30%,#fff 88%,transparent) 0 0/26px 26px,radial-gradient(ellipse 3.4px 2.2px at 72% 68%,#ff8fb3 88%,transparent) 0 0/32px 32px,linear-gradient(160deg,#fff2f6 0%,#ffcadb 55%,#ff9ec0 100%)}
+.c-xsakura{--pc:#ffc3d6;--pg:radial-gradient(ellipse 5.5px 3.6px at 30% 30%,#fff 88%,transparent) 0 0/22px 22px,radial-gradient(ellipse 5px 3.2px at 72% 68%,#ff86ad 88%,transparent) 0 0/26px 26px,linear-gradient(160deg,#fff2f6 0%,#ffcadb 55%,#ff9ec0 100%)}
 .c-xholo{--pc:#d5c6ff;--pg:radial-gradient(circle at 30% 30%,#fff 0 1.2px,transparent 1.8px) 0 0/16px 16px,linear-gradient(115deg,#ffc6ec 0%,#b8ecff 26%,#d9c8ff 50%,#fff1b8 74%,#c4ffe6 100%)}
 .c-xgold{--pc:#ffd25a;--pg:linear-gradient(135deg,#fff3b0 0%,#ffd25a 40%,#e9a90d 75%,#fff0a0 100%)}
 .av[class*=" c-x"],.pick.sw button[class*=" c-x"],.pick.sw button[class^="c-x"]{background:var(--pg)}
