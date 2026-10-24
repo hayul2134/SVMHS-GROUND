@@ -2,7 +2,7 @@
 // 화면 논리 해상도 320×104 픽셀을 정수 배로 키워 그린다(이미지 부드럽게 끄기 → 또렷한 픽셀).
 // 점수는 home-score.js(서버와 공용): 살아남은 시간 → 거리(m). 고정 타임스텝 1/60초.
 // 캐릭터는 문자 그림(템플릿)을 부위별 색으로 칠해 프레임마다 미리 그려 둔다(바꿀 때만 다시).
-import { V0, VMAX, speedAt, scoreAt } from './home-score.js';
+import { V0, VMAX, UNIT, GOAL, speedAt, scoreAt, distAt } from './home-score.js';
 import { store } from './util.js';
 
 export const W = 320, H = 104, GROUND = 92, PX = 26;   // 화면 크기 · 땅 높이(발바닥 y) · 캐릭터 x
@@ -488,7 +488,7 @@ function art() {
 const FONT = {
   0: '111101101101111', 1: '010110010010111', 2: '111001111100111', 3: '111001111001111', 4: '101101111001001',
   5: '111100111001111', 6: '111100111101111', 7: '111001010010010', 8: '111101111101111', 9: '111101111001111',
-  H: '101101111101101', I: '111010010010111', m: '000000111111101', S: '111100111001111', V: '101101101101010', M: '101111111101101', ' ': '000000000000000',
+  H: '101101111101101', I: '111010010010111', m: '000000111111101', S: '111100111001111', V: '101101101101010', M: '101111111101101', O: '111101101101111', E: '111100111100111', ' ': '000000000000000',
 };
 function pxText(g, s, x, y, color, sc = 1) {
   g.fillStyle = color;
@@ -537,7 +537,7 @@ export function createRunner(canvas, char, opt = {}) {
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, speed: V0, scroll: 0,
       y: 0, vy: 0, onGround: true, jumpHeld: 0, ducking: false, anim: 0,
-      obs: [], nextGap: 120, burst: 0, rest: false, nid: 0, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0,
+      obs: [], homeT: 0, homeDone: false, nextGap: 120, burst: 0, rest: false, nid: 0, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0,
       clouds: [0, 1, 2].map(i => ({ x: 40 + i * 120 + rand() * 60, y: 8 + rand() * 22 })),
       stars: Array.from({ length: 28 }, () => ({ x: rand() * W, y: rand() * 46, p: rand() * 6 })),
       seed,
@@ -634,6 +634,11 @@ export function createRunner(canvas, char, opt = {}) {
     st.dust = st.dust.filter(d => d.t > 0);
     if (st.shake > 0) st.shake -= dt;
     if (st.scene === 'dead') { st.deadT += dt; return; }
+    if (st.scene === 'home') {   // 집 도착 연출: 문까지 걸어가 들어감 → 불 켜짐 → 1.8초 뒤 결과
+      st.homeT += dt;
+      if (st.homeT > 1.8 && !st.homeDone) { st.homeDone = true; opt.onOver?.(GOAL, st.ms, true); }
+      return;
+    }
     if (st.scene !== 'play') { st.y = Math.sin(st.anim * 3) * 0; return; }
 
     st.frames++; st.ms = Math.round(st.frames * 50 / 3);
@@ -641,6 +646,7 @@ export function createRunner(canvas, char, opt = {}) {
     const s = scoreAt(st.ms);
     if (Math.floor(s / 100) > st.lastHundred) { st.lastHundred = Math.floor(s / 100); st.flash = 1; beep(780, 1180, .12, 'square', .04); }
     st.score = s;
+    if (s >= GOAL) return arrive();
     if (st.flash > 0) st.flash -= dt * .9;
 
     // 캐릭터
@@ -662,8 +668,13 @@ export function createRunner(canvas, char, opt = {}) {
     for (const o of st.obs) o.x -= mv + (o.dx || 0) * dt;
     st.obs = st.obs.filter(o => o.x + o.w > -10);
     const lastO = st.obs[st.obs.length - 1];
-    if (!lastO || W - (lastO.x + lastO.w) > st.nextGap) spawn();
+    // 집 앞 약 70m부터는 장애물을 더 안 만듦(이미 나온 건 도착 전에 다 지나감) → 마지막은 집이 보이며 달려 들어가기
+    if ((!lastO || W - (lastO.x + lastO.w) > st.nextGap) && (GOAL - st.score) * UNIT > W + 400) spawn();
     for (const o of st.obs) if (hits(o)) return die();
+  }
+  function arrive() {
+    st.scene = 'home'; st.score = GOAL; st.flash = 0; st.lastHundred = GOAL / 100; st.homeT = 0; st.homeDone = false; st.obs = []; st.ducking = false;
+    beep(523, 523, .12); setTimeout(() => beep(659, 659, .12), 130); setTimeout(() => beep(784, 1046, .3), 260);
   }
   function die() {
     st.scene = 'dead'; st.deadT = 0; st.shake = .25;
@@ -743,6 +754,9 @@ export function createRunner(canvas, char, opt = {}) {
         g.globalAlpha = 1; for (let i = 0; i < o.n; i++) g.drawImage(img, X + i * (img.width + 1), Y);
       }
     }
+    // 집 (10만 m 골인 지점): 거리에 묶여 오른쪽에서 다가옴
+    const hx = Math.round(PX + 34 + (GOAL * UNIT - (st.scene === 'home' ? GOAL * UNIT : distAt(st.ms))));
+    if (hx < W + 4) drawHouse(sk, hx);
     // 흙먼지
     g.fillStyle = mix(sk.ground, sk.line, .4);
     for (const d of st.dust) g.fillRect(Math.round(d.x), Math.round(d.y), 1, 1);
@@ -751,24 +765,53 @@ export function createRunner(canvas, char, opt = {}) {
     g.fillStyle = 'rgba(42,40,70,.22)';
     const shw = Math.max(4, 12 - Math.round(air / 6));
     g.fillRect(PX + 12 - (shw >> 1), GROUND, shw, 1);
-    let f;
-    if (st.scene === 'dead') f = 'dead';
+    let f, walkX = 0, inside = false;
+    if (st.scene === 'home') {   // 문(hx+9) 앞까지 걸어가서 들어감
+      const k = Math.min(1, st.homeT / .9); walkX = Math.round((hx + 6 - PX) * k); inside = st.homeT > 1;
+    }
+    if (st.scene === 'home') f = Math.floor(st.anim * 8) % 2 ? 'run2' : 'run1';
+    else if (st.scene === 'dead') f = 'dead';
     else if (!st.onGround) f = 'jump';
     else if (st.ducking) f = Math.floor(st.anim * 10) % 2 ? 'duck2' : 'duck1';
     else if (st.scene === 'play') f = Math.floor(st.anim * (8 + st.speed / 40)) % 2 ? 'run2' : 'run1';
     else f = Math.floor(st.anim * 2) % 2 ? 'run1' : 'run1';
     const cy = Math.round(GROUND - SPR_H + st.y + (st.scene === 'ready' && Math.floor(st.anim * 2) % 2 ? 1 : 0));
-    g.globalAlpha = rimA; g.drawImage(spr[f + '_rim'], PX - 1, cy - 1); g.globalAlpha = 1;
-    g.drawImage(spr[f], PX, cy);
+    if (!inside) {
+      g.globalAlpha = rimA; g.drawImage(spr[f + '_rim'], PX - 1 + walkX, cy - 1); g.globalAlpha = 1;
+      g.drawImage(spr[f], PX + walkX, cy);
+    }
+    if (st.scene === 'home' && st.homeT > 1) {   // 들어간 뒤: 하트·반짝이 위로
+      const t = st.homeT - 1;
+      for (let i = 0; i < 7; i++) {
+        const px = hx + 4 + ((i * 37) % 48), py = Math.round(GROUND - 50 - t * (18 + (i % 3) * 8)) + (i % 2) * 6;
+        g.fillStyle = i % 2 ? '#ff6f9a' : '#ffd25e';
+        if (i % 2) { g.fillRect(px, py, 2, 1); g.fillRect(px + 3, py, 2, 1); g.fillRect(px, py + 1, 5, 1); g.fillRect(px + 1, py + 2, 3, 1); g.fillRect(px + 2, py + 3, 1, 1); }
+        else { g.fillRect(px + 1, py, 1, 3); g.fillRect(px, py + 1, 3, 1); }
+      }
+    }
     // 점수
     const hi = opt.best?.() || 0;
-    let x = W - 4 - (('' + Math.max(hi, 0)).padStart(5, '0').length + 1 + 5 + 3) * 4;
+    const DG = Math.max(5, String(Math.max(hi, st.score)).length);   // 10만(6자리)도 화면 안에
+    let x = W - 4 - (String(Math.max(hi, 0)).padStart(5, '0').length + 1 + DG + 3) * 4;
     const fg = sk.night > .5 ? '#e9ecff' : '#2a2846';
     if (hi > 0) { x = pxText(g, 'HI', x - 4, 4, mix(fg, sk.top, .45)); x = pxText(g, ' ' + String(hi).padStart(5, '0'), x, 4, mix(fg, sk.top, .45)); }
-    else x = W - 4 - 7 * 4;
+    else x = W - 4 - (DG + 2) * 4;
     const blink = st.flash > 0 && Math.floor(st.flash * 8) % 2 === 0;
     if (!blink) { x = pxText(g, ' ' + String(st.flash > 0 ? st.lastHundred * 100 : st.score).padStart(5, '0'), x, 4, fg); pxText(g, 'm', x, 4, fg); }
     g.restore();
+  }
+  function drawHouse(sk, x) {   // 56×46 픽셀 집. 문은 x+9~x+18
+    const y = GROUND - 46, lit = st.scene === 'home' && st.homeT > 1, night = sk.night > .5;
+    const wall = '#fff3dc', wallS = '#ecd9b8', roof = '#e4594d', roofS = '#b8403a', winC = lit || night ? '#ffe58a' : '#bfe3ff';
+    const R = (c, a, b, w, h) => { g.fillStyle = c; g.fillRect(x + a, y + b, w, h); };
+    R(OL, 40, 1, 7, 12); R('#9aa3b5', 41, 2, 5, 11);   // 굴뚝
+    for (let i = 0; i < 8; i++) { R(OL, 26 - 3 - i * 3, i * 2, 6 + i * 6 + 2, 2); R(i % 2 ? roofS : roof, 26 - 2 - i * 3, i * 2 + (i ? 0 : 1), 4 + i * 6 + 2, 2 - (i ? 0 : 1)); }   // 계단식 지붕
+    R(OL, 0, 16, 56, 1);
+    R(OL, 2, 17, 52, 29); R(wall, 3, 17, 50, 29); R(wallS, 3, 41, 50, 5);   // 벽
+    R(OL, 8, 26, 12, 20); R(lit ? '#ffe58a' : '#9b6b4a', 9, 27, 10, 19); R('#ffd25e', 16, 36, 2, 2);   // 문 (들어가면 불빛)
+    R(OL, 26, 25, 22, 12); R(winC, 27, 26, 20, 10); R(OL, 36, 26, 1, 10); R(OL, 27, 30, 20, 1);   // 창문
+    pxText(g, 'HOME', x + 21, y + 39, '#3e6fd8');   // 문패
+    R(OL, 5, 46, 18, 1);   // 현관 턱
   }
   function drawCity(sk, sc) {   // 먼 아파트·빌딩 (160px 무늬 반복)
     const tile = 160, off = Math.floor(sc) % tile, col = mix(sk.far, sk.bot, .3);

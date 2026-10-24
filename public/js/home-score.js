@@ -9,4 +9,6 @@ export function distAt(ms) {
   const t = ms / 1000;
   return t <= T1 ? V0 * t + ACC * t * t / 2 : V0 * T1 + ACC * T1 * T1 / 2 + VMAX * (t - T1);
 }
-export const scoreAt = ms => Math.floor(distAt(ms) / UNIT + 1e-6);
+// 2026-10-25 하율: 10만 m = 집 도착(골인). 그 이상은 없음 → 10만에서 멈춤 (최고 속도로 약 44분)
+export const GOAL = 100000;
+export const scoreAt = ms => Math.min(GOAL, Math.floor(distAt(ms) / UNIT + 1e-6));

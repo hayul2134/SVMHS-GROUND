@@ -25,7 +25,7 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
   // 나 집에 갈래!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
-  home: { name: '나 집에 갈래!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 최대한 멀리. 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
+  home: { name: '나 집에 갈래!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 — 100,000m면 집 도착! 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   reaction: { name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
   cut: { name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
@@ -1269,12 +1269,12 @@ async function playHome() {
   const R = RUN.createRunner(cv, char, {
     sound, best: () => best,
     onStart() { ov.hidden = true; ov.classList.remove('dead'); $('#hr').classList.add('on'); closeDress(); },
-    onOver(score, ms) {
+    onOver(score, ms, win) {   // win: 10만 m 골인(집 도착)
       over = true; deadAt = performance.now(); const no = ++runNo; $('#hr').classList.remove('on');
       const nb = score > best;
       if (nb) { best = score; store.set('home_best', best); }
-      ov.hidden = false; ov.classList.add('dead');
-      ov.innerHTML = `<b>앗, 집에 못 갔다…</b><span><em>${score.toLocaleString('ko-KR')}m</em> · ${(ms / 1000).toFixed(1)}초${nb ? ' · <i>최고 기록!</i>' : ''}</span>
+      ov.hidden = false; ov.classList.add('dead'); ov.classList.toggle('win', !!win);
+      ov.innerHTML = `<b>${win ? '집 도착! 수고했어요' : '앗, 집에 못 갔다…'}</b><span><em>${score.toLocaleString('ko-KR')}m</em> · ${(ms / 1000).toFixed(1)}초${nb ? ' · <i>최고 기록!</i>' : ''}</span>
         <small class="hr-msg" id="hrMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요'}</small><small class="hr-go">${matchMedia('(pointer:coarse)').matches ? '화면을 눌러 다시' : '스페이스 · ↑ · 클릭으로 다시'}</small>`;
       if (!S.me) return;
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {

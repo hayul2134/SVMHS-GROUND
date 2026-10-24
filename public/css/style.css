@@ -3728,6 +3728,7 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 /* ===== 나 집에 갈래!: 그 자리 게임 오버 + 아래 친구 랭킹 줄 (2026-10-25) ===== */
 .hr-ov.dead{background:rgba(42,40,70,.28);gap:6px}
 .hr-ov.dead span{font-size:clamp(14px,2vw,18px)}
+.hr-ov.dead.win{background:rgba(255,210,94,.22)}.hr-ov.dead.win b{transform:none;animation:hrBob 1.2s steps(2) infinite}
 .hr-ov.dead span em{font-style:normal;font-family:var(--num,inherit);font-weight:900;font-size:1.3em}
 .hr-ov.dead span i{font-style:normal;color:#e2483d}
 .hr-ov .hr-msg{animation:none;background:#fffbe8;border:2px solid #2a2846;border-radius:10px;padding:2px 10px;font-size:13px}
