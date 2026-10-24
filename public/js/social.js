@@ -441,12 +441,12 @@ function pvHtml(u, st) {
           <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${esc(st.title)}</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
         </div>
       </div>
-      <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm">${hm}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small>${dk}</div>
+      <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm"><span class="pv-ap">${t.getHours() < 12 ? '오전' : '오후'}</span>${hm}${dk}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small></div>
     </div>
     <button type="button" class="pv-fxs" data-ed-go="fx">${fxOn.length ? `${fxOn.map(k => artOf(fx[k], 'pka')).join('')}<span>효과 <b>${fxOn.length}개</b> 켜짐</span>` : '<span>켜 둔 뽑기 효과 없음</span>'}<i aria-hidden="true">›</i></button>`;
 }
-// 메뉴의 '꾸미기': 내 프로필로 가서 바로 꾸미기 창
-document.getElementById('btnEdit')?.addEventListener('click', () => { if (!S.me) return; if (location.hash !== '#me') location.hash = 'me'; setTimeout(openEdit, 60); });
+// 메뉴의 '꾸미기': 지금 화면 위에 바로 꾸미기 창(닫으면 보던 화면 그대로 — 2026-10-25: 프로필로 넘어가지 않게)
+document.getElementById('btnEdit')?.addEventListener('click', () => { if (!S.me) return; openEdit(); });
 function openEdit() {
   const u = S.me; if (!u) return;
   const picked = new Set(u.stickers || []);
@@ -482,8 +482,7 @@ function openEdit() {
       <section class="pk-sec">${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}</section>
       </div>
       <div class="ed-pane" data-pane="stk">
-      <div class="ed-subbar"><div class="ed-sub" role="tablist">${SUBS.map(([k, n]) => `<button type="button" role="tab" data-ed-sub="${k}" aria-selected="${k === sub0}">${n}<b data-subn="${k}"></b></button>`).join('')}</div><button type="button" class="pv-clr" data-clr="all" data-tip="카드·대표·시계 스티커를 한 번에 떼요 · 저장해야 반영돼요">${ui('peel', 'ic')}전부 떼기</button></div>
-      ${viewSeg}
+      <div class="ed-subbar"><div class="ed-sub" role="tablist">${SUBS.map(([k, n]) => `<button type="button" role="tab" data-ed-sub="${k}" aria-selected="${k === sub0}">${n}<b data-subn="${k}"></b></button>`).join('')}</div>${viewSeg}</div>
       <div class="ed-sp" data-sp="st">${pkSec('프로필 카드 스티커', '내 프로필 카드 윗부분(별 배경)에 붙어요 · 여러 개 고르기', `<b id="stkN">${picked.size}/${stkMax(u)}</b><button type="button" class="pk-clr" data-clr="st">${ui('peel', 'ic')}모두 떼기</button>`)}
       <div class="pick" id="pSt">${pkDiv('기본')}${STICKERS.map(s => `<button type="button" data-v="${s}" class="${picked.has(s) ? 'on' : ''}" data-tip="${EMO_NAME[s] || s}" aria-label="${EMO_NAME[s] || s}">${s}</button>`).join('')}${attDiv('sticker')}${attPicks('sticker', x => picked.has(x))}</div></section></div>
       <div class="ed-sp" data-sp="rep">${pkSec('대표 스티커', '이름 바로 옆에 작게 붙어요 · 댓글 · 랭킹 · DM · 친구 목록 어디서나', `<b>${isDev(u) ? '3개까지' : '1개'}</b><button type="button" class="pk-clr" data-clr="rep">${ui('peel', 'ic')}떼기</button>`)}
@@ -491,7 +490,7 @@ function openEdit() {
       <div class="ed-sp" data-sp="deco">${pkSec('첫 화면 시계 스티커', '내 첫 화면 큰 시계 둘레에 붙어요 · 나만 보여요', `<b id="decoN"></b><button type="button" class="pk-clr" data-clr="deco">${ui('peel', 'ic')}모두 떼기</button>`)}
       <div class="pick" id="pDeco">${attDiv('sticker')}${attPicks('sticker', x => deco.includes(x))}</div>
       <small class="hint">칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small></section></div>
-      <p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p>
+      <div class="ed-stkft"><p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p><button type="button" class="pv-clr" data-clr="all" data-tip="카드·대표·시계 스티커를 한 번에 떼요 · 저장해야 반영돼요">${ui('peel', 'ic')}스티커 전부 떼기</button></div>
       </div>
       <div class="ed-pane" data-pane="fx" id="edFx"></div>
        </div>
@@ -615,7 +614,7 @@ function openEdit() {
     const d = Object.fromEntries(new FormData(e.target));
     try {
       await call('me', { ...d, grade: +d.grade, cls: +d.cls, avatar: sel.avatar, color: sel.color, stickers: [...picked], rep: sel.rep, deco });
-      await refreshMe(); ctx.adoptClass?.(S.me, true); closeSheet(); renderMe(); toast('프로필을 저장했어요 ✨');
+      await refreshMe(); ctx.adoptClass?.(S.me, true); closeSheet(); if (location.hash === '#me') renderMe(); toast('프로필을 저장했어요 ✨');
     } catch (err) { fail(err); }
   };
 }

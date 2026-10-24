@@ -1057,9 +1057,9 @@ body.playing{overflow:hidden}
 .notice .n-tx[href]{text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .notice .n-x{width:30px;height:30px;border-radius:9px;border:2px solid var(--onc);background:rgba(255,255,255,.6);color:var(--onc);flex:none;font-size:13px}
 /* 홈에서는 공지가 떠도 아래 오브젝트가 움직이지 않게: 자리를 차지하지 않고 맨 위에 겹쳐 뜸 (2026-10-23 사용자 요청) */
-.notice:has(~ #v-home.on){position:absolute;top:84px;left:0;right:0;width:calc(100% - 40px);margin:0 auto}
-.notice:not([hidden]) ~ .view:not(#v-home){padding-top:18px}
-@media (max-width:560px){.notice{margin-top:70px;font-size:14px}.notice:has(~ #v-home.on){top:70px;margin-top:0;width:calc(100% - 32px)}}
+/* 공지는 어느 화면에서나 위에 겹쳐 뜸 — 아래 오브젝트를 밀어내지 않음(2026-10-25: 홈 말고 다른 화면에서도) */
+.notice{position:absolute;top:84px;left:0;right:0;width:calc(100% - 40px);margin:0 auto}
+@media (max-width:560px){.notice{margin-top:70px;font-size:14px}.notice{top:70px;margin-top:0;width:calc(100% - 32px)}}
 
 /* ===== 15. 메시지 창 (인스타 PC DM처럼 오른쪽 아래에 떠 있음) ===== */
 .dmdock{position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
@@ -3316,7 +3316,7 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .pv-hint{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(15,34,54,.55)}
 .pv-id{display:flex;align-items:flex-end;gap:10px;padding:0 12px 11px;margin-top:-28px}
 .pv-id .av.big{width:68px;height:68px;flex:none;border:3px solid var(--ink);border-radius:50%;box-shadow:0 0 0 3px var(--card)}
-.pv-nm{min-width:0;padding-bottom:2px}
+.pv-nm{min-width:0;padding-bottom:2px;padding-top:34px}   /* 이름·칭호가 카드 윗부분(배너) 선에 걸치지 않게 — 배너 아래에서 시작 */
 .pv-name{margin:0;font-weight:900;font-size:18px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
 .pv-name .rep .repa{width:22px;height:22px}
 .pv-nm .ptitle{margin:4px 0 0;font-size:11.5px}
@@ -3327,9 +3327,17 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .pv-tm{font:900 40px/1 var(--num,inherit);letter-spacing:-.04em;color:var(--text);text-shadow:3px 3px 0 color-mix(in srgb,var(--pc,#7cc4f5) 55%,transparent)}
 .pv-clk.neon{background:var(--chip)}
 .pv-clk.neon .pv-tm{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:0;text-shadow:.0375em .0em 0 var(--ne-tube),.0346em .0144em 0 var(--ne-tube),.0265em .0265em 0 var(--ne-tube),.0144em .0346em 0 var(--ne-tube),.0em .0375em 0 var(--ne-tube),-.0144em .0346em 0 var(--ne-tube),-.0265em .0265em 0 var(--ne-tube),-.0346em .0144em 0 var(--ne-tube),-.0375em .0em 0 var(--ne-tube),-.0346em -.0144em 0 var(--ne-tube),-.0265em -.0265em 0 var(--ne-tube),-.0144em -.0346em 0 var(--ne-tube),-.0em -.0375em 0 var(--ne-tube),.0144em -.0346em 0 var(--ne-tube),.0265em -.0265em 0 var(--ne-tube),.0346em -.0144em 0 var(--ne-tube);filter:drop-shadow(0 0 1px var(--ne)) drop-shadow(0 0 4px var(--ne))}
-.pv-dk{position:absolute;width:32px;height:32px;display:grid;place-items:center;pointer-events:none}
-.pv-dk > *{width:32px !important;height:32px !important;display:block}
-.pv-dk.k1{left:-9px;top:-11px;transform:rotate(-12deg)}.pv-dk.k2{right:-9px;bottom:-11px;transform:rotate(10deg)}.pv-dk.k3{right:-9px;top:-11px;transform:rotate(12deg)}.pv-dk.k4{left:-9px;bottom:-11px;transform:rotate(-8deg)}.pv-dk.k5{left:50%;top:-14px;margin-left:-16px}
+/* 미리보기 시계 스티커: 상자 모서리가 아니라 진짜 첫 화면 시계(.clock .dk.du1~5)와 같은 자리·같은 비율 — 시계 글자 크기(em) 기준 (2026-10-25) */
+.pv-tm{position:relative;display:inline-block;padding:0 .2em;line-height:.95}
+.pv-tm .pv-ap{font-size:.26em;font-weight:900;color:var(--sub);text-shadow:none;-webkit-text-stroke:0;margin-right:.18em;vertical-align:.9em;letter-spacing:0}
+.pv-clk.neon .pv-tm .pv-ap{color:var(--sub);text-shadow:none!important}
+.pv-dk{position:absolute;display:block;pointer-events:none;line-height:0}
+.pv-dk > *{width:100% !important;height:100% !important;display:block;filter:drop-shadow(2px 2px 0 rgba(23,48,72,.18))}
+.pv-dk.k1{width:.36em;height:.36em;left:-9%;top:-14%;transform:rotate(-12deg)}
+.pv-dk.k2{width:.30em;height:.30em;right:-9%;bottom:-2%;transform:rotate(10deg)}
+.pv-dk.k3{width:.24em;height:.24em;right:-4%;top:-20%;transform:rotate(14deg)}
+.pv-dk.k4{width:.26em;height:.26em;left:-2%;bottom:-16%;transform:rotate(-8deg)}
+.pv-dk.k5{width:.21em;height:.21em;left:-16%;top:38%;transform:rotate(12deg)}
 /* 켜 둔 뽑기 효과 칩 */
 .pv-hit{animation:pvHit .6s ease-out}
 @keyframes pvHit{0%{filter:brightness(1.35);transform:scale(1.04)}100%{filter:none;transform:none}}
@@ -3498,4 +3506,16 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
   .ed-body{padding:2px 14px 16px}
   .ed-hd{padding:10px 12px 10px 18px}.ed-hd h3{font-size:21px}
 }
-@media (max-width:460px){.ed-pv .pv-body{grid-template-columns:minmax(0,1fr) 100px;gap:10px}.ed-pv .pv-card .pban{height:60px}.ed-pv .pv-id .av.big{width:56px;height:56px}.ed-pv .pv-name{font-size:16px}.ed-pv .pv-tm{font-size:27px}.ed-pv .pv-clk small{font-size:9.5px;text-align:center}.ed-pv .pv-dk,.ed-pv .pv-dk > *{width:24px !important;height:24px !important}.ed .pv-fxs{display:none}.ed-tabs button{padding:7px 9px;font-size:13px}.ed-subbar .pv-clr{margin-left:auto}}
+@media (max-width:460px){.ed-pv .pv-body{grid-template-columns:minmax(0,1fr) 100px;gap:10px}.ed-pv .pv-card .pban{height:60px}.ed-pv .pv-id .av.big{width:56px;height:56px}.ed-pv .pv-name{font-size:16px}.ed-pv .pv-tm{font-size:27px}.ed-pv .pv-clk small{font-size:9.5px;text-align:center}.ed .pv-fxs{display:none}.ed-tabs button{padding:7px 9px;font-size:13px}.ed-subbar .pv-clr{margin-left:auto}}
+
+/* 꾸미기 창 정돈(2026-10-25 하율: 시선이 갈 곳이 섞여 난잡) — 조작 줄을 한 줄로(카드·대표·시계 | 모두 보기·보유한 것만),
+   떼기 버튼은 빨간 강조 대신 조용한 테두리 버튼(누를 때만 빨강), '전부 떼기'는 맨 아래로 */
+.ed-subbar .pk-view{margin:0}
+.ed .pk-clr,.ed .pv-clr{background:var(--card);color:var(--text);text-shadow:none;box-shadow:none;border-width:2px}
+.ed .pk-clr:not(:disabled):hover,.ed .pv-clr:not(:disabled):hover{background:#f0646d;color:#fff;box-shadow:2px 2px 0 var(--ink)}
+.ed .pk-clr:disabled,.ed .pv-clr:disabled{opacity:.4}
+.ed-stkft{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.ed-stkft .att-hint{margin:0;flex:1;min-width:0}
+.ed .pk-sec{margin-top:16px}
+.ed .pk-sec .pick .pk-div{margin-top:6px}
+@media (max-width:460px){.ed-pv .pv-tm .pv-ap{display:none}.ed-pv .pv-tm{padding:0 .08em;font-size:25px}}   /* 휴대폰 폭 좁은 미리보기 시계: 오전/오후를 빼야 숫자가 안 잘림 */
