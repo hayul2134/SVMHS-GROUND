@@ -2,6 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
+import { rwNorm } from '../../../public/js/att-rewards.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
@@ -139,7 +140,7 @@ const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
-const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !unlockedOf(effBest(me), effTotal(me), 'sticker').includes(m[1]) ? '아직 받지 못한 스티커예요' : null; };
+const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !unlockedOf(effBest(me), effTotal(me), 'sticker').includes(rwNorm(m[1])) ? '아직 받지 못한 스티커예요' : null; };
 const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
@@ -317,6 +318,11 @@ const ROUTES = {
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
     const ub = k => unlockedOf(effBest(me), effTotal(me), k);
+    // 예전 보상 이름(r:lion 등)은 새 이름으로 바꿔서 검사 (2026-10-24 그림 교체)
+    body.avatar = rwNorm(body.avatar);
+    if (Array.isArray(body.stickers)) body.stickers = body.stickers.map(rwNorm);
+    if (Array.isArray(body.deco)) body.deco = body.deco.map(rwNorm);
+    if (body.rep !== undefined) body.rep = String(body.rep).split(',').map(rwNorm).join(',');
     const avOk = [...AVATARS, ...ub('avatar')], stOk = [...STICKERS, ...ub('sticker')], coOk = [...COLORS, ...ub('color')];
     const avatar = avOk.includes(body.avatar) ? body.avatar : me.avatar;
     const color = coOk.includes(body.color) ? body.color : me.color;
