@@ -251,14 +251,15 @@ const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `$
 function rewardsHtml(r, by) {
   const own = x => r.all || rwOn(x, r.best, r.total);   // r.all: 개발자 계정 = 전부 해금
   const list = REWARDS.filter(x => x.by === by), have = list.filter(own).length;
-  return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${fmtN(r.best)}일` : `총 ${r.total}일`} · ${have}/${list.length}개 받음</small></div>
+  return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${fmtN(r.best)}일` : `총 ${r.all ? '∞' : r.total}일`} · ${have}/${list.length}개 받음</small></div>
     <ul class="att-rw">${list.map(x => {
       const on = own(x);
       return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${named(x.kind) ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
     }).join('')}</ul>`;
 }
 function sheetHtml(r, quiet = false) {
-  const shields = Array.from({ length: r.shieldMax }, (_, i) => shieldSvg(i < r.shield ? 'on' : 'off')).join('');
+  // 개발자 계정: 총 출석·출석 방패도 무한(∞)
+  const shields = r.all ? `${shieldSvg('on')}<b class="inf">∞</b>` : Array.from({ length: r.shieldMax }, (_, i) => shieldSvg(i < r.shield ? 'on' : 'off')).join('');
   const state = r.rest && !r.done ? (r.cur ? '오늘은 쉬는 날 — 출석 안 해도 기록 그대로예요' : '쉬는 날엔 출석을 세지 않아요. 등교하는 날 시작해요') : !r.done ? (r.cur ? '오늘은 아직 출석 전이에요' : '오늘부터 다시 불꽃을 키워 봐요') : r.pf && r.cur >= 3 ? `${ui('sparkle', 'ic')}완벽한 연속 — 방패 없이 이어 가는 중` : '내일도 와서 불꽃을 지켜 주세요';
   const md = `${+r.today.slice(4, 6)}.${+r.today.slice(6)}`;
   // 오늘 출석 도장: 완료면 초록 도장(한 번 쾅 찍힘), 아니면 점선 빈 도장
@@ -274,8 +275,8 @@ function sheetHtml(r, quiet = false) {
     </div>
     <div class="att-stats">
       <div><b>${fmtN(r.best)}</b><small>최고 기록</small></div>
-      <div><b>${r.total}</b><small>총 출석</small></div>
-      <div class="shs" data-tip="연속 ${r.shieldEvery}일마다 1개 · 최대 ${r.shieldMax}개"><span>${shields}</span><small>출석 방패</small></div>
+      <div><b>${r.all ? '∞' : r.total}</b><small>총 출석</small></div>
+      <div class="shs" data-tip="${r.all ? '개발자 계정 · 방패 무한' : `연속 ${r.shieldEvery}일마다 1개 · 최대 ${r.shieldMax}개`}"><span>${shields}</span><small>출석 방패</small></div>
     </div>
     ${progressHtml(r)}
     <section class="att-sec" id="attCal">${calHtml(r)}</section>

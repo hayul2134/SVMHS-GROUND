@@ -1961,7 +1961,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-stats > div{display:grid;justify-items:center;gap:2px;padding:10px 6px;border-radius:16px;background:var(--chip);border:2px solid var(--ink)}
 .att-stats b{font:900 22px/1.2 var(--num)}
 .att-stats small{font-size:12px;font-weight:800;color:var(--sub)}
-.att-stats .shs span{display:flex;gap:3px;height:26px;align-items:center}.att-stats .shs .shd{width:22px;height:22px}
+.att-stats .shs span{display:flex;gap:3px;height:26px;align-items:center}.att-stats .shs .inf{font-size:22px;line-height:1}.att-stats .shs .shd{width:22px;height:22px}
 .att-sec{margin-top:20px}
 .att-sec h4{font-family:var(--disp);font-weight:400;font-size:19px;margin-bottom:8px}
 .att-sec h4 small{display:block;font-family:inherit;font-size:12px;font-weight:700;color:var(--sub);margin-top:2px}
