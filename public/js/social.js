@@ -91,7 +91,6 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-neon-c]'); if (!b) return;
   store.set('neon_c', b.dataset.neonC); document.documentElement.dataset.neon = b.dataset.neonC;
   $$('[data-neon-c]').forEach(x => { const on = x.dataset.neonC === b.dataset.neonC; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
-  document.documentElement.classList.remove('neon-on'); void document.documentElement.offsetWidth; document.documentElement.classList.add('neon-on');   // 색 바꾸면 켜지는 연출 한 번
 });
 // 내가 켠 뽑기 효과 중 내 화면에만 보이는 것: 시계 테마(html[data-ckfx]) · 마스코트 소품(html[data-mfx] → app.js가 캐릭터에 붙임)
 function applyFx() {
