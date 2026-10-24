@@ -2297,7 +2297,11 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
 .s-slots button.on{background:var(--ink);color:var(--lime);border-color:var(--ink)}
 
 /* 한 주 크게 보기 (#mAll) */
-.all-sheet{max-width:min(1120px,100%);text-align:left;padding:20px 20px 22px}
+.all-sheet{max-width:min(1120px,100%);text-align:left;padding:20px 20px 22px;display:flex;flex-direction:column;height:min(720px,calc(100dvh - 32px));overflow:hidden}
+.all-head{flex:none}
+.all-body{flex:1;min-height:0;display:flex}   /* 창 높이 고정: 급식↔시간표·주 넘기기에도 머리(탭·버튼)가 안 움직임 */
+.all-pane{flex:1;min-width:0;min-height:0;overflow:auto;padding:4px}
+.all-pane[hidden]{display:none}
 .all-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .all-head h3{margin:0 auto 0 0}
 .all-head .mealtabs{margin:0}

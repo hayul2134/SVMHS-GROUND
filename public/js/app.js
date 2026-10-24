@@ -1232,23 +1232,35 @@ function weekPick(sel, getMon, setMon) {
   }
 }
 /* ===== 한 주 크게 보기 (첫 화면 카드 '전체' 버튼 → #mAll) — 아래로 내려가지 않고 바로 급식·시간표 한 주 ===== */
-const ALL = { tab: 'meal', mon: null, seq: 0 };
+// 급식·시간표는 각자 칸(pane)을 따로 두고 보이기만 바꿈 → 탭을 오가도 다시 불러오지 않고, 창 크기·위치가 그대로(2026-10-24 전환 버그 수정)
+const ALL = { tab: 'meal', mon: null, key: { meal: '', tt: '' } };
 function weekOf(d) { return mondayOf(addDays(d, d.getDay() === 6 ? 2 : d.getDay() === 0 ? 1 : 0)); }
 function wkResize() { try { heroResize(); } catch {} }   // 한 주 모드로 카드 높이가 바뀌면 서랍 세로 위치 다시 계산
 function openAll(tab, day) { ALL.tab = tab; ALL.mon = weekOf(day); openModal('#mAll'); renderAll(); }
-async function renderAll() {
-  const mon = ALL.mon, box = $('#allBody'), seq = ++ALL.seq, w = diffDays(mon, weekOf(today())) / 7;
-  $$('#mAll [data-all]').forEach(b => { const on = b.dataset.all === ALL.tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+function allPane(tab) {
+  let p = $(`#allBody > [data-pane="${tab}"]`);
+  if (!p) { p = document.createElement('div'); p.dataset.pane = tab; p.className = 'all-pane'; p.setAttribute('role', 'tabpanel'); $('#allBody').append(p); }
+  return p;
+}
+function allKey(tab) { return ymd(ALL.mon) + '|' + ymd(today()) + (tab === 'tt' ? '|' + (cls ? cls.g + '-' + cls.c : '') : ''); }
+function renderAll() {
+  const mon = ALL.mon, tab = ALL.tab, w = diffDays(mon, weekOf(today())) / 7;
+  $$('#mAll [data-all]').forEach(b => { const on = b.dataset.all === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
   $('#allLbl').innerHTML = `${weekLbl(mon)}<small>${w === 0 ? '이번 주' : w === 1 ? '다음 주' : w === -1 ? '지난주' : w > 0 ? w + '주 뒤' : -w + '주 전'}</small>`;
-  if (ALL.tab === 'tt') {
-    $('#allT').textContent = cls ? `${cls.g}학년 ${cls.c}반 시간표` : '시간표';
-    box.className = 'all-body scrollx'; fillWeek(box, mon, () => seq !== ALL.seq); return;
-  }
-  $('#allT').textContent = '한 주 급식';
-  box.className = 'all-body'; box.innerHTML = `<div class="mw">${skel(5)}</div>`;
+  $('#allT').textContent = tab === 'tt' ? (cls ? `${cls.g}학년 ${cls.c}반 시간표` : '시간표') : '한 주 급식';
+  ['meal', 'tt'].forEach(t => { allPane(t).hidden = t !== tab; });
+  const p = allPane(tab), key = allKey(tab);
+  if (ALL.key[tab] === key && !p.dataset.fail) return;   // 이미 그린 주면 보이기만
+  ALL.key[tab] = key; delete p.dataset.fail; p.scrollTop = 0; p.scrollLeft = 0;
+  const stale = () => ALL.key[tab] !== key;
+  if (tab === 'tt') fillWeek(p, mon, stale).then(() => { if (!stale() && !p.querySelector('table')) p.dataset.fail = '1'; });   // 못 불러왔으면 다음에 다시 시도
+  else paintAllMeal(p, mon, stale);
+}
+async function paintAllMeal(box, mon, stale) {
+  box.innerHTML = `<div class="mw">${skel(5)}</div>`;
   try {
     const rows = await getMealsRange(mon, addDays(mon, 4));
-    if (seq !== ALL.seq) return;
+    if (stale()) return;
     const t = ymd(today());
     box.innerHTML = '<div class="mw">' + [0, 1, 2, 3, 4].map(i => {
       const d = addDays(mon, i), k = ymd(d);
@@ -1257,9 +1269,9 @@ async function renderAll() {
         + (ms.length ? ms.map(r => `<div class="mw-m"><h5>${MEALS[r.MMEAL_SC_CODE]}${r.CAL_INFO ? `<span>${esc(r.CAL_INFO)}</span>` : ''}</h5><ul>${cleanDish(r.DDISH_NM).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('') : '<p class="mw-no">급식 없음</p>')
         + '</section>';
     }).join('') + '</div>';
-  } catch { if (seq === ALL.seq) box.innerHTML = empty('급식 정보를 불러오지 못했어요'); }
+  } catch { if (!stale()) { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); box.dataset.fail = '1'; } }
 }
-$$('#mAll [data-all]').forEach(b => b.onclick = () => { ALL.tab = b.dataset.all; renderAll(); });
+$$('#mAll [data-all]').forEach(b => b.onclick = () => { if (ALL.tab === b.dataset.all) return; ALL.tab = b.dataset.all; renderAll(); });
 $('#allPrev').onclick = () => { ALL.mon = addDays(ALL.mon, -7); renderAll(); };
 $('#allNext').onclick = () => { ALL.mon = addDays(ALL.mon, 7); renderAll(); };
 weekPick('#allLbl', () => ALL.mon, m => { ALL.mon = m; renderAll(); });
