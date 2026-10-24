@@ -6,8 +6,8 @@ export const CLUBS = [
   ['artgen', '미술 영재반'], ['icec', 'ICEC'], ['sinabro', '시나브로'], ['gonggan', '공간'], ['texas', '텍사스의 소떼들'], ['saim', 'S.AI.M'],
   ['rcy', 'RCY'], ['ytigers', 'Y-tigers'], ['ybs', 'YBS'], ['gogamdo', '고감도'], ['monorate', '모노레이트'],
 ];
-// 가나다순(2026-10-25 하율) — 영어 이름은 읽는 소리로(ICEC 아이섹 · RCY 알씨와이 · AD focus 에이디 · YBS 와이비에스 · Y-tigers 와이타이거즈 · EXTRUDE 익스트루드 · S.AI.M 사임)
-const READ = { icec: '아이섹', rcy: '알씨와이', adfocus: '에이디포커스', ybs: '와이비에스', ytigers: '와이타이거즈', extrude: '익스트루드', saim: '사임' };
-CLUBS.sort((a, b) => (READ[a[0]] || a[1]).localeCompare(READ[b[0]] || b[1], 'ko'));
+// 정렬(2026-10-25 하율): 한글 이름 가나다순 → 영어 이름은 뒤에 A-Z순
+const isEn = n => /^[A-Za-z]/.test(n);
+CLUBS.sort((a, b) => isEn(a[1]) - isEn(b[1]) || (isEn(a[1]) ? a[1].localeCompare(b[1], 'en', { sensitivity: 'base' }) : a[1].localeCompare(b[1], 'ko')));
 export const clubOf = name => CLUBS.find(c => c[1] === name) || null;
 export const clubLogo = (name, cls = 'clogo') => { const c = clubOf(name); return c ? `<img class="${cls}" src="/clubs/${c[0]}.webp" alt="" loading="lazy" width="128" height="128">` : ''; };
