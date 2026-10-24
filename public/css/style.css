@@ -45,7 +45,7 @@ a{color:inherit}
 header{position:fixed;top:0;left:0;right:0;z-index:45;pointer-events:none}
 /* 스크롤하면 헤더 뒤에 반투명 바탕 (2026-10-24: 버튼이 아래 카드·리본 위에 그냥 떠서 겹쳐 보이던 문제) */
 /* 2026-10-24: 경계선 없이 아래로 스르륵 사라지는 블러 — 블러 층을 헤더보다 길게 깔고 아래쪽을 그라데이션 마스크로 지움 */
-header::before{content:"";position:absolute;left:0;right:0;top:0;bottom:-48px;z-index:-1;pointer-events:none;opacity:0;transition:opacity .25s;background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 88%,transparent) 0%,color-mix(in srgb,var(--bg) 70%,transparent) 55%,transparent 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 50%,rgba(0,0,0,.6) 72%,transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 50%,rgba(0,0,0,.6) 72%,transparent 100%)}
+header::before{content:"";position:absolute;left:0;right:0;top:0;bottom:-16px;z-index:-1;pointer-events:none;opacity:0;transition:opacity .25s;background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 88%,transparent) 0%,color-mix(in srgb,var(--bg) 76%,transparent) 75%,transparent 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 70%,transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 70%,transparent 100%)}
 html.hbg:not(.prelogin) header::before{opacity:1}
 .hd{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:8px}
 .hd > *{pointer-events:auto}
