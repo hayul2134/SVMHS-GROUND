@@ -2593,7 +2593,7 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
   .stage:not(.drawers) .s-side{order:6}.stage:not(.drawers) .s-lside{order:7;margin-top:30px}
 }
 /* 시계 묶음(말풍선 포함) 한 덩어리 정가운데 — 이동량은 app.js centerHero()가 재서 --hx/--hy로 넣음 */
-.drawers :is(.s-greet,.s-what,.clock,.s-info){translate:var(--hx,0) var(--hy,0)}
+.drawers :is(.s-greet,.s-what,.clock,.s-info,.s-fr){translate:var(--hx,0) var(--hy,0)}
 
 /* ===== 오늘 한눈에: 한 화면 배치 (2026-10-23) ===== */
 .board{padding-top:30px}
@@ -2698,6 +2698,7 @@ button.s-ttmore{font-family:inherit;cursor:pointer}
   /* 3) 'N교시 시작까지'·상태 줄: 아래에서 살짝 떠오름 */
   .boot .stage .s-what{animation:hRise .5s cubic-bezier(.2,.9,.3,1) .05s backwards}
   .boot .stage .s-info{animation:hRise .55s cubic-bezier(.2,.9,.3,1) .4s backwards}
+  .boot .stage .s-fr{animation:hRise .55s cubic-bezier(.2,.9,.3,1) .5s backwards}
   /* 4) 말풍선: 마지막에 뿅 (기존 둥실 애니메이션 유지) */
   .boot .stage .s-greet{animation:hBubble .5s cubic-bezier(.3,1.7,.5,1) .7s backwards,bob 2.6s ease-in-out infinite}
   /* 5) 급식판은 왼쪽에서, 시간표는 오른쪽에서 미끄러져 들어옴 */
@@ -3630,3 +3631,53 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .bd-empty p{margin:0;font-size:12.5px;color:var(--sub);line-height:1.45}
 .bd-empty b{display:block;font-size:14.5px;color:var(--text)}
 @media (max-width:520px){.bd{width:112px}.bd-av .av{width:46px;height:46px}}
+
+/* ===== 첫 화면 친구 띠 (2026-10-25) — 상태 줄 아래 작은 스티커 한 장: 접속 중 친구 얼굴(왕관 등 꾸민 그대로) ===== */
+.s-fr{display:inline-flex;align-items:center;gap:10px;margin:18px auto 0;padding:5px 8px 5px 5px;background:var(--card);color:var(--text);border:var(--bd);border-radius:99px;box-shadow:var(--sh-s);rotate:.8deg}
+.stage:not(.drawers) .s-fr{order:5}
+.sf-l{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:var(--chip);font-size:12.5px;font-weight:800;color:var(--sub);white-space:nowrap;cursor:pointer}
+.sf-l b{color:var(--text);font-weight:900}
+.sf-l .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.s-fr.on .sf-l{background:color-mix(in srgb,#33d17a 18%,var(--card));color:var(--text)}
+.s-fr.on .sf-l .dot{background:#33d17a;box-shadow:0 0 0 3px color-mix(in srgb,#33d17a 30%,transparent);animation:bdPulse 1.8s ease-in-out infinite}
+.sf-avs{display:flex;align-items:center;gap:6px}
+.sf-a{position:relative;display:block;border-radius:50%;text-decoration:none;transition:transform .15s cubic-bezier(.3,1.4,.5,1)}
+.sf-a:hover{transform:translateY(-3px) rotate(-4deg)}
+.sf-a .av{width:38px;height:38px;font-size:20px}
+.sf-a .av .dot{width:11px;height:11px}
+.s-fr:not(.on) .sf-a .av{filter:saturate(.75)}
+.sf-a.new::after{content:"";position:absolute;top:-2px;left:-2px;width:11px;height:11px;border-radius:50%;background:#ff5a6e;border:2px solid var(--card)}
+.sf-more{padding:0 4px;font:900 13px var(--num,inherit);color:var(--sub)}
+@media (max-width:560px){.s-fr{gap:6px}.sf-l{padding:5px 9px;font-size:11.5px}.sf-a .av{width:32px;height:32px;font-size:17px}}
+
+/* ===== 홈 친구 랭킹 카드 (2026-10-25) — '한눈에 보기' 맨 위, 친구 카드 옆 ===== */
+.k-rk{--k:#c98a00;--ks:#fff1c2}
+:root[data-theme="dark"] .k-rk{--k:#ffd36b;--ks:#4a3d14}
+.bento .k-rk::before{background:rgba(255,214,102,.85);left:auto;right:16%;transform:rotate(4deg)}
+.bento .k-rk{transform:rotate(.5deg)}
+@media (min-width:1000px){.board .k-bd,.board .k-rk{align-self:stretch}.board .k-bd{display:flex;flex-direction:column}.board .k-bd .bdrow{flex:1}.board .k-bd .bd > a{justify-content:center}.board .k-bd .bd-f{margin-top:6px}}
+.k-rk .badge svg{width:22px;height:22px}
+.k-rk .ct .links{margin-left:auto}
+.rk-tabs{display:flex;gap:6px;margin:2px 0 8px}
+.rk-tabs button{flex:1;display:grid;place-items:center;height:36px;border-radius:12px;background:var(--chip);border:2px solid var(--line);transition:transform .15s,border-color .15s}
+.rk-tabs button .sic{width:22px;height:22px}
+.rk-tabs button:hover{transform:translateY(-2px)}
+.rk-tabs button[aria-selected="true"]{background:var(--ks);border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.rk-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.rk-list > .skel{height:36px;margin:0}
+.rk-cap{font-size:11.5px;font-weight:800;color:var(--sub);padding:0 2px 2px}
+.rk{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:6px;padding:4px 8px 4px 4px;border-radius:12px}
+.rk.me{background:var(--ks);box-shadow:inset 0 0 0 2px var(--k)}
+.rk.top{background:color-mix(in srgb,#ffd36b 22%,var(--card))}
+.rk.top.me{background:var(--ks)}
+.rk-n{display:grid;place-items:center;font:900 14px var(--num,inherit);color:var(--sub)}
+.rk-n .mdl{width:26px;height:26px;font-size:13px}
+.rk > a{display:flex;align-items:center;gap:8px;min-width:0;color:var(--text);text-decoration:none}
+.rk > a .av{flex:none;width:32px;height:32px;font-size:17px}
+.rk > a > b{display:flex;align-items:center;gap:3px;min-width:0;font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden}
+.rk > a > b > span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rk > a > b .devb{flex:none;padding:0 5px;font-size:10px}
+.rk-v{display:inline-flex;align-items:center;gap:2px;font:900 14px var(--num,inherit);white-space:nowrap}
+.rk-v .flm{width:15px;height:19px}
+.rk-v small{font-size:11px;color:var(--sub);margin-left:1px}
+.rk-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;font-size:13px;font-weight:700;color:var(--sub);text-align:center}

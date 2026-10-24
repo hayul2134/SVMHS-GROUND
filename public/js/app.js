@@ -307,7 +307,7 @@ $('#goDown').onclick = () => scrollTo({ top: boardY(), behavior: 'smooth' });
     const gap = boardY() + innerHeight - (cd.getBoundingClientRect().top + scrollY) + 90;   // 90: 위로 삐져나온 마스킹테이프·그림자까지 화면 밖으로 (2026-10-24 2차: 28이면 테이프가 바닥에 걸쳐 보였음)
     cd.style.marginTop = gap > 0 ? Math.min(gap, innerHeight * .7) + 'px' : '';
   };
-  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); if ($('#bdCard')) ro.observe($('#bdCard')); }   // 친구 카드(2026-10-25)는 한눈에 보기 화면 안, 카운트다운만 아래로
+  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); if ($('#bdCard')) ro.observe($('#bdCard')); if ($('#rkCard')) ro.observe($('#rkCard')); }   // 친구 카드(2026-10-25)는 한눈에 보기 화면 안, 카운트다운만 아래로
   addEventListener('resize', f); f();
 }
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
@@ -1056,7 +1056,7 @@ wideMQ.addEventListener('change', applyDrawers); applyDrawers();
 /* 첫 화면 '시계 묶음'(말풍선·N교시 시작까지·큰 시계·별 스티커·상태 줄)을 한 덩어리로 보고 화면 정가운데에 맞춤 (2026-10-23)
    묶음 전체의 바깥 상자를 재서 가운데가 화면 가운데(=좌우 서랍 중심)에 오도록 --hx/--hy 만큼 옮김. 위 공지·아래 밸런스 티켓과는 안 겹치게 제한 */
 const HERO = $('#bigclock');
-const HERO_PARTS = '.s-greet .bubble, #bellLbl, #bigTime, .clock .dk, #more';
+const HERO_PARTS = '.s-greet .bubble, #bellLbl, #bigTime, .clock .dk, #more, #hFr';   // #hFr: 첫 화면 친구 띠(2026-10-25)
 // force=false(글자 폭 변화 등)일 땐 6px 미만 차이는 무시 → 말풍선 흔들림·별 반짝임 때문에 다시 잴 때마다 1~3px씩 튀던 문제 방지
 function centerHero(force) {
   const st = HERO.style;
@@ -1067,7 +1067,7 @@ function centerHero(force) {
   const bob = new DOMMatrix(getComputedStyle($('.s-greet')).transform).f;   // 말풍선 위아래 흔들림 값은 빼고 잼
   // 옮기기 전(정렬값 빼고) 위치로 잼 — --hx/--hy 대신 '지금 실제로 적용 중인' translate를 뺌.
   // translate가 전환 애니메이션 중일 때 재면 서랍 높이(--hcy)가 엉뚱하게 굳던 문제 (2026-10-24)
-  const offOf = el => { const p = el.closest('.s-greet,.s-what,.clock,.s-info'); const t = p ? getComputedStyle(p).translate : 'none';
+  const offOf = el => { const p = el.closest('.s-greet,.s-what,.clock,.s-info,.s-fr'); const t = p ? getComputedStyle(p).translate : 'none';
     if (!t || t === 'none') return [0, 0]; const [x, y] = t.split(' '); return [parseFloat(x) || 0, parseFloat(y) || 0]; };
   let L = Infinity, T = Infinity, R = -Infinity, B = -Infinity;
   for (const el of HERO.querySelectorAll(HERO_PARTS)) {
@@ -1112,7 +1112,7 @@ heroReady = true;   // var(호이스팅) — 이 줄 전에 setSide가 불려도
 const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(() => { const f = heroForce; heroForce = false; centerHero(f); }); };
 const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
-const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play']) heroRO.observe($(s));
+const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr']) heroRO.observe($(s));
 new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
 new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
 document.fonts?.ready.then(heroResize); heroResize();

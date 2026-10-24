@@ -158,7 +158,7 @@ const rwStk = u => [...unlockedOf(effBest(u), effTotal(u), 'sticker'), ...gcStk(
 const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.map(g => [g.v, 1])) : gcOwn(u), fx: gcFx(u) });
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
 const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !rwStk(me).includes(rwNorm(m[1])) ? '아직 받지 못한 스티커예요' : null; };
-const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', nfx: fxPub(u).nfx, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
+const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', nfx: fxPub(u).nfx, mfx: fxPub(u).mfx, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
 async function auth(req, db) {

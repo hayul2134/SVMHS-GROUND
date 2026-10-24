@@ -774,7 +774,7 @@ const bdTile = (u, rest) => {
     ? `<span class="bd-f${lit ? '' : ' off'}" data-tip="${u.att ? '오늘 출석 완료' : rest ? '오늘은 쉬는 날' : '아직 출석 전'}">${ATT.flame('fsm', { tier: ATT.tierOf(u.streak), off: !lit })}<b>${ATT.fmtN(u.streak)}</b></span>` : '';
   return `<li class="bd${u.online ? ' on' : ''}${u.unread ? ' new' : ''}">
     <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">
-      <span class="bd-av">${av(u)}</span>
+      <span class="bd-av">${av(u, '', avWear(u.mfx))}</span>
       <b class="bd-n"><span>${esc(nameOf(u))}</span>${devTag(u)}</b>
       <small class="bd-s">${esc([st, classTxt(u).replace('학년 ', '-').replace('반', '')].filter(Boolean).join(' · '))}</small>
       ${u.mood ? `<span class="bd-m">${esc(u.mood)}</span>` : ''}${fire}
@@ -782,10 +782,11 @@ const bdTile = (u, rest) => {
     <button class="bd-dm" type="button" data-bdm="${esc(u.handle)}" aria-label="${esc(nameOf(u))}에게 메시지" data-tip="메시지">${'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg>'}${u.unread ? `<i>${u.unread > 99 ? '99+' : u.unread}</i>` : ''}</button>
   </li>`;
 };
-const bdReq = u => `<li class="bd req"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}"><span class="bd-av">${av(u)}</span><b class="bd-n"><span>${esc(nameOf(u))}</span>${devTag(u)}</b><small class="bd-s">나를 팔로우했어요</small></a><button class="btn bd-fb" type="button" data-follow="${esc(u.handle)}" data-on="1">맞팔하기</button></li>`;
+const bdReq = u => `<li class="bd req"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}"><span class="bd-av">${av(u, '', avWear(u.mfx))}</span><b class="bd-n"><span>${esc(nameOf(u))}</span>${devTag(u)}</b><small class="bd-s">나를 팔로우했어요</small></a><button class="btn bd-fb" type="button" data-follow="${esc(u.handle)}" data-on="1">맞팔하기</button></li>`;
 async function loadBuddies() {
   const card = $('#bdCard'); if (!card) return;
-  if (!S.me) { card.hidden = true; return; }
+  if (!S.me) { card.hidden = true; paintHeroFr([]); $('#rkCard') && ($('#rkCard').hidden = true); return; }
+  loadHomeRank();
   if (bdBusy) return; bdBusy = true;
   try {
     const r = await call('buddies');
@@ -795,14 +796,62 @@ async function loadBuddies() {
     $('#bdLive').classList.toggle('on', !!on);
     $('#bdBox').innerHTML = fr.length || r.reqs.length ? r.reqs.map(bdReq).join('') + fr.map(u => bdTile(u, r.rest)).join('')
       : `<li class="bd-empty"><p><b>아직 맞팔 친구가 없어요</b>서로 팔로우하면 여기서 친구가 지금 접속 중인지, 오늘 출석했는지 바로 보여요</p><button class="btn" type="button" data-go="me">친구 찾으러 가기</button></li>`;
-    card.hidden = false;
+    card.hidden = false; paintHeroFr(fr);
   } catch { if (!$('#bdBox .bd')) card.hidden = true; }
   finally { bdBusy = false; }
+}
+/* 첫 화면 친구 띠 (2026-10-25): 접속 중인 맞팔 친구 얼굴만(없으면 최근 접속 순) 최대 5명 — 꾸민 왕관이 그대로 보이게 */
+const HFR_MAX = 5;
+function paintHeroFr(fr) {
+  const el = $('#hFr'); if (!el) return;
+  if (!S.me || !fr.length) { el.hidden = true; return; }
+  const on = fr.filter(u => u.online), pool = on.length ? on : fr, show = pool.slice(0, HFR_MAX), more = pool.length - show.length;
+  $('#hFrT').innerHTML = on.length ? `지금 <b>${on.length}</b>명 접속 중` : `친구 <b>${fr.length}</b>명`;
+  el.classList.toggle('on', !!on.length);
+  $('#hFrAvs').innerHTML = show.map(u => `<a class="sf-a${u.unread ? ' new' : ''}" href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}" data-tip="${esc(nameOf(u))}${u.mood ? ' · ' + esc(u.mood) : ''}" aria-label="${esc(nameOf(u))} 프로필">${av(u, '', avWear(u.mfx))}</a>`).join('')
+    + (more > 0 ? `<span class="sf-more">+${more}</span>` : '');
+  el.hidden = false;
+}
+
+/* ===== 홈 친구 랭킹 (2026-10-25) — 맞팔 친구 + 나. 탭: 연속 출석 · 게임 4종. 꾸민 이름(홀로그램·황금)·대표 스티커·왕관이 보이게
+   탭마다 5분 동안은 다시 안 불러옴(무료 요청량), 고른 탭은 이 기기에 기억 */
+const RK_TABS = [['att', '연속 출석', 'fire'], ...Object.entries(GAMES).map(([k, g]) => [k, g.name, g.ic])];
+const rkCache = {};
+let rkTab = store.get('rk_tab', 'att');
+async function loadHomeRank(force) {
+  const card = $('#rkCard'); if (!card || !S.me) return;
+  if (!RK_TABS.some(t => t[0] === rkTab)) rkTab = 'att';
+  $('#rkTabs').innerHTML = RK_TABS.map(([k, n, i]) => `<button type="button" role="tab" aria-selected="${k === rkTab}" data-rk="${k}" data-tip="${n}" aria-label="${n}">${ic(i)}</button>`).join('');
+  card.hidden = false;
+  const tab = rkTab, c = rkCache[tab];
+  if (c) paintHomeRank(tab, c.r);
+  if (!force && c && Date.now() - c.at < 300e3) return;
+  if (!c) $('#rkList').innerHTML = '<li class="skel"></li><li class="skel"></li><li class="skel"></li>';
+  try {
+    const r = await call(tab === 'att' ? 'attrank?scope=friends' : `rank?game=${tab}&scope=friends`);
+    rkCache[tab] = { r, at: Date.now() };
+    if (rkTab === tab) paintHomeRank(tab, r);
+  } catch (e) { if (!c && rkTab === tab) $('#rkList').innerHTML = `<li class="rk-empty">${esc(e.message)}</li>`; }
+}
+function paintHomeRank(tab, r) {
+  const g = GAMES[tab], list = r.list.slice(0, 5);
+  const val = u => g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
+  const head = `<li class="rk-cap">${tab === 'att' ? '연속 출석' : esc(g.name)}${tab === 'att' ? '' : ' · 최고 기록'}</li>`;
+  $('#rkList').innerHTML = head + (list.length ? list.map((u, i) => `<li class="rk${u.isMe ? ' me' : ''}${i === 0 ? ' top' : ''}">
+      <span class="rk-n">${i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1}</span>
+      <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
+      <b class="rk-v">${val(u)}</b></li>`).join('')
+    : `<li class="rk-empty">${tab === 'att' ? '아직 출석 기록이 있는 친구가 없어요' : `아직 친구 중에 기록이 없어요.<button class="btn" type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`);
 }
 function startBuddies() {
   clearInterval(bdTimer);
   bdTimer = setInterval(() => { if (!document.hidden && S.me && (document.body.dataset.view || 'home') === 'home') loadBuddies(); }, 90000);
   document.addEventListener('click', e => { const b = e.target.closest('[data-bdm]'); if (!b) return; e.preventDefault(); openPanel(b.dataset.bdm); });
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-rk]');
+    if (t) { rkTab = t.dataset.rk; store.set('rk_tab', rkTab); loadHomeRank(); return; }
+    if (e.target.closest('#hFrGo')) { const c = $('#bdCard'); if (c && !c.hidden) c.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth', block: 'center' }); }
+  });
 }
 
 /* ===== 떠 있는 메시지 창 (컴퓨터) · 둥근 버튼 (폰) ===== */
