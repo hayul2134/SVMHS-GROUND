@@ -6,7 +6,8 @@ import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, gcDone, SHN, RK, rkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
-import { ffOn } from './flags.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
+import { ffOn } from './flags.js';
+import { TIERS, tierOfK } from './att-rewards.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -273,6 +274,11 @@ document.addEventListener('input', e => {
   if (!f.querySelector('.bad')) f.querySelector('.ferr').hidden = true;
 });
 
+/* ===== 라운드 티어 배지 (2026-10-25) ===== */
+const tierBadge = (k, extra = '', tip = '') => { const t = tierOfK(k); return t ? `<span class="tierb t-${t.k}"${tip ? ` data-tip="${esc(tip)}"` : ''}>${ic('tier')}${t.n}${extra}</span>` : ''; };
+const tierChips = tr => !tr ? '' : (tr.cur ? tierBadge(tr.cur.k, '', `이번 라운드 ${tierOfK(tr.cur.k).n} · ${tr.cur.rank}위 · ${tr.cur.pts}점`) : '')
+  + (tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '');
+
 /* ===== 프로필 카드 ===== */
 const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12'];
 function profileHtml(d) {
@@ -281,6 +287,7 @@ function profileHtml(d) {
   const sk = d.streak || {}, tier = ' t' + ATT.tierOf(sk.cur || 0);
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}"><span>${ui('tag', 'ic')}${esc(u.title)}</span></p>` : '';
+  const tch = tierChips(d.tier);
   const crowns = (d.crowns || []).map(g => `<span class="crown">${ic('crown')}${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
@@ -300,7 +307,7 @@ function profileHtml(d) {
         ${av(u, 'big', avWear(u.mfx) + (isDev(u) ? pdBurst() : ''))}
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-          <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}
+          <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}${tch ? `<p class="ptier">${tch}</p>` : ''}
           <p class="phandle">${[isDev(u) ? `<span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span>` : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
@@ -997,7 +1004,7 @@ async function renderGame() {
   const box = $('#gameBox');
   let info = null;
   if (S.me) { try { info = (await call('games')).games; } catch {} }
-  box.innerHTML = `${rkBand()}<div class="ggrid">${Object.entries(GAMES).map(([k, g], i) => {
+  box.innerHTML = `${rkBand()}${S.me ? '<section class="card tier-card" id="tierBox"><div class="skel"></div></section>' : ''}<div class="ggrid">${Object.entries(GAMES).map(([k, g], i) => {
     const x = info?.[k];
     return `<article class="card gcard g-${k}">
       <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
@@ -1007,6 +1014,39 @@ async function renderGame() {
     </article>`;
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
+  if (S.me) loadTier();
+}
+// 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
+async function loadTier() {
+  const box = $('#tierBox'); if (!box) return;
+  let d; try { d = await call('tier'); } catch { box.hidden = true; return; }
+  if (!$('#tierBox')) return;
+  const m = d.me, t = m && tierOfK(m.tier);
+  const ladder = TIERS.map((x, i) => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${ic('tier')}<b>${x.n}</b><small>${i === TIERS.length - 1 ? '그 외' : '상위 ' + Math.round(x.top * 100) + '%'}</small></li>`).join('');
+  const per = m ? Object.entries(GAMES).map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · <em>+${x.p}</em>` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
+  const top = d.top.length ? d.top.map(u => `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
+  box.innerHTML = `<div class="tr-head"><div class="tr-me ${t ? 't-' + t.k : ''}">${t ? `${ic('tier')}<div><small>이번 라운드 내 티어</small><b>${t.n}</b><span>${m.rank}위 / ${d.players}명 · ${m.pts}점</span></div>` : `${ic('tier')}<div><small>이번 라운드 내 티어</small><b>-</b><span>게임을 한 판 하면 티어가 생겨요</span></div>`}</div>
+      <p class="tr-how">게임마다 이번 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 4개 게임 점수를 합쳐 순위를 매기고, 상위 몇 %인지로 티어가 정해져요. 라운드가 끝나면 새로 시작하고 지난 티어는 프로필에 배지로 남아요.</p></div>
+    <ol class="tr-ladder">${ladder}</ol>
+    ${per ? `<ul class="tr-games">${per}</ul>` : ''}
+    <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;
+}
+
+/* ===== 1~3등 축하 (2026-10-25): 새 최고 기록으로 전체 1~3등에 처음 들거나 순위가 오르면 화면 전체 검정 블러 + 축하 ===== */
+function cheer(game, rank, value) {
+  document.querySelector('.cheer')?.remove();
+  const g = GAMES[game], el = document.createElement('div');
+  el.className = 'cheer'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '축하');
+  const conf = Array.from({ length: 36 }, (_, i) => `<i class="cf c${i % 6}"></i>`).join('');
+  el.innerHTML = `<div class="ch-conf" aria-hidden="true">${conf}</div><div class="ch-box"><i class="ch-rays" aria-hidden="true"></i><i class="mdl m${rank} ch-mdl">${rank}</i>
+    <p class="ch-t">전체 ${rank}등!</p><p class="ch-s">${ic(g.ic)} ${esc(g.name)} · ${esc(g.fmt(value))}</p><p class="ch-m">${['', '학교 1등이에요! 이 자리 지켜 봐요', '1등이 코앞이에요! 한 번만 더?', '시상대 입성! 이제 더 위로'][rank]}</p>
+    <small class="ch-go">아무 데나 누르면 닫혀요</small></div>`;
+  document.body.appendChild(el);
+  const t0 = performance.now();
+  const close = e => { if (performance.now() - t0 < 700) { e?.stopPropagation?.(); e?.preventDefault?.(); return; } el.classList.add('out'); setTimeout(() => el.remove(), 250); document.removeEventListener('keydown', key, true); };
+  const key = e => { e.stopPropagation(); e.preventDefault(); if (['Escape', 'Enter', ' ', 'ArrowUp'].includes(e.key)) close(e); };
+  document.addEventListener('keydown', key, true);
+  el.addEventListener('pointerdown', e => { e.stopPropagation(); close(e); });
 }
 
 // 2주 라운드(att-rewards.js RK): 마감까지 남은 날 + 보상 안내 띠
@@ -1088,6 +1128,7 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
   try {
     const r = await saveScore(game, value, rounds);
     $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('crown') : '');
+    if (r.cheer) cheer(game, r.rank, r.best);
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
 }
 // 기록 저장(서버가 판 기록·티켓으로 다시 검사) — 결과 화면 없이 그 자리에서 다시 하는 게임(나 집에 갈래!)도 같이 씀
@@ -1230,6 +1271,7 @@ async function playHome() {
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
         if (no !== runNo || !$('#hrMsg')) return;
         $('#hrMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
+        if (r.cheer) cheer('home', r.rank, r.best);
         paintRk(true);
       }).catch(e => { if (no === runNo && $('#hrMsg')) $('#hrMsg').textContent = e.message; });
     },

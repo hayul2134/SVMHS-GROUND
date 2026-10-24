@@ -134,6 +134,18 @@ const ymdOf = n => new Date(n * 864e5).toISOString().slice(0, 10).replace(/-/g, 
 // 라운드 번호(시작 전이면 -1)와 그 라운드의 첫날·마지막 날(YYYYMMDD) — today도 YYYYMMDD(KST)
 export const rkOf = today => { const s = dnum(RK.start.replace(/-/g, '')), n = Math.floor((dnum(today) - s) / RK.days); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
 export const rkRange = n => { const s = dnum(RK.start.replace(/-/g, '')); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
+// 라운드 티어 (2026-10-25 하율: 순위로 점수 → 티어). 라운드(RK, 2주) 안에서 게임마다 순위 점수(참가자 전원이 받음: 1등 100 ~ 꼴찌 100/n),
+// 4게임 합으로 줄 세워 백분위로 티어. 라운드가 끝나면 users.tier_last에 남기고 새로 시작.
+export const TIERS = [
+  { k: 'dia', n: '다이아', top: .05, c: '#8fb4ff' },
+  { k: 'pla', n: '플래티넘', top: .2, c: '#5fd4b3' },
+  { k: 'gold', n: '골드', top: .45, c: '#f4b829' },
+  { k: 'silv', n: '실버', top: .75, c: '#aebccc' },
+  { k: 'brz', n: '브론즈', top: 1.01, c: '#d98a4e' },
+];
+export const tierOfK = k => TIERS.find(t => t.k === k) || null;
+export const tierAt = (rank, n) => TIERS.find(t => (rank - 1) / Math.max(1, n) < t.top) || TIERS[TIERS.length - 1];
+export const gamePts = (r, n) => Math.round(100 * (n - r + 1) / n);
 export const GC_TITLE = '쉬는 시간 마스터';   // 시즌 1 시리즈를 다 모으면 받는 칭호
 export const gcRar = v => gcItem(v)?.rar || 0;
 // 가진 뽑기 스티커 목록(스티커만): own = {'r:eraser': 2, …} (나온 횟수)

@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, FX, objName, SHN, RK, rkOf, rkRange } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, FX, objName, SHN, RK, rkOf, rkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -133,7 +133,7 @@ async function devSession(req, db) {   // 보관된 개발자 세션이 아직 �
 }
 
 /* ===== 사용자 ===== */
-const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title, st_rep, st_deco, gc_fx, gc_own';
+const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title, st_rep, st_deco, gc_fx, gc_own, tier_last';
 const pub = u => u && ({
   ...fxPub(u), gcm: isAdm(u) || gcDone(gcOwn(u)), handle: u.handle, name: u.name, title: u.st_title || '', rep: u.st_rep || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
   stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
@@ -471,7 +471,7 @@ const ROUTES = {
     ]);
     return json({
       user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), counts: { following: fo.n, followers: fb.n },
-      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns,
+      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, tier: isAdm(u) ? null : await tierOfUser(db, u),
       streak: isAdm(u) ? { cur: ALL_OPEN, best: ALL_OPEN, total: u.st_total || 0, pf: true } : { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
   }),
@@ -833,13 +833,17 @@ const ROUTES = {
       db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
       db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first(),
     ]);
+    const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b) : null;   // 기록 넣기 전 순위(축하 판단용)
     if (!prev || v < prev.best) {
       await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
         ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, game, day, v, Date.now()).run();
     }
     const best = allPrev.b == null ? v : Math.min(allPrev.b, v);
     const rank = await rankOf(db, game, best);
-    return json({ ok: true, best, newBest: allPrev.b == null || v < allPrev.b, rank });
+    const newBest = allPrev.b == null || v < allPrev.b;
+    tierMemo.clear();
+    // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
+    return json({ ok: true, best, newBest, rank, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {
@@ -1012,6 +1016,18 @@ const ROUTES = {
     return json({ scope, list: list.map(({ uid, ...x }) => x) });
   }),
 
+  // 이번 라운드 티어판(2026-10-25): 내 티어·점수·게임별 순위 + 상위 10명
+  'GET tier': needMe(async ({ db, me }) => {
+    const b = await tierBoard(db), mine = b.list.find(x => x.uid === me.id) || null;
+    const top = b.list.slice(0, 10), ids = top.map(x => x.uid);
+    const us = ids.length ? (await db.prepare(`SELECT ${PUB} FROM users WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results : [];
+    const byId = new Map(us.map(u => [u.id, u]));
+    const pub1 = x => ({ rank: x.rank, pts: x.pts, tier: x.tier, games: x.games });
+    return json({ round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, tiers: TIERS,
+      me: mine ? pub1(mine) : null, last: tierLastOf(me),
+      top: top.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
+  }),
+
   'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
     const out = {};
     await Promise.all(Object.keys(GAMES).map(async game => {
@@ -1082,9 +1098,35 @@ async function settleRounds(db) {
         if (ins.meta?.changes) await db.prepare(`UPDATE users SET gc_tix = MIN(${GC.max}, gc_tix + ?1) WHERE id = ?2`).bind(t, top[i].uid).run();
       }
     }
+    // 그 라운드 최종 티어를 지난 라운드 배지로 남김
+    const tb = await tierBoard(db, n);
+    for (let i = 0; i < tb.list.length; i += 50) await db.batch(tb.list.slice(i, i + 50).map(x => db.prepare('UPDATE users SET tier_last = ?1 WHERE id = ?2').bind(n + ':' + x.tier, x.uid)));
     await db.prepare("INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, '*', 0, 0, 0, 1, ?2)").bind(n, Date.now()).run();
   }
   rkChecked = cur - 1;
+}
+
+// 라운드 티어판: 게임마다 라운드 안 개인 최고로 순위 → 순위 점수(gamePts) 합 → 줄 세워 백분위로 티어(tierAt). 개발자 제외.
+// 같은 워커에서 60초 동안은 다시 계산 안 함(기록이 저장되면 tierMemo.clear())
+const tierMemo = new Map();
+async function tierBoard(db, n) {
+  const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to } = rkRange(cur);
+  const hit = tierMemo.get(cur); if (hit && Date.now() - hit.at < 60e3) return hit.b;
+  const acc = new Map();
+  await Promise.all(Object.keys(GAMES).map(async game => {
+    const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
+    rows.forEach((r, i) => { const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts(i + 1, rows.length); a.pts += p; a.games[game] = { r: i + 1, n: rows.length, p }; acc.set(r.uid, a); });
+  }));
+  const list = [...acc.values()].sort((a, b) => b.pts - a.pts || Object.keys(b.games).length - Object.keys(a.games).length);
+  list.forEach((x, i) => { x.rank = i > 0 && list[i - 1].pts === x.pts ? list[i - 1].rank : i + 1; x.tier = tierAt(x.rank, list.length).k; });
+  const b = { n: cur, from, to, list };
+  tierMemo.set(cur, { at: Date.now(), b });
+  return b;
+}
+const tierLastOf = u => { const [n, k] = String(u.tier_last || '').split(':'); return k && tierOfK(k) ? { n: +n, k } : null; };
+async function tierOfUser(db, u) {
+  const x = (await tierBoard(db)).list.find(y => y.uid === u.id);
+  return { cur: x ? { k: x.tier, rank: x.rank, pts: x.pts } : null, last: tierLastOf(u) };
 }
 
 async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 사람 수 + 1
