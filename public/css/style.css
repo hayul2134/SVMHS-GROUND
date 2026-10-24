@@ -2909,10 +2909,11 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
    본문(소개)과 숫자(통계·기록)는 좌우 단으로 나눠 무게 균형 · 스티커 감성은 서로 반대로 기운 카드로 */
 #v-me .soc,#v-u .soc{max-width:820px}
 /* 제목 '내 프로필'을 카드 왼쪽 끝에 맞추고 카드와 붙여 둠(2026-10-25: 너무 떨어져 보인다는 지적) */
-#v-me > .vhead,#v-u > .vhead{max-width:820px;margin:26px auto 0;padding-left:6px}
+#v-me > .vhead,#v-u > .vhead{max-width:820px;margin:0 auto;padding-left:6px}   /* 위 여백 26→0: 프로필 카드가 화면 아래로 잘리지 않게 (2026-10-25) */
 #v-me .soc,#v-u .soc{margin-top:12px}
 /* 넓은 화면(1100px~)에선 프로필 카드를 통째로 1.1배 — 비율 그대로 커짐(2026-10-25 하율 요청) */
-@media (min-width:1100px){#v-me > .vhead,#v-u > .vhead,#v-me .soc,#v-u .soc{max-width:910px}#v-me .pcard,#v-u .pcard{zoom:1.1}}
+@media (min-width:1100px){#v-me > .vhead,#v-u > .vhead,#v-me .soc,#v-u .soc{max-width:910px}}
+@media (min-width:1100px) and (min-height:900px){#v-me .pcard,#v-u .pcard{zoom:1.1}}   /* 키 작은 화면(노트북)에선 1.1배 확대 안 함 — 카드 아래가 잘렸음 */
 .pbody{padding:0 26px 26px;text-align:left;display:grid;justify-items:stretch;gap:18px}
 .phead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:10px 18px}
 .phead > .av.big{margin-top:-58px;transform:rotate(-3deg)}
