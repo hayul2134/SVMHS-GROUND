@@ -3830,26 +3830,27 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 html:not(.dev-pv) [data-ff]{display:none!important}
 
 /* ===== 라운드 티어 (2026-10-25) — 배지 색은 --tc ===== */
-.t-dia{--tc:#8fb4ff}.t-pla{--tc:#5fd4b3}.t-gold{--tc:#f4b829}.t-silv{--tc:#aebccc}.t-brz{--tc:#d98a4e}
+.t-iron{--tc:#8f959e}.t-bronze{--tc:#c47d4b}.t-silver{--tc:#b5c2cf}.t-gold{--tc:#f3c24f}.t-platinum{--tc:#4cc4b7}.t-emerald{--tc:#2fbf71}.t-diamond{--tc:#6f8dff}.t-master{--tc:#b46bdb}.t-grandmaster{--tc:#e4493e}.t-challenger{--tc:#f3c24f}
+.tri{width:1.5em;height:1.4em;flex:none;overflow:visible}
 .tierb{display:inline-flex;align-items:center;gap:4px;padding:3px 10px 3px 6px;border-radius:999px;border:2px solid var(--ink);background:color-mix(in srgb,var(--tc) 28%,var(--card));color:var(--text);font-weight:900;font-size:12.5px;line-height:1.2;white-space:nowrap;box-shadow:2px 2px 0 var(--ink)}
-.tierb .sic{width:17px;height:17px}
+.tierb .tri{width:22px;height:20px;margin:-3px 0}
 .tierb small{font-weight:800;font-size:10.5px;color:var(--sub)}
-.t-dia.tierb{background:linear-gradient(120deg,#d7e4ff,#b9a4ff,#a8f0e0,#d7e4ff);background-size:200% 100%;animation:tierShine 4s linear infinite}
-:root[data-theme="dark"] .t-dia.tierb{color:#1d2a3a}
+.t-challenger.tierb{background:linear-gradient(120deg,#d7e4ff,#b9a4ff,#a8f0e0,#d7e4ff);background-size:200% 100%;animation:tierShine 4s linear infinite}
+:root[data-theme="dark"] .t-challenger.tierb{color:#1d2a3a}
 @keyframes tierShine{to{background-position:-200% 0}}
 .tierl .tierb{opacity:.85;box-shadow:none;border-style:dashed}
 .ptier{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0}
 .tier-card{display:grid;gap:14px;margin-bottom:22px}
 .tr-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 .tr-me{display:flex;align-items:center;gap:12px;padding:12px 18px 12px 12px;border-radius:18px;border:2.5px solid var(--ink);background:color-mix(in srgb,var(--tc,#aebccc) 25%,var(--card));box-shadow:var(--sh-s)}
-.tr-me > .sic{width:54px;height:54px;filter:drop-shadow(2px 2px 0 color-mix(in srgb,var(--ink) 30%,transparent))}
+.tr-me > .tri{width:64px;height:58px;filter:drop-shadow(2px 2px 0 color-mix(in srgb,var(--ink) 30%,transparent))}
 .tr-me small{display:block;font-size:12px;font-weight:800;color:var(--sub)}
 .tr-me b{display:block;font-family:var(--disp);font-weight:400;font-size:28px;line-height:1.1}
 .tr-me span{font-size:13px;font-weight:800}
 .tr-how{flex:1;min-width:240px;margin:0;font-size:13px;line-height:1.55;color:var(--sub);font-weight:700}
 .tr-ladder{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .tr-ladder li{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:14px;border:2px solid var(--line);background:color-mix(in srgb,var(--tc) 14%,var(--card))}
-.tr-ladder li .sic{width:28px;height:28px}
+.tr-ladder li .tri{width:40px;height:36px}
 .tr-ladder li b{font-size:13.5px;font-weight:900}
 .tr-ladder li small{font-size:11px;color:var(--sub);font-weight:700}
 .tr-ladder li.on{border-color:var(--ink);box-shadow:var(--sh-s);transform:translateY(-3px)}

@@ -136,15 +136,26 @@ export const rkOf = today => { const s = dnum(RK.start.replace(/-/g, '')), n = M
 export const rkRange = n => { const s = dnum(RK.start.replace(/-/g, '')); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
 // 라운드 티어 (2026-10-25 하율: 순위로 점수 → 티어). 라운드(RK, 2주) 안에서 게임마다 순위 점수(참가자 전원이 받음: 1등 100 ~ 꼴찌 100/n),
 // 4게임 합으로 줄 세워 백분위로 티어. 라운드가 끝나면 users.tier_last에 남기고 새로 시작.
+// 2026-10-25 2차(하율): 롤 티어(아이언~챌린저)로. 챌린저 = 1등(참가 3명 이상) · 그랜드마스터 = 2·3등(6명 이상) · 나머지는 백분위
 export const TIERS = [
-  { k: 'dia', n: '다이아', top: .05, c: '#8fb4ff' },
-  { k: 'pla', n: '플래티넘', top: .2, c: '#5fd4b3' },
-  { k: 'gold', n: '골드', top: .45, c: '#f4b829' },
-  { k: 'silv', n: '실버', top: .75, c: '#aebccc' },
-  { k: 'brz', n: '브론즈', top: 1.01, c: '#d98a4e' },
+  { k: 'challenger', n: '챌린저', lb: '1등' },
+  { k: 'grandmaster', n: '그랜드마스터', lb: '2·3등' },
+  { k: 'master', n: '마스터', top: .08, lb: '상위 8%' },
+  { k: 'diamond', n: '다이아몬드', top: .16, lb: '상위 16%' },
+  { k: 'emerald', n: '에메랄드', top: .28, lb: '상위 28%' },
+  { k: 'platinum', n: '플래티넘', top: .42, lb: '상위 42%' },
+  { k: 'gold', n: '골드', top: .58, lb: '상위 58%' },
+  { k: 'silver', n: '실버', top: .74, lb: '상위 74%' },
+  { k: 'bronze', n: '브론즈', top: .88, lb: '상위 88%' },
+  { k: 'iron', n: '아이언', top: 1.01, lb: '그 외' },
 ];
 export const tierOfK = k => TIERS.find(t => t.k === k) || null;
-export const tierAt = (rank, n) => TIERS.find(t => (rank - 1) / Math.max(1, n) < t.top) || TIERS[TIERS.length - 1];
+export const tierAt = (rank, n) => {
+  if (rank === 1 && n >= 3) return TIERS[0];
+  if (rank <= 3 && n >= 6) return TIERS[1];
+  const p = (rank - 1) / Math.max(1, n);
+  return TIERS.slice(2).find(t => p < t.top) || TIERS[TIERS.length - 1];
+};
 export const gamePts = (r, n) => Math.round(100 * (n - r + 1) / n);
 export const GC_TITLE = '쉬는 시간 마스터';   // 시즌 1 시리즈를 다 모으면 받는 칭호
 export const gcRar = v => gcItem(v)?.rar || 0;
