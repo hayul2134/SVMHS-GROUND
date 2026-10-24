@@ -3960,3 +3960,17 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .gcard .beta{font-size:13px;padding:4px 12px 5px}
 :root[data-theme="dark"] .beta{background:#3a9bf0;border-color:#0b1a2a}
 @media (max-width:560px){.beta{font-size:10px;padding:3px 8px}}
+/* ===== 서비스 › 뽑기 카드 강조 (2026-10-25 하율: "뽑기가 훨씬 더 잘 보였으면") =====
+   두 칸 너비 가로 카드 + 직접 그린 캡슐 뽑기 기계(sj-gacha) + 가진 뽑기권 칩(social.js paintTix). 깜빡임 없음 */
+.catgrid .gc-app{grid-column:span 2;flex-direction:row;justify-content:center;gap:16px;padding:16px 18px;text-align:left;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--yellow) 38%,var(--card)),var(--card) 72%)}
+.gc-app .ai{width:76px;height:76px;border-radius:20px;flex:none;background:linear-gradient(160deg,color-mix(in srgb,#fff 35%,var(--yellow)),var(--yellow) 65%)}
+.gc-app .ai .sic{width:60px;height:60px;color:#173048;stroke-width:1.3;filter:drop-shadow(1.5px 1.5px 0 rgba(23,48,72,.25))}
+.gc-txt{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
+.gc-name{font-family:var(--disp);font-weight:400;font-size:26px;line-height:1}
+.gc-tix{font-size:12.5px;font-weight:800;color:var(--sub);white-space:nowrap}
+.gc-app.has-tix .gc-tix{color:#173048;background:var(--yellow);border:2px solid var(--ink);border-radius:999px;padding:3px 10px;box-shadow:2px 2px 0 var(--ink)}
+.gc-app:hover .ai{transform:none}
+.gc-app:hover .ai .sic{animation:gwig .5s ease}
+@media (prefers-reduced-motion:reduce){.gc-app:hover .ai .sic{animation:none}}
+@media (max-width:560px){.catgrid .gc-app{gap:10px;padding:12px 10px}.gc-app .ai{width:60px;height:60px;border-radius:16px}.gc-app .ai .sic{width:46px;height:46px}.gc-name{font-size:21px}.gc-tix{font-size:11px}.gc-app.has-tix .gc-tix{padding:2px 7px}}

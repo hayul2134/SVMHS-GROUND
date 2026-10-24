@@ -83,9 +83,19 @@ function sheet(html) { $('#socSheet').classList.remove('wide', 'attw', 'edw'); $
 const closeSheet = () => ctx.closeModal($('#mSoc'));
 
 /* ===== 헤더 배지 · 주기적 확인 ===== */
+// 서비스 › 뽑기 카드: 가진 뽑기권 수(개발자는 무제한 → ∞)
+function paintTix() {
+  const t = S.me?.gc?.tix;
+  $$('[data-gc-tix]').forEach(el => {
+    const has = t != null && t > 0;
+    el.textContent = t == null ? '캡슐 뽑으러 가기' : has ? `뽑기권 ${t >= 1e6 ? '∞' : t > 99 ? '99+' : t}장` : '출석하면 뽑기권';
+    el.closest('.gc-app')?.classList.toggle('has-tix', has);
+  });
+}
 function paintBadges() {
   const n = S.me ? S.unread : 0;
   $$('[data-badge="dm"]').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
+  paintTix();
   const dev = S.me?.handle === ADMIN_HANDLE;
   if (!S.me) ATT.sync(null);   // 로그아웃: 🔥 버튼 숨김
   $('#btnOut').hidden = !S.me;   // 로그인돼 있을 때만 메뉴 맨 아래 빨간 로그아웃
@@ -110,7 +120,7 @@ function applyFx() {
   if ((h.dataset.mfx || '') !== mf) { if (mf) h.dataset.mfx = mf; else delete h.dataset.mfx; document.dispatchEvent(new Event('sg:mfx')); }
 }
 // 뽑기 상태 받기(뽑기 화면·꾸미기 효과 탭 공용)
-function setGc(g) { if (S.me && g) { S.me.gc = { ...S.me.gc, tix: g.tix ?? S.me.gc?.tix, shard: g.shard ?? S.me.gc?.shard, pity: g.pity ?? S.me.gc?.pity, leg: g.leg ?? S.me.gc?.leg, own: g.own || S.me.gc?.own, fx: g.fx || S.me.gc?.fx || {} }; applyFx(); } }
+function setGc(g) { if (S.me && g) { S.me.gc = { ...S.me.gc, tix: g.tix ?? S.me.gc?.tix, shard: g.shard ?? S.me.gc?.shard, pity: g.pity ?? S.me.gc?.pity, leg: g.leg ?? S.me.gc?.leg, own: g.own || S.me.gc?.own, fx: g.fx || S.me.gc?.fx || {} }; applyFx(); paintTix(); } }
 async function refreshMe() {
   try {
     const r = await call('me');
