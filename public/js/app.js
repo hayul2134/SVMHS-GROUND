@@ -292,7 +292,25 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu'
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
 // 맨 위·맨 아래로 (2026-10-23): 첫 화면 아래 화살표 = 페이지 맨 아래로, 맨 아래 화살표 = 맨 위로
-$('#goDown').onclick = () => $('#board').scrollIntoView({ behavior: 'smooth', block: 'start' });   // ▼ → 바로 아래 '한눈에 보기' (2026-10-24)
+// ▼ → 바로 아래 '한눈에 보기' (2026-10-24): 제목~시간표가 한 화면에 다 들어오는 자리로. 화면이 짧으면 시간표 끝이 보이는 쪽을 우선
+const boardY = () => {
+  const b = $('#board'), w = $('#weekTT'), sy = scrollY;
+  const top = b.getBoundingClientRect().top + sy - 84, end = Math.max(w.getBoundingClientRect().bottom, $('.board .k-up').getBoundingClientRect().bottom) + sy + 24;
+  return Math.max(top, Math.min(end - innerHeight, b.getBoundingClientRect().top + sy + 40));
+};
+$('#goDown').onclick = () => scrollTo({ top: boardY(), behavior: 'smooth' });
+// 그 자리에서 아래 카운트다운 카드가 화면 끝에 걸쳐 보이지 않게, 넓은 화면에선 카드를 화면 밖까지 내림 (2026-10-24)
+{
+  const cd = $('#cdCard');
+  const f = () => {
+    if (innerWidth < 1000 || !$('#v-home').classList.contains('on')) { cd.style.marginTop = ''; return; }
+    cd.style.marginTop = '';
+    const gap = boardY() + innerHeight - (cd.getBoundingClientRect().top + scrollY) + 28;   // 28: 마스킹테이프·그림자 여유
+    cd.style.marginTop = gap > 0 ? Math.min(gap, innerHeight * .45) + 'px' : '';
+  };
+  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); }
+  addEventListener('resize', f); f();
+}
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
 // 짧은 화면(게임 등)엔 '맨 위로'가 필요 없음 → 페이지가 화면 1.5배보다 짧으면 숨김 (2026-10-24)
 { const f = () => { $('#goTop').hidden = document.documentElement.scrollHeight < innerHeight * 1.5; }; if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(document.body); addEventListener('resize', f); f(); }
