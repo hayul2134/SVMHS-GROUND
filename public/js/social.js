@@ -1088,7 +1088,7 @@ function openFeedback() {
       <textarea name="body" maxlength="500" rows="5" required placeholder="예: 시간표에 교실 이름도 나왔으면 좋겠어요"></textarea>
       <div class="fbpics" id="fbPics"></div>
       <input type="file" id="fbFile" accept="image/*" multiple hidden>
-      <p class="note">${isDev(S.me) ? '🛠 개발자 계정으로 보내요.' : `보낸 사람 아이디(@${esc(S.me.handle)})가 개발자에게 보여요. 욕설·저격 글은 보내지 말아 주세요.`}</p>
+      ${isDev(S.me) ? '' : `<p class="note">보낸 사람 아이디(@${esc(S.me.handle)})가 개발자에게 보여요. 욕설·저격 글은 보내지 말아 주세요.</p>`}
       <div class="row"><button class="btn" type="submit">보내기</button><button class="btn ghost" type="button" data-close>닫기</button></div>
     </form>`);
   const pics = [], box = $('#fbPics'), file = $('#fbFile'), form = $('#fbForm');
