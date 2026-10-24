@@ -3707,7 +3707,8 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .hr-rk li.me span{text-decoration:underline 2px #ffd36b;text-underline-offset:3px}
 .hr-all{margin-left:auto;padding:5px 12px;border-radius:99px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:12.5px;font-weight:800;cursor:pointer}
 @media (max-width:640px){.hr-rkn{border-left:0;padding-left:0}.hr-all{margin-left:0}}
-.parea.wide:has(> .hr){justify-content:center;padding-bottom:24px}
+/* 나 집에 갈래!: 위쪽에 붙임 — 가운데 정렬은 위가 많이 비고, 내려간 만큼 세로 여유가 줄어 게임 화면이 작아졌음 (2026-10-25 2차) */
+.parea.wide:has(> .hr){justify-content:flex-start;padding-top:clamp(8px,3vh,28px);padding-bottom:24px}
 .hr{max-width:100%;align-self:center}
 
 /* ===== 개발자 프로필 전용 등장 효과 (2026-10-25) — 무지개 빛 한 번 쓸기 + 사진 뒤 빛줄기·충격파·반짝이. 한 번만, 움직임 줄이기 설정이면 없음 ===== */
