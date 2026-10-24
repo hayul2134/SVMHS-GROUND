@@ -56,6 +56,9 @@ const avWear = v => wearOf(v) ? `<i class="avwear">${wearSvg(v)}</i>` : '';
 const isDev = u => u?.handle === ADMIN_HANDLE;
 // 뽑기 전설 '별똥별 등장': 프로필을 열 때 한 번 쏟아지는 별(위치·크기·시간을 조금씩 다르게)
 const pfxStars = () => `<div class="pfx-star" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`;   // 위치·크기·시간은 style.css nth-child (CSP: style 속성 금지)
+// 개발자 프로필 전용 등장 (2026-10-25 하율: 별똥별 말고 특별하게) — 카드 위를 무지개 빛이 한 번 쓸고, 사진 뒤에서 무지개 빛줄기·충격파·반짝이가 터짐
+const pfxDev = () => '<div class="pfx-dev" aria-hidden="true"></div>';
+const pdBurst = () => `<i class="pd-burst" aria-hidden="true"><i class="pd-rays"></i><i class="pd-ring"></i>${'<i class="pd-sp"></i>'.repeat(12)}</i>`;
 const devTag = u => (isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '') + repTag(u);   // 이름 옆 작은 배지 + 대표 스티커
 // 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
 const nameOf = u => isDev(u) ? '개발자' : u.name;
@@ -281,11 +284,11 @@ function profileHtml(d) {
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
-  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${u.gcm ? ' gcm' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">${u.pfx === 'r:fxstar' ? pfxStars() : ''}
+  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${u.gcm ? ' gcm' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">${isDev(u) ? pfxDev() : u.pfx === 'r:fxstar' ? pfxStars() : ''}
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
       <div class="phead">
-        ${av(u, 'big', avWear(u.mfx))}
+        ${av(u, 'big', avWear(u.mfx) + (isDev(u) ? pdBurst() : ''))}
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
           <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}

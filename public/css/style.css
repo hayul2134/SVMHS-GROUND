@@ -3709,3 +3709,32 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 @media (max-width:640px){.hr-rkn{border-left:0;padding-left:0}.hr-all{margin-left:0}}
 .parea.wide:has(> .hr){justify-content:center;padding-bottom:24px}
 .hr{max-width:100%;align-self:center}
+
+/* ===== 개발자 프로필 전용 등장 효과 (2026-10-25) — 무지개 빛 한 번 쓸기 + 사진 뒤 빛줄기·충격파·반짝이. 한 번만, 움직임 줄이기 설정이면 없음 ===== */
+.pfx-dev{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden;border-radius:inherit}
+.pfx-dev::before{content:"";position:absolute;top:-40%;left:0;width:34%;height:180%;opacity:0;background:linear-gradient(90deg,transparent,rgba(255,143,143,.28),rgba(255,224,138,.55),rgba(255,255,255,.85),rgba(143,232,207,.5),rgba(155,184,255,.3),transparent);transform:translateX(-120%) rotate(18deg);animation:pdShine 1.15s cubic-bezier(.45,0,.25,1) .35s forwards}
+@keyframes pdShine{0%{opacity:1;transform:translateX(-120%) rotate(18deg)}100%{opacity:1;transform:translateX(420%) rotate(18deg)}}
+.pd-burst{position:absolute;left:50%;top:50%;width:0;height:0;z-index:-1;pointer-events:none;font-style:normal}
+.pd-burst > i{position:absolute;display:block;font-style:normal}
+.pd-rays{left:-170px;top:-170px;width:340px;height:340px;border-radius:50%;opacity:0;
+  background:repeating-conic-gradient(from 0deg,rgba(255,143,143,.75) 0 5deg,transparent 5deg 15deg,rgba(255,224,138,.8) 15deg 20deg,transparent 20deg 30deg,rgba(143,232,207,.75) 30deg 35deg,transparent 35deg 45deg,rgba(155,184,255,.8) 45deg 50deg,transparent 50deg 60deg);
+  -webkit-mask:radial-gradient(circle,#000 18%,rgba(0,0,0,.6) 42%,transparent 70%);mask:radial-gradient(circle,#000 18%,rgba(0,0,0,.6) 42%,transparent 70%);
+  animation:pdRays 1.9s cubic-bezier(.2,.8,.3,1) .1s forwards}
+@keyframes pdRays{0%{opacity:0;transform:scale(.3) rotate(0)}25%{opacity:1}100%{opacity:0;transform:scale(1.05) rotate(70deg)}}
+.pd-ring{left:-50px;top:-50px;width:100px;height:100px;border-radius:50%;border:4px solid #ffe08a;box-shadow:0 0 16px #ffe08a,inset 0 0 12px rgba(255,224,138,.7);opacity:0;animation:pdRing .9s cubic-bezier(.15,.7,.3,1) .1s forwards}
+@keyframes pdRing{0%{opacity:1;transform:scale(.5);border-width:6px}100%{opacity:0;transform:scale(2.6);border-width:1px}}
+.pd-sp{left:calc(var(--s) / -2);top:calc(var(--s) / -2);width:var(--s);height:var(--s);background:var(--c);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);filter:drop-shadow(0 0 4px var(--c));opacity:0;animation:pdSp 1.1s cubic-bezier(.15,.8,.3,1) var(--d) forwards}
+@keyframes pdSp{0%{opacity:1;transform:rotate(var(--a)) translateY(-30px) scale(.3) rotate(0)}70%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(var(--r) * -1)) scale(1) rotate(90deg)}}
+.pd-sp:nth-child(3){--a:8deg;--r:158px;--c:#ff8f8f;--s:20px;--d:0.12s}
+.pd-sp:nth-child(4){--a:38deg;--r:118px;--c:#ffe08a;--s:14px;--d:0.17s}
+.pd-sp:nth-child(5){--a:68deg;--r:158px;--c:#8fe8cf;--s:20px;--d:0.22s}
+.pd-sp:nth-child(6){--a:98deg;--r:118px;--c:#6fc6f4;--s:14px;--d:0.27s}
+.pd-sp:nth-child(7){--a:128deg;--r:158px;--c:#9bb8ff;--s:20px;--d:0.12s}
+.pd-sp:nth-child(8){--a:158deg;--r:118px;--c:#d59bff;--s:14px;--d:0.17s}
+.pd-sp:nth-child(9){--a:188deg;--r:158px;--c:#ff8f8f;--s:20px;--d:0.22s}
+.pd-sp:nth-child(10){--a:218deg;--r:118px;--c:#ffe08a;--s:14px;--d:0.27s}
+.pd-sp:nth-child(11){--a:248deg;--r:158px;--c:#8fe8cf;--s:20px;--d:0.12s}
+.pd-sp:nth-child(12){--a:278deg;--r:118px;--c:#6fc6f4;--s:14px;--d:0.17s}
+.pd-sp:nth-child(13){--a:308deg;--r:158px;--c:#9bb8ff;--s:20px;--d:0.22s}
+.pd-sp:nth-child(14){--a:338deg;--r:118px;--c:#d59bff;--s:14px;--d:0.27s}
+@media (prefers-reduced-motion:reduce){.pfx-dev,.pd-burst{display:none}}
