@@ -3,6 +3,7 @@ import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, D
 import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish } from './neis.js';
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
+import './tip.js';
 
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
