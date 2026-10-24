@@ -155,7 +155,7 @@ function tickClock() {
   const pi = periodInfo(b);
   if (ymd(n) !== S.dayKey) {   // 자정이 지나면 '오늘' 기준 카드(시간표 표·급식·일정)를 새 날짜로 다시 그림
     const first = !S.dayKey; S.dayKey = ymd(n);
-    if (!first) { S.mealManual = false; renderHomeTT(); renderHomeMeal(); renderHomeDday(); }
+    if (!first) { S.mealManual = false; renderHomeTT(); renderHomeMeal(); renderHomeDday(); longSched = null; renderCountdown(); }
   } else if (!S.ttPick && S.ttShown && cls && ymd(ttTarget(n)) !== S.ttShown) renderHomeTT();   // 마지막 교시 끝에 홈 시간표 날짜 전환
   const key = `${b.state}|${pi.cur}|${pi.nxt}|${S.todayTT ? S.todayTT.length : '-'}`;
   if (key !== nextKey) {   // 교시가 바뀔 때만 다시 그림
@@ -166,6 +166,7 @@ function tickClock() {
     $$('#sTT li').forEach(li => { const p = +li.dataset.p, z = +li.dataset.p2 || p, inn = x => x >= p && x <= z; li.classList.toggle('now', live && inn(pi.cur)); li.classList.toggle('next', live && !pi.cur && inn(pi.nxt)); li.classList.toggle('done', live && z < pi.done && !inn(pi.cur)); });
   }
   weekProg(secNow);
+  cdTick(n);
   if (!heroVisible) { tickTimer = setTimeout(tickClock, 1000 - bellNow().getMilliseconds() + 5); return; }   // 스크롤로 안 보이면 큰 시계는 안 그림
   setText('#greet', sayLine(b));
   setText('#bellState', b.state);
@@ -1387,6 +1388,110 @@ $('#dMine').addEventListener('click', e => {
   renderDdayView(); renderHomeDday();
 });
 
+/* ===== 카운트다운: 방학까지 · 성인까지 (2026-10-24) ===== */
+// 방학: 나이스 학사일정의 '방학식'·'종업식'(방학 시작)과 '개학'·'시업식'·'입학식'(학기 시작)으로 계산 — 앞뒤 200일을 한 번에 받음(키 없으면 60일)
+// 성인: 기본은 학년으로 태어난 해를 추정(학년도 − 15 − 학년) → 19살 되는 해 1월 1일 0시(청소년보호법 기준 연 나이).
+//       생일을 넣으면(이 기기에만 저장 'birth') 그 해로 계산하고 만 19세 생일(민법상 성년)도 같이 보여 줌
+let longSched = null;
+const loadLong = () => {
+  if (!longSched) longSched = (api.hasKey ? getSchedule(addDays(today(), -200), addDays(today(), 200)) : loadUpcoming()).catch(e => { longSched = null; throw e; });
+  return longSched;
+};
+const VAC_RE = /방학식|종업식/, OPEN_RE = /개학|시업식|입학식/;
+const CD = { vac: null, adult: null, man: null };   // 1초마다 줄어드는 목표 시각(Date)
+const fmtD = d => `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
+const vacName = (d, nm) => /종업식/.test(nm) && d.getMonth() === 1 ? '봄방학' : d.getMonth() >= 4 && d.getMonth() <= 8 ? '여름방학' : '겨울방학';
+const cdLeft = (at, n) => {   // '59일 08:12:33'
+  const ms = at - n; if (ms <= 0) return '';
+  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400);
+  return `${d ? d + '일 ' : ''}${pad(Math.floor(s % 86400 / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}`;
+};
+function vacInfo(rows) {
+  const t = today(), tk = ymd(t);
+  const ev = rows.filter(r => VAC_RE.test(r.EVENT_NM) || OPEN_RE.test(r.EVENT_NM)).sort((a, b) => a.AA_YMD < b.AA_YMD ? -1 : 1);
+  const lastV = [...ev].reverse().find(r => VAC_RE.test(r.EVENT_NM) && r.AA_YMD < tk);
+  if (lastV && diffDays(t, parseYmd(lastV.AA_YMD)) <= 80) {   // 방학식이 지났고 개학 전이면 방학 중 (출석 inVac과 같은 최대 80일)
+    const k = ev.find(r => /개학/.test(r.EVENT_NM) && r.AA_YMD > lastV.AA_YMD);
+    if (!k || k.AA_YMD > tk) return { on: true, name: vacName(parseYmd(lastV.AA_YMD), lastV.EVENT_NM), k: k ? parseYmd(k.AA_YMD) : null };
+  }
+  const v = ev.find(r => VAC_RE.test(r.EVENT_NM) && r.AA_YMD >= tk);
+  if (!v) return null;
+  const vd = parseYmd(v.AA_YMD), st = [...ev].reverse().find(r => OPEN_RE.test(r.EVENT_NM) && r.AA_YMD <= tk);
+  // 남은 등교일: 오늘(마지막 교시 전이면)부터 방학식 날까지 평일 중 휴업일·공휴일 빼고
+  const off = new Set(rows.filter(isOff).map(r => r.AA_YMD));
+  const n = now(), sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  const endT = (BELL.find(x => x.p === lastPeriod(t)) || BELL[BELL.length - 1]).end;
+  let left = 0;
+  for (let d = new Date(t); d <= vd; d = addDays(d, 1)) {
+    if (!(d.getDay() % 6) || off.has(ymd(d)) || offDays.has(ymd(d))) continue;
+    if (ymd(d) === tk && sec >= endT) continue;
+    left++;
+  }
+  const s = st ? parseYmd(st.AA_YMD) : null, span = s ? diffDays(vd, s) : 0;
+  return { on: false, name: vacName(vd, v.EVENT_NM), ev: /종업식/.test(v.EVENT_NM) ? '종업식' : '방학식', d: vd, left, pct: span > 0 ? Math.min(100, Math.max(0, Math.round(diffDays(t, s) / span * 100))) : null };
+}
+function adultInfo() {
+  const b = store.get('birth', ''), t = today();
+  let by, est = false;
+  if (isYmd(b)) by = +b.slice(0, 4);
+  else if (cls && +cls.g >= 1 && +cls.g <= 3) { by = (t.getMonth() < 2 ? t.getFullYear() - 1 : t.getFullYear()) - 15 - +cls.g; est = true; }   // 학년도는 3월에 바뀜
+  else return null;
+  return { yeon: new Date(by + 19, 0, 1), man: isYmd(b) ? new Date(by + 19, +b.slice(4, 6) - 1, +b.slice(6, 8)) : null, est, g: cls?.g };
+}
+async function renderCountdown() {
+  const vb = $('#cdVac'), ab = $('#cdAdult'); if (!vb) return;
+  const t = today();
+  // ── 성인까지
+  const a = adultInfo();
+  CD.adult = CD.man = null;
+  if (!a) ab.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-cake"/></svg><div class="cdm"><p class="cdk">성인까지</p><p class="cds">반을 설정하거나 생일을 넣으면 계산해요</p><span class="cdb"><button class="link" type="button" data-open-class>반 설정</button><button class="link" type="button" data-birth>생일 넣기</button></span></div>`;
+  else {
+    const n1 = diffDays(a.yeon, t), done = n1 <= 0, n2 = a.man ? diffDays(a.man, t) : null;
+    if (!done) CD.adult = a.yeon; else if (n2 > 0) CD.man = a.man;
+    const big = !done ? ddayText(n1) : n2 > 0 ? ddayText(n2) : '성인!';
+    const sub = !done ? `${a.yeon.getFullYear()}년 1월 1일 0시 · 19살 되는 해`
+      : n2 > 0 ? `만 19세 생일 ${a.man.getFullYear()}년 ${fmtD(a.man)} · 민법상 성년` : `${a.yeon.getFullYear()}년부터 성인이에요`;
+    const man = !done && a.man ? `<p class="cdx">만 19세 생일(민법상 성년) <b>${ddayText(n2)}</b> · ${a.man.getFullYear()}.${a.man.getMonth() + 1}.${a.man.getDate()}</p>` : '';
+    ab.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-cake"/></svg><div class="cdm"><p class="cdk">${done && !(n2 > 0) ? '성인 됐어요' : '성인까지'}</p><b class="cdn">${big}</b><span class="cdl" id="cdAL"></span></div>`
+      + `<div class="cdsub"><p class="cds">${sub}</p>${man}<span class="cdb"><em>${a.est ? `${a.g}학년 기준` : '내 생일 기준'}</em><button class="link" type="button" data-birth>${a.est ? '생일 넣기' : '생일 바꾸기'}</button></span></div>`;
+  }
+  ab.insertAdjacentHTML('beforeend', `<form class="cdform" id="cdForm" hidden><input type="date" id="cdBirth" aria-label="생일" min="1990-01-01" max="2020-12-31" value="${isYmd(store.get('birth', '')) ? store.get('birth').replace(/(\d{4})(\d\d)(\d\d)/, '$1-$2-$3') : ''}"><button class="btn" type="submit">저장</button>${isYmd(store.get('birth', '')) ? '<button class="link" type="button" data-birth-clear>지우기</button>' : ''}<span class="note">이 기기에만 저장돼요</span></form>`);
+  // ── 방학까지
+  let v = null, fail = false;
+  try { v = vacInfo(await loadLong()); } catch { fail = true; }
+  CD.vac = null;
+  if (!v) vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-beach"/></svg><div class="cdm"><p class="cdk">방학까지</p><p class="cds">${fail ? '일정을 불러오지 못했어요' : '학사일정에 아직 방학식이 안 올라왔어요'}</p></div>`;
+  else if (v.on) {
+    if (v.k) CD.vac = v.k;
+    vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-beach"/></svg><div class="cdm"><p class="cdk">${v.name} 중 · 개학까지</p><b class="cdn">${v.k ? ddayText(diffDays(v.k, t)) : '방학!'}</b><span class="cdl" id="cdVL"></span></div>`
+      + `<div class="cdsub"><p class="cds">${v.k ? `개학 ${fmtD(v.k)}` : '개학 날짜가 아직 안 올라왔어요'}</p><p class="cdx">푹 쉬어요</p></div>`;
+  } else {
+    const n = diffDays(v.d, t);
+    if (n > 0) CD.vac = v.d;
+    const bar = v.pct == null ? '' : `<div class="cdbar" role="img" aria-label="이번 학기 ${v.pct}% 지남"><i></i></div><p class="cdx">이번 학기 <b>${v.pct}%</b> 지남</p>`;
+    vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-beach"/></svg><div class="cdm"><p class="cdk">${n ? v.name + '까지' : '오늘 ' + v.ev + '!'}</p><b class="cdn">${ddayText(n)}</b><span class="cdl" id="cdVL"></span></div>`
+      + `<div class="cdsub"><p class="cds">${v.ev} ${fmtD(v.d)} · 학교 갈 날 <b>${v.left}일</b></p>${bar}</div>`;
+    const i = vb.querySelector('.cdbar i'); if (i) i.style.width = v.pct + '%';   // CSP: style 속성 대신 JS로
+  }
+  cdTick(now());
+}
+function cdTick(n) {
+  const a = $('#cdAL'), v = $('#cdVL');
+  if (a) a.textContent = cdLeft(CD.adult || CD.man, n);
+  if (v) v.textContent = cdLeft(CD.vac, n);
+  if ((CD.vac && CD.vac <= n) || (CD.adult && CD.adult <= n) || (CD.man && CD.man <= n)) { CD.vac = CD.adult = CD.man = null; renderCountdown(); }   // 0시가 되는 순간 다시 그림
+}
+$('#cdCard')?.addEventListener('click', e => {
+  if (e.target.closest('[data-birth]')) { const f = $('#cdForm'); f.hidden = !f.hidden; if (!f.hidden) $('#cdBirth').focus(); }
+  else if (e.target.closest('[data-birth-clear]')) { store.set('birth', ''); renderCountdown(); toast('생일을 지웠어요'); }
+});
+$('#cdCard')?.addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('#cdBirth').value.replace(/-/g, '');
+  if (!isYmd(v) || +v.slice(0, 4) < 1990 || +v.slice(0, 4) > 2020) { toast('생일을 확인해 주세요'); return; }
+  store.set('birth', v); renderCountdown(); toast('저장했어요');
+});
+
 /* ===== 모달 공통 ===== */
 let lastFocus = null;
 // 창이 하나라도 열려 있으면 뒤 화면 스크롤을 잠금(html.modal-lock) — 창 안(.sheet)만 스크롤됨
@@ -1446,7 +1551,7 @@ function adoptClass(me, force) {
   if (!next || (cls && cls.g === next.g && cls.c === next.c)) return;
   cls = next; store.set('class', cls);
   if ($('#mClass').classList.contains('open')) closeModal($('#mClass'));
-  renderClassChip(); renderHomeTT();
+  renderClassChip(); renderHomeTT(); renderCountdown();
   if ($('#v-tt').classList.contains('on')) renderTTView();
 }
 SOC.adoptClass = adoptClass;
@@ -1457,7 +1562,7 @@ $('#saveClass').onclick = () => {
   if (!next) return;
   if (cls && cls.g === next.g && cls.c === next.c) next.dep = cls.dep;
   cls = next; store.set('class', cls);
-  closeModal($('#mClass')); renderClassChip(); renderHomeTT();
+  closeModal($('#mClass')); renderClassChip(); renderHomeTT(); renderCountdown();
   if ($('#v-tt').classList.contains('on')) renderTTView();
   toast(`${cls.g}학년 ${cls.c}반으로 설정했어요`);
 };
@@ -1647,7 +1752,7 @@ let homeEntered = false;
 function bootHome() {
   if (!cfgReady) return;
   const de = document.documentElement;
-  if (!homeBooted) { homeBooted = true; renderHomeMeal(); renderHomeTT(); renderHomeDday(); loadOffDays(); loadNotice(); if (S.mealWk) loadHeroDay(); }
+  if (!homeBooted) { homeBooted = true; renderHomeMeal(); renderHomeTT(); renderHomeDday(); renderCountdown(); loadOffDays(); loadNotice(); if (S.mealWk) loadHeroDay(); }
   if (introOn()) {   // 소개 화면 뒤: 조용히 최종 모습
     Promise.race([document.fonts?.ready, new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(() => {
       if (!introOn() || homeEntered) return;

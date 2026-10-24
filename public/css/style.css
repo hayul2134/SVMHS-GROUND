@@ -2938,3 +2938,41 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 /* 작은 밸런스 티켓에선 WIN 도장 대신 왕관만 — 이긴 쪽 이름이 '지금 당…'으로 잘리던 문제 */
 .bal-t .bo-stamp{display:none}
 .btn.icb{padding-left:12px;padding-right:12px}.btn.icb svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;display:block}
+/* ===== 한눈에 보기: 카운트다운 (방학까지 · 성인까지, 2026-10-24) ===== */
+.k-cd{--k:#e0708a;--ks:#ffe4ea}
+.bento .k-cd::before{background:rgba(255,190,205,.85);left:auto;right:10%;transform:rotate(3deg)}
+.bento .k-cd{transform:rotate(.25deg)}
+.cdrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cdt{position:relative;display:flex;align-items:center;gap:14px;min-width:0;padding:12px 16px 12px 14px;border:2px solid var(--ink);border-radius:16px;box-shadow:var(--sh-s);background:var(--chip)}
+.cdt.vac{background:color-mix(in srgb,var(--lime) 34%,var(--card));transform:rotate(-.5deg)}
+.cdt.adult{background:color-mix(in srgb,var(--yellow) 40%,var(--card));transform:rotate(.5deg)}
+/* 티켓 절취선: 왼쪽 그림 칸과 숫자 칸 사이 */
+.cdt::after{content:"";position:absolute;left:62px;top:10px;bottom:10px;border-left:2px dashed color-mix(in srgb,var(--ink) 30%,transparent)}
+.cdt > .skel{flex:1;height:58px;margin:0}
+.cdic{flex:none;width:40px;height:40px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;color:var(--ink);overflow:visible;margin-right:10px;filter:drop-shadow(1.5px 1.5px 0 color-mix(in srgb,var(--ink) 25%,transparent))}
+.cdm{flex:none;display:flex;flex-direction:column;min-width:0}
+.cdk{margin:0;font-size:12.5px;font-weight:900;color:var(--sub);white-space:nowrap}
+.cdn{font-family:var(--disp);font-weight:400;font-size:34px;line-height:1.02;color:var(--text);text-shadow:2px 2px 0 color-mix(in srgb,var(--card) 80%,transparent)}
+.cdl{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;font-weight:800;color:var(--sub);letter-spacing:.02em;min-height:1.2em}
+.cdl:empty{display:none}
+.cdsub{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding-left:12px;border-left:2px dotted color-mix(in srgb,var(--ink) 18%,transparent)}
+.cds,.cdx{margin:0;font-size:12.5px;font-weight:700;line-height:1.35;color:var(--text);word-break:keep-all}
+.cdx{font-size:11.5px;color:var(--sub)}
+.cds b,.cdx b{font-weight:900;color:var(--text)}
+.cdm .cds{margin-top:4px;color:var(--sub);white-space:normal}
+.cdb{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:11.5px}
+.cdb em{font-style:normal;font-weight:800;color:var(--sub);padding:2px 7px;border-radius:7px;background:var(--card);border:1.5px solid var(--line)}
+.cdb .link{font-size:11.5px}
+.cdbar{height:9px;border-radius:99px;background:var(--card);border:1.5px solid var(--ink);overflow:hidden}
+.cdbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--sky),var(--lime));border-radius:inherit;transition:width .6s cubic-bezier(.2,.9,.3,1)}
+.cdform{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:8px;position:absolute;left:-2px;right:-2px;top:calc(100% + 8px);z-index:3;padding:10px 12px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:var(--sh-s)}
+.cdform[hidden]{display:none}
+.cdform input{flex:1;min-width:140px;padding:7px 10px;border:2px solid var(--line);border-radius:10px;background:var(--chip);color:var(--text);font:inherit;font-weight:700}
+.cdform .btn{padding:7px 14px}
+.cdform .note{margin:0;font-size:11px;width:100%}
+.board .k-cd .ct{margin-bottom:12px}
+@media (max-width:760px){.cdrow{grid-template-columns:1fr}}
+@media (max-width:420px){.cdt{flex-wrap:wrap}.cdt::after{display:none}.cdsub{flex-basis:100%;padding-left:0;border-left:0}.cdn{font-size:30px}}
+:root[data-theme="dark"] .cdt.vac{background:color-mix(in srgb,var(--lime) 16%,var(--card))}
+:root[data-theme="dark"] .cdt.adult{background:color-mix(in srgb,var(--yellow) 14%,var(--card))}
+:root[data-theme="dark"] .cdic{stroke:#0b1a2a}
