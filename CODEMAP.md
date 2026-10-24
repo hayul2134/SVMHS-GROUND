@@ -92,12 +92,12 @@ npx wrangler@4 pages dev --port 8788
 - DM은 **신고된 메시지와 앞뒤 5개만** 볼 수 있음(사생활 보호). 전체 DM 열람 기능은 일부러 없음.
 - 정지(`bans`): 정지 즉시 세션 삭제 + 로그인 거부(사유·기간 표시). 소셜 `auth()`도 정지된 사람은 막음.
 - 설정(`settings`): `join_code`(있으면 비밀 변수 JOIN_CODE보다 우선, ''이면 코드 없음) · `signup_open` · `dm_open` · `notice`(JSON).
-- 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 학생이 닫으면 `sg_notice_x`에 그 공지 id 저장. 공지에 '자세한 내용'(`body`, 최대 2000자)이 있으면 띠 끝에 '자세히 ›'가 붙고, 누르면 `SOC.openNotices(id)`로 공지 목록(넓은 창 `.sheet.wide`)이 열리며 그 공지 본문이 펼쳐짐. 공지 창 모양(`.ntlist .nt-t`/`.ntb`): 제목은 굵은 큰 글씨 한 줄(넘치면 …), 내용 2줄 미리보기 → '자세히 보기'로 펼침, 펼친 내용 아래 왼쪽 작은 '접기'. 업데이트 소식도 같은 모양. 지금 공지의 제목·내용만 날짜 그대로 고치기: `POST noticeedit`. 관리자 공지 화면에서 지난 공지 기록 삭제(`POST noticedel`, 지금 걸린 공지는 불가).
+- 공지: `/api/notice`(30초 캐시) → `app.js loadNotice()`가 `#notice` 띠로 표시. 새 공지는 한 번 뜨고 ✕를 누르기 전까지 유지, ✕를 누르면 그 공지는 다시 안 뜸 — 계정별로 `sg_notice_x:아이디`에 그 공지 id 저장(공용 태블릿 대비, 예전 `sg_notice_x`도 인정). 공지에 '자세한 내용'(`body`, 최대 2000자)이 있으면 띠 끝에 '자세히 ›'가 붙고, 누르면 `SOC.openNotices(id)`로 공지 목록(넓은 창 `.sheet.wide`)이 열리며 그 공지 본문이 펼쳐짐. 공지 창 모양(`.ntlist .nt-t`/`.ntb`): 제목은 굵은 큰 글씨 한 줄(넘치면 …), 내용 2줄 미리보기 → '자세히 보기'로 펼침, 펼친 내용 아래 왼쪽 작은 '접기'. 업데이트 소식도 같은 모양. 지금 공지의 제목·내용만 날짜 그대로 고치기: `POST noticeedit`. 관리자 공지 화면에서 지난 공지 기록 삭제(`POST noticedel`, 지금 걸린 공지는 불가).
 - 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기(평일 10일 표시). 지금 질문을 바꾸면 그날 표·댓글 초기화. 지금 질문 댓글 목록·삭제(`balancecdel`).
 
 ## 의견 · 공지 버튼 (헤더)
 - 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번 · 이 경로만 요청 4MB까지) → `feedback` 표 + **사진 최대 5장**(2026-10-23: 브라우저 `shrinkImg()`가 긴 변 1600px JPEG·장당 약 450KB 이하로 줄여 data URL로 보냄, 캡처 붙여넣기 지원 → 서버가 형식·파일 머리·1MB 확인 후 `feedback_img`(fid,i,type,data BLOB)에 저장, 관리자 화면은 `GET /api/admin/fbimg/<id>/<i>`로 썸네일) → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.
-- 📢 공지 → `openNotices()` → `GET /api/notices`(최근 20개, 30초 캐시). 관리자가 공지를 올리면 `notices` 표에도 기록(앞 공지는 끝난 것으로). 마지막으로 본 공지 id `sg_notice_seen`과 다르면 버튼에 빨간 점. 목록을 열면 닫았던 띠 공지도 다시 보임.
+- 📢 공지 → `openNotices()` → `GET /api/notices`(최근 20개, 30초 캐시). 관리자가 공지를 올리면 `notices` 표에도 기록(앞 공지는 끝난 것으로). 마지막으로 본 공지 id `sg_notice_seen`과 다르면 버튼에 빨간 점. (목록을 열어도 닫은 띠 공지는 다시 안 뜸 — 2026-10-25)
 
 ## 구글 로그인 · DM 받는 범위 · 카톡
 - 구글(선택 사항 — 기본은 아이디·비밀번호, 구글 버튼은 폼 아래 '원하면'): `wrangler.jsonc`의 `vars.GOOGLE_CLIENT_ID`(공개 값)가 있어야 버튼이 보임. 화면은 `social.js`의 `.gbtn[data-gintent]`(login·link·withdraw) 자리에 GIS 버튼을 그림 → `POST /api/s/google`(처음이면 `need:'signup'` → 아이디·닉네임 받고 가입, 비밀번호는 무작위) · `google-link`(연결/해제) · 탈퇴는 구글로 본인 확인 가능. 서버는 tokeninfo로 aud·iss·exp 확인, `users.google_sub`만 저장(이메일 X). CSP에 accounts.google.com, COOP는 `same-origin-allow-popups`.

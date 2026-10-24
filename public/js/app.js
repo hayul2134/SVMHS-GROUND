@@ -1804,11 +1804,16 @@ $('#btnTheme').onclick = () => {
 };
 
 /* ===== 관리자 공지 ===== */
+// 띠 공지는 새 공지가 올라오면 한 번 뜨고, ✕를 누르기 전까지 계속 유지. ✕를 누르면 그 공지는 다시 안 뜸.
+// 학교 태블릿을 여럿이 같이 쓰니 '닫음'은 계정마다 따로 기억(sg_notice_x:아이디). 다른 공지가 올라오면 다시 뜸.
+let noticeWho = '';
+const noticeKey = () => 'notice_x' + (noticeWho ? ':' + noticeWho : '');
+const noticeClosed = id => { const v = store.get(noticeKey()); return v === undefined ? store.get('notice_x') === id : v === id; };   // 예전 기기 공통 기록(sg_notice_x)도 인정
 async function loadNotice() {
   let n = null;
   try { const r = await fetch('/api/notice'); if (r.ok) n = (await r.json()).notice; } catch {}
   const box = $('#notice');
-  if (!n || store.get('notice_x') === n.id) { box.hidden = true; return; }
+  if (!n || noticeClosed(n.id)) { box.hidden = true; return; }
   $('#noticeIc').textContent = { warn: '⚠️', fun: '🎉' }[n.tone] || '📢';
   box.className = 'notice ' + ({ warn: 'warn', fun: 'fun' }[n.tone] || '');
   const a = $('#noticeTx');
@@ -1819,7 +1824,7 @@ async function loadNotice() {
     a.href = '#'; delete a.dataset.go;
     a.onclick = e => { e.preventDefault(); if (SOC.openNotices) SOC.openNotices(n.id); else toast('잠시 후 다시 눌러 주세요'); };
   } else { a.removeAttribute('href'); delete a.dataset.go; }
-  $('#noticeX').onclick = () => { store.set('notice_x', n.id); box.hidden = true; };
+  $('#noticeX').onclick = () => { store.set(noticeKey(), n.id); box.hidden = true; };
   box.hidden = false;
 }
 
@@ -1924,6 +1929,8 @@ $('#intro').addEventListener('click', e => { const a = e.target.closest('[data-i
 // me: 로그인한 사람(없으면 null) · on: 소셜 기능이 켜져 있는지 · how: 'login' | 'signup' | undefined(처음 확인)
 SOC.authed = (me, on = true, how) => {
   try { if (me) localStorage.setItem('sg_in', '1'); else localStorage.removeItem('sg_in'); } catch {}
+  const who = me?.handle || '';
+  if (who !== noticeWho) { noticeWho = who; if (homeBooted && who) loadNotice(); }   // 계정이 바뀌면 그 계정이 닫은 공지 기준으로 다시
   if (!on) return;                                   // 서버 확인 불가: 지금 상태 유지 (로그인 안 된 기기는 소개 화면 그대로)
   if (me) { adoptClass(me); if (introOn()) { intro(false); if (how === 'login' && !cls) setTimeout(openClass, 400); } }
   else intro(true);                                  // 로그인 안 했으면 사이트는 안 보이고 소개 화면만

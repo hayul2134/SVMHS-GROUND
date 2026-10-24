@@ -1345,7 +1345,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
   sheet('<h3>📢 공지</h3><ul class="ntlist"><li class="skel"></li><li class="skel"></li></ul>');
   $('#socSheet').classList.add('wide');   // 공지는 넓게: 접힌 공지 제목이 2줄 안에 들어가게
   if (!ntList || !ptList) await checkNotices();
-  if (ntList.length) { store.set('notice_seen', ntList[0].id); store.set('notice_x', null); }   // 다 봤음 + 닫았던 띠 공지도 다시 보이게
+  if (ntList.length) store.set('notice_seen', ntList[0].id);   // 다 봤음 (✕로 닫은 띠 공지는 다시 띄우지 않음)
   if (ptList.length) store.set('patch_seen', ptList[0].id);
   $('#ntDot').hidden = true;
   // 공지·업데이트 소식 공통 모양: 굵은 큰 제목 + 내용 2줄 미리보기 → 📖 자세히 보기로 펼치고, 맨 아래 작은 '접기'로 다시 접음
