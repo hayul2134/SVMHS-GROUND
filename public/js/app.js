@@ -1918,7 +1918,7 @@ function intro(on) {
   HTML.classList.toggle('prelogin', on);
   $('#intro').inert = !on;
   if (on) { $('#intro').scrollTop = 0; introTick(); }
-  else { clearTimeout(inTimer); authPage(false); SOC.showOff?.(); onScroll(); bootHome(); }
+  else { clearTimeout(inTimer); authPage(false); SOC.showOff?.(); SOC.inPlayOff?.(); onScroll(); bootHome(); }
 }
 // 소개 화면의 종 시계: 홈과 같은 종 시간(bellInfo)으로 실제 시각·남은 시간을 보여 줌 — 소개가 떠 있고 탭이 보일 때만 돌아감
 let inTimer = 0;
@@ -1950,7 +1950,15 @@ if ('IntersectionObserver' in window) {
   $$('#intro .rv').forEach(el => io.observe(el));
   $('#intro').classList.add('rv-on');
 }
-// 반응속도 맛보기 (기록은 저장 안 함 — 가입하면 진짜 게임에서 랭킹에 올라감)
+const inBestTx = {};
+function inBest(k, html) {   // 맛보기 게임마다 최고 기록 띠 (지금 고른 게임 것만 보임)
+  if (html) inBestTx[k] = html;
+  const el = $('#inBest'), t = inBestTx[inPk];
+  el.hidden = !t; if (t) el.innerHTML = t + '<button type="button" data-intro="signup">가입하고 랭킹에 올리기</button>';
+}
+let inPk = 'home';
+/* ===== 소개 맛보기 (2026-10-25): 나 집에 갈래!(기본) · 반응속도 — 기록은 저장 안 함, 가입하면 진짜 게임에서 랭킹에 올라감 ===== */
+// 반응속도
 {
   const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, best = 0, tries = 0;
   const show = (cls, html) => { pad_.className = 'rx in-rx ' + cls; pad_.innerHTML = html; };
@@ -1963,7 +1971,7 @@ if ('IntersectionObserver' in window) {
       st = 'shown'; show('done', `<b>${ms}ms</b><small>${grade(ms)} · 탭해서 한 번 더</small>`);
       if (!best || ms < best) best = ms;
       const el = $('#inBest'); el.hidden = false;
-      el.innerHTML = `내 최고 <b>${best}ms</b><button type="button" data-intro="signup">가입하고 랭킹에 올리기</button>`;
+      inBest('rx', `내 최고 <b>${best}ms</b>`);
       return;
     }
     st = 'wait'; show('wait', '<b>기다려…</b><small>초록색이 되면 바로 탭!</small>');
@@ -1971,6 +1979,68 @@ if ('IntersectionObserver' in window) {
   };
   pad_.addEventListener('pointerdown', hit);
   pad_.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) hit(e); });   // 키보드로도 할 수 있게
+}
+// 나 집에 갈래! 맛보기: runner.js를 그대로 씀 (화면에 보일 때만 불러와 돌리고, 지나가면 멈춤). 키보드는 게임 칸에 포커스가 있을 때만(소개 스크롤·쇼케이스 ↓↑와 안 겹치게)
+{
+  const box = $('#inHr'), cv = $('#inHrCv'), ov = $('#inHrOv'), scr = $('#inHrScr');
+  let RUN = null, R = null, char = null, over = false, deadAt = 0, best = 0, seen = false, loading = false;
+  const coarse = matchMedia('(pointer:coarse)').matches;
+  const fit = () => {   // 한 도트 = 기기 픽셀 정수배 (도트가 고르게)
+    if (!RUN) return;
+    const w = scr.parentElement.clientWidth, dpr = devicePixelRatio || 1, k = w / RUN.W, snap = Math.floor(k * dpr) / dpr;
+    scr.style.width = Math.min(w, (snap >= k * .85 ? snap : k) * RUN.W) + 'px';   // 정수배로 맞추면 너무 작아질 땐(작은 칸) 칸에 맞춤
+  };
+  const grade = m => m >= 1500 ? '이 정도면 라운드 1등 노려볼 만해요' : m >= 800 ? '꽤 멀리 왔는데요?' : m >= 300 ? '이제 감 잡았다!' : '한 번만 더…';
+  async function start() {
+    if (R || loading || inPk !== 'home' || !introOn()) return R;
+    loading = true;
+    try { RUN ||= await import('./runner.js'); } catch { loading = false; ov.innerHTML = '<b>게임을 못 불러왔어요</b><small>새로 고침해 주세요</small>'; return; }
+    loading = false;
+    if (R || inPk !== 'home' || !seen || !introOn()) return;
+    char ||= RUN.loadChar();
+    R = RUN.createRunner(cv, char, {
+      best: () => best,
+      onStart() { ov.hidden = true; box.classList.add('on'); },
+      onOver(score, ms) {
+        over = true; deadAt = performance.now(); box.classList.remove('on');
+        const nb = score > best; if (nb) best = score;
+        ov.hidden = false; ov.classList.add('dead');
+        ov.innerHTML = `<b>앗, 집에 못 갔다…</b><span><em>${score.toLocaleString('ko-KR')}m</em> · ${(ms / 1000).toFixed(1)}초${nb ? ' · <i>최고 기록!</i>' : ''}</span><small>${grade(score)} · ${coarse ? '눌러서 다시' : '스페이스 · 클릭으로 다시'}</small>`;
+        inBest('home', `내 최고 <b>${best.toLocaleString('ko-KR')}m</b>`);
+      },
+    });
+    fit();
+  }
+  const stop = () => { if (!R) return; R.destroy(); R = null; over = false; ov.hidden = false; ov.classList.remove('dead'); ov.innerHTML = '<b>나 집에 갈래!</b><small>눌러서 출발</small>'; box.classList.remove('on'); };
+  const restart = () => { if (performance.now() - deadAt < 400) return; over = false; ov.classList.remove('dead'); R.reset(); R.jump(); };
+  const act = (a, down) => { if (!R) { if (down) { seen = true; start().then(() => { if (a === 'jump' && R?.st.scene === 'ready') R.jump(); }); } return; } if (over) { if (down && a === 'jump') restart(); return; } R.input(a, down); };
+  const hold = (el, a) => {
+    el.addEventListener('pointerdown', e => { e.preventDefault(); box.focus({ preventScroll: true }); act(a, true); try { el.setPointerCapture(e.pointerId); } catch {} });
+    const up = () => R?.input(a, false);
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+    el.addEventListener('contextmenu', e => e.preventDefault());
+  };
+  hold(cv, 'jump'); hold(ov, 'jump'); hold($('#inHrJ'), 'jump'); hold($('#inHrD'), 'duck');
+  const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck' };
+  box.addEventListener('keydown', e => { const a = KEY[e.key]; if (!a || e.target !== box) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) act(a, true); });
+  box.addEventListener('keyup', e => { const a = KEY[e.key]; if (a) R?.input(a, false); });
+  box.addEventListener('blur', () => { R?.input('jump', false); R?.input('duck', false); });
+  $('#inHrRnd').addEventListener('click', () => { if (!RUN) return; char = RUN.randomChar(); R?.setChar(char); if (R && R.st.scene !== 'play') R.draw(); });
+  if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(box);
+  // 화면에 보이면 시작(대기 화면), 안 보이면 멈춤 — 달리는 중이 아니면 바로 정리
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => es.forEach(e => { seen = e.isIntersecting; if (seen) start(); else if (!R || R.st.scene !== 'play') stop(); }), { root: $('#intro'), threshold: 0 }).observe(box);
+  else { seen = true; start(); }
+  // 탭 바꾸기
+  $('#inPlay').addEventListener('click', e => {
+    const b = e.target.closest('[data-pk]'); if (!b || b.dataset.pk === inPk) return;
+    inPk = b.dataset.pk;
+    $$('#inPlay [data-pk]').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+    $$('#inPlay [data-pk-txt]').forEach(x => { x.hidden = x.dataset.pkTxt !== inPk; });
+    $$('#inPlay [data-pk-box]').forEach(x => { x.hidden = x.dataset.pkBox !== inPk; });
+    if (inPk === 'home') start(); else stop();
+    inBest(inPk);
+  });
+  SOC.inPlayOff = stop;   // 로그인해서 소개가 닫히면 멈춤
 }
 // '구경하기' 화살표: 소개 화면 안에서 부드럽게 내려감 (주소 해시는 안 바꿈)
 $('#intro').addEventListener('click', e => { const a = e.target.closest('[data-intro-go]'); if (!a) return; e.preventDefault(); $('#' + a.dataset.introGo).scrollIntoView({ behavior: 'smooth', block: 'start' }); });
@@ -2022,12 +2092,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#intro
 const SH_INFO = [
   ['오늘 급식', '조식·중식·석식이 시간 맞춰 바뀌고, 식판 그림으로 보여요. 맛있는 메뉴엔 투표도!'],
   ['진짜 종 시계', '우리 학교 종 시간 그대로. 쉬는 시간까지 남은 시간이 1초 단위로 줄어요'],
-  ['우리 반 시간표', '학년·반만 고르면 끝. 지금 교시를 짚어 주고, 7교시가 끝나면 내일 시간표로'],
+  ['우리 반 시간표', '학년·반만 고르면 끝. 지금 교시를 짚어 주고, 마지막 교시가 끝나면 다음 날 시간표로'],
   ['오늘의 밸런스 게임', '평일마다 새 질문 하나. 마지막 교시가 끝나면 결과 공개, 댓글로 토론'],
-  ['미니게임 랭킹', '반응속도 · 1 to 25 · 컷 타이밍 · 나 집에 갈래!. 반 대항전으로 우리 반 순위까지'],
-  ['맞팔 친구랑 DM', '맞팔한 친구끼리만 주고받아요. 쉬는 시간 수다는 여기서'],
-  ['프로필 꾸미기', '아바타·색·스티커·인스타 아이디까지. 친구 찾아서 팔로우'],
-  ['학사일정 · D-day', '다음 시험·행사까지 남은 날이 바로 보여요. 달력으로 보는 학교 일정']];
+  ['출석 체크', '등교일마다 들어오기만 하면 도장 쾅. 불꽃이 커질수록 스티커·프로필 사진·칭호가 열려요'],
+  ['게임 · 2주 라운드', '나 집에 갈래! · 반응속도 · 1 to 25 · 컷 타이밍. 2주마다 새로 겨뤄서 티어를 받고, 1~3등은 뽑기권'],
+  ['뽑기 시즌 1', '일반은 스티커, 희귀는 움직이는 스티커, 전설은 네온 시계·홀로그램 닉네임 같은 효과. 돈으로 사는 건 없어요'],
+  ['친구 · DM', '맞팔 친구가 지금 접속 중인지 첫 화면에서 바로. DM은 맞팔끼리만 주고받아요'],
+  ['프로필 꾸미기', '캐릭터 사진·배경·스티커·칭호·동아리 로고까지. 뽑기 효과로 이름이 반짝여요'],
+  ['일정 · 카운트다운', '다음 시험·행사까지 D-day, 방학까지 남은 등교일, 성인 되는 날까지 1초 단위로']];
 const SH_EX_MEAL = { main: '탕수육', sides: ['잡채', '배추김치', '오이무침', '요구르트'], rice: '잡곡밥', soup: '미역국' };
 var shTT = [];   // [[교시, 과목]] (var: 시계가 먼저 돌 때도 읽을 수 있게)
 const SH_EX_TT = ['국어', '영상 제작', '영어', '체육', '수학', '미술', '한국사'];   // 7교시까지 채워 카드 아래가 비지 않게
@@ -2046,7 +2118,25 @@ function showClock(n, b, left, pct, rest, sec) {
   const ps = (shTT || []).map(([p]) => BELL.find(x => x.p === p)).filter(Boolean), live = ps.length && isSchoolDay(n) && sec >= ps[0].start && sec < ps[ps.length - 1].end;
   $$('#shTt li').forEach(li => { const p = +li.dataset.p, bl = BELL.find(x => x.p === p); li.classList.toggle('done', live ? !!bl && sec >= bl.end : p < 3); li.classList.toggle('cur', live ? !!bl && sec >= bl.start && sec < bl.end : p === 3); });
 }
+// 쇼케이스 카드의 그림을 사이트에서 실제로 쓰는 그림으로 채움 (attend.js 불꽃 · att-art.js 스티커 · 캐릭터 · 동아리 로고) — 한 번만
+let shArt = false;
+async function fillShowArt() {
+  if (shArt) return; shArt = true;
+  try {
+    const [{ flame }, { CLUBS }] = await Promise.all([import('./attend.js'), import('./clubs.js')]);
+    $('#shaFire').innerHTML = flame('big', { tier: 1 });
+    $('#shaNext').innerHTML = emo('r:bell', 'sha-a');
+    $('#shcHit').innerHTML = emo('r:plane', 'shc-a');
+    $('#shcRow').innerHTML = [['r:eraser', 1], ['r:earbud', 1], ['r:test100', 2], ['r:fxneon', 3]].map(([v, r]) => `<li class="r${r}">${emo(v, 'shc-s')}</li>`).join('');
+    $('#shfAvs').innerHTML = ['cat', 'frog', 'penguin', 'dino'].map(k => `<i class="shf-av">${emo('k:' + k)}</i>`).join('');
+    $('#shpAv').innerHTML = emo('k:bunny', 'shp-k');
+    $('#shpBan').innerHTML = ['r:plane', 'r:ball'].map(v => `<i>${emo(v, 'shp-s')}</i>`).join('');
+    const c = CLUBS[Math.floor(Math.random() * CLUBS.length)];   // 동아리는 매번 무작위 (특정 동아리만 보이지 않게)
+    $('#shpClub').innerHTML = `<img src="/clubs/${c[0]}.webp" alt="" width="128" height="128">${esc(c[1])}`;
+  } catch { shArt = false; }
+}
 async function fillShow() {
+  fillShowArt();
   const day = ymd(today()), cell = (x, cls) => { if (!x) return `<span class="c ${cls}"></span>`; const k = foodImg(x); return `<span class="c ${cls}">${k ? `<img src="/food/c/${k}.webp" alt="" loading="lazy">` : '<i></i>'}<b>${esc(x)}</b></span>`; };
   const [meal, rows] = await Promise.all([
     getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),

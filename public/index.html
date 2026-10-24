@@ -168,6 +168,7 @@
           <button class="btn big ghost" type="button" data-intro="login">로그인</button>
         </div>
         <p class="in-note">아이디만 있으면 1분 · 이메일·전화번호 필요 없어요</p>
+        <a class="in-new" href="#inPlay" data-intro-go="inPlay"><b>NEW</b><span>나 집에 갈래! · 뽑기 시즌 1 · 2주 라운드</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-next"/></svg></a>
       </div>
 
       <!-- 실제 시각·종 카운트다운(로그인 없이도 움직임) -->
@@ -222,52 +223,77 @@
         </div></div>
 
         <div class="so so-bal" data-k="3" aria-hidden="true"><div class="so-in">
-          <p class="shb-h"><span>⚖️ 오늘의 밸런스</span><em>⏳ 마감까지 4:11:15</em></p>
+          <p class="shb-h"><span><svg class="sic" viewBox="0 0 24 24"><use href="#sj-vote"/></svg>오늘의 밸런스</span><em><svg class="sic" viewBox="0 0 24 24"><use href="#sj-clock"/></svg>마감까지 4:11:15</em></p>
           <p class="shb-q"><b>Q.</b> 평생 짜장면만 vs 평생 짬뽕만</p>
           <div class="mk-vs"><span class="a">짜장 <b>58%</b></span><span class="b">짬뽕 <b>42%</b></span></div>
-          <p class="shb-c">💬 한쪽 고르고 댓글 달기<b>12 ›</b></p>
+          <p class="shb-c"><span><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg>한쪽 고르고 댓글 달기</span><b>12 ›</b></p>
           <span class="so-ex">예시</span>
         </div></div>
 
-        <div class="so so-game" data-k="4" aria-hidden="true"><div class="so-in">
-          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#i-game"/></svg>미니게임 랭킹</p>
-          <p class="shg-chips"><span class="on">⚡ 반응속도</span><span>🔢 1 to 25</span><span>🎬 컷 타이밍</span><span>🏠 나 집에 갈래!</span></p>
-          <ol class="shg-rank"><li><b>1</b><i class="av c1"></i><span>2-3 김영상</span><em>0.182초</em></li><li><b>2</b><i class="av c2"></i><span>1-5 컷장인</span><em>0.197초</em></li><li class="me"><b>3</b><i class="av c3"></i><span>나</span><em>0.204초</em></li></ol>
-          <p class="shg-cls">🏆 반 대항전 · 우리 반 <b>2위</b></p>
+        <!-- 출석 체크: 불꽃·보상 그림은 app.js fillShowArt()가 진짜 그림(attend.js flame · att-art.js)으로 채움 -->
+        <div class="so so-att" data-k="4" aria-hidden="true"><div class="so-in">
+          <i class="so-tape"></i>
+          <div class="sha-top"><span class="sha-fire" id="shaFire"></span><p class="sha-n"><b>12</b><span>일 연속 출석</span></p></div>
+          <ol class="sha-wk"><li class="ok"><b>월</b><i></i></li><li class="ok"><b>화</b><i></i></li><li class="ok"><b>수</b><i></i></li><li class="ok now"><b>목</b><i></i></li><li><b>금</b><i></i></li></ol>
+          <div class="sha-next"><span class="sha-art" id="shaNext"></span><p><small>다음 보상까지 <b>2일</b></small><strong>기념 스티커가 열려요</strong></p></div>
+          <p class="sha-foot"><span>등교일만 세요</span><span>주말·방학은 쉬어도 OK</span></p>
           <span class="so-ex">예시</span>
         </div></div>
 
-        <div class="so so-dm" data-k="5" aria-hidden="true"><div class="so-in">
-          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg>친구랑 DM</p>
+        <div class="so so-game" data-k="5" aria-hidden="true"><div class="so-in">
+          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#i-game"/></svg>게임 랭킹</p>
+          <p class="shg-chips"><span class="on"><svg class="sic" viewBox="0 0 24 24"><use href="#sj-run"/></svg>나 집에 갈래!</span><span><svg class="sic" viewBox="0 0 24 24"><use href="#sj-bolt"/></svg>반응속도</span><span><svg class="sic" viewBox="0 0 24 24"><use href="#sj-n25"/></svg>1 to 25</span><span><svg class="sic" viewBox="0 0 24 24"><use href="#sj-cut"/></svg>컷 타이밍</span></p>
+          <p class="shg-rd"><b>이번 라운드</b><span>마감 D-9</span><em>1~3등 뽑기권</em></p>
+          <ol class="shg-rank"><li><b>1</b><i class="av c1"></i><span>2-3 김영상</span><em>1,284m</em></li><li><b>2</b><i class="av c2"></i><span>1-5 컷장인</span><em>1,102m</em></li><li class="me"><b>3</b><i class="av c3"></i><span>나</span><em>876m</em></li></ol>
+          <p class="shg-tier"><svg class="sic" viewBox="0 0 24 24"><use href="#sj-tier"/></svg><span>내 티어</span><b class="t-gold">골드</b><i class="lad"><i class="dia"></i><i class="pla"></i><i class="gold on"></i><i class="silv"></i><i class="brz"></i></i></p>
+          <span class="so-ex">예시</span>
+        </div></div>
+
+        <!-- 뽑기: 그림은 app.js fillShowArt()가 att-art.js 진짜 스티커로 채움 (희귀는 움직임) -->
+        <div class="so so-gacha" data-k="6" aria-hidden="true"><div class="so-in">
+          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#i-gacha"/></svg>뽑기 <small>시즌 1 · 쉬는 시간</small></p>
+          <div class="shc-hit"><i class="shc-rays"></i><span class="shc-art" id="shcHit"></span><p><b class="r2">희귀</b><strong>종이비행기</strong><small>움직이는 스티커</small></p></div>
+          <ul class="shc-row" id="shcRow"></ul>
+          <p class="shc-note"><b>전설은 효과!</b><span>네온 시계</span><span>홀로그램 닉네임</span><span>별똥별 등장</span><span>떠 있는 왕관</span></p>
+          <p class="shc-odds"><i class="r1"></i><i class="r2"></i><i class="r3"></i><i class="r4"></i></p>
+          <p class="shc-lg"><span class="r1">일반</span><span class="r2">희귀</span><span class="r3">전설</span><span class="r4">시크릿</span></p>
+          <span class="so-ex">예시</span>
+        </div></div>
+
+        <div class="so so-dm" data-k="7" aria-hidden="true"><div class="so-in">
+          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg>친구 · DM</p>
+          <div class="shf-live"><span class="shf-avs" id="shfAvs"></span><p><b>4명</b> 지금 접속 중</p></div>
           <div class="mk-chat"><p class="l">점심 뭐 나와?</p><p class="r">닭갈비 ㄷㄷ</p><p class="l">4교시 왜 이렇게 기냐…</p><p class="r">5분 남음 ㅋㅋ</p></div>
         </div></div>
 
-        <div class="so so-prof" data-k="6" aria-hidden="true"><div class="so-in">
-          <div class="shp-ban"><i>⭐</i><i>🎬</i><i>🍓</i></div>
-          <span class="shp-av"><svg viewBox="0 0 24 24"><use href="#sj-cg"/></svg></span>
-          <p class="shp-mood"><span>오늘도 편집 중 ✂️</span></p>
-          <p class="shp-n">나만의 프로필</p>
-          <p class="shp-c"><span>2학년 3반</span><span>🎬 동아리</span></p>
-          <p class="shp-s"><span><b>48</b>팔로워</span><span><b>52</b>팔로잉</span></p>
-          <p class="shp-b"><span class="f">팔로우</span><span class="d">💬 DM</span></p>
+        <div class="so so-prof" data-k="8" aria-hidden="true"><div class="so-in">
+          <div class="shp-ban" id="shpBan"></div>
+          <span class="shp-av" id="shpAv"><svg class="sic" viewBox="0 0 24 24"><use href="#sj-cg"/></svg></span>
+          <p class="shp-mood"><span>오늘도 편집 중</span></p>
+          <p class="shp-n">나만의 프로필<i class="nfx nfx-holo"></i></p>
+          <p class="shp-t">쉬는 시간 마스터</p>
+          <p class="shp-c"><span>2학년 3반</span><span>콘텐츠과</span><span class="club" id="shpClub">동아리</span></p>
+          <p class="shp-s"><span><b>48</b>팔로워</span><span><b>12</b>연속 출석</span><span><b class="t-gold">골드</b>티어</span></p>
+          <p class="shp-b"><span class="f">팔로우</span><span class="d">DM</span></p>
         </div></div>
 
-        <div class="so so-cal" data-k="7" aria-hidden="true"><div class="so-in">
-          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#sj-test"/></svg>다가오는 일정</p>
+        <div class="so so-cal" data-k="9" aria-hidden="true"><div class="so-in">
+          <p class="so-h2"><svg viewBox="0 0 24 24"><use href="#sj-test"/></svg>일정 · 카운트다운</p>
           <div class="shd-big"><b>D-7</b><span><strong>2학기 기말고사</strong><small>12월 1일 (화)</small></span></div>
-          <ul class="shd-list"><li><b>D-12</b><span>체육대회</span></li><li><b>D-20</b><span>영상제</span></li><li><b>D-31</b><span>겨울방학</span></li></ul>
+          <ul class="shd-list"><li><b>D-12</b><span>체육대회</span></li><li><b>D-20</b><span>영상제</span></li></ul>
+          <div class="shd-tix"><p class="snow"><svg class="sic" viewBox="0 0 24 24"><use href="#sj-snow"/></svg><span>방학까지</span><b>D-58</b><small>등교 38일</small></p><p class="cake"><svg class="sic" viewBox="0 0 24 24"><use href="#sj-cake"/></svg><span>성인까지</span><b>D-433</b><small>1초씩 줄어요</small></p></div>
           <span class="so-ex">예시</span>
         </div></div>
 
-        <div class="sh-say" aria-live="polite"><p class="shs-n" id="shN">01 / 08</p><p class="shs-t" id="shT">오늘 급식</p><p class="shs-d" id="shD"></p></div>
+        <div class="sh-say" aria-live="polite"><p class="shs-n" id="shN">01 / 10</p><p class="shs-t" id="shT">오늘 급식</p><p class="shs-d" id="shD"></p></div>
         <button class="sh-skip" type="button" id="shSkip">건너뛰기<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></button>
         <div class="sh-dots" aria-hidden="true" id="shDots"></div>
       </div>
     </section>
 
     <div class="in-tick" aria-hidden="true"><div class="tk">
-      <span>오늘 급식 뭐야?</span><i>✦</i><span>다음 쉬는 시간까지 몇 분?</span><i>✦</i><span>반응속도 반 대항전</span><i>✦</i><span>맞팔 친구랑 DM</span><i>✦</i><span>평일마다 새 밸런스 게임</span><i>✦</i><span>내 프로필 꾸미기</span><i>✦</i>
-      <span>오늘 급식 뭐야?</span><i>✦</i><span>다음 쉬는 시간까지 몇 분?</span><i>✦</i><span>반응속도 반 대항전</span><i>✦</i><span>맞팔 친구랑 DM</span><i>✦</i><span>평일마다 새 밸런스 게임</span><i>✦</i><span>내 프로필 꾸미기</span><i>✦</i>
+      <span>오늘 급식 뭐야?</span><i>✦</i><span>다음 쉬는 시간까지 몇 분?</span><i>✦</i><span>나 집에 갈래! 2주 라운드</span><i>✦</i><span>뽑기 시즌 1 「쉬는 시간」</span><i>✦</i><span>출석 불꽃 이어가기</span><i>✦</i><span>맞팔 친구랑 DM</span><i>✦</i><span>평일마다 새 밸런스 게임</span><i>✦</i><span>방학까지 D-day</span><i>✦</i><span>동아리 로고 달고 프로필 꾸미기</span><i>✦</i>
+      <span>오늘 급식 뭐야?</span><i>✦</i><span>다음 쉬는 시간까지 몇 분?</span><i>✦</i><span>나 집에 갈래! 2주 라운드</span><i>✦</i><span>뽑기 시즌 1 「쉬는 시간」</span><i>✦</i><span>출석 불꽃 이어가기</span><i>✦</i><span>맞팔 친구랑 DM</span><i>✦</i><span>평일마다 새 밸런스 게임</span><i>✦</i><span>방학까지 D-day</span><i>✦</i><span>동아리 로고 달고 프로필 꾸미기</span><i>✦</i>
     </div></div>
 
 
@@ -275,30 +301,42 @@
     <section class="in-sec" aria-labelledby="inX">
       <h2 class="in-h rv" id="inX"><small>여기서 끝이 아니에요</small>이것도 다 있어요</h2>
       <ul class="in-feats">
-        <li class="ft rv c-y"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-fire"/></svg></i><b>출석 체크</b><span>등교일마다 도장 쾅. 연속 출석 불꽃이 커지고, 기념 스티커·프로필 사진이 열려요</span></li>
+        <li class="ft rv c-y"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-fire"/></svg></i><b>출석 보상 쓰기</b><span>받은 스티커를 이름 옆 대표 스티커로, 첫 화면 시계 위에, 댓글·DM에 붙여요</span></li>
         <li class="ft rv c-r"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-vote"/></svg></i><b>급식 인기투표</b><span>오늘 제일 맛있는 메뉴에 한 표. 끼니마다 우리 학교 1등 메뉴가 나와요</span></li>
         <li class="ft rv c-b"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-week"/></svg></i><b>한 주 크게 보기</b><span>급식·시간표를 이번 주 전체로 한 번에. 다른 날도 그 자리에서 넘겨 봐요</span></li>
         <li class="ft rv c-g"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-cal"/></svg></i><b>학사일정 달력</b><span>시험·행사·방학을 달력으로. 쉬는 날은 종 시계도 알아서 쉬어요</span></li>
-        <li class="ft rv c-v"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-dday"/></svg></i><b>D-day</b><span>다가오는 학교 일정은 자동으로, 내 일정은 직접 추가해서 날짜 세기</span></li>
-        <li class="ft rv c-p"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-palette"/></svg></i><b>테마 꾸미기</b><span>밝음·어두움, 색깔 테마, 움직이는 캐릭터. 내 그림을 넣어 나만의 캐릭터로</span></li>
-        <li class="ft rv c-b"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></i><b>친구 찾기·팔로우</b><span>아이디로 찾아서 팔로우. 서로 맞팔이면 DM이 열려요</span></li>
-        <li class="ft rv c-y"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-flag"/></svg></i><b>반 대항전</b><span>미니게임 기록으로 반끼리 순위 싸움. 우리 반을 1등으로</span></li>
-        <li class="ft rv c-r"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-mega"/></svg></i><b>공지 · 업데이트 소식</b><span>새 기능이 생기면 매주 업데이트 소식으로 알려 줘요</span></li>
-        <li class="ft rv c-g"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-bulb"/></svg></i><b>의견 보내기</b><span>갖고 싶은 기능, 불편한 점을 개발자에게 바로 보내요</span></li>
+        <li class="ft rv c-v"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-users"/></svg></i><b>친구 접속 표시</b><span>맞팔 친구가 지금 접속 중인지 첫 화면에서 바로. 친구 랭킹 1~3등도 옆에</span></li>
+        <li class="ft rv c-p"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-palette"/></svg></i><b>테마 꾸미기</b><span>밝음·어두움, 색깔 7종, 움직이는 캐릭터 16종. 내 그림을 넣어도 돼요</span></li>
+        <li class="ft rv c-b"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-game"/></svg></i><b>달리기 캐릭터 꾸미기</b><span>나 집에 갈래! 캐릭터의 머리·옷·가방·소품까지 내 맘대로</span></li>
+        <li class="ft rv c-y"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-gacha"/></svg></i><b>조각 상점</b><span>뽑기에서 겹친 건 조각으로. 갖고 싶은 걸 골라 받거나 반짝이로 바꿔요</span></li>
+        <li class="ft rv c-r"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-flag"/></svg></i><b>반 대항전</b><span>게임 기록으로 반끼리 순위 싸움. 우리 반을 1등으로</span></li>
+        <li class="ft rv c-g"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg></i><b>동아리 프로필</b><span>동아리 로고를 골라 프로필에. 학년·반·학과도 같이 보여요</span></li>
+        <li class="ft rv c-v"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-dday"/></svg></i><b>내 D-day</b><span>다가오는 학교 일정은 자동으로, 내 일정은 직접 추가해서 날짜 세기</span></li>
+        <li class="ft rv c-p"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg></i><b>개발자에게 바로 DM</b><span>팔로우 안 해도 개발자에게 DM. 갖고 싶은 기능·불편한 점 말해 주세요</span></li>
+        <li class="ft rv c-b"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-mega"/></svg></i><b>공지 · 업데이트 소식</b><span>새 기능이 생기면 업데이트 소식으로 알려 줘요</span></li>
         <li class="ft rv c-v"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-wifi"/></svg></i><b>와이파이 끊겨도 OK</b><span>학교 와이파이가 잠깐 끊겨도 마지막으로 본 급식·시간표는 그대로</span></li>
         <li class="ft rv c-p"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-key"/></svg></i><b>구글 연결 (선택)</b><span>연결해 두면 아이디·비밀번호를 잊어도 구글로 찾을 수 있어요</span></li>
-        <li class="ft rv c-b"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-qr"/></svg></i><b>QR로 친구 초대</b><span>QR이나 주소 하나로 친구에게 바로 공유</span></li>
         <li class="ft rv c-g"><i class="ft-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-shield"/></svg></i><b>안심하고 쓰기</b><span>이메일·전화번호는 안 받아요. 신고·차단·욕설 필터로 깨끗하게</span></li>
       </ul>
     </section>
 
-    <section class="in-sec in-play rv" aria-labelledby="inG">
+    <!-- 가입 전 맛보기: 나 집에 갈래!(runner.js 그대로, 기록 저장 안 함) · 반응속도. 로직은 app.js '소개 맛보기' -->
+    <section class="in-sec in-play rv" id="inPlay" aria-labelledby="inG">
       <div class="in-pl-txt">
-        <h2 class="in-h" id="inG"><small>가입 전에 맛보기</small>반응속도, 한 판 해 볼래요?</h2>
-        <p class="in-p">빨간색일 땐 참고, <b>초록색으로 바뀌는 순간</b> 누르세요.<br>가입하면 기록이 친구 랭킹이랑 <b>반 대항전</b>에 올라가요.</p>
+        <h2 class="in-h" id="inG"><small>가입 전에 맛보기</small>한 판 해 볼래요?</h2>
+        <div class="segs in-pk" role="tablist" aria-label="맛보기 게임 고르기"><button type="button" class="on" role="tab" aria-selected="true" data-pk="home">나 집에 갈래!</button><button type="button" role="tab" aria-selected="false" data-pk="rx">반응속도</button></div>
+        <p class="in-p" data-pk-txt="home">종이 쳤다! <b>장애물을 피해 집까지</b> 달려요.<span class="kb-only"><br><kbd>Space</kbd> · <kbd>↑</kbd> · 화면 탭으로 점프, <kbd>↓</kbd>로 숙이기.</span><br>가입하면 기록이 <b>2주 라운드 랭킹</b>에 올라가고, 1~3등은 뽑기권을 받아요.</p>
+        <p class="in-p" data-pk-txt="rx" hidden>빨간색일 땐 참고, <b>초록색으로 바뀌는 순간</b> 누르세요.<br>가입하면 기록이 친구 랭킹이랑 <b>반 대항전</b>에 올라가요.</p>
         <p class="in-best" id="inBest" hidden></p>
       </div>
-      <button class="rx idle in-rx" id="inRx" type="button"><b>눌러서 시작</b><small>준비되면 탭!</small></button>
+      <div class="in-pl-box">
+        <div class="in-hr" id="inHr" data-pk-box="home" tabindex="0" aria-label="나 집에 갈래! 맛보기 — 스페이스나 화면 탭으로 점프">
+          <div class="in-hr-scr" id="inHrScr"><canvas id="inHrCv" width="320" height="104" aria-hidden="true"></canvas>
+            <div class="in-hr-ov" id="inHrOv"><b>나 집에 갈래!</b><small>눌러서 출발</small></div></div>
+          <div class="in-hr-btns"><button type="button" class="btn" id="inHrJ">점프</button><button type="button" class="btn ghost" id="inHrD">숙이기</button><button type="button" class="btn ghost in-hr-rnd" id="inHrRnd">캐릭터 바꾸기</button></div>
+        </div>
+        <button class="rx idle in-rx" id="inRx" type="button" data-pk-box="rx" hidden><b>눌러서 시작</b><small>준비되면 탭!</small></button>
+      </div>
     </section>
 
     <section class="in-sec rv" aria-labelledby="inH">
@@ -316,6 +354,8 @@
         <details><summary>돈 드는 거 있어요?</summary><p>없어요. 가입도, 게임도, DM도 전부 무료예요.</p></details>
         <details><summary>학교 공식 사이트예요?</summary><p>아니요. 서울영상고 학생이 만든 비공식 사이트예요. 급식·시간표·학사일정은 나이스 교육정보 개방 포털 자료를 그대로 가져와요.</p></details>
         <details><summary>학교 태블릿에서 로그인해도 괜찮아요?</summary><p>로그인은 30일 동안 유지돼요. 여러 명이 같이 쓰는 기기라면 다 쓰고 로그아웃해 주세요.</p></details>
+        <details><summary>뽑기권은 어떻게 받아요?</summary><p>등교일에 출석하면 1장, 5일 연속마다 1장 더 받아요. 2주마다 마감하는 게임 라운드에서 1~3등을 하면 3·2·1장을 더 줘요. 돈으로 사는 건 없어요.</p></details>
+        <details><summary>게임 랭킹은 언제 다시 시작해요?</summary><p>2주에 한 번 마감하고 새 라운드가 시작돼요. 지난 라운드 티어는 프로필에 남고, 역대 최고 기록은 따로 계속 보여요.</p></details>
         <details><summary>어떤 정보를 받아요?</summary><p>아이디와 비밀번호만 있으면 가입돼요. 이메일·전화번호·실명은 받지 않고, 구글로 가입해도 이메일은 저장하지 않아요. 자세한 건 맨 아래 '이용 안내'에 있어요.</p></details>
       </div>
     </section>
