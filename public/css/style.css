@@ -3801,3 +3801,6 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .rk-last small{color:var(--sub);font-weight:800}
 .rk-last a{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:inherit;font-weight:800}
 .rk-last .mdl{width:20px;height:20px;font-size:11px;border-width:1.5px}
+
+/* 서비스 버튼 → '서비스' 제목이 헤더 버튼(약 56px) 바로 아래에 오게 (2026-10-25) */
+#appsT{scroll-margin-top:64px}
