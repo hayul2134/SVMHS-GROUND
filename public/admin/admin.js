@@ -2,6 +2,7 @@
 // CSP 때문에 인라인 스크립트·style 속성은 못 씀 → 이벤트는 위임, 막대 높이는 CSSOM으로 지정.
 
 import { emo } from '/js/att-art.js';   // 출석 보상 프로필 사진(직접 그린 그림)
+import { MASCOT } from '/js/mascots.js';   // 기본 프로필 캐릭터(k:이름) 그림 — 사이트 CSS 없이도 그림으로 보이게
 const $ = s => document.querySelector(s);
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ESC[c]);
@@ -44,7 +45,9 @@ let toastT;
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); };
 const fail = e => toast('⚠️ ' + (e.message || e));
 
-const av = u => `<span class="av">${emo(u?.avatar || '❔', 'ava')}</span>`;   // 출석 보상 그림('r:이름')은 SVG로
+// 프로필 사진: 캐릭터(k:이름)는 사이트처럼 얼굴 쪽을 확대한 그림, 출석 보상 그림(r:이름)은 SVG, 나머지는 글자
+const avIn = v => { const m = /^k:([a-z]+)$/.exec(v || ''); return m && MASCOT[m[1]] ? MASCOT[m[1]].replace("viewBox='0 0 100 100'", "viewBox='10 -4 80 80' class='kv' aria-hidden='true'") : emo(v || '❔', 'ava'); };
+const av = u => `<span class="av">${avIn(u?.avatar)}</span>`;
 const who = (u, sub) => u ? `<span class="who">${av(u)}<span><b>${esc(u.name)}${u.online ? '<i class="on-dot" title="접속 중"></i>' : ''}</b><small>@${esc(u.handle)}${sub ? ' · ' + sub : ''}</small></span></span>` : '<span class="sub">(탈퇴한 사용자)</span>';
 const cls = u => u.grade && u.cls ? `${u.grade}-${u.cls}` : '';
 
@@ -128,8 +131,8 @@ VIEWS.dash = async () => {
       ${tile(c.balanceVotes, '오늘 밸런스 투표', 'c4', '#balance')}
       ${tile(c.banned, '이용 정지 중', c.banned ? 'c4' : 'c4', '#users/filter=banned')}
     </div>
-    <div class="grid g2">
-      <section class="card"><h3>📈 최근 2주</h3>
+    <div class="grid g3">
+      <section class="card span2"><h3>📈 최근 2주</h3>
         <div class="chart" id="chart">${d.days.map(x => `<div class="col" title="${ymdLabel(x.ymd)} · 가입 ${x.signups} · 게임 ${x.players}명 · DM ${x.dms}"><i class="k1" data-h="${x.signups / max}"></i><i class="k2" data-h="${x.players / max}"></i><i class="k3" data-h="${x.dms / max}"></i></div>`).join('')}</div>
         <div class="xlab">${d.days.map((x, i) => `<span>${i % 2 ? '' : +x.ymd.slice(6)}</span>`).join('')}</div>
         <p class="legend"><span><i class="k1"></i>새 가입</span><span><i class="k2"></i>게임한 사람</span><span><i class="k3"></i>DM 수</span><span>가장 큰 값 ${max}</span></p>
@@ -144,10 +147,11 @@ VIEWS.dash = async () => {
           ${chk(s.dm, s.dm ? 'DM 켜짐' : 'DM 꺼짐', '#settings')}
           ${chk(s.notice, s.notice ? '공지 올라가 있음' : '올린 공지 없음', '#notice', true)}
         </ul>
-        <h3 class="sp">🏫 반별 가입자</h3>
-        <div class="pills">${d.classes.length ? d.classes.map(x => `<span class="pill">${x.grade}-${x.cls}<b>${x.n}</b></span>`).join('') : '<span class="sub">학년·반을 적은 사람이 아직 없어요</span>'}</div>
       </section>
-    </div>`;
+    </div>
+    <section class="card sp"><h3>🏫 반별 가입자</h3>
+        <div class="pills">${d.classes.length ? d.classes.map(x => `<span class="pill">${x.grade}-${x.cls}<b>${x.n}</b></span>`).join('') : '<span class="sub">학년·반을 적은 사람이 아직 없어요</span>'}</div>
+    </section>`;
   document.querySelectorAll('#chart i').forEach(i => { i.style.height = (+i.dataset.h * 100) + '%'; });
   $('#reDash').onclick = () => route();
 };
@@ -196,31 +200,29 @@ VIEWS.monitor = async () => {
       ${tile(d.db.write ? '정상' : '멈춤', 'DB 저장 (계정 무료 한도)', d.db.write ? 'c2' : 'hot')}
       ${tile(d.neis.ok ? d.neis.ms + 'ms' : '오류', '나이스 연결' + (d.neis.key ? '' : ' (인증키 없음)'), d.neis.ok ? 'c4' : 'hot')}
     </div>
-    <div class="grid g2">
-      <section class="card"><h3>🟢 지금 접속 중</h3>
+    <div class="grid g3">
+      <section class="card"><h3>🟢 지금 접속 중 <span class="sub num">${d.online.length}</span></h3>
         ${d.online.length ? `<ul class="mlist">${d.online.map(u => `<li><a href="#users/${encodeURIComponent(u.handle)}">${who(u, cls(u))}</a><span class="sub">${when(u.seen)}</span></li>`).join('')}</ul>` : '<p class="empty">지금은 아무도 없어요</p>'}
       </section>
+      <section class="card"><h3>📰 최근 활동 <span class="sub num">${d.feed.length}</span></h3>
+        ${d.feed.length ? `<ul class="mlist">${d.feed.map(x => `<li><span>${FEED[x.k](x.user, x.x)}</span><span class="sub">${when(x.at)}</span></li>`).join('')}</ul>` : '<p class="empty">활동이 없어요</p>'}
+      </section>
+      <div class="stack wide">
       <section class="card"><h3>⏱ 오늘 시간대별</h3>
         <div class="chart" id="hchart">${d.hours.dm.map((_, h) => `<div class="col${h === nowH ? ' nowh' : ''}" title="${h}시 · 가입 ${d.hours.signup[h]} · 게임 기록 ${d.hours.score[h]} · DM ${d.hours.dm[h]}"><i class="k1" data-h="${d.hours.signup[h] / hmax}"></i><i class="k2" data-h="${d.hours.score[h] / hmax}"></i><i class="k3" data-h="${d.hours.dm[h] / hmax}"></i></div>`).join('')}</div>
         <div class="xlab">${d.hours.dm.map((_, h) => `<span>${h % 3 ? '' : h}</span>`).join('')}</div>
         <p class="legend"><span><i class="k1"></i>가입</span><span><i class="k2"></i>게임 기록</span><span><i class="k3"></i>DM 수 (내용은 안 봄)</span><span>가장 큰 값 ${hmax}</span></p>
       </section>
-    </div>
-    <div class="grid g2">
-      <section class="card"><h3>📰 최근 활동</h3>
-        ${d.feed.length ? `<ul class="mlist">${d.feed.map(x => `<li><span>${FEED[x.k](x.user, x.x)}</span><span class="sub">${when(x.at)}</span></li>`).join('')}</ul>` : '<p class="empty">활동이 없어요</p>'}
-      </section>
-      <div>
         <section class="card"><h3>🍱 오늘 투표</h3>
           ${d.votes.meal.length ? `<ul class="mlist">${d.votes.meal.slice(0, 12).map(v => `<li><span><b>${esc(v.dish)}</b> <span class="sub">${meals[v.meal] || v.meal}</span></span><b class="num">${v.n}표</b></li>`).join('')}</ul>` : '<p class="empty">급식 투표가 아직 없어요</p>'}
           <p class="sub sp">밸런스 게임: A ${d.votes.balance.a || 0}표 · B ${d.votes.balance.b || 0}표 <a href="#balance">자세히 →</a></p>
         </section>
-        <section class="card"><h3>🗄 DB 줄 수</h3>
-          <ul class="mlist">${Object.entries({ users: '사용자', sessions: '로그인 세션', follows: '팔로우', blocks: '차단', messages: 'DM', scores: '게임 기록', reports: '신고', bans: '정지', meal_votes: '급식 투표', balance_votes: '밸런스 투표', admin_log: '관리 기록', rl: '횟수 제한(임시)', errs: '오류 기록' }).map(([k, l]) => `<li><span>${l} <code>${k}</code></span><b class="num">${t[k] ?? '-'}</b></li>`).join('')}</ul>
-          <p class="sub sp">나이스: ${d.neis.ok ? `정상 (${d.neis.ms}ms, ${esc(d.neis.code)})` : `문제 있음 — ${esc(d.neis.code)}`}</p>
-        </section>
       </div>
     </div>
+    <section class="card"><h3>🗄 DB 줄 수</h3>
+          <ul class="mlist cols">${Object.entries({ users: '사용자', sessions: '로그인 세션', follows: '팔로우', blocks: '차단', messages: 'DM', scores: '게임 기록', reports: '신고', bans: '정지', meal_votes: '급식 투표', balance_votes: '밸런스 투표', admin_log: '관리 기록', rl: '횟수 제한(임시)', errs: '오류 기록' }).map(([k, l]) => `<li><span>${l} <code>${k}</code></span><b class="num">${t[k] ?? '-'}</b></li>`).join('')}</ul>
+          <p class="sub sp">나이스: ${d.neis.ok ? `정상 (${d.neis.ms}ms, ${esc(d.neis.code)})` : `문제 있음 — ${esc(d.neis.code)}`}</p>
+    </section>
     <section class="card"><h3>🧯 서버 오류 <span class="sub">최근 60개 · 14일 보관</span>${d.errors.length ? '<button class="btn sm bad" type="button" data-act="errclear">기록 비우기</button>' : ''}</h3>
       ${d.errors.length ? `<ul class="log">${d.errors.map(x => `<li><span class="t">${full(x.at)}</span><b>${esc(SRC[x.src] || x.src)} <code>${esc(x.route)}</code></b><span>${esc(x.msg)}</span></li>`).join('')}</ul>` : '<p class="empty">오류가 없어요 👍</p>'}
     </section>`;
@@ -308,6 +310,7 @@ async function openUser(handle) {
       <div><b>${s.followers}</b><span>팔로워</span></div><div><b>${s.following}</b><span>팔로잉</span></div><div><b>${s.blockedBy}</b><span>차단당함</span></div>
       <div><b>${s.sent}</b><span>보낸 DM (전체)</span></div><div><b>${s.sentToday}</b><span>보낸 DM (오늘)</span></div><div><b>${s.sessions}</b><span>로그인된 기기</span></div>
     </div>
+    <div class="mgrid">
     <div class="sec"><h4>🎮 게임 최고 기록</h4><div class="pills">${d.bests.length ? d.bests.map(b => `<span class="pill">${GAMES[b.game]?.em || ''} ${esc(GAMES[b.game]?.name || b.game)}<b>${esc(GAMES[b.game]?.fmt(b.best) ?? b.best)}</b> · ${b.days}일</span>`).join('') : '<span class="sub">기록 없음</span>'}</div></div>
     <div class="sec"><h4>🚨 받은 신고 ${d.reportsAgainst.length}건</h4>${d.reportsAgainst.length ? d.reportsAgainst.map(r => `<p class="sub">${when(r.at)} · @${esc(r.rh || '탈퇴')} · ${esc(r.reason)} ${r.done ? '' : '<span class="tag rep">대기</span>'}</p>`).join('') : '<p class="sub">없음</p>'}
       ${d.reportsBy.length ? `<h4>📝 이 사람이 한 신고 ${d.reportsBy.length}건</h4>${d.reportsBy.map(r => `<p class="sub">${when(r.at)} → @${esc(r.th || '탈퇴')} · ${esc(r.reason)}</p>`).join('')}` : ''}</div>
@@ -320,11 +323,12 @@ async function openUser(handle) {
     <div class="sec"><h4>🧹 프로필 정리 (부적절한 글 지우기)</h4>
       <div class="chk"><label><input type="checkbox" value="name">닉네임 → 아이디로</label><label><input type="checkbox" value="mood">상태 메시지</label><label><input type="checkbox" value="bio">소개</label><label><input type="checkbox" value="club">동아리</label><label><input type="checkbox" value="insta">인스타 아이디</label><label><input type="checkbox" value="stickers">스티커</label></div>
       <div class="row"><button class="btn sm warn" type="button" data-act="clear" data-h="${h}">고른 항목 지우기</button></div></div>
-    <div class="sec"><h4>🔑 계정</h4>
+    <div class="sec full"><h4>🔑 계정</h4>
       <div class="row"><button class="btn sm" type="button" data-act="kick" data-h="${h}">모든 기기 로그아웃</button><button class="btn sm warn" type="button" data-act="resetpw" data-h="${h}">임시 비밀번호 발급</button></div>
       <div id="pwBox"></div>
       <div class="row"><input class="inp" id="delConfirm" placeholder="삭제하려면 아이디 ${h} 입력" autocomplete="off"><button class="btn sm bad" type="button" data-act="deluser" data-h="${h}">계정 삭제</button></div>
-      <p class="sub">계정 삭제는 되돌릴 수 없어요. DM·팔로우·게임 기록이 모두 지워져요.</p></div>`;
+      <p class="sub">계정 삭제는 되돌릴 수 없어요. DM·팔로우·게임 기록이 모두 지워져요.</p></div>
+    </div>`;
 }
 
 /* ===== 게임 기록 ===== */
@@ -378,7 +382,7 @@ VIEWS.notice = async () => {
       </form>
     </section>
     <section class="card"><h3>공지 기록</h3><p class="sub">학생 화면 📢 목록에 보이는 지난 공지예요. 지우면 목록에서도 사라져요.</p>
-      ${hist.length ? hist.map(h => `<div class="row sp-t"><span class="sub">${full(h.at)}</span><span class="nh-t">${esc(h.text)}</span>${live && h.id === n.id ? '<b class="sub">지금 공지</b>' : `<button class="btn sm bad" type="button" data-act="noticedel" data-id="${esc(h.id)}">삭제</button>`}</div>`).join('') : '<p class="sub">기록이 없어요.</p>'}
+      ${hist.length ? `<ul class="nhist sp-t">${hist.map(h => `<li><span class="sub num">${full(h.at)}</span><span class="nh-t">${esc(h.text)}</span>${live && h.id === n.id ? '<span class="tag on">지금 공지</span>' : `<button class="btn sm bad" type="button" data-act="noticedel" data-id="${esc(h.id)}">삭제</button>`}</li>`).join('')}</ul>` : '<p class="sub">기록이 없어요.</p>'}
     </section>`;
   const f = $('#nForm');
   const prev = () => { $('#nPrev').className = 'nprev ' + f.tone.value; $('#nPrev').firstElementChild.textContent = TONES[f.tone.value].split(' ')[0]; $('#nPrevT').textContent = f.text.value || '내용을 적어 보세요'; };
@@ -402,7 +406,8 @@ VIEWS.balance = async () => {
     <div class="vh"><h2>밸런스 게임</h2></div>
     <section class="card"><h3>지금 투표 <small class="sub">${ymdLabel(t.ymd)}</small></h3>
       <p><b>${esc(d.days[0].q)}</b></p>
-      <p class="sub">${esc(d.days[0].a)} <b class="num">${t.a}</b>표 ${tot ? `(${Math.round(t.a / tot * 100)}%)` : ''} vs ${esc(d.days[0].b)} <b class="num">${t.b}</b>표 ${tot ? `(${Math.round(t.b / tot * 100)}%)` : ''}</p>
+      <div class="vs"><div><span class="sub">A · ${esc(d.days[0].a)}</span><br><b>${t.a}</b>표 <span class="sub">${tot ? Math.round(t.a / tot * 100) + '%' : ''}</span></div><div><span class="sub">B · ${esc(d.days[0].b)}</span><br><b>${t.b}</b>표 <span class="sub">${tot ? Math.round(t.b / tot * 100) + '%' : ''}</span></div></div>
+      ${tot ? `<div class="vbar" id="vbar"><i data-w="${t.a / tot}"></i><i data-w="${t.b / tot}"></i></div>` : ''}
     </section>
     <section class="card"><h3>앞으로 평일 10일 질문</h3>
       <p class="sub sp-b">월~금 하루 한 문제 · 6시 공개 · 마지막 교시 끝 +10분 마감(나이스 시간표 기준). 기본 질문은 목록에서 자동으로 돌아가요. <b>지금 질문을 바꾸면 그날 표·댓글은 초기화돼요.</b></p>
@@ -415,6 +420,7 @@ VIEWS.balance = async () => {
     <section class="card"><h3>지금 질문 댓글 <span class="sub num">${d.comments.length}</span></h3>
       ${d.comments.length ? `<ul class="mlist">${d.comments.map(c => `<li data-cid="${c.id}"><span><b>${esc(c.name)}</b> <small class="sub">@${esc(c.handle)}</small><br>${esc(c.body)}</span><button class="btn sm" type="button" data-act="balcdel">삭제</button></li>`).join('')}</ul>` : '<p class="sub">아직 댓글이 없어요</p>'}
     </section>`;
+  document.querySelectorAll('#vbar i').forEach(i => { i.style.width = (+i.dataset.w * 100) + '%'; });
 };
 
 /* ===== 설정 ===== */
