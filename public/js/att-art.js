@@ -4,6 +4,7 @@
 // 그림은 문서에 한 번만 넣는 스프라이트(<symbol>)로 두고 <use>로 불러 씀 → 같은 그림이 여러 번 나와도 가벼움.
 // 보상 값은 'r:이름'으로 저장되고, 사이트 어디서든 프로필 사진·스티커를 그릴 땐 emo(값)을 씀(옛 이모지 값은 글자 그대로).
 import { STK_MSG, RW_OLD } from './att-rewards.js';
+import { MASCOT } from './mascots.js';
 const INK = '#173048';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const n1 = v => +v.toFixed(1);
@@ -20,8 +21,7 @@ const GR = {
   gS: ['#ffffff', '#c3ced9'], gN: ['#ffd9e4', '#ff8fb0'],
   cLi: ['#ffeeb6', '#ffc85e'], cMa: ['#ffc183', '#e98a3a'], cDr: ['#cdf6b8', '#6fd27a'], cSt: ['#fff6b8', '#ffc93c'], cOw: ['#e6c4a0', '#b88459'],
   cOd: ['#fff4e4', '#f2d6b6'], cWh: ['#c4e6ff', '#5aa2f2'], cWb: ['#ffffff', '#d7ecff'],
-  sSu: ['#ffb2b8', '#ffd9a3'], sSun: ['#fffbe8', '#ffd27a'], sSea: ['#8fa6e6', '#4a5fb4'], sNt: ['#1d2457', '#5a4fa6'], sMn: ['#fffbe6', '#ffd97a'],
-  sSk: ['#cfe8ff', '#fff0f6'], sAu: ['#0f1c3f', '#24456e'], sAr: ['#8ff0c8', '#7ab8ff'], sOc: ['#3b7fd0', '#0f2a5e'], sJf: ['#ffe3f4', '#ff9fd2'], sGx: ['#2a1f66', '#120f33'],
+  sBsky: ['#d8f0ff', '#8fcdf7'], sBsak: ['#fff0f5', '#ffc3d6'], sBnt: ['#2a3a7a', '#4d5fb0'], sBgd: ['#fff6c8', '#ffd66a'], sBsea: ['#5fa8ec', '#1f4f9e'], sBgx: ['#3a2f86', '#18164a'], gLg: ['#9fdcff', '#38a5ea'],
 };
 const DEFS = Object.entries(GR).map(([k, [a, b]]) => `<linearGradient id="${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`).join('')
   // 홀로그램(나비 날개): 분홍→하늘→보라→노랑 대각선 (gH2는 반대 방향)
@@ -62,7 +62,13 @@ const scallop = (cx, cy, R, n, bump) => {
 // 풍경 프로필 사진: 원 안에 잘라 그림(clip) + 얇은 안쪽 테두리 빛
 const scene = (k, body) => `<clipPath id="cl-${k}"><circle cx="24" cy="24" r="23.4"/></clipPath><g clip-path="url(#cl-${k})">${body}</g><circle cx="24" cy="24" r="22.9" fill="none" stroke="#fff" stroke-width="1.1" opacity=".35"/>`;
 const twinkleS = (x, y, s) => `<path d="M${x} ${n1(y - s * 2)}Q${n1(x + s * .3)} ${n1(y - s * .3)} ${n1(x + s * 2)} ${y}Q${n1(x + s * .3)} ${n1(y + s * .3)} ${x} ${n1(y + s * 2)}Q${n1(x - s * .3)} ${n1(y + s * .3)} ${n1(x - s * 2)} ${y}Q${n1(x - s * .3)} ${n1(y - s * .3)} ${x} ${n1(y - s * 2)}Z" fill="#fff" opacity=".95"/>`;
-export const SCENES = new Set(['sunset', 'moonnight', 'sakuratree', 'auroramt', 'jellyfish', 'starcat']);
+// 사이트 캐릭터(테마 마스코트)를 씰 안에 — 머리·상반신이 보이게 크게 넣고 원으로 자름
+const mascotIn = k => { const m = MASCOT[k] || ''; return m.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '').replace(/class='[^']*'/g, '').replace(/'/g, '"'); };
+const seal = (k, mk, bg, deco, top = '', o = {}) => `<circle cx="25.2" cy="26" r="22" fill="${INK}"/><circle cx="24" cy="24" r="22" fill="#fff" stroke="${INK}" stroke-width="2"/>`
+  + `<clipPath id="cl-${k}"><circle cx="24" cy="24" r="18.4"/></clipPath><g clip-path="url(#cl-${k})"><rect width="48" height="48" fill="url(#${bg})"/>${deco}<svg x="${o.x ?? 8.4}" y="${o.y ?? 12.2}" width="${o.w ?? 31.2}" height="${o.w ?? 31.2}" viewBox="0 0 100 100">${mascotIn(mk)}</svg></g>`
+  + `<circle cx="24" cy="24" r="18.4" fill="none" stroke="${o.ring || INK}" stroke-width="${o.ring ? 2.2 : 1.4}"/>${top}`
+  + `<path d="M9.2 16.4A16 16 0 0 1 17 8.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>`;
+export const SCENES = new Set(['sealsky', 'sealsakura', 'sealnight', 'sealcrown', 'sealsea', 'sealgalaxy']);
 
 /* ===== 보상 그림 (48×48) ===== */
 const ART = {
@@ -84,13 +90,15 @@ const ART = {
     + `<circle cx="24.6" cy="26.4" r="6.8" fill="#2b3a5c" stroke="${INK}" stroke-width="1.6"/><circle cx="24.6" cy="26.4" r="3.6" fill="#4a5f8f"/>`
     + `<path d="M20.4 24.2A4.8 4.8 0 0 1 23.4 21.2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="27.8" cy="29.4" r="1.1" fill="#fff" opacity=".8"/>`
     + gloss('M9.4 21.6V19Q9.6 17.4 11.6 17.4H14.2', 2.4) + twinkle(43.6, 9.6, 3, '#fff3b0'),
-  cherry:
-    `<path d="M16 31Q18.6 17 28.2 8.6M32.4 29.6Q31.4 18.4 28.2 8.6" fill="none" stroke="${INK}" stroke-width="4.6" stroke-linecap="round"/><path d="M16 31Q18.6 17 28.2 8.6M32.4 29.6Q31.4 18.4 28.2 8.6" fill="none" stroke="#62c552" stroke-width="2" stroke-linecap="round"/>`
-    + jelly('M28 8.8C29.6 4 35.6 2.6 41.4 4.4 39.4 9.8 33.4 12.2 28 8.8Z', 'gG', '#3f9a3a', `<path d="M29.4 8.4Q34.6 6.8 39.4 5.2" fill="none" stroke="#3f9a3a" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>`, { dx: .8, dy: 1.4 })
-    + jelly('M16 24.6A9.4 9.4 0 1 1 15.99 24.6Z', 'gR', '#c4424f', shade('M23.6 30A8 8 0 0 1 12 41.4 9.4 9.4 0 0 0 23.6 30Z', '#e0545e', .8))
-    + jelly('M32.4 22.8A9.4 9.4 0 1 1 32.39 22.8Z', 'gR', '#c4424f', shade('M40 28.2A8 8 0 0 1 28.4 39.6 9.4 9.4 0 0 0 40 28.2Z', '#e0545e', .8))
-    + gloss('M10.2 32Q10.6 28 13.8 27', 2.6) + gloss('M26.6 30.2Q27 26.2 30.2 25.2', 2.6)
-    + `<circle cx="11.2" cy="35" r="1.2" fill="#fff" opacity=".9"/><circle cx="27.6" cy="33.2" r="1.2" fill="#fff" opacity=".9"/>` + twinkle(8, 10, 3, '#fff3b0'),
+  clock:
+    `<path d="M9.6 14.8A6.4 6.4 0 0 1 18.4 6.6M38.4 14.8A6.4 6.4 0 0 0 29.6 6.6" fill="none" stroke="${INK}" stroke-width="6.4" stroke-linecap="round"/><path d="M9.6 14.8A6.4 6.4 0 0 1 18.4 6.6M38.4 14.8A6.4 6.4 0 0 0 29.6 6.6" fill="none" stroke="#ffc83d" stroke-width="3.2" stroke-linecap="round"/>`
+    + `<path d="M14.6 40.6 11.4 44.4M33.4 40.6 36.6 44.4" stroke="${INK}" stroke-width="3.6" stroke-linecap="round"/>`
+    + jelly('M24 8.4A16.4 16.4 0 1 1 23.99 8.4Z', 'gB', '#2a7fc4', shade('M35.4 13.4A16.4 16.4 0 0 1 18.4 40.2 15.6 15.6 0 0 0 35.4 13.4Z', '#3a92d8', .8)
+      + `<circle cx="24" cy="24.8" r="12" fill="#fffdf6" stroke="${INK}" stroke-width="1.6"/>`
+      + `<g stroke="${INK}" stroke-width="1.4" stroke-linecap="round"><path d="M24 14.6V16.6M24 33V35M13.8 24.8H15.8M32.2 24.8H34.2"/></g>`
+      + `<path d="M24 24.8V18.4M24 24.8 28.8 27.4" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/><circle cx="24" cy="24.8" r="1.6" fill="#f0646d" stroke="${INK}" stroke-width="1"/>`)
+    + jelly('M21.4 4.6H26.6Q27.6 4.6 27.6 5.6V8.6H20.4V5.6Q20.4 4.6 21.4 4.6Z', 'gY', '#d98a10', '', { dx: .6, dy: 1, sw: 1.8 })
+    + gloss('M11.6 20.6Q13 15.2 17.6 12.4', 2.6) + twinkle(43, 26, 2.8, '#fff3b0'),
   planet:
     `<g transform="rotate(-14 24 27)"><path d="M3.4 27A20.6 6.8 0 0 1 44.6 27" fill="none" stroke="${INK}" stroke-width="6.4" stroke-linecap="round"/><path d="M3.4 27A20.6 6.8 0 0 1 44.6 27" fill="none" stroke="#ffd98a" stroke-width="3" stroke-linecap="round"/></g>`
     + jelly('M24 11A13.2 13.2 0 1 1 23.99 11Z', 'gV', '#5d47d6',
@@ -118,13 +126,19 @@ const ART = {
       + `<circle cx="14.6" cy="24" r="2.2" fill="#ffd96a" opacity=".8"/><circle cx="20.4" cy="33.4" r="1.6" fill="#ffd96a" opacity=".8"/><circle cx="17.6" cy="15.4" r="1.2" fill="#ffd96a" opacity=".8"/>`)
     + gloss('M10.4 20.6Q12.4 12.4 20 8.6', 2.8) + jelly(starD(37.6, 15.6, 5.6, 2.4), 'gY', '#d98a10', '', { dx: .6, dy: 1, sw: 1.8 })
     + twinkle(43, 6, 2.6, '#fff') + twinkle(31.4, 26.4, 2, '#fff3b0'),
-  disco:
-    `<path d="M24 1.6V7.4" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`
-    + jelly('M24 7.4A17.6 17.6 0 1 1 23.99 7.4Z', 'gS', '#7d8b9a',
-      `<g fill="none" stroke="#8c99a8" stroke-width=".9" opacity=".9"><path d="M7 19.4Q24 15.4 41 19.4M6.4 25Q24 21.6 41.6 25M7 30.6Q24 27.8 41 30.6M9.4 36Q24 34 38.6 36M10.2 13.8Q24 10 37.8 13.8"/><path d="M24 7.4V42.6M16.4 9.2Q12.6 25 16.4 40.8M31.6 9.2Q35.4 25 31.6 40.8M10.4 13.6Q6.2 25 10.4 36.4M37.6 13.6Q41.8 25 37.6 36.4"/></g>`
-      + `<path d="M16.4 13Q19.6 11.4 24 11.4V19.4Q19.6 19.4 16 20.4Z" fill="#ffffff" opacity=".9"/><path d="M24 19.4Q28.4 19.4 31.6 20.4L32.2 26Q28.4 25 24 25Z" fill="#c9e6ff" opacity=".9"/><path d="M16 26Q19.6 25 24 25V30.6Q19.6 30.6 16.2 31.4Z" fill="#ffd3ec" opacity=".85"/><path d="M31.8 31.4Q28.4 30.6 24 30.6V36Q28 36 30.8 36.6Z" fill="#fff3b0" opacity=".85"/><path d="M10.4 19.6 16 20.4 16 26 9.6 25.4Z" fill="#e3d8ff" opacity=".85"/>`
-      + shade('M39.4 18A17.6 17.6 0 0 1 21 42.4 16.6 16.6 0 0 0 39.4 18Z', '#a3afbd', .55))
-    + gloss('M11.2 17.6Q13.6 12.4 18.4 10.4', 2.6) + twinkle(43.2, 9.6, 3.4, '#fff') + twinkle(5, 40, 2.6, '#c6ebff') + twinkle(42, 41, 2.2, '#ffd3e0'),
+  bell:
+    `<path d="M24 3.6V8" stroke="${INK}" stroke-width="4.4" stroke-linecap="round"/><path d="M24 3.6V8" stroke="#ffc83d" stroke-width="1.8" stroke-linecap="round"/>`
+    + jelly('M24 7.6C32.6 7.6 35.4 14.6 35.4 22.6V29.4L40 34.6Q41 36.2 39.2 36.2H8.8Q7 36.2 8 34.6L12.6 29.4V22.6C12.6 14.6 15.4 7.6 24 7.6Z', 'gY', '#d98a10',
+      shade('M35.4 22.6V29.4L40 34.6Q41 36.2 39.2 36.2H30.6Q34.8 30 32.2 13.4 35.4 16.8 35.4 22.6Z', '#f0a21c', .8)
+      + `<path d="M12.6 29.4H35.4" stroke="#d98a10" stroke-width="1.4" opacity=".7"/>`)
+    + jelly('M24 36.2A4.6 4.6 0 0 1 24 45.4 4.6 4.6 0 0 1 24 36.2Z', 'gB', '#2a7fc4', '', { dx: .6, dy: 1, sw: 1.8 })
+    + gloss('M16.4 26.6V21.4Q16.8 15 20.6 12.2', 2.8) + `<path d="M5.6 15.6Q3.4 19.6 5 24M42.4 15.6Q44.6 19.6 43 24" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round" class="tw"/>`
+    + twinkle(42, 6, 3, '#c6ebff'),
+  gseal:
+    `<circle cx="25.2" cy="26.4" r="19" fill="${INK}"/><circle cx="24" cy="24" r="19" fill="#fff" stroke="${INK}" stroke-width="2"/>`
+    + `<g transform="translate(.4 .4) scale(.236)"><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(1.8 3.6)" fill="none" stroke="${INK}" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" fill="none" stroke="#1f73c4" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" transform="translate(-.6 -1.2)"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(-3 -6)" fill="none" stroke="${INK}" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(-3 -6)" fill="none" stroke="url(#gLg)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/><path d="M68 76Q78 60 98 58" transform="translate(-3 -6)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".85"/></g>`
+    + `<rect x="3" y="4.6" width="17" height="6" rx="1" transform="rotate(-24 11.5 7.6)" fill="#ffe27a" opacity=".85" stroke="${INK}" stroke-width="1.1"/>`
+    + jelly(starD(39.4, 9.6, 6, 2.6), 'gY', '#d98a10', '', { dx: .6, dy: 1, sw: 1.6 }) + twinkle(43.6, 36, 2.6, '#c6ebff'),
   headphone:
     `<path d="M9.4 29V23.4A14.6 14.6 0 0 1 38.6 23.4V29" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/><path d="M9.4 29V23.4A14.6 14.6 0 0 1 38.6 23.4V29" fill="none" stroke="url(#gV)" stroke-width="3.6" stroke-linecap="round"/>`
     + gloss('M12.4 18.4Q15.6 11.6 22 10.2', 1.8)
@@ -136,39 +150,15 @@ const ART = {
     + `<path d="M28.6 12.4V3.6Q31.6 4.4 33.4 7.6" fill="none" stroke="${INK}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M28.6 12.4V3.6Q31.6 4.4 33.4 7.6" fill="none" stroke="#ffc83d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
     + jelly('M26.2 10.4A3 2.4 -20 1 1 26.19 10.4Z', 'gY', '#d98a10', '', { dx: .6, dy: 1, sw: 1.8 }) + twinkle(42.4, 10.4, 2.6, '#c6ebff'),
 
-  /* ----- 프로필 사진: 감성 풍경 (2026-10-24 하율 "고등학생 대상, 그냥 예쁜 걸로" → 아기 같은 캐릭터 대신 고등학생이 실제로 프사로 쓰는 하늘·달·바다 풍경)
-     둥근 프로필 칸을 꽉 채우는 원 안 그림(clip). 외곽선 없이 부드러운 그라디언트 + 은은한 빛 ----- */
-  sunset: scene('sunset', `<rect width="48" height="48" fill="url(#sSu)"/><circle cx="24" cy="29" r="12" fill="#fff4cf" opacity=".35"/><circle cx="24" cy="29" r="7.6" fill="url(#sSun)"/>`
-    + `<path d="M0 29H48V48H0Z" fill="url(#sSea)"/><g stroke="#ffe7b8" stroke-linecap="round" opacity=".85"><path d="M18 32.4H30" stroke-width="1.6"/><path d="M20 35.6H28" stroke-width="1.4"/><path d="M21.6 38.6H26.4" stroke-width="1.2"/><path d="M23 41.4H25" stroke-width="1"/></g>`
-    + `<path d="M6 34H11M36 37H43M8 40.6H12" stroke="#c9d8ff" stroke-width="1" stroke-linecap="round" opacity=".6"/><path d="M33 14.4q1.4-1.4 2.8 0q1.4-1.4 2.8 0M28.4 10.4q1-1 2 0q1-1 2 0" fill="none" stroke="#9c5a6e" stroke-width="1" stroke-linecap="round" opacity=".7"/>`
-    + `<path d="M2 20Q10 17.6 18 19.6M30 22.6Q38 20 47 22" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".45"/>`),
-  moonnight: scene('moonnight', `<rect width="48" height="48" fill="url(#sNt)"/>`
-    + `<g fill="#fff">${[[8, 10, .7], [15, 6, .5], [38, 8, .8], [42, 16, .5], [6, 22, .5], [30, 4, .5], [20, 14, .4], [44, 26, .4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`
-    + `<circle cx="28" cy="19" r="11" fill="#fff1c2" opacity=".08"/><path d="M30.6 10.2A9 9 0 1 0 36.4 25.6 7.4 7.4 0 0 1 30.6 10.2Z" fill="url(#sMn)"/>`
-    + `<path d="M-2 40Q4 33 11 36 15 30 22 34 28 31 33 35 39 32 44 36 50 35 50 40V50H-2Z" fill="#8f86d6" opacity=".7"/><path d="M-2 44Q6 39 13 42 19 38 26 42 33 39 39 42 45 40 50 43V50H-2Z" fill="#b8b0ef" opacity=".85"/>`
-    + twinkleS(12, 28, 1.6) + twinkleS(40, 11, 1.4)),
-  sakuratree: scene('sakuratree', `<rect width="48" height="48" fill="url(#sSk)"/><path d="M-2 40Q14 34 26 37 38 34 50 38V50H-2Z" fill="#bfe6b6"/><path d="M-2 44Q16 40 30 42 40 41 50 43V50H-2Z" fill="#a3d89c"/>`
-    + `<path d="M23.2 40V29Q23 25 19.6 22.4M24.4 31Q26 26.6 30.6 24.4" fill="none" stroke="#8a5a4a" stroke-width="2.6" stroke-linecap="round"/>`
-    + `<g fill="#ffb7cf">${[[15, 20, 6], [22, 15, 7], [30, 17, 6.4], [35, 23, 5], [12, 26, 4.4], [27, 23, 5.6], [19, 24, 5]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`
-    + `<g fill="#ffd6e4">${[[20, 13, 3.6], [28, 14.4, 3], [14, 18, 3], [33, 20, 2.4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`
-    + `<g fill="#fff" opacity=".9">${[[24, 12.4], [17, 17], [31, 16]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1"/>`).join('')}</g>`
-    + `<g fill="#ff9dbd">${[[38, 31, 20], [9, 34, -30], [33, 38, 60], [41, 24, -10]].map(([x, y, a]) => `<ellipse cx="${x}" cy="${y}" rx="1.4" ry=".8" transform="rotate(${a} ${x} ${y})"/>`).join('')}</g>`),
-  auroramt: scene('auroramt', `<rect width="48" height="48" fill="url(#sAu)"/>`
-    + `<g fill="#fff">${[[7, 8, .6], [16, 4, .5], [36, 6, .7], [43, 13, .5], [27, 9, .4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`
-    + `<path d="M-2 26Q10 10 22 18 34 26 50 8V18Q36 34 22 26 10 20 -2 34Z" fill="url(#sAr)" opacity=".85"/><path d="M-2 30Q12 20 24 25 36 30 50 18V22Q36 34 24 30 12 26 -2 36Z" fill="#b39cff" opacity=".45"/>`
-    + `<path d="M-2 50V38L9 29 15 34 24 24 33 33 39 28 50 37V50Z" fill="#3a4f86"/><path d="M24 24 20.4 28 22 28.6 24 27 26.4 29.4 28.4 28.4ZM9 29 6.6 31.2 8 31.6 9.6 30.6 11 31.6Z" fill="#eef4ff"/>`
-    + `<path d="M-2 50V43L8 38 18 43 28 39 38 44 50 40V50Z" fill="#26386a"/>` + twinkleS(40, 21, 1.4)),
-  jellyfish: scene('jellyfish', `<rect width="48" height="48" fill="url(#sOc)"/><path d="M14 -2 8 50M26 -2 24 50M38 -2 42 50" stroke="#bfe6ff" stroke-width="5" opacity=".12"/>`
-    + `<circle cx="24" cy="20" r="13" fill="#ffc6ec" opacity=".18"/>`
-    + `<path d="M17.6 27Q16 33 18.4 38 20 42 18.6 46M21.6 27.6Q21 34 23 39 24 43 22.6 47M26.4 27.6Q27 34 25 39 24 43 25.4 47M30.4 27Q32 33 29.6 38 28 42 29.4 46" fill="none" stroke="#ffd3ec" stroke-width="1.3" stroke-linecap="round" opacity=".9"/>`
-    + `<path d="M14.6 26.4Q14 14.6 24 13.6 34 14.6 33.4 26.4Q31 25 29 27 26.6 25.4 24 27 21.4 25.4 19 27 17 25 14.6 26.4Z" fill="url(#sJf)"/><path d="M17.6 20Q19 16 23 15.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8" fill="none"/>`
-    + `<g fill="none" stroke="#e6f6ff" stroke-width=".8" opacity=".8"><circle cx="38" cy="34" r="1.6"/><circle cx="41" cy="27" r="1"/><circle cx="9" cy="16" r="1.3"/><circle cx="11" cy="10" r=".8"/></g>`),
-  starcat: scene('starcat', `<rect width="48" height="48" fill="url(#sGx)"/><ellipse cx="14" cy="16" rx="16" ry="9" fill="#ff8fd8" opacity=".25" transform="rotate(-24 14 16)"/><ellipse cx="34" cy="34" rx="16" ry="8" fill="#7cc8ff" opacity=".22" transform="rotate(-24 34 34)"/>`
-    + `<g fill="#fff">${[[6, 12, .6], [12, 30, .5], [20, 6, .7], [33, 10, .5], [42, 20, .6], [40, 40, .5], [8, 40, .6], [27, 22, .4], [16, 20, .4], [36, 28, .4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`
-    + `<path d="M4 6 16 14" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".8"/><circle cx="16.4" cy="14.2" r="1.1" fill="#fff"/>`
-    + `<circle cx="26" cy="30" r="13" fill="#fff1c2" opacity=".07"/><path d="M28.4 19A11.4 11.4 0 1 0 36.6 38.4 9.4 9.4 0 0 1 28.4 19Z" fill="url(#sMn)"/>`
-    + `<g fill="#1b1640"><path d="M24.8 35.2Q23 30.8 25.4 28.2 24.6 25.6 25.4 23.4L27.2 25.2Q28.4 24.8 29.6 25.2L31.2 23.4Q32 25.8 31 28.2 33.4 30.8 31.8 35.2Z"/></g><path d="M31.4 34.6Q35.6 35 36 31.8 36.2 29.6 34.4 29" fill="none" stroke="#1b1640" stroke-width="1.5" stroke-linecap="round"/>`
-    + twinkleS(40, 12, 1.8) + twinkleS(9, 26, 1.3)),
+  /* ----- 프로필 사진: 사이트 로고와 같은 '씰 스티커'(흰 판 + 남색 테 + 딱딱한 그림자) 안에 사이트 캐릭터 테마의 친구들 + 배경·소품 (2026-10-24 3차: "내 사이트랑 컨셉에 맞게") ----- */
+  sealsky: seal('sealsky', 'dog', 'sBsky', `<g fill="#fff" opacity=".95"><ellipse cx="11" cy="15" rx="6" ry="3"/><ellipse cx="15" cy="13.4" rx="3.6" ry="3"/><ellipse cx="37" cy="20" rx="5" ry="2.4"/><ellipse cx="34.4" cy="18.8" rx="2.8" ry="2.4"/></g>`),
+  sealsakura: seal('sealsakura', 'bunny', 'sBsak', `<g fill="#fff">${[[10, 14, 20], [37, 12, -30], [13, 33, 50], [38, 30, 10], [30, 9, 70]].map(([x, y, r]) => `<path d="M${x} ${y - 1.8}Q${x + 1.6} ${y} ${x} ${y + 1.8}Q${x - 1.6} ${y} ${x} ${y - 1.8}Z" transform="rotate(${r} ${x} ${y})" opacity=".9"/>`).join('')}</g><g fill="#ff8fb3">${[[7.6, 22, 40], [40.4, 23, -20]].map(([x, y, r]) => `<path d="M${x} ${y - 1.6}Q${x + 1.4} ${y} ${x} ${y + 1.6}Q${x - 1.4} ${y} ${x} ${y - 1.6}Z" transform="rotate(${r} ${x} ${y})"/>`).join('')}</g>`),
+  sealnight: seal('sealnight', 'sheep', 'sBnt', `<g fill="#fff">${[[10, 12, .7], [16, 8, .5], [8, 22, .5], [40, 28, .5], [33, 7, .4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g><path d="M37.6 7.4A6 6 0 1 0 41.4 17.8 4.8 4.8 0 0 1 37.6 7.4Z" fill="#ffe89a"/>`, `<g fill="#cfe4ff" font-family="Jua,sans-serif" font-size="5" opacity=".95"><text x="33" y="25">z</text><text x="36.4" y="21.4" font-size="4">z</text></g>`),
+  sealcrown: seal('sealcrown', 'bear', 'sBgd', `<g fill="#fff" opacity=".7">${[[9, 14], [39, 16], [12, 34], [37, 34]].map(([x, y]) => `<path d="M${x} ${y - 2}L${x + .6} ${y - .6}${x + 2} ${y}${x + .6} ${y + .6}${x} ${y + 2}${x - .6} ${y + .6}${x - 2} ${y}${x - .6} ${y - .6}Z"/>`).join('')}</g>`,
+    `<g transform="translate(.6 5.6) rotate(-8 24 9)">` + jelly('M16.6 12.6 15.6 5.4 19.6 8.4 24 3.6 28.4 8.4 32.4 5.4 31.4 12.6Z', 'gY', '#d98a10', `<circle cx="24" cy="10" r="1.3" fill="#f0646d"/><circle cx="19.8" cy="10.6" r="1" fill="#4aaeef"/><circle cx="28.2" cy="10.6" r="1" fill="#4aaeef"/>`, { dx: .6, dy: 1.1, sw: 1.6 }) + `</g>`, { ring: '#ffc83d' }),
+  sealsea: seal('sealsea', 'whale', 'sBsea', `<path d="M-2 14Q4 11 10 14T22 14 34 14 46 14 52 14" fill="none" stroke="#bfe3ff" stroke-width="1.2" opacity=".6"/><path d="M-2 40Q4 37 10 40T22 40 34 40 46 40 52 40V50H-2Z" fill="#9fd2ff" opacity=".35"/><g fill="none" stroke="#fff" stroke-width=".9" opacity=".85"><circle cx="10" cy="16" r="1.6"/><circle cx="13" cy="10" r="1"/><circle cx="38" cy="14" r="1.3"/></g>`),
+  sealgalaxy: seal('sealgalaxy', 'cat', 'sBgx', `<ellipse cx="14" cy="14" rx="14" ry="7" fill="#ff8fd8" opacity=".3" transform="rotate(-24 14 14)"/><ellipse cx="36" cy="34" rx="14" ry="6" fill="#7cc8ff" opacity=".28" transform="rotate(-24 36 34)"/><g fill="#fff">${[[9, 12, .6], [15, 7, .5], [36, 9, .7], [41, 18, .5], [7, 26, .5], [40, 32, .5], [30, 6, .4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g><path d="M6 6 14 11" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity=".8"/>`,
+    jelly(starD(33.4, 8.4, 4.6, 2), 'gY', '#d98a10', '', { dx: .5, dy: .9, sw: 1.4 }), { ring: '#b39cff' }),
 };
 
 /* ===== 출석 화면 작은 그림 (24×24) — 같은 색·선, 크기가 작아서 두께는 얇게 ===== */
