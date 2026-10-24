@@ -71,12 +71,12 @@ export const RW_OLD = {
   sunset: 'gblue', moonnight: 'conblue', auroramt: 'congold', starcat: 'congx', sakuratree: 'gpink', jellyfish: 'gnight',
   sealsky: 'gblue', sealsakura: 'gpink', sealnight: 'conblue', sealcrown: 'congold', sealsea: 'gnight', sealgalaxy: 'congx',
 };
-export const objName = v => OBJ_NAME[String(v || '').replace(/^r:/, '')] || '';
+export const objName = v => { const k = String(v || '').replace(/^r:/, ''); return k.endsWith('_s') ? (OBJ_NAME[k.slice(0, -2)] ? '반짝이 ' + OBJ_NAME[k.slice(0, -2)] : '') : OBJ_NAME[k] || ''; };
 export const rwNorm = v => typeof v === 'string' && v.startsWith('r:') && RW_OLD[v.slice(2)] ? 'r:' + RW_OLD[v.slice(2)] : v;
 export const KIND = { sticker: '스티커', avatar: '프로필 사진', color: '배경 색', title: '칭호', perk: '혜택' };
 export const PERK_NAME = { deco2: '시계 스티커 칸 +1', deco3: '시계 스티커 칸 +1', shield3: '출석 방패 최대 3개' };
 // 출석 보상 스티커의 쓰임새: 대표 스티커(이름 옆) · 첫 화면 시계 스티커 · 댓글·DM 스티커 (모두 받은 보상 스티커만)
-export const STK_MSG = /^::(r:[a-z0-9]+)$/;   // 예전 이름(r:medal 등)도 통과 → rwNorm으로 새 이름   // 스티커만 보내는 댓글·DM 본문
+export const STK_MSG = /^::(r:[a-z0-9]+(?:_s)?)$/;   // 예전 이름(r:medal 등)도 통과 → rwNorm으로 새 이름   // 스티커만 보내는 댓글·DM 본문
 export const perkOn = (v, best, total) => REWARDS.some(r => r.kind === 'perk' && r.v === v && rwOn(r, best || 0, total || 0));
 export const decoSlots = (best, total) => 1 + ['deco2', 'deco3'].filter(v => perkOn(v, best, total)).length;
 export const shieldMaxOf = (best, total) => perkOn('shield3', best, total) ? 3 : 2;
@@ -93,7 +93,7 @@ export const rwName = r => r.kind === 'color' ? `‘${COLOR_NAME[r.v]}’` : r.k
    세트 수집 설계(빈칸을 먼저 보여 주고, 완성 보상은 사회적·기능적으로) · 디스코드 프로필 효과(남에게 보이는 움직임이 가치).
    → 등급이 오를수록 '할 수 있는 일'이 달라짐:
      일반 = 학생 물건 스티커 · 희귀 = 움직이는 스티커 · 전설 = 효과(닉네임·프로필 등장·시계·착용 소품) · 시크릿 = 황금 닉네임.
-   시리즈를 다 모으면 칭호 GC_TITLE + 프로필 사진 홀로 테두리. 중복 스티커(일반·희귀)는 맞팔 친구에게 선물. 조각 GC.secretCost개면 시크릿 확정 교환.
+   시리즈를 다 모으면 칭호 GC_TITLE + 프로필 사진 홀로 테두리. 중복 스티커(일반·희귀)는 맞팔 친구에게 선물. 조각으로 없는 것 골라 받기(GC.pick) · 가진 스티커 반짝이 강화(GC.shine, 값 끝 '_s').
    뽑기권: 출석(등교일)마다 1장 + 연속 5일마다 1장 더 + 기념일(MILESTONES) 1장 더. 처음 3장 선물. 최대 99장. 돈으로 사는 것 없음. */
 export const FX = { name: '닉네임 효과', prof: '프로필 등장 효과', clock: '시계 테마', masc: '착용 소품' };
 export const GACHA = [
@@ -119,11 +119,25 @@ Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포
   plane: '종이비행기', test100: '100점 시험지', ball: '농구공', memo: '비밀 편지',
   fxholo: '홀로그램 닉네임', fxstar: '별똥별 등장', fxneon: '네온 시계', fxcrown: '떠 있는 왕관', fxgold: '황금 닉네임' });
 export const RAR = { 1: { n: '일반', p: 72 }, 2: { n: '희귀', p: 22 }, 3: { n: '전설', p: 5.5 }, 4: { n: '시크릿', p: .5 } };   // p: % (합 100)
-export const GC = { start: 3, max: 99, pityRare: 10, pityLeg: 50, shard: { 1: 1, 2: 3, 3: 10, 4: 30 }, shardPerTix: 10, secretCost: 100, bonusEvery: 5 };
+// 조각(2026-10-25 하율: "조각 → 뽑기권은 메리트 없음, 조각으로 다른 걸") — 뽑기권으로는 못 바꿈.
+//   pick: 아직 없는 것 골라 받기(등급별 조각) · shine: 가진 스티커(일반·희귀)를 반짝이 버전으로(다 모은 뒤에도 쓸 곳)
+export const GC = { start: 3, max: 99, pityRare: 10, pityLeg: 50, shard: { 1: 1, 2: 3, 3: 10, 4: 30 }, pick: { 1: 8, 2: 20, 3: 60, 4: 100 }, shine: { 1: 30, 2: 60 }, bonusEvery: 5 };
+// 반짝이 스티커: 값 끝에 '_s' (r:eraser → r:eraser_s). gc_own에도 같은 키로 기록. 어디서든 그 값으로 저장·검사·그림
+export const SHN = '_s';
+export const isShn = v => typeof v === 'string' && v.endsWith(SHN);
+export const baseOf = v => isShn(v) ? v.slice(0, -SHN.length) : v;
+// 게임 랭킹 라운드(2026-10-25 하율: "2주에 한 번 마감해서 새로 경쟁, 1~3등 뽑기권, 게임 랭커만"):
+//   start(월요일 0시, KST)부터 14일씩. 라운드가 끝나면 게임마다 1~3등에게 tix[등수-1]장 — 서버 settleRounds가 한 번만 지급
+export const RK = { start: '2026-10-26', days: 14, tix: [3, 2, 1] };
+const dnum = ymd => Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)) / 864e5;
+const ymdOf = n => new Date(n * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
+// 라운드 번호(시작 전이면 -1)와 그 라운드의 첫날·마지막 날(YYYYMMDD) — today도 YYYYMMDD(KST)
+export const rkOf = today => { const s = dnum(RK.start.replace(/-/g, '')), n = Math.floor((dnum(today) - s) / RK.days); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
+export const rkRange = n => { const s = dnum(RK.start.replace(/-/g, '')); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
 export const GC_TITLE = '쉬는 시간 마스터';   // 시즌 1 시리즈를 다 모으면 받는 칭호
 export const gcRar = v => gcItem(v)?.rar || 0;
 // 가진 뽑기 스티커 목록(스티커만): own = {'r:eraser': 2, …} (나온 횟수)
-export const gcHave = own => GACHA_STK.filter(g => own && own[g.v] > 0).map(g => g.v);
+export const gcHave = own => GACHA_STK.filter(g => own && own[g.v] > 0).flatMap(g => own[g.v + SHN] > 0 ? [g.v, g.v + SHN] : [g.v]);
 export const gcDone = own => GACHA.every(g => own && own[g.v] > 0);
 // 효과 값 검사: 그 칸(slot)의 효과인지
 export const fxOk = (slot, v) => !!GACHA.find(g => g.v === v && g.fx === slot);

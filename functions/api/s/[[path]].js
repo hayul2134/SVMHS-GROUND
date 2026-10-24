@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, FX, objName } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, FX, objName, SHN, RK, rkOf, rkRange } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
@@ -147,7 +147,7 @@ const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 뽑기: 가진 스티커 {값: 나온 횟수}. 개발자는 전부 가진 것으로
 const gcOwn = u => { try { const o = JSON.parse(u?.gc_own || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
-const gcStk = u => isAdm(u) ? GACHA_ALL.filter(g => !g.fx).map(g => g.v) : gcHave(gcOwn(u));
+const gcStk = u => isAdm(u) ? GACHA_ALL.filter(g => !g.fx).flatMap(g => [g.v, g.v + SHN]) : gcHave(gcOwn(u));   // 반짝이(_s)도
 // 켜 둔 뽑기 효과 {name, prof, clock, masc} — 가진 것만 인정(개발자는 전부)
 const gcFx = u => { let o; try { o = JSON.parse(u?.gc_fx || '{}'); } catch { o = {}; } const own = gcOwn(u), out = {};
   for (const k of Object.keys(FX)) if (o && fxOk(k, o[k]) && (isAdm(u) || own[o[k]] > 0)) out[k] = o[k]; return out; };
@@ -155,7 +155,7 @@ const gcFx = u => { let o; try { o = JSON.parse(u?.gc_fx || '{}'); } catch { o =
 const fxPub = u => { const f = gcFx(u); return { nfx: f.name || '', pfx: f.prof || '', mfx: f.masc || '' }; };   // mfx: 착용 소품(프로필 사진 위 왕관)
 // 쓸 수 있는 보상 스티커 = 출석 보상 스티커 + 뽑기 스티커
 const rwStk = u => [...unlockedOf(effBest(u), effTotal(u), 'sticker'), ...gcStk(u)];
-const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.map(g => [g.v, 1])) : gcOwn(u), fx: gcFx(u) });
+const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.flatMap(g => g.fx ? [[g.v, 1]] : [[g.v, 1], [g.v + SHN, 1]])) : gcOwn(u), fx: gcFx(u) });
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
 const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !rwStk(me).includes(rwNorm(m[1])) ? '아직 받지 못한 스티커예요' : null; };
 const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', nfx: fxPub(u).nfx, mfx: fxPub(u).mfx, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
@@ -316,6 +316,7 @@ const ROUTES = {
   },
 
   'GET me': async ({ req, db }) => {
+    try { await settleRounds(db); } catch (e) { console.log('settleRounds', e?.message); }   // 끝난 게임 랭킹 라운드 보상(한 번만)
     const me = await auth(req, db);
     if (!me) return json({ me: null });
     const [unread, fo, fb, fr] = await Promise.all([
@@ -325,7 +326,8 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    const rkGift = (await db.prepare("SELECT round, game, place, tix FROM rank_rewards WHERE uid = ?1 AND seen = 0 AND game <> '*' ORDER BY round, game").bind(me.id).all()).results;
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length }, rkGift });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -843,6 +845,21 @@ const ROUTES = {
       return json({ scope, list, mine: me.grade && me.cls ? { grade: me.grade, cls: me.cls } : null });
     }
     let rows;
+    if (scope === 'round') {   // 이번 라운드(2주, att-rewards.js RK): 라운드 안 기록 중 개인 최고 — 끝나면 1~3등 뽑기권
+      const rd = rkOf(kstYmd()), cur = rd.n < 0 ? rkRange(0) : rd;
+      const BR = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid`;
+      rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BR}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 50`).bind(game, cur.from, cur.to).all()).results;
+      const list = rows.map(r => ({ ...card(r), grade: r.grade, cls: r.cls, value: r.value, isMe: r.uid === me.id }));
+      let mine = list.findIndex(x => x.isMe) + 1 || null, myValue = list.find(x => x.isMe)?.value ?? null;
+      if (!mine) {
+        const s2 = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2 AND day BETWEEN ?3 AND ?4').bind(me.id, game, cur.from, cur.to).first();
+        if (s2?.b != null) { myValue = s2.b; mine = (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (${BR}) WHERE best < ?4`).bind(game, cur.from, cur.to, s2.b).first()).r; }
+      }
+      // 지난 라운드 1~3등(보상 받은 사람)
+      const last = (await db.prepare(`SELECT k.place, k.tix, ${U} FROM rank_rewards k JOIN users u ON u.id = k.uid WHERE k.round = ?1 AND k.game = ?2 ORDER BY k.place`).bind(cur.n - 1, game).all()).results
+        .map(r => ({ ...card(r), place: r.place, tix: r.tix }));
+      return json({ scope, list, mine, myValue, round: { n: cur.n, from: cur.from, to: cur.to, started: rd.n >= 0, tix: RK.tix }, last });
+    }
     if (scope === 'friends') {
       rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid
         WHERE t.uid = ?2 OR t.uid IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?2) ORDER BY t.best, t.at LIMIT 50`)
@@ -893,24 +910,37 @@ const ROUTES = {
     const after = { ...me, gc_tix: tix, gc_own: JSON.stringify(own), gc_pity: pity, gc_leg: leg, gc_shard: shard };
     return json({ out, ...gcPub(after) });
   }),
-  // 조각 10개 → 뽑기권 1장
-  'POST gachaex': needMe(async ({ db, me }) => {
-    if ((me.gc_shard || 0) < GC.shardPerTix) return err(`조각이 ${GC.shardPerTix}개 있어야 바꿀 수 있어요`);
-    const r = await db.prepare(`UPDATE users SET gc_shard = gc_shard - ?1, gc_tix = MIN(${GC.max}, gc_tix + 1) WHERE id = ?2 AND gc_shard >= ?1 RETURNING gc_tix, gc_shard`).bind(GC.shardPerTix, me.id).first();
-    if (!r) return err('다시 한 번 눌러 주세요', 409);
-    return json(gcPub({ ...me, gc_tix: r.gc_tix, gc_shard: r.gc_shard }));
-  }),
-  // 조각 GC.secretCost개 → 시크릿 확정 (아직 없을 때만)
-  'POST gcsecret': needMe(async ({ db, me }) => {
-    const sec = GACHA.find(g => g.rar === 4), own = gcOwn(me);
-    if (own[sec.v]) return err('이미 시크릿을 가지고 있어요');
-    if ((me.gc_shard || 0) < GC.secretCost) return err(`조각이 ${GC.secretCost}개 있어야 바꿀 수 있어요`);
-    own[sec.v] = 1;
+  // 조각 → 뽑기권 교환은 없앰(2026-10-25 하율: "메리트 없음") — 예전 화면이 부르면 안내만
+  'POST gachaex': needMe(async () => err('조각은 이제 스티커 골라 받기·반짝이 강화에 써요. 새로 고침해 주세요')),
+  // 조각으로 골라 받기: 아직 없는 것 하나(시크릿 포함) — 가격 GC.pick[등급]
+  'POST gcpick': needMe(async ({ db, me, body }) => {
+    const v = String(body.v || ''), it = GACHA.find(g => g.v === v), own = gcOwn(me);
+    if (!it) return err('지금 시즌에서 받을 수 없는 거예요');
+    if (own[v]) return err('이미 가지고 있어요');
+    const cost = GC.pick[it.rar];
+    if ((me.gc_shard || 0) < cost) return err(`조각이 ${cost}개 있어야 받을 수 있어요`);
+    own[v] = 1;
     const r = await db.prepare('UPDATE users SET gc_shard = gc_shard - ?1, gc_own = ?2 WHERE id = ?3 AND gc_own = ?4 AND gc_shard >= ?1 RETURNING gc_shard')
-      .bind(GC.secretCost, JSON.stringify(own), me.id, me.gc_own || '{}').first();
+      .bind(cost, JSON.stringify(own), me.id, me.gc_own || '{}').first();
     if (!r) return err('다시 한 번 눌러 주세요', 409);
-    return json({ v: sec.v, ...gcPub({ ...me, gc_shard: r.gc_shard, gc_own: JSON.stringify(own) }) });
+    return json({ v, ...gcPub({ ...me, gc_shard: r.gc_shard, gc_own: JSON.stringify(own) }) });
   }),
+  // 반짝이 강화: 가진 스티커(일반·희귀)를 반짝이 버전으로 — own['r:x_s'] = 1. 원래 스티커도 그대로 씀
+  'POST gcshine': needMe(async ({ db, me, body }) => {
+    const v = String(body.v || ''), it = GACHA.find(g => g.v === v), own = gcOwn(me);
+    if (!it || it.fx || !GC.shine[it.rar]) return err('반짝이로 바꿀 수 없는 거예요');
+    if (!own[v]) return err('먼저 이 스티커를 뽑아야 해요');
+    if (own[v + SHN]) return err('이미 반짝이로 바꿨어요');
+    const cost = GC.shine[it.rar];
+    if ((me.gc_shard || 0) < cost) return err(`조각이 ${cost}개 있어야 바꿀 수 있어요`);
+    own[v + SHN] = 1;
+    const r = await db.prepare('UPDATE users SET gc_shard = gc_shard - ?1, gc_own = ?2 WHERE id = ?3 AND gc_own = ?4 AND gc_shard >= ?1 RETURNING gc_shard')
+      .bind(cost, JSON.stringify(own), me.id, me.gc_own || '{}').first();
+    if (!r) return err('다시 한 번 눌러 주세요', 409);
+    return json({ v: v + SHN, ...gcPub({ ...me, gc_shard: r.gc_shard, gc_own: JSON.stringify(own) }) });
+  }),
+  // 랭킹 보상 알림 봤음
+  'POST rkseen': needMe(async ({ db, me }) => { await db.prepare('UPDATE rank_rewards SET seen = 1 WHERE uid = ?1 AND seen = 0').bind(me.id).run(); return json({ ok: true }); }),
   // 효과 켜기·끄기: body { slot: name|prof|clock|masc, v: 'r:…' 또는 '' }
   'POST gcfx': needMe(async ({ db, me, body }) => {
     const slot = String(body.slot || ''), v = String(body.v || '');
@@ -1022,6 +1052,28 @@ async function attState(env, db, me, doCheck, quiet = false) {
   // 새로 열린 보상: 연속은 최고 기록이 넘어선 것, 누적은 총 출석일이 넘어선 것
   const unlocked = REWARDS.filter(x => !rwOn(x, old.st_best, old.st_total) && rwOn(x, best, r.st_total));
   return json(out({ new: true, prev: prevLive, lost, used, gotShield, unlocked, tix, tixNow: r.gc_tix, milestone: unlocked.length > 0 || MILESTONES.includes(cur), weekDays: await weekRows() }));
+}
+
+// 게임 랭킹 라운드 정산(att-rewards.js RK, 2026-10-25): 끝난 라운드마다 게임별 1~3등에게 뽑기권 RK.tix장.
+// rank_rewards 기본키(round, game, place)로 한 번만 — 동시에 여러 요청이 와도 INSERT OR IGNORE가 성공한 쪽만 지급. game '*' 줄 = 그 라운드 정산 끝 표시
+let rkChecked = -2;   // 이 워커에서 이미 정산을 확인한 마지막 라운드(매 요청 DB를 안 보려고)
+async function settleRounds(db) {
+  const cur = rkOf(kstYmd()).n;
+  if (cur < 1 || rkChecked >= cur - 1) return;
+  for (let n = Math.max(0, cur - 2); n < cur; n++) {
+    if (await db.prepare("SELECT 1 AS x FROM rank_rewards WHERE round = ?1 AND game = '*'").bind(n).first()) continue;
+    const { from, to } = rkRange(n);
+    for (const game of Object.keys(GAMES)) {
+      const top = (await db.prepare(`SELECT uid, MIN(best) AS b, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid ORDER BY b, at LIMIT 3`).bind(game, from, to).all()).results;
+      for (let i = 0; i < top.length; i++) {
+        const t = RK.tix[i];
+        const ins = await db.prepare('INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6)').bind(n, game, i + 1, top[i].uid, t, Date.now()).run();
+        if (ins.meta?.changes) await db.prepare(`UPDATE users SET gc_tix = MIN(${GC.max}, gc_tix + ?1) WHERE id = ?2`).bind(t, top[i].uid).run();
+      }
+    }
+    await db.prepare("INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, '*', 0, 0, 0, 1, ?2)").bind(n, Date.now()).run();
+  }
+  rkChecked = cur - 1;
 }
 
 async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 사람 수 + 1

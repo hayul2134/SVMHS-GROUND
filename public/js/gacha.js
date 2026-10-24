@@ -1,12 +1,13 @@
-// SVMHS GROUND — 뽑기 (2026-10-24 하율: "뽑기 같은 기능도 있으면 좋겠어") · 서버: functions/api/s/[[path]].js (gacha · gachaex)
+// SVMHS GROUND — 뽑기 (2026-10-24 하율: "뽑기 같은 기능도 있으면 좋겠어") · 서버: functions/api/s/[[path]].js (gacha · gcpick · gcshine)
 // 시즌 1 「쉬는 시간」(2026-10-24 개편): 일반 8 스티커 · 희귀 4 움직이는 스티커 · 전설 4 효과 · 시크릿 1 (att-rewards.js GACHA, 그림 att-art.js GA).
-// 효과는 '내 효과'에서 켬(서버 gcfx) · 중복 스티커는 맞팔 친구에게 선물(gcgift) · 조각 100개면 시크릿 확정(gcsecret) · 다 모으면 칭호 + 프로필 홀로 테두리.
-// 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물).
+// 효과는 '내 효과'에서 켬(서버 gcfx) · 중복 스티커는 맞팔 친구에게 선물(gcgift) · 다 모으면 칭호 + 프로필 홀로 테두리.
+// 조각 상점(2026-10-25 하율: 조각 → 뽑기권은 메리트 없음): 없는 것 골라 받기(gcpick, 시크릿 포함) · 가진 스티커 반짝이 강화(gcshine, 값 끝 '_s').
+// 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물) + 2주 라운드 게임 랭킹 1~3등(3·2·1장, 서버 settleRounds).
 // 연출 순서: 손잡이 한 바퀴 → 기계가 덜컹 → 캡슐이 굴러 나옴 → 캡슐을 누르면(또는 차례로 저절로) 열림.
 //   캡슐 색이 등급 힌트(일반 하늘 · 희귀 보라 · 전설 금빛 홀로) — 희귀·전설은 열리기 전 더 오래 흔들리고 빛줄기가 나옴(두근거림).
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
 import { $, esc, toast, store } from './util.js';
-import { GACHA, RAR, GC, FX, GC_TITLE, objName, neonPick } from './att-rewards.js';
+import { GACHA, RAR, GC, FX, GC_TITLE, RK, SHN, objName, neonPick } from './att-rewards.js';
 import { artOf, ensureSprite } from './att-art.js';
 import { SPOTS, spotPref, setSpotPref, resolveSpot, wearSvg, anchorOf, setAdj } from './wear.js';
 
@@ -18,7 +19,6 @@ const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const RCLS = { 1: 'r1', 2: 'r2', 3: 'r3', 4: 'r4' };
 let gift = null;   // 선물 고르는 중인 스티커 { v, list: 맞팔 친구 }
-const SEC = GACHA.find(g => g.rar === 4);
 const fmt = n => n >= 1e6 ? '∞' : n;
 
 /* ----- 뽑기 기계 (직접 그림: 로고와 같은 젤리 — 남색 선 · 두께 · 광택) ----- */
@@ -69,13 +69,13 @@ function paint() {
           <button class="btn lime gc-go" type="button" data-gc="5" ${g.tix < 5 || busy ? 'disabled' : ''}>5번 뽑기<small>희귀 이상 1개 확정</small></button>
         </div>
         <p class="gc-pity">희귀 확정까지 <b>${GC.pityRare - g.pity}</b>번 · 전설 확정까지 <b>${GC.pityLeg - g.leg}</b>번</p>
-        <div class="gc-shard"><span><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b><small>/${GC.shardPerTix}</small></span><button type="button" class="btn ghost" data-gc-ex ${g.shard < GC.shardPerTix ? 'disabled' : ''}>뽑기권으로 바꾸기</button></div>
-        ${g.own[SEC.v] ? '' : `<div class="gc-sec"><span>시크릿 확정 교환 · 조각 <b>${g.shard}</b>/${GC.secretCost}</span><button type="button" class="btn ghost" data-gc-sec ${g.shard < GC.secretCost ? 'disabled' : ''}>시크릿 받기</button></div>`}
-        <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장, 연속 5일마다 1장 더!</p>
+        <div class="gc-shard"><span><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span><button type="button" class="btn ghost" data-gc-shop>조각 상점</button></div>
+        <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장 · 연속 5일마다 1장 더 · <a href="#game" data-go="game">게임 랭킹 1~3등</a>은 2주마다 ${RK.tix.join('·')}장!</p>
       </div>
     </section>
     <section class="gc-stage" id="gcStage" aria-live="polite">${keep || ''}</section>
     ${fxBox(g)}
+    ${shop(g)}
     <section class="gc-col card">
       <div class="gc-colh"><h3>시즌 1 「쉬는 시간」 도감 <small>${GACHA.filter(x => g.own[x.v]).length}/${GACHA.length}</small></h3>
         <div class="segs"><button type="button" data-gc-view="all" class="${view === 'all' ? 'on' : ''}">모두 보기</button><button type="button" data-gc-view="have" class="${view === 'have' ? 'on' : ''}">가진 것만</button></div></div>
@@ -90,10 +90,10 @@ function paint() {
       </tbody></table>
       <ul><li>희귀 이상이 ${GC.pityRare - 1}번 연속 안 나오면 <b>${GC.pityRare}번째는 희귀 확정</b>, 전설 이상이 ${GC.pityLeg - 1}번 연속 안 나오면 <b>${GC.pityLeg}번째는 전설 확정</b>이에요.</li>
       <li>5번 뽑기는 희귀 이상이 <b>1개 이상 확정</b>이에요.</li>
-      <li>시크릿은 뽑기(${RAR[4].p}%)로 나오거나, <b>조각 ${GC.secretCost}개로 확정 교환</b>할 수 있어요.</li>
-      <li>이미 가진 게 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]} · 시크릿 ${GC.shard[4]}개). 조각 ${GC.shardPerTix}개 = 뽑기권 1장.</li>
+      <li>이미 가진 게 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]} · 시크릿 ${GC.shard[4]}개).</li>
+      <li>조각 상점: 아직 없는 걸 <b>골라서 받기</b>(일반 ${GC.pick[1]} · 희귀 ${GC.pick[2]} · 전설 ${GC.pick[3]} · 시크릿 ${GC.pick[4]}개) · 가진 스티커를 <b>반짝이로 바꾸기</b>(일반 ${GC.shine[1]} · 희귀 ${GC.shine[2]}개). 조각을 뽑기권으로 바꿀 수는 없어요.</li>
       <li>시즌 1을 전부 모으면 칭호 <b>‘${GC_TITLE}’</b>과 프로필 사진 <b>홀로그램 테두리</b>를 받아요.</li>
-      <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(3·7·14·30일…)에 1장 더 받아요. 최대 ${GC.max}장까지 모여요.</li>
+      <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(3·7·14·30일…)에 1장 더 받아요. 게임 랭킹은 ${RK.days}일마다 마감해서 게임마다 1등 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장을 줘요. 최대 ${GC.max}장까지 모여요.</li>
       <li>돈으로 사는 건 없어요. 결과는 서버에서 정해지고, 창을 닫아도 그대로 남아요.</li></ul>
     </details>`;
   tuneInit();
@@ -101,16 +101,32 @@ function paint() {
 const TIER = { 1: '스티커', 2: '움직이는 스티커', 3: '효과', 4: '도감엔 ?로만 보여요' };
 const isSecHidden = (x, n) => x.rar === 4 && !n;
 function cell(x, n) {
-  if (isSecHidden(x, n)) return `<li class="r4 lock sec" data-tip="시크릿 — 뽑기 ${RAR[4].p}% 또는 조각 ${GC.secretCost}개"><span class="gc-ic" aria-hidden="true">?</span><small>???</small></li>`;
+  if (isSecHidden(x, n)) return `<li class="r4 lock sec" data-tip="시크릿 — 뽑기 ${RAR[4].p}% 또는 조각 상점 ${GC.pick[4]}개"><span class="gc-ic" aria-hidden="true">?</span><small>???</small></li>`;
   const tip = `${objName(x.v)}${x.d ? ' — ' + x.d : ''}${n ? ` · ${n}번 나옴` : ' · 아직 못 뽑음'}`;
   const canGift = !x.fx && n >= 2;
-  return `<li class="${RCLS[x.rar]}${n ? ' on' : ' lock'}" data-tip="${esc(tip)}"><span class="gc-ic">${artOf(x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}${canGift ? `<button type="button" class="gc-gift" data-gc-gift="${x.v}" aria-label="${esc(objName(x.v))} 친구에게 선물">선물</button>` : ''}</li>`;
+  const sh = api.me()?.gc?.own?.[x.v + SHN] > 0;   // 반짝이로 바꾼 스티커는 도감에도 반짝이로
+  return `<li class="${RCLS[x.rar]}${n ? ' on' : ' lock'}" data-tip="${esc(tip + (sh ? ' · 반짝이' : ''))}"><span class="gc-ic">${artOf(sh ? x.v + SHN : x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}${canGift ? `<button type="button" class="gc-gift" data-gc-gift="${x.v}" aria-label="${esc(objName(x.v))} 친구에게 선물">선물</button>` : ''}</li>`;
 }
 // 시리즈 진행: 빈칸을 먼저 보여 주고, 다 모으면 무엇을 받는지 같이 보여 줌(세트 수집 설계)
 function prog(g) {
   const have = GACHA.filter(x => g.own[x.v]).length, all = GACHA.length;
   return `<div class="gc-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${all}" aria-valuenow="${have}"><i class="w${Math.round(have / all * 20) * 5}"></i></div>
     <p>${have >= all ? `<b>시즌 1 완성!</b> 칭호 ‘${esc(GC_TITLE)}’ · 프로필 사진 홀로그램 테두리를 받았어요. <a href="#me" data-go="me">칭호 달기 →</a>` : `<b>${all - have}칸</b> 남았어요 — 다 모으면 칭호 ‘${esc(GC_TITLE)}’ + 프로필 사진 홀로그램 테두리`}</p></div>`;
+}
+// 조각 상점: ① 골라서 받기(아직 없는 것, 시크릿은 ?로) ② 반짝이로 바꾸기(가진 일반·희귀 스티커)
+// 조각을 많이 쓰는 버튼이라 한 번 누르면 '조각 N개 쓰기?'로 바뀌고 3초 안에 한 번 더 눌러야 실행(arm)
+function shop(g) {
+  const miss = GACHA.filter(x => !g.own[x.v]).sort((a, b) => b.rar - a.rar);
+  const shn = GACHA.filter(x => GC.shine[x.rar]), shOwn = shn.filter(x => g.own[x.v + SHN]).length;
+  const btn = (k, v, cost) => `<button type="button" class="btn gc-buy" data-gc-${k}="${v}" data-cost="${cost}" ${g.shard < cost ? 'disabled' : ''}><i class="gc-sh" aria-hidden="true"></i>${cost}</button>`;
+  const pick = miss.map(x => `<li class="${RCLS[x.rar]}${x.rar === 4 ? ' sec' : ''}"><span class="gc-ic">${x.rar === 4 ? '<span aria-hidden="true">?</span>' : artOf(x.v)}</span><small>${x.rar === 4 ? '시크릿' : esc(objName(x.v))}</small>${btn('pick', x.v, GC.pick[x.rar])}</li>`).join('');
+  const up = shn.map(x => { const has = g.own[x.v], done = g.own[x.v + SHN];
+    return `<li class="${RCLS[x.rar]}${done ? ' on' : has ? '' : ' lock'}"><span class="gc-ic">${artOf(has ? x.v + SHN : x.v)}</span><small>${esc(objName(x.v))}</small>${done ? '<em class="gc-done">반짝이</em>' : has ? btn('shine', x.v, GC.shine[x.rar]) : '<em class="gc-need">먼저 뽑기</em>'}</li>`; }).join('');
+  return `<section class="gc-shop card" id="gcShop"><div class="gc-shoph"><h3>조각 상점</h3><span class="gc-shn"><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span></div>
+    <h4>골라서 받기 <small>뽑기 운이 안 따를 때, 갖고 싶은 걸 바로</small></h4>
+    ${pick ? `<ul class="gc-grid gc-buyl">${pick}</ul>` : '<p class="gc-none">시즌 1을 다 모았어요! 남은 조각은 반짝이로 바꾸는 데 써 보세요.</p>'}
+    <h4>반짝이로 바꾸기 <small>${shOwn}/${shn.length} · 금빛으로 빛나고 별이 반짝여요. 프로필·이름 옆·시계·댓글·DM 어디서나 그대로</small></h4>
+    <ul class="gc-grid gc-buyl">${up}</ul></section>`;
 }
 // 내 효과(전설·시크릿): 칸마다 가진 효과 중 하나를 켬
 function fxBox(g) {
@@ -209,13 +225,22 @@ function paintBtns() {
   const g = api.me()?.gc; if (!g) return;
   document.querySelectorAll('[data-gc]').forEach(b => { b.disabled = busy || g.tix < +b.dataset.gc; });
 }
-async function exchange() {
-  try { const r = await api.call('gachaex', {}); api.setGc(r); paint(); toast('조각으로 뽑기권 1장을 받았어요'); }
-  catch (e) { toast(e.message); }
+let armed = null;
+function arm(b) {   // 첫 번째 누름: 확인 상태로
+  if (armed && armed !== b) disarm();
+  armed = b; b.classList.add('arm'); b.dataset.txt = b.innerHTML; b.innerHTML = `조각 ${b.dataset.cost}개 쓰기?`;
+  clearTimeout(arm.t); arm.t = setTimeout(disarm, 3000);
 }
-async function secret() {
-  try { const r = await api.call('gcsecret', {}); api.setGc(r); paint(); flash(4); toast(`시크릿 ‘${objName(r.v)}’을 받았어요! 내 효과에서 켜 보세요`); }
-  catch (e) { toast(e.message); }
+function disarm() { if (!armed) return; armed.classList.remove('arm'); if (armed.dataset.txt) armed.innerHTML = armed.dataset.txt; armed = null; }
+async function buy(kind, v) {
+  armed = null;
+  try {
+    const r = await api.call(kind === 'pick' ? 'gcpick' : 'gcshine', { v }); api.setGc(r); paint();
+    const it = gcItem(v);
+    if (kind === 'pick') { if (it?.rar >= 3) flash(it.rar); toast(`${objName(r.v)}을(를) 받았어요!${it?.fx ? ' 내 효과에서 켜 보세요' : ''}`); }
+    else toast(`${objName(v)} 스티커가 반짝이로 바뀌었어요! 꾸미기에서 골라 보세요`);
+    $('#gcShop')?.scrollIntoView({ block: 'nearest' });
+  } catch (e) { toast(e.message); paint(); }
 }
 async function setFx(slot, v) {
   try { const r = await api.call('gcfx', { slot, v }); api.setGc(r); paint(); toast(v ? `${objName(v)} 켰어요` : '효과를 껐어요'); }
@@ -238,8 +263,9 @@ function onClick(e) {
   const c = t.closest('.gc-cap'); if (c) { openCap(+c.dataset.i); return; }
   if (t.closest('[data-gc-all]')) { last?.out.forEach((_, i) => openCap(i, true)); return; }
   if (t.closest('[data-gc-close]')) { const s = $('#gcStage'); if (s) { s.innerHTML = ''; s.className = 'gc-stage'; } last = null; return; }
-  if (t.closest('[data-gc-ex]')) { exchange(); return; }
-  if (t.closest('[data-gc-sec]')) { secret(); return; }
+  if (t.closest('[data-gc-shop]')) { $('#gcShop')?.scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'start' }); return; }
+  const bu = t.closest('[data-gc-pick],[data-gc-shine]');
+  if (bu && !bu.disabled) { const k = bu.dataset.gcPick ? 'pick' : 'shine'; if (bu === armed) buy(k, bu.dataset.gcPick || bu.dataset.gcShine); else arm(bu); return; }
   const fb = t.closest('[data-gc-fx]'); if (fb) { setFx(fb.dataset.gcFx, fb.dataset.v); return; }
   const wa = t.closest('[data-wear-at]'); if (wa) { setSpotPref(wa.dataset.wearAt); paint(); return; }
   if (t.closest('[data-wt-auto]')) { const a = myArt(); if (a) setAdj(a, null); paint(); toast('자동 위치로 돌렸어요'); return; }

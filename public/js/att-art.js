@@ -380,6 +380,9 @@ export const medal = i => {
 // 그림마다 실제 그려진 범위(반짝이 제외, 헤드리스 브라우저 getBBox로 잰 값)를 가운데에 둔 정사각 viewBox → 어느 칸에서도 정가운데·같은 크기
 // 그림을 고치면 다시 잴 것: 그림 범위를 재서 (가로·세로 중 큰 값 + 5.2) 정사각형, 중심 = 범위 중심
 const VB = {"plane": "0.8 3.0 45.8 45.8", "test100": "0.1 0.0 51.3 51.3", "ball": "1.9 2.8 46.2 46.2", "memo": "1.8 1.4 46.0 46.0", "fxholo": "0.2 0.8 49.2 49.2", "fxstar": "1.4 -0.6 48.1 48.1", "fxneon": "0.8 1.4 48.0 48.0", "fxcrown": "1.2 3.6 45.6 45.6", "fxgold": "0.2 -5.5 50.3 50.3", "sharp": "-0.4 -0.6 47.8 47.8", "correct": "-1.1 -2.4 54.0 54.0", "bell": "0.8 1.0 48.0 48.0", "clock": "2.7 2.0 45.0 45.0", "gseal": "-0.5 -1.2 49.2 49.2", "tray": "1.4 2.5 46.8 46.8", "nametag": "1.6 -1.0 46.4 46.4", "note": "3.0 3.4 44.0 44.0", "slate": "2.5 2.1 45.3 45.3", "palette": "2.0 2.7 45.6 45.6", "timeline": "1.4 0.2 46.8 46.8", "headset": "1.4 2.3 46.8 46.8", "light": "0.6 0.4 48.6 48.6", "cube": "-0.0 1.4 48.0 48.0", "eraser": "1.9 5.3 45.3 45.3", "hilite": "-1.1 -2.1 50.9 50.9", "postit": "-0.5 -2.3 50.3 50.3", "ruler": "-0.9 -1.6 52.6 52.6", "tape": "3.4 3.4 44.2 44.2", "earbud": "-0.5 1.0 49.8 49.8", "diploma": "-0.8 0.6 52.1 52.1"};
+// 반짝이 별(네 갈래, 남색 선 + 금빛) — 반짝이 스티커 위에 겹침
+const spk = (x, y, r, c) => `<path class="${c}" d="M${x} ${y - r}Q${x + r * .18} ${y - r * .18} ${x + r} ${y}Q${x + r * .18} ${y + r * .18} ${x} ${y + r}Q${x - r * .18} ${y + r * .18} ${x - r} ${y}Q${x - r * .18} ${y - r * .18} ${x} ${y - r}Z" fill="#fff6c8" stroke="#173048" stroke-width="1.5" stroke-linejoin="round"/>`;
+const SHNX = spk(40, 8, 7, 'shx1') + spk(7, 18, 4.6, 'shx2') + spk(38, 40, 5, 'shx3');
 /* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) ===== */
 let done = false;
 export function ensureSprite() {
@@ -387,17 +390,18 @@ export function ensureSprite() {
   done = true;
   const box = document.createElement('div');
   box.className = 'att-sprite'; box.setAttribute('aria-hidden', 'true');
-  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => `<symbol id="art-${k}" viewBox="${SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'}">${v}</symbol>`).join('')}</svg>`;
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => `<symbol id="art-${k}" viewBox="${SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'}">${v}</symbol>`).join('')}<symbol id="art-shnx" viewBox="0 0 48 48">${SHNX}</symbol></svg>`;
   document.body.appendChild(box);
 }
 if (typeof document !== 'undefined') { if (document.body) ensureSprite(); else document.addEventListener('DOMContentLoaded', ensureSprite, { once: true }); }
 
 /* ===== 내보내기 ===== */
 // 2026-10-24 보상 그림 교체 전 이름 → 새 그림 (예전에 고른 프로필 사진·스티커·보낸 스티커 메시지가 그대로 새 그림으로 보이게)
-const keyOf = v => { const k = String(v).slice(2); return RW_OLD[k] || k; };
+const keyOf = v => { const k = String(v).slice(2).replace(/_s$/, ''); return RW_OLD[k] || k; };   // '_s' = 반짝이 버전(같은 그림 + 반짝임)
 export const ART_KEYS = Object.keys(ART);
 export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[keyOf(v)];
-export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); return `<svg class="art ${cls}${SCENES.has(keyOf(v)) ? ' sc' : ''}" aria-hidden="true"><use href="#art-${keyOf(v)}" width="100%" height="100%"/></svg>`; };
+// 반짝이 버전(값 끝 '_s', 조각 강화 2026-10-25): 금빛 테두리 빛 + 위에 반짝이 별 3개(#art-shnx, 하나씩 깜빡임 — style.css .shn)
+export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); const sh = /_s$/.test(v); return `<svg class="art ${cls}${SCENES.has(keyOf(v)) ? ' sc' : ''}${sh ? ' shn' : ''}" aria-hidden="true"><use href="#art-${keyOf(v)}" width="100%" height="100%"/>${sh ? '<use href="#art-shnx" class="shnx" width="100%" height="100%"/>' : ''}</svg>`; };
 // 프로필 사진·스티커 값 → 그림(직접 그린 것) 또는 글자(예전 이모지)
 // 프로필 사진 캐릭터 16종 'k:이름' (2026-10-24, 동물 이모지 대신) — 테마 캐릭터 그림(style.css .sk-* 의 --art)을 얼굴만 잘라 씀
 const KAV = { cat: '고양이', dog: '강아지', bear: '곰돌이', bunny: '토끼', frog: '개구리', chick: '병아리', hamster: '햄찌', penguin: '펭귄', fox: '여우', panda: '판다', dino: '공룡', ghost: '유령', slime: '슬라임', sheep: '양', whale: '고래', axolotl: '우파루파' };

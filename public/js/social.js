@@ -3,7 +3,7 @@ import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
 import { wearOf, wearSvg } from './wear.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, gcDone } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, gcDone, SHN, RK, rkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 
@@ -112,12 +112,19 @@ async function refreshMe() {
   try {
     const r = await call('me');
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
+    if (r.rkGift?.length) rkGiftToast(r.rkGift);
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
   applyFx();
   if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
   if (!panelOpen()) loadRecent();
   if (!S.meErr) loadBuddies();
+}
+// 끝난 게임 랭킹 라운드 보상(서버 settleRounds가 이미 뽑기권을 넣음) → 한 번 알리고 봤음 표시
+function rkGiftToast(list) {
+  const n = list.reduce((a, x) => a + x.tix, 0);
+  toast(`게임 랭킹 보상! ${list.map(x => `${GAMES[x.game]?.name || x.game} ${x.place}등`).join(' · ')} — 뽑기권 ${n}장을 받았어요`, 6000);
+  call('rkseen', {}).catch(() => {});
 }
 function startPoll() {
   clearInterval(pollTimer);
@@ -627,8 +634,9 @@ function openEdit() {
 const attHave = r => r.by === 'gacha' ? !!S.me?.gc?.own?.[r.v] : rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
 // 스티커 = 출석 보상 스티커 + 뽑기 스티커(by 'gacha')
 // 뽑기에서 빠진 스티커(GACHA_OLD)는 이미 가진 사람에게만 보임 — 더는 못 얻는 걸 잠금으로 보여 주지 않음(개발자도 '전부 보유'는 현재 뽑기 목록 기준)
-const GC_ITEMS = [...GACHA, ...GACHA_OLD].filter(g => !g.fx).map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
-const gcList = () => GC_ITEMS.filter(g => !GACHA_OLD.some(o => o.v === g.v) || S.me?.gc?.own?.[g.v]);
+// 반짝이 버전('_s', 조각 상점에서 강화)은 원래 스티커 바로 뒤에, 가진 사람에게만 보임
+const GC_ITEMS = [...GACHA, ...GACHA_OLD].filter(g => !g.fx).flatMap(g => [{ ...g, by: 'gacha', kind: 'sticker' }, { ...g, v: g.v + SHN, shn: 1, by: 'gacha', kind: 'sticker' }]);
+const gcList = () => GC_ITEMS.filter(g => (!GACHA_OLD.some(o => o.v === g.v.replace(/_s$/, '')) || S.me?.gc?.own?.[g.v]) && (!g.shn || S.me?.gc?.own?.[g.v]));
 const rwList = kind => kind === 'sticker' ? [...ATT.lockedOf('sticker'), ...gcList()] : ATT.lockedOf(kind);
 const lockMsg = b => b.dataset.by === 'gacha' ? '뽑기에서 나오는 스티커예요 — 서비스 › 뽑기에서 뽑아 보세요' : `${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`;
 // 꾸미기 목록 보기: 모두 보기 / 보유한 것만 보기 (이 기기에 기억 edit_view)
@@ -656,7 +664,7 @@ function gcDiv() {
 function attPicks(kind, isOn) {
   return rwList(kind).map(r => {
     const gc = r.by === 'gacha';
-    const tip = gc ? `뽑기 ${RAR[r.rar].n} · ${objName(r.v)}` : `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상 · ${kind === 'color' ? COLOR_NAME[r.v] : objName(r.v)}`;
+    const tip = gc ? `${r.shn ? '조각 상점' : '뽑기 ' + RAR[r.rar].n} · ${objName(r.v)}` : `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상 · ${kind === 'color' ? COLOR_NAME[r.v] : objName(r.v)}`;
     const inner = kind === 'color' ? '' : artOf(r.v, 'pka');
     return (r === GC_ITEMS[0] ? gcDiv() : '') + (attHave(r)
       ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
@@ -987,7 +995,7 @@ async function renderGame() {
   const box = $('#gameBox');
   let info = null;
   if (S.me) { try { info = (await call('games')).games; } catch {} }
-  box.innerHTML = `<div class="ggrid">${Object.entries(GAMES).map(([k, g], i) => {
+  box.innerHTML = `${rkBand()}<div class="ggrid">${Object.entries(GAMES).map(([k, g], i) => {
     const x = info?.[k];
     return `<article class="card gcard g-${k}">
       <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
@@ -999,11 +1007,23 @@ async function renderGame() {
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
 }
 
-async function openRank(game, scope = 'all') {
+// 2주 라운드(att-rewards.js RK): 마감까지 남은 날 + 보상 안내 띠
+const kstNow = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+function rkInfo() {
+  const r = rkOf(kstNow()), started = r.n >= 0, cur = started ? r : rkOf(RK.start.replace(/-/g, ''));
+  const day = y => Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8)) / 864e5;
+  const left = day(cur.to) - day(kstNow());   // 마지막 날(이 날 밤 12시에 마감)까지 남은 날
+  return { started, from: cur.from, to: cur.to, left, md: `${+cur.to.slice(4, 6)}/${+cur.to.slice(6, 8)}` };
+}
+function rkBand() {
+  const k = rkInfo();
+  return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${k.started ? `라운드 마감 ${k.left ? 'D-' + k.left : '오늘 밤 12시'}` : `${+k.from.slice(4, 6)}/${+k.from.slice(6, 8)} 첫 라운드 시작`}</b><small>${RK.days}일마다 랭킹을 새로 시작해요 · 게임마다 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장 (${k.md} 밤 12시 마감)</small></p></div>`;
+}
+async function openRank(game, scope = 'round') {
   if (S.enabled === false) { toast('랭킹을 준비하고 있어요'); return; }
   if (!S.me) { toast('랭킹은 로그인하면 볼 수 있어요'); ctx.go('me'); return; }
   const g = GAMES[game];
-  const tabs = [['all', '전체'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
+  const tabs = [['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   sheet(`<h3>${ic(g.ic)} ${g.name} 랭킹</h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
     <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
@@ -1016,7 +1036,12 @@ async function openRank(game, scope = 'all') {
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : '각자 최고 기록으로 순위를 매겨요';
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'round' ? '이번 라운드에 낸 기록 중 각자 최고 기록으로 매겨요' : '각자 최고 기록으로 순위를 매겨요';
+      if (scope === 'round') {   // 라운드 안내 + 지난 라운드 1~3등
+        const k = rkInfo();
+        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${k.left ? 'D-' + k.left : '오늘 밤 12시'}` : '첫 라운드 준비 중'}</b> · 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장</p>${r.last?.length ? `<p class="rk-last"><small>지난 라운드</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
+        if (!r.list.length) $('#rankList').innerHTML = '<li class="empty">이번 라운드 기록이 아직 없어요. 지금 하면 1등!</li>';
+      }
     }
   } catch (e) { $('#rankList').innerHTML = `<li class="empty">${esc(e.message)}</li>`; }
 }
