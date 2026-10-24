@@ -7,8 +7,7 @@
 //  4. 이어진 날은 달력·이번 주에서 띠로 연결 → 끊기기 싫은 마음(연속의 시각화)
 //  5. 다음 보상까지 남은 날을 늘 보여 줌 (목표가 분명하게)
 import { $, esc, pad } from './util.js';
-import { REWARDS, KIND, COLOR_NAME, DEPT, rwOn, rwName } from './att-rewards.js';
-const SCHOOL = new Set(['r:bell', 'r:clock', 'r:nametag', 'r:tray', 'r:note', 'r:gseal']);
+import { REWARDS, KIND, COLOR_NAME, rwOn, rwName, objName } from './att-rewards.js';
 import { artOf, ui, medal } from './att-art.js';
 export { REWARDS };
 export const unlocked = (best, total, kind) => REWARDS.filter(r => r.kind === kind && rwOn(r, best || 0, total || 0)).map(r => r.v);
@@ -71,7 +70,7 @@ const bigFire = (n, o = {}) => `<div class="att-fire ${o.sm ? 'sm' : ''} t${tier
 // 보상 그림 (스티커·사진은 이모지, 배경 색은 동그란 견본, 칭호는 이름표)
 export const rwIcon = r => r.kind === 'color' ? `<i class="rw-sw c-${r.v}" aria-hidden="true"></i>` : r.kind === 'title' ? ui('tag', 'rw-tag')
   : r.kind === 'perk' ? (r.v === 'shield3' ? shieldSvg('on rw-tag') : ui('sparkle', 'rw-tag')) : artOf(r.v, 'rw-e');
-const named = k => k === 'title' || k === 'color' || k === 'perk';   // 이름을 글로 같이 보여 주는 보상
+const named = () => true;   // 이름을 글로 같이 보여 줌 (스티커·프로필 사진은 물건 이름)
 
 /* ----- 헤더 🔥 버튼 ----- */
 let chipTier = -1, chipBurned = false;
@@ -248,15 +247,15 @@ function calHtml(r) {
     <div class="att-cal">${h}</div>`;
 }
 // 보상 칸: 그림 칸(고정 크기) → 날짜 → 설명(2줄 자리 고정) 순서라 칸마다 줄이 똑같이 맞음. 받았으면 오른쪽 위 초록 체크, 아니면 자물쇠
-const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : x.kind === 'perk' ? (x.v === 'shield3' ? '방패 3개' : '시계 칸 +1') : x.dept ? DEPT[x.dept] : x.kind === 'sticker' && SCHOOL.has(x.v) ? '학교 스티커' : KIND[x.kind];
-// 학과 보상은 세 과가 같은 날 함께 풀림 — 칸 설명에 과 이름을 써서 공평함이 보이게 (2026-10-24)
+const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : x.kind === 'perk' ? (x.v === 'shield3' ? '방패 3개' : '시계 칸 +1') : objName(x.v) || KIND[x.kind];
+// 칸 설명은 물건 이름 (과 이름 X — 2026-10-24 하율)
 function rewardsHtml(r, by) {
   const own = x => r.all || rwOn(x, r.best, r.total);   // r.all: 개발자 계정 = 전부 해금
   const list = REWARDS.filter(x => x.by === by), have = list.filter(own).length;
   return `<div class="att-rwh"><b>${by === 'best' ? '연속 기록 보상' : '누적 출석 보상'}</b><small>${by === 'best' ? `최고 ${fmtN(r.best)}일` : `총 ${r.all ? '∞' : r.total}일`} · ${have}/${list.length}개 받음</small></div>
     <ul class="att-rw">${list.map(x => {
       const on = own(x);
-      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${x.dept ? esc(DEPT[x.dept]) + ' ' : ''}${esc(KIND[x.kind])}${named(x.kind) ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
+      return `<li class="k-${x.kind}${on ? ' on' : ''}" data-tip="${esc(KIND[x.kind])}${named(x.kind) ? ' · ' + esc(rwName(x)) : ''}${on ? ' · 받음' : ''}"><span class="rw-ic">${rwIcon(x)}</span><b>${x.d}일</b><small class="rw-cap">${esc(rwCap(x))}</small>${on ? ui('check', 'lk ok') : ui('lock', 'lk')}</li>`;
     }).join('')}</ul>`;
 }
 function sheetHtml(r, quiet = false) {

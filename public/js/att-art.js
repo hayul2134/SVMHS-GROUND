@@ -26,6 +26,7 @@ const GR = {
 const DEFS = Object.entries(GR).map(([k, [a, b]]) => `<linearGradient id="${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`).join('')
   // 홀로그램(나비 날개): 분홍→하늘→보라→노랑 대각선 (gH2는 반대 방향)
   + '<linearGradient id="gH" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb3e6"/><stop offset=".35" stop-color="#94d8ff"/><stop offset=".7" stop-color="#b39cff"/><stop offset="1" stop-color="#ffe98a"/></linearGradient>'
+  + '<radialGradient id="wh-fade"><stop offset=".05" stop-color="#fff"/><stop offset=".75" stop-color="#fff" stop-opacity="0"/></radialGradient>'
   + '<linearGradient id="gH2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb3e6"/><stop offset=".35" stop-color="#94d8ff"/><stop offset=".7" stop-color="#b39cff"/><stop offset="1" stop-color="#ffe98a"/></linearGradient>';
 
 /* ----- 젤리 조각: 두께(오른쪽 아래로 민 진한 판) → 면(그라디언트) → 안쪽 그림자·무늬 → 외곽선(맨 위) ----- */
@@ -61,7 +62,7 @@ const scallop = (cx, cy, R, n, bump) => {
 
 // ===== 보상 그림 4차 (2026-10-24 하율: "일반 학교 오브젝트 + 콘텐츠과·미디어과·프로듀스과 특성, 학과끼리 공평하게") =====
 // 학교 공통 물건은 하나씩, 학과 물건은 항상 세 과가 '같은 날 함께' 풀림(세트) → 어느 과가 먼저라는 불만이 없게.
-// 콘과(영상콘텐츠과: 방송·영화 연출·촬영·편집·조명) / 미과(영상미디어과: 애니메이션·디자인·3D·캐릭터·색채) / 프과(영상프로듀스과: 경영·창업·광고·방송제작)
+// 콘과(영상콘텐츠과: 방송·영화 연출·촬영·편집·조명) / 미과(영상미디어과: 애니메이션·디자인·3D·캐릭터·색채) / 프과(영상프로듀스과: 후반 작업 — 편집·사운드·색보정, 2026-10-24 하율 정정)
 const STARS = (pts, c = '#fff') => `<g fill="${c}">${pts.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`;
 // 학과 상징(48×48, 젤리 스티커) — 스티커로도 쓰고 씰(프로필 사진) 안에도 넣음
 const EM = {
@@ -105,26 +106,28 @@ const EM = {
     + `<g transform="rotate(-40 34 30)"><rect x="31.8" y="19" width="4.4" height="24" rx="2.2" fill="url(#gN)" stroke="${INK}" stroke-width="1.6"/><path d="M31.8 40 34 46.4 36.2 40Z" fill="#fff" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/><path d="M33 22V30" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".8"/></g>`
     + gloss('M7.6 30V15.2Q7.8 13.6 9.6 13.6', 1.8, .5),
   /* 프과 */
-  megaphone:
-    jelly('M8.6 18.6 30.4 9.6Q32.6 8.8 32.6 11V35Q32.6 37.2 30.4 36.4L8.6 27.4Z', 'gR', '#c4424f', shade('M8.6 24.6 32.6 31V35Q32.6 37.2 30.4 36.4L8.6 27.4Z', '#e0545e', .7)
-      + `<path d="M15 16.2V29.8" stroke="#fff" stroke-width="1.6" opacity=".55"/>`)
-    + jelly('M31.4 7.2A3.4 15.8 0 1 1 31.39 7.2Z', 'gW', '#aebccb', '', { dx: .6, dy: 1 })
-    + jelly('M4.4 18.2H9.4V27.8H4.4Q3 27.8 3 26.4V19.6Q3 18.2 4.4 18.2Z', 'gS', '#7d8b9a', '', { dx: .6, dy: 1 })
-    + `<path d="M13.6 28.6 15.6 37.4Q16 39 17.6 38.6L20 38Q21.4 37.6 21 36L19.4 30.8" fill="url(#gS)" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>`
-    + `<path d="M38.6 15.6Q41.4 18 41.4 23 41.4 28 38.6 30.4M42.4 11.6Q46 16 46 23 46 30 42.4 34.4" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" class="tw"/>` + gloss('M11.6 20.2 26.4 14', 2, .7),
-  chart:
-    jelly('M8 7H40Q43 7 43 10V38Q43 41 40 41H8Q5 41 5 38V10Q5 7 8 7Z', 'gW', '#aebccb',
-      `<path d="M10 35.6H38" stroke="#c3ced9" stroke-width="1.2"/>`
-      + jelly('M11.4 27.6H17.4V35.6H11.4Z', 'gM', '#2c9c7a', '', { dx: .5, dy: .9, sw: 1.6 }) + jelly('M20.4 22H26.4V35.6H20.4Z', 'gB', '#2a7fc4', '', { dx: .5, dy: .9, sw: 1.6 }) + jelly('M29.4 15.4H35.4V35.6H29.4Z', 'gV', '#5d47d6', '', { dx: .5, dy: .9, sw: 1.6 }))
-    + `<path d="M9 24.6 19 17.4 25 20.4 37.4 9.6" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 24.6 19 17.4 25 20.4 37.4 9.6" fill="none" stroke="#f0646d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`
-    + jelly('M33.4 6.2 42.6 4.6 41 13.8Z', 'gR', '#c4424f', '', { dx: .5, dy: .9, sw: 1.6 }) + twinkle(44, 24, 2.6, '#fff3b0'),
-  bulb:
-    `<g stroke="#ffc83d" stroke-width="2.4" stroke-linecap="round" class="tw"><path d="M24 1.4V4.4M8.6 7.6 10.8 9.8M39.4 7.6 37.2 9.8M3.6 21H6.6M41.4 21H44.4"/></g>`
-    + jelly('M24 6.4C32.4 6.4 37.6 12.6 37.6 19.8 37.6 25.4 34 28.6 32 31.6 31 33.2 30.8 34.4 30.8 35.6H17.2C17.2 34.4 17 33.2 16 31.6 14 28.6 10.4 25.4 10.4 19.8 10.4 12.6 15.6 6.4 24 6.4Z', 'gY', '#d98a10',
-      shade('M37.6 19.8C37.6 25.4 34 28.6 32 31.6 31 33.2 30.8 34.4 30.8 35.6H26.8Q28 27.4 34.4 21.4 36 16.4 33.6 11.4 37.6 14.8 37.6 19.8Z', '#f0a21c', .8)
-      + `<path d="M20.4 31.4Q20.4 24.6 22 22.6 24 21 26 22.6 27.6 24.6 27.6 31.4" fill="none" stroke="#c97a0a" stroke-width="1.4" stroke-linecap="round"/>`)
-    + jelly('M17.4 35.6H30.6V40.6Q30.6 43 28.2 43H19.8Q17.4 43 17.4 40.6Z', 'gS', '#7d8b9a', `<path d="M17.4 38.2H30.6M17.4 40.8H30.6" stroke="#8d9aa8" stroke-width="1"/>`, { dx: .8, dy: 1.2 })
-    + `<path d="M21.6 43.4Q24 46.6 26.4 43.4" fill="#5d6b7a" stroke="${INK}" stroke-width="1.4"/>` + gloss('M14.4 19Q14.6 13 19.6 10.4', 2.8),
+  timeline:   // 편집 타임라인: 영상 클립 두 줄 + 오디오 파형 + 빨간 재생헤드
+    jelly('M7.6 8H40.4Q44 8 44 11.6V36.4Q44 40 40.4 40H7.6Q4 40 4 36.4V11.6Q4 8 7.6 8Z', 'gK2', '#0f1f33',
+      `<path d="M8 13.4H40" stroke="#4a6488" stroke-width="1" stroke-dasharray="1 2.4"/>`
+      + jelly('M8.4 15.8H21.6V21.6H8.4Z', 'gB', '#2a7fc4', '', { dx: .4, dy: .8, sw: 1.3 }) + jelly('M23.4 15.8H39.6V21.6H23.4Z', 'gV', '#5d47d6', '', { dx: .4, dy: .8, sw: 1.3 })
+      + jelly('M8.4 24.2H16.6V30H8.4Z', 'gN', '#d9577e', '', { dx: .4, dy: .8, sw: 1.3 }) + jelly('M18.4 24.2H34V30H18.4Z', 'gB', '#2a7fc4', '', { dx: .4, dy: .8, sw: 1.3 })
+      + jelly('M8.4 32.4H39.6V36.4H8.4Z', 'gM', '#2c9c7a', `<path d="M10 34.4H12M12 33.2V35.6M14 32.9V35.9M16 33.6V35.2M18 32.8V36M20 33.4V35.4M22 33V35.8M24 33.8V35M26 32.9V35.9M28 33.4V35.4M30 33V35.8M32 33.6V35.2M34 33.1V35.7M36 33.5V35.3M38 34.4" stroke="#1d6b55" stroke-width="1" stroke-linecap="round"/>`, { dx: .4, dy: .8, sw: 1.3 }))
+    + `<path d="M28.4 11.6V39.4" stroke="${INK}" stroke-width="3.6" stroke-linecap="round"/><path d="M28.4 11.6V39.4" stroke="#f0646d" stroke-width="1.6" stroke-linecap="round"/>`
+    + jelly('M24.6 4.4H32.2V8.6L28.4 12.2 24.6 8.6Z', 'gR', '#c4424f', '', { dx: .5, dy: .9, sw: 1.6 })
+    + gloss('M7.6 33V12.8Q7.8 11.4 9.4 11.2', 1.6, .45) + twinkle(44.2, 5.4, 2.6, '#fff3b0'),
+  headset:   // 사운드 믹싱 헤드폰
+    `<path d="M8.6 28V22.4A15.4 15.4 0 0 1 39.4 22.4V28" fill="none" stroke="${INK}" stroke-width="7.2" stroke-linecap="round"/><path d="M8.6 28V22.4A15.4 15.4 0 0 1 39.4 22.4V28" fill="none" stroke="url(#gS)" stroke-width="3.6" stroke-linecap="round"/>`
+    + `<path d="M13.4 13.6Q17.6 9.4 24 9" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".9"/>`
+    + jelly('M7.6 25.4H12.6Q15 25.4 15 27.8V39.2Q15 41.6 12.6 41.6H7.6Q4 41.6 4 38V29Q4 25.4 7.6 25.4Z', 'gV', '#5d47d6', `<path d="M12.4 27.6V39.4" stroke="#b39cff" stroke-width="2.2" stroke-linecap="round"/>`)
+    + jelly('M35.4 25.4H40.4Q44 25.4 44 29V38Q44 41.6 40.4 41.6H35.4Q33 41.6 33 39.2V27.8Q33 25.4 35.4 25.4Z', 'gV', '#5d47d6', `<path d="M35.6 27.6V39.4" stroke="#b39cff" stroke-width="2.2" stroke-linecap="round"/><circle cx="39.6" cy="33.4" r="2" fill="#f0646d" stroke="${INK}" stroke-width="1"/>`)
+    + `<path d="M19 30.4V36.4M22.4 27.6V39.2M25.8 29.4V37.4M29.2 31.6V35.2" stroke="${INK}" stroke-width="3.6" stroke-linecap="round" class="tw"/><path d="M19 30.4V36.4M22.4 27.6V39.2M25.8 29.4V37.4M29.2 31.6V35.2" stroke="#47c9a0" stroke-width="1.6" stroke-linecap="round" class="tw"/>`
+    + gloss('M7 36V30.4Q7.2 28.4 9 28.2', 1.8, .7),
+  wheel:   // 색보정 컬러 휠 (씰 안)
+    `<circle cx="25.4" cy="26.6" r="17" fill="${INK}"/>`
+    + [['#ff6a6a', 0], ['#ffc83d', 60], ['#7ee07a', 120], ['#4fd2e8', 180], ['#4a8cef', 240], ['#d86af0', 300]].map(([c, r]) => `<path d="M24 24 24 7A17 17 0 0 1 38.72 15.5Z" fill="${c}" transform="rotate(${r} 24 24)"/>`).join('')
+    + `<circle cx="24" cy="24" r="17" fill="url(#wh-fade)"/><circle cx="24" cy="24" r="17" fill="none" stroke="${INK}" stroke-width="2.2"/>`
+    + `<path d="M24 12V36M12 24H36" stroke="#fff" stroke-width=".9" opacity=".7"/><circle cx="28.6" cy="19.4" r="3.4" fill="#fff" stroke="${INK}" stroke-width="1.8"/><circle cx="28.6" cy="19.4" r="1.1" fill="${INK}"/>`
+    + gloss('M11.4 19.4Q13.4 12.8 19.6 10.2', 2.4, .75),
   /* G 로고 (학교 공통 씰 안) */
   glogo: `<g transform="translate(.4 .4) scale(.236)"><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(1.8 3.6)" fill="none" stroke="${INK}" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" fill="none" stroke="#1f73c4" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" transform="translate(-.6 -1.2)"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(-3 -6)" fill="none" stroke="${INK}" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(-3 -6)" fill="none" stroke="url(#gLg)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/><path d="M68 76Q78 60 98 58" transform="translate(-3 -6)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".85"/></g>`,
 };
@@ -140,14 +143,14 @@ const seal = (k, em, tier) => { const t = TIER[tier];
   return `<circle cx="25.2" cy="26" r="22" fill="${INK}"/><circle cx="24" cy="24" r="22" fill="#fff" stroke="${INK}" stroke-width="2"/>`
     + `<clipPath id="cl-${k}"><circle cx="24" cy="24" r="18.4"/></clipPath><g clip-path="url(#cl-${k})"><rect width="48" height="48" fill="url(#${t.bg})"/>${t.deco}</g>`
     + `<circle cx="24" cy="24" r="18.4" fill="none" stroke="${t.ring}" stroke-width="${t.ring === INK ? 1.4 : 2.4}"/>`
-    + `<g transform="translate(24 24.6) scale(${em === 'glogo' ? .8 : .58}) translate(-24 -24)">${EM[em]}</g>${t.top || ''}`
+    + `<g transform="translate(24 24.6) scale(${em === 'glogo' ? .8 : em === 'wheel' ? .7 : .58}) translate(-24 -24)">${EM[em]}</g>${t.top || ''}`
     + `<path d="M9.2 16.4A16 16 0 0 1 17 8.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>`;
 };
 const SEALS = {
   gblue: ['glogo', 'blue'], gpink: ['glogo', 'pink'], gnight: ['glogo', 'night'],
-  conblue: ['filmcam', 'blue'], medblue: ['tablet', 'blue'], problue: ['bulb', 'blue'],
-  congold: ['filmcam', 'gold'], medgold: ['tablet', 'gold'], progold: ['bulb', 'gold'],
-  congx: ['filmcam', 'galaxy'], medgx: ['tablet', 'galaxy'], progx: ['bulb', 'galaxy'],
+  conblue: ['filmcam', 'blue'], medblue: ['tablet', 'blue'], problue: ['wheel', 'blue'],
+  congold: ['filmcam', 'gold'], medgold: ['tablet', 'gold'], progold: ['wheel', 'gold'],
+  congx: ['filmcam', 'galaxy'], medgx: ['tablet', 'galaxy'], progx: ['wheel', 'galaxy'],
 };
 export const SCENES = new Set(Object.keys(SEALS));
 
@@ -194,8 +197,8 @@ const ART = {
     + `<g fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round">${[10, 16, 22, 28, 34].map(y => `<path d="M7.4 ${y}H12.6"/>`).join('')}</g><g fill="none" stroke="#c3ced9" stroke-width=".9" stroke-linecap="round">${[10, 16, 22, 28, 34].map(y => `<path d="M8 ${y - .5}H12"/>`).join('')}</g>`
     + gloss('M15 26V36', 2, .55) + twinkle(44, 10, 2.6, '#fff3b0'),
   /* ----- 학과 스티커 (세 과가 같은 날 함께) ----- */
-  slate: EM.slate, palette: EM.palette, megaphone: EM.megaphone,
-  light: EM.light, cube: EM.cube, chart: EM.chart,
+  slate: EM.slate, palette: EM.palette, timeline: EM.timeline,
+  light: EM.light, cube: EM.cube, headset: EM.headset,
   /* ----- 프로필 사진: 씰 (학교 공통 G · 학과 상징 — 등급만 다르고 세 과 모두 같은 날) ----- */
   ...Object.fromEntries(Object.entries(SEALS).map(([k, [em, t]]) => [k, seal(k, em, t)])),
 };
@@ -232,7 +235,7 @@ export const medal = i => {
 
 // 그림마다 실제 그려진 범위(반짝이 제외, 헤드리스 브라우저 getBBox로 잰 값)를 가운데에 둔 정사각 viewBox → 어느 칸에서도 정가운데·같은 크기
 // 그림을 고치면 다시 잴 것: 그림 범위를 재서 (가로·세로 중 큰 값 + 5.2) 정사각형, 중심 = 범위 중심
-const VB = {"bell": "0.8 1.0 48.0 48.0", "clock": "2.7 2.0 45.0 45.0", "gseal": "-0.5 -1.2 49.2 49.2", "tray": "1.4 2.5 46.8 46.8", "nametag": "1.6 -1.0 46.4 46.4", "note": "3.0 3.4 44.0 44.0", "slate": "2.5 2.1 45.3 45.3", "palette": "2.0 2.7 45.6 45.6", "megaphone": "0.3 4.6 37.8 37.8", "light": "0.6 0.4 48.6 48.6", "cube": "-0.0 1.4 48.0 48.0", "chart": "2.4 1.8 44.8 44.8"};
+const VB = {"bell": "0.8 1.0 48.0 48.0", "clock": "2.7 2.0 45.0 45.0", "gseal": "-0.5 -1.2 49.2 49.2", "tray": "1.4 2.5 46.8 46.8", "nametag": "1.6 -1.0 46.4 46.4", "note": "3.0 3.4 44.0 44.0", "slate": "2.5 2.1 45.3 45.3", "palette": "2.0 2.7 45.6 45.6", "timeline": "1.4 0.2 46.8 46.8", "headset": "1.4 2.3 46.8 46.8", "light": "0.6 0.4 48.6 48.6", "cube": "-0.0 1.4 48.0 48.0"};
 /* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) ===== */
 let done = false;
 export function ensureSprite() {

@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
@@ -487,7 +487,7 @@ function openEdit() {
 const attHave = r => rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
 function attPicks(kind, isOn) {
   return ATT.lockedOf(kind).map(r => {
-    const tip = `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상${kind === 'color' ? ' · ' + COLOR_NAME[r.v] : ''}`;
+    const tip = `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상 · ${kind === 'color' ? COLOR_NAME[r.v] : objName(r.v)}`;
     const inner = kind === 'color' ? '' : artOf(r.v, 'pka');
     return attHave(r)
       ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`

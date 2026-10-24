@@ -5,14 +5,15 @@
 // 스티커·프로필 사진은 이모지가 아니라 직접 그린 그림('r:이름' → public/js/att-art.js의 ART)
 // 2026-10-24 4차(하율: "일반 학교 오브젝트 + 콘텐츠과·미디어과·프로듀스과 특성, 학과끼리 공평하게"):
 // 학교 공통 물건(종·시계·명찰·급식판·노트·G 로고)은 하나씩, 학과 물건은 **세 과가 항상 같은 날 함께** 풀림 → "왜 우리 과는 늦게 주냐" 불만이 없게.
-// 콘과=영상콘텐츠과(방송·영화: 슬레이트·조명·필름 카메라) · 미과=영상미디어과(애니·디자인·3D: 팔레트·3D 큐브·펜 태블릿) · 프과=영상프로듀스과(경영·창업·광고: 확성기·성장 그래프·아이디어 전구)
+// 콘과=영상콘텐츠과(방송·영화: 슬레이트·조명·필름 카메라) · 미과=영상미디어과(애니·디자인·3D: 팔레트·3D 큐브·펜 태블릿) · 프과=영상프로듀스과(후반 작업: 편집 타임라인·헤드폰·컬러 휠 — 2026-10-24 하율 정정)
+// 화면에는 과 이름을 쓰지 않고 물건 이름만 씀(OBJ_NAME) — "왜 과로 틀에 박냐"는 말이 안 나오게 (2026-10-24)
 // 프로필 사진은 로고와 같은 씰 — 학과 씰은 30일(파랑)·100일(금빛)·365일(은하수) 등급만 다르고 세 과 모두 같은 날.
 export const REWARDS = [
   { by: 'best', d: 3, kind: 'sticker', v: 'r:bell' },
   { by: 'best', d: 5, kind: 'title', v: '불씨' },
   { by: 'best', d: 7, kind: 'sticker', v: 'r:slate', dept: 'con' },
   { by: 'best', d: 7, kind: 'sticker', v: 'r:palette', dept: 'med' },
-  { by: 'best', d: 7, kind: 'sticker', v: 'r:megaphone', dept: 'pro' },
+  { by: 'best', d: 7, kind: 'sticker', v: 'r:timeline', dept: 'pro' },
   { by: 'best', d: 7, kind: 'title', v: '일주일 개근' },
   { by: 'best', d: 10, kind: 'avatar', v: 'r:gblue' },
   { by: 'best', d: 14, kind: 'color', v: 'xflame' },
@@ -27,7 +28,7 @@ export const REWARDS = [
   { by: 'best', d: 40, kind: 'color', v: 'xsunset' },
   { by: 'best', d: 50, kind: 'sticker', v: 'r:light', dept: 'con' },
   { by: 'best', d: 50, kind: 'sticker', v: 'r:cube', dept: 'med' },
-  { by: 'best', d: 50, kind: 'sticker', v: 'r:chart', dept: 'pro' },
+  { by: 'best', d: 50, kind: 'sticker', v: 'r:headset', dept: 'pro' },
   { by: 'best', d: 60, kind: 'color', v: 'xsakura' },
   { by: 'best', d: 75, kind: 'color', v: 'xaurora' },
   { by: 'best', d: 90, kind: 'sticker', v: 'r:gseal' },
@@ -51,15 +52,26 @@ export const REWARDS = [
   { by: 'total', d: 120, kind: 'avatar', v: 'r:gnight' },
   { by: 'total', d: 200, kind: 'title', v: '그라운드 지킴이' },
 ];
-export const DEPT = { con: '콘텐츠과', med: '미디어과', pro: '프로듀스과' };
+export const DEPT = { con: '콘텐츠과', med: '미디어과', pro: '프로듀스과' };   // 내부 분류용(화면 표기 X)
+// 스티커·프로필 사진의 화면 이름 = 물건 이름
+export const OBJ_NAME = {
+  bell: '학교 종', clock: '자명종', gseal: 'G 씰', nametag: '명찰', tray: '급식판', note: '노트',
+  slate: '슬레이트', palette: '팔레트', timeline: '편집 타임라인', light: '촬영 조명', cube: '3D 큐브', headset: '헤드폰',
+  gblue: '파란 G', gpink: '분홍 G', gnight: '밤하늘 G',
+  conblue: '필름 카메라', medblue: '펜 태블릿', problue: '컬러 휠',
+  congold: '금빛 필름 카메라', medgold: '금빛 펜 태블릿', progold: '금빛 컬러 휠',
+  congx: '은하수 필름 카메라', medgx: '은하수 펜 태블릿', progx: '은하수 컬러 휠',
+};
 // 예전 보상 이름 → 지금 이름 (그림 교체가 여러 번 있었음 — 저장값·보낸 스티커가 그대로 보이게)
 export const RW_OLD = {
+  megaphone: 'timeline', chart: 'headset',
   sprout: 'bell', medal: 'slate', gem: 'clock', trophy: 'light', volcano: 'gseal', pencil: 'nametag', badge: 'note', lion: 'gblue', dragon: 'conblue', star: 'congold', firework: 'congx', owl: 'gpink', whale: 'gnight',
   heart: 'bell', camera: 'slate', cherry: 'clock', planet: 'light', shootstar: 'gseal', butterfly: 'gseal', milk: 'nametag', bungeo: 'tray', headphone: 'note', moon: 'nametag', disco: 'bell',
   strawcat: 'gblue', astrodog: 'conblue', crownbunny: 'congold', galaxycat: 'congx', jellybear: 'gpink',
   sunset: 'gblue', moonnight: 'conblue', auroramt: 'congold', starcat: 'congx', sakuratree: 'gpink', jellyfish: 'gnight',
   sealsky: 'gblue', sealsakura: 'gpink', sealnight: 'conblue', sealcrown: 'congold', sealsea: 'gnight', sealgalaxy: 'congx',
 };
+export const objName = v => OBJ_NAME[String(v || '').replace(/^r:/, '')] || '';
 export const rwNorm = v => typeof v === 'string' && v.startsWith('r:') && RW_OLD[v.slice(2)] ? 'r:' + RW_OLD[v.slice(2)] : v;
 export const KIND = { sticker: '스티커', avatar: '프로필 사진', color: '배경 색', title: '칭호', perk: '혜택' };
 export const PERK_NAME = { deco2: '시계 스티커 칸 +1', deco3: '시계 스티커 칸 +1', shield3: '출석 방패 최대 3개' };
@@ -74,4 +86,4 @@ export const ATT_COLORS = REWARDS.filter(r => r.kind === 'color').map(r => r.v);
 export const MILESTONES = [3, 7, 14, 30, 50, 100, 150, 200, 365];
 export const rwOn = (r, best, total) => (r.by === 'total' ? total : best) >= r.d;
 export const unlockedOf = (best, total, kind) => REWARDS.filter(r => r.kind === kind && rwOn(r, best || 0, total || 0)).map(r => r.v);
-export const rwName = r => r.kind === 'color' ? `‘${COLOR_NAME[r.v]}’` : r.kind === 'title' ? `‘${r.v}’` : r.kind === 'perk' ? PERK_NAME[r.v] : r.v;
+export const rwName = r => r.kind === 'color' ? `‘${COLOR_NAME[r.v]}’` : r.kind === 'title' ? `‘${r.v}’` : r.kind === 'perk' ? PERK_NAME[r.v] : objName(r.v) || r.v;
