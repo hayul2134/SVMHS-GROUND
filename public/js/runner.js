@@ -336,6 +336,7 @@ export function buildSprites(c) {
     const cx = cv.getContext('2d');
     g.forEach((v, i) => { if (v) { cx.fillStyle = v; cx.fillRect(i % SPR_W, (i / SPR_W) | 0, 1, 1); } });
     out[f] = cv;
+    out[f + '_rim'] = rimCanvas(cv);
   }
   return out;
 }
@@ -444,13 +445,23 @@ const FLY = {   // 날아오는 것 (2프레임)
     '.oWWWWwwwwwwoo',
     '..oooWWWWooo..',
     '.....ooo......',
-  ]], col: { w: '#ffffff', W: '#cfd8e6' } },
+  ]], col: { w: '#fff1a8', W: '#e6c35c' } },   // 노란 메모지 비행기 — 흰색은 밝은 하늘에 묻힘
 };
-function rowsCanvas(rows, col) {
+function rowsCanvas(rows, col) {   // col.o 가 있으면 외곽선 색을 바꿈(배경용 — 진한 외곽선은 앞 물체에만)
   const w = Math.max(...rows.map(r => r.length)), h = rows.length;
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const g = cv.getContext('2d');
-  rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const ch = r[x]; if (ch === '.') continue; g.fillStyle = ch === 'o' ? OL : col[ch] || '#f0f'; g.fillRect(x, y, 1, 1); } });
+  rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const ch = r[x]; if (ch === '.') continue; g.fillStyle = ch === 'o' ? (col.o || OL) : col[ch] || '#f0f'; g.fillRect(x, y, 1, 1); } });
+  return cv;
+}
+// 테두리 빛(림): 그림 모양을 1px 넓혀 밝은 색으로 칠한 판 → 그림 뒤에 깔면 어떤 배경에서도 물체가 떨어져 보임
+function rimCanvas(src) {
+  const w = src.width, h = src.height, d = src.getContext('2d').getImageData(0, 0, w, h).data;
+  const cv = document.createElement('canvas'); cv.width = w + 2; cv.height = h + 2;
+  const g = cv.getContext('2d'); g.fillStyle = '#ffffff';
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3]) {
+    g.fillRect(x, y + 1, 3, 1); g.fillRect(x + 1, y, 1, 3);   // 상하좌우 1px
+  }
   return cv;
 }
 let ART = null;
@@ -467,7 +478,9 @@ function art() {
     'owwwwwwwwwwwwWWo',
     '.oWWWWWWWWWWWWo.',
     '..oooooooooooo..',
-  ], { w: '#ffffff', W: '#dce9f7' });
+  ], { w: '#ffffff', W: '#e6eff9', o: '#c4d6ea' });
+  for (const k of Object.keys(ART.obs)) ART.obs[k + '_rim'] = rimCanvas(ART.obs[k]);
+  for (const k of Object.keys(ART.fly)) ART.fly[k + '_rim'] = ART.fly[k].map(rimCanvas);
   return ART;
 }
 
@@ -502,9 +515,9 @@ function skyAt(m) {
 }
 
 /* ===== 결정적 난수 ===== */
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+function rng(seed) {   // f.s = 내부 상태 (테스트에서 저장·복원)
+  const f = () => { let a = f.s | 0; a = a + 0x6D2B79F5 | 0; f.s = a; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  f.s = seed >>> 0; return f;
 }
 
 /* ===== 게임 =====
@@ -524,7 +537,7 @@ export function createRunner(canvas, char, opt = {}) {
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, speed: V0, scroll: 0,
       y: 0, vy: 0, onGround: true, jumpHeld: 0, ducking: false, anim: 0,
-      obs: [], nextGap: 120, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0,
+      obs: [], nextGap: 120, burst: 0, rest: false, nid: 0, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0,
       clouds: [0, 1, 2].map(i => ({ x: 40 + i * 120 + rand() * 60, y: 8 + rand() * 22 })),
       stars: Array.from({ length: 28 }, () => ({ x: rand() * W, y: rand() * 46, p: rand() * 6 })),
       seed,
@@ -552,22 +565,58 @@ export function createRunner(canvas, char, opt = {}) {
     st.vy = -JUMP_V; st.onGround = false; st.jumpHeld = 0; st.ducking = false;
     beep(520, 880, .09); return true;
   }
+  /* 간격 설계 (2026-10-25): 일정한 간격 대신 '리듬' — 보통 · 짧게 · 숨 돌리기 · 연타(2~3개 바짝) 를 섞어 긴장감을 준다.
+     못 피하는 배치는 만들지 않는다: 모든 간격은 FAIR 이상.
+     FAIR 근거(짧은 점프 기준): 고깔(14px)을 넘으려면 12px 이상 떠 있어야 하고, 그 높이 위에 있는 시간은 0.256초, 점프 전체 0.36초.
+     → 앞 장애물을 가장 늦게 넘으면 착지(0.052초) + 다시 뛰어 12px까지(0.052초) = 0.104초면 두 번 넘을 수 있음(이론 최소).
+     가장 일찍 넘은 경우(넘자마자 아직 떠 있음)도 착지 0.31초 + 다시 0.05초 = 0.36초.
+     → 끝-끝 간격을 12px + 속도×0.40초 이상으로 둬서, 앞 장애물을 짧은 점프로 '어느 타이밍에 넘든' 다음 것을 넘을 수 있게 함.
+       (길게 누른 큰 점프는 ↓로 빨리 내려올 수 있음) 2026-10-25 헤드리스 봇(모든 점프 시점을 되감아 시험)으로 30판 검증. */
+  const FAIR_T = .40, FAIR_PX = 12;
+  const fairGap = sp => FAIR_PX + sp * FAIR_T;
   function spawn() {
-    const m = st.score, sp = st.speed;
+    const m = st.score, sp = st.speed, inBurst = st.burst > 0;
     let o;
-    if (m > 220 && rand() < (m > 900 ? .3 : .2)) {   // 날아오는 것: 낮게(점프) · 머리 높이(숙이거나 점프) · 높게(그냥 지나감)
+    if (!inBurst && m > 220 && rand() < (m > 900 ? .3 : .2)) {   // 날아오는 것: 낮게(점프) · 머리 높이(숙이거나 점프) · 높게(그냥 지나감)
       const kind = rand() < .6 ? 'pigeon' : 'plane', spr0 = A.fly[kind][0];
       const lv = [GROUND - 4, GROUND - 19, GROUND - 32][Math.floor(rand() * 3)];
-      o = { fly: kind, w: spr0.width, h: spr0.height, x: W + 4, y: lv - spr0.height, dx: kind === 'plane' ? 40 : 18 };
+      const dx = kind === 'plane' ? 40 : 18;
+      // 날아오는 건 땅보다 빨리 다가오므로, 도착 시각이 땅 장애물과 같도록 화면 밖 더 먼 곳에서 출발 (안 그러면 앞 장애물과 간격이 줄어듦)
+      // 날아오는 것은 대처(점프·가만히·숙이기)가 달라 읽을 시간이 더 필요 → 앞뒤 간격을 넉넉히(속도×0.6초 + 20px 이상)
+      const prev = st.obs[st.obs.length - 1], need = sp * .6 + 20;
+      const gx = W + 4 + (prev && !prev.fly ? Math.max(0, need - (W + 4 - (prev.x + prev.w))) : 0);
+      const x = PX + (gx - PX) * (sp + dx) / sp;
+      o = { fly: kind, w: spr0.width, h: spr0.height, x, y: lv - spr0.height, dx };
     } else {
       const pool = m < 120 ? ['books', 'cone', 'books'] : ['books', 'cone', 'bin', 'desk', 'sign', 'cone'];
       const k = pool[Math.floor(rand() * pool.length)], img = A.obs[k];
-      const n = (k === 'books' || k === 'cone') && sp > 190 ? 1 + Math.floor(rand() * (sp > 260 ? 3 : 2)) : 1;   // 처음엔 하나씩, 빨라지면 2~3개 묶음
+      // 처음엔 하나씩, 빨라지면 2~3개 묶음 — 연타 중에는 묶음 없음(넓은 묶음 뒤 바짝 붙이면 큰 점프 착지가 늦어 위험)
+      const n = !inBurst && (k === 'books' || k === 'cone') && sp > 190 ? 1 + Math.floor(rand() * (sp > 260 ? 3 : 2)) : 1;
       o = { k, n, w: img.width * n + (n - 1), h: img.height, x: W + 4, y: GROUND - img.height };
     }
-    st.obs.push(o);
-    const air = 2 * JUMP_V / G_FALL + .12;   // 점프 한 번 체공 시간 근처
-    st.nextGap = Math.max(o.w + sp * air, sp * (.62 + rand() * .95) + o.w);
+    o.id = ++st.nid; st.obs.push(o);
+    // 다음 간격 고르기
+    const r = rand();
+    let gap;
+    if (st.burst > 0) {   // 연타 진행 중
+      st.burst--;
+      gap = sp * (FAIR_T + .03 + rand() * .1) + FAIR_PX;
+      if (st.burst === 0) st.rest = true;
+    } else if (st.rest) {   // 연타 직후엔 숨 돌리기
+      st.rest = false;
+      gap = sp * (1.4 + rand() * .6);
+    } else {
+      const pBurst = m < 150 ? 0 : Math.min(.3, .1 + m / 4000);
+      const pShort = m < 60 ? 0 : .22, pBreath = .16;
+      if (!o.fly && o.n === 1 && r < pBurst) {   // 연타 시작: 2개(초반) ~ 3개(500m 이후)
+        st.burst = m > 500 && rand() < .45 ? 1 : 0;
+        gap = sp * (FAIR_T + .03 + rand() * .1) + FAIR_PX;
+        if (st.burst === 0) st.rest = true;
+      } else if (r < pBurst + pShort) gap = sp * (.45 + rand() * .15) + FAIR_PX;   // 짧게
+      else if (r < pBurst + pShort + pBreath) gap = sp * (1.7 + rand() * .8);      // 길게(숨 돌리기)
+      else gap = sp * (.75 + rand() * .55);                                            // 보통
+    }
+    st.nextGap = Math.max(fairGap(sp), gap, o.fly ? sp * .6 + 20 : 0);
   }
   const box = () => st.ducking && st.onGround
     ? { x: PX + 3, y: GROUND - 14, w: 19, h: 13 }
@@ -657,6 +706,15 @@ export function createRunner(canvas, char, opt = {}) {
     // 먼 건물 (아파트·빌딩)
     drawCity(sk, st.scroll * .12);
     drawTrees(sk, st.scroll * .45);
+    // 가로등·학교도 배경 → 안개를 씌우기 전에 그림
+    drawLamps(sk);
+    drawSchool(sk);
+    // 배경 안개(공기 원근): 배경을 하늘색 쪽으로 밀어 대비를 낮춤 → 진한 외곽선을 가진 장애물·캐릭터만 또렷하게 튀어나옴
+    // 건물 높이 띠에만, 위로 갈수록 옅게 계단식(해·달·구름·별은 그대로, 경계선이 안 보이게)
+    const hz = sk.night > .5 ? .38 : .42;
+    g.fillStyle = sk.bot;
+    [[52, .3], [40, .62], [28, 1]].forEach(([h, k], i, arr) => { g.globalAlpha = hz * k; g.fillRect(0, GROUND - h, W, h - (arr[i + 1]?.[0] ?? 0)); });
+    g.globalAlpha = 1;
     // 땅: 보도블록 + 도로
     g.fillStyle = sk.ground; g.fillRect(0, GROUND, W, H - GROUND);
     g.fillStyle = sk.line; g.fillRect(0, GROUND, W, 1);
@@ -668,15 +726,22 @@ export function createRunner(canvas, char, opt = {}) {
     g.fillStyle = mix(sk.road, '#ffffff', .55);
     const off2 = Math.floor(st.scroll * 1.0) % 40;
     for (let x = -off2; x < W; x += 40) g.fillRect(x, GROUND + 11, 14, 1);
-    // 가로등 (밤엔 불빛)
-    drawLamps(sk);
-    // 학교 (처음 출발 지점)
-    drawSchool(sk);
     // 장애물
+    // 장애물: 땅 그림자 → 밝은 테두리(림) → 그림. 림은 밤에 더 진하게(외곽선이 밤하늘과 같은 남색이라 묻힘)
+    const rimA = .55 + sk.night * .35;
     for (const o of st.obs) {
       const X = Math.round(o.x), Y = Math.round(o.y);
-      if (o.fly) { const fr = A.fly[o.fly][Math.floor(st.anim * (o.fly === 'plane' ? 4 : 8)) % 2]; g.drawImage(fr, X, Y + (o.fly === 'plane' ? Math.round(Math.sin(st.anim * 5) * 1) : 0)); }
-      else { const img = A.obs[o.k]; for (let i = 0; i < o.n; i++) g.drawImage(img, X + i * (img.width + 1), Y); }
+      if (o.fly) {
+        const fi = Math.floor(st.anim * (o.fly === 'plane' ? 4 : 8)) % 2, bob = o.fly === 'plane' ? Math.round(Math.sin(st.anim * 5) * 1) : 0;
+        g.globalAlpha = .18; g.fillStyle = OL; g.fillRect(X + 2, GROUND, o.w - 4, 1);   // 땅에 비친 그림자 → 높이 가늠
+        g.globalAlpha = rimA; g.drawImage(A.fly[o.fly + '_rim'][fi], X - 1, Y + bob - 1);
+        g.globalAlpha = 1; g.drawImage(A.fly[o.fly][fi], X, Y + bob);
+      } else {
+        const img = A.obs[o.k], rim = A.obs[o.k + '_rim'];
+        g.fillStyle = 'rgba(42,40,70,.28)'; g.fillRect(X - 1, GROUND, o.w + 2, 2);
+        g.globalAlpha = rimA; for (let i = 0; i < o.n; i++) g.drawImage(rim, X + i * (img.width + 1) - 1, Y - 1);
+        g.globalAlpha = 1; for (let i = 0; i < o.n; i++) g.drawImage(img, X + i * (img.width + 1), Y);
+      }
     }
     // 흙먼지
     g.fillStyle = mix(sk.ground, sk.line, .4);
@@ -692,7 +757,9 @@ export function createRunner(canvas, char, opt = {}) {
     else if (st.ducking) f = Math.floor(st.anim * 10) % 2 ? 'duck2' : 'duck1';
     else if (st.scene === 'play') f = Math.floor(st.anim * (8 + st.speed / 40)) % 2 ? 'run2' : 'run1';
     else f = Math.floor(st.anim * 2) % 2 ? 'run1' : 'run1';
-    g.drawImage(spr[f], PX, Math.round(GROUND - SPR_H + st.y + (st.scene === 'ready' && Math.floor(st.anim * 2) % 2 ? 1 : 0)));
+    const cy = Math.round(GROUND - SPR_H + st.y + (st.scene === 'ready' && Math.floor(st.anim * 2) % 2 ? 1 : 0));
+    g.globalAlpha = rimA; g.drawImage(spr[f + '_rim'], PX - 1, cy - 1); g.globalAlpha = 1;
+    g.drawImage(spr[f], PX, cy);
     // 점수
     const hi = opt.best?.() || 0;
     let x = W - 4 - (('' + Math.max(hi, 0)).padStart(5, '0').length + 1 + 5 + 3) * 4;
@@ -712,31 +779,28 @@ export function createRunner(canvas, char, opt = {}) {
         const w = 12 + Math.floor(r() * 16), h = 12 + Math.floor(r() * 30), top = GROUND - h;
         g.fillStyle = col; g.fillRect(x, top, w, h);
         if (r() < .35) g.fillRect(x + (w >> 1) - 1, top - 4, 2, 4);   // 옥상 안테나
-        g.fillStyle = sk.night > .4 ? sk.farW : mix(col, '#ffffff', .3);
+        g.fillStyle = sk.night > .4 ? mix(sk.farW, col, .35) : mix(col, '#ffffff', .25);
         for (let wy = top + 3; wy < GROUND - 3; wy += 4)
-          for (let wx = x + 2; wx < x + w - 2; wx += 4) if (r() < (sk.night > .4 ? .45 : .3)) g.fillRect(wx, wy, 2, 2);
+          for (let wx = x + 2; wx < x + w - 2; wx += 4) if (r() < (sk.night > .4 ? .3 : .3)) g.fillRect(wx, wy, 2, 2);
         x += w + 1 + Math.floor(r() * 7);
       }
     }
   }
   function drawTrees(sk, sc) {   // 가로수
     const gap = 74, off = Math.floor(sc) % gap;
-    const leaf = mix('#7fcf8a', sk.far, sk.night * .6 + .1), dark = shade(leaf, .2), trunk = mix('#9b6b4a', sk.far, sk.night * .5);
+    const leaf = mix('#8fcf99', sk.far, sk.night * .6 + .35), dark = shade(leaf, .12), trunk = mix('#9b6b4a', sk.far, sk.night * .5 + .35);
     for (let x = -off + 20; x < W + 12; x += gap) {
       g.fillStyle = trunk; g.fillRect(x + 4, GROUND - 7, 2, 7);
-      g.fillStyle = OL; g.globalAlpha = .55;
-      g.fillRect(x + 1, GROUND - 19, 8, 1); g.fillRect(x, GROUND - 18, 1, 10); g.fillRect(x + 9, GROUND - 18, 1, 10); g.fillRect(x + 1, GROUND - 8, 8, 1);
-      g.globalAlpha = 1;
       g.fillStyle = leaf; g.fillRect(x + 1, GROUND - 18, 8, 10);
       g.fillStyle = dark; g.fillRect(x + 1, GROUND - 11, 8, 3); g.fillRect(x + 6, GROUND - 17, 3, 6);
-      g.fillStyle = tint(leaf, .3); g.fillRect(x + 2, GROUND - 17, 2, 2);
+      g.fillStyle = tint(leaf, .25); g.fillRect(x + 2, GROUND - 17, 2, 2);
     }
   }
   function drawLamps(sk) {
     const gap = 110, off = Math.floor(st.scroll * .8) % gap;
     for (let x = -off + 60; x < W + 10; x += gap) {
       if (sk.night > .5) { g.fillStyle = 'rgba(255,230,150,.16)'; g.fillRect(x - 9, GROUND - 26, 22, 26); g.fillRect(x - 5, GROUND - 30, 14, 4); }
-      g.fillStyle = sk.line; g.fillRect(x + 1, GROUND - 30, 2, 30); g.fillRect(x + 1, GROUND - 31, 7, 2);
+      g.fillStyle = mix(sk.line, sk.far, .45); g.fillRect(x + 1, GROUND - 30, 2, 30); g.fillRect(x + 1, GROUND - 31, 7, 2);
       g.fillStyle = sk.night > .5 ? '#ffe58a' : '#e6ebf2'; g.fillRect(x + 6, GROUND - 29, 3, 2);
     }
   }
@@ -745,13 +809,13 @@ export function createRunner(canvas, char, opt = {}) {
     if (x < -120) return;
     const y = GROUND - 44;
     g.fillStyle = mix('#e8eef8', sk.far, .3); g.fillRect(x, y, 70, 44);
-    g.fillStyle = sk.line; g.fillRect(x, y, 70, 1); g.fillRect(x + 69, y, 1, 44);
+    g.fillStyle = mix(sk.line, sk.far, .4); g.fillRect(x, y, 70, 1); g.fillRect(x + 69, y, 1, 44);
     g.fillStyle = mix('#8fc3ff', sk.top, .3);
     for (let r = 0; r < 3; r++) for (let c = 0; c < 6; c++) g.fillRect(x + 5 + c * 10, y + 14 + r * 9, 6, 5);
     g.fillStyle = '#3e6fd8'; g.fillRect(x + 14, y + 3, 40, 8);
     pxText(g, 'SVMHS', x + 16, y + 4, '#ffffff');
     // 교문 기둥
-    g.fillStyle = sk.line; g.fillRect(x + 76, GROUND - 18, 4, 18); g.fillRect(x + 100, GROUND - 18, 4, 18);
+    g.fillStyle = mix(sk.line, sk.far, .4); g.fillRect(x + 76, GROUND - 18, 4, 18); g.fillRect(x + 100, GROUND - 18, 4, 18);
   }
 
   /* --- 루프 --- */
@@ -777,6 +841,8 @@ export function createRunner(canvas, char, opt = {}) {
     destroy() { alive = false; cancelAnimationFrame(raf); try { actx?.close(); } catch {} },
     step(n = 1, quiet = false) { for (let i = 0; i < n; i++) update(STEP); if (!quiet) draw(); },   // 테스트용
     draw,
+    snap: () => ({ st: structuredClone(st), r: rand.s, keys: { ...keys } }),   // 테스트용 저장·복원
+    load(sn) { Object.assign(st, structuredClone(sn.st)); rand.s = sn.r; Object.assign(keys, sn.keys); },
   };
   return api;
 }
