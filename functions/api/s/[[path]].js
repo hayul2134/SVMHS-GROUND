@@ -491,6 +491,20 @@ const ROUTES = {
     return json({ users: rows.map(u => ({ ...card(u), following: mine.has(u.id), isMe: u.id === me.id })) });
   }),
 
+  // 홈 '친구' 카드(2026-10-25): 맞팔 친구 지금 상태 한 번에 — 접속 중·마지막 접속·상태 메시지·오늘 출석·연속 출석·안 읽은 DM + 나를 새로 팔로우한 사람(맞팔 전, 14일 안)
+  'GET buddies': needMe(async ({ env, db, me }) => {
+    const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_last, u.st_shield, u.st_rep, u.gc_fx, u.gc_own';
+    const [fr, rq, un] = await Promise.all([
+      db.prepare(`SELECT ${U} FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a JOIN users u ON u.id = f.b WHERE f.a = ?1 ORDER BY u.seen DESC LIMIT 60`).bind(me.id).all(),
+      db.prepare(`SELECT ${U} FROM follows f JOIN users u ON u.id = f.a WHERE f.b = ?1 AND f.at > ?2 AND u.is_test = 0
+        AND f.a NOT IN (SELECT b FROM follows WHERE a = ?1) AND f.a NOT IN (SELECT b FROM blocks WHERE a = ?1) ORDER BY f.at DESC LIMIT 6`).bind(me.id, Date.now() - 14 * 86400e3).all(),
+      db.prepare('SELECT a, COUNT(*) AS n FROM messages WHERE b = ?1 AND seen = 0 AND del = 0 GROUP BY a').bind(me.id).all(),
+    ]);
+    const rows = fr.results, today = kstToday(), [live, rest] = await Promise.all([liveMany(env, db, rows), restDay(env, db, today)]), unread = Object.fromEntries(un.results.map(r => [r.a, r.n]));
+    const friends = rows.map((u, i) => ({ ...card(u), grade: u.grade, cls: u.cls, seen: u.seen || 0, streak: isAdm(u) ? ALL_OPEN : live[i], att: isAdm(u) || u.st_last >= today, unread: unread[u.id] || 0 }));
+    return json({ rest, friends, reqs: rq.results.map(u => ({ ...card(u), grade: u.grade, cls: u.cls })) });
+  }),
+
   'POST follow': needMe(async ({ db, me, body }) => {
     const u = await byHandle(db, body.handle);
     if (!u || u.id === me.id) return err('팔로우할 수 없어요');

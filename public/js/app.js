@@ -307,7 +307,7 @@ $('#goDown').onclick = () => scrollTo({ top: boardY(), behavior: 'smooth' });
     const gap = boardY() + innerHeight - (cd.getBoundingClientRect().top + scrollY) + 90;   // 90: 위로 삐져나온 마스킹테이프·그림자까지 화면 밖으로 (2026-10-24 2차: 28이면 테이프가 바닥에 걸쳐 보였음)
     cd.style.marginTop = gap > 0 ? Math.min(gap, innerHeight * .7) + 'px' : '';
   };
-  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); }
+  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); if ($('#bdCard')) ro.observe($('#bdCard')); }   // 친구 카드(2026-10-25)는 한눈에 보기 화면 안, 카운트다운만 아래로
   addEventListener('resize', f); f();
 }
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
