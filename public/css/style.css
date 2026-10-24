@@ -3738,3 +3738,8 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .pd-sp:nth-child(13){--a:308deg;--r:158px;--c:#9bb8ff;--s:20px;--d:0.22s}
 .pd-sp:nth-child(14){--a:338deg;--r:118px;--c:#d59bff;--s:14px;--d:0.27s}
 @media (prefers-reduced-motion:reduce){.pfx-dev,.pd-burst{display:none}}
+/* 개발자 DM 안내 쪽지: 아이콘 뒤 글자 시작선에 맞춰 줄바꿈(내어쓰기), '팔로우 안 해도 돼요'는 중간에서 안 끊김 (2026-10-25) */
+.pdev:has(> span){display:flex;align-items:flex-start;gap:6px}
+.pdev:has(> span) > .sic{flex:none;margin:0!important;vertical-align:0!important;position:relative;top:.17em}
+.pdev > span{flex:1;min-width:0}
+.pdev .nw{white-space:nowrap}
