@@ -994,7 +994,7 @@ async function renderThread(handle, box, panel) {
   const form = q('#dmForm');
   if (form) {
     const inp = q('#dmIn');
-    const grow = () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 120) + 'px'; };
+    const grow = () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight + inp.offsetHeight - inp.clientHeight, 120) + 'px'; };   // border-box라 테두리 두께를 더해야 글자가 가운데 (빼먹으면 아래로 쏠림)
     inp.addEventListener('input', grow);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
     const send = async (text, keep) => {

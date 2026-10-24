@@ -817,7 +817,7 @@ $('#bsOpts').addEventListener('click', onPick);
 $('#plMore').onclick = () => { if (!BAL) return; paintBalSheet(); openModal('#mBal'); loadBalance().then(pollBalance); };
 $('#plQ').onclick = $('#plCom').onclick = $('#plMore').onclick;
 // 댓글 입력: Enter = 등록, Shift+Enter = 줄바꿈 (한글 조합 중 Enter는 무시)
-const bsGrow = () => { const i = $('#bsIn'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 110) + 'px'; };
+const bsGrow = () => { const i = $('#bsIn'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight + i.offsetHeight - i.clientHeight, 110) + 'px'; };   // 테두리 포함
 $('#bsIn').addEventListener('input', bsGrow);
 $('#bsIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); $('#bsForm').requestSubmit(); } });
 async function balSend(body, typed) {
