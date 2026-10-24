@@ -1028,7 +1028,7 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="iconbtn" id="pQuit" data-tip="그만하기" data-tip-end aria-label="그만하기">✕</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   return $('#parea');
@@ -1056,11 +1056,16 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
   }
   if (!S.me) return;
   try {
-    const r = await call('score', { game, value, rounds, ticket: await ticket });
-    ticket = null;
+    const r = await saveScore(game, value, rounds);
     $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('crown') : '');
-    if ($('#v-game').classList.contains('on')) renderGame();
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
+}
+// 기록 저장(서버가 판 기록·티켓으로 다시 검사) — 결과 화면 없이 그 자리에서 다시 하는 게임(나 집에 갈래!)도 같이 씀
+async function saveScore(game, value, rounds) {
+  const r = await call('score', { game, value, rounds, ticket: await ticket });
+  ticket = null;
+  if ($('#v-game').classList.contains('on')) renderGame();
+  return r;
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -1163,45 +1168,77 @@ async function playHome() {
         <p class="hr-keys"><kbd>Space</kbd><kbd>↑</kbd> 점프 (길게 누르면 더 높이) · <kbd>↓</kbd> 숙이기</p>
         <button type="button" class="btn ghost" id="hrSnd" aria-pressed="false">소리 끔</button></div>
       <div class="hr-dress" id="hrDressBox" hidden></div>
+      <div class="hr-rk" id="hrRk"></div>
     </div>`, true);
   if (!RUN) { try { RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!$('#hrCv')) return;   // 불러오는 사이 그만둠
   const cv = $('#hrCv'), ov = $('#hrOv'), scr = $('#hrScr');
   let char = RUN.loadChar(), sound = store.get('home_snd', false);
   let best = store.get('home_best', 0);
-  const fit = () => {   // 320×104를 정수 배로 (좁으면 꽉 채움)
-    const w = $('#hr').clientWidth - 6, k = Math.floor(w / RUN.W);   // 테두리 빼고
-    cv.style.width = (k >= 2 ? k * RUN.W : w) + 'px';
+  // 화면 크기 (2026-10-25): 가로 폭 + 세로 남는 자리까지 보고 최대한 크게. 한 도트 = 기기 픽셀 정수배(dpr 2면 0.5px 단위)라 도트 크기가 고르게
+  const fit = () => {
+    const w = $('#parea').clientWidth - 6, top = scr.getBoundingClientRect().top + scrollY;
+    const hAvail = innerHeight - top - 150;   // 아래 조작 줄·랭킹 줄 자리
+    const dpr = devicePixelRatio || 1, k = Math.min(w / RUN.W, Math.max(2, hAvail / RUN.H));
+    const per = k >= 1 ? Math.floor(k * dpr) / dpr : k;
+    const cw = Math.min(w, per * RUN.W);
+    cv.style.width = cw + 'px'; $('#hr').style.width = cw + 6 + 'px';   // 아래 조작 줄·랭킹 줄도 게임 화면 폭에 맞춤
   };
-  let over = false;
+  // 게임 오버 (2026-10-25 하율: 가벼운 게임이라 결과 화면으로 넘어가지 않게) — 공룡 게임처럼 화면 위에 기록만 띄우고 그 자리에서 바로 다시
+  let over = false, deadAt = 0, runNo = 0;
   const R = RUN.createRunner(cv, char, {
     sound, best: () => best,
-    onStart() { ov.hidden = true; $('#hr').classList.add('on'); closeDress(); },
+    onStart() { ov.hidden = true; ov.classList.remove('dead'); $('#hr').classList.add('on'); closeDress(); },
     onOver(score, ms) {
-      over = true;
-      if (score > best) { best = score; store.set('home_best', best); }
+      over = true; deadAt = performance.now(); const no = ++runNo; $('#hr').classList.remove('on');
+      const nb = score > best;
+      if (nb) { best = score; store.set('home_best', best); }
       ov.hidden = false; ov.classList.add('dead');
-      ov.innerHTML = `<b>앗, 집에 못 갔다…</b><span>${score.toLocaleString('ko-KR')}m 달렸어요</span>`;
-      setTimeout(() => {
-        if (!$('#hrCv')) return;
-        cleanup();
-        finish('home', HOME_MAX - Math.max(1, score), `<p class="rdet">${(ms / 1000).toFixed(1)}초 동안 ${score.toLocaleString('ko-KR')}m 달렸어요</p><p class="note center">스페이스·↑로 바로 다시</p>`, [Math.max(1, score), ms]);
-      }, 1100);
+      ov.innerHTML = `<b>앗, 집에 못 갔다…</b><span><em>${score.toLocaleString('ko-KR')}m</em> · ${(ms / 1000).toFixed(1)}초${nb ? ' · <i>최고 기록!</i>' : ''}</span>
+        <small class="hr-msg" id="hrMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요'}</small><small class="hr-go">${matchMedia('(pointer:coarse)').matches ? '화면을 눌러 다시' : '스페이스 · ↑ · 클릭으로 다시'}</small>`;
+      if (!S.me) return;
+      saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
+        if (no !== runNo || !$('#hrMsg')) return;
+        $('#hrMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
+        paintRk(true);
+      }).catch(e => { if (no === runNo && $('#hrMsg')) $('#hrMsg').textContent = e.message; });
     },
   });
+  // 다시 하기: 죽은 뒤 0.4초가 지나야 (누르고 있던 점프로 바로 다시 시작되지 않게). 새 판마다 서버 시작 티켓을 새로 받음
+  const restart = () => {
+    if (!over || performance.now() - deadAt < 400) return false;
+    over = false; ticket = S.me ? call('start', { game: 'home' }).then(r => r.ticket).catch(() => '') : null;
+    R.reset(); R.jump(); return true;
+  };
+  // 아래 친구 랭킹 줄: 이 게임 친구 1~3등 + 내 최고 (목표가 보이게)
+  async function paintRk(force) {
+    const el = $('#hrRk'); if (!el) return;
+    const mine = `<span class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></span>`;
+    if (!S.me) { el.innerHTML = mine + '<span class="hr-rkn">로그인하면 친구와 기록을 겨룰 수 있어요</span>'; return; }
+    if (!el.innerHTML) el.innerHTML = mine;
+    try {
+      const r = await call('rank?game=home&scope=friends'); if (!$('#hrRk')) return;
+      const top = r.list.slice(0, 3);
+      el.innerHTML = mine + (top.length ? `<span class="hr-rkn">친구 랭킹</span><ol>${top.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><i class="mdl m${i + 1}">${i + 1}</i>${av(u, 'xs', avWear(u.mfx))}<span>${esc(nameOf(u))}</span><b>${esc(GAMES.home.fmt(u.value))}</b></li>`).join('')}</ol>`
+        : '<span class="hr-rkn">아직 친구 기록이 없어요. 첫 기록을 남겨 보세요!</span>') + '<button type="button" class="hr-all" data-rank="home">전체 랭킹</button>';
+    } catch {}
+  }
+  paintRk();
   window.__home = R;   // 테스트용 (헤드리스 점검)
   fit();
-  const ro = new ResizeObserver(fit); ro.observe($('#hr'));
+  const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
   // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)
   const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck' };
   const kd = e => {
-    const a = KEY[e.key]; if (!a || over || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea')) return;
-    e.preventDefault(); if (!e.repeat) R.input(a, true);
+    const a = KEY[e.key]; if (!a || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea')) return;
+    e.preventDefault(); if (e.repeat) return;
+    if (over) { if (a === 'jump') restart(); return; }
+    R.input(a, true);
   };
   const ku = e => { const a = KEY[e.key]; if (a) R.input(a, false); };
   document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
   const hold = (el, a) => {
-    el.addEventListener('pointerdown', e => { e.preventDefault(); if (!over && $('#hrDressBox').hidden) R.input(a, true); try { el.setPointerCapture(e.pointerId); } catch {} });
+    el.addEventListener('pointerdown', e => { e.preventDefault(); if (!$('#hrDressBox').hidden) return; if (over) { restart(); return; } R.input(a, true); try { el.setPointerCapture(e.pointerId); } catch {} });
     const up = () => R.input(a, false);
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
     el.addEventListener('contextmenu', e => e.preventDefault());
@@ -1209,7 +1246,7 @@ async function playHome() {
   hold(scr, 'jump'); hold($('#hrJ'), 'jump'); hold($('#hrD'), 'duck');
   const blur = () => { R.input('jump', false); R.input('duck', false); };
   window.addEventListener('blur', blur);
-  function cleanup() { R.destroy(); ro.disconnect(); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__home === R) delete window.__home; }
+  function cleanup() { R.destroy(); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__home === R) delete window.__home; }
   quitGame = cleanup;
   const sndBtn = $('#hrSnd');
   const paintSnd = () => { sndBtn.textContent = sound ? '소리 켬' : '소리 끔'; sndBtn.setAttribute('aria-pressed', sound); };
@@ -1246,6 +1283,7 @@ async function playHome() {
     };
   }
   $('#hrDress').onclick = () => {
+    if (R.st.scene === 'dead') { over = false; R.reset(); ov.classList.remove('dead'); ov.innerHTML = '<b>나 집에 갈래!</b>'; }
     if (R.st.scene !== 'ready') return;
     if (!box.hidden) return closeDress();
     paintDress(); box.hidden = false; $('#hr').classList.add('dressing');
