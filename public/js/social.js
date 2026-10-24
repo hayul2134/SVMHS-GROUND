@@ -332,6 +332,7 @@ function profileHtml(d) {
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
           <h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}${tch ? `<p class="ptier">${tch}</p>` : ''}
           <p class="phandle">${[isDev(u) ? `<span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span>` : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
+          <p class="pstats ig"><button type="button" data-people="followers" data-h="${esc(u.handle)}">팔로워 <b>${d.counts.followers}</b></button><button type="button" data-people="following" data-h="${esc(u.handle)}">팔로잉 <b>${d.counts.following}</b></button></p>
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
       </div>
@@ -344,7 +345,6 @@ function profileHtml(d) {
         </div>
         <aside class="pside">
           ${streak}
-          <div class="pstats"><button data-people="followers" data-h="${esc(u.handle)}"><b>${d.counts.followers}</b>팔로워</button><button data-people="following" data-h="${esc(u.handle)}"><b>${d.counts.following}</b>팔로잉</button></div>
           ${isDev(u) ? '' : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
         </aside>
       </div>

@@ -4109,3 +4109,10 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .clubpick.su .cp-grid{max-height:236px;overflow-y:auto;padding:4px 6px 6px 2px;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));overscroll-behavior:contain}
 .clubpick.su.bad .cp-grid{box-shadow:0 0 0 2px #e2483d;border-radius:14px}
 .clubpick.su.bad legend{color:#e2483d}
+
+/* 팔로워·팔로잉 인스타처럼 (2026-10-25): 이름 아래 한 줄 글자, 상자 없이 — '팔로워 12  팔로잉 30' */
+.pstats.ig{display:flex;flex-wrap:wrap;gap:4px 22px;margin:8px 0 0;padding:0}
+.pstats.ig button{display:inline-flex;align-items:baseline;gap:5px;padding:2px 0;border:0;border-radius:6px;background:none;font:600 15px/1.3 var(--sans);color:var(--text)}
+.pstats.ig button:hover{background:none;text-decoration:underline;text-underline-offset:3px}
+.pstats.ig b{font:800 16px/1.3 var(--num,var(--sans));color:var(--text)}
+.pside:not(:has(> *)){display:none}   /* 팔로워 칸이 이름 아래로 옮겨가 비면 숨김 */
