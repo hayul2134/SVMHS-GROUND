@@ -117,7 +117,7 @@ export const GACHA_STK = GACHA_ALL.filter(g => !g.fx);   // 스티커로 쓰는 
 export const gcItem = v => GACHA_ALL.find(g => g.v === v);
 Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포스트잇', ruler: '자', tape: '마스킹테이프', earbud: '무선 이어폰', sharp: '샤프', correct: '수정테이프',
   plane: '종이비행기', test100: '100점 시험지', ball: '농구공', memo: '비밀 편지',
-  fxholo: '홀로그램 닉네임', fxstar: '별똥별 등장', fxneon: '네온 시계', fxcrown: '떠 있는 왕관', fxgold: '황금 닉네임' });
+  fxholo: '홀로그램 닉네임', fxstar: '별똥별 등장', fxneon: '네온 시계', fxcrown: '떠 있는 왕관', fxgold: '황금 닉네임', fxkey: '집 열쇠' });
 export const RAR = { 1: { n: '일반', p: 72 }, 2: { n: '희귀', p: 22 }, 3: { n: '전설', p: 5.5 }, 4: { n: '시크릿', p: .5 } };   // p: % (합 100)
 // 조각(2026-10-25 하율: "조각 → 뽑기권은 메리트 없음, 조각으로 다른 걸") — 뽑기권으로는 못 바꿈.
 //   pick: 아직 없는 것 골라 받기(등급별 조각) · shine: 가진 스티커(일반·희귀)를 반짝이 버전으로(다 모은 뒤에도 쓸 곳)
@@ -158,12 +158,17 @@ export const tierAt = (rank, n) => {
 };
 export const gamePts = (r, n) => Math.round(100 * (n - r + 1) / n);
 export const GC_TITLE = '쉬는 시간 마스터';   // 시즌 1 시리즈를 다 모으면 받는 칭호
+// 히든 보상(2026-10-25 하율): '나 집에 갈래!' 100,000m에 처음 도착한 단 한 사람 — 집 열쇠(착용 소품) + 칭호.
+// 뽑기 목록(GACHA)·도감·개발자 '전부 해금'에 들어가지 않음(세상에 하나). 서버가 첫 도착 때 gc_own에 넣어 줌(settings 'home_first')
+export const HIDDEN = [{ v: 'r:fxkey', fx: 'masc', d: '나 집에 갈래! 100,000m에 처음 도착한 단 한 사람' }];
+export const HOME_TITLE = '전설의 하굣길';
+export const isHidden = v => HIDDEN.some(h => h.v === v);
 export const gcRar = v => gcItem(v)?.rar || 0;
 // 가진 뽑기 스티커 목록(스티커만): own = {'r:eraser': 2, …} (나온 횟수)
 export const gcHave = own => GACHA_STK.filter(g => own && own[g.v] > 0).flatMap(g => own[g.v + SHN] > 0 ? [g.v, g.v + SHN] : [g.v]);
 export const gcDone = own => GACHA.every(g => own && own[g.v] > 0);
 // 효과 값 검사: 그 칸(slot)의 효과인지
-export const fxOk = (slot, v) => !!GACHA.find(g => g.v === v && g.fx === slot);
+export const fxOk = (slot, v) => !!GACHA.find(g => g.v === v && g.fx === slot) || HIDDEN.some(g => g.v === v && g.fx === slot);
 // 출석 하루에 받는 뽑기권: 1 + 연속 5일마다 1 + 기념일 1
 export const gcEarn = cur => 1 + (cur % GC.bonusEvery === 0 ? 1 : 0) + (MILESTONES.includes(cur) ? 1 : 0);
 

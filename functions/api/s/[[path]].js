@@ -2,8 +2,8 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, FX, objName, SHN, RK, rkOf, rkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
-import { HOME_MAX, scoreAt } from '../../../public/js/home-score.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, isHidden, FX, objName, SHN, RK, rkOf, rkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
+import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
@@ -151,7 +151,7 @@ const gcOwn = u => { try { const o = JSON.parse(u?.gc_own || '{}'); return o && 
 const gcStk = u => isAdm(u) ? GACHA_ALL.filter(g => !g.fx).flatMap(g => [g.v, g.v + SHN]) : gcHave(gcOwn(u));   // 반짝이(_s)도
 // 켜 둔 뽑기 효과 {name, prof, clock, masc} — 가진 것만 인정(개발자는 전부)
 const gcFx = u => { let o; try { o = JSON.parse(u?.gc_fx || '{}'); } catch { o = {}; } const own = gcOwn(u), out = {};
-  for (const k of Object.keys(FX)) if (o && fxOk(k, o[k]) && (isAdm(u) || own[o[k]] > 0)) out[k] = o[k]; return out; };
+  for (const k of Object.keys(FX)) if (o && fxOk(k, o[k]) && ((isAdm(u) && !isHidden(o[k])) || own[o[k]] > 0)) out[k] = o[k]; return out; };   // 히든 보상은 개발자도 '가진 것'만
 // 남에게 보이는 효과만(닉네임·프로필 등장) — 랭킹·댓글·DM·프로필로 나감
 const fxPub = u => { const f = gcFx(u); return { nfx: f.name || '', pfx: f.prof || '', mfx: f.masc || '' }; };   // mfx: 착용 소품(프로필 사진 위 왕관)
 // 쓸 수 있는 보상 스티커 = 출석 보상 스티커 + 뽑기 스티커
@@ -347,7 +347,7 @@ const ROUTES = {
     if (isBad(name, body.bio, body.mood, body.club, isAdm(me) ? body.title : '')) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
-    const ub = k => k === 'sticker' ? rwStk(me) : [...unlockedOf(effBest(me), effTotal(me), k), ...(k === 'title' && gcDone(gcOwn(me)) ? [GC_TITLE] : [])];   // 스티커는 뽑기 스티커도
+    const ub = k => k === 'sticker' ? rwStk(me) : [...unlockedOf(effBest(me), effTotal(me), k), ...(k === 'title' && gcDone(gcOwn(me)) ? [GC_TITLE] : []), ...(k === 'title' && gcOwn(me)['r:fxkey'] > 0 ? [HOME_TITLE] : [])];   // 스티커는 뽑기 스티커도
     // 예전 보상 이름(r:lion 등)은 새 이름으로 바꿔서 검사 (2026-10-24 그림 교체)
     body.avatar = rwNorm(body.avatar);
     if (Array.isArray(body.stickers)) body.stickers = body.stickers.map(rwNorm);
@@ -842,8 +842,31 @@ const ROUTES = {
     const rank = await rankOf(db, game, best);
     const newBest = allPrev.b == null || v < allPrev.b;
     tierMemo.clear();
+    // 히든 보상(2026-10-25 하율): 100,000m에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
+    let first = false;
+    if (game === 'home' && v === HOME_MAX - GOAL && !isAdm(me)) {
+      const won = await db.prepare("INSERT INTO settings (k, v) VALUES ('home_first', ?1) ON CONFLICT (k) DO NOTHING RETURNING k")
+        .bind(JSON.stringify({ uid: me.id, at: Date.now() })).first();
+      if (won) {
+        first = true;
+        const fresh = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(me.id).first();
+        const own = gcOwn(fresh); for (const h of HIDDEN) own[h.v] = 1;
+        await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2').bind(JSON.stringify(own), me.id).run();
+        // 사이트 전체 알림: 관리자가 올린 공지가 떠 있지 않을 때만 띠 공지로 48시간 (보상 내용은 말하지 않음 — 히든)
+        try {
+          const cur = JSON.parse((await db.prepare("SELECT v FROM settings WHERE k = 'notice'").first())?.v || 'null');
+          if (!cur || (cur.until && cur.until < Date.now())) {
+            const n = { id: randHex(4), text: `${me.name}님이 처음으로 집에 도착했어요! (나 집에 갈래! 100,000m)`.slice(0, 120), body: '', tone: 'fun', link: '#game', at: Date.now(), until: Date.now() + 48 * 3600e3 };
+            await db.batch([
+              db.prepare("INSERT INTO settings (k, v) VALUES ('notice', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(n)),
+              db.prepare('INSERT INTO notices (id, text, tone, link, at, until, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)').bind(n.id, n.text, n.tone, n.link, n.at, n.until, n.body),
+            ]);
+          }
+        } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/home_first', method: 'NOTICE' }, e); }
+      }
+    }
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {
@@ -960,7 +983,7 @@ const ROUTES = {
   'POST gcfx': needMe(async ({ db, me, body }) => {
     const slot = String(body.slot || ''), v = String(body.v || '');
     if (!FX[slot]) return err('bad slot');
-    if (v && (!fxOk(slot, v) || (!isAdm(me) && !(gcOwn(me)[v] > 0)))) return err('아직 없는 효과예요');
+    if (v && (!fxOk(slot, v) || ((!isAdm(me) || isHidden(v)) && !(gcOwn(me)[v] > 0)))) return err('아직 없는 효과예요');
     const fx = gcFx(me); if (v) fx[slot] = v; else delete fx[slot];
     await db.prepare('UPDATE users SET gc_fx = ?1 WHERE id = ?2').bind(JSON.stringify(fx), me.id).run();
     return json(gcPub({ ...me, gc_fx: JSON.stringify(fx) }));

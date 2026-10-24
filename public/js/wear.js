@@ -10,8 +10,12 @@ const INK = '#173048';
 const CROWN_P = 'M37.4 7.6 43.6 12.6 50 2.4 56.4 12.6 62.6 7.6 60.4 20.4H39.6Z';
 const crownG = halo => `<g class="mfx">${halo ? `<path class="w-halo" d="${CROWN_P}"/>` : ''}<path d="${CROWN_P}" transform="translate(1.2 2)" fill="${INK}"/><path d="${CROWN_P}" fill="#ffc83d" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M39.9 17.2H60.1" stroke="#d98a10" stroke-width="1.4"/><circle cx="50" cy="14.6" r="2.2" fill="#f0646d" stroke="${INK}" stroke-width="1.1"/><circle cx="37.4" cy="7.6" r="1.8" fill="#fff3b0" stroke="${INK}" stroke-width="1.1"/><circle cx="50" cy="2.4" r="1.9" fill="#fff3b0" stroke="${INK}" stroke-width="1.1"/><circle cx="62.6" cy="7.6" r="1.8" fill="#fff3b0" stroke="${INK}" stroke-width="1.1"/><path d="M42 16V12.8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g>`;
 
+// 집 열쇠(히든): 마스코트 머리 위에 비스듬히 떠 있음. 그림은 att-art의 48×48 열쇠를 줄여 씀
+const KEY_P = 'M15 12A10 10 0 1 0 24.6 25H34V30.6H37.4V27.6H40V31.2H43.6V19.4H24.6A10 10 0 0 0 15 12Z';
+const keyG = halo => `<g class="mfx"><g transform="translate(50 10.5) rotate(-14) scale(.62) translate(-26.5 -21.6)">${halo ? `<path class="w-halo" d="${KEY_P}"/>` : ''}<path d="${KEY_P}" transform="translate(1.6 2.6)" fill="${INK}"/><path d="${KEY_P}" fill="#ffc83d" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/><path d="M24.6 23H43.6V25H24.6Z" fill="#d98a10" opacity=".55"/><path d="M15 16.4 20.6 21.4V27.6H9.4V21.4Z" fill="#fffbe8" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/><path d="M13.6 27.6V24.2H16.4V27.6" fill="#f0646d"/><path d="M8.4 19.4Q9.4 15.2 13.4 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none" opacity=".85"/></g></g>`;   // .mfx엔 CSS 애니메이션 transform이 걸려 SVG transform 속성이 덮이므로 안쪽 g에 둠
 export const WEAR = {
   'r:fxcrown': { id: 'crown', g: crownG, vb: '33.4 -1.6 33.2 25' },
+  'r:fxkey': { id: 'key', g: keyG, vb: '33.2 -0.6 32.2 23.4' },
 };
 export const SPOTS = [['auto', '자동'], ['mascot', '캐릭터 머리'], ['clock', '큰 시계'], ['logo', '로고']];
 export const wearOf = v => WEAR[v] || null;

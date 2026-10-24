@@ -3,7 +3,7 @@ import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
 import { wearOf, wearSvg } from './wear.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, gcDone, SHN, RK, rkOf } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, gcDone, SHN, RK, rkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 import { ffOn } from './flags.js';
@@ -546,8 +546,9 @@ function openEdit() {
     const box = $('#edFx'); if (!box) return;
     const g = S.me?.gc || {}, fx = g.fx || {}, own = g.own || {};
     box.innerHTML = `<p class="ed-note">뽑기 전설·시크릿으로 받은 효과예요. 누르면 <b>바로 켜지고 꺼져요</b>(저장 안 눌러도 돼요).</p><ul class="ed-fxl">${Object.entries(FX).map(([slot, nm]) => {
-      const mine = GACHA.filter(x => x.fx === slot && own[x.v]), on = fx[slot];
-      const show = GACHA.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
+      const pool = [...GACHA, ...HIDDEN.filter(h => own[h.v])];   // 히든 보상은 가진 사람에게만
+      const mine = pool.filter(x => x.fx === slot && own[x.v]), on = fx[slot];
+      const show = pool.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
       return `<li class="${on ? 'on' : mine.length ? '' : 'none'}"><div class="ed-fxh"><span class="ed-fxi">${mine.length ? artOf(show.v, 'pka') : ui('lock', 'ic')}</span><p><b>${esc(nm)}</b><small>${mine.length ? (on ? `${esc(objName(on))} 켜짐` : '꺼짐') : `아직 없어요 · 뽑기 전설에서 나와요`}</small></p></div>
         ${mine.length ? `<div class="ed-fxb"><button type="button" class="${on ? '' : 'on'}" data-ed-fx="${slot}" data-v="">끄기</button>${mine.map(x => `<button type="button" class="${on === x.v ? 'on' : ''}" data-ed-fx="${slot}" data-v="${x.v}">${artOf(x.v, 'pka')}${esc(objName(x.v))}</button>`).join('')}</div>` : ''}
         ${slot === 'clock' && on === 'r:fxneon' ? `<div class="ed-neon"><small>네온 색 <em>이 기기에 저장</em></small><div class="ed-ncs" role="radiogroup" aria-label="네온 색">${NEON.map(([k, n]) => `<button type="button" role="radio" aria-checked="${neonC() === k}" class="ed-nc nc-${k}${neonC() === k ? ' on' : ''}" data-neon-c="${k}"><i></i>${n}</button>`).join('')}</div></div>` : ''}
@@ -708,7 +709,8 @@ function stkTray(btn, onPick) {
 }
 function titleOpts(cur) {
   const have = ATT.lockedOf('title').filter(attHave), gcT = gcDone(S.me?.gc?.own);   // 뽑기 시리즈 완성 칭호
-  return `<option value="">없음</option>${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}`;
+  const hT = S.me?.gc?.own?.['r:fxkey'] > 0;   // 히든 칭호: 가진 사람만 보임(잠긴 칸으로도 안 보여 줌)
+  return `<option value="">없음</option>${hT ? `<option value="${esc(HOME_TITLE)}" ${HOME_TITLE === cur ? 'selected' : ''}>${esc(HOME_TITLE)}</option>` : ''}${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}`;
 }
 
 /* ===== 계정 설정 ===== */
@@ -1280,7 +1282,9 @@ async function playHome() {
       if (!S.me) return;
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
         if (no !== runNo || !$('#hrMsg')) return;
-        $('#hrMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
+        $('#hrMsg').innerHTML = r.first ? `<b>히든 보상!</b> 처음으로 집에 온 단 한 사람 — 착용 소품 ‘집 열쇠’ · 칭호 ‘${esc(HOME_TITLE)}’를 받았어요`
+          : (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
+        if (r.first) refreshMe();
         if (r.cheer) cheer('home', r.rank, r.best);
         paintRk(true);
       }).catch(e => { if (no === runNo && $('#hrMsg')) $('#hrMsg').textContent = e.message; });

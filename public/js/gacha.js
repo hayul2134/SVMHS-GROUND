@@ -7,7 +7,7 @@
 //   캡슐 색이 등급 힌트(일반 하늘 · 희귀 보라 · 전설 금빛 홀로) — 희귀·전설은 열리기 전 더 오래 흔들리고 빛줄기가 나옴(두근거림).
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
 import { $, esc, toast, store } from './util.js';
-import { GACHA, RAR, GC, FX, GC_TITLE, RK, SHN, objName, neonPick } from './att-rewards.js';
+import { GACHA, HIDDEN, HOME_TITLE, RAR, GC, FX, GC_TITLE, RK, SHN, objName, neonPick } from './att-rewards.js';
 import { artOf, ensureSprite } from './att-art.js';
 import { SPOTS, spotPref, setSpotPref, resolveSpot, wearSvg, anchorOf, setAdj } from './wear.js';
 
@@ -132,8 +132,9 @@ function shop(g) {
 function fxBox(g) {
   const fx = g.fx || {};
   return `<section class="gc-fxw card"><h3>내 효과</h3><ul class="gc-fxs">${Object.entries(FX).map(([slot, nm]) => {
-    const mine = GACHA.filter(x => x.fx === slot && g.own[x.v]), on = fx[slot];
-    const show = GACHA.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
+    const pool = [...GACHA, ...HIDDEN.filter(h => g.own[h.v])];   // 히든 보상은 가진 사람에게만 보임
+    const mine = pool.filter(x => x.fx === slot && g.own[x.v]), on = fx[slot];
+    const show = pool.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
     const np = slot === 'clock' && on === 'r:fxneon' ? `<div class="gc-neon"><small>네온 색</small>${neonPick(store.get('neon_c', 'pink'))}</div>` : slot === 'masc' && on ? wearBox(on) : '';
     return `<li class="${on ? 'on' : mine.length ? '' : 'none'}"><span class="gc-ic">${mine.length ? artOf(show.v) : ''}</span><b>${nm}</b><small>${mine.length ? esc(objName(show.v)) + (on ? ' · 켜짐' : ' · 꺼짐') : '전설에서 나와요 — ' + esc(show.d)}</small>
       ${mine.length ? `<div class="gc-fxb">${mine.map(x => `<button type="button" class="btn ghost${on === x.v ? ' on' : ''}" data-gc-fx="${slot}" data-v="${on === x.v ? '' : x.v}">${on === x.v ? esc(objName(x.v)) + ' 끄기' : esc(objName(x.v)) + ' 켜기'}</button>`).join('')}</div>` : ''}${np}</li>`;
