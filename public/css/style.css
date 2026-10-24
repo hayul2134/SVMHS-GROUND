@@ -3807,3 +3807,8 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 
 /* 서비스 버튼 → '서비스' 제목이 헤더 버튼(약 56px) 바로 아래에 오게 (2026-10-25) */
 #appsT{scroll-margin-top:64px}
+/* 나 집에 갈래! 소리 버튼: 글자 대신 스피커 아이콘 (2026-10-25) */
+.hr-snd{display:grid;place-items:center;width:52px;height:48px;padding:0}
+.hr-snd svg{width:26px;height:26px}
+.hr-snd:not(.on){color:var(--sub)}
+.hr-snd.on{background:var(--yellow);color:var(--onc,#1d2a3a)}

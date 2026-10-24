@@ -1194,7 +1194,7 @@ async function playHome() {
       <div class="hr-touch"><button type="button" class="btn big" id="hrJ">점프</button><button type="button" class="btn big ghost" id="hrD">숙이기</button></div>
       <div class="hr-bar"><button type="button" class="btn" id="hrDress">${ic('brush')}캐릭터 꾸미기</button>
         <p class="hr-keys"><kbd>Space</kbd><kbd>↑</kbd> 점프 (길게 누르면 더 높이) · <kbd>↓</kbd> 숙이기</p>
-        <button type="button" class="btn ghost" id="hrSnd" aria-pressed="false">소리 끔</button></div>
+        <button type="button" class="btn ghost hr-snd" id="hrSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div class="hr-dress" id="hrDressBox" hidden></div>
       <div class="hr-rk" id="hrRk"></div>
     </div>`, true);
@@ -1277,7 +1277,11 @@ async function playHome() {
   function cleanup() { R.destroy(); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__home === R) delete window.__home; }
   quitGame = cleanup;
   const sndBtn = $('#hrSnd');
-  const paintSnd = () => { sndBtn.textContent = sound ? '소리 켬' : '소리 끔'; sndBtn.setAttribute('aria-pressed', sound); };
+  const paintSnd = () => {   // 소리 아이콘: 켜짐 = 스피커+소리 물결, 꺼짐 = 스피커+✕ (2026-10-25)
+    const t = sound ? '소리 끄기' : '소리 켜기';
+    sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`;
+    sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound);
+  };
   paintSnd();
   sndBtn.onclick = () => { sound = !sound; store.set('home_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
 
