@@ -1406,6 +1406,7 @@ const cdLeft = (at, n) => {   // '59일 08:12:33'
   const s = Math.floor(ms / 1000), d = Math.floor(s / 86400);
   return `${d ? d + '일 ' : ''}${pad(Math.floor(s % 86400 / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}`;
 };
+const vacIc = v => v && v.name === '여름방학' ? 'beach' : 'snow';   // 여름은 해·파라솔, 겨울·봄방학(2월)은 눈사람 (2026-10-24)
 function vacInfo(rows) {
   const t = today(), tk = ymd(t);
   const ev = rows.filter(r => VAC_RE.test(r.EVENT_NM) || OPEN_RE.test(r.EVENT_NM)).sort((a, b) => a.AA_YMD < b.AA_YMD ? -1 : 1);
@@ -1460,16 +1461,16 @@ async function renderCountdown() {
   let v = null, fail = false;
   try { v = vacInfo(await loadLong()); } catch { fail = true; }
   CD.vac = null;
-  if (!v) vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-beach"/></svg><div class="cdm"><p class="cdk">방학까지</p><p class="cds">${fail ? '일정을 불러오지 못했어요' : '학사일정에 아직 방학식이 안 올라왔어요'}</p></div>`;
+  if (!v) vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${vacIc(v)}"/></svg><div class="cdm"><p class="cdk">방학까지</p><p class="cds">${fail ? '일정을 불러오지 못했어요' : '학사일정에 아직 방학식이 안 올라왔어요'}</p></div>`;
   else if (v.on) {
     if (v.k) CD.vac = v.k;
-    vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-beach"/></svg><div class="cdm"><p class="cdk">${v.name} 중 · 개학까지</p><b class="cdn">${v.k ? ddayText(diffDays(v.k, t)) : '방학!'}</b><span class="cdl" id="cdVL"></span></div>`
+    vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${vacIc(v)}"/></svg><div class="cdm"><p class="cdk">${v.name} 중 · 개학까지</p><b class="cdn">${v.k ? ddayText(diffDays(v.k, t)) : '방학!'}</b><span class="cdl" id="cdVL"></span></div>`
       + `<div class="cdsub"><p class="cds">${v.k ? `개학 ${fmtD(v.k)}` : '개학 날짜가 아직 안 올라왔어요'}</p><p class="cdx">푹 쉬어요</p></div>`;
   } else {
     const n = diffDays(v.d, t);
     if (n > 0) CD.vac = v.d;
     const bar = v.pct == null ? '' : `<div class="cdbar" role="img" aria-label="이번 학기 ${v.pct}% 지남"><i></i></div><p class="cdx">이번 학기 <b>${v.pct}%</b> 지남</p>`;
-    vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-beach"/></svg><div class="cdm"><p class="cdk">${n ? v.name + '까지' : '오늘 ' + v.ev + '!'}</p><b class="cdn">${ddayText(n)}</b><span class="cdl" id="cdVL"></span></div>`
+    vb.innerHTML = `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${vacIc(v)}"/></svg><div class="cdm"><p class="cdk">${n ? v.name + '까지' : '오늘 ' + v.ev + '!'}</p><b class="cdn">${ddayText(n)}</b><span class="cdl" id="cdVL"></span></div>`
       + `<div class="cdsub"><p class="cds">${v.ev} ${fmtD(v.d)} · 학교 갈 날 <b>${v.left}일</b></p>${bar}</div>`;
     const i = vb.querySelector('.cdbar i'); if (i) i.style.width = v.pct + '%';   // CSP: style 속성 대신 JS로
   }
