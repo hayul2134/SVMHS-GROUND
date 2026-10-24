@@ -447,13 +447,30 @@
 
     <section class="apps" id="apps" aria-labelledby="appsT">
       <h2 class="sec-t" id="appsT">서비스</h2>
-      <!-- 다른 버튼이 없거나(게임·시간표) 찾아가기 번거로운 것(학사일정·D-day)만. 프로필·설정·공유·DM·테마·이용 안내·급식은 헤더 메뉴·메시지 버튼·급식 카드에 이미 있음 -->
-      <div class="appgrid">
-        <button class="app hot" data-go="game"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-game"/></svg></i>게임</button>
-        <button class="app" data-go="gacha"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gacha"/></svg></i>뽑기</button>
+      <!-- 2026-10-24 카테고리로 나눔: 게임(아이콘을 누르면 그 게임 바로 시작, social.js [data-play]) · 학교생활 · 보상. 프로필·설정·공유·DM·테마·이용 안내·급식은 헤더 메뉴·메시지 버튼·급식 카드에 이미 있음 -->
+      <div class="svcat">
+        <div class="cat-h"><h3>게임</h3><button class="cat-more" type="button" data-go="game"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg>기록·랭킹</button></div>
+        <div class="appgrid catgrid">
+        <button class="app gapp g-reaction" data-play="reaction"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-bolt"/></svg></i>반응속도</button>
+        <button class="app gapp g-num25" data-play="num25"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-n25"/></svg></i>1 to 25</button>
+        <button class="app gapp g-cut" data-play="cut"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-clap"/></svg></i>컷 타이밍</button>
+        <button class="app gapp g-home" data-play="home"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-home"/></svg></i>나 집에 갈래!</button>
+        </div>
+      </div>
+      <div class="svcat">
+        <div class="cat-h"><h3>학교생활</h3></div>
+        <div class="appgrid catgrid">
         <button class="app" data-go="tt"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tt"/></svg></i>시간표</button>
         <button class="app" data-go="cal"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></i>학사일정</button>
         <button class="app" data-go="dday"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>D-day</button>
+        </div>
+      </div>
+      <div class="svcat">
+        <div class="cat-h"><h3>보상</h3></div>
+        <div class="appgrid catgrid">
+        <button class="app" data-go="gacha"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gacha"/></svg></i>뽑기</button>
+        <button class="app" type="button" id="appAtt"><i class="ai"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-fire"/></svg></i>출석 체크</button>
+        </div>
       </div>
     </section>
   </div>

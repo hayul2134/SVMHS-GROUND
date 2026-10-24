@@ -3208,3 +3208,30 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 @keyframes pvHit{0%{filter:brightness(1.35);transform:scale(1.04)}100%{filter:none;transform:none}}
 .pv-dk.pv-hit,.pv-clk .pv-hit{animation:none}
 @media (prefers-reduced-motion:reduce){.pv-hit{animation:none}}
+
+/* ===== 서비스 카테고리 (2026-10-24): 게임 · 학교생활 · 보상 — 게임 아이콘을 누르면 그 게임 바로 시작 ===== */
+.svcat{width:100%;max-width:640px;margin:0 auto}
+.svcat + .svcat{margin-top:34px}
+.cat-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px 14px}
+.cat-h h3{position:relative;font-family:var(--disp);font-weight:400;font-size:20px;color:var(--on-bg);padding:2px 12px 1px;transform:rotate(-1.5deg)}
+.cat-h h3::before{content:"";position:absolute;inset:4px -2px 0;z-index:-1;background:color-mix(in srgb,var(--yellow) 70%,transparent);border-radius:3px;transform:skewX(-6deg)}
+:root[data-theme="dark"] .cat-h h3::before{background:color-mix(in srgb,var(--sky) 30%,transparent)}
+.cat-more{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--card);border:2px solid var(--ink);box-shadow:var(--sh-s);font:inherit;font-weight:900;font-size:13px;color:var(--text);cursor:pointer;transition:transform .12s,box-shadow .12s}
+.cat-more .sic{width:17px;height:17px}
+.cat-more:hover{transform:translate(-1px,-1px)}
+.cat-more:active{transform:translate(2px,2px);box-shadow:none}
+.appgrid.catgrid{grid-template-columns:repeat(4,1fr);max-width:none;margin:0}
+/* 게임 아이콘: 직접 그린 스티커(#sj-*) + 게임마다 고정 색 (순서 색 규칙보다 우선) */
+.apps .gapp .ai{background:linear-gradient(160deg,color-mix(in srgb,#fff 28%,var(--c)),var(--c) 60%)}
+.apps .gapp .ai{width:64px;height:64px;border-radius:18px}
+.apps .gapp .ai .sic{width:40px;height:40px;color:#173048;stroke-width:1.6;filter:drop-shadow(1.5px 1.5px 0 rgba(23,48,72,.25))}
+.apps .gapp.g-reaction .ai{--c:var(--sky)}
+.apps .gapp.g-num25 .ai{--c:var(--violet)}
+.apps .gapp.g-cut .ai{--c:#ffc4dd}
+.apps .gapp.g-home .ai{--c:var(--lime)}
+.apps .gapp:hover .ai .sic{animation:gwig .5s ease}
+@keyframes gwig{30%{transform:rotate(-10deg) scale(1.08)}65%{transform:rotate(6deg)}}
+@media (prefers-reduced-motion:reduce){.apps .gapp:hover .ai .sic{animation:none}}
+@media (max-width:560px){.svcat + .svcat{margin-top:26px}.cat-h h3{font-size:18px}.apps .gapp .ai{width:52px;height:52px;border-radius:15px}.apps .gapp .ai .sic{width:32px;height:32px}}
+.catgrid .app{text-align:center;word-break:keep-all;line-height:1.25}
+@media (max-width:380px){.appgrid.catgrid{gap:12px 6px}.app{font-size:11.5px}}

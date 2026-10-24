@@ -313,6 +313,7 @@ $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
 // 짧은 화면(게임 등)엔 '맨 위로'가 필요 없음 → 페이지가 화면 1.5배보다 짧으면 숨김 (2026-10-24)
 { const f = () => { $('#goTop').hidden = document.documentElement.scrollHeight < innerHeight * 1.5; }; if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(document.body); addEventListener('resize', f); f(); }
 $('#svcFab').onclick = () => $('#apps').scrollIntoView({ behavior: 'smooth', block: 'start' });
+$('#appAtt').onclick = () => { const b = $('#btnStreak'); if (b && !b.hidden) b.click(); else toast('로그인하면 출석 체크를 열 수 있어요'); };   // 서비스 › 보상 › 출석 체크 = 헤더 불꽃 버튼과 같은 창
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
 document.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) $(ACT[a.dataset.act]).click(); });
