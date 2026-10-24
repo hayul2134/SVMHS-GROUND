@@ -292,7 +292,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu'
 function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
 addEventListener('scroll', onScroll, { passive: true });
 // 맨 위·맨 아래로 (2026-10-23): 첫 화면 아래 화살표 = 페이지 맨 아래로, 맨 아래 화살표 = 맨 위로
-$('#goDown').onclick = () => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+$('#goDown').onclick = () => $('#board').scrollIntoView({ behavior: 'smooth', block: 'start' });   // ▼ → 바로 아래 '한눈에 보기' (2026-10-24)
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
 // 짧은 화면(게임 등)엔 '맨 위로'가 필요 없음 → 페이지가 화면 1.5배보다 짧으면 숨김 (2026-10-24)
 { const f = () => { $('#goTop').hidden = document.documentElement.scrollHeight < innerHeight * 1.5; }; if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(document.body); addEventListener('resize', f); f(); }
