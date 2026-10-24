@@ -398,6 +398,8 @@
         <button class="s-tab" type="button" data-side="tt" aria-label="시간표 꺼내기"><span aria-hidden="true"><svg class="sic" viewBox="0 0 24 24"><use href="#sj-ttab"/></svg></span><b>시간표</b></button>
         <h2 class="s-tth" id="sTTh"><span class="s-nav"><button class="s-nb" type="button" data-nav="tt" data-d="-1" aria-label="이전 날 시간표"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-prev"/></svg></button><button class="s-lbl" type="button" id="sTTlbl" data-home="tt">오늘 시간표</button><button class="s-nb" type="button" data-nav="tt" data-d="1" aria-label="다음 날 시간표"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-next"/></svg></button></span><span class="s-acts"><button class="s-ttmore" type="button" id="goWeek" aria-label="시간표 한 주 크게 보기">전체</button><button class="s-put" type="button" data-side="tt" data-tip-end aria-label="시간표 옆으로 넣기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stow"/></svg></button></span></h2>
         <div id="sTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+        <!-- 친구 랭킹 1~3등 (2026-10-25, social.js '홈 친구 랭킹' · 서버 attrank·rank scope=friends): 시간표 카드 아래, 서랍과 함께 움직임 -->
+        <div class="s-rk" id="sRk" hidden><div class="srk-h"><a href="#game" data-go="game"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg>친구 랭킹</a><span class="rk-tabs" id="rkTabs" role="tablist" aria-label="랭킹 종류"></span></div><ol class="rk-list" id="rkList" aria-live="polite"></ol></div>
       </aside>
       </div>
       </div>
@@ -424,17 +426,6 @@
     <section class="board" id="board" aria-labelledby="boardT">
       <div class="board-h"><h2 class="sec-t" id="boardT">한눈에 보기</h2></div>
       <div class="grid bento">
-        <!-- 친구: 맞팔 친구 지금 상태 (2026-10-25, social.js '홈 친구 카드' · 서버 GET buddies) -->
-        <div class="card c8 k-bd" id="bdCard" hidden>
-          <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-users"/></svg></i>친구</h2><span class="bd-live" id="bdLive" hidden></span><span class="links"><a href="#me" data-go="me">친구 찾기</a></span></div>
-          <ul class="bdrow" id="bdBox" aria-live="polite"><li class="skel"></li></ul>
-        </div>
-        <!-- 친구 랭킹 (2026-10-25, social.js '홈 친구 랭킹' · 서버 GET attrank·rank scope=friends): 연속 출석 + 게임 4종, 맞팔 친구와 나만 -->
-        <div class="card c4 k-rk" id="rkCard" hidden>
-          <div class="ct"><h2><i class="badge"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg></i>친구 랭킹</h2><span class="links"><a href="#game" data-go="game">전체 랭킹</a></span></div>
-          <div class="rk-tabs" id="rkTabs" role="tablist" aria-label="랭킹 종류"></div>
-          <ol class="rk-list" id="rkList" aria-live="polite"><li class="skel"></li><li class="skel"></li></ol>
-        </div>
         <div class="card c12 k-tt" id="weekTT">
           <div class="ct"><h2 class="hw-h"><i class="badge hw-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></i><span id="hwTitle">시간표</span></h2><p class="hw-now" id="hwNow" aria-live="polite" hidden></p></div>
           <div class="scrollx" id="hWeek"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
@@ -448,6 +439,11 @@
         <div class="card c6 k-up">
           <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-dday"/></svg></i>다가오는 일정</h2><span class="links"><a href="#dday" data-go="dday">D-day 추가</a><a href="#cal" data-go="cal">학사일정</a></span></div>
           <div class="uprow" id="hUp"><div class="skel"></div></div>
+        </div>
+        <!-- 친구: 맞팔 친구 지금 상태 (2026-10-25, social.js '홈 친구 카드' · 서버 GET buddies) -->
+        <div class="card c12 k-bd" id="bdCard" hidden>
+          <div class="ct"><h2><i class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-users"/></svg></i>친구</h2><span class="bd-live" id="bdLive" hidden></span><span class="links"><a href="#me" data-go="me">친구 찾기</a></span></div>
+          <ul class="bdrow" id="bdBox" aria-live="polite"><li class="skel"></li></ul>
         </div>
         <!-- 방학·성인 카운트다운 (2026-10-24, app.js '카운트다운') -->
         <div class="card c12 k-cd" id="cdCard">
