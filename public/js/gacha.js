@@ -1,17 +1,23 @@
 // SVMHS GROUND — 뽑기 (2026-10-24 하율: "뽑기 같은 기능도 있으면 좋겠어") · 서버: functions/api/s/[[path]].js (gacha · gachaex)
-// 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물). 뽑기에서만 나오는 스티커 19종(att-rewards.js GACHA, 그림 att-art.js GA).
+// 시즌 1 「쉬는 시간」(2026-10-24 개편): 일반 8 스티커 · 희귀 4 움직이는 스티커 · 전설 4 효과 · 시크릿 1 (att-rewards.js GACHA, 그림 att-art.js GA).
+// 효과는 '내 효과'에서 켬(서버 gcfx) · 중복 스티커는 맞팔 친구에게 선물(gcgift) · 조각 100개면 시크릿 확정(gcsecret) · 다 모으면 칭호 + 프로필 홀로 테두리.
+// 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물).
 // 연출 순서: 손잡이 한 바퀴 → 기계가 덜컹 → 캡슐이 굴러 나옴 → 캡슐을 누르면(또는 차례로 저절로) 열림.
 //   캡슐 색이 등급 힌트(일반 하늘 · 희귀 보라 · 전설 금빛 홀로) — 희귀·전설은 열리기 전 더 오래 흔들리고 빛줄기가 나옴(두근거림).
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
 import { $, esc, toast } from './util.js';
-import { GACHA, RAR, GC, objName } from './att-rewards.js';
+import { GACHA, RAR, GC, FX, GC_TITLE, objName } from './att-rewards.js';
 import { artOf, ensureSprite } from './att-art.js';
 
 let api;   // social.js에서 받음: call · refreshMe · me() · setGc(g)
 let busy = false, view = 'all';
+const gcItem = v => GACHA.find(g => g.v === v);
+const flash = r => { if (reduce()) return; const f = document.createElement('i'); f.className = 'gc-flash r' + r; f.setAttribute('aria-hidden', 'true'); document.body.append(f); setTimeout(() => f.remove(), 950); };
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = ms => new Promise(r => setTimeout(r, ms));
-const RCLS = { 1: 'r1', 2: 'r2', 3: 'r3' };
+const RCLS = { 1: 'r1', 2: 'r2', 3: 'r3', 4: 'r4' };
+let gift = null;   // 선물 고르는 중인 스티커 { v, list: 맞팔 친구 }
+const SEC = GACHA.find(g => g.rar === 4);
 const fmt = n => n >= 1e6 ? '∞' : n;
 
 /* ----- 뽑기 기계 (직접 그림: 로고와 같은 젤리 — 남색 선 · 두께 · 광택) ----- */
@@ -63,29 +69,62 @@ function paint() {
         </div>
         <p class="gc-pity">희귀 확정까지 <b>${GC.pityRare - g.pity}</b>번 · 전설 확정까지 <b>${GC.pityLeg - g.leg}</b>번</p>
         <div class="gc-shard"><span><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b><small>/${GC.shardPerTix}</small></span><button type="button" class="btn ghost" data-gc-ex ${g.shard < GC.shardPerTix ? 'disabled' : ''}>뽑기권으로 바꾸기</button></div>
+        ${g.own[SEC.v] ? '' : `<div class="gc-sec"><span>시크릿 확정 교환 · 조각 <b>${g.shard}</b>/${GC.secretCost}</span><button type="button" class="btn ghost" data-gc-sec ${g.shard < GC.secretCost ? 'disabled' : ''}>시크릿 받기</button></div>`}
         <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장, 연속 5일마다 1장 더!</p>
       </div>
     </section>
     <section class="gc-stage" id="gcStage" aria-live="polite">${keep || ''}</section>
+    ${fxBox(g)}
     <section class="gc-col card">
-      <div class="gc-colh"><h3>뽑기 도감 <small>${GACHA.filter(x => g.own[x.v]).length}/${GACHA.length}</small></h3>
+      <div class="gc-colh"><h3>시즌 1 「쉬는 시간」 도감 <small>${GACHA.filter(x => g.own[x.v]).length}/${GACHA.length}</small></h3>
         <div class="segs"><button type="button" data-gc-view="all" class="${view === 'all' ? 'on' : ''}">모두 보기</button><button type="button" data-gc-view="have" class="${view === 'have' ? 'on' : ''}">가진 것만</button></div></div>
-      ${[3, 2, 1].map(r => { const list = GACHA.filter(x => x.rar === r && (view === 'all' || g.own[x.v])); return list.length ? `<h4 class="gc-rh ${RCLS[r]}">${RAR[r].n}<small>${RAR[r].p}%</small></h4><ul class="gc-grid">${list.map(x => {
-        const n = g.own[x.v] || 0;
-        return `<li class="${RCLS[r]}${n ? ' on' : ' lock'}" data-tip="${esc(objName(x.v))}${n ? ` · ${n}번 나옴` : ' · 아직 못 뽑음'}"><span class="gc-ic">${artOf(x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}</li>`;
-      }).join('')}</ul>` : ''; }).join('') || '<p class="gc-none">아직 뽑은 스티커가 없어요. 첫 뽑기를 해 보세요!</p>'}
-      <p class="gc-use">뽑은 스티커는 출석 보상 스티커처럼 <b>프로필 스티커 · 이름 옆 대표 스티커 · 첫 화면 시계 꾸미기 · 댓글·DM 스티커</b>로 쓸 수 있어요. <a href="#me" data-go="me">프로필 꾸미기 →</a></p>
+      ${prog(g)}
+      ${gift ? giftBox() : ''}
+      ${[4, 3, 2, 1].map(r => { const list = GACHA.filter(x => x.rar === r && (view === 'all' || g.own[x.v])); return list.length ? `<h4 class="gc-rh ${RCLS[r]}">${RAR[r].n}<small>${RAR[r].p}% · ${TIER[r]}</small></h4><ul class="gc-grid">${list.map(x => cell(x, g.own[x.v] || 0)).join('')}</ul>` : ''; }).join('') || '<p class="gc-none">아직 뽑은 게 없어요. 첫 뽑기를 해 보세요!</p>'}
+      <p class="gc-use">일반·희귀 스티커는 <b>프로필 스티커 · 이름 옆 대표 스티커 · 첫 화면 시계 꾸미기 · 댓글·DM 스티커</b>로 써요. 2개 이상 가진 스티커는 <b>맞팔 친구에게 선물</b>할 수 있어요. <a href="#me" data-go="me">프로필 꾸미기 →</a></p>
     </section>
     <details class="gc-rule card"><summary>확률 · 규칙</summary>
       <table class="gc-rates"><thead><tr><th>등급</th><th>확률</th><th>종류</th><th>한 종류당</th></tr></thead><tbody>
-      ${[1, 2, 3].map(r => { const k = GACHA.filter(x => x.rar === r).length; return `<tr class="${RCLS[r]}"><td>${RAR[r].n}</td><td>${RAR[r].p}%</td><td>${k}종</td><td>${+(RAR[r].p / k).toFixed(3)}%</td></tr>`; }).join('')}
+      ${[1, 2, 3, 4].map(r => { const k = GACHA.filter(x => x.rar === r).length; return `<tr class="${RCLS[r]}"><td>${RAR[r].n}</td><td>${RAR[r].p}%</td><td>${k}종</td><td>${+(RAR[r].p / k).toFixed(3)}%</td></tr>`; }).join('')}
       </tbody></table>
-      <ul><li>희귀 이상이 ${GC.pityRare - 1}번 연속 안 나오면 <b>${GC.pityRare}번째는 희귀 확정</b>, 전설이 ${GC.pityLeg - 1}번 연속 안 나오면 <b>${GC.pityLeg}번째는 전설 확정</b>이에요.</li>
+      <ul><li>희귀 이상이 ${GC.pityRare - 1}번 연속 안 나오면 <b>${GC.pityRare}번째는 희귀 확정</b>, 전설 이상이 ${GC.pityLeg - 1}번 연속 안 나오면 <b>${GC.pityLeg}번째는 전설 확정</b>이에요.</li>
       <li>5번 뽑기는 희귀 이상이 <b>1개 이상 확정</b>이에요.</li>
-      <li>이미 가진 스티커가 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]}개). 조각 ${GC.shardPerTix}개 = 뽑기권 1장.</li>
+      <li>시크릿은 뽑기(${RAR[4].p}%)로 나오거나, <b>조각 ${GC.secretCost}개로 확정 교환</b>할 수 있어요.</li>
+      <li>이미 가진 게 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]} · 시크릿 ${GC.shard[4]}개). 조각 ${GC.shardPerTix}개 = 뽑기권 1장.</li>
+      <li>시즌 1을 전부 모으면 칭호 <b>‘${GC_TITLE}’</b>과 프로필 사진 <b>홀로그램 테두리</b>를 받아요.</li>
       <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(3·7·14·30일…)에 1장 더 받아요. 최대 ${GC.max}장까지 모여요.</li>
       <li>돈으로 사는 건 없어요. 결과는 서버에서 정해지고, 창을 닫아도 그대로 남아요.</li></ul>
     </details>`;
+}
+const TIER = { 1: '스티커', 2: '움직이는 스티커', 3: '효과', 4: '도감엔 ?로만 보여요' };
+const isSecHidden = (x, n) => x.rar === 4 && !n;
+function cell(x, n) {
+  if (isSecHidden(x, n)) return `<li class="r4 lock sec" data-tip="시크릿 — 뽑기 ${RAR[4].p}% 또는 조각 ${GC.secretCost}개"><span class="gc-ic" aria-hidden="true">?</span><small>???</small></li>`;
+  const tip = `${objName(x.v)}${x.d ? ' — ' + x.d : ''}${n ? ` · ${n}번 나옴` : ' · 아직 못 뽑음'}`;
+  const canGift = !x.fx && n >= 2;
+  return `<li class="${RCLS[x.rar]}${n ? ' on' : ' lock'}" data-tip="${esc(tip)}"><span class="gc-ic">${artOf(x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}${canGift ? `<button type="button" class="gc-gift" data-gc-gift="${x.v}" aria-label="${esc(objName(x.v))} 친구에게 선물">선물</button>` : ''}</li>`;
+}
+// 시리즈 진행: 빈칸을 먼저 보여 주고, 다 모으면 무엇을 받는지 같이 보여 줌(세트 수집 설계)
+function prog(g) {
+  const have = GACHA.filter(x => g.own[x.v]).length, all = GACHA.length;
+  return `<div class="gc-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${all}" aria-valuenow="${have}"><i class="w${Math.round(have / all * 20) * 5}"></i></div>
+    <p>${have >= all ? `<b>시즌 1 완성!</b> 칭호 ‘${esc(GC_TITLE)}’ · 프로필 사진 홀로그램 테두리를 받았어요. <a href="#me" data-go="me">칭호 달기 →</a>` : `<b>${all - have}칸</b> 남았어요 — 다 모으면 칭호 ‘${esc(GC_TITLE)}’ + 프로필 사진 홀로그램 테두리`}</p></div>`;
+}
+// 내 효과(전설·시크릿): 칸마다 가진 효과 중 하나를 켬
+function fxBox(g) {
+  const fx = g.fx || {};
+  return `<section class="gc-fxw card"><h3>내 효과</h3><ul class="gc-fxs">${Object.entries(FX).map(([slot, nm]) => {
+    const mine = GACHA.filter(x => x.fx === slot && g.own[x.v]), on = fx[slot];
+    const show = GACHA.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
+    return `<li class="${on ? 'on' : mine.length ? '' : 'none'}"><span class="gc-ic">${mine.length ? artOf(show.v) : ''}</span><b>${nm}</b><small>${mine.length ? esc(objName(show.v)) + (on ? ' · 켜짐' : ' · 꺼짐') : '전설에서 나와요 — ' + esc(show.d)}</small>
+      ${mine.length ? `<div class="gc-fxb">${mine.map(x => `<button type="button" class="btn ghost${on === x.v ? ' on' : ''}" data-gc-fx="${slot}" data-v="${on === x.v ? '' : x.v}">${on === x.v ? esc(objName(x.v)) + ' 끄기' : esc(objName(x.v)) + ' 켜기'}</button>`).join('')}</div>` : ''}</li>`;
+  }).join('')}</ul></section>`;
+}
+function giftBox() {
+  const fr = gift.list;
+  return `<div class="gc-giftf card"><span class="gc-ic">${artOf(gift.v)}</span><p><b>${esc(objName(gift.v))}</b> 스티커를 누구에게 선물할까요? <small>(서로 팔로우한 친구 · DM으로 가요)</small></p>
+    ${fr == null ? '<p>친구 목록을 불러오는 중…</p>' : fr.length ? `<ul>${fr.map(u => `<li><button type="button" data-gc-to="${esc(u.handle)}">${esc(u.name)} <small>@${esc(u.handle)}</small></button></li>`).join('')}</ul>` : '<p>아직 서로 팔로우한 친구가 없어요.</p>'}
+    <button type="button" class="btn ghost" data-gc-gift-x>취소</button></div>`;
 }
 const tkSvg = () => `<svg viewBox="0 0 40 28"><path d="M5 3H35Q37 3 37 5V10A4 4 0 0 0 37 18V23Q37 25 35 25H5Q3 25 3 23V18A4 4 0 0 0 3 10V5Q3 3 5 3Z" transform="translate(1.4 2)" fill="#173048"/><path d="M5 3H35Q37 3 37 5V10A4 4 0 0 0 37 18V23Q37 25 35 25H5Q3 25 3 23V18A4 4 0 0 0 3 10V5Q3 3 5 3Z" fill="url(#gY)" stroke="#173048" stroke-width="2.2" stroke-linejoin="round"/><path d="M26 5V23" stroke="#173048" stroke-width="1.6" stroke-dasharray="2 2.2"/><path d="M14.5 8.6 16 12.2 19.8 12.4 16.8 14.8 17.8 18.6 14.5 16.4 11.2 18.6 12.2 14.8 9.2 12.4 13 12.2Z" fill="#fff" stroke="#173048" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
 
@@ -126,12 +165,13 @@ async function openCap(i, instant = false) {
   const cap = slot.querySelector('.gc-cap');
   if (!instant && cap) {
     cap.classList.add('shake' + x.rar);
-    await wait(x.rar === 3 ? 1100 : x.rar === 2 ? 700 : 320);
+    await wait(x.rar >= 3 ? 1100 + (x.rar - 3) * 500 : x.rar === 2 ? 700 : 320);
     cap.classList.add('pop');
     await wait(260);
   }
   slot.innerHTML = `<div class="gc-got ${RCLS[x.rar]}${instant ? '' : ' in'}">${x.rar > 1 ? '<i class="gc-rays" aria-hidden="true"></i>' : ''}<span class="gc-ic">${artOf(x.v)}</span>
-    <b class="gc-rt">${RAR[x.rar].n}</b><small>${esc(objName(x.v))}</small>${x.new ? '<em class="gc-new">NEW</em>' : `<em class="gc-dup">조각 +${x.shard}</em>`}</div>`;
+    <b class="gc-rt">${RAR[x.rar].n}</b><small>${esc(objName(x.v))}</small>${x.new ? '<em class="gc-new">NEW</em>' : `<em class="gc-dup">조각 +${x.shard}</em>`}${gcItem(x.v)?.fx && x.new ? '<em class="gc-dup gc-fxk">내 효과에서 켜기</em>' : ''}</div>`;
+  if (x.rar >= 3 && !instant) flash(x.rar);
   if (last.open.size === last.out.length) done();
 }
 function done() {
@@ -149,6 +189,25 @@ async function exchange() {
   try { const r = await api.call('gachaex', {}); api.setGc(r); paint(); toast('조각으로 뽑기권 1장을 받았어요'); }
   catch (e) { toast(e.message); }
 }
+async function secret() {
+  try { const r = await api.call('gcsecret', {}); api.setGc(r); paint(); flash(4); toast(`시크릿 ‘${objName(r.v)}’을 받았어요! 내 효과에서 켜 보세요`); }
+  catch (e) { toast(e.message); }
+}
+async function setFx(slot, v) {
+  try { const r = await api.call('gcfx', { slot, v }); api.setGc(r); paint(); toast(v ? `${objName(v)} 켰어요` : '효과를 껐어요'); }
+  catch (e) { toast(e.message); }
+}
+async function openGift(v) {
+  gift = { v, list: null }; paint();
+  try { const r = await api.call('people?kind=friends'); if (gift?.v === v) { gift.list = r.list || r.people || r.users || []; paint(); } }
+  catch (e) { gift = null; paint(); toast(e.message); }
+}
+async function sendGift(to) {
+  if (!gift) return;
+  const v = gift.v;
+  try { const r = await api.call('gcgift', { to, v }); api.setGc(r); gift = null; paint(); toast(`${objName(v)} 스티커를 선물했어요! DM으로 갔어요`); }
+  catch (e) { toast(e.message); }
+}
 function onClick(e) {
   const t = e.target;
   const b = t.closest('[data-gc]'); if (b && !b.disabled) { draw(+b.dataset.gc); return; }
@@ -156,5 +215,10 @@ function onClick(e) {
   if (t.closest('[data-gc-all]')) { last?.out.forEach((_, i) => openCap(i, true)); return; }
   if (t.closest('[data-gc-close]')) { const s = $('#gcStage'); if (s) { s.innerHTML = ''; s.className = 'gc-stage'; } last = null; return; }
   if (t.closest('[data-gc-ex]')) { exchange(); return; }
+  if (t.closest('[data-gc-sec]')) { secret(); return; }
+  const fb = t.closest('[data-gc-fx]'); if (fb) { setFx(fb.dataset.gcFx, fb.dataset.v); return; }
+  const gb = t.closest('[data-gc-gift]'); if (gb) { openGift(gb.dataset.gcGift); return; }
+  if (t.closest('[data-gc-gift-x]')) { gift = null; paint(); return; }
+  const to = t.closest('[data-gc-to]'); if (to) { sendGift(to.dataset.gcTo); return; }
   const v = t.closest('[data-gc-view]'); if (v) { view = v.dataset.gcView; paint(); }
 }

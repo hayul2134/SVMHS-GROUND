@@ -3057,7 +3057,7 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 @media (max-width:560px){.appgrid{gap:12px 7px}}
 #gcBox{display:grid;gap:18px;max-width:880px;margin:0 auto 48px}
 #gcBox .card{transform:none}
-.r1{--rc:#7cc8ff;--rd:#2a7fc4}.r2{--rc:#a891ff;--rd:#5d47d6}.r3{--rc:#ffd66a;--rd:#c98a10}
+.r1{--rc:#7cc8ff;--rd:#2a7fc4}.r2{--rc:#a891ff;--rd:#5d47d6}.r3{--rc:#ffd66a;--rd:#c98a10}.r4{--rc:#ffc53d;--rd:#a8700a}
 .gc-top{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:24px;align-items:center}
 .gc-mcw{display:grid;place-items:center}
 .gc-mc{width:100%;max-width:220px;height:auto;display:block;overflow:visible}
@@ -3155,7 +3155,90 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .gc-rule ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.65;color:var(--sub);font-weight:600}
 .gc-rule ul b{color:var(--text)}
 .gc-empty{text-align:center;font-weight:800}
-@media (prefers-reduced-motion:reduce){.gc-mc.spin,.gc-mc.spin *,.gc-cap,.gc-got.in,.gc-rays{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.gc-mc.spin,.gc-mc.spin *,.gc-cap,.gc-got.in,.gc-rays,.gc-flash,.gc-fx-prev *{animation:none!important}}
+/* ===== 뽑기 시즌 1 (2026-10-24 개편) ===== */
+/* 시크릿 캡슐·결과: 금빛 */
+.gc-mc .cp.r4 .ct,.gc-cap.r4 .ct{fill:url(#tGd)}
+.gc-cap.shake4{animation:gcWig .4s ease-in-out 4;filter:drop-shadow(0 0 12px #ffd34a) drop-shadow(0 0 24px #ffb000)}
+.gc-stage.top4{background:radial-gradient(circle at 50% 40%,color-mix(in srgb,#ffd34a 55%,var(--card)),var(--card) 72%)}
+.r4 .gc-rays{background:repeating-conic-gradient(from 0deg,#ffd34acc 0 9deg,#fff3b0aa 9deg 16deg,transparent 16deg 26deg)}
+.r4 .gc-rt{background:linear-gradient(90deg,#fff3b0,#ffc53d,#fff3b0);box-shadow:0 0 12px #ffc53d}
+.gc-rh.r4::before{background:linear-gradient(135deg,#fff3b0,#ffc53d)}
+.gc-grid li.r4.on{background:linear-gradient(135deg,color-mix(in srgb,#fff3b0 50%,var(--card)),color-mix(in srgb,#ffc53d 35%,var(--card)))}
+.gc-grid li.sec .gc-ic{display:grid;place-items:center;font:400 34px/1 var(--disp);color:var(--sub);border:2px dashed var(--line);border-radius:14px}
+.gc-got em.gc-fxk{background:var(--ink);color:#fff}
+/* 전설·시크릿이 열릴 때 화면 전체가 번쩍 */
+.gc-flash{position:fixed;inset:0;z-index:300;pointer-events:none;background:radial-gradient(circle at 50% 45%,#fff 0,#fff8 25%,transparent 70%);animation:gcFlash .9s ease-out forwards}
+.gc-flash.r4{background:radial-gradient(circle at 50% 45%,#fff6c8 0,#ffd34a99 30%,transparent 72%)}
+@keyframes gcFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+/* 시리즈 진행·내 효과·선물·시크릿 교환 */
+.gc-prog{display:grid;gap:6px;margin:4px 0 10px}
+.gc-prog .bar{height:12px;border-radius:99px;border:2px solid var(--ink);background:var(--chip);overflow:hidden}
+.gc-prog .bar i{display:block;height:100%;background:linear-gradient(90deg,#94d8ff,#b39cff,#ffb3e6,#ffe98a)}.gc-prog .bar i.w0{width:0%}.gc-prog .bar i.w5{width:5%}.gc-prog .bar i.w10{width:10%}.gc-prog .bar i.w15{width:15%}.gc-prog .bar i.w20{width:20%}.gc-prog .bar i.w25{width:25%}.gc-prog .bar i.w30{width:30%}.gc-prog .bar i.w35{width:35%}.gc-prog .bar i.w40{width:40%}.gc-prog .bar i.w45{width:45%}.gc-prog .bar i.w50{width:50%}.gc-prog .bar i.w55{width:55%}.gc-prog .bar i.w60{width:60%}.gc-prog .bar i.w65{width:65%}.gc-prog .bar i.w70{width:70%}.gc-prog .bar i.w75{width:75%}.gc-prog .bar i.w80{width:80%}.gc-prog .bar i.w85{width:85%}.gc-prog .bar i.w90{width:90%}.gc-prog .bar i.w95{width:95%}.gc-prog .bar i.w100{width:100%}
+.gc-prog p{margin:0;font-size:13px;font-weight:800;color:var(--sub)}.gc-prog p b{color:var(--text)}
+.gc-fxw h3,.gc-col h3.gc-sub{margin:0 0 8px;font:400 20px/1.2 var(--disp)}
+.gc-fxs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.gc-fxs li{display:grid;grid-template-columns:52px 1fr;gap:4px 10px;align-items:center;padding:10px;border:2px solid var(--ink);border-radius:16px;background:var(--card)}
+.gc-fxs li.on{background:color-mix(in srgb,#ffd66a 22%,var(--card))}
+.gc-fxs .gc-ic{grid-row:span 2;width:52px;height:52px}.gc-fxs .gc-ic .art{width:100%;height:100%}
+.gc-fxs b{font-size:14px}.gc-fxs small{font-size:12px;color:var(--sub);font-weight:700}
+.gc-fxs .gc-fxb{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px}
+.gc-fxs .gc-fxb button{padding:6px 10px;font-size:12.5px}
+.gc-fxs .gc-fxb button.on{background:var(--ink);color:#fff}
+.gc-fxs li.none{opacity:.6}
+.gc-sec{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 8px 8px 12px;border:2px dashed var(--ink);border-radius:14px;font-weight:900;font-size:13.5px}
+.gc-sec .btn{padding:7px 12px;font-size:13px}.gc-sec .btn:disabled{opacity:.45;box-shadow:none}
+.gc-grid .gc-gift{position:absolute;left:6px;top:5px;padding:1px 6px;border-radius:99px;border:2px solid var(--ink);background:var(--lime);font:800 10.5px/1.3 var(--num);cursor:pointer;color:var(--ink)}
+.gc-giftf{display:grid;gap:10px}.gc-giftf .gc-ic{width:72px;height:72px;margin:0 auto}
+.gc-giftf ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:44vh;overflow:auto}
+.gc-giftf li button{width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid var(--ink);border-radius:12px;background:var(--card);font-weight:800;text-align:left;cursor:pointer;color:var(--text)}
+/* 희귀: 움직이는 스티커 (스프라이트 <use> 복제본엔 조상 선택자가 안 닿아서 클래스 하나로만 고름) */
+.an-plane,.an-ball,.an-memo,.an-heart,.an-shadow{transform-box:fill-box;transform-origin:center}
+.an-plane{animation:anPlane 2.6s ease-in-out infinite}
+.an-trail{animation:anTrail 1.2s linear infinite}
+.an-ring{stroke-dasharray:100;animation:anRing 3.2s ease-in-out infinite}
+.an-ball{transform-origin:50% 100%;animation:anBall .9s cubic-bezier(.5,0,.5,1) infinite}
+.an-shadow{animation:anShadow .9s cubic-bezier(.5,0,.5,1) infinite}
+.an-memo{transform-origin:50% 100%;animation:anMemo 2.4s ease-in-out infinite}
+.an-heart{animation:anHeart 2.4s ease-out infinite}
+@keyframes anPlane{0%,100%{transform:translate(0,0) rotate(0)}30%{transform:translate(2px,-3px) rotate(-5deg)}60%{transform:translate(-1px,1px) rotate(3deg)}}
+@keyframes anTrail{to{stroke-dashoffset:-11.2}}
+@keyframes anRing{0%{stroke-dashoffset:100}45%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes anBall{0%,100%{transform:translateY(-7px)}45%{transform:translateY(0) scale(1,1)}52%{transform:translateY(0) scale(1.1,.88)}60%{transform:translateY(-1px) scale(1)}}
+@keyframes anShadow{0%,100%{transform:scale(.6);opacity:.12}50%{transform:scale(1.05);opacity:.26}}
+@keyframes anMemo{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}35%{transform:rotate(4deg)}50%{transform:rotate(0)}}
+@keyframes anHeart{0%,30%{transform:translateY(8px) scale(.3);opacity:0}45%{transform:translateY(0) scale(1.15);opacity:1}75%{transform:translateY(-3px) scale(1);opacity:1}100%{transform:translateY(-8px) scale(.9);opacity:0}}
+html.away .an-plane,html.away .an-trail,html.away .an-ring,html.away .an-ball,html.away .an-shadow,html.away .an-memo,html.away .an-heart{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.an-plane,.an-trail,.an-ring,.an-ball,.an-shadow,.an-memo,.an-heart{animation:none!important}.an-ring{stroke-dashoffset:0}}
+/* 전설 ① 닉네임 효과: 이름 옆 숨은 표시(.nfx)가 있으면 그 부모 글자에 효과 (repTag가 붙임) */
+:is(h2,p,b,span,a,strong,div):has(> .nfx-holo){background:linear-gradient(90deg,#ff7ad9,#5ab8ff,#9b7bff,#ffc93c,#ff7ad9);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;animation:nfxHolo 3s linear infinite;filter:drop-shadow(0 0 .5px var(--ink))}
+:is(h2,p,b,span,a,strong,div):has(> .nfx-gold){background:linear-gradient(100deg,#b8780a 20%,#ffd34a 40%,#fff6c8 50%,#ffd34a 60%,#b8780a 80%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;animation:nfxGold 2.6s linear infinite;filter:drop-shadow(0 0 .6px #6b4500)}
+@keyframes nfxHolo{to{background-position:200% 0}}
+@keyframes nfxGold{from{background-position:150% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion:reduce){:is(h2,p,b,span,a,strong,div):has(> .nfx-holo),:is(h2,p,b,span,a,strong,div):has(> .nfx-gold){animation:none}}
+/* 전설 ② 프로필 등장 효과: 프로필 카드를 열면 별똥별이 한 번 쏟아짐 */
+.pcard{position:relative}
+.pfx-star{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;border-radius:inherit}
+.pfx-star i{position:absolute;top:-30px;width:var(--s,18px);height:var(--s,18px);opacity:0;animation:pfxFall 1.9s cubic-bezier(.3,.6,.5,1) var(--d,0s) forwards}
+.pfx-star i::before{content:"";position:absolute;inset:0;background:#ffd34a;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 0 4px #fff6c8)}
+.pfx-star i::after{content:"";position:absolute;right:60%;bottom:60%;width:46px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,#fff6c8);transform-origin:right center;transform:rotate(-35deg)}
+.pfx-star i:nth-child(1){left:8%;--s:12px;--d:0.00s}.pfx-star i:nth-child(2){left:45%;--s:19px;--d:0.11s}.pfx-star i:nth-child(3){left:82%;--s:12px;--d:0.22s}.pfx-star i:nth-child(4){left:27%;--s:19px;--d:0.33s}.pfx-star i:nth-child(5){left:64%;--s:12px;--d:0.44s}.pfx-star i:nth-child(6){left:9%;--s:19px;--d:0.55s}.pfx-star i:nth-child(7){left:46%;--s:12px;--d:0.66s}.pfx-star i:nth-child(8){left:83%;--s:19px;--d:0.77s}.pfx-star i:nth-child(9){left:28%;--s:12px;--d:0.88s}.pfx-star i:nth-child(10){left:65%;--s:19px;--d:0.99s}.pfx-star i:nth-child(11){left:10%;--s:12px;--d:1.10s}.pfx-star i:nth-child(12){left:47%;--s:19px;--d:1.21s}.pfx-star i:nth-child(13){left:84%;--s:12px;--d:1.32s}.pfx-star i:nth-child(14){left:29%;--s:19px;--d:1.43s}
+@keyframes pfxFall{0%{opacity:0;transform:translate(0,0) rotate(0)}10%{opacity:1}100%{opacity:0;transform:translate(-90px,260px) rotate(-200deg)}}
+@media (prefers-reduced-motion:reduce){.pfx-star{display:none}}
+/* 시리즈 완성: 프로필 사진 홀로 테두리 */
+.pcard.gcm .phead .av{box-shadow:0 0 0 3px var(--card),0 0 0 6px transparent;background-clip:padding-box;outline:4px solid transparent;position:relative}
+.pcard.gcm .phead .av::after{content:"";position:absolute;inset:-7px;border-radius:inherit;padding:4px;background:conic-gradient(#ff7ad9,#5ab8ff,#9b7bff,#ffc93c,#ff7ad9);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+/* 전설 ③ 시계 테마: 네온 */
+html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{color:#fff;-webkit-text-stroke:2px #ff4fd8;text-shadow:0 0 6px #ff7ae2,0 0 18px #ff4fd8,0 0 42px #ff4fd8,6px 6px 0 color-mix(in srgb,#6fe3ff 55%,transparent);animation:ckNeon 4s ease-in-out infinite}
+html[data-ckfx=neon] .stage.rest .s-big{-webkit-text-stroke-color:#3fe8a4;text-shadow:0 0 6px #7fffc9,0 0 18px #3fe8a4,0 0 42px #3fe8a4,6px 6px 0 color-mix(in srgb,#6fe3ff 55%,transparent)}
+html[data-ckfx=neon] .s-big .sec{-webkit-text-stroke:0;text-shadow:0 0 8px #6fe3ff;color:#bff6ff}
+@keyframes ckNeon{0%,100%{opacity:1}91%{opacity:1}92%{opacity:.55}93%{opacity:1}95%{opacity:.7}96%{opacity:1}}
+@media (prefers-reduced-motion:reduce){html[data-ckfx=neon] .s-big{animation:none}}
+/* 전설 ④ 마스코트 소품: 머리 위에 떠 있는 왕관 */
+.mascot .mfx{transform-box:fill-box;transform-origin:center;animation:mfxFloat 2.8s ease-in-out infinite}
+@keyframes mfxFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-3px) rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){.mascot .mfx{animation:none}}
+
 .att-note.gck{background:color-mix(in srgb,var(--violet) 28%,var(--card))}
 .att-note.gck a{margin-left:4px;padding:3px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:13px;text-decoration:none;white-space:nowrap}
 /* 프로필 꾸미기 묶음 카드(2026-10-24): 제목 + 어디에 쓰이는지 한 줄을 목록 위에 — 구분선(출석 보상·뽑기)과 섞여 '이게 어디 쓰는 스티커인지' 안 보이던 문제 */

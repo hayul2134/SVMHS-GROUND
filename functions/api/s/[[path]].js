@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, FX, objName } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
@@ -132,9 +132,9 @@ async function devSession(req, db) {   // 보관된 개발자 세션이 아직 �
 }
 
 /* ===== 사용자 ===== */
-const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title, st_rep, st_deco';
+const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title, st_rep, st_deco, gc_fx, gc_own';
 const pub = u => u && ({
-  handle: u.handle, name: u.name, title: u.st_title || '', rep: u.st_rep || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
+  ...fxPub(u), gcm: isAdm(u) || gcDone(gcOwn(u)), handle: u.handle, name: u.name, title: u.st_title || '', rep: u.st_rep || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
   stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
 });
 // 개발자(관리자) 계정은 제한을 모두 풂(2026-10-23 하율 지시): 출석 보상 전부 해금 · 시계 칸·방패 최대 · 내 행동 횟수 제한 없음 ·
@@ -147,19 +147,24 @@ const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 뽑기: 가진 스티커 {값: 나온 횟수}. 개발자는 전부 가진 것으로
 const gcOwn = u => { try { const o = JSON.parse(u?.gc_own || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
-const gcStk = u => isAdm(u) ? GACHA_ALL.map(g => g.v) : gcHave(gcOwn(u));
+const gcStk = u => isAdm(u) ? GACHA_ALL.filter(g => !g.fx).map(g => g.v) : gcHave(gcOwn(u));
+// 켜 둔 뽑기 효과 {name, prof, clock, masc} — 가진 것만 인정(개발자는 전부)
+const gcFx = u => { let o; try { o = JSON.parse(u?.gc_fx || '{}'); } catch { o = {}; } const own = gcOwn(u), out = {};
+  for (const k of Object.keys(FX)) if (o && fxOk(k, o[k]) && (isAdm(u) || own[o[k]] > 0)) out[k] = o[k]; return out; };
+// 남에게 보이는 효과만(닉네임·프로필 등장) — 랭킹·댓글·DM·프로필로 나감
+const fxPub = u => { const f = gcFx(u); return { nfx: f.name || '', pfx: f.prof || '' }; };
 // 쓸 수 있는 보상 스티커 = 출석 보상 스티커 + 뽑기 스티커
 const rwStk = u => [...unlockedOf(effBest(u), effTotal(u), 'sticker'), ...gcStk(u)];
-const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.map(g => [g.v, 1])) : gcOwn(u) });
+const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.map(g => [g.v, 1])) : gcOwn(u), fx: gcFx(u) });
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
 const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !rwStk(me).includes(rwNorm(m[1])) ? '아직 받지 못한 스티커예요' : null; };
-const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
+const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', nfx: fxPub(u).nfx, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.st_deco, u.gc_tix, u.gc_own, u.gc_pity, u.gc_leg, u.gc_shard, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.st_deco, u.gc_tix, u.gc_own, u.gc_pity, u.gc_leg, u.gc_shard, u.gc_fx, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -233,13 +238,13 @@ async function balState(env, db, me) {
   const mine = mineRow.results[0]?.pick || '';
   let comments = null;
   if (mine || !open || isAdm(me)) {
-    comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color, u.st_rep,
+    comments = (await db.prepare(`SELECT c.id, c.uid, c.body, c.at, COALESCE(v.pick, c.pick) AS pick, u.handle, u.name, u.avatar, u.color, u.st_rep, u.gc_fx, u.gc_own,
       (SELECT COUNT(*) FROM balance_comment_likes l WHERE l.cid = c.id) AS likes, EXISTS (SELECT 1 FROM balance_comment_likes l WHERE l.cid = c.id AND l.uid = ?2) AS liked
       FROM balance_comments c JOIN users u ON u.id = c.uid LEFT JOIN balance_votes v ON v.ymd = c.ymd AND v.voter = 'u' || c.uid
       WHERE c.ymd = ?1 AND NOT EXISTS (SELECT 1 FROM blocks k WHERE (k.a = ?2 AND k.b = c.uid) OR (k.a = c.uid AND k.b = ?2))
       AND NOT EXISTS (SELECT 1 FROM bans x WHERE x.uid = c.uid AND (x.until = 0 OR x.until > ?3))
       ORDER BY (u.handle = ?4) DESC, c.id DESC LIMIT 100`).bind(ymd, me.id, now, ADMIN_HANDLE).all()).results
-      .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, rep: r.st_rep || '', avatar: r.avatar, color: r.color, likes: r.likes, liked: !!r.liked }));
+      .map(r => ({ id: r.id, body: r.body, at: r.at, pick: r.pick, me: r.uid === me.id, dev: r.handle === ADMIN_HANDLE, handle: r.handle, name: r.name, rep: r.st_rep || '', nfx: fxPub(r).nfx, avatar: r.avatar, color: r.color, likes: r.likes, liked: !!r.liked }));
   }
   return { enabled: true, ymd, q, a, b, last, opens, closes, next: nextOpen(ymd), now, open, counts, mine, dev: isAdm(me), ncom: ncom.results[0].n, comments };
 }
@@ -329,7 +334,7 @@ const ROUTES = {
     if (isBad(name, body.bio, body.mood, body.club, isAdm(me) ? body.title : '')) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
-    const ub = k => k === 'sticker' ? rwStk(me) : unlockedOf(effBest(me), effTotal(me), k);   // 스티커는 뽑기 스티커도
+    const ub = k => k === 'sticker' ? rwStk(me) : [...unlockedOf(effBest(me), effTotal(me), k), ...(k === 'title' && gcDone(gcOwn(me)) ? [GC_TITLE] : [])];   // 스티커는 뽑기 스티커도
     // 예전 보상 이름(r:lion 등)은 새 이름으로 바꿔서 검사 (2026-10-24 그림 교체)
     body.avatar = rwNorm(body.avatar);
     if (Array.isArray(body.stickers)) body.stickers = body.stickers.map(rwNorm);
@@ -813,7 +818,7 @@ const ROUTES = {
   'GET rank': needMe(async ({ db, me, url }) => {
     const game = url.searchParams.get('game'), scope = url.searchParams.get('scope') || 'all';
     if (!GAMES[game]) return err('bad game');
-    const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.st_rep';
+    const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.st_rep, u.gc_fx, u.gc_own';
     const BEST = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid`;
     if (scope === 'class') {   // 반 대항전: 반마다 최고 기록 상위 3명 평균
       const rows = (await db.prepare(`SELECT t.best, u.grade, u.cls FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE u.grade > 0 AND u.cls > 0 ORDER BY t.best`).bind(game).all()).results;
@@ -856,10 +861,11 @@ const ROUTES = {
     const out = [];
     for (let i = 0; i < n; i++) {
       const x = rnd() * 100;
-      let rar = leg + 1 >= GC.pityLeg || x < RAR[3].p ? 3 : pity + 1 >= GC.pityRare || x < RAR[3].p + RAR[2].p ? 2 : 1;
+      // 시크릿 0.5 · 전설 5.5 · 희귀 22 · 일반 72 (천장은 전설·희귀까지 — 시크릿은 조각 교환으로 확정 가능)
+      let rar = x < RAR[4].p ? 4 : leg + 1 >= GC.pityLeg || x < RAR[4].p + RAR[3].p ? 3 : pity + 1 >= GC.pityRare || x < RAR[4].p + RAR[3].p + RAR[2].p ? 2 : 1;
       if (n === 5 && i === 4 && !gotRare && rar === 1) rar = 2;   // 5연뽑: 희귀 이상 1개 확정
       if (rar >= 2) gotRare = true;
-      pity = rar >= 2 ? 0 : pity + 1; leg = rar === 3 ? 0 : leg + 1;
+      pity = rar >= 2 ? 0 : pity + 1; leg = rar >= 3 ? 0 : leg + 1;
       const pool = GACHA.filter(g => g.rar === rar), g = pool[Math.floor(rnd() * pool.length)];
       const isNew = !own[g.v];
       own[g.v] = (own[g.v] || 0) + 1;
@@ -880,6 +886,54 @@ const ROUTES = {
     if (!r) return err('다시 한 번 눌러 주세요', 409);
     return json(gcPub({ ...me, gc_tix: r.gc_tix, gc_shard: r.gc_shard }));
   }),
+  // 조각 GC.secretCost개 → 시크릿 확정 (아직 없을 때만)
+  'POST gcsecret': needMe(async ({ db, me }) => {
+    const sec = GACHA.find(g => g.rar === 4), own = gcOwn(me);
+    if (own[sec.v]) return err('이미 시크릿을 가지고 있어요');
+    if ((me.gc_shard || 0) < GC.secretCost) return err(`조각이 ${GC.secretCost}개 있어야 바꿀 수 있어요`);
+    own[sec.v] = 1;
+    const r = await db.prepare('UPDATE users SET gc_shard = gc_shard - ?1, gc_own = ?2 WHERE id = ?3 AND gc_own = ?4 AND gc_shard >= ?1 RETURNING gc_shard')
+      .bind(GC.secretCost, JSON.stringify(own), me.id, me.gc_own || '{}').first();
+    if (!r) return err('다시 한 번 눌러 주세요', 409);
+    return json({ v: sec.v, ...gcPub({ ...me, gc_shard: r.gc_shard, gc_own: JSON.stringify(own) }) });
+  }),
+  // 효과 켜기·끄기: body { slot: name|prof|clock|masc, v: 'r:…' 또는 '' }
+  'POST gcfx': needMe(async ({ db, me, body }) => {
+    const slot = String(body.slot || ''), v = String(body.v || '');
+    if (!FX[slot]) return err('bad slot');
+    if (v && (!fxOk(slot, v) || (!isAdm(me) && !(gcOwn(me)[v] > 0)))) return err('아직 없는 효과예요');
+    const fx = gcFx(me); if (v) fx[slot] = v; else delete fx[slot];
+    await db.prepare('UPDATE users SET gc_fx = ?1 WHERE id = ?2').bind(JSON.stringify(fx), me.id).run();
+    return json(gcPub({ ...me, gc_fx: JSON.stringify(fx) }));
+  }),
+  // 중복 스티커 선물: body { to: 아이디, v } — 일반·희귀 스티커만, 2개 이상 가진 것만(하나는 남김), 맞팔 친구에게만. 받는 사람 DM에 스티커가 감
+  'POST gcgift': needMe(async ({ db, me, body }) => {
+    const v = String(body.v || ''), it = gcItem(v);
+    if (!it || it.fx) return err('선물할 수 없는 스티커예요');
+    const own = gcOwn(me);
+    if (!isAdm(me) && !((own[v] || 0) >= 2)) return err('2개 이상 가진 스티커만 선물할 수 있어요');
+    const u = await byHandle(db, body.to);
+    if (!u || u.id === me.id) return err('없는 사용자예요', 404);
+    const r = await rel(db, me.id, u.id);
+    if (r.blocked || r.blockedMe || !(r.following && r.followsMe)) return err('서로 팔로우한 친구에게만 선물할 수 있어요', 403);
+    if (!isAdm(me) && await limited(db, 'gift:' + me.id, 20, 3600)) return err('선물은 1시간에 20번까지예요', 429);
+    if (!isAdm(me)) {
+      own[v] -= 1;
+      const ok = await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2 AND gc_own = ?3 RETURNING id').bind(JSON.stringify(own), me.id, me.gc_own || '{}').first();
+      if (!ok) return err('다시 한 번 눌러 주세요', 409);
+    }
+    for (let t = 0; t < 3; t++) {   // 받는 사람 쪽도 이전 값 조건으로(동시에 뽑아도 안 날아가게)
+      const cur = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(u.id).first();
+      const o = gcOwn(cur); o[v] = (o[v] || 0) + 1;
+      if (await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2 AND gc_own = ?3 RETURNING id').bind(JSON.stringify(o), u.id, cur.gc_own || '{}').first()) break;
+    }
+    const now = Date.now(), pair = pairOf(me.id, u.id);
+    await db.batch([
+      db.prepare('INSERT INTO messages (pair, a, b, body, at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(pair, me.id, u.id, `선물: ${objName(v)} 스티커를 보냈어요!`, now),
+      db.prepare('INSERT INTO messages (pair, a, b, body, at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(pair, me.id, u.id, '::' + v, now + 1),
+    ]);
+    return json(gcPub({ ...me, gc_own: JSON.stringify(own) }));
+  }),
   'POST att': needMe(async ({ env, db, me }) => attState(env, db, me, true)),
   'GET att': needMe(async ({ env, db, me, url }) => {
     const m = url.searchParams.get('m') || kstToday().slice(0, 6);
@@ -892,7 +946,7 @@ const ROUTES = {
   // 연속 출석 랭킹: 친구(맞팔 + 나) · 전체 (지금 살아 있는 기록 기준, 같으면 최고 기록 순)
   'GET attrank': needMe(async ({ env, db, me, url }) => {
     const scope = url.searchParams.get('scope') === 'all' ? 'all' : 'friends';
-    const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_best, u.st_last, u.st_shield, u.st_pf, u.st_title, u.st_rep';
+    const U = 'u.id, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.mood, u.st_cur, u.st_best, u.st_last, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.gc_fx, u.gc_own';
     const since = (() => { const d = new Date(Date.now() + 9 * 3600e3 - 120 * 86400e3); return d.toISOString().slice(0, 10).replace(/-/g, ''); })();
     const rows = (scope === 'friends'
       ? await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND u.handle <> '${ADMIN_HANDLE}' AND (u.id = ?1 OR u.id IN (SELECT f.b FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1)) ORDER BY u.st_cur DESC LIMIT ?2`).bind(me.id, 200, since).all()

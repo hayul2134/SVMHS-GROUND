@@ -2,7 +2,7 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, GC_TITLE, gcDone } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 
@@ -51,6 +51,8 @@ const fail = e => toast(e.message || '문제가 생겼어요');
 // 개발자 계정은 이모지 대신 사이트 로고 + 무지개 링 아바타 (어디서나 같게)
 const av = (u, cls = '') => u?.handle === ADMIN_HANDLE ? `<span class="av avdev ${cls}"><img src="/logo-mark.svg?v=4" alt="">${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>` : `<span class="av c-${esc(ALL_COLORS.includes(u.color) ? u.color : 'sky')} ${cls}">${emo(u.avatar || 'k:cat', 'ava')}${u.online ? '<i class="dot" data-tip="접속 중"></i>' : ''}</span>`;
 const isDev = u => u?.handle === ADMIN_HANDLE;
+// 뽑기 전설 '별똥별 등장': 프로필을 열 때 한 번 쏟아지는 별(위치·크기·시간을 조금씩 다르게)
+const pfxStars = () => `<div class="pfx-star" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`;   // 위치·크기·시간은 style.css nth-child (CSP: style 속성 금지)
 const devTag = u => (isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '') + repTag(u);   // 이름 옆 작은 배지 + 대표 스티커
 // 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
 const nameOf = u => isDev(u) ? '개발자' : u.name;
@@ -83,12 +85,20 @@ function paintBadges() {
   ['#btnClass', '#btnShare', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·QR·신고 필요 없음
   $('#btnMe .mi').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
 }
+// 내가 켠 뽑기 효과 중 내 화면에만 보이는 것: 시계 테마(html[data-ckfx]) · 마스코트 소품(html[data-mfx] → app.js가 캐릭터에 붙임)
+function applyFx() {
+  const fx = S.me?.gc?.fx || {}, h = document.documentElement;
+  const ck = fx.clock === 'r:fxneon' ? 'neon' : '', mf = fx.masc === 'r:fxcrown' ? 'crown' : '';
+  if (ck) h.dataset.ckfx = ck; else delete h.dataset.ckfx;
+  if ((h.dataset.mfx || '') !== mf) { if (mf) h.dataset.mfx = mf; else delete h.dataset.mfx; document.dispatchEvent(new Event('sg:mfx')); }
+}
 async function refreshMe() {
   try {
     const r = await call('me');
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
+  applyFx();
   if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
   if (!panelOpen()) loadRecent();
 }
@@ -257,7 +267,7 @@ function profileHtml(d) {
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
-  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">
+  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${u.gcm ? ' gcm' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">${u.pfx === 'r:fxstar' ? pfxStars() : ''}
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
       <div class="phead">
@@ -525,7 +535,7 @@ function openEdit() {
 const attHave = r => r.by === 'gacha' ? !!S.me?.gc?.own?.[r.v] : rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
 // 스티커 = 출석 보상 스티커 + 뽑기 스티커(by 'gacha')
 // 뽑기에서 빠진 스티커(GACHA_OLD)는 이미 가진 사람에게만 보임 — 더는 못 얻는 걸 잠금으로 보여 주지 않음(개발자도 '전부 보유'는 현재 뽑기 목록 기준)
-const GC_ITEMS = [...GACHA, ...GACHA_OLD].map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
+const GC_ITEMS = [...GACHA, ...GACHA_OLD].filter(g => !g.fx).map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
 const gcList = () => GC_ITEMS.filter(g => !GACHA_OLD.some(o => o.v === g.v) || S.me?.gc?.own?.[g.v]);
 const rwList = kind => kind === 'sticker' ? [...ATT.lockedOf('sticker'), ...gcList()] : ATT.lockedOf(kind);
 const lockMsg = b => b.dataset.by === 'gacha' ? '뽑기에서 나오는 스티커예요 — 서비스 › 뽑기에서 뽑아 보세요' : `${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`;
@@ -578,8 +588,8 @@ function stkTray(btn, onPick) {
   t.onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; t.remove(); off(); onPick(b.dataset.v); };
 }
 function titleOpts(cur) {
-  const have = ATT.lockedOf('title').filter(attHave);
-  return `<option value="">없음</option>${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}`;
+  const have = ATT.lockedOf('title').filter(attHave), gcT = gcDone(S.me?.gc?.own);   // 뽑기 시리즈 완성 칭호
+  return `<option value="">없음</option>${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}`;
 }
 
 /* ===== 계정 설정 ===== */
@@ -1078,7 +1088,7 @@ export async function init(c) {
   ctx = c; c.stkTray = stkTray;   // app.js 밸런스 댓글에서도 씀
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
   c.RENDER.gacha = () => GCH.render();
-  GCH.init({ call, refreshMe, me: () => S.me, setGc: g => { if (S.me) S.me.gc = { ...S.me.gc, tix: g.tix, shard: g.shard, pity: g.pity, leg: g.leg, own: g.own }; } });
+  GCH.init({ call, refreshMe, me: () => S.me, setGc: g => { if (S.me) { S.me.gc = { ...S.me.gc, tix: g.tix, shard: g.shard, pity: g.pity, leg: g.leg, own: g.own, fx: g.fx || S.me.gc?.fx || {} }; applyFx(); } } });
   c.report = openReport;
   c.authForm = authHtml;   // 소개 화면의 로그인/가입 폼
   c.onLeave = v => {

@@ -1635,10 +1635,14 @@ function applySkin(k) {
 // 마스코트 그림은 js/mascots.js(tools/skins/gen.py가 생성)를 캐릭터 테마일 때만 불러옴. hi=true면 고른 순간 깡충 인사 한 번.
 const CHAR_SET = new Set(SKINS.char.map(c => c[0]));
 let mascotMod = null;
+// 머리 위에 떠 있는 왕관(마스코트 100×100 좌표, 머리 모양이 캐릭터마다 달라서 살짝 띄움)
+const CROWN = `<g class="mfx"><path d="M37.4 7.6 43.6 12.6 50 2.4 56.4 12.6 62.6 7.6 60.4 20.4H39.6Z" transform="translate(1.2 2)" fill="#173048"/><path d="M37.4 7.6 43.6 12.6 50 2.4 56.4 12.6 62.6 7.6 60.4 20.4H39.6Z" fill="#ffc83d" stroke="#173048" stroke-width="2" stroke-linejoin="round"/><path d="M39.9 17.2H60.1" stroke="#d98a10" stroke-width="1.4"/><circle cx="50" cy="14.6" r="2.2" fill="#f0646d" stroke="#173048" stroke-width="1.1"/><circle cx="37.4" cy="7.6" r="1.8" fill="#fff3b0" stroke="#173048" stroke-width="1.1"/><circle cx="50" cy="2.4" r="1.9" fill="#fff3b0" stroke="#173048" stroke-width="1.1"/><circle cx="62.6" cy="7.6" r="1.8" fill="#fff3b0" stroke="#173048" stroke-width="1.1"/><path d="M42 16V12.8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g>`;
+document.addEventListener('sg:mfx', () => syncMascot());
 async function syncMascot(hi) {
   const k = document.documentElement.dataset.skin || '', art = lsGet(MYART);
   let el = document.getElementById('mascot');
-  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) : CHAR_SET.has(k) ? k : '';
+  const mfx = document.documentElement.dataset.mfx || '';   // 뽑기 전설 '떠 있는 왕관'(social.js applyFx)
+  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) : CHAR_SET.has(k) ? k + (mfx ? ':' + mfx : '') : '';
   if (!key) { if (el) el.remove(); return; }
   if (!art) {
     try { mascotMod = mascotMod || await import('./mascots.js'); } catch { return; }
@@ -1648,7 +1652,7 @@ async function syncMascot(hi) {
   if (el.dataset.key !== key) {
     el.dataset.key = key; el.dataset.k = art ? '' : k;
     if (art) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.src = art; el.replaceChildren(im); }
-    else el.innerHTML = mascotMod.MASCOT[k] || '';
+    else { el.innerHTML = mascotMod.MASCOT[k] || ''; if (mfx === 'crown') el.querySelector('.mb')?.insertAdjacentHTML('beforeend', CROWN); }
   }
   if (hi && !art) { el.classList.remove('m-hello'); void el.offsetWidth; el.classList.add('m-hello'); }  // .hi는 메뉴 항목 클래스라 쓰면 안 됨
 }
