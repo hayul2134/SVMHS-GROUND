@@ -559,10 +559,11 @@ export function createRunner(canvas, char, opt = {}) {
   /* --- 판 --- */
   const JUMP_V = 270, G_HOLD = 820, G_FALL = 1500, G_FAST = 3200, HOLD_MAX = .2;
   function jump() {
-    if (st.scene === 'ready') { st.scene = 'play'; opt.onStart?.(); }
+    const first = st.scene === 'ready';   // 게임 시작 점프는 소리 없이 (2026-10-25 하율 요청: 시작할 때 '퉁' 소리 없애기)
+    if (first) { st.scene = 'play'; opt.onStart?.(); }
     if (st.scene !== 'play' || !st.onGround) return false;
     st.vy = -JUMP_V; st.onGround = false; st.jumpHeld = 0; st.ducking = false;
-    beep(520, 880, .09); return true;
+    if (!first) beep(520, 880, .09); return true;
   }
   /* 간격 설계 (2026-10-25): 일정한 간격 대신 '리듬' — 보통 · 짧게 · 숨 돌리기 · 연타(2~3개 바짝) 를 섞어 긴장감을 준다.
      못 피하는 배치는 만들지 않는다: 모든 간격은 FAIR 이상.
