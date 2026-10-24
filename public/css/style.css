@@ -3001,3 +3001,110 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 :root[data-theme="dark"] .cdt.vac{background:color-mix(in srgb,var(--lime) 16%,var(--card))}
 :root[data-theme="dark"] .cdt.adult{background:color-mix(in srgb,var(--yellow) 14%,var(--card))}
 :root[data-theme="dark"] .cdic{stroke:#0b1a2a}
+
+/* ===== 뽑기 (gacha.js) — 캡슐 색 = 등급 힌트: 일반 하늘 · 희귀 보라 · 전설 금빛 홀로 ===== */
+.appgrid{grid-template-columns:repeat(5,1fr);max-width:780px}
+@media (max-width:560px){.appgrid{gap:12px 7px}}
+#gcBox{display:grid;gap:18px;max-width:880px;margin:0 auto 48px}
+#gcBox .card{transform:none}
+.r1{--rc:#7cc8ff;--rd:#2a7fc4}.r2{--rc:#a891ff;--rd:#5d47d6}.r3{--rc:#ffd66a;--rd:#c98a10}
+.gc-top{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:24px;align-items:center}
+.gc-mcw{display:grid;place-items:center}
+.gc-mc{width:100%;max-width:220px;height:auto;display:block;overflow:visible}
+.gc-mc .cp .ct,.gc-cap .ct{fill:var(--rc)}
+.gc-mc .cp.r3 .ct,.gc-cap.r3 .ct{fill:url(#gH)}
+.gc-mc .gc-out{opacity:0}
+.gc-side{display:grid;gap:12px;min-width:0}
+.gc-tix{display:flex;align-items:center;gap:10px}
+.gc-tix .gc-tk svg{width:46px;height:32px;display:block}
+.gc-tix b{font:800 40px/1 var(--num)}
+.gc-tix small{font-weight:900;color:var(--sub)}
+.gc-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gc-go{display:grid;gap:2px;padding:12px 10px;font-size:17px}
+.gc-go small{font-size:12px;font-weight:800;opacity:.8}
+.gc-go:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.gc-pity,.gc-how{margin:0;font-size:13.5px;color:var(--sub);font-weight:700}
+.gc-pity b{color:var(--text);font-family:var(--num)}
+.gc-shard{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 8px 8px 12px;border:2px solid var(--ink);border-radius:14px;background:var(--chip);font-weight:900}
+.gc-shard b{font-family:var(--num);font-size:18px}.gc-shard small{color:var(--sub)}
+.gc-shard .btn{padding:7px 12px;font-size:13px}
+.gc-shard .btn:disabled{opacity:.45;box-shadow:none}
+.gc-sh{display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:-1px;background:linear-gradient(135deg,#ffb3e6,#94d8ff 45%,#b39cff 75%,#ffe98a);border:2px solid var(--ink);transform:rotate(45deg);border-radius:3px}
+@media (max-width:620px){.gc-top{grid-template-columns:1fr;justify-items:center;text-align:center}.gc-mc{max-width:170px}.gc-tix{justify-content:center}.gc-side{width:100%}}
+/* 손잡이 한 바퀴 → 기계 덜컹 → 안의 캡슐 출렁 → 캡슐이 굴러 나옴 */
+.gc-mc .gc-knob,.gc-mc .gc-out{transform-box:fill-box;transform-origin:center}
+.gc-mc.spin .gc-knob{animation:gcKnob .6s cubic-bezier(.5,-.3,.4,1.3)}
+.gc-mc.spin{animation:gcRattle .5s .5s ease-in-out;transform-origin:50% 100%}
+.gc-mc.spin .gc-in{animation:gcSlosh .55s .5s ease-in-out}
+.gc-mc.spin .gc-out{animation:gcRoll .5s .85s ease-out forwards}
+@keyframes gcKnob{to{transform:rotate(360deg)}}
+@keyframes gcRattle{0%,100%{transform:none}20%{transform:rotate(-2.5deg)}45%{transform:rotate(2deg)}70%{transform:rotate(-1deg)}}
+@keyframes gcSlosh{0%,100%{transform:none}30%{transform:translate(-4px,3px)}60%{transform:translate(4px,-2px)}}
+@keyframes gcRoll{0%{opacity:1;transform:translateY(-12px)}60%{opacity:1;transform:translateY(4px)}100%{opacity:0;transform:translateY(4px) scale(.6)}}
+/* 결과 */
+.gc-stage{display:none}
+.gc-stage.show{display:block;padding:20px 14px;border-radius:var(--radius);border:var(--bd);box-shadow:var(--sh);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--lime) 30%,var(--card)),var(--card) 70%)}
+.gc-stage.top3{background:radial-gradient(circle at 50% 40%,color-mix(in srgb,#ffd66a 40%,var(--card)),var(--card) 70%)}
+.gc-res{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.gc-slot{width:132px;min-height:168px;display:grid;place-items:center}
+.gc-cap{width:96px;height:96px;padding:0;background:none;border:0;cursor:pointer;animation:gcDrop .5s cubic-bezier(.3,1.5,.5,1) backwards}
+.gc-slot:nth-child(2) .gc-cap{animation-delay:.08s}.gc-slot:nth-child(3) .gc-cap{animation-delay:.16s}.gc-slot:nth-child(4) .gc-cap{animation-delay:.24s}.gc-slot:nth-child(5) .gc-cap{animation-delay:.32s}
+.gc-cap svg{width:100%;height:100%;overflow:visible}
+.gc-cap .top{transition:transform .26s cubic-bezier(.4,-.4,.6,1)}
+.gc-cap.shake1{animation:gcWig .38s ease-in-out}
+.gc-cap.shake2{animation:gcWig .4s ease-in-out 2}
+.gc-cap.shake3{animation:gcWig .43s ease-in-out 3;filter:drop-shadow(0 0 10px #ffd66a) drop-shadow(0 0 18px #ff9de2)}
+.gc-cap.shake2{filter:drop-shadow(0 0 10px #a891ff)}
+.gc-cap.pop .top{transform:translate(-14px,-30px) rotate(-38deg)}
+@keyframes gcDrop{from{transform:translateY(-60px) scale(.6);opacity:0}}
+@keyframes gcWig{0%,100%{transform:none}25%{transform:rotate(-12deg) translateY(-2px)}75%{transform:rotate(12deg) translateY(-2px)}}
+.gc-got{position:relative;display:grid;justify-items:center;gap:4px;text-align:center}
+.gc-got.in{animation:gcPop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gcPop{from{transform:scale(.3) translateY(20px);opacity:0}}
+.gc-got .gc-ic{position:relative;z-index:1;width:88px;height:88px}
+.gc-got .gc-ic .art,.gc-grid .gc-ic .art{width:100%;height:100%;filter:drop-shadow(1.8px 0 0 #fff) drop-shadow(-1.8px 0 0 #fff) drop-shadow(0 1.8px 0 #fff) drop-shadow(0 -1.8px 0 #fff) drop-shadow(1.5px 2px 0 rgba(23,48,72,.28))}
+.gc-rays{position:absolute;z-index:0;left:50%;top:44px;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--rc) 70%,transparent) 0 10deg,transparent 10deg 24deg);-webkit-mask:radial-gradient(circle,#000 30%,transparent 68%);mask:radial-gradient(circle,#000 30%,transparent 68%);animation:gcSpin 6s linear infinite}
+.r3 .gc-rays{background:repeating-conic-gradient(from 0deg,#ffb3e6aa 0 8deg,#94d8ffaa 8deg 16deg,#ffe98aaa 16deg 24deg,transparent 24deg 34deg)}
+@keyframes gcSpin{to{transform:rotate(360deg)}}
+.gc-rt{position:relative;z-index:1;padding:2px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--rc);color:var(--ink);font:400 14px/1.3 var(--disp)}
+.r3 .gc-rt{background:linear-gradient(90deg,#ffb3e6,#94d8ff,#b39cff,#ffe98a)}
+.gc-got small{position:relative;z-index:1;font-weight:900;font-size:13.5px}
+.gc-new,.gc-dup{position:relative;z-index:1;font:800 11.5px/1 var(--num);font-style:normal;padding:4px 8px;border-radius:99px;border:2px solid var(--ink)}
+.gc-new{background:var(--red);color:#fff}
+.gc-dup{background:var(--chip);color:var(--sub)}
+.gc-act{display:flex;justify-content:center;margin-top:14px}
+.gc-act .btn{padding:9px 18px}
+@media (max-width:560px){.gc-slot{width:96px;min-height:140px}.gc-cap{width:76px;height:76px}.gc-got .gc-ic{width:70px;height:70px}}
+/* 도감 */
+.gc-colh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.gc-colh h3{margin:0;font:400 22px/1.2 var(--disp)}.gc-colh h3 small{font:800 14px var(--num);color:var(--sub);margin-left:4px}
+.gc-colh .segs{margin:0;min-width:200px}
+.gc-rh{display:flex;align-items:center;gap:6px;margin:14px 0 8px;font:400 16px var(--disp)}
+.gc-rh::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);background:var(--rc)}
+.gc-rh.r3::before{background:linear-gradient(135deg,#ffb3e6,#94d8ff,#ffe98a)}
+.gc-rh small{font:800 12px var(--num);color:var(--sub)}
+.gc-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.gc-grid li{position:relative;display:grid;justify-items:center;gap:4px;padding:10px 4px 8px;border:2px solid var(--ink);border-radius:16px;background:var(--card);text-align:center}
+.gc-grid li.on{background:color-mix(in srgb,var(--rc) 22%,var(--card))}
+.gc-grid li.r3.on{background:linear-gradient(135deg,color-mix(in srgb,#ffb3e6 30%,var(--card)),color-mix(in srgb,#94d8ff 30%,var(--card)),color-mix(in srgb,#ffe98a 30%,var(--card)))}
+.gc-grid .gc-ic{width:56px;height:56px}
+.gc-grid li.lock .gc-ic{filter:grayscale(1) opacity(.38)}
+.gc-grid li.lock .gc-ic .art{filter:none}
+.gc-grid small{font-weight:800;font-size:12.5px;line-height:1.25}
+.gc-grid li.lock small{color:var(--sub)}
+.gc-grid em{position:absolute;top:5px;right:6px;font:800 11px var(--num);font-style:normal;color:var(--sub)}
+.gc-none{color:var(--sub);font-weight:700}
+.gc-use{margin:14px 0 0;font-size:13.5px;color:var(--sub);font-weight:700;line-height:1.55}
+.gc-use b{color:var(--text)}.gc-use a{color:var(--accent);font-weight:900}
+.gc-rule summary{cursor:pointer;font:400 18px var(--disp)}
+.gc-rates{width:100%;border-collapse:collapse;margin:12px 0;font-weight:800;font-size:14px;text-align:center}
+.gc-rates th,.gc-rates td{padding:7px 4px;border-bottom:2px solid var(--line)}
+.gc-rates th{color:var(--sub);font-size:12.5px}
+.gc-rates tr td:first-child{color:var(--rd)}
+:root[data-theme="dark"] .gc-rates tr td:first-child{color:var(--rc)}
+.gc-rule ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.65;color:var(--sub);font-weight:600}
+.gc-rule ul b{color:var(--text)}
+.gc-empty{text-align:center;font-weight:800}
+@media (prefers-reduced-motion:reduce){.gc-mc.spin,.gc-mc.spin *,.gc-cap,.gc-got.in,.gc-rays{animation:none!important}}
+.att-note.gck{background:color-mix(in srgb,var(--violet) 28%,var(--card))}
+.att-note.gck a{margin-left:4px;padding:3px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:13px;text-decoration:none;white-space:nowrap}

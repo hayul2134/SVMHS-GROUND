@@ -155,6 +155,125 @@ const SEALS = {
 export const SCENES = new Set(Object.keys(SEALS));
 
 /* ===== 보상 그림 (48×48) ===== */
+// ===== 뽑기 스티커 (2026-10-24 하율: "뽑기 같은 기능도 있으면 좋겠어") =====
+// 출석 보상과 겹치지 않는 '뽑기에서만 나오는' 학교생활 물건. 학과 색이 없는 것만 → 어느 과든 똑같이 반가움.
+// 일반(필통·가방 속 물건) · 희귀(쉬는 시간·매점) · 전설(홀로그램 G · 졸업장). 같은 젤리 스티커 규칙(ART_GUIDE).
+const GA = {
+  /* 일반 */
+  eraser:   // 지우개: 분홍 고무 + 파란 종이 띠 + 지우개 가루
+    `<g transform="rotate(-16 24 25)">`
+    + jelly('M10.4 16H37.6Q40.4 16 40.4 18.8V31.2Q40.4 34 37.6 34H10.4Q7.6 34 7.6 31.2V18.8Q7.6 16 10.4 16Z', 'gN', '#d9577e',
+      `<path d="M20.6 16H37.6Q40.4 16 40.4 18.8V31.2Q40.4 34 37.6 34H20.6Z" fill="url(#gB)" stroke="${INK}" stroke-width="1.6"/>`
+      + `<path d="M24.4 21.4H36.4M24.4 25.4H33M24.4 29.2H30.4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity=".9"/>`
+      + shade('M7.6 28.6Q14 30.8 20.6 29.4V34H10.4Q7.6 34 7.6 31.2Z', '#e9799b', .7))
+    + gloss('M11.2 20.4V26.6', 2.2, .85) + `</g>`
+    + `<g fill="#ffb3c8" stroke="${INK}" stroke-width=".9"><circle cx="8.6" cy="41.6" r="1.5"/><circle cx="13" cy="43.4" r="1.1"/><circle cx="5.4" cy="38" r=".9"/></g>`
+    + twinkle(41.4, 9.6, 2.8, '#fff3b0'),
+  hilite:   // 형광펜: 그어 둔 형광 줄 + 비스듬한 펜
+    `<path d="M5 41.4H30.6" stroke="#e4ff5c" stroke-width="7" stroke-linecap="round" opacity=".9"/><path d="M5 41.4H30.6" stroke="#c9ee2a" stroke-width="1" stroke-dasharray="2 3" opacity=".7"/>`
+    + `<g transform="rotate(-42 25 24)">`
+    + jelly('M3.6 21.2 9.4 19.4V28.6L3.6 26.8Z', 'gY', '#c9a400', '', { dx: .6, dy: 1, sw: 1.7 })
+    + jelly('M9.4 18.4H33.4V29.6H9.4Q8 29.6 8 28.2V19.8Q8 18.4 9.4 18.4Z', 'gW', '#aebccb',
+      `<path d="M13 18.4H29V29.6H13Z" fill="#e8ff7a"/><path d="M15.4 22.6H26.6" stroke="#9ab800" stroke-width="1.6" stroke-linecap="round"/><path d="M15.4 25.6H22" stroke="#9ab800" stroke-width="1.6" stroke-linecap="round"/>`)
+    + jelly('M33.4 17.2H42Q44.6 17.2 44.6 19.8V28.2Q44.6 30.8 42 30.8H33.4Z', 'gG', '#3f9a3a', `<path d="M36.6 17.2V12.6H39.4V17.2" fill="url(#gG)" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`)
+    + gloss('M11.4 21.2H30.6', 1.8, .8) + `</g>`
+    + twinkle(41.6, 39.4, 2.6, '#fff3b0'),
+  postit:   // 포스트잇: 노란 메모 + 접힌 모서리 + 손글씨 하트
+    `<g transform="rotate(-6 24 24)">`
+    + jelly('M7 7H41V32.4L32.4 41H7Z', 'gY', '#d98a10',
+      shade('M41 26 41 32.4 32.4 41H22Q36 36 41 26Z', '#f6b62c', .65)
+      + `<path d="M12.4 15.4H33.4M12.4 21.2H29" stroke="#c98a1a" stroke-width="1.8" stroke-linecap="round" opacity=".75"/>`
+      + `<path d="M18.6 33.4C14.6 30.6 12.6 28.4 13.4 26.4 14.2 24.6 16.6 24.6 18.6 26.8 20.6 24.6 23 24.6 23.8 26.4 24.6 28.4 22.6 30.6 18.6 33.4Z" fill="#f0646d" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"/>`)
+    + jelly('M41 32.4H35Q32.4 32.4 32.4 35V41Z', 'gL', '#d9771a', '', { dx: .5, dy: .8, sw: 1.8 })
+    + `<rect x="15.4" y="2.6" width="17.2" height="6.4" rx="1" fill="#c6ebff" opacity=".85" stroke="${INK}" stroke-width="1.1" transform="rotate(3 24 5.8)"/>`
+    + gloss('M10.6 12V28', 2.2, .7) + `</g>` + twinkle(43.2, 8.6, 2.6, '#c6ebff'),
+  ruler:   // 자: 비치는 하늘색 플라스틱 + 눈금
+    `<g transform="rotate(-34 24 24)">`
+    + jelly('M3 17.4H45Q46.4 17.4 46.4 18.8V29.2Q46.4 30.6 45 30.6H3Q1.6 30.6 1.6 29.2V18.8Q1.6 17.4 3 17.4Z', 'gLg', '#2a7fc4',
+      `<g stroke="${INK}" stroke-width="1.1" stroke-linecap="round">${[5, 9, 13, 17, 21, 25, 29, 33, 37, 41].map((x, i) => `<path d="M${x} 17.4V${i % 5 === 0 ? 24.4 : i % 5 === 2 ? 22.4 : 21}"/>`).join('')}</g>`
+      + `<path d="M3.4 27.2H44.6" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".55"/><circle cx="41.4" cy="26" r="1.8" fill="#fff" stroke="${INK}" stroke-width="1.1"/>`)
+    + gloss('M5 20.4H16', 1.8, .85) + `</g>` + twinkle(40.6, 39.6, 2.6, '#fff3b0'),
+  tape:   // 마스킹테이프: 민트 땡땡이 롤 + 풀려 나온 끝(지그재그)
+    jelly('M30.4 30.6 44 37.4 42.6 39 44.4 40.6 42.4 42 43.6 43.8 28 37Z', 'gM', '#2c9c7a', `<g fill="#fff" opacity=".9"><circle cx="35" cy="35.6" r="1.1"/><circle cx="40" cy="38.6" r="1"/></g>`, { dx: .6, dy: 1.2, sw: 1.7 })
+    + jelly('M22.4 6A16.4 16.4 0 1 1 22.39 6Z', 'gM', '#2c9c7a',
+      shade('M33.6 10.8A16.4 16.4 0 0 1 16.2 37.4 15.4 15.4 0 0 0 33.6 10.8Z', '#36b38c', .75)
+      + `<g fill="#fff" opacity=".95">${[[13, 15], [21, 11.4], [30, 13.6], [33.6, 22], [31, 31], [22.6, 34.6], [13.6, 30.6], [10.4, 22.6]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.5"/>`).join('')}</g>`
+      + `<circle cx="22.4" cy="22.4" r="8" fill="#fff7ec" stroke="${INK}" stroke-width="2"/><circle cx="22.4" cy="22.4" r="5.6" fill="none" stroke="#e7d6bd" stroke-width="1.4"/>`)
+    + gloss('M10.4 25.6Q9.6 16.4 16.6 11', 2.4) + twinkle(42.4, 8.4, 2.8, '#fff3b0'),
+  sdcard:   // SD 카드: 남색 카드 + 하늘색 라벨 + 금색 단자
+    jelly('M15.4 4.6H37.4Q40.4 4.6 40.4 7.6V40.4Q40.4 43.4 37.4 43.4H10.6Q7.6 43.4 7.6 40.4V12.4Z', 'gK2', '#0f1f33',
+      `<g fill="url(#gY)" stroke="#a8650a" stroke-width=".8">${[16.4, 21, 25.6, 30.2, 34.8].map(x => `<rect x="${x}" y="7.2" width="3" height="6.6" rx=".8"/>`).join('')}</g>`
+      + `<rect x="11.4" y="18.6" width="25.2" height="20.8" rx="2.4" fill="url(#gB)" stroke="${INK}" stroke-width="1.4"/>`
+      + `<text x="24" y="33.4" text-anchor="middle" font-family="Outfit,Jua,sans-serif" font-weight="800" font-size="11.4" fill="#fff" stroke="${INK}" stroke-width=".7" paint-order="stroke">SD</text>`
+      + `<path d="M7.6 24.4H9.2V29.4H7.6" fill="#4a6488"/>`)
+    + gloss('M10.8 36V16.4', 1.8, .5) + twinkle(43.8, 9, 2.6, '#c6ebff'),
+  banana:   // 바나나우유: 동그란 단지 + 바나나 라벨 + 분홍 줄무늬 빨대
+    `<path d="M30.4 3.6 25.8 13.6" stroke="${INK}" stroke-width="4.6" stroke-linecap="round"/><path d="M30.4 3.6 25.8 13.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M29.6 5.4 28.9 7M28.2 8.4 27.5 10" stroke="#ff8fb0" stroke-width="2.4"/>`
+    + jelly('M19.2 10.6H28.8Q30 10.6 30 11.8V15.2Q30 16.6 31.2 17.6 40 23.2 40 31.6 40 43.6 24 43.6 8 43.6 8 31.6 8 23.2 16.8 17.6 18 16.6 18 15.2V11.8Q18 10.6 19.2 10.6Z', 'gY', '#e0a20f',
+      `<path d="M18 13.4H30" stroke="#fff" stroke-width="2.6"/><path d="M18 13.4H30" stroke="${INK}" stroke-width=".9" opacity=".35"/>`
+      + shade('M40 31.6Q40 43.6 24 43.6 36 39 34.8 22.4 40 26.4 40 31.6Z', '#f2b72a', .8)
+      + `<rect x="14" y="25" width="20" height="12.4" rx="3.6" fill="#fffdf2" stroke="${INK}" stroke-width="1.3"/>`
+      + `<path d="M16.6 28.4Q19.4 35.4 27.4 34.2 31.6 33.2 31.4 27.6 29.6 30.8 25.4 31 20.6 31.2 16.6 28.4Z" fill="url(#gY)" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/><path d="M31.4 27.6 32.6 26.4M16.6 28.4 16 27.8" stroke="#8a5a1a" stroke-width="1.8" stroke-linecap="round"/><path d="M20 31Q23.4 32.6 27 32" fill="none" stroke="#e0a20f" stroke-width="1" stroke-linecap="round"/>`)
+    + gloss('M13 33.6Q12.6 26.4 18.4 21.6', 2.4) + twinkle(41.4, 12.4, 2.6, '#fff3b0'),
+  earbud:   // 무선 이어폰 한 쌍
+    [[-1, 13.6, 10], [1, 34.4, -10]].map(([s, x, r]) => `<g transform="rotate(${r} ${x} 24)">`
+      + jelly(`M${x - 2.4} 22H${x + 2.4}V40.6Q${x + 2.4} 43.4 ${x} 43.4 ${x - 2.4} 43.4 ${x - 2.4} 40.6Z`, 'gW', '#aebccb', `<circle cx="${x}" cy="40.6" r="1.1" fill="#c3ced9"/>`, { dx: .8, dy: 1.4, sw: 1.8 })
+      + jelly(`M${x} 7A8 8 0 1 1 ${x - .01} 7Z`, 'gW', '#aebccb', `<path d="M${x + s * 3.4} 11.2Q${x + s * 5.8} 15 ${x + s * 3.4} 18.8" fill="none" stroke="#7d8b9a" stroke-width="2.2" stroke-linecap="round"/><circle cx="${x - s * 1.4}" cy="9.8" r="1" fill="#c3ced9"/>`, { dx: .8, dy: 1.4, sw: 1.8 })
+      + gloss(`M${x - 4.6} 16.4Q${x - 4.2} 11.4 ${x - .6} 10.2`, 1.8) + `</g>`).join('')
+    + twinkle(24, 30, 2.8, '#c6ebff'),
+  /* 희귀 */
+  popcorn:   // 팝콘: 빨강·흰 줄무늬 통 + 넘치는 팝콘
+    `<g stroke="${INK}" stroke-width="1.6">${[[13, 16, 5.4], [20.4, 11.4, 6], [28.4, 11.6, 6], [35.4, 16, 5.4], [24.4, 17.4, 6.2], [16, 19.6, 4.6], [33, 20, 4.6]].map(([x, y, r]) => `<circle cx="${n1(x + .8)}" cy="${n1(y + 1.2)}" r="${r}" fill="#e3c08a"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#gPa)"/>`).join('')}</g>`
+    + `<g fill="#fff">${[[11.6, 14.6], [19, 9.6], [27, 9.8], [34, 14.4], [23, 15.6]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4"/>`).join('')}</g>`
+    + jelly('M8.6 21.6H39.4L35.6 44H12.4Z', 'gW', '#aebccb',
+      `<path d="M14.4 21.6H19.6L19.2 44H15.6ZM24.6 21.6H29.6L28.2 44H24.4ZM34.4 21.6H39.4L35.6 44H31.4Z" fill="url(#gR)"/>`
+      + `<path d="M9.4 21.6H38.6V25.6H9.8Z" fill="url(#gY)" stroke="${INK}" stroke-width="1.4"/>`)
+    + `<circle cx="40.4" cy="36.4" r="3.6" fill="url(#gPa)" stroke="${INK}" stroke-width="1.4"/>`
+    + gloss('M12 30V37', 2, .6) + twinkle(43.6, 7.4, 2.8, '#fff3b0'),
+  ramen:   // 컵라면: 반쯤 뜯은 뚜껑 + 젓가락 + 김
+    `<path d="M15 9.4Q13 6.6 15 3.8M22 8.4Q20 5.6 22 2.8" fill="none" stroke="${INK}" stroke-width="1.5" stroke-linecap="round" class="tw"/>`
+    + jelly('M7.4 17.4H40.6L36.6 43.4Q36.4 44.6 35 44.6H13Q11.6 44.6 11.4 43.4Z', 'gR', '#c4424f',
+      `<path d="M9 27.4H39L37.8 35.6H10.2Z" fill="#fff" stroke="${INK}" stroke-width="1.3"/>`
+      + `<path d="M15 31.6Q17.4 29.4 19.8 31.6T24.6 31.6 29.4 31.6 34.2 31.6" fill="none" stroke="#f0a21c" stroke-width="1.8" stroke-linecap="round"/>`
+      + shade('M40.6 17.4 36.6 43.4Q36.4 44.6 35 44.6H31.6Q36 32 35.6 17.4Z', '#d9535c', .7))
+    + jelly('M6.4 14.6H41.6Q43.2 14.6 43.2 16.2V17.6Q43.2 19.2 41.6 19.2H6.4Q4.8 19.2 4.8 17.6V16.2Q4.8 14.6 6.4 14.6Z', 'gW', '#aebccb', '', { dx: .6, dy: 1, sw: 1.8 })
+    + jelly('M25.4 14.8 39.4 4.4Q41 3.4 41.8 5L43.8 8.8Q44.4 10.4 42.8 11Z', 'gW', '#aebccb', `<path d="M29.4 12.6 39.6 6.4" stroke="#f0646d" stroke-width="1.6" stroke-linecap="round"/>`, { dx: .6, dy: 1, sw: 1.7 })
+    + `<g stroke-linecap="round"><path d="M4 12.4 30.4 21.6M5.6 9.4 31.6 19.4" stroke="${INK}" stroke-width="3.2"/><path d="M4 12.4 30.4 21.6M5.6 9.4 31.6 19.4" stroke="#e9c48f" stroke-width="1.4"/></g>`
+    + gloss('M12.4 22.6 13.6 33', 2, .7),
+  mic:   // 마이크: 은색 망 머리 + 남색 손잡이 + 빨간 버튼
+    `<g transform="rotate(-28 24 24)">`
+    + jelly('M18.6 24.4H29.4L27.2 45.4Q27 46.6 25.8 46.6H22.2Q21 46.6 20.8 45.4Z', 'gK2', '#0f1f33', `<path d="M21 31.4H27" stroke="#4a6488" stroke-width="1.4" stroke-linecap="round"/><circle cx="24" cy="36.4" r="1.6" fill="#f0646d" stroke="${INK}" stroke-width="1"/>`)
+    + jelly('M17.4 21.6H30.6Q31.6 21.6 31.6 22.6V24.4Q31.6 25.4 30.6 25.4H17.4Q16.4 25.4 16.4 24.4V22.6Q16.4 21.6 17.4 21.6Z', 'gY', '#d98a10', '', { dx: .5, dy: .9, sw: 1.7 })
+    + jelly('M24 2.4A10 10 0 1 1 23.99 2.4Z', 'gS', '#7d8b9a',
+      `<g fill="none" stroke="#8d9aa8" stroke-width="1" opacity=".9"><path d="M14.6 12.4H33.4M15.6 8H32.4M15.6 16.8H32.4M24 2.6V22.2M19.2 3.8V21M28.8 3.8V21"/></g>`)
+    + gloss('M17.2 9.6Q18.6 5.4 22.4 4.4', 2.2) + `</g>`
+    + `<path d="M37.4 10.6Q40.4 13.6 39 17.4M40.6 6.4Q45.4 11.6 43.4 18.6" fill="none" stroke="${INK}" stroke-width="1.5" stroke-linecap="round" class="tw"/>`,
+  joypad:   // 게임패드
+    jelly('M13.4 14.4H34.6Q41.4 14.4 43.2 22.4L45.2 32Q46.4 38.4 41.4 39.6 37.6 40.4 34.8 35.6L33 32.8H15L13.2 35.6Q10.4 40.4 6.6 39.6 1.6 38.4 2.8 32L4.8 22.4Q6.6 14.4 13.4 14.4Z', 'gV', '#5d47d6',
+      shade('M43.2 22.4 45.2 32Q46.4 38.4 41.4 39.6 44 33 39.4 17.2 42.4 18.8 43.2 22.4Z', '#7a62f0', .8)
+      + `<path d="M11.6 20.6H14.6V23.6H17.6V26.6H14.6V29.6H11.6V26.6H8.6V23.6H11.6Z" fill="#2a3a7a" stroke="${INK}" stroke-width="1" stroke-linejoin="round"/>`
+      + `<circle cx="33.6" cy="22.6" r="2.2" fill="url(#gY)" stroke="${INK}" stroke-width="1.1"/><circle cx="38" cy="25.8" r="2.2" fill="url(#gR)" stroke="${INK}" stroke-width="1.1"/><circle cx="29.2" cy="25.8" r="2.2" fill="url(#gB)" stroke="${INK}" stroke-width="1.1"/><circle cx="33.6" cy="29" r="2.2" fill="url(#gG)" stroke="${INK}" stroke-width="1.1"/>`
+      + `<rect x="20" y="20.6" width="3" height="1.8" rx=".9" fill="#2a3a7a"/><rect x="25" y="20.6" width="3" height="1.8" rx=".9" fill="#2a3a7a"/>`)
+    + gloss('M7.2 31.6 8.6 23.6Q9.8 18.4 13.8 17.8', 2.2) + twinkle(24, 8.4, 3, '#fff3b0'),
+  /* 전설 */
+  gholo:   // 홀로그램 G: 로고 G를 무지갯빛 홀로 필름으로
+    `<circle cx="25.2" cy="26.4" r="19.6" fill="${INK}"/><circle cx="24" cy="24" r="19.6" fill="url(#gH)" stroke="${INK}" stroke-width="2"/>`
+    + `<path d="M8.4 16Q24 4 40 16" fill="none" stroke="#fff" stroke-width="4" opacity=".35"/><path d="M6.6 30Q24 22 42 30" fill="none" stroke="#fff" stroke-width="2.4" opacity=".3"/>`
+    + `<g transform="translate(.4 .4) scale(.236)"><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(1.8 3.6)" fill="none" stroke="${INK}" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(-3 -6)" fill="none" stroke="${INK}" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M131.1 68.9A44 44 0 1 0 143.7 105H110" transform="translate(-3 -6)" fill="none" stroke="url(#gH2)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/><path d="M68 76Q78 60 98 58" transform="translate(-3 -6)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".9"/></g>`
+    + jelly(starD(40, 8.4, 6.4, 2.6), 'gY', '#d98a10', '', { dx: .6, dy: 1, sw: 1.6 }) + twinkle(7.4, 39.4, 3, '#fff') + twinkle(43.4, 37.4, 2.2, '#ffe98a'),
+  diploma:   // 졸업장: 말린 종이 + 빨간 리본 + 금빛 메달
+    `<g transform="rotate(-24 24 24)">`
+    + jelly('M5.4 17.6H42.6Q45.4 17.6 45.4 24 45.4 30.4 42.6 30.4H5.4Q2.6 30.4 2.6 24 2.6 17.6 5.4 17.6Z', 'gPa', '#d6b483',
+      `<ellipse cx="42.6" cy="24" rx="2.6" ry="6.4" fill="#f2d3a8" stroke="${INK}" stroke-width="1.3"/><path d="M42.6 21.4Q41.2 22.6 42.4 25.2" fill="none" stroke="#c49a63" stroke-width="1" stroke-linecap="round"/>`
+      + `<path d="M8 22H20M8 26H16" stroke="#d6b483" stroke-width="1.3" stroke-linecap="round"/>`)
+    + `<path d="M24.4 17.6V30.4" stroke="${INK}" stroke-width="5.4"/><path d="M24.4 17.6V30.4" stroke="#f0646d" stroke-width="3.2"/>`
+    + gloss('M7 20.2H38', 1.6, .8) + `</g>`
+    + `<path d="M26.8 31.4 23.4 44.4 27.4 42 30.6 44.6 31.4 32.4M33.6 31.2 34.4 43.6 37.4 41.4 41 43.2 38 31Z" fill="url(#gR)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>`
+    + jelly(starD(32.4, 29.6, 8.4, 6.4, 12), 'gY', '#d98a10', `<circle cx="32.4" cy="29.6" r="4.4" fill="#fff3b0" stroke="#d98a10" stroke-width="1"/>`, { dx: .7, dy: 1.2, sw: 1.8 })
+    + jelly(starD(32.4, 29.6, 3, 1.3), 'gL', '#d9771a', '', { flat: true, sw: 1 })
+    + twinkle(8, 37.6, 2.8, '#fff3b0') + twinkle(42.6, 8, 2.6, '#c6ebff'),
+};
+
 const ART = {
   /* ----- 학교 공통 스티커 ----- */
   bell: `<path d="M24 3.6V8" stroke="${INK}" stroke-width="4.4" stroke-linecap="round"/><path d="M24 3.6V8" stroke="#ffc83d" stroke-width="1.8" stroke-linecap="round"/>`
@@ -199,6 +318,8 @@ const ART = {
   /* ----- 학과 스티커 (세 과가 같은 날 함께) ----- */
   slate: EM.slate, palette: EM.palette, timeline: EM.timeline,
   light: EM.light, cube: EM.cube, headset: EM.headset,
+  /* ----- 뽑기 스티커 ----- */
+  ...GA,
   /* ----- 프로필 사진: 씰 (학교 공통 G · 학과 상징 — 등급만 다르고 세 과 모두 같은 날) ----- */
   ...Object.fromEntries(Object.entries(SEALS).map(([k, [em, t]]) => [k, seal(k, em, t)])),
 };
@@ -235,7 +356,7 @@ export const medal = i => {
 
 // 그림마다 실제 그려진 범위(반짝이 제외, 헤드리스 브라우저 getBBox로 잰 값)를 가운데에 둔 정사각 viewBox → 어느 칸에서도 정가운데·같은 크기
 // 그림을 고치면 다시 잴 것: 그림 범위를 재서 (가로·세로 중 큰 값 + 5.2) 정사각형, 중심 = 범위 중심
-const VB = {"bell": "0.8 1.0 48.0 48.0", "clock": "2.7 2.0 45.0 45.0", "gseal": "-0.5 -1.2 49.2 49.2", "tray": "1.4 2.5 46.8 46.8", "nametag": "1.6 -1.0 46.4 46.4", "note": "3.0 3.4 44.0 44.0", "slate": "2.5 2.1 45.3 45.3", "palette": "2.0 2.7 45.6 45.6", "timeline": "1.4 0.2 46.8 46.8", "headset": "1.4 2.3 46.8 46.8", "light": "0.6 0.4 48.6 48.6", "cube": "-0.0 1.4 48.0 48.0"};
+const VB = {"bell": "0.8 1.0 48.0 48.0", "clock": "2.7 2.0 45.0 45.0", "gseal": "-0.5 -1.2 49.2 49.2", "tray": "1.4 2.5 46.8 46.8", "nametag": "1.6 -1.0 46.4 46.4", "note": "3.0 3.4 44.0 44.0", "slate": "2.5 2.1 45.3 45.3", "palette": "2.0 2.7 45.6 45.6", "timeline": "1.4 0.2 46.8 46.8", "headset": "1.4 2.3 46.8 46.8", "light": "0.6 0.4 48.6 48.6", "cube": "-0.0 1.4 48.0 48.0", "eraser": "1.9 5.3 45.3 45.3", "hilite": "-1.1 -2.1 50.9 50.9", "postit": "-0.5 -2.3 50.3 50.3", "ruler": "-0.9 -1.6 52.6 52.6", "tape": "3.4 3.4 44.2 44.2", "sdcard": "1.4 2.0 46.8 46.8", "banana": "0.8 1.0 48.0 48.0", "earbud": "-0.5 1.0 49.8 49.8", "popcorn": "2.5 2.8 46.6 46.6", "ramen": "-0.0 1.4 48.6 48.6", "mic": "-2.8 -3.1 56.8 56.8", "joypad": "-0.0 3.6 49.7 49.7", "gholo": "0.9 -0.6 49.2 49.2", "diploma": "-0.8 0.6 52.1 52.1"};
 /* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) ===== */
 let done = false;
 export function ensureSprite() {

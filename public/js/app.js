@@ -7,7 +7,7 @@ import { emo, ui, stkMsg, repTag } from './att-art.js';
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
 const MAX_GRADE = 3, MAX_CLASS = 10, BASE_CLASS = 6, MAX_DDAY = 20;   // 2026년 학년별 6개 반 (반 목록은 나이스에서 받아옴, 실패 시 BASE_CLASS)
-const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday', 'me', 'u', 'dm', 'game'];   // me·u·dm·game은 social.js가 그림
+const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday', 'me', 'u', 'dm', 'game', 'gacha'];   // me·u·dm·game·gacha는 social.js가 그림
 
 /* ===== 저장된 값 불러오기 (손상·조작된 값은 버림) ===== */
 const validClass = c => c && +c.g >= 1 && +c.g <= MAX_GRADE && +c.c >= 1 && +c.c <= MAX_CLASS
@@ -2290,7 +2290,7 @@ const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => { if (
 loadConfig().finally(async () => {
   cfgReady = true; bootHome();
   const h = location.hash.slice(1);
-  if (h && h !== 'home') { if (/^(me|u|dm|game)\b/.test(h)) await socReady; go(h); }
+  if (h && h !== 'home') { if (/^(me|u|dm|game|gacha)\b/.test(h)) await socReady; go(h); }
   if (!cls && !introOn()) setTimeout(() => { if (!cls) openClass(); }, 1500);   // 소개 화면이면 닫힐 때 띄움 · 로그인 확인(adoptClass)을 기다렸다가 그래도 반이 없을 때만
 });
 

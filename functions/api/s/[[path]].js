@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, RAR, GC, gcHave, gcEarn, gcRar } from '../../../public/js/att-rewards.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
@@ -139,15 +139,21 @@ const ALL_OPEN = 1e6;
 const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE}')`;
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+// 뽑기: 가진 스티커 {값: 나온 횟수}. 개발자는 전부 가진 것으로
+const gcOwn = u => { try { const o = JSON.parse(u?.gc_own || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
+const gcStk = u => isAdm(u) ? GACHA.map(g => g.v) : gcHave(gcOwn(u));
+// 쓸 수 있는 보상 스티커 = 출석 보상 스티커 + 뽑기 스티커
+const rwStk = u => [...unlockedOf(effBest(u), effTotal(u), 'sticker'), ...gcStk(u)];
+const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.map(g => [g.v, 1])) : gcOwn(u) });
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
-const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !unlockedOf(effBest(me), effTotal(me), 'sticker').includes(rwNorm(m[1])) ? '아직 받지 못한 스티커예요' : null; };
+const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !rwStk(me).includes(rwNorm(m[1])) ? '아직 받지 못한 스티커예요' : null; };
 const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.st_deco, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.st_deco, u.gc_tix, u.gc_own, u.gc_pity, u.gc_leg, u.gc_shard, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -308,7 +314,7 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length } });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -317,7 +323,7 @@ const ROUTES = {
     if (isBad(name, body.bio, body.mood, body.club, isAdm(me) ? body.title : '')) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
-    const ub = k => unlockedOf(effBest(me), effTotal(me), k);
+    const ub = k => k === 'sticker' ? rwStk(me) : unlockedOf(effBest(me), effTotal(me), k);   // 스티커는 뽑기 스티커도
     // 예전 보상 이름(r:lion 등)은 새 이름으로 바꿔서 검사 (2026-10-24 그림 교체)
     body.avatar = rwNorm(body.avatar);
     if (Array.isArray(body.stickers)) body.stickers = body.stickers.map(rwNorm);
@@ -831,6 +837,43 @@ const ROUTES = {
 
   /* ----- 출석 체크 (lib/attend.js) ----- */
   // 오늘 출석: 하루 한 번만 기록(두 탭이 동시에 보내도 st_last 조건으로 한 번만). 이미 했으면 지금 상태만 돌려줌
+  /* ----- 뽑기 ----- */
+  'GET gacha': needMe(async ({ me }) => json({ ...gcPub(me), items: GACHA, rar: RAR, gc: GC, all: isAdm(me) })),
+  // 뽑기: n = 1 또는 5. 확률·천장은 att-rewards.js RAR·GC. 두 탭에서 동시에 눌러도 한 번만 반영(이전 값 조건)
+  'POST gacha': needMe(async ({ db, me, body }) => {
+    const n = +body.n === 5 ? 5 : 1, adm = isAdm(me);
+    if (!adm && (me.gc_tix ?? 0) < n) return err(n === 5 ? '뽑기권이 5장 있어야 해요' : '뽑기권이 없어요. 등교하는 날 출석하면 받아요');
+    if (!adm && await limited(db, 'gc:' + me.id, 120, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
+    const own = gcOwn(me);
+    let pity = me.gc_pity || 0, leg = me.gc_leg || 0, shard = me.gc_shard || 0, gotRare = false;
+    const rnd = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const x = rnd() * 100;
+      let rar = leg + 1 >= GC.pityLeg || x < RAR[3].p ? 3 : pity + 1 >= GC.pityRare || x < RAR[3].p + RAR[2].p ? 2 : 1;
+      if (n === 5 && i === 4 && !gotRare && rar === 1) rar = 2;   // 5연뽑: 희귀 이상 1개 확정
+      if (rar >= 2) gotRare = true;
+      pity = rar >= 2 ? 0 : pity + 1; leg = rar === 3 ? 0 : leg + 1;
+      const pool = GACHA.filter(g => g.rar === rar), g = pool[Math.floor(rnd() * pool.length)];
+      const isNew = !own[g.v];
+      own[g.v] = (own[g.v] || 0) + 1;
+      const sh = isNew ? 0 : GC.shard[rar]; shard += sh;
+      out.push({ v: g.v, rar, new: isNew, shard: sh });
+    }
+    const tix = adm ? (me.gc_tix ?? 0) : (me.gc_tix ?? 0) - n;
+    const r = await db.prepare('UPDATE users SET gc_tix = ?1, gc_own = ?2, gc_pity = ?3, gc_leg = ?4, gc_shard = ?5 WHERE id = ?6 AND gc_tix = ?7 AND gc_own = ?8 RETURNING id')
+      .bind(tix, JSON.stringify(own), pity, leg, Math.min(shard, 9999), me.id, me.gc_tix ?? 0, me.gc_own || '{}').first();
+    if (!r) return err('다른 창에서 먼저 뽑았어요. 한 번 더 눌러 주세요', 409);
+    const after = { ...me, gc_tix: tix, gc_own: JSON.stringify(own), gc_pity: pity, gc_leg: leg, gc_shard: shard };
+    return json({ out, ...gcPub(after) });
+  }),
+  // 조각 10개 → 뽑기권 1장
+  'POST gachaex': needMe(async ({ db, me }) => {
+    if ((me.gc_shard || 0) < GC.shardPerTix) return err(`조각이 ${GC.shardPerTix}개 있어야 바꿀 수 있어요`);
+    const r = await db.prepare(`UPDATE users SET gc_shard = gc_shard - ?1, gc_tix = MIN(${GC.max}, gc_tix + 1) WHERE id = ?2 AND gc_shard >= ?1 RETURNING gc_tix, gc_shard`).bind(GC.shardPerTix, me.id).first();
+    if (!r) return err('다시 한 번 눌러 주세요', 409);
+    return json(gcPub({ ...me, gc_tix: r.gc_tix, gc_shard: r.gc_shard }));
+  }),
   'POST att': needMe(async ({ env, db, me }) => attState(env, db, me, true)),
   'GET att': needMe(async ({ env, db, me, url }) => {
     const m = url.searchParams.get('m') || kstToday().slice(0, 6);
@@ -890,8 +933,9 @@ async function attState(env, db, me, doCheck, quiet = false) {
   const gotShield = cur % SHIELD_EVERY === 0 && shield < shieldMaxOf(isAdm(me) ? ALL_OPEN : Math.max(u.st_best, cur), u.st_total + 1);
   if (gotShield) shield++;
   const best = Math.max(u.st_best, cur), old = { ...u };
-  const r = await db.prepare(`UPDATE users SET st_cur = ?1, st_best = ?2, st_last = ?3, st_total = st_total + 1, st_shield = ?4, st_pf = ?7 WHERE id = ?5 AND st_last = ?6 RETURNING st_total`)
-    .bind(cur, best, today, shield, me.id, u.st_last, pf).first();
+  const tix = gcEarn(cur);   // 뽑기권: 출석 1 + 연속 5일마다 1 + 기념일 1
+  const r = await db.prepare(`UPDATE users SET st_cur = ?1, st_best = ?2, st_last = ?3, st_total = st_total + 1, st_shield = ?4, st_pf = ?7, gc_tix = MIN(${GC.max}, gc_tix + ?8) WHERE id = ?5 AND st_last = ?6 RETURNING st_total, gc_tix`)
+    .bind(cur, best, today, shield, me.id, u.st_last, pf, tix).first();
   if (!r) {   // 다른 탭이 먼저 기록함 → 새로 읽어서 상태만
     u = pick(await db.prepare('SELECT st_cur, st_best, st_last, st_total, st_shield, st_pf FROM users WHERE id = ?1').bind(me.id).first());
     return json(out({ new: false, weekDays: await weekRows() }));
@@ -903,7 +947,7 @@ async function attState(env, db, me, doCheck, quiet = false) {
   u = { st_cur: cur, st_best: best, st_last: today, st_total: r.st_total, st_shield: shield, st_pf: pf };
   // 새로 열린 보상: 연속은 최고 기록이 넘어선 것, 누적은 총 출석일이 넘어선 것
   const unlocked = REWARDS.filter(x => !rwOn(x, old.st_best, old.st_total) && rwOn(x, best, r.st_total));
-  return json(out({ new: true, prev: prevLive, lost, used, gotShield, unlocked, milestone: unlocked.length > 0 || MILESTONES.includes(cur), weekDays: await weekRows() }));
+  return json(out({ new: true, prev: prevLive, lost, used, gotShield, unlocked, tix, tixNow: r.gc_tix, milestone: unlocked.length > 0 || MILESTONES.includes(cur), weekDays: await weekRows() }));
 }
 
 async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 사람 수 + 1

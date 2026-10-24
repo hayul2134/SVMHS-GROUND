@@ -87,3 +87,23 @@ export const MILESTONES = [3, 7, 14, 30, 50, 100, 150, 200, 365];
 export const rwOn = (r, best, total) => (r.by === 'total' ? total : best) >= r.d;
 export const unlockedOf = (best, total, kind) => REWARDS.filter(r => r.kind === kind && rwOn(r, best || 0, total || 0)).map(r => r.v);
 export const rwName = r => r.kind === 'color' ? `‘${COLOR_NAME[r.v]}’` : r.kind === 'title' ? `‘${r.v}’` : r.kind === 'perk' ? PERK_NAME[r.v] : objName(r.v) || r.v;
+
+/* ===== 뽑기 (2026-10-24 하율: "뽑기 같은 기능도 있으면 좋겠어") =====
+   출석 보상과 따로, 뽑기에서만 나오는 스티커(그림: att-art.js GA). 출석 보상 스티커와 똑같이 프로필·대표 스티커·시계·댓글·DM에 씀.
+   뽑기권: 출석(등교일)마다 1장 + 연속 5일마다 1장 더 + 기념일(MILESTONES) 1장 더. 처음 3장 선물. 최대 99장.
+   확률은 화면에 그대로 공개. 천장: 희귀 이상이 10번 연속 안 나오면 10번째는 희귀 확정, 전설은 50번째 확정. 5연뽑은 희귀 이상 1개 확정.
+   이미 가진 스티커가 또 나오면 조각(일반 1 · 희귀 3 · 전설 10) → 조각 10개 = 뽑기권 1장. 돈으로 사는 것 없음(사이트 수익 없음). */
+export const GACHA = [
+  { v: 'r:eraser', rar: 1 }, { v: 'r:hilite', rar: 1 }, { v: 'r:postit', rar: 1 }, { v: 'r:ruler', rar: 1 },
+  { v: 'r:tape', rar: 1 }, { v: 'r:sdcard', rar: 1 }, { v: 'r:banana', rar: 1 }, { v: 'r:earbud', rar: 1 },
+  { v: 'r:popcorn', rar: 2 }, { v: 'r:ramen', rar: 2 }, { v: 'r:mic', rar: 2 }, { v: 'r:joypad', rar: 2 },
+  { v: 'r:gholo', rar: 3 }, { v: 'r:diploma', rar: 3 },
+];
+Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포스트잇', ruler: '자', tape: '마스킹테이프', sdcard: 'SD 카드', banana: '바나나우유', earbud: '무선 이어폰', popcorn: '팝콘', ramen: '컵라면', mic: '마이크', joypad: '게임패드', gholo: '홀로그램 G', diploma: '졸업장' });
+export const RAR = { 1: { n: '일반', p: 75 }, 2: { n: '희귀', p: 21 }, 3: { n: '전설', p: 4 } };   // p: % (합 100)
+export const GC = { start: 3, max: 99, pityRare: 10, pityLeg: 50, shard: { 1: 1, 2: 3, 3: 10 }, shardPerTix: 10, bonusEvery: 5 };
+export const gcRar = v => GACHA.find(g => g.v === v)?.rar || 0;
+// 가진 뽑기 스티커 목록: own = {'r:eraser': 2, …} (나온 횟수)
+export const gcHave = own => GACHA.filter(g => own && own[g.v] > 0).map(g => g.v);
+// 출석 하루에 받는 뽑기권: 1 + 연속 5일마다 1 + 기념일 1
+export const gcEarn = cur => 1 + (cur % GC.bonusEvery === 0 ? 1 : 0) + (MILESTONES.includes(cur) ? 1 : 0);

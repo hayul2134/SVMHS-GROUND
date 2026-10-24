@@ -160,6 +160,7 @@ function celebrate(r) {
     pw ? `<p class="att-note pwk">${ui('pw', 'ic')}<span><b>이번 주 개근!</b> 주말 푹 쉬고 월요일에 봐요</span></p>` : '',
     r.used ? `<p class="att-note sh">${shieldSvg('ic')}<span>방패 <b>${r.used}개</b>가 빠진 날을 지켜 줬어요</span></p>` : '',
     r.gotShield ? `<p class="att-note sh got">${shieldSvg('ic')}<span>연속 ${fmtN(r.cur)}일! <b>출석 방패 +1</b> <small>(${r.shield}/${r.shieldMax})</small></span></p>` : '',
+    r.tix ? `<p class="att-note gck">${ui('gift', 'ic')}<span>뽑기권 <b>+${r.tix}</b>${r.tixNow != null ? ` <small>(${r.tixNow}장)</small>` : ''}</span><a href="#gacha" data-go="gacha" data-close>뽑으러 가기</a></p>` : '',
     r.pf && [7, 14, 30, 50, 100].includes(r.cur) ? `<p class="att-note pfn">${ui('sparkle', 'ic')}<span><b>완벽한 연속</b> — 방패 없이 여기까지 왔어요</span></p>` : '',
   ].join('');
   const gifts = (r.unlocked || []).map((x, i) => `<div class="att-gift k-${x.kind}" data-i="${i}"><span class="rw-box">${rwIcon(x)}</span><p><b>${x.by === 'total' ? `총 ${x.d}일 출석 보상` : `${x.d}일 연속 보상`}</b><small>${x.kind === 'perk' ? `${esc(rwName(x))}!` : `새 ${KIND[x.kind]}${named(x.kind) ? ` ${esc(rwName(x))}` : ''} 해금!`}${x.kind === 'sticker' ? '<br>대표 스티커·첫 화면 시계·댓글·DM에 쓸 수 있어요' : ''}</small></p></div>`).join('');
@@ -294,6 +295,7 @@ function sheetHtml(r, quiet = false) {
       <li>불꽃은 7일·30일·100일에 색이 바뀌어요.</li>
       <li>보상은 최고 연속 기록·총 출석일 기준이라 한 번 받으면 사라지지 않아요.</li>
       <li>받은 <b>스티커</b>는 이름 옆 대표 스티커, 첫 화면 시계 꾸미기, 밸런스 댓글·DM 스티커로 쓸 수 있어요. 고르기는 프로필 꾸미기에서.</li>
+      <li>등교하는 날 출석하면 <b>뽑기권</b>도 1장씩 받아요(연속 5일마다·기념일엔 1장 더). 서비스 › 뽑기에서 써요.</li>
       <li><b>혜택</b> 보상: 시계 스티커 칸이 늘어나고(1칸 → 최대 3칸), 연속 30일이면 방패를 3개까지 모을 수 있어요.</li></ul></details>
     <div class="row"><button class="btn ghost" type="button" data-close>닫기</button></div>`;
 }

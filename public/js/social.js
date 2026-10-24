@@ -1,7 +1,8 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName } from './att-rewards.js';
+import * as GCH from './gacha.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, RAR } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
@@ -430,11 +431,11 @@ function openEdit() {
   $('#editForm .pk-seg').onclick = e => { const b = e.target.closest('[data-view]'); if (!b) return; store.set('edit_view', b.dataset.view); pkApply(); };
   const sel = { avatar: u.avatar, color: u.color };
   const prev = () => { $('#edPrev').className = 'preview c-' + sel.color; $('#edPrev').innerHTML = av({ avatar: sel.avatar, color: sel.color }, 'big'); };
-  $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(`${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev(); };
-  $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(`${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`); return; } $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev(); };
+  $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev(); };
+  $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev(); };
   $('#pSt').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.lock) { toast(`${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`); return; }
+    if (b.dataset.lock) { toast(lockMsg(b)); return; }
     if (picked.has(b.dataset.v)) picked.delete(b.dataset.v);
     else if (picked.size >= stkMax(u)) { toast(`스티커는 ${stkMax(u)}개까지!`); return; }
     else picked.add(b.dataset.v);
@@ -442,7 +443,7 @@ function openEdit() {
   };
   // 대표 스티커(하나) · 시계 스티커(칸 수만큼, 고른 순서대로 왼쪽 위 → 오른쪽 아래 → 오른쪽 위)
   sel.rep = u.rep || '';
-  const lockTip = b => toast(`${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`);
+  const lockTip = b => toast(lockMsg(b));
   const decoN = () => { const el = $('#decoN'); if (el) el.textContent = `${deco.length}/${slots}칸`; };
   decoN();
   // 대표 스티커: 보통 1개(누르면 바꿈), 개발자는 3개까지 골라 붙임
@@ -487,7 +488,11 @@ function openEdit() {
 }
 
 // 출석 보상 칸: 해금된 건 고를 수 있고, 아직이면 흐리게 + 자물쇠(누르면 필요한 일수 안내)
-const attHave = r => rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
+const attHave = r => r.by === 'gacha' ? !!S.me?.gc?.own?.[r.v] : rwOn(r, S.me?.attBest || 0, S.me?.attTotal || 0);
+// 스티커 = 출석 보상 스티커 + 뽑기 스티커(by 'gacha')
+const GC_STK = GACHA.map(g => ({ ...g, by: 'gacha', kind: 'sticker' }));
+const rwList = kind => kind === 'sticker' ? [...ATT.lockedOf('sticker'), ...GC_STK] : ATT.lockedOf(kind);
+const lockMsg = b => b.dataset.by === 'gacha' ? '뽑기에서 나오는 스티커예요 — 서비스 › 뽑기에서 뽑아 보세요' : `${b.dataset.by === 'total' ? '총 출석' : '연속 출석'} ${b.dataset.lock}일을 달성하면 열려요 🔥`;
 // 꾸미기 목록 보기: 모두 보기 / 보유한 것만 보기 (이 기기에 기억 edit_view)
 const pkView = () => store.get('edit_view', 'all') === 'own' ? 'own' : 'all';
 const pkDiv = (t, extra = '') => `<p class="pk-div${extra}">${t}</p>`;
@@ -503,20 +508,26 @@ function pkApply() {
   $$('#editForm .pk-seg [data-view]').forEach(b => { const on = b.dataset.view === pkView(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   $$('#editForm select[name=title] option:disabled').forEach(o => { o.hidden = own; });
 }
+// 뽑기 스티커 구분선 (스티커 목록에서 출석 보상 뒤)
+function gcDiv() {
+  const n = GC_STK.filter(attHave).length;
+  return pkDiv(`뽑기 스티커 <small>${n}/${GC_STK.length} 뽑음</small><span class="pk-none">아직 뽑은 스티커가 없어요 · 서비스 › 뽑기</span>`, n ? '' : ' zero');
+}
 function attPicks(kind, isOn) {
-  return ATT.lockedOf(kind).map(r => {
-    const tip = `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상 · ${kind === 'color' ? COLOR_NAME[r.v] : objName(r.v)}`;
+  return rwList(kind).map(r => {
+    const gc = r.by === 'gacha';
+    const tip = gc ? `뽑기 ${RAR[r.rar].n} · ${objName(r.v)}` : `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상 · ${kind === 'color' ? COLOR_NAME[r.v] : objName(r.v)}`;
     const inner = kind === 'color' ? '' : artOf(r.v, 'pka');
-    return attHave(r)
+    return (r === GC_STK[0] ? gcDiv() : '') + (attHave(r)
       ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
-      : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${r.d}" data-by="${r.by}" data-tip="🔒 ${tip}" aria-label="${tip} (잠김)">${inner}<span class="pk-lk">${ui('lock')}</span><i>${r.d}</i></button>`;
+      : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${gc ? 'g' : r.d}" data-by="${r.by}" data-tip="🔒 ${tip}" aria-label="${tip} (잠김)">${inner}<span class="pk-lk">${ui('lock')}</span><i>${gc ? '뽑기' : r.d}</i></button>`);
   }).join('');
 }
 // 스티커 고르기 작은 창 (DM·밸런스 댓글 공용) — 받은 출석 보상 스티커만. 고르면 onPick('r:이름')
 function stkTray(btn, onPick) {
   const old = $('.stk-tray'); if (old) { const same = old._btn === btn; old.remove(); if (same) return; }
   if (!S.me) { toast('로그인하면 쓸 수 있어요'); return; }
-  const have = ATT.lockedOf('sticker').filter(attHave), next = ATT.lockedOf('sticker').find(r => !attHave(r));
+  const have = rwList('sticker').filter(attHave), next = ATT.lockedOf('sticker').find(r => !attHave(r));
   const t = document.createElement('div');
   t.className = 'stk-tray'; t._btn = btn; t.setAttribute('role', 'dialog'); t.setAttribute('aria-label', '스티커 고르기');
   t.innerHTML = have.length
@@ -922,6 +933,8 @@ function expWarn() {
 export async function init(c) {
   ctx = c; c.stkTray = stkTray;   // app.js 밸런스 댓글에서도 씀
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
+  c.RENDER.gacha = () => GCH.render();
+  GCH.init({ call, refreshMe, me: () => S.me, setGc: g => { if (S.me) S.me.gc = { ...S.me.gc, tix: g.tix, shard: g.shard, pity: g.pity, leg: g.leg, own: g.own }; } });
   c.report = openReport;
   c.authForm = authHtml;   // 소개 화면의 로그인/가입 폼
   c.onLeave = v => {
