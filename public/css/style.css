@@ -2041,6 +2041,25 @@ html.away .mascot *{animation-play-state:paused!important}
 .pick.sw .att-pk{background:var(--pg)}
 /* 잠긴 칸 흐림은 버튼 자체(filter·opacity)가 아니라 덮개(::before)로 — 버튼에 걸면 마우스 이름표까지 흐려짐 */
 .pick .att-pk.lock::before{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;background:color-mix(in srgb,var(--card) 50%,transparent);-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1);pointer-events:none}
+/* 잠긴 그림은 그림(.pka) 자체를 흑백으로 — 덮개만으로는 브라우저에 따라 색이 남음. 칸 배경도 회색 */
+.pick .att-pk.lock{background:var(--chip);cursor:not-allowed}
+.pick.sw .att-pk.lock{background:var(--pg)}
+.pick .att-pk.lock .pka{filter:grayscale(1) contrast(.85);opacity:.55}
+.pick .att-pk .pk-lk{position:absolute;z-index:2;left:50%;top:50%;width:46%;height:46%;transform:translate(-50%,-50%);display:grid;place-items:center;pointer-events:none;filter:drop-shadow(0 1px 1.5px rgba(15,34,54,.35))}
+.pick .att-pk .pk-lk .att-ic{width:100%;height:100%;vertical-align:0}
+/* 꾸미기 목록 보기 토글 + 기본/출석 보상 구분선 */
+.pk-view{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:18px 0 -4px;font-weight:900;font-size:14px}
+.pk-seg{display:inline-flex;padding:3px;gap:3px;border-radius:999px;background:var(--chip);border:2px solid var(--ink)}
+.pk-seg button{padding:6px 12px;border-radius:999px;font:inherit;font-size:12.5px;font-weight:900;color:var(--sub);background:none;border:0;cursor:pointer;transition:background .15s,color .15s}
+.pk-seg button.on{background:var(--ink);color:var(--card)}
+.pick .pk-div{grid-column:1/-1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 0;font-size:12px;font-weight:900;color:var(--sub);text-align:left}
+.pick .pk-div:first-child{margin-top:0}
+.pick .pk-div:not(:first-child){padding-top:8px;border-top:2px dashed color-mix(in srgb,var(--sub) 35%,transparent)}
+.pick .pk-div small{font-weight:800;color:var(--fire)}
+.pick .pk-div .flm{display:inline-block;width:11px;height:13px}
+.pick .pk-none{display:none;width:100%;font-weight:800;color:var(--sub)}
+.own-only .pick .att-pk.lock{display:none}
+.own-only .pick .pk-div.zero .pk-none{display:block}
 .pick .att-pk.lock:hover{transform:none}
 .pick .att-pk i{position:absolute;z-index:2;right:2px;bottom:1px;font:900 10px/1 var(--num);font-style:normal;color:var(--ink);background:var(--card);border-radius:6px;padding:1px 3px}
 .sform .att-hint{margin-top:-4px}
