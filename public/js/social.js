@@ -55,7 +55,7 @@ const av = (u, cls = '', x = '') => u?.handle === ADMIN_HANDLE ? `<span class="a
 const avWear = v => wearOf(v) ? `<i class="avwear">${wearSvg(v)}</i>` : '';
 const isDev = u => u?.handle === ADMIN_HANDLE;
 // 뽑기 전설 '별똥별 등장': 프로필을 열 때 한 번 쏟아지는 별(위치·크기·시간을 조금씩 다르게)
-const pfxStars = () => `<div class="pfx-star" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`;   // 위치·크기·시간은 style.css nth-child (CSP: style 속성 금지)
+const pfxStars = () => `<div class="pfx-star" aria-hidden="true">${'<i></i>'.repeat(6)}</div>`;   // 위치·크기·시간은 style.css nth-child (CSP: style 속성 금지)
 const devTag = u => (isDev(u) ? '<span class="devb" data-tip="SVMHS GROUND 개발자">🛠 개발자</span>' : '') + repTag(u);   // 이름 옆 작은 배지 + 대표 스티커
 // 개발자 계정은 닉네임 대신 '개발자'로 표시하고 아이디는 어디에도 띄우지 않음 (링크는 실제 아이디 그대로)
 const nameOf = u => isDev(u) ? '개발자' : u.name;
