@@ -3497,4 +3497,4 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
   .ed-body{padding:2px 14px 16px}
   .ed-hd{padding:10px 12px 10px 18px}.ed-hd h3{font-size:21px}
 }
-@media (max-width:460px){.ed-pv .pv-body{grid-template-columns:1fr}.ed-pv .pv-clk{min-height:80px}.ed-subbar .pv-clr{margin-left:auto}}
+@media (max-width:460px){.ed-pv .pv-body{grid-template-columns:minmax(0,1fr) 100px;gap:10px}.ed-pv .pv-card .pban{height:60px}.ed-pv .pv-id .av.big{width:56px;height:56px}.ed-pv .pv-name{font-size:16px}.ed-pv .pv-tm{font-size:27px}.ed-pv .pv-clk small{font-size:9.5px;text-align:center}.ed-pv .pv-dk,.ed-pv .pv-dk > *{width:24px !important;height:24px !important}.ed .pv-fxs{display:none}.ed-tabs button{padding:7px 9px;font-size:13px}.ed-subbar .pv-clr{margin-left:auto}}
