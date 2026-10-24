@@ -248,7 +248,7 @@ function calHtml(r) {
     <div class="att-cal">${h}</div>`;
 }
 // 보상 칸: 그림 칸(고정 크기) → 날짜 → 설명(2줄 자리 고정) 순서라 칸마다 줄이 똑같이 맞음. 받았으면 오른쪽 위 초록 체크, 아니면 자물쇠
-const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : x.kind === 'perk' ? (x.v === 'shield3' ? '방패 3개' : '시계 칸 +1') : objName(x.v) || KIND[x.kind];
+const rwCap = x => x.kind === 'title' ? `‘${x.v}’` : x.kind === 'color' ? `${COLOR_NAME[x.v]} 배경` : x.kind === 'perk' ? (x.v === 'shield3' ? '방패 3개' : '시계 장식 칸 +1') : objName(x.v) || KIND[x.kind];
 // 칸 설명은 물건 이름 (과 이름 X — 2026-10-24 하율)
 function rewardsHtml(r, by) {
   const own = x => r.all || rwOn(x, r.best, r.total);   // r.all: 개발자 계정 = 전부 해금

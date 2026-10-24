@@ -14,7 +14,7 @@ export const REWARDS = [
   { by: 'best', d: 7, kind: 'sticker', v: 'r:slate', dept: 'con' },
   { by: 'best', d: 7, kind: 'sticker', v: 'r:palette', dept: 'med' },
   { by: 'best', d: 7, kind: 'sticker', v: 'r:timeline', dept: 'pro' },
-  { by: 'best', d: 7, kind: 'title', v: '일주일 개근' },
+  { by: 'best', d: 7, kind: 'title', v: '타오르는 중' },
   { by: 'best', d: 10, kind: 'avatar', v: 'r:gblue' },
   { by: 'best', d: 14, kind: 'color', v: 'xflame' },
   { by: 'best', d: 14, kind: 'perk', v: 'deco2' },
@@ -23,7 +23,7 @@ export const REWARDS = [
   { by: 'best', d: 30, kind: 'avatar', v: 'r:conblue', dept: 'con' },
   { by: 'best', d: 30, kind: 'avatar', v: 'r:medblue', dept: 'med' },
   { by: 'best', d: 30, kind: 'avatar', v: 'r:problue', dept: 'pro' },
-  { by: 'best', d: 30, kind: 'title', v: '한 달의 불꽃' },
+  { by: 'best', d: 30, kind: 'title', v: '꺼지지 않는 불꽃' },
   { by: 'best', d: 30, kind: 'perk', v: 'shield3' },
   { by: 'best', d: 40, kind: 'color', v: 'xsunset' },
   { by: 'best', d: 50, kind: 'sticker', v: 'r:light', dept: 'con' },
@@ -56,7 +56,7 @@ export const DEPT = { con: '콘텐츠과', med: '미디어과', pro: '프로듀�
 // 스티커·프로필 사진의 화면 이름 = 물건 이름
 export const OBJ_NAME = {
   bell: '학교 종', clock: '자명종', gseal: 'G 씰', nametag: '명찰', tray: '급식판', note: '노트',
-  slate: '슬레이트', palette: '팔레트', timeline: '편집 타임라인', light: '촬영 조명', cube: '3D 큐브', headset: '헤드폰',
+  slate: '슬레이트', palette: '팔레트', timeline: '타임라인', light: '조명', cube: '3D 큐브', headset: '헤드폰',
   gblue: '파란 G', gpink: '분홍 G', gnight: '밤하늘 G',
   conblue: '필름 카메라', medblue: '펜 태블릿', problue: '컬러 휠',
   congold: '금빛 필름 카메라', medgold: '금빛 펜 태블릿', progold: '금빛 컬러 휠',
