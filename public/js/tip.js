@@ -7,10 +7,10 @@ const M = 8;   // 화면 가장자리 여백
 
 function make() {
   box = document.createElement('div');
-  box.className = 'ftip';
+  box.className = 'htip';
   box.setAttribute('aria-hidden', 'true');
   document.body.appendChild(box);
-  document.documentElement.classList.add('ftip-on');   // CSS ::after 이름표 끔
+  document.documentElement.classList.add('htip-on');   // CSS ::after 이름표 끔
 }
 
 function place() {

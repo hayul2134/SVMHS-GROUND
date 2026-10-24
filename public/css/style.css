@@ -1685,13 +1685,13 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
   .pick button:hover::after{transform:translate(-50%,0) scale(.91)}
   .pick button.on:hover::after,.pick button.on:focus-visible::after{transform:translate(-50%,0) rotate(6deg)}
   /* 2026-10-24: 이름표는 tip.js가 body 맨 위 층에 띄움(.ftip) → 스크롤 창·화면 가장자리에서 안 잘림. JS가 켜지면 ::after는 끔 */
-  .ftip-on [data-tip]::after{content:none!important;display:none!important}
-  .ftip{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;max-width:calc(100vw - 16px);
+  .htip-on [data-tip]::after{content:none!important;display:none!important}
+  .htip{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;max-width:calc(100vw - 16px);
     padding:7px 11px;border-radius:10px;background:#173048;color:#fff;font:700 12.5px/1.2 var(--sans);letter-spacing:-.01em;white-space:nowrap;text-align:center;
     box-shadow:0 4px 12px rgba(23,48,72,.25);opacity:0;transition:opacity .12s ease}
-  .ftip.on{opacity:1}
-  .ftip.wrap{white-space:normal;width:max-content;max-width:220px;line-height:1.35}
-  :root[data-theme="dark"] .ftip{background:#f3f7fb;color:var(--onc)}
+  .htip.on{opacity:1}
+  .htip.wrap{white-space:normal;width:max-content;max-width:220px;line-height:1.35}
+  :root[data-theme="dark"] .htip{background:#f3f7fb;color:var(--onc)}
   .pick.sw button.on:hover::after,.pick.sw button.on:focus-visible::after{transform:translate(-50%,0)}
 }
 /* 식판 카툰 음식 그림(투명 배경): 칸 안에 잘리지 않게 담고(contain), 아래는 이름표 자리로 조금 비움 */
