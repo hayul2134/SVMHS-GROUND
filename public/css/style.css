@@ -710,6 +710,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .vhead h2{font-family:var(--disp);font-weight:400;font-size:34px;color:var(--on-bg);text-shadow:3px 3px 0 var(--sky);transform:rotate(-2deg)}
 #v-tt > .card,#v-cal > .card,#v-dday > .grid{margin-top:26px}
 #v-tt > .card{transform:rotate(-.3deg)}#v-cal > .card{transform:rotate(.3deg)}
+#v-cal > .card{margin-top:0;padding-top:14px}#v-cal .k-cal > .ct{margin-bottom:10px}   /* 학사일정 위로 올려 아래 공간 확보 (2026-10-25) */
 .pager{display:flex;align-items:center;gap:8px}
 .vhead .pager{background:var(--card);border:var(--bd);border-radius:14px;padding:4px;box-shadow:var(--sh-s)}
 .pager button{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--text);border:2px solid var(--ink);transition:.1s}
