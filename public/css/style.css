@@ -44,8 +44,8 @@ a{color:inherit}
 /* ===== 3. 헤더 (위에 떠 있는 버튼들) ===== */
 header{position:fixed;top:0;left:0;right:0;z-index:45;pointer-events:none}
 /* 스크롤하면 헤더 뒤에 반투명 바탕 (2026-10-24: 버튼이 아래 카드·리본 위에 그냥 떠서 겹쳐 보이던 문제) */
-header{transition:background .2s,box-shadow .2s,backdrop-filter .2s}
-html.hbg:not(.prelogin) header{background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 2px 0 var(--line)}
+header{transition:background .2s,backdrop-filter .2s}
+html.hbg:not(.prelogin) header{background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .hd{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:8px}
 .hd > *{pointer-events:auto}
 .logo{display:flex;align-items:center;gap:10px;line-height:1;margin-right:auto;color:var(--on-bg)}
