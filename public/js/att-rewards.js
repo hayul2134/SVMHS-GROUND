@@ -129,3 +129,7 @@ export const gcDone = own => GACHA.every(g => own && own[g.v] > 0);
 export const fxOk = (slot, v) => !!GACHA.find(g => g.v === v && g.fx === slot);
 // 출석 하루에 받는 뽑기권: 1 + 연속 5일마다 1 + 기념일 1
 export const gcEarn = cur => 1 + (cur % GC.bonusEvery === 0 ? 1 : 0) + (MILESTONES.includes(cur) ? 1 : 0);
+
+// 네온 시계 색(2026-10-24 하율: "네온 색상도 바꿀 수 있게") — 실제 네온관 색. 값은 이 기기에 저장(localStorage sg_neon_c), html[data-neon]로 적용
+export const NEON = [['pink', '핑크', '#ff3fb4'], ['red', '레드', '#ff3448'], ['orange', '오렌지', '#ff7a1f'], ['yellow', '옐로', '#ffd22e'], ['green', '그린', '#2fff7a'], ['ice', '아이스 블루', '#36e2ff'], ['blue', '블루', '#3f6bff'], ['purple', '퍼플', '#b14bff'], ['warm', '웜 화이트', '#ffe7b8']];
+export const neonPick = cur => `<div class="neon-pick" role="radiogroup" aria-label="네온 색">${NEON.map(([k, n, c]) => `<button type="button" role="radio" aria-checked="${cur === k}" class="nc nc-${k}${cur === k ? ' on' : ''}" data-neon-c="${k}" data-tip="${n}" aria-label="${n}"></button>`).join('')}</div>`;

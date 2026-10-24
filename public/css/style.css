@@ -3229,11 +3229,6 @@ html.away .an-plane,html.away .an-trail,html.away .an-ring,html.away .an-ball,ht
 .pcard.gcm .phead .av{position:relative}
 .pcard.gcm .phead .av::before{content:"";position:absolute;inset:-7px;z-index:1;border-radius:inherit;padding:4px;background:conic-gradient(#ff7ad9,#5ab8ff,#9b7bff,#ffc93c,#ff7ad9);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
 /* 전설 ③ 시계 테마: 네온 */
-html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{color:#fff;-webkit-text-stroke:2px #ff4fd8;text-shadow:0 0 6px #ff7ae2,0 0 18px #ff4fd8,0 0 42px #ff4fd8,6px 6px 0 color-mix(in srgb,#6fe3ff 55%,transparent);animation:ckNeon 4s ease-in-out infinite}
-html[data-ckfx=neon] .stage.rest .s-big{-webkit-text-stroke-color:#3fe8a4;text-shadow:0 0 6px #7fffc9,0 0 18px #3fe8a4,0 0 42px #3fe8a4,6px 6px 0 color-mix(in srgb,#6fe3ff 55%,transparent)}
-html[data-ckfx=neon] .s-big .sec{-webkit-text-stroke:0;text-shadow:0 0 8px #6fe3ff;color:#bff6ff}
-@keyframes ckNeon{0%,100%{opacity:1}91%{opacity:1}92%{opacity:.55}93%{opacity:1}95%{opacity:.7}96%{opacity:1}}
-@media (prefers-reduced-motion:reduce){html[data-ckfx=neon] .s-big{animation:none}}
 /* 전설 ④ 마스코트 소품: 머리 위에 떠 있는 왕관 */
 .mascot .mfx{transform-box:fill-box;transform-origin:center;animation:mfxFloat 2.8s ease-in-out infinite}
 @keyframes mfxFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-3px) rotate(4deg)}}
@@ -3334,3 +3329,46 @@ html[data-ckfx=neon] .s-big .sec{-webkit-text-stroke:0;text-shadow:0 0 8px #6fe3
 .catgrid .app{text-align:center;word-break:keep-all;line-height:1.25}
 @media (max-width:380px){.appgrid.catgrid{gap:12px 6px}.app{font-size:11.5px}}
 .sheet.edw{max-width:560px}
+
+/* ===== 네온 시계(뽑기 전설 효과) — 2026-10-24 2차, 원칙은 tools/neon/NEON_GUIDE.md =====
+   ① 관(튜브)은 '속이 하얗게 달아오른 가는 선' — 글자를 채우고 테두리 긋기(text-stroke)·옆으로 미는 그림자 금지
+   ② 빛은 세 겹: 관 바로 옆(작은 블러, 진한 색) → 번짐(중간) → 벽에 퍼진 빛(크게, 옅게)
+   ③ 네온은 어두운 판 위에서만 산다 — 밝은 크림 배경 위에 바로 올리지 않고 아크릴 판(+모서리 볼트)에 붙임
+   ④ 깜빡임은 '켤 때 한 번' + '아주 가끔 한 글자만 살짝' — 계속 숨 쉬듯 깜빡이면 싸 보임 */
+html{--ne:#ff3fb4}
+html[data-neon=pink]{--ne:#ff3fb4}html[data-neon=red]{--ne:#ff3448}html[data-neon=orange]{--ne:#ff7a1f}html[data-neon=yellow]{--ne:#ffd22e}html[data-neon=green]{--ne:#2fff7a}html[data-neon=ice]{--ne:#36e2ff}html[data-neon=blue]{--ne:#3f6bff}html[data-neon=purple]{--ne:#b14bff}html[data-neon=warm]{--ne:#ffe7b8}
+html{--ne-core:color-mix(in srgb,#fff 72%,var(--ne));--ne-glow:0 0 1px var(--ne-core),0 0 .03em var(--ne),0 0 .07em var(--ne),0 0 .16em var(--ne),0 0 .34em color-mix(in srgb,var(--ne) 70%,transparent),0 0 .7em color-mix(in srgb,var(--ne) 40%,transparent)}
+html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{
+  position:relative;isolation:isolate;font-family:"Pretendard Variable",Pretendard,sans-serif;font-weight:250;letter-spacing:.02em;
+  color:var(--ne-core);-webkit-text-stroke:0;text-shadow:var(--ne-glow);padding:.06em .2em .1em;animation:neOn 1.3s steps(1,end) both}
+/* 아크릴 판: 거의 검은 남보라 + 위쪽이 살짝 밝은 반사 + 판 안쪽으로 번진 색 + 벽(크림 배경)에 비친 빛 */
+html[data-ckfx=neon] .stage .s-big::before{content:"";position:absolute;inset:-.02em -.06em -.04em;z-index:-1;border-radius:.16em;
+  background:linear-gradient(180deg,rgba(255,255,255,.07),transparent 38%),radial-gradient(120% 90% at 50% 55%,color-mix(in srgb,var(--ne) 16%,#120c1c),#0d0a14 70%);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.06),inset 0 0 .5em color-mix(in srgb,var(--ne) 22%,transparent),0 .05em 0 #000,0 0 .5em color-mix(in srgb,var(--ne) 30%,transparent),0 0 1.4em color-mix(in srgb,var(--ne) 18%,transparent)}
+/* 판 모서리 볼트 4개(스탠드오프) */
+html[data-ckfx=neon] .stage .s-big::after{content:"";position:absolute;inset:.05em .02em .03em;z-index:-1;pointer-events:none;
+  --b:radial-gradient(circle at center,#dfe5ee 0 32%,#8b95a3 45%,transparent 60%);
+  background:var(--b) left top/.09em .09em no-repeat,var(--b) right top/.09em .09em no-repeat,var(--b) left bottom/.09em .09em no-repeat,var(--b) right bottom/.09em .09em no-repeat}
+html[data-ckfx=neon] .s-big .ap{color:var(--ne-core);text-shadow:var(--ne-glow);font-weight:300}
+html[data-ckfx=neon] .s-big .c{animation:neColon 2s steps(1,end) infinite;opacity:.95}   /* 콜론: 1초마다 아주 살짝 숨 쉼(관 하나가 따로 노는 느낌) */
+html[data-ckfx=neon] .s-big .n:nth-of-type(3){animation:neDip 11s steps(1,end) 3s infinite}   /* 가끔 한 글자만 지지직 */
+html[data-ckfx=neon] .s-big .sec{color:var(--ne-core);text-shadow:var(--ne-glow);font-weight:250}
+html[data-ckfx=neon] .stage .s-big.long,html[data-ckfx=neon] .stage .s-big.long2{font-weight:250}
+html.neon-on[data-ckfx=neon] .stage .s-big{animation:neOn 1.3s steps(1,end) both}
+@keyframes neOn{0%{color:#3a2f44;text-shadow:none}8%{color:var(--ne-core);text-shadow:var(--ne-glow)}12%{color:#3a2f44;text-shadow:none}22%{color:var(--ne-core);text-shadow:var(--ne-glow)}26%{color:#5a4a66;text-shadow:0 0 .05em var(--ne)}40%,100%{color:var(--ne-core);text-shadow:var(--ne-glow)}}
+@keyframes neDip{0%,93%,100%{opacity:1}94%{opacity:.35}95%{opacity:1}96.5%{opacity:.6}97%{opacity:1}}
+@keyframes neColon{0%{opacity:.95}50%{opacity:.8}}
+@media (prefers-reduced-motion:reduce){html[data-ckfx=neon] .s-big,html[data-ckfx=neon] .s-big *{animation:none !important}}
+/* 꾸미기 미리보기 시계도 같은 규칙 */
+.pv-clk.neon{background:radial-gradient(120% 90% at 50% 55%,color-mix(in srgb,var(--ne) 16%,#120c1c),#0d0a14 70%);box-shadow:4px 4px 0 var(--ink),0 0 18px color-mix(in srgb,var(--ne) 28%,transparent)}
+.pv-clk.neon small{color:color-mix(in srgb,#fff 70%,var(--ne))}
+.pv-clk.neon .pv-tm{font-family:"Pretendard Variable",Pretendard,sans-serif;font-weight:250;color:var(--ne-core);-webkit-text-stroke:0;text-shadow:var(--ne-glow)}
+/* 네온 색 고르기 */
+.neon-pick{display:flex;flex-wrap:wrap;gap:6px}
+.neon-pick .nc{width:26px;height:26px;border-radius:50%;border:2px solid #0d0a14;cursor:pointer;background:radial-gradient(circle,color-mix(in srgb,#fff 70%,var(--c)) 0 22%,var(--c) 45%,color-mix(in srgb,var(--c) 30%,#0d0a14) 72%);box-shadow:0 0 6px color-mix(in srgb,var(--c) 70%,transparent);transition:transform .12s}
+.neon-pick .nc:hover{transform:scale(1.12)}
+.neon-pick .nc.on{outline:3px solid var(--ink);outline-offset:2px}
+.nc-pink{--c:#ff3fb4}.nc-red{--c:#ff3448}.nc-orange{--c:#ff7a1f}.nc-yellow{--c:#ffd22e}.nc-green{--c:#2fff7a}.nc-ice{--c:#36e2ff}.nc-blue{--c:#3f6bff}.nc-purple{--c:#b14bff}.nc-warm{--c:#ffe7b8}
+.pv-neon,.gc-neon{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pv-neon small,.gc-neon small{font-size:11px;font-weight:900;color:var(--sub)}
+.pv.fold .pv-neon{display:none}

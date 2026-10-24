@@ -2,7 +2,7 @@
 import { $, $$, esc, toast, store } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, GC_TITLE, gcDone } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, gcDone } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 
@@ -85,11 +85,20 @@ function paintBadges() {
   ['#btnClass', '#btnShare', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·QR·신고 필요 없음
   $('#btnMe .mi').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
 }
+// 네온 시계 색: 이 기기에 저장 · 고르는 곳은 꾸미기 미리보기와 뽑기 '내 효과' 두 군데(같은 버튼 data-neon-c)
+const neonC = () => { const v = store.get('neon_c', 'pink'); return NEON.some(x => x[0] === v) ? v : 'pink'; };
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-neon-c]'); if (!b) return;
+  store.set('neon_c', b.dataset.neonC); document.documentElement.dataset.neon = b.dataset.neonC;
+  $$('[data-neon-c]').forEach(x => { const on = x.dataset.neonC === b.dataset.neonC; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
+  document.documentElement.classList.remove('neon-on'); void document.documentElement.offsetWidth; document.documentElement.classList.add('neon-on');   // 색 바꾸면 켜지는 연출 한 번
+});
 // 내가 켠 뽑기 효과 중 내 화면에만 보이는 것: 시계 테마(html[data-ckfx]) · 마스코트 소품(html[data-mfx] → app.js가 캐릭터에 붙임)
 function applyFx() {
   const fx = S.me?.gc?.fx || {}, h = document.documentElement;
   const ck = fx.clock === 'r:fxneon' ? 'neon' : '', mf = fx.masc === 'r:fxcrown' ? 'crown' : '';
   if (ck) h.dataset.ckfx = ck; else delete h.dataset.ckfx;
+  h.dataset.neon = neonC();
   if ((h.dataset.mfx || '') !== mf) { if (mf) h.dataset.mfx = mf; else delete h.dataset.mfx; document.dispatchEvent(new Event('sg:mfx')); }
 }
 async function refreshMe() {
@@ -430,7 +439,8 @@ function pvHtml(u, st) {
       </div>
       <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm">${hm}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small>${dk}</div>
     </div>
-    ${fxOn ? `<div class="pv-fxs"><small>켜 둔 뽑기 효과</small>${fxOn}</div>` : ''}`;
+    ${fxOn ? `<div class="pv-fxs"><small>켜 둔 뽑기 효과</small>${fxOn}</div>` : ''}
+    ${fx.clock === 'r:fxneon' ? `<div class="pv-neon"><small>네온 색</small>${neonPick(neonC())}</div>` : ''}`;
 }
 // 메뉴의 '꾸미기': 내 프로필로 가서 바로 꾸미기 창
 document.getElementById('btnEdit')?.addEventListener('click', () => { if (!S.me) return; if (location.hash !== '#me') location.hash = 'me'; setTimeout(openEdit, 60); });
