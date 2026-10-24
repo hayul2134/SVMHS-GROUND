@@ -161,12 +161,14 @@ def M_fox():
 def M_panda():
     c, l, k = '#ffffff', '#a3a0ad', '#3e3a45'
     pupil = "<g class='me'>"
-    for x in (39, 61):
-        pupil += (f"<circle cx='{x}' cy='54' r='3.6' fill='#fff'/><circle cx='{x+.5}' cy='54.4' r='2.4' fill='{k}'/><circle cx='{x+1.2}' cy='53.4' r='.9' fill='#fff'/>")
+    # 2026-10-24 '눈이 무섭다' → 흰자 테두리(노려보는 느낌) 빼고 까만 눈 + 하이라이트 2개, 눈두덩은 바깥으로 처지게(八자)
+    for x in (39.5, 60.5):
+        pupil += (f"<ellipse cx='{x}' cy='55' rx='3.3' ry='3.9' fill='#141217'/>"
+                  f"<circle cx='{x+1.1}' cy='53.6' r='1.35' fill='#fff'/><circle cx='{x-1}' cy='56.6' r='.6' fill='#fff' opacity='.8'/>")
     pupil += '</g>'
     return (SHADOW + body(k, '#2c2932', c, feet=k).replace(f"<ellipse cx='50' cy='81' rx='18' ry='12.5' fill='{k}'", f"<ellipse cx='50' cy='81' rx='18' ry='12.5' fill='{c}'")
             + f"<circle cx='23' cy='22' r='10' fill='{k}' {ln('#2c2932')}/><circle cx='77' cy='22' r='10' fill='{k}' {ln('#2c2932')}/>" + mochi(c, l)
-            + f"<ellipse cx='38.5' cy='55' rx='7.4' ry='9.2' transform='rotate(-30 38.5 55)' fill='{k}'/><ellipse cx='61.5' cy='55' rx='7.4' ry='9.2' transform='rotate(30 61.5 55)' fill='{k}'/>"
+            + f"<ellipse cx='38' cy='56' rx='7.6' ry='8.8' transform='rotate(28 38 56)' fill='{k}'/><ellipse cx='62' cy='56' rx='7.6' ry='8.8' transform='rotate(-28 62 56)' fill='{k}'/>"
             + pupil + blush(64, 26) + f"<ellipse cx='50' cy='61' rx='2.8' ry='2' fill='{k}'/>" + mouth(63.4, 3))
 
 
