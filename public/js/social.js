@@ -1569,7 +1569,7 @@ async function checkNotices() {   // 새 공지·새 업데이트 소식이 있�
 const dueTxt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} (${'일월화수목금토'[d.getDay()]}) ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 // 개발자 전용: 다음 공지 초안 편집 카드
 function draftCard(d) {
-  const row = (x = {}) => `<li data-id="${esc(x.id || '')}" data-pf="${esc(x.ff || '')}"><textarea rows="2" maxlength="300" placeholder="공지 한 줄 (이모지·이모티콘 환영)">${esc(x.t || '')}</textarea>${x.ff ? `<small class="pdff">새 기능 · ${esc(x.ff)}</small>` : ''}<button type="button" class="pdx" aria-label="이 줄 빼기" data-tip="이 줄 빼기">✕</button></li>`;
+  const row = (x = {}) => `<li data-id="${esc(x.id || '')}" data-pf="${esc(x.ff || '')}" data-img="${esc(x.img || '')}" data-noimg="${x.noimg ? 1 : ''}"><textarea rows="2" maxlength="300" placeholder="공지 한 줄 (이모지·이모티콘 환영)">${esc(x.t || '')}</textarea>${x.img ? `<span class="pdimg"><img src="${esc(x.img)}" alt="" loading="lazy"><button type="button" class="pdix" data-tip="사진 빼기">사진 빼기</button></span>` : ''}${x.ff ? `<small class="pdff">새 기능 · ${esc(x.ff)}</small>` : ''}<button type="button" class="pdx" aria-label="이 줄 빼기" data-tip="이 줄 빼기">✕</button></li>`;
   return `<div class="pdraft" id="pnDraft"><p class="pdh"><b>📝 다음 공지 초안</b><span class="pdme">나만 보여요</span></p>
     <p class="note">수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.</p>
     <input class="pdt" maxlength="60" placeholder="${esc(d.defTitle)}" value="${esc(d.title || '')}">
@@ -1582,13 +1582,13 @@ function bindDraft() {
   const box = $('#pnDraft'); if (!box) return;
   const list = box.querySelector('.pdl');
   const rowHtml = () => { const t = document.createElement('template'); t.innerHTML = draftCard({ ...pnDraft, items: [{}] }); return t.content.querySelector('.pdl li'); };
-  box.addEventListener('click', e => { if (e.target.closest('.pdx')) e.target.closest('li').remove(); });
+  box.addEventListener('click', e => { if (e.target.closest('.pdx')) e.target.closest('li').remove(); else if (e.target.closest('.pdix')) { const li = e.target.closest('li'); li.dataset.img = ''; li.dataset.noimg = '1'; e.target.closest('.pdimg').remove(); } });
   box.querySelector('.pdadd').onclick = () => { const li = rowHtml(); list.append(li); box.querySelector('.empty')?.remove(); li.querySelector('textarea').focus(); };
   box.querySelector('.pdsave').onclick = async e => {
     const b = e.currentTarget; b.disabled = true;
     try {
       const j = await call('patch', { title: box.querySelector('.pdt').value, ok: box.querySelector('.pdok input').checked,
-        items: [...list.children].map(li => ({ id: li.dataset.id, ff: li.dataset.pf, t: li.querySelector('textarea').value })) });
+        items: [...list.children].map(li => ({ id: li.dataset.id, ff: li.dataset.pf, img: li.dataset.img, noimg: !!li.dataset.noimg, t: li.querySelector('textarea').value })) });
       pnDraft = j.draft; ptList = null;
       toast(j.published ? '공개 시각이 지나서 바로 모두에게 올렸어요 🎉' : '초안을 저장했어요');
       if (j.published) openNotices(); else b.disabled = false;
@@ -1607,7 +1607,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
       <p class="nt-t">${title}</p>${inner ? `<div class="ntb"><div class="nb-txt">${inner}</div><button type="button" class="nb-more">📖 자세히 보기</button><button type="button" class="nb-fold">접기 ▴</button></div>` : ''}
       <small>${foot}</small></div></li>`;
   const patches = ptList.slice(0, 12).map((x, i) => card(!i, '🛠', esc(x.title || '업데이트'),
-      (x.items || []).length ? `<ul class="ptitems">${x.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '', `${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}`)).join('');
+      (x.items || []).length ? `<ul class="ptitems">${x.items.map(t => typeof t === 'string' ? `<li>${esc(t)}</li>` : `<li>${esc(t.t || '')}${t.img ? `<img class="ptimg" src="${esc(t.img)}" alt="" loading="lazy">` : ''}</li>`).join('')}</ul>` : '', `${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}`)).join('');
   $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => card(n.live, NT_IC[n.tone] || '',
       n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text), n.body ? esc(n.body) : '',
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
