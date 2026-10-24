@@ -78,6 +78,7 @@ function paintBadges() {
   const dev = S.me?.handle === ADMIN_HANDLE;
   if (!S.me) ATT.sync(null);   // 로그아웃: 🔥 버튼 숨김
   $('#btnOut').hidden = !S.me;   // 로그인돼 있을 때만 메뉴 맨 아래 빨간 로그아웃
+  $('#btnEdit').hidden = !S.me;   // 메뉴 '프로필' 바로 아래 '꾸미기' (로그인했을 때만)
   $('#btnAdmin').hidden = !dev;   // 관리자 계정일 때만 메뉴에 표시 (권한은 서버가 검사)
   ['#btnClass', '#btnShare', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·QR·신고 필요 없음
   $('#btnMe .mi').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
@@ -399,6 +400,8 @@ function openMore(h) {
 }
 
 /* ===== 프로필 꾸미기 ===== */
+// 메뉴의 '꾸미기': 내 프로필로 가서 바로 꾸미기 창
+document.getElementById('btnEdit')?.addEventListener('click', () => { if (!S.me) return; if (location.hash !== '#me') location.hash = 'me'; setTimeout(openEdit, 60); });
 function openEdit() {
   const u = S.me; if (!u) return;
   const picked = new Set(u.stickers || []);
