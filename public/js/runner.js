@@ -556,7 +556,7 @@ export function createRunner(canvas, char, opt = {}) {
       o.connect(v).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
     } catch {}
   }
-  /* 점프 소리 (2026-10-25 2차): 고전 8비트 게임식 '쀼웅' — 펄스파(25%)로 음이 빠르게 위로 미끄러짐.
+  /* 점프 소리 (2026-10-25 2차): 고전 8비트 게임식 '뿌웅'(3차: 한 옥타브 낮춤, 130→330~500Hz) — 펄스파(25%)로 음이 빠르게 위로 미끄러짐.
      톡 = 짧게(0.16초) · 길게 누르면 올라가는 동안 계속 위로, 내려올 땐 그 음에서 잦아들다 착지 때 끝 (떨림·음 내려가기 없음) */
   const JV_TAP = .16, JV_LONG = .06;
   let pulse = null;
@@ -573,10 +573,10 @@ export function createRunner(canvas, char, opt = {}) {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
       const t = actx.currentTime, o = actx.createOscillator(), v = actx.createGain();
       o.setPeriodicWave(pulseWave());
-      o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(700, t + .07);
+      o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(330, t + .07);
       v.gain.setValueAtTime(.06, t);
       o.connect(v).connect(actx.destination); o.start(t);
-      jv = { o, v, t0: t, tap: false, peak: 700 };
+      jv = { o, v, t0: t, tap: false, peak: 330 };
     } catch { jv = null; }
   }
   function jvStop(fade = .04, at) {
@@ -593,7 +593,7 @@ export function createRunner(canvas, char, opt = {}) {
     const t = actx.currentTime;
     if (t - jv.t0 < .07) return;
     if (st.vy < 0) {
-      jv.peak = Math.max(jv.peak, 700 + (-st.y) * 9);
+      jv.peak = Math.max(jv.peak, 330 + (-st.y) * 4);
       jv.o.frequency.cancelScheduledValues(t); jv.o.frequency.setTargetAtTime(jv.peak, t, .03);
     } else if (!jv.fall) {   // 꼭대기: 음은 그대로, 소리만 잦아듦
       jv.fall = true; jv.o.frequency.cancelScheduledValues(t); jv.o.frequency.setValueAtTime(jv.o.frequency.value, t);
@@ -603,7 +603,7 @@ export function createRunner(canvas, char, opt = {}) {
   function jvRelease() {   // 톡 누른 거면 짧은 '쀼'로 마무리
     if (!jv || jv.tap || st.jumpHeld >= JV_LONG || actx.currentTime - jv.t0 > .1) return;
     jv.tap = true;
-    const t = jv.t0; jv.o.frequency.cancelScheduledValues(actx.currentTime); jv.o.frequency.setValueAtTime(240, t); jv.o.frequency.exponentialRampToValueAtTime(900, t + JV_TAP);
+    const t = jv.t0; jv.o.frequency.cancelScheduledValues(actx.currentTime); jv.o.frequency.setValueAtTime(130, t); jv.o.frequency.exponentialRampToValueAtTime(420, t + JV_TAP);
     jvStop(0, t + JV_TAP);
   }
 
