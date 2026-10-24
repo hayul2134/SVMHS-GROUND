@@ -635,8 +635,8 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 /* 학사일정 달력 */
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:22px}
 .cal .dh{text-align:center;font-size:15px;font-weight:900;color:var(--text);padding:6px 0;margin-bottom:2px;border-radius:10px;background:var(--chip);border:2px solid var(--line)}   /* 요일 더 잘 보이게(2026-10-25) */
-.cal .dh:first-child,.cal .dy.sun .n{color:var(--red)}.cal .dh:last-child,.cal .dy.sat .n{color:#2f7fd6}
-.cal .dh:first-child{background:color-mix(in srgb,var(--red) 14%,var(--card))}.cal .dh:last-child{background:color-mix(in srgb,#2f7fd6 14%,var(--card))}
+.cal .dh:first-child,.cal .dy.sun .n{color:var(--red)}.cal .dh:nth-child(7),.cal .dy.sat .n{color:#2f7fd6}
+.cal .dh:first-child{background:color-mix(in srgb,var(--red) 14%,var(--card))}.cal .dh:nth-child(7){background:color-mix(in srgb,#2f7fd6 14%,var(--card))}
 .cal .dy{min-height:112px;border-radius:14px;border:2px solid var(--line);background:var(--chip);padding:6px 6px 7px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .cal .dy.pad{opacity:0;pointer-events:none}
 .cal .dy .n{font-family:var(--disp);font-weight:400;font-size:17px;line-height:1}
