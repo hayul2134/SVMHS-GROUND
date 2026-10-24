@@ -3023,7 +3023,7 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .ptitle.dev span{background:linear-gradient(90deg,#ff7aa8,#ffb35c,#ffe066,#7ee0a1,#6fc6f4,#a98bff,#ff7aa8);background-size:200% 100%;color:#173048;box-shadow:2px 2px 0 var(--ink);animation:devTitle 4s linear infinite}
 @keyframes devTitle{to{background-position:200% 0}}
 @media (prefers-reduced-motion:reduce){.ptitle.dev span{animation:none}}
-/* 첫 10만 m 도착자 칭호(히든): 노을빛 판 + '인류 최초' 금빛 도장 */
+/* 첫 10만 m 도착자 칭호(히든) '눈물나는 한 걸음': 노을빛 판 + '최초' 금빛 도장 */
 .ptitle.first span{background:linear-gradient(100deg,#ff9a8b,#ffd8a8 55%,#ffe58a);color:#173048;box-shadow:2px 2px 0 var(--ink)}
 .ptitle.first .t-first{display:inline-block;margin-right:5px;padding:0 6px;border-radius:5px;background:linear-gradient(180deg,#fff3b0,#ffc83d);border:1.5px solid #173048;color:#c2402f;font-style:normal;font-weight:900;letter-spacing:.02em;transform:rotate(-4deg);box-shadow:1.5px 1.5px 0 #173048;animation:tFirst 2.4s ease-in-out infinite}
 @keyframes tFirst{0%,100%{transform:rotate(-4deg) scale(1)}50%{transform:rotate(-4deg) scale(1.08)}}
