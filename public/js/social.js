@@ -1044,6 +1044,7 @@ async function renderGame() {
 // 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
 async function loadTier() {
   const box = $('#tierBox'); if (!box) return;
+  if (!RK.start) { box.innerHTML = `<div class="tr-head"><div class="tr-me">${tierIc('iron')}<div><small>라운드 티어</small><b>곧 시작</b><span>정식 업데이트 주부터 2주마다 매겨요</span></div></div><p class="tr-how">게임마다 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 4개 게임 점수를 합쳐 아이언부터 챌린저까지 티어가 정해져요.</p></div>`; return; }
   let d; try { d = await call('tier'); } catch { box.hidden = true; return; }
   if (!$('#tierBox')) return;
   const m = d.me, t = m && tierOfK(m.tier);
@@ -1078,7 +1079,8 @@ function cheer(game, rank, value) {
 const kstNow = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
 function rkInfo(wk = false) {   // wk: 뽑기권 주(1주) · 아니면 점수·티어 라운드(2주)
   const of = wk ? wkOf : rkOf;
-  const r = of(kstNow()), started = r.n >= 0, cur = started ? r : of(RK.start.replace(/-/g, ''));
+  const r = of(kstNow()), started = r.n >= 0, cur = started ? r : of(RK.start ? RK.start.replace(/-/g, '') : kstNow());
+  if (!RK.start) return { started: false, open: false, from: '', to: '', left: 0, md: '' };
   const day = y => Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8)) / 864e5;
   const left = day(cur.to) - day(kstNow());   // 마지막 날(이 날 밤 12시에 마감)까지 남은 날
   return { started, from: cur.from, to: cur.to, left, md: `${+cur.to.slice(4, 6)}/${+cur.to.slice(6, 8)}` };
@@ -1086,6 +1088,7 @@ function rkInfo(wk = false) {   // wk: 뽑기권 주(1주) · 아니면 점수·
 const ddl = k => k.left ? 'D-' + k.left : '오늘 밤 12시';
 function rkBand() {   // 두 주기 안내: 1주 = 뽑기권 · 2주 = 점수·티어 (2026-10-25)
   const w = rkInfo(true), r = rkInfo();
+  if (!w.open && w.open !== undefined) return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>주간 랭킹·티어는 정식 업데이트 주부터 시작해요</b><small>시작하면 매주 게임마다 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장 · ${RK.days}일마다 점수·티어를 새로 매겨요. 지금 기록은 '역대' 랭킹에 쌓여요</small></p></div>`;
   return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${w.started ? `이번 주 마감 ${ddl(w)} · 라운드 마감 ${ddl(r)}` : `${+w.from.slice(4, 6)}/${+w.from.slice(6, 8)} 첫 주·첫 라운드 시작`}</b><small>매주 게임마다 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장 (${w.md} 밤 12시 마감) · ${RK.days}일마다 점수·티어를 새로 매겨요 (${r.md} 밤 12시 마감)</small></p></div>`;
 }
 async function openRank(game, scope = 'week') {
@@ -1108,7 +1111,7 @@ async function openRank(game, scope = 'week') {
       $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요 · 주가 끝나면 1~3등 뽑기권' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
       if (scope === 'week' || scope === 'round') {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
         const wk = scope === 'week', k = rkInfo(wk);
-        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? `1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장` : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
+        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? `1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장` : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
         if (!r.list.length) $('#rankList').innerHTML = `<li class="empty">${wk ? '이번 주' : '이번 라운드'} 기록이 아직 없어요. 지금 하면 1등!</li>`;
       }
     }
