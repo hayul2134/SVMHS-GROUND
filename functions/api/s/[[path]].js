@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierOfK, gamePts } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -297,10 +297,11 @@ const ROUTES = {
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
     const salt = randHex(16);
     const g = +body.grade, c = +body.cls;
-    const u = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, club) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?9) RETURNING id`)
+    const gift = joinBonus(kstYmd());   // 배포 첫 2주 가입 선물(att-rewards.js JOIN)
+    const u = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, club, gc_tix) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?9, ?10) RETURNING id`)
       .bind(handle, name, await hashPw(pw, salt), salt, Date.now(), AVATARS[Math.floor(Math.random() * 16)],
-        g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 6 ? c : 0, club).first();
-    return json({ ok: true }, 200, { 'set-cookie': await newSession(req, db, u.id) });
+        g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 6 ? c : 0, club, GC.start + gift).first();
+    return json({ ok: true, gift }, 200, { 'set-cookie': await newSession(req, db, u.id) });
   },
 
   'POST login': async ({ req, db, body }) => {
@@ -675,9 +676,10 @@ const ROUTES = {
     }
     if (await db.prepare('SELECT 1 FROM users WHERE handle = ?1').bind(handle).first()) return err('이미 있는 아이디예요');
     const salt = randHex(16), g2 = +body.grade, c2 = +body.cls;
-    const nu = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, google_sub, club) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?9, ?10) RETURNING id`)
-      .bind(handle, name, await hashPw(randHex(24), salt), salt, Date.now(), AVATARS[Math.floor(Math.random() * 16)], g2 >= 1 && g2 <= 3 ? g2 : 0, c2 >= 1 && c2 <= 6 ? c2 : 0, g.sub, club).first();   // 비밀번호는 아무도 모르는 무작위 값(구글로만 로그인)
-    return json({ ok: true, created: true }, 200, { 'set-cookie': await newSession(req, db, nu.id) });
+    const gift = joinBonus(kstYmd());   // 배포 첫 2주 가입 선물(att-rewards.js JOIN)
+    const nu = await db.prepare(`INSERT INTO users (handle, name, pw, salt, created, avatar, grade, cls, seen, google_sub, club, gc_tix) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?9, ?10, ?11) RETURNING id`)
+      .bind(handle, name, await hashPw(randHex(24), salt), salt, Date.now(), AVATARS[Math.floor(Math.random() * 16)], g2 >= 1 && g2 <= 3 ? g2 : 0, c2 >= 1 && c2 <= 6 ? c2 : 0, g.sub, club, GC.start + gift).first();   // 비밀번호는 아무도 모르는 무작위 값(구글로만 로그인)
+    return json({ ok: true, created: true, gift }, 200, { 'set-cookie': await newSession(req, db, nu.id) });
   },
   // 이미 있는 계정에 구글 연결 / 해제
   // 연결·해제 모두 지금 비밀번호 확인 (로그인된 기기를 잠깐 빌린 사람이 자기 구글을 몰래 연결해 계정을 가져가지 못하게)

@@ -253,14 +253,14 @@ document.addEventListener('submit', async e => {
   d.handle = (d.handle || '').trim().toLowerCase();
   const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.classList.add('busy'); card.classList.add('busy');
   try {
-    await call(mode, d);
+    const res = await call(mode, d);
     await refreshMe();
     if (card.closest('#introAuth')) { card.classList.add('ok'); await new Promise(r => setTimeout(r, 760)); }   // 소개 화면: '입장!' 도장 찍히고 닫힘
     ctx.authed?.(S.me, true, mode);   // 소개 화면이면 닫힘 (가입 때 고른 학년·반은 여기서 이 기기 반 설정으로 들어감)
     renderMe();
     // 가입 직후 창을 연달아 띄우지 않음(2026-10-24): 프로필 꾸미기 창은 자동으로 안 열고, 첫 출석 축하 창 하나만 뜸.
     // 환영 인사는 출석 창이 닫힌 뒤(또는 바로) 짧게
-    const hi = () => toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉` : `${S.me.name}, 반가워요!`);
+    const hi = () => toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉${giftMsg(res)}` : `${S.me.name}, 반가워요!`);
     setTimeout(() => { const m = document.querySelector('.modal.open'); if (!m) return hi(); const ob = new MutationObserver(() => { if (!m.classList.contains('open')) { ob.disconnect(); setTimeout(hi, 250); } }); ob.observe(m, { attributes: true, attributeFilter: ['class'] }); }, 1200);
   } catch (err) { authErr(f, err, mode); btn.disabled = false; }
   finally { btn.classList.remove('busy'); card.classList.remove('busy'); }
@@ -1530,7 +1530,7 @@ function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아�
     const d = Object.fromEntries(new FormData(e.target)), b = e.target.querySelector('[type=submit]');
     if (!e.target.querySelector('[name=club]:checked')) { const box = e.target.querySelector('.ferr'); box.textContent = '동아리를 골라 주세요 (없으면 \'없음\')'; box.hidden = false; return; }
     b.disabled = true;
-    try { await call('google', { credential, ...d, handle: d.handle.trim().toLowerCase(), grade: +d.grade, cls: +d.cls }); closeSheet(); await googleDone('signup'); }
+    try { const res = await call('google', { credential, ...d, handle: d.handle.trim().toLowerCase(), grade: +d.grade, cls: +d.cls }); closeSheet(); await googleDone('signup', res); }
     catch (x) { const box = e.target.querySelector('.ferr'); box.textContent = x.message; box.hidden = false; b.disabled = false; }
   };
 }
@@ -1559,9 +1559,11 @@ function googleReset(credential, r) {
     } catch (x) { const box = e.target.querySelector('.ferr'); box.textContent = x.message; box.hidden = false; b.disabled = false; }
   };
 }
-async function googleDone(mode) {
+// 배포 첫 2주 가입 선물(서버 joinBonus) — 환영 인사 뒤에 붙임
+const giftMsg = r => r?.gift > 0 ? ` 가입 선물로 뽑기권 ${r.gift}장을 더 드렸어요` : '';
+async function googleDone(mode, res) {
   await refreshMe();
-  toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉` : `${S.me.name}, 반가워요!`);
+  toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉${giftMsg(res)}` : `${S.me.name}, 반가워요!`);
   if (!store.get('gtip', false)) { store.set('gtip', true); setTimeout(() => toast('학교 기기라면 다 쓴 뒤 구글에서도 로그아웃해 주세요 🔒'), 2600); }
   ctx.authed?.(S.me, true, mode);
   renderMe();
