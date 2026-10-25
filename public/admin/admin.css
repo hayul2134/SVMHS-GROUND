@@ -267,6 +267,8 @@ code{background:var(--chip);border:1.5px solid var(--line);border-radius:6px;pad
 /* 의견 */
 .card.fb .fbh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 .card.fb .fbh .sub{margin-left:auto}
+.card.fb.unread{box-shadow:inset 5px 0 0 var(--accent),var(--sh)}
+.tag.new{background:var(--accent);color:#fff;margin-left:0}
 .fbb{white-space:pre-wrap;word-break:break-word;font-size:14.5px;line-height:1.55;margin-bottom:10px}
 .fbimgs{display:flex;flex-wrap:wrap;gap:8px;margin:-2px 0 12px}
 .fbimgs img{display:block;width:96px;height:96px;object-fit:cover;border-radius:10px;border:1.5px solid var(--line)}

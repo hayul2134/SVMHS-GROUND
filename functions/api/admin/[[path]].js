@@ -126,7 +126,7 @@ const ROUTES = {
       one(`SELECT day AS d, COUNT(DISTINCT uid) AS n FROM scores WHERE day >= ?1 GROUP BY day`).bind(kstYmd(now - 13 * DAY)),
       one(`SELECT ((at + 32400000) / 86400000) AS d, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY d`).bind(t0 - 13 * DAY),
       one(`SELECT grade, cls, COUNT(*) AS n FROM users WHERE grade > 0 AND cls > 0 AND ${NA} GROUP BY grade, cls ORDER BY grade, cls`),
-      one('SELECT COUNT(*) AS n FROM feedback WHERE done = 0'),   // 15: 확인 안 한 의견
+      one('SELECT COUNT(*) AS n FROM feedback WHERE done = 0 AND rd = 0'),   // 15: 안 읽은 의견
     ]);
     const n = i => r[i].results[0].n;
     const days = [];
@@ -213,10 +213,10 @@ const ROUTES = {
   /* ----- 의견 (학생 → 개발자) ----- */
   'GET feedback': async ({ db, url }) => {
     const open = url.searchParams.get('state') !== 'done';
-    const rows = (await db.prepare(`SELECT f.id, f.kind, f.body, f.at, f.done, f.note, (SELECT COUNT(*) FROM feedback_img i WHERE i.fid = f.id) AS imgs, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen
+    const rows = (await db.prepare(`SELECT f.id, f.kind, f.body, f.at, f.done, f.note, f.rd, (SELECT COUNT(*) FROM feedback_img i WHERE i.fid = f.id) AS imgs, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen
       FROM feedback f LEFT JOIN users u ON u.id = f.uid WHERE f.done ${open ? '= 0' : '> 0'} ORDER BY f.id DESC LIMIT 200`).all()).results;
-    const cnt = await db.prepare('SELECT SUM(done = 0) AS open, COUNT(*) AS total FROM feedback').first();
-    return json({ list: rows.map(x => ({ id: x.id, kind: x.kind, body: x.body, at: x.at, done: x.done, note: x.note, imgs: x.imgs || 0, user: x.handle ? { handle: x.handle, name: x.name, avatar: x.avatar, color: x.color, grade: x.grade, cls: x.cls, online: Date.now() - (x.seen || 0) < 150e3 } : null })), open: cnt.open || 0, total: cnt.total || 0 });
+    const cnt = await db.prepare('SELECT SUM(done = 0) AS open, SUM(done = 0 AND rd = 0) AS unread, COUNT(*) AS total FROM feedback').first();
+    return json({ list: rows.map(x => ({ id: x.id, kind: x.kind, body: x.body, at: x.at, done: x.done, rd: x.rd ? 1 : 0, note: x.note, imgs: x.imgs || 0, user: x.handle ? { handle: x.handle, name: x.name, avatar: x.avatar, color: x.color, grade: x.grade, cls: x.cls, online: Date.now() - (x.seen || 0) < 150e3 } : null })), open: cnt.open || 0, unread: cnt.unread || 0, total: cnt.total || 0 });
   },
   // 의견 사진: GET /api/admin/fbimg/<의견 id>/<번호> → 이미지 그대로 (관리자 화면 <img>에서 씀)
   'GET fbimg': async ({ db, arg }) => {
@@ -228,8 +228,11 @@ const ROUTES = {
   'POST feedback': async ({ db, body }) => {
     const id = parseInt(body.id);
     if (body.del) { await db.batch([db.prepare('DELETE FROM feedback_img WHERE fid = ?1').bind(id), db.prepare('DELETE FROM feedback WHERE id = ?1').bind(id)]); await log(db, '의견 삭제', `#${id}`); return json({ ok: true }); }
+    // 읽음 표시: { readAll: true } 새 의견 전부 / { id, read: 0|1 } 하나 (확인함과 별개 — 목록은 그대로, 배지만 줄어듦)
+    if (body.readAll) { await db.prepare('UPDATE feedback SET rd = 1 WHERE done = 0 AND rd = 0').run(); return json({ ok: true }); }
+    if ([0, 1].includes(body.read)) { const r = await db.prepare('UPDATE feedback SET rd = ?1 WHERE id = ?2').bind(body.read, id).run(); return r.meta.changes ? json({ ok: true }) : err('없는 의견이에요', 404); }
     const done = [0, 1].includes(body.done) ? body.done : 1;
-    const r = await db.prepare('UPDATE feedback SET done = ?1, note = ?2 WHERE id = ?3').bind(done, clean(body.note, 200), id).run();
+    const r = await db.prepare('UPDATE feedback SET done = ?1, note = ?2, rd = CASE WHEN ?1 > 0 THEN 1 ELSE rd END WHERE id = ?3').bind(done, clean(body.note, 200), id).run();
     if (!r.meta.changes) return err('없는 의견이에요', 404);
     await log(db, done ? '의견 확인' : '의견 되돌림', `#${id}`);
     return json({ ok: true });
