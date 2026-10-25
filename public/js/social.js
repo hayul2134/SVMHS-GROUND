@@ -947,6 +947,9 @@ function paintHeroFr(fr) {
   el.classList.toggle('on', !!on.length);
   $('#hFrAvs').innerHTML = show.map(u => `<a class="sf-a${u.unread ? ' new' : ''}" href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}" data-tip="${esc(nameOf(u))}${u.mood ? ' · ' + esc(u.mood) : ''}" aria-label="${esc(nameOf(u))} 프로필">${av(u, '', avWear(u.mfx))}</a>`).join('')
     + (more > 0 ? `<span class="sf-more">+${more}</span>` : '');
+  // 첫 등장 애니메이션(boot)이 끝난 뒤 늦게 나타나면 '툭' 튀지 않게 살짝 떠오름 (2026-10-25)
+  const cl = document.documentElement.classList;
+  if (el.hidden && !cl.contains('pre') && !cl.contains('boot')) { el.classList.remove('fr-in'); void el.offsetWidth; el.classList.add('fr-in'); el.addEventListener('animationend', () => el.classList.remove('fr-in'), { once: true }); }
   el.hidden = false;
 }
 
