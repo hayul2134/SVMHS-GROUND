@@ -378,7 +378,7 @@ async function renderMe() {
   if (!S.me) { box.innerHTML = authHtml('login'); return; }
   box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
   try {
-    const d = await call('user/' + encodeURIComponent(S.me.handle));
+    const d = await call('user/' + encodeURIComponent(S.me.handle)); S.meProf = d;
     box.innerHTML = profileHtml(d) + `
       <section class="card findcard">
         <div class="ct"><h2>👋 친구 찾기</h2></div>
@@ -494,25 +494,57 @@ function openMore(h) {
 /* ===== 프로필 꾸미기 ===== */
 // 꾸미기 미리보기 그림 — 실제 프로필 카드(배너 스티커·사진·배경 색·이름 옆 대표 스티커·칭호)와 첫 화면 시계(시계 스티커)를 작게
 // data-pv: 어떤 설정이 바꾸는 부분인지(av·co·st·rep·deco·name·title) → 바뀐 곳만 반짝
+// 미리보기 = 실제 화면 그대로(2026-10-25 하율: "적용했을 때 화면이랑 똑같이"):
+// 프로필은 진짜 프로필 카드(profileHtml)를 지금 고른 값으로 그려 실제 폭으로 놓고 줄여 보여 주고,
+// 시계는 첫 화면 시계(#bigclock .clock)를 그대로 복제해 지금 고른 시계 스티커만 바꿔 끼움 — 따로 흉내 낸 그림이 없어서 어긋날 일이 없음
 function pvHtml(u, st) {
-  const dev = isDev(u), col = ALL_COLORS.includes(st.color) ? st.color : 'sky', fx = S.me?.gc?.fx || {};
-  const t = new Date(), hm = `${t.getHours() % 12 || 12}:${String(t.getMinutes()).padStart(2, '0')}`;
-  const stk = st.stickers.slice(0, st.max).map((v, i) => `<i class="stk ${STK_POS[i]}">${emo(v, 'stka')}</i>`).join('');
-  const dk = st.deco.map((v, i) => `<i class="pv-dk k${i + 1}">${artOf(v, 'pka')}</i>`).join('');
-  // 켜 둔 뽑기 효과(전설·시크릿): 미리보기에도 그대로 + 무엇이 켜져 있는지 칩으로(끄는 곳 안내)
-  const fxOn = Object.keys(FX).filter(k => fx[k]);
-  return `<div class="pv-top"><b>미리보기</b><small>${dev ? '실제 내 프로필과 똑같이 보여요' : '친구들에게 이렇게 보여요'}</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
+  const fx = S.me?.gc?.fx || {}, fxOn = Object.keys(FX).filter(k => fx[k]);
+  const base = S.meProf?.user?.handle === u.handle ? S.meProf : { counts: { followers: 0, following: 0 }, streak: {}, crowns: [], bests: {}, rel: {}, user: u };
+  const user = { ...base.user, ...st.f, avatar: st.avatar, color: st.color, stickers: st.stickers, rep: st.rep, title: st.title, nfx: fx.name || '', pfx: fx.prof || '', mfx: fx.masc || '', online: false };
+  return `<div class="pv-top"><b>미리보기</b><small>적용하면 이렇게 보여요</small><button type="button" class="pv-fold" data-pv-fold aria-label="미리보기 접기·펴기"><span class="o">접기</span><span class="c">펴기</span></button></div>
     <div class="pv-body">
-      <div class="pv-card c-${esc(col)}${dev ? ' dev' : ''}" data-pv="co">
-        <div class="pban" data-pv="st co">${stk || '<span class="pv-hint">카드 스티커가 여기 붙어요</span>'}</div>
-        <div class="pv-id">
-          ${dev ? av({ handle: ADMIN_HANDLE }, 'big', avWear(fx.masc)).replace('<span class="av', '<span data-pv="av co" class="av') : `<span class="av big c-${esc(col)}" data-pv="av co">${emo(st.avatar || 'k:cat', 'ava')}${avWear(fx.masc)}</span>`}
-          <div class="pv-nm"><p class="pv-name" data-pv="name rep">${esc(dev ? '개발자' : st.name)}${repTag({ rep: st.rep, nfx: fx.name })}</p>${st.title ? `<p class="ptitle${dev ? ' dev' : ''}${st.title === HOME_TITLE ? ' first' : ''}" data-pv="title"><span>${ui('tag', 'ic')}${ttlHtml(st.title)}</span></p>` : dev ? `<p class="pv-sub" data-pv="title"><span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span></p>` : '<p class="pv-sub" data-pv="title">칭호 없음</p>'}</div>
-        </div>
-      </div>
-      <div class="pv-clk${fx.clock === 'r:fxneon' ? ' neon' : ''}" data-pv="deco"><span class="pv-tm"><span class="pv-ap">${t.getHours() < 12 ? '오전' : '오후'}</span>${hm}${dk}</span><small>첫 화면 시계 · ${st.deco.length}/${st.slots}칸</small></div>
+      <div class="pv-real pv-rp" aria-hidden="true"><div class="pv-sc">${profileHtml({ ...base, me: true, user })}</div></div>
+      <div class="pv-real pv-rc" aria-hidden="true"><div class="pv-sc"></div></div>
     </div>
     <button type="button" class="pv-fxs" data-ed-go="fx">${fxOn.length ? `${fxOn.map(k => artOf(fx[k], 'pka')).join('')}<span>효과 <b>${fxOn.length}개</b> 켜짐</span>` : '<span>켜 둔 뽑기 효과 없음</span>'}<i aria-hidden="true">›</i></button>`;
+}
+// 실제 프로필 화면 폭(보이는 #meBox가 있으면 그 폭, 없으면 main 안에 .soc를 잠깐 놓고 잼) — 같은 폭으로 그려야 줄바꿈·배치가 실제와 같음
+function realProfW() {
+  const live = $('#meBox'); if (live?.offsetWidth) return live.offsetWidth;
+  const host = $('#v-me') ? $('main') : null; if (!host) return 640;
+  const pr = document.createElement('div'); pr.className = 'soc'; pr.style.cssText = 'position:absolute;visibility:hidden;left:0;top:0;height:0;overflow:hidden';
+  const cs = getComputedStyle(host), inner = host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  host.append(pr); const mw = parseFloat(getComputedStyle(pr).maxWidth); pr.remove();
+  return Math.round(Math.min(inner, isNaN(mw) ? inner : mw));
+}
+// 첫 화면 시계 복제: id는 지우고, JS로 넣은 위치값(style)도 그대로 옮김(CSP — 속성 복사 대신 cssText)
+function cloneClock(deco) {
+  const live = $('#bigclock .clock'), stage = $('#bigclock'); if (!live || !stage) return null;
+  const sec = document.createElement('section'); sec.className = stage.className + ' pv-stage';
+  const c = live.cloneNode(true), a = [live, ...live.querySelectorAll('*')], b = [c, ...c.querySelectorAll('*')];
+  b.forEach((x, i) => { x.removeAttribute('id'); x.removeAttribute('role'); if (a[i]?.style?.cssText) x.style.cssText = a[i].style.cssText; });
+  [1, 2, 3, 4, 5].forEach(i => { const el = c.querySelector('.du' + i), v = deco[i - 1]; if (!el) return; el.innerHTML = v ? emo(v, 'dua') : ''; el.classList.toggle('on', !!v); c.classList.toggle('d' + i, !!v); });
+  sec.append(c); return sec;
+}
+// 실제 크기로 그린 걸 칸 폭에 맞게 줄임. 시계는 숫자 밖으로 삐져나온 스티커까지 다 들어오게 테두리를 잼
+function fitPv(box) {
+  box.querySelectorAll('.pv-real').forEach(w => {
+    const sc = w.firstElementChild; if (!sc) return;
+    sc.style.transform = 'none';
+    const W = w.clientWidth; if (!W) return;
+    if (w.classList.contains('pv-rp')) {
+      const nat = +w.dataset.nw || realProfW(); w.dataset.nw = nat;
+      sc.style.width = nat + 'px';
+      const s = Math.min(1, W / nat);
+      sc.style.transform = `scale(${s})`; w.style.height = Math.ceil(sc.offsetHeight * s) + 'px';
+      return;
+    }
+    const o = sc.getBoundingClientRect(); let x0 = 0, y0 = 0, x1 = sc.offsetWidth, y1 = sc.offsetHeight;
+    sc.querySelectorAll('.clock, .clock *').forEach(e => { const r = e.getBoundingClientRect(); if (!r.width || !r.height) return; x0 = Math.min(x0, r.left - o.left); y0 = Math.min(y0, r.top - o.top); x1 = Math.max(x1, r.right - o.left); y1 = Math.max(y1, r.bottom - o.top); });
+    const bw = x1 - x0 + 8, bh = y1 - y0 + 8, s = Math.min(1, W / bw);
+    sc.style.transform = `translate(${(W - bw * s) / 2 - (x0 - 4) * s}px, ${-(y0 - 4) * s}px) scale(${s})`;
+    w.style.height = Math.ceil(bh * s) + 'px';
+  });
 }
 // 메뉴의 '꾸미기': 지금 화면 위에 바로 꾸미기 창(닫으면 보던 화면 그대로 — 2026-10-25: 프로필로 넘어가지 않게)
 // 새로 얻은 뽑기 보상이 있으면 그 칸이 있는 탭으로 바로 열림(스티커 먼저, 없으면 효과)
@@ -620,16 +652,26 @@ function openEdit(o = {}) {
   $('#socSheet').classList.add('edw');   // 꾸미기 창은 미리보기가 잘 보이게 넓게
   const F = $('#editForm');
   let clrSync = () => {};
-  const prev = part => {
+  const fv = () => { const e = F.elements; return { name: e.name.value.trim() || u.name, mood: e.mood?.value.trim() ?? u.mood, bio: e.bio?.value.trim() ?? u.bio, grade: +(e.grade?.value ?? u.grade) || 0, cls: +(e.cls?.value ?? u.cls) || 0, club: e.club ? e.club.value : u.club, insta: e.insta ? e.insta.value.trim().replace(/^@/, '') : u.insta }; };
+  let ckObs = null, fitT = 0;
+  const prev = () => {
     const box = $('#edPrev'); if (!box) return;
-    box.innerHTML = pvHtml(u, { ...sel, stickers: [...picked], deco, name: F.elements.name.value.trim() || u.name, title: F.elements.title?.value || '', max: stkMax(u), slots });
-    if (part) part.split(' ').forEach(pt => box.querySelectorAll(`[data-pv~="${pt}"]`).forEach(x => { x.classList.remove('pv-hit'); void x.offsetWidth; x.classList.add('pv-hit'); }));
+    box.innerHTML = pvHtml(u, { ...sel, stickers: [...picked], deco, f: fv(), title: F.elements.title?.value || '', max: stkMax(u), slots });
+    const ck = cloneClock(deco), slot = box.querySelector('.pv-rc .pv-sc');
+    if (ck) slot.append(ck); else box.querySelector('.pv-rc').remove();
+    // 첫 화면 시계가 바뀌면(1초마다·네온 관 붙임) 복제본 숫자도 같이
+    ckObs?.disconnect(); const bt = $('#bigTime');
+    if (ck && bt) { ckObs = new MutationObserver(() => { const t = box.querySelector('.pv-rc .s-big'); if (!t?.isConnected) { ckObs.disconnect(); return; } t.innerHTML = bt.innerHTML; t.className = bt.className; const st = $('#bigclock'); if (st) ck.className = st.className + ' pv-stage'; }); ckObs.observe(bt, { childList: true, subtree: true, characterData: true, attributes: true }); }
+    fitPv(box); clearTimeout(fitT); fitT = setTimeout(() => fitPv(box), 350);   // 창 열림 애니메이션·글꼴 뒤에 한 번 더
     clrSync(); subN();
   };
   const subN = () => { const n = { st: `${picked.size}/${stkMax(u)}`, rep: sel.rep ? `${sel.rep.split(',').length}` : '', deco: `${deco.length}/${slots}` }; $$('#editForm [data-subn]').forEach(b => { b.textContent = n[b.dataset.subn]; }); };
   prev();
-  F.elements.name.addEventListener('input', () => prev('name'));
-  F.elements.title?.addEventListener(F.elements.title.tagName === 'SELECT' ? 'change' : 'input', () => prev('title'));
+  let pvT = 0; const prevSoon = () => { clearTimeout(pvT); pvT = setTimeout(prev, 120); };
+  F.addEventListener('input', e => { if (e.target.closest('[data-pane="info"]') || e.target.name === 'title') prevSoon(); });
+  F.addEventListener('change', e => { if (e.target.closest('[data-pane="info"]') || e.target.name === 'title') prevSoon(); });
+  if (!S.meProf || S.meProf.user?.handle !== u.handle) call('user/' + encodeURIComponent(u.handle)).then(d => { S.meProf = d; prev(); }).catch(() => {});
+  { const ro = new ResizeObserver(() => { const b = $('#edPrev'); if (!b?.isConnected) { ro.disconnect(); return; } fitPv(b); }); ro.observe($('.ed-pv')); }
   $('#edPrev').addEventListener('click', e => { if (!e.target.closest('[data-pv-fold]')) return; const f = !$('#edPrev').classList.contains('fold'); $('#edPrev').classList.toggle('fold', f); store.set('pv_fold', f ? 1 : 0); });
   $('#pAv').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pAv .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.avatar = b.dataset.v; prev('av'); };
   $('#pCo').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.lock) { toast(lockMsg(b)); return; } $$('#pCo .on').forEach(x => x.classList.remove('on')); b.classList.add('on'); sel.color = b.dataset.v; prev('co'); };
