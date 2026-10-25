@@ -155,8 +155,9 @@ export const rkRange = n => { const s = dnum(RK_START()); return { n, from: ymdO
 export const wkOf = today => { const s = dnum(RK_START()), n = Math.floor((dnum(today) - s) / RK.wdays); return { n, from: ymdOf(s + n * RK.wdays), to: ymdOf(s + n * RK.wdays + RK.wdays - 1) }; };
 // 신규 가입 선물(2026-10-25 하율: "배포한다고 한 주 업데이트 날부터 2주 동안 가입하면 뽑기권 5개"):
 //   RK.start(업데이트일)부터 days일 동안 가입하면 기본 뽑기권(GC.start)에 tix장을 더 줌. RK.start가 비어 있으면(배포 전) 없음
-export const JOIN = { tix: 5, days: 14 };
-export const joinBonus = today => { if (!RK.start) return 0; const d = dnum(today) - dnum(RK.start.replace(/-/g, '')); return d >= 0 && d < JOIN.days ? JOIN.tix : 0; };
+// 2026-10-25 하율: 시작은 오늘(10/25)로 앞당기되 끝나는 날(11/8)은 그대로 → 15일. 그 전에 가입한 사람은 db.js v31에서 5장 채워 줌
+export const JOIN = { tix: 5, start: '2026-10-25', days: 15 };
+export const joinBonus = today => { const st = JOIN.start || RK.start; if (!st) return 0; const d = dnum(today) - dnum(st.replace(/-/g, '')); return d >= 0 && d < JOIN.days ? JOIN.tix : 0; };
 export const wkRange = n => { const s = dnum(RK_START()); return { n, from: ymdOf(s + n * RK.wdays), to: ymdOf(s + n * RK.wdays + RK.wdays - 1) }; };
 // 라운드 티어 (2026-10-25 하율: 순위로 점수 → 티어). 라운드(RK, 2주) 안에서 게임마다 순위 점수(참가자 전원이 받음: 1등 100 ~ 꼴찌 100/n),
 // 4게임 합으로 줄 세워 백분위로 티어. 라운드가 끝나면 users.tier_last에 남기고 새로 시작.

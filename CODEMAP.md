@@ -156,3 +156,5 @@ npx wrangler@4 pages dev --port 8788
 - **구글 로그인 무한 반복(화면 멈춤)**: GIS 스크립트를 못 불러오면 `mountGoogle`의 실패 표시(글자 바꿈)가 MutationObserver를 다시 불러 끝없이 반복 → 로그인·가입 화면 전체가 멈춤. 실패에도 `data-done`, `gReady = null`(다음에 다시 시도).
 - **자리 비움**: util.js `idle()`(5분 입력 없음)·`onWake()` — DM 알림 poll·친구 목록·밸런스 새로 고침을 쉼(Cloudflare 무료 요청 하루 10만 대비: 켜 둔 탭 1개 ≈ 분당 2~3회).
 - 가입 선물 토스트 5초, 연속 출석 랭킹 동점은 먼저 가입한 순(`a.uid - b.uid`).
+
+- 2026-10-25, 하율: "빨리 가입한 사람들한테 8개 채워서 주고, 오늘부터 8개씩, 종료일은 앞당기지마" → att-rewards.js JOIN에 start(10/25)·days 15(끝 11/8 그대로) 따로 둠(게임 주기 RK.start와 분리). 기존 가입자는 db.js v31에서 뽑기권 +5장(개발자 제외)
