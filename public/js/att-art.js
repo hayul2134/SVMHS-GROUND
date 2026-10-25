@@ -547,6 +547,8 @@ const keyOf = v => { const k = String(v).slice(2).replace(/_s$/, ''); return RW_
 export const ART_KEYS = Object.keys(ART);
 export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[keyOf(v)];
 // 반짝이 버전(값 끝 '_s', 조각 강화 2026-10-25): 금빛 테두리 빛 + 위에 반짝이 별 3개(#art-shnx, 하나씩 깜빡임 — style.css .shn)
+// 화면 밖 스티커는 멈춘 그림으로 바꿔 둠(뽑기 페이지 IntersectionObserver) — <use> 복제본은 화면 밖이어도 매 프레임 스타일을 다시 계산해서
+export const stillHref = h => { const m = /^#art-(.+?)(-ol)?$/.exec(h || ''); if (!m || /-(gl|st)$/.test(m[1]) || m[1].endsWith('-st')) return h; const id = m[1] === 'shnx' ? 'art-shnx-st' : `art-${m[1]}-st${m[2] || ''}`; return document.getElementById(id) ? '#' + id : h; };
 // cls에 'still'이 있으면 움직임 없는 그림(한 화면에 많이 늘어놓는 곳 — 렉 방지, 2026-10-25)
 export const artOf = (v, cls = '') => {
   if (!isArt(v)) return ''; ensureSprite();

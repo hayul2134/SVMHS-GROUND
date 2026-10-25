@@ -8,7 +8,7 @@
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
 import { $, esc, toast, store } from './util.js';
 import { GACHA, HIDDEN, HOME_TITLE, RAR, GC, FX, GC_TITLE, RK, SHN, objName, neonPick } from './att-rewards.js';
-import { artOf, ensureSprite } from './att-art.js';
+import { artOf, ensureSprite, stillHref } from './att-art.js';
 import { SPOTS, spotPref, setSpotPref, resolveSpot, wearSvg, anchorOf, setAdj } from './wear.js';
 
 let api;   // social.js에서 받음: call · refreshMe · me() · setGc(g)
@@ -97,6 +97,18 @@ function paint() {
       <li>돈으로 사는 건 없어요. 결과는 서버에서 정해지고, 창을 닫아도 그대로 남아요.</li></ul>
     </details>`;
   tuneInit();
+  lazyAnim();
+}
+// 렉 방지(2026-10-25 실측: 도감·상점이 한꺼번에 움직이면 120→19fps): 화면에 보이는 스티커만 움직이고, 나머지는 멈춘 그림(stillHref)으로 바꿔 둠
+let io = null;
+function lazyAnim() {
+  io?.disconnect();
+  if (!('IntersectionObserver' in window)) return;
+  io = new IntersectionObserver(es => es.forEach(e => e.target.querySelectorAll('use').forEach(u => {
+    const base = u.dataset.h || (u.dataset.h = u.getAttribute('href')), want = e.isIntersecting ? base : stillHref(base);
+    if (u.getAttribute('href') !== want) u.setAttribute('href', want);
+  })), { rootMargin: '80px 0px' });
+  document.querySelectorAll('#gcBox svg.art:not(.still)').forEach(s => io.observe(s));
 }
 const TIER = { 1: '스티커', 2: '움직이는 스티커', 3: '효과', 4: '도감엔 ?로만 보여요' };
 const isSecHidden = (x, n) => x.rar === 4 && !n;
