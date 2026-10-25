@@ -4651,7 +4651,7 @@ html.tl2 .cat-more.cm-tier:hover{background:#ffe373}
 
 /* 분반 미선택: 분반 수업 칸 아이콘 빨간 점 + 반 설정 창 '분반 수업' 강조 (2026-10-26) */
 .tt li .s .si,.week td .si{position:relative}
-.tt li .s .si .nw-d{top:-5px;right:-6px;width:10px;height:10px}
+.tt li .s .si .nw-d{top:-7px;right:-4px;width:11px;height:11px}
 .week td .si .nw-d{top:-4px;right:calc(50% - 16px);width:10px;height:10px}
 .tt li[data-open-class],.week td[data-open-class]{cursor:pointer}
 #trBox.tr-need label[for="selT"]::after{content:"";display:inline-block;width:9px;height:9px;margin-left:6px;vertical-align:2px;border-radius:50%;background:var(--nw);border:2px solid var(--ink);animation:nwPulse 1.8s ease-in-out infinite}
