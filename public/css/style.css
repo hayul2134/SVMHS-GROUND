@@ -4552,3 +4552,6 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 .an-x:hover{background:var(--chip)}
 html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
 @media (prefers-reduced-motion:reduce){.app-nudge,.app-nudge.show{transition:opacity .2s}}
+
+/* 글자 이모티콘 줄바꿈 금지 (kao.js, 2026-10-25) */
+.kao{white-space:nowrap;word-break:keep-all;overflow-wrap:normal}

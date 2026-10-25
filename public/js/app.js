@@ -4,6 +4,7 @@ import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetab
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
 import './tip.js';
+import './kao.js';   // 글자 이모티콘 줄바꿈 금지 (2026-10-25)
 import './seg.js';   // 전환 버튼 묶음 → 스위치처럼 미끄러지는 알약 (2026-10-25)
 import { initInstall } from './install.js';   // 앱으로 설치하기 (2026-10-25)
 import { wearG, wearSvg, spotPref, resolveSpot, anchorOf } from './wear.js';
