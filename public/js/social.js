@@ -955,20 +955,24 @@ function paintHeroFr(fr) {
 
 /* ===== 홈 전체 랭킹 (2026-10-25, 친구 → 전체로 변경) — 전체 학생. 탭: 연속 출석 · 게임 4종. 꾸민 이름(홀로그램·황금)·대표 스티커·왕관이 보이게
    탭마다 5분 동안은 다시 안 불러옴(무료 요청량), 고른 탭은 이 기기에 기억 */
-const RK_TABS = [['att', '연속 출석', 'fire'], ...Object.entries(GAMES).map(([k, g]) => [k, g.name, g.ic])];
+// 2026-10-26 하율: 홈 랭킹은 연속 출석 + 티어(2주 라운드)만, 게임별 탭은 뺌 — 미리보기 깃발 'rank-tier'(월요일 패치에 공개)
+const RK_OLD = [['att', '연속 출석', 'fire'], ...Object.entries(GAMES).map(([k, g]) => [k, g.name, g.ic])];
+const RK_NEW = [['att', '연속 출석', 'fire'], ['tier', '티어', '']];
+const rkTabs = () => ffOn('rank-tier', isDev(S.me)) ? RK_NEW : RK_OLD;
 const rkCache = {};
 let rkTab = store.get('rk_tab', 'att');
 async function loadHomeRank(force) {
   const card = $('#sRk'); if (!card || !S.me) return;
+  const RK_TABS = rkTabs();
   if (!RK_TABS.some(t => t[0] === rkTab)) rkTab = 'att';
-  $('#rkTabs').innerHTML = RK_TABS.map(([k, n, i]) => `<button type="button" role="tab" aria-selected="${k === rkTab}" data-rk="${k}" data-tip="${n}" aria-label="${n}">${ic(i)}</button>`).join('');
+  $('#rkTabs').innerHTML = RK_TABS.map(([k, n, i]) => `<button type="button" role="tab" aria-selected="${k === rkTab}" data-rk="${k}" data-tip="${n}" aria-label="${n}">${i ? ic(i) : tierIc('challenger')}</button>`).join('');
   card.hidden = false;
   const tab = rkTab, c = rkCache[tab];
   if (c) paintHomeRank(tab, c.r);
   if (!force && c && Date.now() - c.at < 300e3) return;
   if (!c) $('#rkList').innerHTML = '<li class="skel"></li>';
   try {
-    const r = await call(tab === 'att' ? 'attrank?scope=all' : `rank?game=${tab}&scope=all`);
+    const r = tab === 'tier' ? await call('tier').then(d => ({ list: d.top })) : await call(tab === 'att' ? 'attrank?scope=all' : `rank?game=${tab}&scope=all`);
     rkCache[tab] = { r, at: Date.now() };
     if (rkTab === tab) paintHomeRank(tab, r);
   } catch (e) { if (!c && rkTab === tab) $('#rkList').innerHTML = `<li class="rk-empty">${esc(e.message)}</li>`; }
@@ -980,12 +984,12 @@ function attEmpty() {
 }
 function paintHomeRank(tab, r) {   // 시간표 아래 따로 떨어진 랭킹 카드, 1~3등 (2026-10-25 3차: 분리 + 1등 금빛 강조)
   const g = GAMES[tab], list = r.list.slice(0, 3);
-  const val = u => g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
+  const val = u => tab === 'tier' ? `<span class="rk-tr" data-tip="${u.pts}점">${tierIc(u.tier)}${esc(tierOfK(u.tier)?.n || '')}</span>` : g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
   $('#rkList').innerHTML = list.length ? list.map((u, i) => `<li class="rk p${i + 1}${u.isMe ? ' me' : ''}">
       <span class="rk-n"><i class="mdl m${i + 1}">${i + 1}</i></span>
       <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}"><span class="rk-av">${i === 0 ? `<i class="rk-cr">${ic('crown')}</i>` : ''}${av(u, 'xs', avWear(u.mfx))}</span><b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
       <b class="rk-v">${val(u)}</b></li>`).join('')
-    : `<li class="rk-empty">${tab === 'att' ? attEmpty() : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
+    : `<li class="rk-empty">${tab === 'att' ? attEmpty() : tab === 'tier' ? '이번 라운드 기록이 아직 없어요<br>게임을 하면 티어가 매겨져요' : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
 }
 function startBuddies() {
   clearInterval(bdTimer);

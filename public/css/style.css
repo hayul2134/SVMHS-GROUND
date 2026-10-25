@@ -3908,6 +3908,7 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .rk-v{display:inline-flex;align-items:center;gap:1px;font:900 13px var(--num,inherit);white-space:nowrap}
 .rk-v .flm{width:13px;height:16px}
 .rk-v small{font-size:10.5px;color:var(--sub);margin-left:1px}
+.rk-tr{display:inline-flex;align-items:center;gap:3px}.rk-tr .tri{width:20px;height:19px;flex:none}.rk-tabs button .tri{width:19px;height:18px}   /* 홈 랭킹 티어 탭 (2026-10-26) */
 .rk-empty{padding:6px 2px;font-size:12px;font-weight:700;color:var(--sub)}
 .rk-empty button{margin-left:4px;padding:2px 8px;border-radius:99px;border:1.5px solid var(--ink);background:var(--card);font-size:11.5px;font-weight:800}
 .rk-av{display:contents}.rk-cr{display:none}
