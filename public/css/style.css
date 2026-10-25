@@ -3911,26 +3911,26 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .pquit svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ===== 나 집에 갈래!: 그 자리 게임 오버 + 아래 친구 랭킹 줄 (2026-10-25) ===== */
-.hr-ov.dead{background:rgba(42,40,70,.3);gap:10px;padding:clamp(14px,4%,28px)}
-.hr-ov.dead b{font-size:clamp(18px,3.2vw,30px)}
+.hr-ov.dead{background:rgba(42,40,70,.3);gap:12px;padding:clamp(14px,4%,28px)}
+.hr-ov.dead b{font-size:clamp(20px,3.8vw,36px)}
 .hr-ov.dead.win{background:rgba(255,210,94,.22)}.hr-ov.dead.win b{transform:none;animation:hrBob 1.2s steps(2) infinite}
 /* 결과 카드: 기록 · 직전 비교 · 저장 상태를 한 장에 (2026-10-25 여백 정리) */
-.hr-card{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:min(360px,100%);padding:10px 18px 9px;background:#fff;border:2px solid #2a2846;border-radius:14px;box-shadow:3px 3px 0 #2a2846;color:#2a2846}
+.hr-card{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:min(420px,100%);padding:13px 24px 11px;background:#fff;border:2px solid #2a2846;border-radius:14px;box-shadow:3px 3px 0 #2a2846;color:#2a2846}
 .hr-card p{margin:0;display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;gap:4px 8px}
-.hr-sc em{font-style:normal;font-family:var(--num,inherit);font-weight:900;font-size:clamp(18px,2.6vw,24px);line-height:1}
-.hr-ov .hr-sc span{all:unset;font-weight:800;font-size:13px;color:#6f6a60}
-.hr-nb{font-style:normal;font-weight:900;font-size:12px;color:#c98a00}
-.hr-prev{font-weight:800;font-size:12.5px;color:#8a8478}
+.hr-sc em{font-style:normal;font-family:var(--num,inherit);font-weight:900;font-size:clamp(20px,3vw,30px);line-height:1}
+.hr-ov .hr-sc span{all:unset;font-weight:800;font-size:15px;color:#6f6a60}
+.hr-nb{font-style:normal;font-weight:900;font-size:14px;color:#c98a00}
+.hr-prev{font-weight:800;font-size:14.5px;color:#8a8478}
 .hr-prev i{font-style:normal;font-weight:900}.hr-prev .hr-up{color:#2f9e5b}.hr-prev .hr-dn{color:#d9534f}
-.hr-ov .hr-msg{animation:none;margin-top:3px;padding-top:6px;border-top:1.5px dashed #d9d3c4;font-size:12px;font-weight:800;color:#5c574d;max-width:100%}
+.hr-ov .hr-msg{animation:none;margin-top:3px;padding-top:8px;border-top:1.5px dashed #d9d3c4;font-size:14px;font-weight:800;color:#5c574d;max-width:100%}
 .hr-ov .hr-msg b{font:inherit;font-weight:900;color:#c98a00;-webkit-text-stroke:0;text-shadow:none;animation:none;transform:none}
-.hr-ov .hr-go{color:#fff;-webkit-text-stroke:0;text-shadow:1px 1px 0 #2a2846,-1px 1px 0 #2a2846,1px -1px 0 #2a2846,-1px -1px 0 #2a2846;font-size:13px}
+.hr-ov .hr-go{color:#fff;-webkit-text-stroke:0;text-shadow:1px 1px 0 #2a2846,-1px 1px 0 #2a2846,1px -1px 0 #2a2846,-1px -1px 0 #2a2846;font-size:15px}
 .hr{container-type:inline-size}
 /* 좁은 게임 화면(세로도 낮음): 카드를 한 줄로 눕혀 잘리지 않게 */
-@container (max-width:600px){.hr-ov.dead{gap:5px;padding:8px}.hr-ov.dead b{font-size:17px;-webkit-text-stroke-width:1.5px;text-shadow:2px 2px 0 #2a2846}
+@container (max-width:600px){.hr-ov.dead{gap:5px;padding:8px}.hr-ov.dead b{font-size:19px;-webkit-text-stroke-width:1.5px;text-shadow:2px 2px 0 #2a2846}
   .hr-card{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:2px 10px;padding:5px 12px;box-shadow:2px 2px 0 #2a2846}
-  .hr-sc em{font-size:16px}.hr-ov .hr-sc span,.hr-prev{font-size:11px}.hr-nb{font-size:11px}
-  .hr-ov .hr-msg{margin:0;padding:0 0 0 10px;border-top:0;border-left:1.5px dashed #d9d3c4;font-size:11px}.hr-ov .hr-go{font-size:11px}}
+  .hr-sc em{font-size:18px}.hr-ov .hr-sc span,.hr-prev{font-size:12px}.hr-nb{font-size:12px}
+  .hr-ov .hr-msg{margin:0;padding:0 0 0 10px;border-top:0;border-left:1.5px dashed #d9d3c4;font-size:12px}.hr-ov .hr-go{font-size:12px}}
 .hr-rk{display:flex;flex-direction:column;gap:8px;color:var(--text);font-size:13.5px;font-weight:700}
 .hr-rk:empty{display:none}
 .hr-me{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;margin:0;padding-left:4px}
