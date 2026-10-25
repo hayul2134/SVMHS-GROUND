@@ -1366,7 +1366,7 @@ async function playHome() {
     const top = r.list.slice(0, RK_N);
     if (!top.length) return `<p class="hr-pe">${empty}</p>`;
     const row = (u, n) => `<li class="${u.isMe ? 'me' : ''}"><span class="hr-n">${n <= 3 ? `<i class="mdl m${n}">${n}</i>` : n}</span>${av(u, 'xs', avWear(u.mfx))}<span class="hr-nm">${esc(nameOf(u))}</span><b>${esc(GAMES.home.fmt(u.value))}</b></li>`;
-    const mineOut = r.mine && !top.some(u => u.isMe) ? `<li class="me hr-mine"><span class="hr-n">${r.mine}</span>${av(S.me, 'xs')}<span class="hr-nm">나</span><b>${esc(GAMES.home.fmt(r.myValue))}</b></li>` : '';
+    const mineOut = r.mine && !isDev(S.me) && !top.some(u => u.isMe) ? `<li class="me hr-mine"><span class="hr-n">${r.mine}</span>${av(S.me, 'xs')}<span class="hr-nm">나</span><b>${esc(GAMES.home.fmt(r.myValue))}</b></li>` : '';
     return `<ol>${top.map((u, i) => row(u, i + 1)).join('')}${mineOut}</ol>`;
   };
   const rkPane = (k, title, body) => `<section class="hr-pane"><header><b>${title}</b><button type="button" class="hr-all" data-rank="home" data-scope="${k}">더 보기</button></header>${body}</section>`;
