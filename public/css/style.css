@@ -4115,7 +4115,9 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .clubpick.su.bad legend{color:#e2483d}
 
 /* 팔로워·팔로잉 인스타처럼 (2026-10-25): 이름 아래 한 줄 글자, 상자 없이 — '팔로워 12  팔로잉 30' */
-.pstats.ig{display:flex;flex-wrap:wrap;gap:4px 22px;margin:8px 0 0;padding:0}
+.pnrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px}
+.pnrow .pname{min-width:0}
+.pstats.ig{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0;padding:0}
 .pstats.ig button{display:inline-flex;align-items:baseline;gap:5px;padding:2px 0;border:0;border-radius:6px;background:none;font:600 15px/1.3 var(--sans);color:var(--text)}
 .pstats.ig button:hover{background:none;text-decoration:underline;text-underline-offset:3px}
 .pstats.ig b{font:800 16px/1.3 var(--num,var(--sans));color:var(--text)}
