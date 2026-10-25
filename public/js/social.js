@@ -6,7 +6,7 @@ import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시
 import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
-import { HOME_MAX } from './home-score.js';
+import { HOME_MAX, GOAL } from './home-score.js';
 import { ffOn } from './flags.js';
 import { TIERS, tierOfK } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
@@ -26,7 +26,7 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
-  home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 — 100,000m면 집 도착! 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
+  home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 — 50,000m면 집 도착! 그 뒤로는 끝없이. 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
@@ -807,7 +807,7 @@ function stkTray(btn, onPick) {
   setTimeout(() => { document.addEventListener('pointerdown', close, true); document.addEventListener('keydown', close, true); });
   t.onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; t.remove(); off(); onPick(b.dataset.v); };
 }
-// 칭호 글자: 첫 10만 m 도착자 칭호는 앞에 금빛 '최초' 도장을 붙여 강조
+// 칭호 글자: 첫 5만 m 도착자 칭호는 앞에 금빛 '최초' 도장을 붙여 강조
 const ttlHtml = t => t === HOME_TITLE ? `<em class="t-first">${esc(HOME_FIRST)}</em>${esc(HOME_TITLE)}` : esc(t);
 function titleOpts(cur) {
   const have = ATT.lockedOf('title').filter(attHave), gcT = gcDone(S.me?.gc?.own);   // 뽑기 시리즈 완성 칭호
@@ -1396,11 +1396,17 @@ async function playHome() {
     cv.style.width = cw + 'px'; $('#hr').style.width = cw + 6 + 'px';   // 아래 조작 줄·랭킹 줄도 게임 화면 폭에 맞춤
   };
   // 게임 오버 (2026-10-25 하율: 가벼운 게임이라 결과 화면으로 넘어가지 않게) — 공룡 게임처럼 화면 위에 기록만 띄우고 그 자리에서 바로 다시
-  let over = false, deadAt = 0, runNo = 0;
+  let over = false, deadAt = 0, runNo = 0, choosing = false, goTicket = null;
+  const touchy = matchMedia('(pointer:coarse)').matches;
   const R = RUN.createRunner(cv, char, {
     sound, best: () => best,
-    onStart() { ov.hidden = true; ov.classList.remove('dead'); $('#hr').classList.add('on'); closeDress(); },
-    onOver(score, ms, win) {   // win: 10만 m 골인(집 도착)
+    onStart() { ov.hidden = true; ov.classList.remove('dead', 'win', 'again'); $('#hr').classList.add('on'); closeDress(); },
+    onReady() {   // 집에서 나와 출발 자리에 섬 → 입력하면 다시 출발
+      ov.hidden = false; ov.className = 'hr-ov again';
+      ov.innerHTML = `<b>다시 출발!</b><span>이제 끝없이 달려요</span><small>${touchy ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · 화살표 · 화면 클릭으로 출발'}</small>`;
+    },
+    onOver(score, ms, win) {   // win: 5만 m 골인(집 도착) — 집에서 쉬기 / 밖으로 나가기 고르기
+      if (win) return arrived(score, ms);
       over = true; deadAt = performance.now(); const no = ++runNo; $('#hr').classList.remove('on');
       const nb = score > best;
       if (nb) { best = score; store.set('home_best', best); }
@@ -1422,9 +1428,55 @@ async function playHome() {
       }).catch(e => { if (no === runNo && $('#hrMsg')) $('#hrMsg').textContent = e.message; });
     },
   });
+  // 집 도착(2026-10-25 하율): 마리오 골인처럼 집에 들어간 뒤 안내 + 버튼 두 개.
+  // 처음 도착한 한 사람: '집에 최초로 도착했습니다!' + 히든 칭호 발견 띠 / 그 뒤: '집에 도착했습니다!' + 받은 칭호
+  // 왼쪽 '집에서 쉬기' = 5만 m로 끝 · 오른쪽 '밖으로 나가기' = 캐릭터가 나와서, 입력하면 같은 판을 이어 끝없이 달림(이어 달리기 티켓)
+  function arrived(score, ms) {
+    over = true; choosing = true; deadAt = performance.now(); const no = ++runNo; $('#hr').classList.remove('on');
+    const nb = score > best;
+    if (nb) { best = score; store.set('home_best', best); }
+    last = score; store.set('home_last', score);
+    ov.hidden = false; ov.className = 'hr-ov dead win';
+    const paint = r => {
+      const first = !!r?.first;
+      const title = first ? '집에 <u>최초로</u> 도착했습니다!' : '집에 도착했습니다!';
+      const prize = !S.me ? '<p class="hr-prize">로그인하면 도착 칭호를 받을 수 있어요</p>'
+        : !r ? '<p class="hr-prize wait">칭호 확인 중…</p>'
+        : r.err ? `<p class="hr-prize">${esc(r.err)}</p>`
+        : first ? `<div class="hr-hidden"><i>히든 칭호 발견!</i><p>처음으로 히든 칭호를 발견했어요</p><p class="hr-ttl"><span class="t-first">${esc(HOME_FIRST)}</span> ${esc(HOME_TITLE)}</p><small>착용 소품 ‘집 열쇠’도 함께 받았어요 · 프로필 꾸미기에서 달 수 있어요</small></div>`
+        : `<p class="hr-prize">${r.arrived ? '칭호를 얻었어요' : '보유 중인 칭호'} <b class="hr-ttl">${esc(HOME_TITLE2)}</b>${r.arrived ? ' · 프로필 꾸미기에서 달 수 있어요' : ''}</p>`;
+      ov.innerHTML = `<b class="hr-win">${title}<br>축하합니다!</b>${prize}
+        <div class="hr-pick"><button type="button" class="btn ghost" data-hr="rest">${ic('home')}집에서 쉬기</button><button type="button" class="btn" data-hr="out">${ic('run')}밖으로 나가기</button></div>`;
+    };
+    paint(null);
+    goTicket = null;
+    if (!S.me) return;
+    const sv = saveScore('home', HOME_MAX - score, [score, ms]);
+    goTicket = sv.then(r => r.next || '').catch(() => '');
+    sv.then(r => {
+      syncBest(r.best);
+      if (r.first || r.arrived) refreshMe();
+      if (r.cheer) cheer('home', r.rank, r.best);
+      paintRk(true);
+      if (no === runNo && choosing) paint(r);
+    }).catch(e => { if (no === runNo && choosing) paint({ err: e.message }); });
+  }
+  ov.addEventListener('click', e => {
+    const b = e.target.closest('[data-hr]'); if (!b || !choosing) return;
+    choosing = false;
+    if (b.dataset.hr === 'rest') {   // 5만 m로 끝 — 이 판 기록은 이미 저장됨
+      deadAt = performance.now();
+      ov.querySelector('.hr-pick')?.remove();
+      ov.insertAdjacentHTML('beforeend', `<p class="hr-prize">푹 쉬어요! 오늘 기록 <b>${GOAL.toLocaleString('ko-KR')}m</b></p><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · ↑ · 클릭으로 다시'}</small>`);
+      return;
+    }
+    over = false; ov.hidden = true; ov.className = 'hr-ov';
+    ticket = S.me ? goTicket : null;   // 같은 판을 이어서 저장
+    R.goOut();
+  });
   // 다시 하기: 죽은 뒤 0.4초가 지나야 (누르고 있던 점프로 바로 다시 시작되지 않게). 새 판마다 서버 시작 티켓을 새로 받음
   const restart = () => {
-    if (!over || performance.now() - deadAt < 400) return false;
+    if (!over || choosing || performance.now() - deadAt < 400) return false;
     over = false; ticket = S.me ? call('start', { game: 'home' }).then(r => r.ticket).catch(() => '') : null;
     R.reset(); R.jump(); return true;
   };
@@ -1456,9 +1508,13 @@ async function playHome() {
   fit();
   const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
   // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)
-  const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck' };
+  const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck', ArrowLeft: 'go', ArrowRight: 'go' };
   const kd = e => {
     const a = KEY[e.key]; if (!a || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
+    if (choosing) {   // 집에서 고르는 중: ←·→로 버튼 이동, 스페이스·엔터는 버튼 그대로(실수로 새 판 시작 안 되게)
+      if (a === 'go') { e.preventDefault(); const bs = [...ov.querySelectorAll('[data-hr]')]; (bs[e.key === 'ArrowLeft' ? 0 : 1] || bs[0])?.focus(); }
+      return;
+    }
     e.preventDefault(); if (e.repeat) return;
     if (over) { if (a === 'jump') restart(); return; }
     R.input(a, true);
@@ -1466,7 +1522,7 @@ async function playHome() {
   const ku = e => { const a = KEY[e.key]; if (a) R.input(a, false); };
   document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
   const hold = (el, a) => {
-    el.addEventListener('pointerdown', e => { e.preventDefault(); if (!$('#hrDressBox').hidden) return; if (over) { restart(); return; } R.input(a, true); try { el.setPointerCapture(e.pointerId); } catch {} });
+    el.addEventListener('pointerdown', e => { if (e.target.closest?.('[data-hr]')) return; e.preventDefault(); if (!$('#hrDressBox').hidden || choosing) return; if (over) { restart(); return; } R.input(a, true); try { el.setPointerCapture(e.pointerId); } catch {} });
     const up = () => R.input(a, false);
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
     el.addEventListener('contextmenu', e => e.preventDefault());

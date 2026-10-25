@@ -3049,7 +3049,7 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .ptitle.dev span{background:linear-gradient(90deg,#ff7aa8,#ffb35c,#ffe066,#7ee0a1,#6fc6f4,#a98bff,#ff7aa8);background-size:200% 100%;color:#173048;box-shadow:2px 2px 0 var(--ink);animation:devTitle 4s linear infinite}
 @keyframes devTitle{to{background-position:200% 0}}
 @media (prefers-reduced-motion:reduce){.ptitle.dev span{animation:none}}
-/* 첫 10만 m 도착자 칭호(히든) '눈물나는 한 걸음': 노을빛 판 + '최초' 금빛 도장 */
+/* 첫 5만 m 도착자 칭호(히든) '눈물나는 한 걸음': 노을빛 판 + '최초' 금빛 도장 */
 .ptitle.first span{background:linear-gradient(100deg,#ff9a8b,#ffd8a8 55%,#ffe58a);color:#173048;box-shadow:2px 2px 0 var(--ink)}
 .ptitle.first .t-first{display:inline-block;margin-right:5px;padding:0 6px;border-radius:5px;background:linear-gradient(180deg,#fff3b0,#ffc83d);border:1.5px solid #173048;color:#c2402f;font-style:normal;font-weight:900;letter-spacing:.02em;transform:rotate(-4deg);box-shadow:1.5px 1.5px 0 #173048;animation:tFirst 2.4s ease-in-out infinite}
 @keyframes tFirst{0%,100%{transform:rotate(-4deg) scale(1)}50%{transform:rotate(-4deg) scale(1.08)}}
@@ -4433,3 +4433,25 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 .mdl.m3{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231b2536' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M6.6 6H3.6q0 4.6 3.6 5M17.4 6h3q0 4.6-3.6 5'/%3E%3Cpath d='M6.4 2.6h11.2v6.2a5.6 5.6 0 0 1-11.2 0z' fill='%23f0a86a'/%3E%3Cpath d='M9 4.6v3.6' stroke='%23ffe1c4' stroke-width='1.5'/%3E%3Cpath d='M10.4 14.3h3.2l.6 3.3h-4.4z' fill='%23f0a86a'/%3E%3Crect x='6.6' y='17.6' width='10.8' height='4' rx='1.2' fill='%23c0703c'/%3E%3C/svg%3E");color:#3a1f0c}
 .rk-n .mdl,.hr-rk li .mdl{width:30px;height:30px;font-size:11.5px;padding-top:3px}
 .rk-last .mdl{width:24px;height:24px;font-size:10px;padding-top:2px}
+
+/* ===== 집에 가고 싶어!: 5만 m 집 도착 안내 + 집에서 쉬기 / 밖으로 나가기 (2026-10-25 하율) ===== */
+.hr-ov.dead.win{gap:10px}
+.hr-ov .hr-win{line-height:1.15;animation:none!important}
+.hr-ov .hr-win u{text-decoration:none;color:#ffd25e}
+.hr-prize{margin:0;padding:6px 14px;background:#fff;border:2px solid #2a2846;border-radius:12px;box-shadow:2px 2px 0 #2a2846;color:#2a2846;font-weight:800;font-size:14.5px;max-width:min(440px,100%)}
+.hr-prize.wait{opacity:.8}
+.hr-ov .hr-prize b,.hr-prize .hr-ttl{all:unset;display:inline-block;margin:0 2px;padding:1px 9px;border-radius:7px;background:linear-gradient(100deg,#bfe3ff,#e9f3ff);border:1.5px solid #2a2846;font-weight:900;color:#173048}
+/* 히든 칭호 발견: 금빛 띠로 크게 */
+.hr-hidden{display:flex;flex-direction:column;align-items:center;gap:3px;max-width:min(460px,100%);padding:10px 22px 9px;border:2.5px solid #2a2846;border-radius:14px;background:linear-gradient(115deg,#fff3b0,#ffd8a8 45%,#ff9a8b);box-shadow:3px 3px 0 #2a2846;color:#2a2846;animation:hrHid .6s cubic-bezier(.2,1.6,.4,1) both}
+.hr-hidden > i{font-style:normal;font-family:var(--disp);font-size:clamp(18px,3vw,26px);color:#c2402f;letter-spacing:.02em;text-shadow:1.5px 1.5px 0 #fff}
+.hr-hidden p{margin:0;font-weight:900;font-size:14px}
+.hr-hidden .hr-ttl{margin-top:2px;padding:3px 12px;border-radius:9px;background:#fff;border:2px solid #2a2846;font-size:16px}
+.hr-hidden .t-first{display:inline-block;margin-right:3px;padding:0 6px;border-radius:5px;background:linear-gradient(180deg,#fff3b0,#ffc83d);border:1.5px solid #173048;color:#c2402f;font-weight:900;transform:rotate(-4deg);box-shadow:1.5px 1.5px 0 #173048}
+.hr-hidden small{font-weight:800;font-size:12px;color:#5c574d;animation:none}
+@keyframes hrHid{from{transform:scale(.4) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
+.hr-pick{display:flex;gap:10px;pointer-events:auto}
+.hr-pick .btn{min-width:132px;justify-content:center}
+.hr-ov.again{background:rgba(255,255,255,.12);place-content:start center;padding-top:6%}
+.hr-ov.again b{font-size:clamp(18px,3.4vw,32px)}
+@container (max-width:600px){.hr-ov.dead.win{gap:5px}.hr-prize{font-size:12px;padding:3px 9px}.hr-hidden{padding:5px 12px;gap:1px}.hr-hidden > i{font-size:16px}.hr-hidden p{font-size:12px}.hr-hidden .hr-ttl{font-size:13px}.hr-hidden small{font-size:10.5px}.hr-pick .btn{min-width:0;padding:6px 12px;font-size:13px}}
+@media (prefers-reduced-motion:reduce){.hr-hidden{animation:none}}

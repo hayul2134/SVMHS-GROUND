@@ -541,7 +541,7 @@ export function createRunner(canvas, char, opt = {}) {
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, speed: V0, scroll: 0,
       y: 0, vy: 0, onGround: true, jumpHeld: 0, ducking: false, anim: 0,
-      obs: [], homeT: 0, homeDone: false, nextGap: 120, burst: 0, rest: false, nid: 0, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0,
+      obs: [], homeT: 0, homeDone: false, past: false, outT: 0, grace: 0, nextGap: 120, burst: 0, rest: false, nid: 0, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0,
       clouds: [0, 1, 2].map(i => ({ x: 40 + i * 120 + rand() * 60, y: 8 + rand() * 22 })),
       stars: Array.from({ length: 28 }, () => ({ x: rand() * W, y: rand() * 46, p: rand() * 6 })),
       seed,
@@ -563,8 +563,8 @@ export function createRunner(canvas, char, opt = {}) {
   /* --- 판 --- */
   const JUMP_V = 270, G_HOLD = 820, G_FALL = 1500, G_FAST = 3200, HOLD_MAX = .2;
   function jump() {
-    const first = st.scene === 'ready';   // 게임 시작 점프는 소리 없이 (2026-10-25 하율 요청: 시작할 때 '퉁' 소리 없애기)
-    if (first) { st.scene = 'play'; opt.onStart?.(); }
+    const first = st.scene === 'ready' || st.scene === 'again';   // 게임 시작 점프는 소리 없이 (2026-10-25 하율 요청: 시작할 때 '퉁' 소리 없애기)
+    if (first) { if (st.scene === 'again') again(); st.scene = 'play'; opt.onStart?.(); }
     if (st.scene !== 'play' || !st.onGround) return false;
     st.vy = -JUMP_V; st.onGround = false; st.jumpHeld = 0; st.ducking = false;
     if (!first) beep(520, 880, .09); return true;
@@ -638,11 +638,19 @@ export function createRunner(canvas, char, opt = {}) {
     st.dust = st.dust.filter(d => d.t > 0);
     if (st.shake > 0) st.shake -= dt;
     if (st.scene === 'dead') { st.deadT += dt; return; }
-    if (st.scene === 'home') {   // 집 도착 연출: 문까지 걸어가 들어감 → 불 켜짐 → 1.8초 뒤 결과
+    // 집 도착 연출(2026-10-25 하율: 마리오 스테이지 클리어처럼): 문까지 걸어가 들어감(0~1초) → 문 닫힘 → 불 켜지고 지붕 깃발이 올라감 → 2.2초 뒤 결과(집에서 쉬기 / 밖으로 나가기)
+    // 집에 있는 동안(home·out·again)은 시간(ms)이 멈춰 있음 → 점수·서버 검증에 안 들어감
+    if (st.scene === 'home') {
       st.homeT += dt;
-      if (st.homeT > 1.8 && !st.homeDone) { st.homeDone = true; opt.onOver?.(GOAL, st.ms, true); }
+      if (st.homeT > 2.2 && !st.homeDone) { st.homeDone = true; opt.onOver?.(GOAL, st.ms, true); }
       return;
     }
+    if (st.scene === 'out') {   // 밖으로 나가기: 문이 열리고 나와서 출발 자리로 돌아감 → 'again'(입력하면 출발)
+      st.outT += dt; st.homeT += dt;
+      if (st.outT > 1.15) { st.scene = 'again'; opt.onReady?.(); }
+      return;
+    }
+    if (st.scene === 'again') { st.homeT += dt; return; }
     if (st.scene !== 'play') { st.y = Math.sin(st.anim * 3) * 0; return; }
 
     st.frames++; st.ms = Math.round(st.frames * 50 / 3);
@@ -655,7 +663,8 @@ export function createRunner(canvas, char, opt = {}) {
       if (m % step === 0) beep(780, 1180, .12, 'square', .04);
     }
     st.score = s;
-    if (s >= GOAL) return arrive();
+    if (s >= GOAL && !st.past) return arrive();
+    if (st.grace > 0) st.grace -= dt;
     if (st.flash > 0) st.flash -= dt * .9;
 
     // 캐릭터
@@ -678,12 +687,20 @@ export function createRunner(canvas, char, opt = {}) {
     st.obs = st.obs.filter(o => o.x + o.w > -10);
     const lastO = st.obs[st.obs.length - 1];
     // 집 앞 약 70m부터는 장애물을 더 안 만듦(이미 나온 건 도착 전에 다 지나감) → 마지막은 집이 보이며 달려 들어가기
-    if ((!lastO || W - (lastO.x + lastO.w) > st.nextGap) && (GOAL - st.score) * UNIT > W + 400) spawn();
+    // 집에서 다시 나온 뒤(past)엔 처음 1.2초 숨 돌린 다음 끝없이
+    if ((!lastO || W - (lastO.x + lastO.w) > st.nextGap) && st.grace <= 0 && (st.past || (GOAL - st.score) * UNIT > W + 400)) spawn();
     for (const o of st.obs) if (hits(o)) return die();
   }
   function arrive() {
     st.scene = 'home'; st.score = GOAL; st.flash = 0; st.lastHundred = GOAL / 100; st.homeT = 0; st.homeDone = false; st.obs = []; st.ducking = false;
     beep(523, 523, .12); setTimeout(() => beep(659, 659, .12), 130); setTimeout(() => beep(784, 1046, .3), 260);
+  }
+  function goOut() {   // '밖으로 나가기'
+    if (st.scene !== 'home' || !st.homeDone) return false;
+    st.scene = 'out'; st.outT = 0; beep(784, 523, .1); return true;
+  }
+  function again() {   // 다시 출발: 끝없이 달리기 (최고 속도 그대로)
+    st.past = true; st.grace = 1.2; st.obs = []; st.nextGap = 0; st.y = 0; st.vy = 0; st.onGround = true;
   }
   function die() {
     st.scene = 'dead'; st.deadT = 0; st.shake = .25;
@@ -763,9 +780,9 @@ export function createRunner(canvas, char, opt = {}) {
         g.globalAlpha = 1; for (let i = 0; i < o.n; i++) g.drawImage(img, X + i * (img.width + 1), Y);
       }
     }
-    // 집 (10만 m 골인 지점): 거리에 묶여 오른쪽에서 다가옴
-    const hx = Math.round(PX + 34 + (GOAL * UNIT - (st.scene === 'home' ? GOAL * UNIT : distAt(st.ms))));
-    if (hx < W + 4) drawHouse(sk, hx);
+    // 집 (5만 m 골인 지점): 거리에 묶여 오른쪽에서 다가오고, 다시 나가 달리면 왼쪽으로 지나감 (집에 있는 동안은 ms가 멈춰 그 자리)
+    const hx = Math.round(PX + 34 + (GOAL * UNIT - distAt(st.ms)));
+    if (hx < W + 4 && hx > -70) drawHouse(sk, hx);
     // 흙먼지
     g.fillStyle = mix(sk.ground, sk.line, .4);
     for (const d of st.dust) g.fillRect(Math.round(d.x), Math.round(d.y), 1, 1);
@@ -774,23 +791,33 @@ export function createRunner(canvas, char, opt = {}) {
     g.fillStyle = 'rgba(42,40,70,.22)';
     const shw = Math.max(4, 12 - Math.round(air / 6));
     g.fillRect(PX + 12 - (shw >> 1), GROUND, shw, 1);
-    let f, walkX = 0, inside = false;
+    let f, walkX = 0, inside = false, flip = false;
+    const door = hx + 6 - PX;
     if (st.scene === 'home') {   // 문(hx+9) 앞까지 걸어가서 들어감
-      const k = Math.min(1, st.homeT / .9); walkX = Math.round((hx + 6 - PX) * k); inside = st.homeT > 1;
+      const k = Math.min(1, st.homeT / .9); walkX = Math.round(door * k); inside = st.homeT > 1;
+    } else if (st.scene === 'out') {   // 문에서 나와(0~0.3초) 뒤돌아 출발 자리까지 걸어감(~0.95초) → 앞을 봄
+      const t = st.outT;
+      inside = t < .25;
+      const k = Math.min(1, Math.max(0, (t - .3) / .65)); walkX = Math.round(door * (1 - k));
+      flip = t >= .3 && t < .95;
     }
-    if (st.scene === 'home') f = Math.floor(st.anim * 8) % 2 ? 'run2' : 'run1';
+    if (st.scene === 'home' || (st.scene === 'out' && st.outT < .95)) f = st.scene === 'out' && st.outT < .3 ? 'run1' : Math.floor(st.anim * 8) % 2 ? 'run2' : 'run1';
+    else if (st.scene === 'out' || st.scene === 'again') f = 'run1';
     else if (st.scene === 'dead') f = 'dead';
     else if (!st.onGround) f = 'jump';
     else if (st.ducking) f = Math.floor(st.anim * 10) % 2 ? 'duck2' : 'duck1';
     else if (st.scene === 'play') f = Math.floor(st.anim * (8 + st.speed / 40)) % 2 ? 'run2' : 'run1';
     else f = Math.floor(st.anim * 2) % 2 ? 'run1' : 'run1';
-    const cy = Math.round(GROUND - SPR_H + st.y + (st.scene === 'ready' && Math.floor(st.anim * 2) % 2 ? 1 : 0));
+    const cy = Math.round(GROUND - SPR_H + st.y + ((st.scene === 'ready' || st.scene === 'again') && Math.floor(st.anim * 2) % 2 ? 1 : 0));
     if (!inside) {
+      g.save();
+      if (flip) { g.translate(PX * 2 + walkX * 2 + SPR_W, 0); g.scale(-1, 1); }
       g.globalAlpha = rimA; g.drawImage(spr[f + '_rim'], PX - 1 + walkX, cy - 1); g.globalAlpha = 1;
       g.drawImage(spr[f], PX + walkX, cy);
+      g.restore();
     }
-    if (st.scene === 'home' && st.homeT > 1) {   // 들어간 뒤: 하트·반짝이 위로
-      const t = st.homeT - 1;
+    if (st.scene === 'home' && st.homeT > 1.2) {   // 들어간 뒤: 하트·반짝이가 계속 피어오름 (고르는 동안에도)
+      const t = (st.homeT - 1.2) % 1.6;
       for (let i = 0; i < 7; i++) {
         const px = hx + 4 + ((i * 37) % 48), py = Math.round(GROUND - 50 - t * (18 + (i % 3) * 8)) + (i % 2) * 6;
         g.fillStyle = i % 2 ? '#ff6f9a' : '#ffd25e';
@@ -820,14 +847,26 @@ export function createRunner(canvas, char, opt = {}) {
     g.restore();
   }
   function drawHouse(sk, x) {   // 56×46 픽셀 집. 문은 x+9~x+18
-    const y = GROUND - 46, lit = st.scene === 'home' && st.homeT > 1, night = sk.night > .5;
+    const sc = st.scene, inHome = sc === 'home' || sc === 'out' || sc === 'again';
+    const y = GROUND - 46, lit = (sc === 'home' && st.homeT > 1.1) || sc === 'out' || sc === 'again' || st.past, night = sk.night > .5;
+    // 문: 들어갈 때(0.55~1.1초)·나올 때(0~0.45초)만 열림(안쪽 불빛), 그 외엔 닫힌 나무 문
+    const open = (sc === 'home' && st.homeT > .55 && st.homeT < 1.1) || (sc === 'out' && st.outT < .45);
+    // 지붕 깃발(마리오 골인처럼): 들어간 뒤 1.1~1.8초에 올라가고 그 뒤로 계속 꽂혀 있음
+    const flagK = sc === 'home' ? Math.min(1, Math.max(0, (st.homeT - 1.1) / .7)) : inHome || st.past ? 1 : 0;
     const wall = '#fff3dc', wallS = '#ecd9b8', roof = '#e4594d', roofS = '#b8403a', winC = lit || night ? '#ffe58a' : '#bfe3ff';
     const R = (c, a, b, w, h) => { g.fillStyle = c; g.fillRect(x + a, y + b, w, h); };
     R(OL, 40, 1, 7, 12); R('#9aa3b5', 41, 2, 5, 11);   // 굴뚝
     for (let i = 0; i < 8; i++) { R(OL, 26 - 3 - i * 3, i * 2, 6 + i * 6 + 2, 2); R(i % 2 ? roofS : roof, 26 - 2 - i * 3, i * 2 + (i ? 0 : 1), 4 + i * 6 + 2, 2 - (i ? 0 : 1)); }   // 계단식 지붕
     R(OL, 0, 16, 56, 1);
     R(OL, 2, 17, 52, 29); R(wall, 3, 17, 50, 29); R(wallS, 3, 41, 50, 5);   // 벽
-    R(OL, 8, 26, 12, 20); R(lit ? '#ffe58a' : '#9b6b4a', 9, 27, 10, 19); R('#ffd25e', 16, 36, 2, 2);   // 문 (들어가면 불빛)
+    R(OL, 8, 26, 12, 20);
+    if (open) { R('#ffe58a', 9, 27, 10, 19); R('#fff6c9', 10, 28, 4, 17); }   // 열린 문: 안쪽 불빛
+    else { R('#9b6b4a', 9, 27, 10, 19); R('#85593b', 9, 36, 10, 1); R('#ffd25e', 16, 36, 2, 2); }   // 닫힌 문
+    if (flagK > 0) {   // 깃대 + 깃발(노랑 바탕 빨강 하트)
+      R(OL, 25, -17, 3, 18); R('#e8e8f0', 26, -16, 1, 17); R('#ffd25e', 25, -19, 3, 2);
+      const fy = Math.round(-4 - flagK * 11);
+      R(OL, 27, fy - 1, 10, 8); R('#ffd25e', 27, fy, 9, 6); R('#ff6f9a', 30, fy + 1, 2, 1); R('#ff6f9a', 33, fy + 1, 2, 1); R('#ff6f9a', 30, fy + 2, 5, 1); R('#ff6f9a', 31, fy + 3, 3, 1); R('#ff6f9a', 32, fy + 4, 1, 1);
+    }
     R(OL, 26, 25, 22, 12); R(winC, 27, 26, 20, 10); R(OL, 36, 26, 1, 10); R(OL, 27, 30, 20, 1);   // 창문
     pxText(g, 'HOME', x + 21, y + 39, '#3e6fd8');   // 문패
     R(OL, 5, 46, 18, 1);   // 현관 턱
@@ -893,10 +932,11 @@ export function createRunner(canvas, char, opt = {}) {
   raf = requestAnimationFrame(frame);
 
   const api = {
-    st, reset, jump,
+    st, reset, jump, goOut,
     input(name, down) {
       if (name === 'jump') { if (down && !keys.jump) jump(); keys.jump = down; }
-      if (name === 'duck') { keys.duck = down; if (down && st.scene === 'ready') { st.scene = 'play'; opt.onStart?.(); } }
+      if (name === 'duck') { keys.duck = down; if (down && (st.scene === 'ready' || st.scene === 'again')) { if (st.scene === 'again') again(); st.scene = 'play'; opt.onStart?.(); } }
+      if (name === 'go' && down && st.scene === 'again') { again(); st.scene = 'play'; opt.onStart?.(); }   // ←·→ (집에서 나온 뒤 출발만)
     },
     setChar(c) { spr = buildSprites(c); },
     setSound(v) { sound = v; },

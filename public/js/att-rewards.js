@@ -182,15 +182,15 @@ export const tierAt = (rank, n) => {
 };
 export const gamePts = (r, n) => Math.round(100 * (n - r + 1) / n);
 export const GC_TITLE = '쉬는 시간 마스터';   // 시즌 1 시리즈를 다 모으면 받는 칭호
-// 히든 보상(2026-10-25 하율): '집에 가고 싶어!' 100,000m에 처음 도착한 단 한 사람 — 집 열쇠(착용 소품) + 칭호.
+// 히든 보상(2026-10-25 하율): '집에 가고 싶어!' 50,000m에 처음 도착한 단 한 사람 — 집 열쇠(착용 소품) + 칭호.
 // 뽑기 목록(GACHA)·도감·개발자 '전부 해금'에 들어가지 않음(세상에 하나). 서버가 첫 도착 때 gc_own에 넣어 줌(settings 'home_first')
-export const HIDDEN = [{ v: 'r:fxkey', fx: 'masc', d: '집에 가고 싶어! 100,000m에 처음 도착한 단 한 사람' }];
+export const HIDDEN = [{ v: 'r:fxkey', fx: 'masc', d: '집에 가고 싶어! 50,000m에 처음 도착한 단 한 사람' }];
 // 칭호(2026-10-25 하율: 재밌게, '첫 번째'가 강조되게 — 그다음 도착한 사람은 그 '첫 번째' 부분만 뺀 칭호)
 // 2026-10-25 하율: 첫 도착자 히든 칭호는 '눈물나는 한 걸음' — 화면에선 앞에 금빛 '최초' 도장(칭호 값에는 안 들어감)
 export const HOME_FIRST = '최초';   // 강조 도장 글자
-export const HOME_TITLE2 = '하교 성공';   // 10만 m 도착한 모두(첫 도착자 포함)
+export const HOME_TITLE2 = '하교 성공';   // 5만 m 도착한 모두(첫 도착자 포함)
 export const HOME_TITLE = '눈물나는 한 걸음';   // 첫 도착자 한 명만
-export const HOME_MARK = 'h:home';   // gc_own에 넣는 '10만 m 도착' 표시(스티커·효과 아님)
+export const HOME_MARK = 'h:home';   // gc_own에 넣는 '5만 m 도착' 표시(스티커·효과 아님)
 export const isHidden = v => HIDDEN.some(h => h.v === v);
 export const gcRar = v => gcItem(v)?.rar || 0;
 // 가진 뽑기 스티커 목록(스티커만): own = {'r:eraser': 2, …} (나온 횟수)

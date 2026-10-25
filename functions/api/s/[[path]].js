@@ -829,9 +829,9 @@ const ROUTES = {
     const g = GAMES[game];
     if (!g || !Number.isFinite(v) || v < g.min || v > g.max) return err('기록이 이상해요');
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
-    const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
+    const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
-    const elapsed = Date.now() - (tk.reset - TICKET_TTL);
+    const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
     if (elapsed < g.play) return err('기록이 이상해요');
     { const bad = checkRounds(game, v, body.rounds, elapsed); if (bad) return err(bad); }
     const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
@@ -848,9 +848,15 @@ const ROUTES = {
     const rank = await rankOf(db, game, best);
     const newBest = allPrev.b == null || v < allPrev.b;
     tierMemo.clear();
-    // 히든 보상(2026-10-25 하율): 100,000m에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
+    // 히든 보상(2026-10-25 하율): 집(50,000m, home-score.js GOAL)에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
     let first = false, arrived = false;
-    if (game === 'home' && v === HOME_MAX - GOAL && !isAdm(me)) {
+    // 집에 도착한 판(5만 m 이상): 같은 판을 '밖으로 나가기'로 이어 달릴 수 있게 출발 시각이 같은 이어 달리기 티켓을 하나 더 줌 (2026-10-25 하율)
+    let next = null;
+    if (game === 'home' && v <= HOME_MAX - GOAL) {
+      next = randHex(16);
+      await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${next}`, Date.now() - elapsed, Date.now() + 6 * 3600e3).run();   // n = 원래 출발 시각, 6시간 유효
+    }
+    if (game === 'home' && v <= HOME_MAX - GOAL && !isAdm(me)) {
       // 도착한 사람 모두: 칭호 '하교 성공' (처음 한 번만 표시)
       { const fr = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(me.id).first(), o = gcOwn(fr);
         if (!(o[HOME_MARK] > 0)) { arrived = true; o[HOME_MARK] = 1; await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2').bind(JSON.stringify(o), me.id).run(); } }
@@ -865,7 +871,7 @@ const ROUTES = {
         try {
           const cur = JSON.parse((await db.prepare("SELECT v FROM settings WHERE k = 'notice'").first())?.v || 'null');
           if (!cur || (cur.until && cur.until < Date.now())) {
-            const n = { id: randHex(4), text: `${me.name}님이 처음으로 집에 도착했어요! (집에 가고 싶어! 100,000m)`.slice(0, 120), body: '', tone: 'fun', link: '#game', at: Date.now(), until: Date.now() + 48 * 3600e3 };
+            const n = { id: randHex(4), text: `${me.name}님이 처음으로 집에 도착했어요! (집에 가고 싶어! ${GOAL.toLocaleString('en-US')}m)`.slice(0, 120), body: '', tone: 'fun', link: '#game', at: Date.now(), until: Date.now() + 48 * 3600e3 };
             await db.batch([
               db.prepare("INSERT INTO settings (k, v) VALUES ('notice', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(n)),
               db.prepare('INSERT INTO notices (id, text, tone, link, at, until, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)').bind(n.id, n.text, n.tone, n.link, n.at, n.until, n.body),
@@ -875,7 +881,7 @@ const ROUTES = {
       }
     }
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, arrived, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, arrived, next, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {

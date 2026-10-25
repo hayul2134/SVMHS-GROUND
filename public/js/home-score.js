@@ -9,6 +9,7 @@ export function distAt(ms) {
   const t = ms / 1000;
   return t <= T1 ? V0 * t + ACC * t * t / 2 : V0 * T1 + ACC * T1 * T1 / 2 + VMAX * (t - T1);
 }
-// 2026-10-25 하율: 10만 m = 집 도착(골인). 그 이상은 없음 → 10만에서 멈춤 (최고 속도로 약 44분)
-export const GOAL = 100000;
-export const scoreAt = ms => Math.min(GOAL, Math.floor(distAt(ms) / UNIT + 1e-6));
+// 2026-10-25 하율: 5만 m = 집 도착(골인, 최고 속도로 약 22분 13초). 집에서 '밖으로 나가기'를 고르면 그 뒤로 끝없이 달림
+// → 점수는 GOAL에서 멈추지 않음(집에 들어가 있는 동안은 시간이 멈춰 있어 ms에 안 들어감). 저장 상한만 HOME_MAX - 1
+export const GOAL = 50000;
+export const scoreAt = ms => Math.min(HOME_MAX - 1, Math.floor(distAt(ms) / UNIT + 1e-6));
