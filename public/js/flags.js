@@ -7,7 +7,6 @@
 // 형식: ['이름', '무엇인지 한 줄', '추가한 날짜']
 export const PREVIEW_LIST = [
   ['rk-split', '홈 전체 랭킹을 시간표와 분리한 별도 카드(1등 금빛·왕관), 시간표는 시계 높이 가운데', '2026-10-25'],
-  ['kao-nowrap', '글자 이모티콘((๑•̀ㅂ•́)و✧ 등)이 줄바꿈으로 잘리지 않게', '2026-10-25'],
 ];
 export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 export const ffOn = (name, dev) => !PREVIEW.has(name) || !!dev;
