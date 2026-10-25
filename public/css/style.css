@@ -3612,13 +3612,21 @@ html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[
 /* 빛 번짐은 시계 전체가 아니라 숫자 글자마다 → '오전/오후' 뒤에는 빛이 안 생김(2026-10-25 하율) */
 html[data-ckfx=neon] .stage .s-big > :not(.ap){filter:drop-shadow(0 0 .006em var(--ne-deep)) drop-shadow(0 0 .03em var(--ne)) drop-shadow(0 0 .08em color-mix(in srgb,var(--ne) 55%,transparent))}   /* 맨 앞 겹: 관 바깥 진한 테두리 → 크림 배경 위에서도 또렷 */
 html[data-ckfx=neon] .s-big .sec{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:0;text-shadow:.045em .0em 0 var(--ne-tube),.0416em .0172em 0 var(--ne-tube),.0318em .0318em 0 var(--ne-tube),.0172em .0416em 0 var(--ne-tube),.0em .045em 0 var(--ne-tube),-.0172em .0416em 0 var(--ne-tube),-.0318em .0318em 0 var(--ne-tube),-.0416em .0172em 0 var(--ne-tube),-.045em .0em 0 var(--ne-tube),-.0416em -.0172em 0 var(--ne-tube),-.0318em -.0318em 0 var(--ne-tube),-.0172em -.0416em 0 var(--ne-tube),-.0em -.045em 0 var(--ne-tube),.0172em -.0416em 0 var(--ne-tube),.0318em -.0318em 0 var(--ne-tube),.0416em -.0172em 0 var(--ne-tube)}
-/* 네온 시계 4차(2026-10-25 하율 "깨진다 + 더 네온 느낌"): 관은 SVG 필터(js/neon.js #sgNeon)로 — text-shadow 고리는 픽셀 맞춤 때문에 확대하면 곡선이 계단처럼 깨져서 폐기.
-   색은 flood-color로 CSS 변수 그대로: 관(--ne-tube) · 하얗게 달아오른 심(--ne-hot) · 밝은 테마에서만 짙은 바깥 테두리(--ne-edge) */
-html{--ne-tube:var(--ne);--ne-edge:color-mix(in srgb,var(--ne) 75%,#000);--ne-hot:color-mix(in srgb,#fff 88%,var(--ne));--ne-glass:var(--ne)}   /* 글자 자체는 그려지지 않음(필터가 모양만 씀) — 투명이면 모양이 사라지니 불투명 색 */
-html:not([data-theme=dark]){--ne-tube:var(--ne);--ne-edge:color-mix(in srgb,var(--ne) 55%,#0b1622)}   /* 밝은 배경: 관 가장자리를 짙게 해 크림 배경과 구분 */
-.ne-edge{flood-color:var(--ne-edge)}.ne-tube{flood-color:var(--ne-tube)}.ne-hot{flood-color:var(--ne-hot)}
-html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{color:var(--ne-glass);text-shadow:none;filter:none;animation:none;-webkit-text-stroke:0}
-html[data-ckfx=neon] .stage .s-big > :not(.ap),html[data-ckfx=neon] .s-big .sec{color:var(--ne-glass);text-shadow:none!important;filter:url(#sgNeon)!important}
+/* 네온 시계 6차(2026-10-25 하율 "뭉툭해서 그래픽 깨진 것 같음"): 관은 js/neon.js가 숫자 칸마다 겹쳐 놓는 SVG 글자(.ntb)의 stroke —
+   글자 윤곽선을 따라 일정한 두께, 모서리 둥글게. 원래 글자는 투명(폭·자리 유지), 속은 비어 배경이 보이는 윤곽 네온관.
+   관 단면: 짙은 가장자리(--ne-edge) → 네온색(--ne-tube) → 흰 심(--ne-hot), 빛 번짐은 drop-shadow 2겹 */
+html{--ne-tube:var(--ne);--ne-edge:color-mix(in srgb,var(--ne) 75%,#000);--ne-hot:color-mix(in srgb,#fff 88%,var(--ne))}
+html:not([data-theme=dark]){--ne-edge:color-mix(in srgb,var(--ne) 55%,#0b1622)}   /* 밝은 배경: 관 가장자리를 짙게 해 크림 배경과 구분 */
+html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{text-shadow:none;filter:none;animation:none;-webkit-text-stroke:0}
+html[data-ckfx=neon] .stage .s-big > :is(.n,.c){position:relative;color:transparent!important;-webkit-text-fill-color:transparent;text-shadow:none!important;filter:none!important}
+html[data-ckfx=neon] .s-big .sec{text-shadow:none!important;filter:none!important}
+.s-big .nb{display:inline-block;width:0;height:0;vertical-align:baseline}
+.ntb{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;
+  filter:drop-shadow(0 0 .02em var(--ne)) drop-shadow(0 0 .07em color-mix(in srgb,var(--ne) 65%,transparent))}
+.ntb text{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.ntb .t1{stroke:var(--ne-edge);stroke-width:.082em}
+.ntb .t2{stroke:var(--ne-tube);stroke-width:.062em}
+.ntb .t3{stroke:var(--ne-hot);stroke-width:.02em}
 /* 네온 시계의 '오전/오후'는 네온 처리 안 함(2026-10-25 하율: 글자까지 네온이면 이상함) — 평소 시계처럼 옅은 일반 글자 */
 html[data-ckfx=neon] .stage .s-big .ap{color:var(--sub)!important;-webkit-text-fill-color:currentColor;-webkit-text-stroke:0;text-shadow:none!important;filter:none;animation:none;font-weight:900;background:none}
 @media (prefers-reduced-motion:reduce){html[data-ckfx=neon] .s-big,html[data-ckfx=neon] .s-big *{animation:none !important}}
