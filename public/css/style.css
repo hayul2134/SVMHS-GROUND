@@ -4086,7 +4086,7 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .cp-i input:checked + span{border-color:var(--ink);background:#fff1c2;box-shadow:3px 3px 0 var(--ink)}
 :root[data-theme="dark"] .cp-i input:checked + span{background:#4a3d14}
 .cp-i input:focus-visible + span{outline:3px solid var(--yellow);outline-offset:2px}
-.pi-c .pi-logo{box-sizing:border-box;width:28px;height:28px;padding:4px;margin:-4px 0 -4px -4px;border-radius:8px;background:#fff;object-fit:contain;box-shadow:0 0 0 1.5px var(--ink)}   /* 로고가 네모에 꽉 차지 않게 안쪽 여백 */
+.pi-c .pi-logo{box-sizing:border-box;width:28px;height:28px;padding:4px;margin:-3px 3px -3px 0;border-radius:8px;background:#fff;object-fit:contain;box-shadow:0 0 0 1.5px var(--ink)}   /* 로고가 네모에 꽉 차지 않게 안쪽 여백 */
 
 /* 2026-10-25 Beta 표시: 반응속도·1 to 25·컷 타이밍 (나중에 아이디어와 결합해 디벨롭 예정) — 스킨과 상관없이 항상 파란색 */
 .app,.gcard{position:relative}
