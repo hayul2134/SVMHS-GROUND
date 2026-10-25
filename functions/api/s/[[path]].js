@@ -940,7 +940,7 @@ const ROUTES = {
     const out = [];
     for (let i = 0; i < n; i++) {
       const x = rnd() * 100;
-      // 확률은 RAR(시크릿 0.1 · 전설 3 · 희귀 22 · 일반 74.9). 천장은 전설·희귀만, 각각 한 번(시크릿은 조각 상점으로 확정 가능)
+      // 확률은 RAR(시크릿 0.1 · 전설 3 · 희귀 22 · 일반 74.9). 천장은 전설·희귀만, 각각 한 번(시크릿은 천장 없음 · 전설·시크릿은 조각 상점에도 없음)
       let rar = x < RAR[4].p ? 4 : x < RAR[4].p + RAR[3].p ? 3 : x < RAR[4].p + RAR[3].p + RAR[2].p ? 2 : 1, used = '';
       if (rar < 3 && leg >= 0 && leg + 1 >= GC.pityLeg) { rar = 3; used = 'leg'; }
       else if (rar < 2 && pity >= 0 && pity + 1 >= GC.pityRare) { rar = 2; used = 'pity'; }
@@ -969,6 +969,7 @@ const ROUTES = {
     if (!it) return err('지금 시즌에서 받을 수 없는 거예요');
     if (own[v]) return err('이미 가지고 있어요');
     const cost = GC.pick[it.rar];
+    if (!cost) return err('전설·시크릿은 조각으로 받을 수 없어요. 뽑기로만 나와요');   // 2026-10-25 하율
     if ((me.gc_shard || 0) < cost) return err(`조각이 ${cost}개 있어야 받을 수 있어요`);
     own[v] = 1;
     const r = await db.prepare('UPDATE users SET gc_shard = gc_shard - ?1, gc_own = ?2 WHERE id = ?3 AND gc_own = ?4 AND gc_shard >= ?1 RETURNING gc_shard')

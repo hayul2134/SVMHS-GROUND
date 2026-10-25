@@ -128,7 +128,7 @@ Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포
 export const RAR = { 1: { n: '일반', p: 74.9 }, 2: { n: '희귀', p: 22 }, 3: { n: '전설', p: 3 }, 4: { n: '시크릿', p: .1 } };   // p: % (합 100) — 2026-10-25 하율: 시크릿 0.1 · 전설 3 이하
 // 조각(2026-10-25 하율: "조각 → 뽑기권은 메리트 없음, 조각으로 다른 걸") — 뽑기권으로는 못 바꿈.
 //   pick: 아직 없는 것 골라 받기(등급별 조각) · shine: 가진 스티커(일반·희귀)를 반짝이 버전으로(다 모은 뒤에도 쓸 곳)
-export const GC = { start: 3, max: 99, pityRare: 10, pityLeg: 50, shard: { 1: 1, 2: 3, 3: 10, 4: 30 }, pick: { 1: 8, 2: 20, 3: 60, 4: 100 }, shine: { 1: 30, 2: 60 }, bonusEvery: 5 };
+export const GC = { start: 3, max: 99, pityRare: 10, pityLeg: 50, shard: { 1: 1, 2: 3, 3: 10, 4: 30 }, pick: { 1: 8, 2: 20 }, shine: { 1: 30, 2: 60 }, bonusEvery: 5 };
 // 반짝이 스티커: 값 끝에 '_s' (r:eraser → r:eraser_s). gc_own에도 같은 키로 기록. 어디서든 그 값으로 저장·검사·그림
 export const SHN = '_s';
 export const isShn = v => typeof v === 'string' && v.endsWith(SHN);

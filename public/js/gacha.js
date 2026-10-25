@@ -91,7 +91,7 @@ function paint() {
       <ul><li>희귀 이상이 ${GC.pityRare - 1}번 연속 안 나오면 <b>${GC.pityRare}번째는 희귀 확정</b>, 전설 이상이 ${GC.pityLeg - 1}번 연속 안 나오면 <b>${GC.pityLeg}번째는 전설 확정</b>이에요. <b>이 확정은 희귀·전설 각각 한 번만</b> 쓸 수 있어요(확정으로 받은 뒤엔 운으로만).</li>
       <li>5번 뽑기는 희귀 이상이 <b>1개 이상 확정</b>이에요.</li>
       <li>이미 가진 게 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]} · 시크릿 ${GC.shard[4]}개).</li>
-      <li>조각 상점: 아직 없는 걸 <b>골라서 받기</b>(일반 ${GC.pick[1]} · 희귀 ${GC.pick[2]} · 전설 ${GC.pick[3]} · 시크릿 ${GC.pick[4]}개) · 가진 스티커를 <b>반짝이로 바꾸기</b>(일반 ${GC.shine[1]} · 희귀 ${GC.shine[2]}개). 조각을 뽑기권으로 바꿀 수는 없어요.</li>
+      <li>조각 상점: 아직 없는 걸 <b>골라서 받기</b>(일반 ${GC.pick[1]} · 희귀 ${GC.pick[2]}개 — <b>전설·시크릿은 뽑기로만</b>) · 가진 스티커를 <b>반짝이로 바꾸기</b>(일반 ${GC.shine[1]} · 희귀 ${GC.shine[2]}개). 조각을 뽑기권으로 바꿀 수는 없어요.</li>
       <li>시즌 1을 전부 모으면 칭호 <b>‘${GC_TITLE}’</b>과 프로필 사진 <b>홀로그램 테두리</b>를 받아요.</li>
       <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(3·7·14·30일…)에 1장 더 받아요. 게임 랭킹은 ${RK.wdays}일(매주)마다 마감해서 게임마다 1등 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장을 줘요. 최대 ${GC.max}장까지 모여요.</li>
       <li>돈으로 사는 건 없어요. 결과는 서버에서 정해지고, 창을 닫아도 그대로 남아요.</li></ul>
@@ -113,7 +113,7 @@ function lazyAnim() {
 const TIER = { 1: '스티커', 2: '움직이는 스티커', 3: '효과', 4: '도감엔 ?로만 보여요' };
 const isSecHidden = (x, n) => x.rar === 4 && !n;
 function cell(x, n) {
-  if (isSecHidden(x, n)) return `<li class="r4 lock sec" data-tip="시크릿 — 뽑기 ${RAR[4].p}% 또는 조각 상점 ${GC.pick[4]}개"><span class="gc-ic" aria-hidden="true">?</span><small>???</small></li>`;
+  if (isSecHidden(x, n)) return `<li class="r4 lock sec" data-tip="시크릿 — 뽑기에서만 ${RAR[4].p}%"><span class="gc-ic" aria-hidden="true">?</span><small>???</small></li>`;
   const tip = `${objName(x.v)}${x.d ? ' — ' + x.d : ''}${n ? ` · ${n}번 나옴` : ' · 아직 못 뽑음'}`;
   const canGift = !x.fx && n >= 2;
   const sh = api.me()?.gc?.own?.[x.v + SHN] > 0;   // 반짝이로 바꾼 스티커는 도감에도 반짝이로
@@ -125,19 +125,19 @@ function prog(g) {
   return `<div class="gc-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${all}" aria-valuenow="${have}"><i class="w${Math.round(have / all * 20) * 5}"></i></div>
     <p>${have >= all ? `<b>시즌 1 완성!</b> 칭호 ‘${esc(GC_TITLE)}’ · 프로필 사진 홀로그램 테두리를 받았어요. <a href="#me" data-go="me">칭호 달기 →</a>` : `<b>${all - have}칸</b> 남았어요 — 다 모으면 칭호 ‘${esc(GC_TITLE)}’ + 프로필 사진 홀로그램 테두리`}</p></div>`;
 }
-// 조각 상점: ① 골라서 받기(아직 없는 것, 시크릿은 ?로) ② 반짝이로 바꾸기(가진 일반·희귀 스티커)
+// 조각 상점: ① 골라서 받기(아직 없는 일반·희귀만 — 전설·시크릿은 뽑기로만, 2026-10-25 하율) ② 반짝이로 바꾸기(가진 일반·희귀 스티커)
 // 상점 그림은 멈춘 그림(artOf 'still') — 수십 개가 한꺼번에 움직이면 렉(2026-10-25). 움직임은 도감·결과에서 보임
 // 조각을 많이 쓰는 버튼이라 한 번 누르면 '조각 N개 쓰기?'로 바뀌고 3초 안에 한 번 더 눌러야 실행(arm)
 function shop(g) {
-  const miss = GACHA.filter(x => !g.own[x.v]).sort((a, b) => b.rar - a.rar);
+  const miss = GACHA.filter(x => !g.own[x.v] && GC.pick[x.rar]).sort((a, b) => b.rar - a.rar);
   const shn = GACHA.filter(x => GC.shine[x.rar]).sort((a, b) => b.rar - a.rar), shOwn = shn.filter(x => g.own[x.v + SHN]).length;
   const btn = (k, v, cost) => `<button type="button" class="btn gc-buy" data-gc-${k}="${v}" data-cost="${cost}" ${g.shard < cost ? 'disabled' : ''}><i class="gc-sh" aria-hidden="true"></i>${cost}</button>`;
   const pick = miss.map(x => `<li class="${RCLS[x.rar]}${x.rar === 4 ? ' sec' : ''}"><span class="gc-ic">${x.rar === 4 ? '<span aria-hidden="true">?</span>' : artOf(x.v, 'still')}</span><small>${x.rar === 4 ? '시크릿' : esc(objName(x.v))}</small>${btn('pick', x.v, GC.pick[x.rar])}</li>`).join('');
   const up = shn.map(x => { const has = g.own[x.v], done = g.own[x.v + SHN];
     return `<li class="${RCLS[x.rar]}${done ? ' on' : has ? '' : ' lock'}"><span class="gc-ic">${artOf(has ? x.v + SHN : x.v, 'still')}</span><small>${esc(objName(x.v))}</small>${done ? '<em class="gc-done">반짝이</em>' : has ? btn('shine', x.v, GC.shine[x.rar]) : '<em class="gc-need">먼저 뽑기</em>'}</li>`; }).join('');
   return `<section class="gc-shop card" id="gcShop"><div class="gc-shoph"><h3>조각 상점</h3><span class="gc-shn"><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span></div>
-    <h4>골라서 받기 <small>뽑기 운이 안 따를 때, 갖고 싶은 걸 바로</small></h4>
-    ${pick ? `<ul class="gc-grid gc-buyl">${pick}</ul>` : '<p class="gc-none">시즌 1을 다 모았어요! 남은 조각은 반짝이로 바꾸는 데 써 보세요.</p>'}
+    <h4>골라서 받기 <small>뽑기 운이 안 따를 때, 갖고 싶은 걸 바로 · 일반·희귀만(전설·시크릿은 뽑기로만)</small></h4>
+    ${pick ? `<ul class="gc-grid gc-buyl">${pick}</ul>` : `<p class="gc-none">${GACHA.every(x => g.own[x.v]) ? '시즌 1을 다 모았어요!' : '일반·희귀는 다 모았어요! 전설·시크릿은 뽑기로만 나와요.'} 남은 조각은 반짝이로 바꾸는 데 써 보세요.</p>`}
     <h4>반짝이로 바꾸기 <small>${shOwn}/${shn.length} · 금빛으로 빛나고 별이 반짝여요. 프로필·이름 옆·시계·댓글·DM 어디서나 그대로</small></h4>
     <ul class="gc-grid gc-buyl">${up}</ul></section>`;
 }
