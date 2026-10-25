@@ -4421,3 +4421,6 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
   .ed-pv{max-height:42dvh;overflow-y:auto}
   .ed-pv .pv-body{grid-template-columns:minmax(0,1fr) 34%;align-items:start}
 }
+/* 시간표·일정과 카운트다운·친구 줄 사이 숨 쉴 틈 (2026-10-25 하율: 화면 밖까지 밀던 여백은 너무 넓고, 없애니 너무 붙음) */
+.board .bento > .k-cd,.board .bento > .k-bd{margin-top:34px}
+@media (max-width:900px){.board .bento > .k-bd{margin-top:14px}}
