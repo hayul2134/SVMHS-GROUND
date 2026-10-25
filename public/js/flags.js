@@ -6,6 +6,7 @@
 //   JS: ffOn('이름', isDev) / 서버: ffOn('이름', isAdm(me))
 // 형식: ['이름', '무엇인지 한 줄', '추가한 날짜']
 export const PREVIEW_LIST = [
+  ['tier-look', '티어 카드 새 디자인 — 아이언→챌린저 계단, 내 티어 후광·나 표시, 3단계 설명', '2026-10-25'],
 ];
 export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 export const ffOn = (name, dev) => !PREVIEW.has(name) || !!dev;

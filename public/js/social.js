@@ -1148,6 +1148,25 @@ async function loadTier() {
   const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${x.lb}</small></li>`).join('');
   const per = m ? Object.entries(GAMES).map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · <em>+${x.p}</em>` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
   const top = d.top.length ? d.top.map(u => `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
+  // 2026-10-25 하율 '티어 더 예쁘게' — 미리보기 깃발 tier-look(개발자 화면 먼저, 월요일 공개)
+  if (ffOn('tier-look', isDev(S.me))) {
+    const APEX = new Set(['master', 'grandmaster', 'challenger']);
+    const rev = [...TIERS].reverse();
+    const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><b>${x.n}</b><small>${x.lb}</small></li>`).join('');
+    const k = t ? t.k : 'iron';
+    box.classList.add('tr2');
+    box.innerHTML = `<div class="tr2-top">
+      <div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
+        <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>
+      <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>4개 게임 점수를 합쳐 줄 세우기</span></li><li><b>3</b><span>상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small></span></li></ol>
+    </div>
+    <ol class="tr-stairs">${stairs}</ol>
+    ${per ? `<ul class="tr-games">${per}</ul>` : ''}
+    <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;
+    const sl = box.querySelector('.tr-stairs'), on = sl?.querySelector('li.on');   // 폰: 가로로 넘기는 계단을 내 티어 쪽으로
+    if (on && sl.scrollWidth > sl.clientWidth) sl.scrollLeft = on.offsetLeft - (sl.clientWidth - on.offsetWidth) / 2;
+    return;
+  }
   box.innerHTML = `<div class="tr-head"><div class="tr-me ${t ? 't-' + t.k : ''}">${t ? `${tierIc(t.k)}<div><small>이번 라운드 내 티어</small><b>${t.n}</b><span>${m.rank}위 / ${d.players}명 · ${m.pts}점</span></div>` : `${tierIc('iron')}<div><small>이번 라운드 내 티어</small><b>-</b><span>게임을 한 판 하면 티어가 생겨요</span></div>`}</div>
       <p class="tr-how">게임마다 이번 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 4개 게임 점수를 합쳐 순위를 매기고, 상위 몇 %인지로 티어가 정해져요. 라운드가 끝나면 새로 시작하고 지난 티어는 프로필에 배지로 남아요.</p></div>
     <ol class="tr-ladder">${ladder}</ol>
