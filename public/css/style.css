@@ -4403,3 +4403,5 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 /* 급식 이름표 가독성(2026-10-25 하율): 900 굵기·-.04em 자간은 작은 글씨에서 획이 뭉개짐 → 700 · -.015em, 획 또렷하게 */
 .tray .lbl,.drink .lbl{font-weight:700;letter-spacing:-.015em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 .tray .nm.xl{letter-spacing:-.035em}
+/* 프로필 '친구 찾기' 칸은 화면 높이만큼 — 사람이 적어 페이지가 짧아도 홈 '친구 찾기'에서 이 칸이 화면 맨 위까지 올라오게 (2026-10-25) */
+#meBox .findcard{min-height:calc(100vh - 140px);min-height:calc(100dvh - 140px)}
