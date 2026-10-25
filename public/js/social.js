@@ -1322,7 +1322,7 @@ async function playHome() {
   // 화면 크기 (2026-10-25): 가로 폭 + 세로 남는 자리까지 보고 최대한 크게. 한 도트 = 기기 픽셀 정수배(dpr 2면 0.5px 단위)라 도트 크기가 고르게
   const fit = () => {
     const w = $('#parea').clientWidth - 6, top = scr.getBoundingClientRect().top + scrollY;
-    const hAvail = innerHeight - top - 150;   // 아래 조작 줄·랭킹 줄 자리
+    const hAvail = innerHeight - top - 320;   // 아래 조작 줄 + 친구·전체 랭킹(1~5등)이 스크롤 없이 보이게
     const dpr = devicePixelRatio || 1, k = Math.min(w / RUN.W, Math.max(2, hAvail / RUN.H));
     const per = k >= 1 ? Math.floor(k * dpr) / dpr : k;
     const cw = Math.min(w, per * RUN.W);
@@ -1359,18 +1359,24 @@ async function playHome() {
     over = false; ticket = S.me ? call('start', { game: 'home' }).then(r => r.ticket).catch(() => '') : null;
     R.reset(); R.jump(); return true;
   };
-  // 아래 친구 랭킹 줄: 이 게임 친구 1~3등 + 내 최고 (목표가 보이게)
-  async function paintRk(force) {
+  // 아래 랭킹 (2026-10-25 하율: 버튼 없이 바로 보이게) — 왼쪽 친구 랭킹 · 오른쪽 전체 랭킹, 각 1~5등 + 순위 밖이면 내 순위
+  const RK_N = 5;
+  const rkRows = (r, empty) => {
+    const top = r.list.slice(0, RK_N);
+    if (!top.length) return `<p class="hr-pe">${empty}</p>`;
+    const row = (u, n) => `<li class="${u.isMe ? 'me' : ''}"><span class="hr-n">${n <= 3 ? `<i class="mdl m${n}">${n}</i>` : n}</span>${av(u, 'xs', avWear(u.mfx))}<span class="hr-nm">${esc(nameOf(u))}</span><b>${esc(GAMES.home.fmt(u.value))}</b></li>`;
+    const mineOut = r.mine && !top.some(u => u.isMe) ? `<li class="me hr-mine"><span class="hr-n">${r.mine}</span>${av(S.me, 'xs')}<span class="hr-nm">나</span><b>${esc(GAMES.home.fmt(r.myValue))}</b></li>` : '';
+    return `<ol>${top.map((u, i) => row(u, i + 1)).join('')}${mineOut}</ol>`;
+  };
+  const rkPane = (k, title, body) => `<section class="hr-pane"><header><b>${title}</b><button type="button" class="hr-all" data-rank="home" data-scope="${k}">더 보기</button></header>${body}</section>`;
+  async function paintRk() {
     const el = $('#hrRk'); if (!el) return;
-    const mine = `<span class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></span>`;
-    if (!S.me) { el.innerHTML = mine + '<span class="hr-rkn">로그인하면 친구와 기록을 겨룰 수 있어요</span>'; return; }
-    if (!el.innerHTML) el.innerHTML = mine;
-    try {
-      const r = await call('rank?game=home&scope=friends'); if (!$('#hrRk')) return;
-      const top = r.list.slice(0, 3);
-      el.innerHTML = mine + (top.length ? `<span class="hr-rkn">친구 랭킹</span><ol>${top.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><i class="mdl m${i + 1}">${i + 1}</i>${av(u, 'xs', avWear(u.mfx))}<span>${esc(nameOf(u))}</span><b>${esc(GAMES.home.fmt(u.value))}</b></li>`).join('')}</ol>`
-        : '<span class="hr-rkn">아직 친구 기록이 없어요. 첫 기록을 남겨 보세요!</span>') + '<button type="button" class="hr-all" data-rank="home">전체 랭킹</button>';
-    } catch {}
+    const mine = `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></p>`;
+    if (!S.me) { el.innerHTML = mine + '<p class="hr-pe">로그인하면 친구·전체 랭킹에 기록을 올릴 수 있어요</p>'; return; }
+    if (!el.innerHTML) el.innerHTML = mine + `<div class="hr-cols">${rkPane('friends', '친구 랭킹', '<p class="hr-pe">불러오는 중…</p>')}${rkPane('all', '전체 랭킹', '<p class="hr-pe">불러오는 중…</p>')}</div>`;
+    const [f, a] = await Promise.all([call('rank?game=home&scope=friends').catch(() => null), call('rank?game=home&scope=all').catch(() => null)]);
+    if (!$('#hrRk')) return;
+    el.innerHTML = mine + `<div class="hr-cols">${rkPane('friends', '친구 랭킹', f ? rkRows(f, '아직 친구 기록이 없어요. 첫 기록을 남겨 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}${rkPane('all', '전체 랭킹', a ? rkRows(a, '아직 기록이 없어요. 첫 1등을 노려 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}</div>`;
   }
   paintRk();
   window.__home = R;   // 테스트용 (헤드리스 점검)
