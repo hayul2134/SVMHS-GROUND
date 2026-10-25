@@ -13,12 +13,22 @@ function make() {
   document.documentElement.classList.add('htip-on');   // CSS ::after 이름표 끔
 }
 
+// 카드형 이름표(data-tip-t 제목 · -d 설명 · -m 아래 작은 줄 · -r 등급 색): 긴 설명을 한 줄로 붙이지 않고 나눠서 보여 줌 (2026-10-25)
+function fillCard(el) {
+  box.textContent = '';
+  const add = (tag, cls, txt) => { if (!txt) return; const n = document.createElement(tag); n.className = cls; n.textContent = txt; box.appendChild(n); };
+  add('b', 'ht-t', el.getAttribute('data-tip-t'));
+  add('span', 'ht-d', el.getAttribute('data-tip-d'));
+  add('span', 'ht-m r' + (el.getAttribute('data-tip-r') || ''), el.getAttribute('data-tip-m'));
+}
+
 function place() {
   if (!cur) return;
   if (!cur.isConnected || !cur.getAttribute('data-tip')) return hide();
-  const t = cur.getAttribute('data-tip');
-  if (box.textContent !== t) box.textContent = t;
+  const t = cur.getAttribute('data-tip'), card = cur.hasAttribute('data-tip-t');
+  if (box.dataset.k !== t) { box.dataset.k = t; card ? fillCard(cur) : (box.textContent = t); }
   box.classList.toggle('wrap', !!cur.closest('.cal'));
+  box.classList.toggle('card', card);
   const r = cur.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
   if (r.bottom < 0 || r.top > vh) return hide();
   const w = box.offsetWidth, h = box.offsetHeight;
@@ -48,7 +58,7 @@ function show(el) {
 function hide() {
   cancelAnimationFrame(raf);
   cur = null;
-  if (box) box.classList.remove('on');
+  if (box) { box.classList.remove('on'); delete box.dataset.k; }
 }
 
 if (fine.matches) {

@@ -122,7 +122,9 @@ function cell(x, n) {
   const tip = `${objName(x.v)}${x.d ? ' — ' + x.d : ''}${n ? ` · ${n}번 나옴` : ' · 아직 못 뽑음'}`;
   const canGift = !x.fx && n >= 2;
   const sh = api.me()?.gc?.own?.[x.v + SHN] > 0;   // 반짝이로 바꾼 스티커는 도감에도 반짝이로
-  return `<li class="${RCLS[x.rar]}${n ? ' on' : ' lock'}" data-tip="${esc(tip + (sh ? ' · 반짝이' : ''))}"><span class="gc-ic">${artOf(sh ? x.v + SHN : x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}${canGift ? `<button type="button" class="gc-gift" data-gc-gift="${x.v}" aria-label="${esc(objName(x.v))} 친구에게 선물">선물</button>` : ''}</li>`;
+  // 이름표는 카드형(이름 / 설명 / 등급·횟수) — 한 줄로 길게 붙이면 안 읽힘(2026-10-25 하율). data-tip은 낭독·대체용 한 줄
+  const meta = [RAR[x.rar].n, n ? `${n}번 나옴` : '아직 못 뽑음', sh ? '반짝이' : ''].filter(Boolean).join(' · ');
+  return `<li class="${RCLS[x.rar]}${n ? ' on' : ' lock'}" data-tip="${esc(tip + (sh ? ' · 반짝이' : ''))}" data-tip-t="${esc(objName(x.v))}" data-tip-d="${esc(x.d || '')}" data-tip-m="${esc(meta)}" data-tip-r="${x.rar}"><span class="gc-ic">${artOf(sh ? x.v + SHN : x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}${canGift ? `<button type="button" class="gc-gift" data-gc-gift="${x.v}" aria-label="${esc(objName(x.v))} 친구에게 선물">선물</button>` : ''}</li>`;
 }
 // 시리즈 진행: 빈칸을 먼저 보여 주고, 다 모으면 무엇을 받는지 같이 보여 줌(세트 수집 설계)
 function prog(g) {

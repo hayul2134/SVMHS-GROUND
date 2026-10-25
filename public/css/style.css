@@ -1811,6 +1811,14 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
   .htip.on{opacity:1}
   .htip.wrap{white-space:normal;width:max-content;max-width:220px;line-height:1.35}
   :root[data-theme="dark"] .htip{background:#f3f7fb;color:var(--onc)}
+  /* 카드형 이름표(뽑기 도감 등): 이름 / 설명 / 등급·횟수를 줄을 나눠 읽기 쉽게 (2026-10-25) */
+  .htip.card{display:grid;gap:4px;white-space:normal;width:max-content;max-width:232px;padding:10px 13px 11px;border-radius:13px;text-align:left;line-height:1.4}
+  .htip.card .ht-t{font:800 14px/1.25 var(--sans)}
+  .htip.card .ht-d{font-weight:600;font-size:12.5px;opacity:.86;word-break:keep-all}
+  .htip.card .ht-m{display:flex;align-items:center;gap:6px;margin-top:2px;padding-top:6px;border-top:1px solid rgba(255,255,255,.16);font-weight:700;font-size:11.5px;opacity:.78}
+  .htip.card .ht-m::before{content:"";width:8px;height:8px;flex:none;border-radius:50%;background:#9cc8f5}
+  .htip.card .ht-m.r2::before{background:#b9a2ff}.htip.card .ht-m.r3::before{background:linear-gradient(135deg,#ffb3e6,#94d8ff,#ffe98a)}.htip.card .ht-m.r4::before{background:#ffc53d}
+  :root[data-theme="dark"] .htip.card .ht-m{border-top-color:rgba(23,48,72,.14)}
   .pick.csw button.on:hover::after,.pick.csw button.on:focus-visible::after{transform:translate(-50%,0)}
 }
 /* 식판 카툰 음식 그림(투명 배경): 칸 안에 잘리지 않게 담고(contain), 아래는 이름표 자리로 조금 비움 */
