@@ -4385,3 +4385,21 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 @media (max-width:760px){.gc-where li{grid-template-columns:1fr auto}.gc-where li .gw-path,.gc-where li small{grid-column:1 / -1}.gc-where li .btn{grid-row:1;grid-column:2}}
 .pick .att-pk i.nw-b{top:-7px;right:-7px;bottom:auto;z-index:4;font:900 10.5px/15px var(--num);color:#fff;background:var(--nw);border-radius:99px;padding:0 5px}
 .ed-body .pick{padding-top:6px}   /* 맨 윗줄 N 표시가 스크롤 칸에 잘리지 않게 */
+/* 2026-10-25 하율: 카운트다운 · 친구 나란히(각 c6), 카운트다운 두 장은 세로로. 친구 카드가 숨으면 카운트다운이 한 줄 전체 */
+.k-cd .cdrow{grid-template-columns:1fr}
+.bento .k-cd:has(+ #bdCard[hidden]){grid-column:span 12}
+.bento .k-cd:has(+ #bdCard[hidden]) .cdrow{grid-template-columns:1fr 1fr}
+.k-bd{display:flex;flex-direction:column}
+.k-bd .bdrow{flex:1;align-items:stretch}
+.k-bd .bd-empty{flex-direction:column;align-items:flex-start;justify-content:center}
+@media (max-width:760px){.bento .k-cd:has(+ #bdCard[hidden]) .cdrow{grid-template-columns:1fr}}
+@media (max-width:900px){.bento .k-cd,.bento .k-bd{grid-column:span 12}}
+/* 캐릭터 꾸미기 '무작위' → 주사위 아이콘 (2026-10-25 하율), 누르면 굴러감 */
+.hd-dice{display:inline-flex;align-items:center;justify-content:center;padding-left:0;padding-right:0;min-width:64px}
+#hrDressBox .hd-dice .sic{width:40px;height:40px;margin:0;stroke-width:1.4}
+.hd-dice.roll .sic{animation:hdRoll .5s cubic-bezier(.3,1.4,.5,1)}
+@keyframes hdRoll{0%{transform:rotate(0) scale(1)}40%{transform:rotate(-200deg) scale(.8)}100%{transform:rotate(-360deg) scale(1)}}
+@media (prefers-reduced-motion:reduce){.hd-dice.roll .sic{animation:none}}
+/* 급식 이름표 가독성(2026-10-25 하율): 900 굵기·-.04em 자간은 작은 글씨에서 획이 뭉개짐 → 700 · -.015em, 획 또렷하게 */
+.tray .lbl,.drink .lbl{font-weight:700;letter-spacing:-.015em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+.tray .nm.xl{letter-spacing:-.035em}

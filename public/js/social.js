@@ -1432,7 +1432,7 @@ async function playHome() {
   function paintDress() {
     const sw = (o, i) => o.colors[i][0];
     box.innerHTML = `<div class="hd-pv"><canvas id="hdCv" aria-label="내 캐릭터"></canvas><div class="hd-frs">${['run1', 'jump', 'duck1'].map((f, i) => `<button type="button" data-hf="${f}" class="${i ? '' : 'on'}">${['달리기', '점프', '숙이기'][i]}</button>`).join('')}</div>
-        <div class="row"><button type="button" class="btn ghost" id="hdRnd">무작위</button><button type="button" class="btn" id="hdDone">완료</button></div></div>
+        <div class="row"><button type="button" class="btn ghost hd-dice" id="hdRnd" aria-label="무작위로 꾸미기" title="무작위로 꾸미기"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-dice"/></svg></button><button type="button" class="btn" id="hdDone">완료</button></div></div>
       <div class="hd-opts">${RUN.OPTS.map(o => `<div class="hd-g"><p>${o.name}</p><div class="hd-ch">${o.colors
         ? o.colors.map((c, i) => `<button type="button" class="hd-sw${char[o.k] === i ? ' on' : ''}${c[0] ? '' : ' none'}" data-hk="${o.k}" data-hv="${i}" data-tip="${c[1]}" aria-label="${o.name} ${c[1]}"${c[0] ? ` data-c="${c[0]}"` : ''}></button>`).join('')
         : o.list.map(([v, t]) => `<button type="button" class="hd-tx${char[o.k] === v ? ' on' : ''}" data-hk="${o.k}" data-hv="${v}">${t}</button>`).join('')}</div></div>`).join('')}</div>`;
@@ -1450,7 +1450,7 @@ async function playHome() {
         box.querySelectorAll(`[data-hk="${o.k}"]`).forEach(x => x.classList.toggle('on', x === b));
         RUN.saveChar(char); R.setChar(char); pv(); return;
       }
-      if (e.target.closest('#hdRnd')) { char = RUN.randomChar(); RUN.saveChar(char); R.setChar(char); const keep = fr; paintDress(); box.querySelector(`[data-hf="${keep}"]`)?.click(); return; }
+      if (e.target.closest('#hdRnd')) { char = RUN.randomChar(); RUN.saveChar(char); R.setChar(char); const keep = fr; paintDress(); box.querySelector(`[data-hf="${keep}"]`)?.click(); box.querySelector('#hdRnd')?.classList.add('roll'); return; }
       if (e.target.closest('#hdDone')) { closeDress(); $('#hrDress').focus(); }
     };
   }

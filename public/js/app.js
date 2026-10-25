@@ -301,14 +301,16 @@ const boardY = () => Math.max(0, $('#boardT').getBoundingClientRect().top + scro
 $('#goDown').onclick = () => scrollTo({ top: boardY(), behavior: 'smooth' });
 // 그 자리에서 아래 카운트다운 카드가 화면 끝에 걸쳐 보이지 않게, 넓은 화면에선 카드를 화면 밖까지 내림 (2026-10-24)
 {
-  const cd = $('#cdCard');
+  // 2026-10-25 하율: 카운트다운·친구가 한 줄에 나란히 → 둘 다 같이 내림(같은 줄 맞춤)
+  const cd = $('#cdCard'), row = [cd, $('#bdCard')].filter(Boolean);
+  const set = v => row.forEach(e => { e.style.marginTop = v; });
   const f = () => {
-    if (innerWidth < 1000 || !$('#v-home').classList.contains('on')) { cd.style.marginTop = ''; return; }
-    cd.style.marginTop = '';
+    if (innerWidth < 1000 || !$('#v-home').classList.contains('on')) { set(''); return; }
+    set('');
     const gap = boardY() + innerHeight - (cd.getBoundingClientRect().top + scrollY) + 90;   // 90: 위로 삐져나온 마스킹테이프·그림자까지 화면 밖으로 (2026-10-24 2차: 28이면 테이프가 바닥에 걸쳐 보였음)
-    cd.style.marginTop = gap > 0 ? Math.min(gap, innerHeight * .7) + 'px' : '';
+    set(gap > 0 ? Math.min(gap, innerHeight * .7) + 'px' : '');
   };
-  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); if ($('#bdCard')) ro.observe($('#bdCard')); }   // 친구 카드(2026-10-25)는 한눈에 보기 화면 안, 카운트다운만 아래로
+  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); }
   addEventListener('resize', f); f();
 }
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
