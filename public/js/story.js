@@ -160,8 +160,7 @@ export async function shareBlob(blob, name = 'svmhs-ground.png') {
   if (navigator.canShare?.({ files: [f] })) {
     try { await navigator.share({ files: [f] }); return 'shared'; } catch (e) { if (e?.name === 'AbortError') return 'cancel'; }
   }
-  const a = document.createElement('a'), u = URL.createObjectURL(blob);
-  a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(u), 4000);
+  const u = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });   // data: 주소(CSP img-src에 blob: 없음)
+  const a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
   return 'saved';
 }

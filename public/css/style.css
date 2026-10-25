@@ -4644,7 +4644,7 @@ html.tl2 .cat-more.cm-tier:hover{background:#ffe373}
 
 /* 랭킹 스토리 공유 버튼 (2026-10-26, story.js) */
 .sheet h3.rk-h3{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.rk-story{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:99px;border:2px solid var(--ink);background:#ffe08a;color:#173048;font:800 12.5px var(--body,inherit);box-shadow:2px 2px 0 var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
-.rk-story .sic{width:16px;height:16px}
+.sheet h3 .rk-story{margin-left:auto;font-family:inherit;display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:99px;border:2px solid var(--ink);background:#ffe08a;color:#173048;font-size:13px;font-weight:800;line-height:1.2;letter-spacing:0;box-shadow:2px 2px 0 var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
+.sheet h3 .rk-story .sic{width:16px;height:16px}
 .rk-story:hover{transform:translateY(-2px)}
 .rk-story:disabled{opacity:.6;cursor:progress}
