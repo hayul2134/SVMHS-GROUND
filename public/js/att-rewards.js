@@ -100,9 +100,13 @@ export const GACHA = [
   // 일반 — 필통·가방·책상 위, 학생이 실제로 가진 물건
   { v: 'r:eraser', rar: 1 }, { v: 'r:hilite', rar: 1 }, { v: 'r:postit', rar: 1 }, { v: 'r:ruler', rar: 1 },
   { v: 'r:sharp', rar: 1 }, { v: 'r:correct', rar: 1 }, { v: 'r:tape', rar: 1 }, { v: 'r:earbud', rar: 1 },
+  { v: 'r:hbpencil', rar: 1 }, { v: 'r:glue', rar: 1 }, { v: 'r:calc', rar: 1 }, { v: 'r:scissors', rar: 1 },   // 2026-10-25 추가
+  { v: 'r:milkbox', rar: 1 }, { v: 'r:slipper', rar: 1 }, { v: 'r:bottle', rar: 1 }, { v: 'r:stapler', rar: 1 },
   // 희귀 — 움직이는 스티커(학교생활 한 장면). 댓글·DM·프로필·시계 위에서 움직임
   { v: 'r:plane', rar: 2, d: '창밖으로 날아가는 종이비행기' }, { v: 'r:test100', rar: 2, d: '빨간 동그라미가 그려지는 100점' },
   { v: 'r:ball', rar: 2, d: '통통 튀는 농구공' }, { v: 'r:memo', rar: 2, d: '하트가 퐁 올라오는 비밀 편지' },
+  { v: 'r:bread', rar: 2, d: '김이 모락모락 나는 매점 빵' }, { v: 'r:fan', rar: 2, d: '빙글빙글 도는 교실 선풍기' },   // 2026-10-25 추가
+  { v: 'r:nap', rar: 2, d: 'Z가 퐁퐁 올라오는 쉬는 시간 낮잠' }, { v: 'r:icecream', rar: 2, d: '녹아서 똑 떨어지는 아이스크림' },
   // 전설 — 효과(스티커가 아님): 서비스 › 뽑기 '내 효과'에서 하나씩 켬
   { v: 'r:fxholo', rar: 3, fx: 'name', d: '랭킹·댓글·DM·프로필 어디서나 이름이 홀로그램으로 반짝여요' },
   { v: 'r:fxstar', rar: 3, fx: 'prof', d: '누가 내 프로필을 열면 별똥별이 쏟아져요' },
@@ -116,9 +120,11 @@ export const GACHA_ALL = [...GACHA, ...GACHA_OLD];
 export const GACHA_STK = GACHA_ALL.filter(g => !g.fx);   // 스티커로 쓰는 것(일반·희귀)
 export const gcItem = v => GACHA_ALL.find(g => g.v === v);
 Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포스트잇', ruler: '자', tape: '마스킹테이프', earbud: '무선 이어폰', sharp: '샤프', correct: '수정테이프',
+  hbpencil: '연필', glue: '딱풀', calc: '계산기', scissors: '가위', milkbox: '급식 우유', slipper: '실내화', bottle: '물병', stapler: '스테이플러',
   plane: '종이비행기', test100: '100점 시험지', ball: '농구공', memo: '비밀 편지',
+  bread: '매점 빵', fan: '교실 선풍기', nap: '쉬는 시간 낮잠', icecream: '아이스크림',
   fxholo: '홀로그램 닉네임', fxstar: '별똥별 등장', fxneon: '네온 시계', fxcrown: '떠 있는 왕관', fxgold: '황금 닉네임', fxkey: '집 열쇠' });
-export const RAR = { 1: { n: '일반', p: 72 }, 2: { n: '희귀', p: 22 }, 3: { n: '전설', p: 5.5 }, 4: { n: '시크릿', p: .5 } };   // p: % (합 100)
+export const RAR = { 1: { n: '일반', p: 74.9 }, 2: { n: '희귀', p: 22 }, 3: { n: '전설', p: 3 }, 4: { n: '시크릿', p: .1 } };   // p: % (합 100) — 2026-10-25 하율: 시크릿 0.1 · 전설 3 이하
 // 조각(2026-10-25 하율: "조각 → 뽑기권은 메리트 없음, 조각으로 다른 걸") — 뽑기권으로는 못 바꿈.
 //   pick: 아직 없는 것 골라 받기(등급별 조각) · shine: 가진 스티커(일반·희귀)를 반짝이 버전으로(다 모은 뒤에도 쓸 곳)
 export const GC = { start: 3, max: 99, pityRare: 10, pityLeg: 50, shard: { 1: 1, 2: 3, 3: 10, 4: 30 }, pick: { 1: 8, 2: 20, 3: 60, 4: 100 }, shine: { 1: 30, 2: 60 }, bonusEvery: 5 };

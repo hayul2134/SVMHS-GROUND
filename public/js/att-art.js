@@ -226,6 +226,81 @@ const GA = {
       + `<path d="M24.4 17.6Q26.4 14.4 30 14" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>`)
     + gloss('M17.4 26V17Q17.8 12.8 21.6 12.6', 2.2, .75) + `</g>`
     + twinkle(42.4, 41.4, 2.6, '#fff3b0'),
+  // 2026-10-25 하율 "일반 더 늘려봐" — 8종 추가(필통·책상·급식에서 실제로 보는 물건)
+  hbpencil:   // 연필: 노란 육각 몸통 + 나무 깎은 끝 + 흑연 + 은색 띠 + 분홍 지우개
+    `<g transform="rotate(-40 24 24)">`
+    + jelly('M3.4 24 10.6 19.6V28.4Z', 'gPa', '#c9a070', `<path d="M3.4 24 6.4 22.2V25.8Z" fill="${INK}"/>`, { dx: .6, dy: 1, sw: 1.7 })
+    + jelly('M10.6 19.6H35V28.4H10.6Z', 'gY', '#d98a10', shade('M10.6 25.2H35V28.4H10.6Z', '#f0a21c', .75) + `<path d="M10.6 24H35" stroke="#e0a015" stroke-width="1.2"/>`, { dx: .6, dy: 1, sw: 1.8 })
+    + jelly('M35 19.2H39.4V28.8H35Z', 'gS', '#7d8b9a', `<path d="M36.5 19.6V28.4M38 19.6V28.4" stroke="#9aa8b6" stroke-width="1"/>`, { dx: .6, dy: 1, sw: 1.7 })
+    + jelly('M39.4 19.4H42.6Q45.4 19.4 45.4 22.2V25.8Q45.4 28.6 42.6 28.6H39.4Z', 'gN', '#d9577e', '', { dx: .6, dy: 1, sw: 1.7 })
+    + gloss('M12.8 21.4H32.4', 1.6, .85) + `</g>`
+    + twinkle(40.4, 38.6, 2.8, '#fff3b0') + twinkle(8.6, 9.6, 2.2, '#c6ebff'),
+  glue:   // 딱풀: 노란 뚜껑 + 파란 몸통 + '풀' 라벨
+    `<g transform="rotate(16 24 24)">`
+    + jelly('M15.6 16H32.4V40.4Q32.4 43.4 29.4 43.4H18.6Q15.6 43.4 15.6 40.4Z', 'gB', '#2a7fc4',
+      shade('M28.6 16H32.4V40.4Q32.4 43.4 29.4 43.4H27.4Q30 40 28.6 16Z', '#3a92d8', .8)
+      + `<rect x="15.6" y="22.4" width="16.8" height="11.2" fill="#fff" stroke="${INK}" stroke-width="1.4"/><text x="24" y="31.6" text-anchor="middle" font-family="Jua,sans-serif" font-size="9" fill="#2a7fc4">풀</text>`
+      + `<path d="M15.6 38.6H32.4" stroke="#2a7fc4" stroke-width="1.3"/>`)
+    + jelly('M14.6 7.6Q14.6 4.6 17.6 4.6H30.4Q33.4 4.6 33.4 7.6V16.6H14.6Z', 'gY', '#d98a10', `<path d="M14.6 13.2H33.4" stroke="#d98a10" stroke-width="1.3" opacity=".8"/>`)
+    + gloss('M18.2 18.6V20.6M18.2 35.6V37', 2, .8) + gloss('M17.6 7.6V10.6', 2) + `</g>`
+    + twinkle(41, 10, 2.8, '#fff3b0') + twinkle(7.6, 38, 2.2, '#c6ebff'),
+  calc:   // 계산기: 보라 몸통 + 연두 화면(100) + 버튼 9개(= 은 주황)
+    `<g transform="rotate(-8 24 24)">`
+    + jelly('M12.4 4.6H35.6Q39.4 4.6 39.4 8.4V39.6Q39.4 43.4 35.6 43.4H12.4Q8.6 43.4 8.6 39.6V8.4Q8.6 4.6 12.4 4.6Z', 'gV', '#5b45c9',
+      shade('M39.4 30V39.6Q39.4 43.4 35.6 43.4H22Q34 40.4 39.4 30Z', '#7a62f0', .7)
+      + `<rect x="12.8" y="8.6" width="22.4" height="9.4" rx="2" fill="#e2f9cf" stroke="${INK}" stroke-width="1.5"/><text x="33" y="16.2" text-anchor="end" font-family="Outfit,Jua,sans-serif" font-weight="800" font-size="7.4" fill="${INK}">100</text>`
+      + [0, 1, 2].map(r => [0, 1, 2].map(c => `<rect x="${n1(13.2 + c * 7.8)}" y="${n1(21.4 + r * 6.6)}" width="6" height="4.8" rx="1.6" fill="${r === 2 && c === 2 ? 'url(#gL)' : '#fff'}" stroke="${INK}" stroke-width="1.2"/>`).join('')).join(''))
+    + gloss('M11.8 10.6V19.4', 1.8, .7) + `</g>`
+    + twinkle(42.4, 8, 2.8, '#fff3b0') + twinkle(5.6, 40, 2.2, '#c6ebff'),
+  scissors:   // 가위: 분홍·하늘 손잡이 고리 + 넓은 은색 날 + 노란 나사
+    `<g transform="rotate(-38 24 24)">`
+    + jelly('M20.4 21.4 46 15.2Q47.6 16.4 46.2 17.8L23.4 27.8Z', 'gS', '#7d8b9a', `<path d="M24.6 22.6 43.4 17.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".9"/>`, { dx: .6, dy: 1, sw: 1.8 })
+    + jelly('M20.4 26.6 46 32.8Q47.6 31.6 46.2 30.2L23.4 20.2Z', 'gS', '#7d8b9a', '', { dx: .6, dy: 1, sw: 1.8 })
+    + [[13.4, 'gR', '#f0646d'], [34.6, 'gB', '#4aaeef']].map(([y, g, c]) =>
+      `<path d="M${y < 24 ? '13.6 19' : '13.6 29'} 22 24" stroke="${INK}" stroke-width="6.4" stroke-linecap="round"/><path d="M${y < 24 ? '13.6 19' : '13.6 29'} 22 24" stroke="${c}" stroke-width="3.2" stroke-linecap="round"/>`
+      + `<circle cx="10.4" cy="${y + 1.4}" r="7" fill="none" stroke="${INK}" stroke-width="7.2"/><circle cx="9.4" cy="${y}" r="7" fill="none" stroke="${INK}" stroke-width="7.2"/><circle cx="9.4" cy="${y}" r="7" fill="none" stroke="url(#${g})" stroke-width="3.8"/>`
+      + `<path d="M4.6 ${y - 2.4}Q6 ${y - 5.4} 9.4 ${y - 5.6}" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>`).join('')
+    + `<circle cx="22" cy="24" r="2.8" fill="url(#gY)" stroke="${INK}" stroke-width="1.5"/>` + `</g>`
+    + twinkle(42.6, 38.4, 2.8, '#fff3b0') + twinkle(39.4, 6.6, 2.2, '#c6ebff'),
+  milkbox:   // 급식 우유: 흰 종이팩 + 파란 지붕 + '우유' 띠 + 빨대
+    `<g transform="rotate(6 24 24)">`
+    + `<path d="M27.6 10.4 32.6 1.6" stroke="${INK}" stroke-width="4.4" stroke-linecap="round"/><path d="M27.6 10.4 32.6 1.6" stroke="#ff8fb0" stroke-width="2.2" stroke-linecap="round"/>`
+    + jelly('M12.4 17.6H35.6V41.4Q35.6 43.6 33.4 43.6H14.6Q12.4 43.6 12.4 41.4Z', 'gW', '#aebccb',
+      shade('M31.4 17.6H35.6V41.4Q35.6 43.6 33.4 43.6H30.6Q32.6 40 31.4 17.6Z', '#dfe9f2', .9)
+      + `<path d="M12.4 26H35.6V36.4H12.4Z" fill="url(#gLg)" stroke="${INK}" stroke-width="1.4"/><text x="24" y="34.2" text-anchor="middle" font-family="Jua,sans-serif" font-size="8.6" fill="#fff" stroke="${INK}" stroke-width="1.8" paint-order="stroke">우유</text>`)
+    + jelly('M12.4 17.6 17.4 9.4H30.6L35.6 17.6Z', 'gB', '#2a7fc4', `<path d="M24 9.4 21.6 17.6" stroke="#2a7fc4" stroke-width="1.2"/>`)
+    + jelly('M17.4 9.4V6.2H30.6V9.4Z', 'gB', '#2a7fc4', '', { dx: .5, dy: .9, sw: 1.7 })
+    + gloss('M15 21V24M15 38.6V40.4', 2, .85) + `</g>`
+    + twinkle(41.6, 9.4, 2.8, '#fff3b0') + twinkle(6.6, 38, 2.2, '#c6ebff'),
+  slipper:   // 실내화 한 켤레: 흰 고무 바닥 + 파란 앞 띠(학교 실내화 그 모양)
+    `<g transform="translate(3.4 4.6) rotate(-12 12 20)">`
+      + jelly('M12 0C18 0 21 4.4 21 10.6V29.4Q21 40 12 40 3 40 3 29.4V10.6C3 4.4 6 0 12 0Z', 'gW', '#aebccb', `<path d="M12 3.8C15.8 3.8 17.4 7 17.4 11.4V29Q17.4 36.2 12 36.2 6.6 36.2 6.6 29V11.4C6.6 7 8.2 3.8 12 3.8Z" fill="#f6f9fc" stroke="#c3ced9" stroke-width="1.1"/>`, { dx: .8, dy: 1.4, sw: 1.9 })
+      + jelly('M1.8 9.2Q12 3.6 22.2 9.2V18.4Q12 13.4 1.8 18.4Z', 'gB', '#2a7fc4', shade('M22.2 14.4V18.4Q12 13.4 1.8 18.4V16.4Q12 11 22.2 14.4Z', '#3a92d8', .8), { dx: .8, dy: 1.4, sw: 1.9 })
+      + gloss('M6.4 22V30', 1.8, .8) + `</g>`
+    + `<g transform="translate(21.6 2.6) rotate(10 12 20)">`
+      + jelly('M12 0C18 0 21 4.4 21 10.6V29.4Q21 40 12 40 3 40 3 29.4V10.6C3 4.4 6 0 12 0Z', 'gW', '#aebccb', `<path d="M12 3.8C15.8 3.8 17.4 7 17.4 11.4V29Q17.4 36.2 12 36.2 6.6 36.2 6.6 29V11.4C6.6 7 8.2 3.8 12 3.8Z" fill="#f6f9fc" stroke="#c3ced9" stroke-width="1.1"/>`, { dx: .8, dy: 1.4, sw: 1.9 })
+      + jelly('M1.8 9.2Q12 3.6 22.2 9.2V18.4Q12 13.4 1.8 18.4Z', 'gB', '#2a7fc4', shade('M22.2 14.4V18.4Q12 13.4 1.8 18.4V16.4Q12 11 22.2 14.4Z', '#3a92d8', .8), { dx: .8, dy: 1.4, sw: 1.9 })
+      + gloss('M6.4 22V30', 1.8, .8) + `</g>`
+    + twinkle(43.4, 40.6, 2.6, '#fff3b0') + twinkle(4.4, 41.4, 2.2, '#c6ebff'),
+  bottle:   // 물병: 민트 텀블러 + 남색 뚜껑·고리 + 물 보이는 창
+    `<g transform="rotate(10 24 24)">`
+    + `<path d="M31 6.6H35Q38.2 6.6 38.2 9.8V10.6Q38.2 13.8 35 13.8H31.6" fill="none" stroke="${INK}" stroke-width="4.2"/><path d="M31 6.6H35Q38.2 6.6 38.2 9.8V10.6Q38.2 13.8 35 13.8H31.6" fill="none" stroke="#4a6488" stroke-width="1.8"/>`
+    + jelly('M15.4 14.6H32.6V40.4Q32.6 43.6 29.4 43.6H18.6Q15.4 43.6 15.4 40.4Z', 'gM', '#2c9c7a',
+      shade('M29 14.6H32.6V40.4Q32.6 43.6 29.4 43.6H27.8Q30.4 40 29 14.6Z', '#36b38c', .75)
+      + `<path d="M19.4 21.6H28.6V38.4Q28.6 39.8 27.2 39.8H20.8Q19.4 39.8 19.4 38.4Z" fill="#effbff" stroke="${INK}" stroke-width="1.3"/><path d="M19.4 29.4Q24 27.6 28.6 29.4V38.4Q28.6 39.8 27.2 39.8H20.8Q19.4 39.8 19.4 38.4Z" fill="#8fd6ff"/><path d="M21 31.6V36.6" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>`)
+    + jelly('M16.4 7.4Q16.4 4.4 19.4 4.4H28.6Q31.6 4.4 31.6 7.4V14.6H16.4Z', 'gK2', '#0f1f33', `<path d="M16.4 11H31.6" stroke="#4a6488" stroke-width="1.2"/>`, { dx: .6, dy: 1, sw: 1.8 })
+    + gloss('M17.8 17.4V20M17.8 34V38', 2, .8) + gloss('M18.8 6.8V8.8', 1.4, .6) + `</g>`
+    + twinkle(42, 37.4, 2.8, '#fff3b0') + twinkle(7.4, 10, 2.2, '#c6ebff'),
+  stapler:   // 스테이플러: 빨간 위 팔 + 남색 받침 + 튀어나온 철심
+    `<g transform="rotate(-12 24 24)">`
+    + jelly('M6 33.4H40.4Q43.4 33.4 43.4 36.4V37.6Q43.4 40.6 40.4 40.6H6Q4.4 40.6 4.4 39V35Q4.4 33.4 6 33.4Z', 'gK2', '#0f1f33', `<rect x="7" y="34.6" width="6.4" height="2" rx="1" fill="#8d9aa8"/>`, { dx: .6, dy: 1, sw: 1.8 })
+    + jelly('M36.2 24H42.8V33.6H36.2Z', 'gK2', '#0f1f33', '', { dx: .6, dy: 1, sw: 1.7 })
+    + jelly('M4.6 25.6Q4.6 17.4 12.6 17.4H39.4Q44.2 17.4 44.2 22.2V24.6Q44.2 28.4 40.4 28.4H7.4Q4.6 28.4 4.6 25.6Z', 'gR', '#c43c48',
+      shade('M4.8 26.2Q22 27.8 44.2 24.6Q44.2 28.4 40.4 28.4H7.4Q4.8 28.4 4.8 26.2Z', '#d9505b', .8)
+      + `<rect x="27.4" y="19.6" width="10.4" height="4.4" rx="2.2" fill="#fff" stroke="${INK}" stroke-width="1.2" opacity=".9"/>`)
+    + `<path d="M15.4 9.6V6.4H25V9.6" fill="none" stroke="${INK}" stroke-width="3.6" stroke-linejoin="round"/><path d="M15.4 9.6V6.4H25V9.6" fill="none" stroke="#dfe9f2" stroke-width="1.6" stroke-linejoin="round"/>`
+    + gloss('M9.6 20.6H24', 1.8, .85) + `</g>`
+    + twinkle(41, 9, 2.8, '#fff3b0') + twinkle(5.6, 12.6, 2.2, '#c6ebff'),
   /* 희귀 — 움직이는 스티커 (움직임은 style.css '.art .an-*', 동작 줄이기 설정이면 멈춤) */
   plane:   // 종이비행기: 흰·하늘 날개 + 접힌 선 + 점선 꼬리(흘러감)
     `<path class="an-trail" d="M3.4 43.4Q9 36 17.4 35.6" fill="none" stroke="${INK}" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="2.6 3"/>`
@@ -262,6 +337,44 @@ const GA = {
     + gloss('M9.6 19V36', 1.8, .6) + `</g>`
     + `<g class="an-heart"><path d="M24 12.6C19.6 9.6 17.8 7.4 18.6 5.4 19.4 3.6 21.8 3.4 24 5.6 26.2 3.4 28.6 3.6 29.4 5.4 30.2 7.4 28.4 9.6 24 12.6Z" fill="#f0646d" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/></g>`
     + twinkle(42.6, 7.4, 2.6, '#fff3b0'),
+  // 2026-10-25 하율 "희귀도 더 늘려도 좋을 듯" — 움직이는 스티커 4종 추가
+  bread:   // 매점 빵: 따끈한 소보로에서 김이 모락모락(.an-stm 3줄이 엇갈려 올라감)
+    [['an-stm', 17], ['an-stm an-stm2', 24], ['an-stm an-stm3', 31]].map(([c, x]) => `<g class="${c}"><path d="M${x} 15.6Q${x - 2.4} 12.4 ${x} 9.4 ${x + 2.4} 6.4 ${x} 3.4" fill="none" stroke="${INK}" stroke-width="4.2" stroke-linecap="round"/><path d="M${x} 15.6Q${x - 2.4} 12.4 ${x} 9.4 ${x + 2.4} 6.4 ${x} 3.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g>`).join('')
+    + jelly('M6.4 31.4Q6.4 17.4 24 17.4 41.6 17.4 41.6 31.4 41.6 37.6 35.4 37.6H12.6Q6.4 37.6 6.4 31.4Z', 'gP', '#c4602a',
+      shade('M41.6 29V31.4Q41.6 37.6 35.4 37.6H20Q34 35 41.6 29Z', '#e5783a', .75)
+      + `<g fill="#ffe0a6" stroke="${INK}" stroke-width=".9">${[[14, 25.4], [20.4, 22], [27.6, 21.6], [33.6, 25], [18.4, 29.6], [25.6, 27.4], [31, 30.4], [12, 31]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8"/>`).join('')}</g>`)
+    + jelly('M8.4 35.4H39.6L36.8 44H11.2Z', 'gW', '#aebccb', `<path d="M14.6 35.4 15.6 44M21.2 35.4 21.6 44M27.8 35.4 27.4 44M34 35.4 33 44" stroke="#f0646d" stroke-width="1.8"/>`, { dx: .6, dy: 1, sw: 1.8 })
+    + gloss('M11.6 26.6Q13.4 21.6 18.4 19.8', 2.2)
+    + twinkle(43, 12.6, 2.8, '#fff3b0') + twinkle(5, 14, 2.2, '#c6ebff'),
+  fan:   // 교실 선풍기: 날개 4장이 빙글빙글(.an-fan) — 4장이라 그림 범위의 가운데 = 축
+    jelly('M21.8 30H26.2V40.4H21.8Z', 'gS', '#7d8b9a', '', { dx: .6, dy: 1, sw: 1.7 })
+    + jelly('M13.4 40.6Q13.4 37.6 16.4 37.6H31.6Q34.6 37.6 34.6 40.6V41.6Q34.6 44.4 31.8 44.4H16.2Q13.4 44.4 13.4 41.6Z', 'gB', '#2a7fc4', '', { dx: .6, dy: 1, sw: 1.8 })
+    + jelly('M24 4A15 15 0 1 1 23.99 4Z', 'gW', '#aebccb', `<circle cx="24" cy="19" r="12.6" fill="#eaf6ff" stroke="#c3ced9" stroke-width="1.2"/>`)
+    + `<g class="an-fan">${[0, 90, 180, 270].map(a => `<path transform="rotate(${a} 24 19)" d="M24 19C21 15.4 20.8 9.4 24 7.6 27.4 9.4 27.2 15.4 24 19Z" fill="url(#gB)" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>`).join('')}</g>`
+    + `<g stroke="${INK}" stroke-width=".8" opacity=".35" fill="none"><circle cx="24" cy="19" r="8.4"/><path d="M24 4.6V33.4M9.6 19H38.4M13.8 8.8 34.2 29.2M34.2 8.8 13.8 29.2"/></g>`
+    + `<circle cx="24" cy="19" r="2.8" fill="url(#gY)" stroke="${INK}" stroke-width="1.4"/>`
+    + gloss('M12.4 13.4Q14.6 8.4 19.6 6.6', 2.2, .9)
+    + twinkle(42.4, 37.6, 2.8, '#fff3b0') + twinkle(41.6, 6.6, 2.2, '#c6ebff'),
+  nap:   // 쉬는 시간 낮잠: 책 위에 엎드린 찹쌀떡 + Z가 퐁퐁(.an-z)
+    jelly('M3.6 35Q13.8 31 24 35.4 34.2 31 44.4 35V42Q34.2 38 24 42.4 13.8 38 3.6 42Z', 'gW', '#aebccb',
+      `<path d="M24 35.4V42.4" stroke="${INK}" stroke-width="1.3"/><path d="M7.4 37Q14.4 34.8 20.6 37.2M27.4 37.2Q33.6 34.8 40.6 37" fill="none" stroke="#c3ced9" stroke-width="1.2" stroke-linecap="round"/>`)
+    + jelly('M23 14.6C32.6 14.6 37.4 20.6 37.4 27 37.4 32.6 32 35.4 23 35.4 14 35.4 8.6 32.6 8.6 27 8.6 20.6 13.4 14.6 23 14.6Z', 'cOd', '#d9b88a',
+      `<path d="M14.6 26.4Q16.6 28.4 18.6 26.4M27.4 26.4Q29.4 28.4 31.4 26.4" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>`
+      + `<ellipse cx="13.6" cy="30" rx="2.4" ry="1.4" fill="#ffb3c8" opacity=".85"/><ellipse cx="32.4" cy="30" rx="2.4" ry="1.4" fill="#ffb3c8" opacity=".85"/>`
+      + `<path d="M21.4 30.4Q23 31.8 24.6 30.4" fill="none" stroke="${INK}" stroke-width="1.3" stroke-linecap="round"/>`)
+    + gloss('M12.2 22Q14.4 18 19 17', 2)
+    + `<g class="an-z"><text x="36.6" y="15.4" font-family="Jua,sans-serif" font-size="10" fill="#fff" stroke="${INK}" stroke-width="2.4" paint-order="stroke">Z</text></g>`
+    + `<g class="an-z an-z2"><text x="41.8" y="7.6" font-family="Jua,sans-serif" font-size="7.4" fill="#c6ebff" stroke="${INK}" stroke-width="2" paint-order="stroke">z</text></g>`
+    + twinkle(5, 12, 2.2, '#fff3b0'),
+  icecream:   // 아이스크림: 딸기 하드 + 초코 코팅, 아래로 녹아 똑 떨어짐(.an-drip)
+    jelly('M21.6 32H26.4V42.4Q26.4 44.8 24 44.8 21.6 44.8 21.6 42.4Z', 'gPa', '#c9a070', '', { dx: .5, dy: .9, sw: 1.7 })
+    + jelly('M14.6 10.6Q14.6 4.6 20.6 4.6H27.4Q33.4 4.6 33.4 10.6V31.4Q33.4 34.6 30.2 34.6H17.8Q14.6 34.6 14.6 31.4Z', 'gN', '#d9577e',
+      `<path d="M14.6 10.6Q14.6 4.6 20.6 4.6H27.4Q33.4 4.6 33.4 10.6V15Q30 17.6 27.4 15.4 24.6 18.4 21.4 15.6 18 18 14.6 15.4Z" fill="url(#gK)" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>`
+      + `<g stroke-width="1.6" stroke-linecap="round"><path d="M18.6 9.4 20 8.4" stroke="#ffe27a"/><path d="M24.4 7.6 25.6 9" stroke="#9ff0ff"/><path d="M29 10.6 30.4 9.8" stroke="#fff"/></g>`
+      + shade('M29.6 14.6Q31.6 15.2 33.4 14V31.4Q33.4 34.6 30.2 34.6H28.6Q31 28 29.6 14.6Z', '#ff7aa2', .55))
+    + `<g class="an-drip"><path d="M28.4 33.6Q28.4 37.4 30.2 39.4 32 37.4 32 33.6Z" fill="url(#gN)" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"/></g>`
+    + gloss('M17.6 20V29', 2.2, .85)
+    + twinkle(41.4, 10.6, 2.8, '#fff3b0') + twinkle(7, 36, 2.2, '#c6ebff'),
   /* 전설 — 효과 아이콘 (실제 효과는 style.css '뽑기 효과') */
   fxholo:   // 홀로그램 닉네임: 무지갯빛 이름표 + 반짝이
     jelly('M10.6 14.4H37.4Q45.2 14.4 45.2 22.2V25.8Q45.2 33.6 37.4 33.6H10.6Q2.8 33.6 2.8 25.8V22.2Q2.8 14.4 10.6 14.4Z', 'gH', '#7a62f0',
@@ -386,10 +499,32 @@ export const medal = i => {
 
 // 그림마다 실제 그려진 범위(반짝이 제외, 헤드리스 브라우저 getBBox로 잰 값)를 가운데에 둔 정사각 viewBox → 어느 칸에서도 정가운데·같은 크기
 // 그림을 고치면 다시 잴 것: 그림 범위를 재서 (가로·세로 중 큰 값 + 5.2) 정사각형, 중심 = 범위 중심
-const VB = {"plane": "0.8 3.0 45.8 45.8", "test100": "0.1 0.0 51.3 51.3", "ball": "1.9 2.8 46.2 46.2", "memo": "1.8 1.4 46.0 46.0", "fxholo": "0.2 0.8 49.2 49.2", "fxstar": "1.4 -0.6 48.1 48.1", "fxneon": "0.8 1.4 48.0 48.0", "fxcrown": "1.2 3.6 45.6 45.6", "fxkey": "1.4 -0.8 47.5 47.5", "fxgold": "0.2 -5.5 50.3 50.3", "sharp": "-0.4 -0.6 47.8 47.8", "correct": "-1.1 -2.4 54.0 54.0", "bell": "0.8 1.0 48.0 48.0", "clock": "2.7 2.0 45.0 45.0", "gseal": "-0.5 -1.2 49.2 49.2", "tray": "1.4 2.5 46.8 46.8", "nametag": "1.6 -1.0 46.4 46.4", "note": "3.0 3.4 44.0 44.0", "slate": "2.5 2.1 45.3 45.3", "palette": "2.0 2.7 45.6 45.6", "timeline": "1.4 0.2 46.8 46.8", "headset": "1.4 2.3 46.8 46.8", "light": "0.6 0.4 48.6 48.6", "cube": "-0.0 1.4 48.0 48.0", "eraser": "1.9 5.3 45.3 45.3", "hilite": "-1.1 -2.1 50.9 50.9", "postit": "-0.5 -2.3 50.3 50.3", "ruler": "-0.9 -1.6 52.6 52.6", "tape": "3.4 3.4 44.2 44.2", "earbud": "-0.5 1.0 49.8 49.8", "diploma": "-0.8 0.6 52.1 52.1"};
+const VB = {"scissors": "-6.5 -1.5 57.6 57.6", "slipper": "-1.1 -1.3 51.1 51.1", "hbpencil": "2.5 1.6 44.6 44.6", "glue": "-1.0 0.2 50.8 50.8", "calc": "-0.5 -0.2 50.9 50.9", "milkbox": "-1.4 -2.1 52.3 52.3", "bottle": "1.3 0.6 50.5 50.5", "stapler": "-1.4 -2.7 53.0 53.0", "bread": "1.4 0.8 46.8 46.8", "fan": "1.5 1.4 46.6 46.6", "nap": "0.1 -1.7 49.5 49.5", "icecream": "1.6 2.0 46.3 46.3", "plane": "0.8 3.0 45.8 45.8", "test100": "0.1 0.0 51.3 51.3", "ball": "1.9 2.8 46.2 46.2", "memo": "1.8 1.4 46.0 46.0", "fxholo": "0.2 0.8 49.2 49.2", "fxstar": "1.4 -0.6 48.1 48.1", "fxneon": "0.8 1.4 48.0 48.0", "fxcrown": "1.2 3.6 45.6 45.6", "fxkey": "1.4 -0.8 47.5 47.5", "fxgold": "0.2 -5.5 50.3 50.3", "sharp": "-0.4 -0.6 47.8 47.8", "correct": "-1.1 -2.4 54.0 54.0", "bell": "0.8 1.0 48.0 48.0", "clock": "2.7 2.0 45.0 45.0", "gseal": "-0.5 -1.2 49.2 49.2", "tray": "1.4 2.5 46.8 46.8", "nametag": "1.6 -1.0 46.4 46.4", "note": "3.0 3.4 44.0 44.0", "slate": "2.5 2.1 45.3 45.3", "palette": "2.0 2.7 45.6 45.6", "timeline": "1.4 0.2 46.8 46.8", "headset": "1.4 2.3 46.8 46.8", "light": "0.6 0.4 48.6 48.6", "cube": "-0.0 1.4 48.0 48.0", "eraser": "1.9 5.3 45.3 45.3", "hilite": "-1.1 -2.1 50.9 50.9", "postit": "-0.5 -2.3 50.3 50.3", "ruler": "-0.9 -1.6 52.6 52.6", "tape": "3.4 3.4 44.2 44.2", "earbud": "-0.5 1.0 49.8 49.8", "diploma": "-0.8 0.6 52.1 52.1"};
 // 반짝이 별(네 갈래, 남색 선 + 금빛) — 반짝이 스티커 위에 겹침
 const spk = (x, y, r, c) => `<path class="${c}" d="M${x} ${y - r}Q${x + r * .18} ${y - r * .18} ${x + r} ${y}Q${x + r * .18} ${y + r * .18} ${x} ${y + r}Q${x - r * .18} ${y + r * .18} ${x - r} ${y}Q${x - r * .18} ${y - r * .18} ${x} ${y - r}Z" fill="#fff6c8" stroke="#173048" stroke-width="1.5" stroke-linejoin="round"/>`;
 const SHNX = spk(40, 8, 7, 'shx1') + spk(7, 18, 4.6, 'shx2') + spk(38, 40, 5, 'shx3');
+/* ===== 스티커 흰 테두리·그림자·반짝이 금빛을 '필터' 대신 '그림'으로 (2026-10-25 렉 해결) =====
+   전에는 CSS drop-shadow 4~6겹으로 흰 테두리를 만들었는데, 움직이는 스티커(희귀 an-*·반짝이 별)는 매 프레임 그 필터를 다시 그려
+   뽑기 페이지가 120fps → 19fps로 떨어졌음(실제 측정). 그래서 같은 그림을 흰색·남색으로 '실루엣' 떠서 뒤에 깔아 둠:
+   모양마다 선을 2r 더 굵게 칠하면 가장자리 밖으로 r만큼 테두리가 생김. 클래스(an-*)는 그대로라 움직임도 같이 따라감.
+   쓰는 칸(출석·도감·프로필 스티커 등)에서만 CSS로 .olx를 보이게 함 — style.css '스티커 테두리'. */
+const SIL_TAG = /<(path|circle|ellipse|rect|polygon|polyline|line|text|g)\b([^>]*?)(\/?)>/g;
+const sil = (m, c, r = 1.6) => `<g fill="${c}" stroke="${c}" stroke-width="${2 * r}" stroke-linejoin="round" stroke-linecap="round">`
+  + m.replace(/<clipPath[\s\S]*?<\/clipPath>/g, '').replace(/<(linear|radial)Gradient[\s\S]*?<\/\1Gradient>/g, '')
+    .replace(SIL_TAG, (all, tag, at, sl) => {
+      const op = /\sopacity="([\d.]+)"/.exec(at);
+      if (sl && op && +op[1] < .5) return '';   // 옅은 그림자·바닥 그림자는 테두리에서 뺌
+      at = at.replace(/\s(opacity|fill-opacity|stroke-opacity|filter)="[^"]*"/g, '')
+        .replace(/\sfill="(?!none")[^"]*"/g, ` fill="${c}"`);
+      const st = /\sstroke="([^"]*)"/.exec(at), sw = /\sstroke-width="([\d.]+)"/.exec(at);
+      if (st) at = at.replace(/\sstroke="[^"]*"/, ` stroke="${c}"`);
+      if (sw) at = at.replace(/\sstroke-width="[\d.]+"/, ` stroke-width="${n1((st && st[1] === 'none' ? 0 : +sw[1]) + 2 * r)}"`);
+      else if (st && st[1] === 'none') at += ` stroke-width="${2 * r}"`;
+      return `<${tag}${at}${sl}>`;
+    }) + '</g>';
+const olSym = (k, v, vb) => `<symbol id="art-${k}-ol" overflow="visible" viewBox="${vb}"><g transform="translate(1.4 1.9)" opacity=".28">${sil(v, INK)}</g>${sil(v, '#fff')}</symbol>`
+  + `<symbol id="art-${k}-gl" overflow="visible" viewBox="${vb}"><g opacity=".3">${sil(v, '#ffd34a', 4.4)}</g><g opacity=".55">${sil(v, '#ffd34a', 2.8)}</g></symbol>`;
+
 /* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) ===== */
 let done = false;
 export function ensureSprite() {
@@ -397,7 +532,7 @@ export function ensureSprite() {
   done = true;
   const box = document.createElement('div');
   box.className = 'att-sprite'; box.setAttribute('aria-hidden', 'true');
-  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => `<symbol id="art-${k}" overflow="visible" viewBox="${SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'}">${v}</symbol>`).join('')}<symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol></svg>`;
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => { const vb = SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'; return `<symbol id="art-${k}" overflow="visible" viewBox="${vb}">${v}</symbol>` + olSym(k, v, vb); }).join('')}<symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol></svg>`;
   document.body.appendChild(box);
 }
 if (typeof document !== 'undefined') { if (document.body) ensureSprite(); else document.addEventListener('DOMContentLoaded', ensureSprite, { once: true }); }
@@ -408,7 +543,7 @@ const keyOf = v => { const k = String(v).slice(2).replace(/_s$/, ''); return RW_
 export const ART_KEYS = Object.keys(ART);
 export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[keyOf(v)];
 // 반짝이 버전(값 끝 '_s', 조각 강화 2026-10-25): 금빛 테두리 빛 + 위에 반짝이 별 3개(#art-shnx, 하나씩 깜빡임 — style.css .shn)
-export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); const sh = /_s$/.test(v); return `<svg class="art ${cls}${SCENES.has(keyOf(v)) ? ' sc' : ''}${sh ? ' shn' : ''}" aria-hidden="true"><use href="#art-${keyOf(v)}" width="100%" height="100%"/>${sh ? '<use href="#art-shnx" class="shnx" width="100%" height="100%"/>' : ''}</svg>`; };
+export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); const sh = /_s$/.test(v); return `<svg class="art ${cls}${SCENES.has(keyOf(v)) ? ' sc' : ''}${sh ? ' shn' : ''}" aria-hidden="true">${sh ? `<use href="#art-${keyOf(v)}-gl" class="glx" width="100%" height="100%"/>` : ''}<use href="#art-${keyOf(v)}-ol" class="olx" width="100%" height="100%"/><use href="#art-${keyOf(v)}" width="100%" height="100%"/>${sh ? '<use href="#art-shnx" class="shnx" width="100%" height="100%"/>' : ''}</svg>`; };
 // 프로필 사진·스티커 값 → 그림(직접 그린 것) 또는 글자(예전 이모지)
 // 프로필 사진 캐릭터 16종 'k:이름' (2026-10-24, 동물 이모지 대신) — 테마 캐릭터 그림(style.css .sk-* 의 --art)을 얼굴만 잘라 씀
 const KAV = { cat: '고양이', dog: '강아지', bear: '곰돌이', bunny: '토끼', frog: '개구리', chick: '병아리', hamster: '햄찌', penguin: '펭귄', fox: '여우', panda: '판다', dino: '공룡', ghost: '유령', slime: '슬라임', sheep: '양', whale: '고래', axolotl: '우파루파' };
