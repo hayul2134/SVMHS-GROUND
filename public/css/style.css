@@ -4631,3 +4631,8 @@ html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
 /* 2차 엠블럼(tri2)은 테두리 안쪽 여백이 있어 작은 배지에서 살짝 크게 */
 .tierb .tri.tri2{width:27px;height:25px;margin:-5px -2px -5px -3px}
 .tr-top .tierb .tri.tri2,.ptier .tierb .tri.tri2{width:27px;height:25px}
+/* 티어 엠블럼 3차(2026-10-25 하율 '에메랄드~챌린저 더 화려하게'): 날개가 그림 칸 밖으로 나가도 안 잘리게 + 반짝이 깜빡임 */
+.tri.tri2{overflow:visible}
+.tri2 .tw-blink{transform-box:fill-box;transform-origin:center;animation:twBlink 2.4s ease-in-out infinite}
+@keyframes twBlink{50%{opacity:.35;transform:scale(.7)}}
+@media (prefers-reduced-motion:reduce){.tri2 .tw-blink{animation:none}}
