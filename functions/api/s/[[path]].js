@@ -958,8 +958,9 @@ const ROUTES = {
       // 확률은 RAR(시크릿 0.03 · 전설 1 · 희귀 14.47 · 일반 84.5). 천장은 전설·희귀만, 각각 한 번(시크릿은 천장 없음 · 전설·시크릿은 조각 상점에도 없음)
       let rar = x < RAR[4].p ? 4 : x < RAR[4].p + RAR[3].p ? 3 : x < RAR[4].p + RAR[3].p + RAR[2].p ? 2 : 1, used = '';
       if (rar < 3 && leg >= 0 && leg + 1 >= GC.pityLeg) { rar = 3; used = 'leg'; }
+      // 5연뽑: 희귀 이상 1개 확정(이건 매번). 1회용 희귀 천장보다 먼저 봐야 어차피 확정될 칸에서 천장이 헛되이 소모되지 않음(2026-10-26)
+      else if (n === 5 && i === 4 && !gotRare && rar === 1) rar = 2;
       else if (rar < 2 && pity >= 0 && pity + 1 >= GC.pityRare) { rar = 2; used = 'pity'; }
-      if (n === 5 && i === 4 && !gotRare && rar === 1) rar = 2;   // 5연뽑: 희귀 이상 1개 확정(이건 매번)
       if (rar >= 2) gotRare = true;
       if (pity >= 0) pity = used === 'pity' ? -1 : rar >= 2 ? 0 : pity + 1;
       if (leg >= 0) leg = used === 'leg' ? -1 : rar >= 3 ? 0 : leg + 1;
