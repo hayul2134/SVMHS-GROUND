@@ -26,7 +26,7 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
-  home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 — 50,000m면 집 도착! 그 뒤로는 끝없이. 캐릭터 꾸미기 가능', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
+  home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
