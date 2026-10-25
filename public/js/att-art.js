@@ -522,8 +522,12 @@ const sil = (m, c, r = 1.6) => `<g fill="${c}" stroke="${c}" stroke-width="${2 *
       else if (st && st[1] === 'none') at += ` stroke-width="${2 * r}"`;
       return `<${tag}${at}${sl}>`;
     }) + '</g>';
+// 멈춘 버전(still): 움직임 클래스(an-*·shx)를 뺀 그림 — 한 화면에 수십 개 늘어놓는 곳(조각 상점)용, 금빛 빛은 늘 멈춘 그림으로(넓어서 다시 그리면 비쌈)
+const still = v => v.replace(/\sclass="(an-|shx)[^"]*"/g, '');
+const ANIM = v => /\sclass="(an-|shx)/.test(v);
 const olSym = (k, v, vb) => `<symbol id="art-${k}-ol" overflow="visible" viewBox="${vb}"><g transform="translate(1.4 1.9)" opacity=".28">${sil(v, INK)}</g>${sil(v, '#fff')}</symbol>`
-  + `<symbol id="art-${k}-gl" overflow="visible" viewBox="${vb}"><g opacity=".3">${sil(v, '#ffd34a', 4.4)}</g><g opacity=".55">${sil(v, '#ffd34a', 2.8)}</g></symbol>`;
+  + `<symbol id="art-${k}-gl" overflow="visible" viewBox="${vb}"><g opacity=".3">${sil(still(v), '#ffd34a', 4.4)}</g><g opacity=".55">${sil(still(v), '#ffd34a', 2.8)}</g></symbol>`
+  + (ANIM(v) ? `<symbol id="art-${k}-st" overflow="visible" viewBox="${vb}">${still(v)}</symbol>` + olSym(k + '-st', still(v), vb).split('<symbol id="art-' + k + '-st-gl"')[0] : '');
 
 /* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) ===== */
 let done = false;
@@ -532,7 +536,7 @@ export function ensureSprite() {
   done = true;
   const box = document.createElement('div');
   box.className = 'att-sprite'; box.setAttribute('aria-hidden', 'true');
-  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => { const vb = SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'; return `<symbol id="art-${k}" overflow="visible" viewBox="${vb}">${v}</symbol>` + olSym(k, v, vb); }).join('')}<symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol></svg>`;
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => { const vb = SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'; return `<symbol id="art-${k}" overflow="visible" viewBox="${vb}">${v}</symbol>` + olSym(k, v, vb); }).join('')}<symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol><symbol id="art-shnx-st" overflow="visible" viewBox="0 0 48 48">${still(SHNX)}</symbol></svg>`;
   document.body.appendChild(box);
 }
 if (typeof document !== 'undefined') { if (document.body) ensureSprite(); else document.addEventListener('DOMContentLoaded', ensureSprite, { once: true }); }
@@ -543,7 +547,12 @@ const keyOf = v => { const k = String(v).slice(2).replace(/_s$/, ''); return RW_
 export const ART_KEYS = Object.keys(ART);
 export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[keyOf(v)];
 // 반짝이 버전(값 끝 '_s', 조각 강화 2026-10-25): 금빛 테두리 빛 + 위에 반짝이 별 3개(#art-shnx, 하나씩 깜빡임 — style.css .shn)
-export const artOf = (v, cls = '') => { if (!isArt(v)) return ''; ensureSprite(); const sh = /_s$/.test(v); return `<svg class="art ${cls}${SCENES.has(keyOf(v)) ? ' sc' : ''}${sh ? ' shn' : ''}" aria-hidden="true">${sh ? `<use href="#art-${keyOf(v)}-gl" class="glx" width="100%" height="100%"/>` : ''}<use href="#art-${keyOf(v)}-ol" class="olx" width="100%" height="100%"/><use href="#art-${keyOf(v)}" width="100%" height="100%"/>${sh ? '<use href="#art-shnx" class="shnx" width="100%" height="100%"/>' : ''}</svg>`; };
+// cls에 'still'이 있으면 움직임 없는 그림(한 화면에 많이 늘어놓는 곳 — 렉 방지, 2026-10-25)
+export const artOf = (v, cls = '') => {
+  if (!isArt(v)) return ''; ensureSprite();
+  const sh = /_s$/.test(v), k = keyOf(v), st = /(^|\s)still(\s|$)/.test(cls), id = st && ANIM(ART[k]) ? k + '-st' : k;
+  return `<svg class="art ${cls}${SCENES.has(k) ? ' sc' : ''}${sh ? ' shn' : ''}" aria-hidden="true">${sh ? `<use href="#art-${k}-gl" class="glx" width="100%" height="100%"/>` : ''}<use href="#art-${id}-ol" class="olx" width="100%" height="100%"/><use href="#art-${id}" width="100%" height="100%"/>${sh ? `<use href="#art-shnx${st ? '-st' : ''}" class="shnx" width="100%" height="100%"/>` : ''}</svg>`;
+};
 // 프로필 사진·스티커 값 → 그림(직접 그린 것) 또는 글자(예전 이모지)
 // 프로필 사진 캐릭터 16종 'k:이름' (2026-10-24, 동물 이모지 대신) — 테마 캐릭터 그림(style.css .sk-* 의 --art)을 얼굴만 잘라 씀
 const KAV = { cat: '고양이', dog: '강아지', bear: '곰돌이', bunny: '토끼', frog: '개구리', chick: '병아리', hamster: '햄찌', penguin: '펭귄', fox: '여우', panda: '판다', dino: '공룡', ghost: '유령', slime: '슬라임', sheep: '양', whale: '고래', axolotl: '우파루파' };

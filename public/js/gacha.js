@@ -114,14 +114,15 @@ function prog(g) {
     <p>${have >= all ? `<b>시즌 1 완성!</b> 칭호 ‘${esc(GC_TITLE)}’ · 프로필 사진 홀로그램 테두리를 받았어요. <a href="#me" data-go="me">칭호 달기 →</a>` : `<b>${all - have}칸</b> 남았어요 — 다 모으면 칭호 ‘${esc(GC_TITLE)}’ + 프로필 사진 홀로그램 테두리`}</p></div>`;
 }
 // 조각 상점: ① 골라서 받기(아직 없는 것, 시크릿은 ?로) ② 반짝이로 바꾸기(가진 일반·희귀 스티커)
+// 상점 그림은 멈춘 그림(artOf 'still') — 수십 개가 한꺼번에 움직이면 렉(2026-10-25). 움직임은 도감·결과에서 보임
 // 조각을 많이 쓰는 버튼이라 한 번 누르면 '조각 N개 쓰기?'로 바뀌고 3초 안에 한 번 더 눌러야 실행(arm)
 function shop(g) {
   const miss = GACHA.filter(x => !g.own[x.v]).sort((a, b) => b.rar - a.rar);
   const shn = GACHA.filter(x => GC.shine[x.rar]), shOwn = shn.filter(x => g.own[x.v + SHN]).length;
   const btn = (k, v, cost) => `<button type="button" class="btn gc-buy" data-gc-${k}="${v}" data-cost="${cost}" ${g.shard < cost ? 'disabled' : ''}><i class="gc-sh" aria-hidden="true"></i>${cost}</button>`;
-  const pick = miss.map(x => `<li class="${RCLS[x.rar]}${x.rar === 4 ? ' sec' : ''}"><span class="gc-ic">${x.rar === 4 ? '<span aria-hidden="true">?</span>' : artOf(x.v)}</span><small>${x.rar === 4 ? '시크릿' : esc(objName(x.v))}</small>${btn('pick', x.v, GC.pick[x.rar])}</li>`).join('');
+  const pick = miss.map(x => `<li class="${RCLS[x.rar]}${x.rar === 4 ? ' sec' : ''}"><span class="gc-ic">${x.rar === 4 ? '<span aria-hidden="true">?</span>' : artOf(x.v, 'still')}</span><small>${x.rar === 4 ? '시크릿' : esc(objName(x.v))}</small>${btn('pick', x.v, GC.pick[x.rar])}</li>`).join('');
   const up = shn.map(x => { const has = g.own[x.v], done = g.own[x.v + SHN];
-    return `<li class="${RCLS[x.rar]}${done ? ' on' : has ? '' : ' lock'}"><span class="gc-ic">${artOf(has ? x.v + SHN : x.v)}</span><small>${esc(objName(x.v))}</small>${done ? '<em class="gc-done">반짝이</em>' : has ? btn('shine', x.v, GC.shine[x.rar]) : '<em class="gc-need">먼저 뽑기</em>'}</li>`; }).join('');
+    return `<li class="${RCLS[x.rar]}${done ? ' on' : has ? '' : ' lock'}"><span class="gc-ic">${artOf(has ? x.v + SHN : x.v, 'still')}</span><small>${esc(objName(x.v))}</small>${done ? '<em class="gc-done">반짝이</em>' : has ? btn('shine', x.v, GC.shine[x.rar]) : '<em class="gc-need">먼저 뽑기</em>'}</li>`; }).join('');
   return `<section class="gc-shop card" id="gcShop"><div class="gc-shoph"><h3>조각 상점</h3><span class="gc-shn"><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span></div>
     <h4>골라서 받기 <small>뽑기 운이 안 따를 때, 갖고 싶은 걸 바로</small></h4>
     ${pick ? `<ul class="gc-grid gc-buyl">${pick}</ul>` : '<p class="gc-none">시즌 1을 다 모았어요! 남은 조각은 반짝이로 바꾸는 데 써 보세요.</p>'}
