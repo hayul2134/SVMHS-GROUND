@@ -4417,6 +4417,7 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 .ed-pv .stage.pv-stage{min-height:0;padding:0;margin:0;display:block;width:max-content;position:relative}
 .ed-pv .stage.pv-stage > .clock{margin:0}
 .ed-pv .pv-body{grid-template-columns:1fr}
+@media (min-width:821px){.sheet.edw{max-width:min(1120px,100%)}.ed-main{grid-template-columns:minmax(320px,47%) minmax(0,1fr)}}   /* 실제 크기 카드를 줄여 넣으니 미리보기 칸을 넓게 */
 @media (max-width:820px){
   .ed-pv{max-height:42dvh;overflow-y:auto}
   .ed-pv .pv-body{grid-template-columns:minmax(0,1fr) 34%;align-items:start}
