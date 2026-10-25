@@ -946,7 +946,7 @@ const ROUTES = {
     const out = [];
     for (let i = 0; i < n; i++) {
       const x = rnd() * 100;
-      // 확률은 RAR(시크릿 0.1 · 전설 3 · 희귀 22 · 일반 74.9). 천장은 전설·희귀만, 각각 한 번(시크릿은 천장 없음 · 전설·시크릿은 조각 상점에도 없음)
+      // 확률은 RAR(시크릿 0.03 · 전설 1 · 희귀 14.47 · 일반 84.5). 천장은 전설·희귀만, 각각 한 번(시크릿은 천장 없음 · 전설·시크릿은 조각 상점에도 없음)
       let rar = x < RAR[4].p ? 4 : x < RAR[4].p + RAR[3].p ? 3 : x < RAR[4].p + RAR[3].p + RAR[2].p ? 2 : 1, used = '';
       if (rar < 3 && leg >= 0 && leg + 1 >= GC.pityLeg) { rar = 3; used = 'leg'; }
       else if (rar < 2 && pity >= 0 && pity + 1 >= GC.pityRare) { rar = 2; used = 'pity'; }
