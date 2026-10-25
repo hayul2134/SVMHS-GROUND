@@ -387,7 +387,12 @@ async function renderMe() {
         <ul class="plist" id="findList"><li class="skel"></li></ul>
       </section>`;
     findPeople('');
-    if (wantFind) { wantFind = false; requestAnimationFrame(() => { const f = box.querySelector('.findcard'); if (f) scrollTo({ top: f.getBoundingClientRect().top + scrollY - 76, behavior: 'smooth' }); }); }
+    if (wantFind) {   // 프로필 등장 효과·사진이 늦게 자리 잡아 높이가 바뀜 → 1.2초 동안 자리가 바뀌면 다시 맞춤
+      wantFind = false;
+      const f = box.querySelector('.findcard'), t0 = Date.now(); let last = -1;
+      const sc = () => { if (!f.isConnected || location.hash !== '#me') return; const y = Math.max(0, f.getBoundingClientRect().top + scrollY - 76); if (Math.abs(y - last) > 2) { scrollTo({ top: y, behavior: last < 0 ? 'smooth' : 'auto' }); last = y; } if (Date.now() - t0 < 1200) setTimeout(sc, 150); };
+      requestAnimationFrame(sc);
+    }
   } catch (e) { box.innerHTML = `<div class="card"><p class="empty">${esc(e.message)}</p></div>`; }
 }
 // 홈 친구 카드의 '친구 찾기'(2026-10-25 하율): 프로필 화면을 열고 바로 아래 친구 찾기 칸까지 내려 줌
