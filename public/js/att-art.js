@@ -397,7 +397,7 @@ export function ensureSprite() {
   done = true;
   const box = document.createElement('div');
   box.className = 'att-sprite'; box.setAttribute('aria-hidden', 'true');
-  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => `<symbol id="art-${k}" viewBox="${SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'}">${v}</symbol>`).join('')}<symbol id="art-shnx" viewBox="0 0 48 48">${SHNX}</symbol></svg>`;
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => `<symbol id="art-${k}" overflow="visible" viewBox="${SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'}">${v}</symbol>`).join('')}<symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol></svg>`;
   document.body.appendChild(box);
 }
 if (typeof document !== 'undefined') { if (document.body) ensureSprite(); else document.addEventListener('DOMContentLoaded', ensureSprite, { once: true }); }
