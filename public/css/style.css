@@ -3852,10 +3852,10 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .bd-dm i{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#ff5a6e;color:#fff;border:2px solid var(--card);font-style:normal;font-size:10.5px;font-weight:900;line-height:14px;text-align:center}
 .bd.new .bd-dm{background:var(--yellow);color:var(--onc)}
 :root[data-theme="dark"] .bd-dm{color:var(--text)}
-.bd.req > a{border-style:dashed;background:var(--card)}
+.bd.req > a{border-style:dashed;background:var(--card);padding-bottom:28px}
 .bd.req .bd-s{color:var(--k)}
 .bd-fb{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);padding:4px 12px;font-size:12px;white-space:nowrap}
-.bd.req{margin-bottom:10px}
+.bd.req{margin-bottom:14px}
 .bd-empty{flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;border:2px dashed var(--line);background:var(--chip)}
 .bd-empty p{margin:0;font-size:12.5px;color:var(--sub);line-height:1.45}
 .bd-empty b{display:block;font-size:14.5px;color:var(--text)}
