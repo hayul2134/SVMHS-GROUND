@@ -612,13 +612,13 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .week td.now,:root[data-theme="dark"] .week td.today.now:not(.e){background:var(--yellow);color:#173048;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);transform:scale(1.07) rotate(-1deg);z-index:1;font-weight:900;overflow:visible}
 .week td.now .sic{color:#173048}
 .week td.now .x2{bottom:13px;background:#fff;color:#173048;border-color:#173048}
-.week td.now::before{content:"지금";white-space:nowrap;position:absolute;top:-13px;left:-10px;font-size:12px;font-weight:900;padding:2px 8px;border-radius:8px;background:var(--red);color:#173048;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);transform:rotate(-6deg);z-index:2}
+.week td.now::before{content:"지금";white-space:nowrap;position:absolute;top:-13px;left:4px;font-size:12px;font-weight:900;padding:2px 8px;border-radius:8px;background:var(--red);color:#173048;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);transform:rotate(-6deg);z-index:2}
 .week td.now[data-left]::before{content:"지금 · " attr(data-left)}
 .week td.now::after{content:"";position:absolute;left:6px;right:6px;bottom:4px;height:5px;border-radius:99px;background:linear-gradient(90deg,var(--hero) var(--pg,0%),color-mix(in srgb,#173048 14%,transparent) 0)}
 .week td.pn.nowp b{display:inline-block;min-width:28px;padding:1px 0;border-radius:9px;background:var(--yellow);color:#173048;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);transform:rotate(-4deg)}
 .week td.pn.nowp small{color:var(--text)}
 .week td.next{border-style:dashed;border-color:var(--ink)}
-.week td.next::before{content:"다음";position:absolute;top:-10px;left:-8px;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:7px;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);transform:rotate(-8deg)}
+.week td.next::before{content:"다음";position:absolute;top:-10px;left:4px;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:7px;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);transform:rotate(-8deg)}
 .week td.e:not(.pn),.week td.e.today{background:none;border-color:transparent;box-shadow:none}
 .week th:first-child,.week td.pn{position:sticky;left:0;z-index:2;background:var(--card)!important;box-shadow:-8px 0 0 var(--card)}
 .week tr.lunch,.week tr.lunch td{height:18px}
@@ -2506,7 +2506,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .s-tt .week td .x2{font-size:10px;right:3px;bottom:2px;padding:0 3px}
 .s-tt .week td.pn b{font-size:15px}
 .s-tt .week td.pn small{font-size:10px;margin-top:1px}
-.s-tt .week td.now::before,.s-tt .week td.next::before{font-size:9.5px;top:-8px;left:-6px;padding:0 5px}
+.s-tt .week td.now::before,.s-tt .week td.next::before{font-size:9.5px;top:-8px;left:4px;padding:0 5px}
 .s-tt .week tr.lunch,.s-tt .week tr.lunch td{height:12px}
 .s-tt .week tr.lunch span{font-size:10.5px}
 .wkm{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
