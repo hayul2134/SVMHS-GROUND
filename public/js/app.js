@@ -1030,13 +1030,18 @@ function setSide(k, open) {
   if (heroReady) heroLater(true);   // 카드를 꺼내고 넣으면 덩어리 크기가 바뀌므로 다시 가운데로
 }
 function openSide(k, on) { const el = SIDE[k].el; if (el.classList.contains('stow')) { el.classList.toggle('open', on); paintSide(k); if (heroReady) heroLater(true); } }
+// [미리보기:rk-split] 개발자 화면(html.rk2)에서만 — 월요일 공개 때 조건 제거
+function placeRk() {
+  const rk = $('#sRk'), tt = SIDE.tt.el; if (!rk) return;
+  const out = document.documentElement.classList.contains('rk2') && !wideMQ.matches;
+  if (!out) { if (rk.parentNode !== tt) tt.appendChild(rk); } else if (rk.previousElementSibling !== tt) tt.after(rk);
+}
 function applyDrawers() {
   const on = wideMQ.matches;
   $('#bigclock').classList.toggle('drawers', on);
   // 전체 랭킹은 시간표와 따로 떨어진 카드 (2026-10-25 하율): 서랍 화면에선 시간표 카드 안에 두되 아래로 띄워(absolute) 서랍과 함께 움직이고,
   // 좁은 화면에선 시간표 카드 바로 다음 칸으로 꺼냄
-  const rk = $('#sRk'), tt = SIDE.tt.el;
-  if (rk) { if (on) { if (rk.parentNode !== tt) tt.appendChild(rk); } else if (rk.previousElementSibling !== tt) tt.after(rk); }
+  placeRk();
   for (const k in SIDE) {
     const el = SIDE[k].el;
     el.classList.toggle('stow', on);
@@ -1073,6 +1078,7 @@ const HERO_PARTS = '.s-greet .bubble, #bellLbl, #bigTime, .clock .dk, #more, #hF
 // force=false(글자 폭 변화 등)일 땐 6px 미만 차이는 무시 → 말풍선 흔들림·별 반짝임 때문에 다시 잴 때마다 1~3px씩 튀던 문제 방지
 function centerHero(force) {
   const st = HERO.style;
+  placeRk();
   if (!HERO.classList.contains('drawers')) { st.removeProperty('--hx'); st.removeProperty('--hy'); st.removeProperty('--hcy'); return; }
   if (!force && document.documentElement.classList.contains('tuck')) return;   // 첫 화면을 안 보고 있을 땐 안 잼
   if (document.documentElement.classList.contains('boot')) return;   // 등장 애니메이션 중엔 크기가 변하므로 안 잼
@@ -1121,7 +1127,7 @@ function centerHero(force) {
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
   // 시간표는 시계와 같은 높이 가운데. 아래 랭킹 카드가 메시지 버튼·화면 아래에 걸릴 때만 그만큼 시간표째 위로 올림(--rkup)
   const rk = $('#sRk'), tt = SIDE.tt.el; let up = 0;
-  if (rk && !rk.hidden && tt.classList.contains('open') && st.getPropertyValue('--hcy')) {
+  if (rk && !rk.hidden && document.documentElement.classList.contains('rk2') && tt.classList.contains('open') && st.getPropertyValue('--hcy')) {
     const dock = $('#dmDock'), lim = (dock && dock.offsetParent ? dock.getBoundingClientRect().top : innerHeight) - 10;
     const th = tt.offsetHeight, over = cy + th / 2 + 16 + rk.offsetHeight - lim;
     if (over > 0) up = Math.min(over, Math.max(0, cy - th / 2 - (hdr + 10)));
