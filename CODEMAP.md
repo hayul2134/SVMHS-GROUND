@@ -37,7 +37,8 @@
 | `lib/db.js`, `lib/balance.js` | functions 세 곳이 같이 쓰는 D1 테이블 정의(`setup`)·설정(`settings` 테이블)·횟수 제한(`limited`·`ipKey`: IP는 해시로만, 만료 줄 자동 삭제)·관리 기록용 `maskIp`·밸런스 기본 질문. **표 구조를 바꾸면 `SCHEMA_V`를 올릴 것**(평소엔 버전 확인 쿼리 1번만 실행). functions/ 밖이라 라우트가 아님 |
 | `public/sw.js` | 서비스 워커(`app.js` 시작에서 등록). 화면 파일·`/api/neis`·`/api/config`를 네트워크 먼저(3.5초 넘으면 저장본) 방식으로 저장 → 와이파이가 끊겨도 마지막 화면·급식·시간표 보임. 로그인·DM·게임·투표·관리자는 건드리지 않음. 저장 목록을 크게 바꾸면 `SHELL`·`DATA` 이름의 v를 올릴 것 |
 | `public/_headers` | 보안 헤더(CSP 등) · 이미지 캐시 |
-| `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 |
+| `public/manifest.webmanifest`, `public/icons/` | 홈 화면에 추가(PWA) 정보 — `maskable-*.png`는 안드로이드 둥근 아이콘용(가장자리까지 파랑) |
+| `public/js/install.js` | 앱으로 설치하기(2026-10-25, 깃발 `app-install`): 메뉴 '앱 설치'·소개 화면 `#inApp`·이용 안내 `#installBtn` → `#mApp` 창에 기기·브라우저별 안내(설치 신호 있으면 버튼 한 번, 아이폰·아이패드·맥 Safari·삼성·Firefox·앱 안 브라우저는 순서 안내). 설치 신호는 `theme.js`가 `window.__bip`로 먼저 잡음. 로그인 뒤 12초에 한 번 권유 카드 `#appNudge`(닫으면 `sg_appNudge`로 다시 안 뜸). 앱으로 열리면 `html.is-app` |
 | `public/og-image.jpg` | 카톡 등 링크 미리보기 이미지 (1200×630) |
 | `public/404.html`, `robots.txt` | 기타 (검색 노출 차단: noindex) |
 

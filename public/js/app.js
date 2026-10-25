@@ -5,6 +5,7 @@ import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
 import './tip.js';
 import './seg.js';   // 전환 버튼 묶음 → 스위치처럼 미끄러지는 알약 (2026-10-25)
+import { initInstall } from './install.js';   // 앱으로 설치하기 (2026-10-25)
 import { wearG, wearSvg, spotPref, resolveSpot, anchorOf } from './wear.js';
 
 /* ===== 설정 ===== */
@@ -1648,12 +1649,7 @@ $('#saveClass').onclick = () => {
 /* ===== 이용 안내 · 홈 화면에 추가 ===== */
 $('#btnInfo').onclick = () => openModal('#mInfo');
 $('#btnReport').onclick = () => { if (SOC.report) SOC.report(); else toast('잠시 후 다시 눌러 주세요'); };
-let installEvt = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; });
-$('#installBtn').onclick = async () => {
-  if (!installEvt) return;
-  installEvt.prompt(); await installEvt.userChoice.catch(() => {}); installEvt = null; $('#installBtn').hidden = true;
-};
+initInstall({ openModal });   // 앱으로 설치하기(install.js) — 메뉴 '앱 설치'·소개 화면·이용 안내·한 번 뜨는 권유 카드
 $('#clearData').onclick = () => {
   if (!confirm('이 기기에 저장된 반 설정·D-day·테마를 모두 지울까요?')) return;
   store.clearAll(); location.reload();

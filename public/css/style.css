@@ -4455,3 +4455,41 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 .hr-ov.again b{font-size:clamp(18px,3.4vw,32px)}
 @container (max-width:600px){.hr-ov.dead.win{gap:5px}.hr-prize{font-size:12px;padding:3px 9px}.hr-hidden{padding:5px 12px;gap:1px}.hr-hidden > i{font-size:16px}.hr-hidden p{font-size:12px}.hr-hidden .hr-ttl{font-size:13px}.hr-hidden small{font-size:10.5px}.hr-pick .btn{min-width:0;padding:6px 12px;font-size:13px}}
 @media (prefers-reduced-motion:reduce){.hr-hidden{animation:none}}
+
+/* ===== 앱으로 설치하기 (install.js, 2026-10-25) ===== */
+#mApp{z-index:58}   /* 소개 화면(55) 위에서도 열림 */
+.app-sheet{max-width:420px}
+.a-ico{display:flex;flex-direction:column;align-items:center;gap:6px;margin:2px 0 10px}
+.a-ico img{width:72px;height:72px;border-radius:18px;box-shadow:var(--sh-s);transform:rotate(-4deg)}
+.a-ico span{font:800 12px/1 Outfit,Pretendard,sans-serif;letter-spacing:.08em;color:var(--sub)}
+.a-body{margin-top:6px;text-align:left}
+.a-sub{font-size:14px;color:var(--sub);line-height:1.55;text-align:center;margin-bottom:12px}
+.a-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:4px 0 12px}
+.a-acts .btn{display:inline-flex;align-items:center;gap:8px}
+.a-acts .btn .a-i{width:20px;height:20px;margin:0}
+.asteps{list-style:none;counter-reset:as;display:flex;flex-direction:column;gap:10px;margin:4px 0 10px}
+.asteps li{counter-increment:as;position:relative;padding:10px 12px 10px 46px;border-radius:14px;background:var(--chip);border:var(--bd);font-size:14px;line-height:1.5;color:var(--text)}
+.asteps li::before{content:counter(as);position:absolute;left:11px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font:800 13px/1 Outfit,Pretendard,sans-serif}
+.asteps small{color:var(--sub);font-size:12px}
+.a-i{display:inline-block;width:18px;height:18px;vertical-align:-4px;margin:0 3px;color:var(--accent);fill:none;overflow:visible}
+.a-tip{font-size:12.5px;color:var(--sub);line-height:1.55;padding:0 4px}
+.app-sheet .row{margin-top:8px}
+/* 소개 화면 '앱으로 설치하기' */
+.in-app{display:inline-flex;align-items:center;gap:10px;margin-top:12px;padding:9px 14px 9px 10px;border-radius:14px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);text-align:left;color:var(--text);transition:transform .1s}
+.in-app:hover{transform:translateY(-1px) rotate(-.5deg)}
+.in-app:active,.in-app.is-pressed{transform:translateY(1px)}
+.in-app svg{width:30px;height:30px;padding:5px;border-radius:9px;background:var(--chip);color:var(--accent);flex:none}
+.in-app span{display:flex;flex-direction:column;gap:2px}
+.in-app b{font-size:14.5px;font-weight:900}
+.in-app small{font-size:11.5px;color:var(--sub);font-weight:700}
+/* 한 번만 뜨는 권유 카드 */
+.app-nudge{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));z-index:45;display:flex;align-items:center;gap:10px;width:min(440px,calc(100vw - 32px));padding:10px 10px 10px 12px;border-radius:18px;background:var(--card);border:var(--bd);box-shadow:var(--sh);
+  opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-50%) translateY(24px) rotate(-1deg);transition:opacity .3s,transform .4s cubic-bezier(.2,1.4,.4,1),visibility 0s .4s}
+.app-nudge.show{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%) translateY(0) rotate(-1deg);transition:opacity .3s,transform .4s cubic-bezier(.2,1.4,.4,1)}
+.app-nudge img{width:40px;height:40px;border-radius:11px;flex:none}
+.app-nudge p{flex:1;font-size:13.5px;line-height:1.4;color:var(--text);font-weight:700}
+.app-nudge .btn{padding:9px 14px;flex:none}
+.an-x{width:30px;height:30px;border-radius:50%;color:var(--sub);flex:none;font-size:14px}
+.an-x:hover{background:var(--chip)}
+html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
+@media (prefers-reduced-motion:reduce){.app-nudge,.app-nudge.show{transition:opacity .2s}}

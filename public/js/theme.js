@@ -54,3 +54,5 @@
   // iOS Safari는 touchstart 리스너가 있어야 :active가 동작한다.
   document.addEventListener('touchstart', function () {}, { passive: true });
 })();
+// 앱 설치 신호를 페이지 맨 처음에 잡아 둠 → install.js가 '지금 설치하기' 버튼에 씀 (모듈이 늦게 떠도 놓치지 않게)
+addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__bip = e; dispatchEvent(new Event('sg-bip')); });

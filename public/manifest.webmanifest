@@ -10,13 +10,88 @@
   "background_color": "#eaf5fd",
   "theme_color": "#eaf5fd",
   "icons": [
-    { "src": "/icons/icon-192.png?v=4", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png?v=4", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/logo.svg?v=4", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "/icons/icon-192.png?v=4",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png?v=4",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png?v=1",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png?v=1",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.svg?v=4",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ],
   "shortcuts": [
-    { "name": "급식", "url": "/#meal" },
-    { "name": "시간표", "url": "/#tt" },
-    { "name": "학사일정", "url": "/#cal" }
+    {
+      "name": "급식",
+      "url": "/#meal",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png?v=4",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "시간표",
+      "url": "/#tt",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png?v=4",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "학사일정",
+      "url": "/#cal",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png?v=4",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "categories": [
+    "education",
+    "lifestyle"
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.jpg?v=2",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "큰 종 시계와 오늘 급식·시간표"
+    }
   ]
 }

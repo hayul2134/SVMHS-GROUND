@@ -6,6 +6,7 @@
 //   JS: ffOn('이름', isDev) / 서버: ffOn('이름', isAdm(me))
 // 형식: ['이름', '무엇인지 한 줄', '추가한 날짜']
 export const PREVIEW_LIST = [
+  ['app-install', '앱으로 설치하기 — 메뉴·소개 화면·이용 안내 버튼, 기기별 설치 안내 창, 한 번 뜨는 권유 카드', '2026-10-25'],
 ];
 export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 export const ffOn = (name, dev) => !PREVIEW.has(name) || !!dev;
