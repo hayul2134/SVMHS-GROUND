@@ -20,6 +20,7 @@ function fillCard(el) {
   add('b', 'ht-t', el.getAttribute('data-tip-t'));
   add('span', 'ht-d', el.getAttribute('data-tip-d'));
   add('span', 'ht-m r' + (el.getAttribute('data-tip-r') || ''), el.getAttribute('data-tip-m'));
+  add('span', 'ht-u', el.getAttribute('data-tip-u'));
 }
 
 function place() {

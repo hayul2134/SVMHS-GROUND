@@ -1818,6 +1818,9 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
   .htip.card .ht-m{display:flex;align-items:center;gap:6px;margin-top:2px;padding-top:6px;border-top:1px solid rgba(255,255,255,.16);font-weight:700;font-size:11.5px;opacity:.78}
   .htip.card .ht-m::before{content:"";width:8px;height:8px;flex:none;border-radius:50%;background:#9cc8f5}
   .htip.card .ht-m.r2::before{background:#b9a2ff}.htip.card .ht-m.r3::before{background:linear-gradient(135deg,#ffb3e6,#94d8ff,#ffe98a)}.htip.card .ht-m.r4::before{background:#ffc53d}
+  .htip.card .ht-m{white-space:nowrap}
+  .htip.card .ht-u{font-weight:700;font-size:11.5px;color:#9fd0ff}
+  :root[data-theme="dark"] .htip.card .ht-u{color:#2f6db0}
   :root[data-theme="dark"] .htip.card .ht-m{border-top-color:rgba(23,48,72,.14)}
   .pick.csw button.on:hover::after,.pick.csw button.on:focus-visible::after{transform:translate(-50%,0)}
 }
