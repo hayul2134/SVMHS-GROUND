@@ -4691,3 +4691,5 @@ html.tl2 .cat-more.cm-tier:hover{background:#ffe373}
 .tr-note .tr-go{position:relative;color:#fff;background:var(--nw);border-color:var(--ink);font-weight:900}
 .tr-note .tr-go:hover{filter:brightness(1.06)}
 .tr-note .tr-go .nw-d{top:-5px;right:-5px;background:#fff}
+/* 2026-10-26 핫픽스: 홈 랭킹 카드용 .rk(24px 칸·overflow:hidden)가 랭킹 창 순위 칸(span.rk)에도 걸려 트로피 오른쪽 손잡이가 잘리던 문제 */
+html .rank span.rk{display:inline-grid;place-items:center;grid-template-columns:none;width:32px;padding:0;gap:0;border:0;border-radius:0;background:none;overflow:visible;animation:none;position:static}

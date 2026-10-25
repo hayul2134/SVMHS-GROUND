@@ -1,7 +1,7 @@
 // SVMHS GROUND — 서비스 워커: 학교 와이파이가 끊겨도 마지막으로 본 화면·급식·시간표가 보이게
 // 방식: 네트워크 먼저(최신 배포가 바로 보이게) → 3.5초 안에 응답이 없거나 실패하면 저장해 둔 것.
 // 로그인·DM·게임·투표·관리자 요청은 건드리지 않는다(항상 네트워크).
-const SHELL = 'sg-shell-v7', DATA = 'sg-data-v1';
+const SHELL = 'sg-shell-v8', DATA = 'sg-data-v1';
 const PRECACHE = ['/', '/css/style.css', '/js/theme.js', '/js/hoverlock.js', '/js/app.js', '/js/util.js', '/js/neis.js', '/js/food.js', '/js/qr.js', '/js/social.js', '/js/home-score.js', '/js/runner.js', '/js/attend.js', '/js/att-art.js', '/js/att-rewards.js', '/js/mascots.js', '/js/gacha.js', '/js/tip.js', '/js/seg.js', '/js/flags.js', '/js/clubs.js', '/js/wear.js', '/js/neon.js', '/js/install.js', '/js/kao.js',
   '/manifest.webmanifest', '/logo.svg?v=4', '/icons/icon-192.png'];
 const DATA_MAX = 80;   // 나이스 응답은 날짜마다 주소가 달라서 최근 것만 남김
