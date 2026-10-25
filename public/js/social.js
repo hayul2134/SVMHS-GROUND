@@ -975,12 +975,12 @@ function attEmpty() {
   const d = new Date().getDay();
   return d === 0 || d === 6 ? '출석은 등교일에만 세요<br>월요일 첫 출석부터 순위가 생겨요' : '아직 1등 자리가 비어 있어요<br>오늘 출석하면 바로 이름이 올라가요';
 }
-function paintHomeRank(tab, r) {   // 시간표 카드 아래 1~3등만 (2026-10-25 2차)
+function paintHomeRank(tab, r) {   // 시간표 아래 따로 떨어진 랭킹 카드, 1~3등 (2026-10-25 3차: 분리 + 1등 금빛 강조)
   const g = GAMES[tab], list = r.list.slice(0, 3);
   const val = u => g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
-  $('#rkList').innerHTML = list.length ? list.map((u, i) => `<li class="rk${u.isMe ? ' me' : ''}">
+  $('#rkList').innerHTML = list.length ? list.map((u, i) => `<li class="rk p${i + 1}${u.isMe ? ' me' : ''}">
       <span class="rk-n"><i class="mdl m${i + 1}">${i + 1}</i></span>
-      <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
+      <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}"><span class="rk-av">${i === 0 ? `<i class="rk-cr">${ic('crown')}</i>` : ''}${av(u, 'xs', avWear(u.mfx))}</span><b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
       <b class="rk-v">${val(u)}</b></li>`).join('')
     : `<li class="rk-empty">${tab === 'att' ? attEmpty() : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
 }

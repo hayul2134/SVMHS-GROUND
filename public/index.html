@@ -464,7 +464,7 @@
         <button class="s-tab" type="button" data-side="tt" aria-label="시간표 꺼내기"><span aria-hidden="true"><svg class="sic" viewBox="0 0 24 24"><use href="#sj-ttab"/></svg></span><b>시간표</b></button>
         <h2 class="s-tth" id="sTTh"><span class="s-nav"><button class="s-nb" type="button" data-nav="tt" data-d="-1" aria-label="이전 날 시간표"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-prev"/></svg></button><button class="s-lbl" type="button" id="sTTlbl" data-home="tt">오늘 시간표</button><button class="s-nb" type="button" data-nav="tt" data-d="1" aria-label="다음 날 시간표"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-next"/></svg></button></span><span class="s-acts"><button class="s-ttmore" type="button" id="goWeek" aria-label="시간표 한 주 크게 보기">전체</button><button class="s-put" type="button" data-side="tt" data-tip-end aria-label="시간표 옆으로 넣기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stow"/></svg></button></span></h2>
         <div id="sTT"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
-        <!-- 전체 랭킹 1~3등 (2026-10-25, social.js '홈 전체 랭킹' · 서버 attrank·rank scope=all): 시간표 카드 아래, 서랍과 함께 움직임 -->
+        <!-- 전체 랭킹 1~3등 (2026-10-25, social.js '홈 전체 랭킹'): 시간표와 따로 떨어진 카드 — 서랍 화면에선 app.js applyDrawers가 여기 두고 카드 아래로 띄움, 좁은 화면에선 시간표 다음 칸으로 옮김 -->
         <div class="s-rk" id="sRk" hidden><div class="srk-h"><a href="#game" data-go="game"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg>전체 랭킹</a><span class="rk-tabs" id="rkTabs" role="tablist" aria-label="랭킹 종류"></span></div><ol class="rk-list" id="rkList" aria-live="polite"></ol></div>
       </aside>
       </div>

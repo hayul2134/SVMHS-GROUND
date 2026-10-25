@@ -1033,6 +1033,10 @@ function openSide(k, on) { const el = SIDE[k].el; if (el.classList.contains('sto
 function applyDrawers() {
   const on = wideMQ.matches;
   $('#bigclock').classList.toggle('drawers', on);
+  // 전체 랭킹은 시간표와 따로 떨어진 카드 (2026-10-25 하율): 서랍 화면에선 시간표 카드 안에 두되 아래로 띄워(absolute) 서랍과 함께 움직이고,
+  // 좁은 화면에선 시간표 카드 바로 다음 칸으로 꺼냄
+  const rk = $('#sRk'), tt = SIDE.tt.el;
+  if (rk) { if (on) { if (rk.parentNode !== tt) tt.appendChild(rk); } else if (rk.previousElementSibling !== tt) tt.after(rk); }
   for (const k in SIDE) {
     const el = SIDE[k].el;
     el.classList.toggle('stow', on);
@@ -1115,13 +1119,21 @@ function centerHero(force) {
   // 좌우 서랍은 큰 시계 + 상태 줄의 가운데와 같은 높이 (말풍선까지 넣으면 카드가 위로 떠 보임 — 2026-10-23). 헤더·화면 아래에 걸리면 화면 가운데로
   const cy = Math.round(cMid + dy);
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
+  // 시간표는 시계와 같은 높이 가운데. 아래 랭킹 카드가 메시지 버튼·화면 아래에 걸릴 때만 그만큼 시간표째 위로 올림(--rkup)
+  const rk = $('#sRk'), tt = SIDE.tt.el; let up = 0;
+  if (rk && !rk.hidden && tt.classList.contains('open') && st.getPropertyValue('--hcy')) {
+    const dock = $('#dmDock'), lim = (dock && dock.offsetParent ? dock.getBoundingClientRect().top : innerHeight) - 10;
+    const th = tt.offsetHeight, over = cy + th / 2 + 16 + rk.offsetHeight - lim;
+    if (over > 0) up = Math.min(over, Math.max(0, cy - th / 2 - (hdr + 10)));
+  }
+  st.setProperty('--rkup', Math.round(up) + 'px');
 }
 let heroRaf = 0, heroForce = false, TK_H = 0;
 heroReady = true;   // var(호이스팅) — 이 줄 전에 setSide가 불려도 오류 없이 건너뜀
 const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(() => { const f = heroForce; heroForce = false; centerHero(f); }); };
 const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
-const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr']) heroRO.observe($(s));
+const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr', '#sRk']) heroRO.observe($(s));
 new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
 new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
 document.fonts?.ready.then(heroResize); heroResize();
