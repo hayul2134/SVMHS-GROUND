@@ -125,7 +125,7 @@ const ROUTES = {
       one(`SELECT ((created + 32400000) / 86400000) AS d, COUNT(*) AS n FROM users WHERE created >= ?1 AND ${NA} GROUP BY d`).bind(t0 - 13 * DAY),
       one(`SELECT day AS d, COUNT(DISTINCT uid) AS n FROM scores WHERE day >= ?1 GROUP BY day`).bind(kstYmd(now - 13 * DAY)),
       one(`SELECT ((at + 32400000) / 86400000) AS d, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY d`).bind(t0 - 13 * DAY),
-      one('SELECT grade, cls, COUNT(*) AS n FROM users WHERE grade > 0 AND cls > 0 GROUP BY grade, cls ORDER BY grade, cls'),
+      one(`SELECT grade, cls, COUNT(*) AS n FROM users WHERE grade > 0 AND cls > 0 AND ${NA} GROUP BY grade, cls ORDER BY grade, cls`),
       one('SELECT COUNT(*) AS n FROM feedback WHERE done = 0'),   // 15: 확인 안 한 의견
     ]);
     const n = i => r[i].results[0].n;
