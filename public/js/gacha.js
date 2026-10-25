@@ -68,7 +68,7 @@ function paint() {
           <button class="btn gc-go" type="button" data-gc="1" ${g.tix < 1 || busy ? 'disabled' : ''}>1번 뽑기<small>뽑기권 1장</small></button>
           <button class="btn lime gc-go" type="button" data-gc="5" ${g.tix < 5 || busy ? 'disabled' : ''}>5번 뽑기<small>희귀 이상 1개 확정</small></button>
         </div>
-        <p class="gc-pity">희귀 확정까지 <b>${GC.pityRare - g.pity}</b>번 · 전설 확정까지 <b>${GC.pityLeg - g.leg}</b>번</p>
+        <p class="gc-pity">${g.pity < 0 ? '희귀 확정 <b>사용함</b>' : `희귀 확정까지 <b>${GC.pityRare - g.pity}</b>번`} · ${g.leg < 0 ? '전설 확정 <b>사용함</b>' : `전설 확정까지 <b>${GC.pityLeg - g.leg}</b>번`}</p>
         <div class="gc-shard"><span><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span><button type="button" class="btn ghost" data-gc-shop>조각 상점</button></div>
         <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장 · 연속 5일마다 1장 더 · <a href="#game" data-go="game">게임 랭킹 1~3등</a>은 매주 ${RK.tix.join('·')}장!</p>
       </div>
@@ -88,7 +88,7 @@ function paint() {
       <table class="gc-rates"><thead><tr><th>등급</th><th>확률</th><th>종류</th><th>한 종류당</th></tr></thead><tbody>
       ${[1, 2, 3, 4].map(r => { const k = GACHA.filter(x => x.rar === r).length; return `<tr class="${RCLS[r]}"><td>${RAR[r].n}</td><td>${RAR[r].p}%</td><td>${k}종</td><td>${+(RAR[r].p / k).toFixed(3)}%</td></tr>`; }).join('')}
       </tbody></table>
-      <ul><li>희귀 이상이 ${GC.pityRare - 1}번 연속 안 나오면 <b>${GC.pityRare}번째는 희귀 확정</b>, 전설 이상이 ${GC.pityLeg - 1}번 연속 안 나오면 <b>${GC.pityLeg}번째는 전설 확정</b>이에요.</li>
+      <ul><li>희귀 이상이 ${GC.pityRare - 1}번 연속 안 나오면 <b>${GC.pityRare}번째는 희귀 확정</b>, 전설 이상이 ${GC.pityLeg - 1}번 연속 안 나오면 <b>${GC.pityLeg}번째는 전설 확정</b>이에요. <b>이 확정은 희귀·전설 각각 한 번만</b> 쓸 수 있어요(확정으로 받은 뒤엔 운으로만).</li>
       <li>5번 뽑기는 희귀 이상이 <b>1개 이상 확정</b>이에요.</li>
       <li>이미 가진 게 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]} · 시크릿 ${GC.shard[4]}개).</li>
       <li>조각 상점: 아직 없는 걸 <b>골라서 받기</b>(일반 ${GC.pick[1]} · 희귀 ${GC.pick[2]} · 전설 ${GC.pick[3]} · 시크릿 ${GC.pick[4]}개) · 가진 스티커를 <b>반짝이로 바꾸기</b>(일반 ${GC.shine[1]} · 희귀 ${GC.shine[2]}개). 조각을 뽑기권으로 바꿀 수는 없어요.</li>

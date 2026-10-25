@@ -934,16 +934,20 @@ const ROUTES = {
     if (!adm && (me.gc_tix ?? 0) < n) return err(n === 5 ? '뽑기권이 5장 있어야 해요' : '뽑기권이 없어요. 등교하는 날 출석하면 받아요');
     if (!adm && await limited(db, 'gc:' + me.id, 120, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
     const own = gcOwn(me);
+    // 천장은 계정마다 한 번씩만(2026-10-25 하율): 천장으로 '확정'된 순간 그 값을 -1로 바꿔 다시는 안 씀(자연히 나온 건 안 씀)
     let pity = me.gc_pity || 0, leg = me.gc_leg || 0, shard = me.gc_shard || 0, gotRare = false;
     const rnd = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
     const out = [];
     for (let i = 0; i < n; i++) {
       const x = rnd() * 100;
-      // 시크릿 0.5 · 전설 5.5 · 희귀 22 · 일반 72 (천장은 전설·희귀까지 — 시크릿은 조각 교환으로 확정 가능)
-      let rar = x < RAR[4].p ? 4 : leg + 1 >= GC.pityLeg || x < RAR[4].p + RAR[3].p ? 3 : pity + 1 >= GC.pityRare || x < RAR[4].p + RAR[3].p + RAR[2].p ? 2 : 1;
-      if (n === 5 && i === 4 && !gotRare && rar === 1) rar = 2;   // 5연뽑: 희귀 이상 1개 확정
+      // 확률은 RAR(시크릿 0.1 · 전설 3 · 희귀 22 · 일반 74.9). 천장은 전설·희귀만, 각각 한 번(시크릿은 조각 상점으로 확정 가능)
+      let rar = x < RAR[4].p ? 4 : x < RAR[4].p + RAR[3].p ? 3 : x < RAR[4].p + RAR[3].p + RAR[2].p ? 2 : 1, used = '';
+      if (rar < 3 && leg >= 0 && leg + 1 >= GC.pityLeg) { rar = 3; used = 'leg'; }
+      else if (rar < 2 && pity >= 0 && pity + 1 >= GC.pityRare) { rar = 2; used = 'pity'; }
+      if (n === 5 && i === 4 && !gotRare && rar === 1) rar = 2;   // 5연뽑: 희귀 이상 1개 확정(이건 매번)
       if (rar >= 2) gotRare = true;
-      pity = rar >= 2 ? 0 : pity + 1; leg = rar >= 3 ? 0 : leg + 1;
+      if (pity >= 0) pity = used === 'pity' ? -1 : rar >= 2 ? 0 : pity + 1;
+      if (leg >= 0) leg = used === 'leg' ? -1 : rar >= 3 ? 0 : leg + 1;
       const pool = GACHA.filter(g => g.rar === rar), g = pool[Math.floor(rnd() * pool.length)];
       const isNew = !own[g.v];
       own[g.v] = (own[g.v] || 0) + 1;
