@@ -16,6 +16,9 @@ let busy = false, view = 'all';
 const gcItem = v => GACHA.find(g => g.v === v);
 const flash = r => { if (reduce()) return; const f = document.createElement('i'); f.className = 'gc-flash r' + r; f.setAttribute('aria-hidden', 'true'); document.body.append(f); setTimeout(() => f.remove(), 950); };
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 애니메이션 스킵(2026-10-25 하율): 뽑기 전에 체크하면 무대 없이 바로 결과 — 이 기기 sg_gc_skip
+const skipPref = () => { try { return localStorage.getItem('sg_gc_skip') === '1'; } catch { return false; } };
+const setSkipPref = v => { try { localStorage.setItem('sg_gc_skip', v ? '1' : '0'); } catch {} };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const RCLS = { 1: 'r1', 2: 'r2', 3: 'r3', 4: 'r4' };
 let gift = null;   // 선물 고르는 중인 스티커 { v, list: 맞팔 친구 }
@@ -47,6 +50,7 @@ const bigCap = (c, i) => `<button type="button" class="gc-cap ${c}" data-i="${i}
 export function init(a) {
   api = a;
   document.addEventListener('click', onClick);
+  document.addEventListener('change', e => { const c = e.target.closest?.('[data-gc-skip]'); if (c) { setSkipPref(c.checked); toast(c.checked ? '이제 애니메이션 없이 바로 결과가 나와요' : '뽑기 애니메이션을 다시 보여 줘요'); } });
 }
 export async function render() {
   const box = $('#gcBox'); if (!box) return;
@@ -68,6 +72,7 @@ function paint() {
           <button class="btn gc-go" type="button" data-gc="1" ${g.tix < 1 || busy ? 'disabled' : ''}>1번 뽑기<small>뽑기권 1장</small></button>
           <button class="btn lime gc-go" type="button" data-gc="5" ${g.tix < 5 || busy ? 'disabled' : ''}>5번 뽑기<small>희귀 이상 1개 확정</small></button>
         </div>
+        <label class="gc-skipck"><input type="checkbox" data-gc-skip ${skipPref() ? 'checked' : ''}><i aria-hidden="true"></i>뽑기 애니메이션 스킵 <small>바로 결과 보기</small></label>
         <p class="gc-pity">${g.pity < 0 ? '희귀 확정 <b>사용함</b>' : `희귀 확정까지 <b>${GC.pityRare - g.pity}</b>번`} · ${g.leg < 0 ? '전설 확정 <b>사용함</b>' : `전설 확정까지 <b>${GC.pityLeg - g.leg}</b>번`}</p>
         <div class="gc-shard"><span><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span><button type="button" class="btn ghost" data-gc-shop>조각 상점</button></div>
         <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장 · 연속 5일마다 1장 더 · <a href="#game" data-go="game">게임 랭킹 1~3등</a>은 매주 ${RK.tix.join('·')}장!</p>
@@ -191,7 +196,7 @@ async function draw(n) {
   const req = api.call('gacha', { n }).then(r => { api.setGc(r); return r; });
   let r, res = { again: null };
   try {
-    if (reduce()) r = await req;
+    if (reduce() || skipPref()) r = await req;
     else { res = await play({ req, n, machine: machine('X'), tix: () => api.me()?.gc?.tix ?? 0 }); r = await req; }
   } catch (e) { busy = false; paintBtns(); toast(e.message || '뽑기를 못 했어요'); return; }
   last = { out: r.out, open: new Set() };
@@ -203,6 +208,8 @@ async function draw(n) {
     stage.className = `gc-stage show top${top}`;
     stage.innerHTML = `<div class="gc-res">${r.out.map((x, i) => `<div class="gc-slot" data-s="${i}"></div>`).join('')}</div><div class="gc-act"></div>`;
     r.out.forEach((_, i) => openCap(i, true));
+    if (skipPref() && top >= 3) flash(top);
+    if (skipPref()) stage.scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'center' });
   }
   if (res.again && (api.me()?.gc?.tix ?? 0) >= res.again) draw(res.again);
 }

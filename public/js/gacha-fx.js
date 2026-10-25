@@ -138,7 +138,7 @@ export async function play({ req, machine, n, tix }) {
       <p class="gfx-hint"></p>
       <div class="gfx-end"></div></div>
     <i class="gfx-blk" aria-hidden="true"></i><i class="gfx-fl" aria-hidden="true"></i>
-    <div class="gfx-bar"><button type="button" class="gfx-snd" aria-pressed="${getSnd()}" aria-label="소리"><svg viewBox="0 0 24 24"><use href="#i-snd-${getSnd() ? 'on' : 'off'}"/></svg></button><button type="button" class="gfx-skip">건너뛰기</button></div>`;
+    <div class="gfx-bar"><button type="button" class="gfx-snd" aria-pressed="${getSnd()}" aria-label="소리"><svg viewBox="0 0 24 24"><use href="#i-snd-${getSnd() ? 'on' : 'off'}"/></svg></button><button type="button" class="gfx-skip" aria-label="애니메이션 스킵"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5v13l8.5-6.5zM12.5 5.5v13l8.5-6.5z" fill="currentColor"/><path d="M21 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span>스킵</span></button></div>`;
   document.body.append(root);
   document.documentElement.classList.add('gfx-on');
   const $ = s => root.querySelector(s);
@@ -159,18 +159,30 @@ export async function play({ req, machine, n, tix }) {
     await done(anim(root, [{ opacity: 1 }, { opacity: 0 }], 220));
     P.stop(); root.remove(); document.documentElement.classList.remove('gfx-on'); resolveClose({ again });
   };
-  const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); out ? doSkip() : null; } else if ((e.key === ' ' || e.key === 'Enter') && out && !root.classList.contains('fin')) { e.preventDefault(); next(); } };
+  const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); doSkip(); } else if ((e.key === ' ' || e.key === 'Enter') && out && row.childElementCount && !root.classList.contains('fin')) { e.preventDefault(); next(); } };
   addEventListener('keydown', onKey);
+  root.addEventListener('click', e => {
+    const t = e.target;
+    if (t.closest('.gfx-snd')) return;
+    if (t.closest('.gfx-skip')) return doSkip();
+    if (!out || !row.childElementCount) return;   // 기계 단계: 스킵·소리 버튼만
+    if (t.closest('.gfx-x')) return close();
+    const ag = t.closest('.gfx-again'); if (ag) { again = +ag.dataset.n; return close(); }
+    if (t.closest('.gfx-auto')) { auto = true; end.innerHTML = ''; return next(); }
+    if (root.classList.contains('fin')) return;
+    const sl = t.closest('.gfx-sl');
+    if (sl && !opening) return openOne(+sl.dataset.k);
+    next();   // 빈 곳을 눌러도 다음으로
+  });
 
   /* ① 손잡이: 뒤로 감기 → 두 바퀴(딸깍) → 기계 덜컹. 응답이 오기 전이면 계속 돌림 */
   const knob = mc.querySelector('.gc-knob'), inner = mc.querySelector('.gc-in');
-  await done(anim(mcw, [{ transform: 'translateY(30px) scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: ease.back }));
-  await done(anim(knob, [{ transform: 'rotate(0)' }, { transform: 'rotate(-40deg)' }], { duration: 260, easing: ease.out }));
-  await sleep(110);
+  if (!skip) await done(anim(mcw, [{ transform: 'translateY(30px) scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: ease.back }));
+  if (!skip) { await done(anim(knob, [{ transform: 'rotate(0)' }, { transform: 'rotate(-40deg)' }], { duration: 260, easing: ease.out })); await sleep(110); }
   let got = null, err = null;
   req.then(r => { got = r; }, e => { err = e; });
   let turns = 0;
-  while ((turns < 2 || (!got && !err)) && turns < 40) {
+  while (((turns < 2 && !skip) || (!got && !err)) && turns < 40) {
     const sp = turns < 2 ? 520 - turns * 90 : 360;
     const k = anim(knob, [{ transform: `rotate(${turns ? 0 : -40}deg)` }, { transform: 'rotate(360deg)' }], { duration: sp, easing: turns ? 'linear' : 'cubic-bezier(.4,0,1,1)', fill: 'none' });
     for (let q = 0; q < 4; q++) setTimeout(() => S('tick'), sp * q / 4);
@@ -182,7 +194,7 @@ export async function play({ req, machine, n, tix }) {
   out = got.out.map((x, i) => ({ ...x, i })).sort((a, b) => a.rar - b.rar);   // 낮은 등급부터 → 마지막이 하이라이트
   const top = out[out.length - 1].rar;
   S('clunk'); shake(5, 300);
-  await done(anim(mc, [{ transform: 'none' }, { transform: 'translateY(6px) scaleY(.96)' }, { transform: 'none' }], { duration: 260, easing: ease.back, fill: 'none' }));
+  if (!skip) await done(anim(mc, [{ transform: 'none' }, { transform: 'translateY(6px) scaleY(.96)' }, { transform: 'none' }], { duration: 260, easing: ease.back, fill: 'none' }));
 
   /* 5번 뽑기에 전설 이상이 있으면 배출구에서 금가루가 샘 — '어? 금빛?' (1번 뽑기는 캡슐 열 때까지 비밀) */
   const chute = mc.querySelector('.gc-out'), cc = ctr(chute.parentNode);
@@ -197,10 +209,11 @@ export async function play({ req, machine, n, tix }) {
 
   /* ② 캡슐이 굴러 나와 줄에 섬 (전부 은색) */
   S('roll');
+  if (skip) mcw.hidden = true;
   row.className = `gfx-row n${out.length}`;
   row.innerHTML = out.map((x, k) => `<button type="button" class="gfx-sl" data-k="${k}" aria-label="캡슐 ${k + 1} 열기"><span class="gfx-cap">${capSvg()}</span></button>`).join('');
   anim(mcw, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(-34vh) scale(.5)', opacity: 0 }], { duration: 620, easing: ease.in, delay: 120 });
-  await Promise.all([...row.children].map((sl, k) => {
+  if (!skip) await Promise.all([...row.children].map((sl, k) => {
     const c = sl.querySelector('.gfx-cap'), b = ctr(c);
     const dx = cc.x - b.x, dy = cc.y - b.y, s = 18 / b.w;
     return sleep(k * 110).then(() => { S('land', k); return done(anim(c, [
@@ -222,13 +235,12 @@ export async function play({ req, machine, n, tix }) {
     });
   }, 1300);
   const pickHint = () => { hint.textContent = out.length > 1 ? '캡슐을 눌러 하나씩 열어 보세요' : '캡슐을 눌러 열어 보세요'; end.innerHTML = out.length > 1 ? '<button type="button" class="btn ghost gfx-auto">차례로 자동 열기</button>' : ''; };
-  pickHint();
   const nextIdx = () => out.findIndex((_, k) => !opened.has(k));
   const pulseNext = () => { row.querySelectorAll('.gfx-sl').forEach((s, k) => s.classList.toggle('nx', k === nextIdx())); };
-  pulseNext();
 
   /* ③ 열기 */
   let opening = null, waitTap = null;
+  setTimeout(() => { if (skip) runSkip(); else { pickHint(); pulseNext(); } });
   async function openOne(k) {
     if (opened.has(k) || opening || closed) return;
     opened.add(k);
@@ -329,9 +341,15 @@ export async function play({ req, machine, n, tix }) {
     const k = nextIdx(); if (k >= 0) openOne(k);
   }
   async function doSkip() {
-    if (skip || root.classList.contains('fin')) return close();
-    skip = true; auto = true; clearInterval(tell);
-    root.querySelector('.gfx-skip').textContent = '닫기';
+    if (root.classList.contains('fin')) return close();
+    if (skip) return;
+    skip = true; auto = true;
+    root.querySelector('.gfx-skip').disabled = true;
+    if (!out || !row.childElementCount) return;   // 기계 단계면 본 흐름이 이어서 바로 결과로
+    runSkip();
+  }
+  async function runSkip() {
+    clearInterval(tell);
     waitTap?.();
     await opening;
     for (let g = 0; nextIdx() >= 0 && !closed && g < 50; g++) { if (opening) await opening; else await openOne(nextIdx()); await sleep(0); }
@@ -348,18 +366,6 @@ export async function play({ req, machine, n, tix }) {
     end.querySelector('.gfx-again, .gfx-x')?.focus();
   }
 
-  root.addEventListener('click', e => {
-    const t = e.target;
-    if (t.closest('.gfx-snd')) return;
-    if (t.closest('.gfx-skip')) return doSkip();
-    if (t.closest('.gfx-x')) return close();
-    const ag = t.closest('.gfx-again'); if (ag) { again = +ag.dataset.n; return close(); }
-    if (t.closest('.gfx-auto')) { auto = true; end.innerHTML = ''; return next(); }
-    if (root.classList.contains('fin')) return;
-    const sl = t.closest('.gfx-sl');
-    if (sl && !opening) return openOne(+sl.dataset.k);
-    next();   // 빈 곳을 눌러도 다음으로
-  });
   root.querySelector('.gfx-skip').focus({ preventScroll: true });
   return closedP;
 }
