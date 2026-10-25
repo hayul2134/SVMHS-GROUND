@@ -12,7 +12,7 @@ const GAMES = {
   home: { name: '집에 가고 싶어!', em: '🏠', fmt: v => (1000000 - v).toLocaleString('ko-KR') + 'm', sus: 1000000 - 30000 },   // 저장값 = 1000000 - 거리. 3만m(약 13분 무사고) 넘으면 의심
   reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 160 },
   num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 7000 },
-  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 40 },
+  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 20 },   // 2026-10-26 하율: 학생들이 잘해서 40 → 20 (한 판 평균 4ms 이하만 의심)
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const pad = n => String(n).padStart(2, '0');
