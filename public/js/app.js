@@ -1127,14 +1127,23 @@ function centerHero(force) {
   const cy = Math.round(cMid + dy);
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
   // 시간표는 시계와 같은 높이 가운데. 아래 랭킹 카드가 메시지 버튼·화면 아래에 걸릴 때만 그만큼 시간표째 위로 올림(--rkup)
-  // 화면에 실제로 그려진 위치(getBoundingClientRect)로만 계산 — offsetHeight는 회전·확대가 빠진 값이라 겹침을 덜 재던 문제(2026-10-25)
-  const rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0; let up = 0;
-  if (rk && !rk.hidden && document.documentElement.classList.contains('rk2') && tt.classList.contains('open') && st.getPropertyValue('--hcy')) {
-    const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null, lim = (db && db.height ? db.top : innerHeight) - 14;
-    const rr = rk.getBoundingClientRect(), tr = tt.getBoundingClientRect();
-    const over = rr.bottom + up0 - lim, room = tr.top + up0 - (hdr + 10);   // 올리기 전(up=0) 기준
-    if (over > 0) up = Math.min(over, Math.max(0, room));
-  }
+  fitRk();
+}
+// [미리보기:rk-split] 시간표 아래 랭킹 카드가 메시지 버튼에 걸리면 그만큼만 시간표째 위로(--rkup). 화면에 실제로 그려진 위치로 계산.
+// 랭킹은 뼈대(짧음) → 실제 목록(김)으로 늦게 바뀌고, 그때 등장 애니메이션 중이면 centerHero가 건너뛰어 덜 올라가던 문제(2026-10-25) →
+// centerHero와 따로, 크기가 바뀔 때마다·애니메이션이 끝난 뒤 다시 잼
+let rkT = 0;
+function fitRk() {
+  clearTimeout(rkT);
+  const st = HERO.style, rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0;
+  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !tt.classList.contains('open') || !st.getPropertyValue('--hcy')) { if (up0) st.setProperty('--rkup', '0px'); return; }
+  const de = document.documentElement;
+  if (de.classList.contains('tuck')) return;
+  if (de.classList.contains('boot') || de.classList.contains('pre') || tt.getAnimations().some(a => a.playState === 'running')) { rkT = setTimeout(fitRk, 250); return; }
+  const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null, lim = (db && db.height ? db.top : innerHeight) - 14;
+  const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, rr = rk.getBoundingClientRect(), tr = tt.getBoundingClientRect();
+  const over = rr.bottom + up0 - lim, room = tr.top + up0 - (hdr + 10);
+  const up = over > 0 ? Math.min(over, Math.max(0, room)) : 0;
   if (Math.abs(up - up0) >= 1) st.setProperty('--rkup', Math.round(up) + 'px');
 }
 let heroRaf = 0, heroForce = false, TK_H = 0;
@@ -1142,7 +1151,9 @@ heroReady = true;   // var(호이스팅) — 이 줄 전에 setSide가 불려도
 const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(heroRaf); heroRaf = requestAnimationFrame(() => { const f = heroForce; heroForce = false; centerHero(f); }); };
 const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
-const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr', '#sRk']) heroRO.observe($(s));
+const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr']) heroRO.observe($(s));
+new ResizeObserver(() => fitRk()).observe($('#sRk'));
+addEventListener('load', () => setTimeout(fitRk, 1500));
 new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
 new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
 document.fonts?.ready.then(heroResize); heroResize();
