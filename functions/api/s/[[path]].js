@@ -1070,13 +1070,25 @@ const ROUTES = {
   }),
 
   // 이번 라운드 티어판(2026-10-25): 내 티어·점수·게임별 순위 + 상위 10명
-  'GET tier': needMe(async ({ db, me }) => {
+  // ?k=티어 → 그 티어에 지금 있는 사람 전부(순위순, 최대 200명) — 2026-10-26 하율 '티어 누르면 누가 있는지'
+  'GET tier': needMe(async ({ db, me, url }) => {
     const b = await tierBoard(db), mine = b.list.find(x => x.uid === me.id) || null;
-    const top = b.list.slice(0, 10), ids = top.map(x => x.uid);
-    const us = ids.length ? (await db.prepare(`SELECT ${PUB} FROM users WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results : [];
-    const byId = new Map(us.map(u => [u.id, u]));
     const pub1 = x => ({ rank: x.rank, pts: x.pts, tier: x.tier, games: x.games });
-    return json({ round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, tiers: TIERS,
+    const usersOf = async ids => {   // D1 바인드 한도 때문에 90개씩
+      const out = new Map();
+      for (let i = 0; i < ids.length; i += 90) { const c = ids.slice(i, i + 90);
+        (await db.prepare(`SELECT ${PUB} FROM users WHERE id IN (${c.map(() => '?').join(',')})`).bind(...c).all()).results.forEach(u => out.set(u.id, u)); }
+      return out;
+    };
+    const k = url.searchParams.get('k');
+    if (k) {
+      if (!tierOfK(k)) return err('없는 티어예요');
+      const all = b.list.filter(x => x.tier === k), mem = all.slice(0, 200), byId = await usersOf(mem.map(x => x.uid));
+      return json({ k, n: all.length, list: mem.map(x => ({ ...card(byId.get(x.uid)), rank: x.rank, pts: x.pts, isMe: x.uid === me.id })).filter(x => x.handle) });
+    }
+    const cnt = {}; b.list.forEach(x => { cnt[x.tier] = (cnt[x.tier] || 0) + 1; });
+    const top = b.list.slice(0, 10), byId = await usersOf(top.map(x => x.uid));
+    return json({ cnt, round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, tiers: TIERS,
       me: mine ? pub1(mine) : null, last: tierLastOf(me),
       top: top.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
   }),

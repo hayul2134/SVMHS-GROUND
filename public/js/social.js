@@ -1156,7 +1156,8 @@ async function loadTier() {
   if (ffOn('tier-look', isDev(S.me))) {
     const APEX = new Set(['master', 'grandmaster', 'challenger']);
     const rev = [...TIERS].reverse();
-    const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
+    const cnt = d.cnt || {};
+    const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}" data-tk="${x.k}" role="button" tabindex="0" aria-expanded="false" aria-label="${x.n} — 지금 ${cnt[x.k] || 0}명, 눌러서 보기">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><b>${x.n}</b><small>${lbOf(x)}</small><span class="tl-cnt${cnt[x.k] ? '' : ' z'}">${cnt[x.k] || 0}명</span></li>`).join('');
     const k = t ? t.k : 'iron';
     box.classList.add('tr2');
     box.innerHTML = `<div class="tr2-top">
@@ -1164,9 +1165,12 @@ async function loadTier() {
         <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>
       <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>4개 게임 점수를 합쳐 줄 세우기</span></li><li><b>3</b><span>${byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li></ol>
     </div>
+    <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>
     <ol class="tr-stairs">${stairs}</ol>
+    <div class="tr-who" hidden></div>
     ${per ? `<ul class="tr-games">${per}</ul>` : ''}
     <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;
+    tierWho(box);
     const sl = box.querySelector('.tr-stairs'), on = sl?.querySelector('li.on');   // 폰: 가로로 넘기는 계단을 내 티어 쪽으로
     if (on && sl.scrollWidth > sl.clientWidth) sl.scrollLeft = on.offsetLeft - (sl.clientWidth - on.offsetWidth) / 2;
     return;
@@ -1176,6 +1180,31 @@ async function loadTier() {
     <ol class="tr-ladder">${ladder}</ol>
     ${per ? `<ul class="tr-games">${per}</ul>` : ''}
     <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;
+}
+
+// 티어 계단을 누르면 그 티어에 지금 있는 사람 목록(2026-10-26 하율 요청) — 같은 티어를 다시 누르면 닫힘
+function tierWho(box) {
+  const panel = box.querySelector('.tr-who'), memo = new Map();
+  let open = '';
+  const show = async k => {
+    box.querySelectorAll('.tr-stairs li').forEach(li => { const on = li.dataset.tk === k; li.classList.toggle('sel', on); li.setAttribute('aria-expanded', on ? 'true' : 'false'); });
+    if (!k) { panel.hidden = true; panel.innerHTML = ''; return; }
+    const t = tierOfK(k);
+    const head = n => `<div class="tw-head t-${k}">${tierIc(k)}<b>${t.n}</b><span>${n == null ? '' : `지금 ${n}명`}</span><button type="button" class="tw-x" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>`;
+    panel.hidden = false; panel.className = 'tr-who t-' + k;
+    if (!memo.has(k)) panel.innerHTML = head(null) + '<div class="skel"></div>';
+    let r = memo.get(k);
+    if (!r) { try { r = await call('tier?k=' + k); memo.set(k, r); } catch { panel.innerHTML = head(null) + '<p class="tw-empty">불러오지 못했어요. 잠시 뒤 다시 눌러 주세요</p>'; return; } }
+    if (open !== k) return;   // 그 사이 다른 티어를 누름
+    const li = r.list.map(u => `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`).join('');
+    panel.innerHTML = head(r.n) + (r.list.length ? `<ol class="tw-list">${li}</ol>${r.n > r.list.length ? `<p class="tw-more">외 ${r.n - r.list.length}명</p>` : ''}` : '<p class="tw-empty">지금 이 티어엔 아무도 없어요 — 먼저 올라가 볼까요?</p>');
+  };
+  const pick = li => { const k = li.dataset.tk; open = open === k ? '' : k; show(open); };
+  box.onclick = e => {
+    if (e.target.closest('.tw-x')) { open = ''; show(''); return; }
+    const li = e.target.closest('.tr-stairs li[data-tk]'); if (li) pick(li);
+  };
+  box.onkeydown = e => { const li = e.target.closest?.('.tr-stairs li[data-tk]'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(li); } };
 }
 
 /* 축하 트로피 (2026-10-25 하율 요청): 1등 금 · 2등 은 · 3등 동 — 색은 CSS .ch-tro.r1~r3 */

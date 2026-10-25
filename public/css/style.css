@@ -4619,6 +4619,35 @@ html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
 .tl-me{position:absolute;top:-28px;left:50%;z-index:2;transform:translateX(-50%);padding:2px 9px;border-radius:999px;border:2px solid var(--ink);background:var(--yellow,#ffd84d);color:#1d2a3a;font:900 12px/1.3 inherit;font-style:normal;box-shadow:2px 2px 0 var(--ink);white-space:nowrap}
 .tl-me::after{content:"";position:absolute;left:50%;bottom:-6px;width:8px;height:8px;background:inherit;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:translateX(-50%) rotate(45deg)}
 .tr-stairs:has(li.on) li:not(.on){opacity:.82}
+/* 티어를 누르면 그 티어 사람들(2026-10-26 하율) */
+.tr-tap{margin:14px 0 -16px;font-size:12px;font-weight:800;color:var(--sub);text-align:right}
+.tr-stairs li[data-tk]{cursor:pointer;border-radius:14px;outline:none;-webkit-tap-highlight-color:transparent}
+.tr-stairs li[data-tk]:focus-visible{box-shadow:0 0 0 3px var(--blue,#4f7cff)}
+.tl-cnt{margin-top:3px;padding:1px 7px;border-radius:999px;border:1.5px solid var(--ink);background:var(--card);color:var(--text);font:900 11px/1.35 var(--num,inherit);white-space:nowrap}
+.tl-cnt.z{border-color:var(--line);color:var(--sub);font-weight:800}
+.tr-stairs li.sel .tl-cnt{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.tr-stairs li.sel .tl-em{transform:translateY(-5px) scale(1.08)}
+.tr-stairs li.sel.on .tl-em{transform:scale(1.2)}
+.tr-stairs:has(li.sel) li:not(.sel){opacity:.6}
+.tr-who{margin-top:12px;padding:12px 14px;border-radius:18px;border:2.5px solid var(--ink);background:color-mix(in srgb,var(--tc,#8aa) 10%,var(--card));box-shadow:var(--sh-s);animation:twIn .22s ease-out}
+@keyframes twIn{from{opacity:0;transform:translateY(-6px)}}
+.tw-head{display:flex;align-items:center;gap:8px}
+.tw-head .tri{width:40px;height:36px;flex:none}
+.tw-head b{font-size:16px;font-weight:900;color:var(--text)}
+.tw-head span{font:900 13px var(--num,inherit);color:var(--sub)}
+.tw-x{margin-left:auto;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.tw-x svg{width:14px;height:14px}
+.tw-list{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 12px;max-height:320px;overflow-y:auto}
+.tw-list li{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:10px;min-width:0}
+.tw-list li.me{background:var(--chip)}
+.tw-list .tr-n{width:24px;flex:none;text-align:center;font:900 13px var(--num,inherit);color:var(--sub)}
+.tw-list li a{display:flex;align-items:center;gap:6px;min-width:0;flex:1;color:var(--text);text-decoration:none}
+.tw-list li a b{display:flex;align-items:center;gap:3px;min-width:0;white-space:nowrap;overflow:hidden;font-size:14px}
+.tw-list li a b span{overflow:hidden;text-overflow:ellipsis}
+.tw-list li em{flex:none;font-style:normal;font:900 13px var(--num,inherit)}
+.tw-empty,.tw-more{margin:10px 0 2px;font-size:13px;font-weight:800;color:var(--sub)}
+.tr-who .skel{height:44px;margin-top:10px}
+@media (max-width:760px){.tr-tap{margin:10px 0 -18px;text-align:left}}
 @media (max-width:900px){.tm-how{grid-template-columns:1fr}.tm-how li+li::before{display:none}}
 @media (max-width:760px){
   .tr-stairs{grid-template-columns:repeat(10,64px);overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:4px;scrollbar-width:thin}
