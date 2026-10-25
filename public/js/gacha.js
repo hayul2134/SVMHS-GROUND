@@ -3,12 +3,12 @@
 // 효과는 '내 효과'에서 켬(서버 gcfx) · 중복 스티커는 맞팔 친구에게 선물(gcgift) · 다 모으면 칭호 + 프로필 홀로 테두리.
 // 조각 상점(2026-10-25 하율: 조각 → 뽑기권은 메리트 없음): 없는 것 골라 받기(gcpick, 시크릿 포함) · 가진 스티커 반짝이 강화(gcshine, 값 끝 '_s').
 // 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물) + 매주 게임 랭킹 1~3등(3·2·1장, 서버 settleRounds).
-// 연출 순서: 손잡이 한 바퀴 → 기계가 덜컹 → 캡슐이 굴러 나옴 → 캡슐을 누르면(또는 차례로 저절로) 열림.
-//   캡슐 색이 등급 힌트(일반 하늘 · 희귀 보라 · 전설 금빛 홀로) — 희귀·전설은 열리기 전 더 오래 흔들리고 빛줄기가 나옴(두근거림).
+// 연출(2026-10-25 2차): 화면 전체 무대 gacha-fx.js — 은색 캡슐(등급 숨김) → 금 가며 등급 승급. 끝나면 결과를 아래 #gcStage에 열린 채로 남김.
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
 import { $, esc, toast, store } from './util.js';
 import { GACHA, HIDDEN, HOME_TITLE, RAR, GC, FX, GC_TITLE, RK, SHN, objName, neonPick } from './att-rewards.js';
 import { artOf, ensureSprite, stillHref } from './att-art.js';
+import { play } from './gacha-fx.js';
 import { SPOTS, spotPref, setSpotPref, resolveSpot, wearSvg, anchorOf, setAdj } from './wear.js';
 
 let api;   // social.js에서 받음: call · refreshMe · me() · setGc(g)
@@ -24,12 +24,12 @@ const fmt = n => n >= 1e6 ? '∞' : n;
 /* ----- 뽑기 기계 (직접 그림: 로고와 같은 젤리 — 남색 선 · 두께 · 광택) ----- */
 const CAPS = [[52, 88, 'r1'], [78, 96, 'r2'], [104, 86, 'r1'], [64, 64, 'r1'], [94, 60, 'r3'], [42, 66, 'r2'], [116, 66, 'r1'], [80, 38, 'r1'], [58, 40, 'r2'], [102, 38, 'r1']];
 const capSvg = (x, y, c, r = 12) => `<g class="cp ${c}" transform="translate(${x} ${y})"><circle r="${r}" fill="#fff" stroke="#173048" stroke-width="2.6"/><path d="M-${r} 0A${r} ${r} 0 0 1 ${r} 0Z" class="ct" stroke="#173048" stroke-width="2.6" stroke-linejoin="round"/><path d="M-${r - 4} -${r * .38}Q-${r * .5} -${r - 3} 0 -${r - 3.6}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".9"/></g>`;
-const machine = () => `<svg class="gc-mc" viewBox="0 0 160 206" aria-hidden="true">
-  <defs><clipPath id="gcDome"><circle cx="80" cy="68" r="55"/></clipPath>
-    <linearGradient id="gcGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaf7ff" stop-opacity=".95"/><stop offset="1" stop-color="#b8e2ff" stop-opacity=".75"/></linearGradient></defs>
+const machine = (k = '') => `<svg class="gc-mc" viewBox="0 0 160 206" aria-hidden="true">
+  <defs><clipPath id="gcDome${k}"><circle cx="80" cy="68" r="55"/></clipPath>
+    <linearGradient id="gcGlass${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaf7ff" stop-opacity=".95"/><stop offset="1" stop-color="#b8e2ff" stop-opacity=".75"/></linearGradient></defs>
   <circle cx="83" cy="73" r="58" fill="#173048"/>
-  <circle cx="80" cy="68" r="58" fill="url(#gcGlass)" stroke="#173048" stroke-width="4"/>
-  <g clip-path="url(#gcDome)"><g class="gc-in">${CAPS.map(([x, y, c]) => capSvg(x, y, c)).join('')}</g></g>
+  <circle cx="80" cy="68" r="58" fill="url(#gcGlass${k})" stroke="#173048" stroke-width="4"/>
+  <g clip-path="url(#gcDome${k})"><g class="gc-in">${CAPS.map(([x, y, c]) => capSvg(x, y, c)).join('')}</g></g>
   <path d="M42 28Q58 14 80 13" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".9"/><path d="M30 48Q32 40 36 35" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>
   <path d="M33 118H131V128H33Z" transform="translate(3 5)" fill="#173048"/><path d="M33 118H131V128H33Z" fill="url(#gY)" stroke="#173048" stroke-width="3.4" stroke-linejoin="round"/>
   <path d="M30 128H134Q140 128 140 134V194Q140 200 134 200H30Q24 200 24 194V134Q24 128 30 128Z" transform="translate(3 5)" fill="#173048"/>
@@ -187,30 +187,24 @@ let last = null;   // 지금 열고 있는 결과
 async function draw(n) {
   if (busy) return;
   busy = true; paintBtns();
-  const mc = $('.gc-mc');
-  let r;
+  // 2026-10-25 2차: 화면 전체 무대 연출(gacha-fx.js) — 동작 줄이기 설정이면 바로 결과
+  const req = api.call('gacha', { n }).then(r => { api.setGc(r); return r; });
+  let r, res = { again: null };
   try {
-    const p = api.call('gacha', { n });
-    if (!reduce() && mc) { mc.classList.remove('spin'); void mc.getBoundingClientRect(); mc.classList.add('spin'); }
-    [r] = await Promise.all([p, reduce() ? 0 : wait(1150)]);
-  } catch (e) { busy = false; mc?.classList.remove('spin'); paintBtns(); toast(e.message || '뽑기를 못 했어요'); return; }
-  api.setGc(r);
+    if (reduce()) r = await req;
+    else { res = await play({ req, n, machine: machine('X'), tix: () => api.me()?.gc?.tix ?? 0 }); r = await req; }
+  } catch (e) { busy = false; paintBtns(); toast(e.message || '뽑기를 못 했어요'); return; }
   last = { out: r.out, open: new Set() };
-  mc?.classList.remove('spin');
-  const stage = $('#gcStage');
-  const top = Math.max(...r.out.map(x => x.rar));
-  stage.className = `gc-stage show n${r.out.length} top${top}`;
-  stage.innerHTML = `<div class="gc-res">${r.out.map((x, i) => `<div class="gc-slot" data-s="${i}">${bigCap(RCLS[x.rar], i)}</div>`).join('')}</div>
-    <div class="gc-act"><button type="button" class="btn ghost" data-gc-all>${r.out.length > 1 ? '모두 열기' : '바로 열기'}</button></div>`;
-  $('#gcTix').textContent = fmt(r.tix);
-  stage.scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'center' });
-  if (reduce()) { r.out.forEach((_, i) => openCap(i, true)); return; }
-  // 차례로 저절로 열림(누르면 바로) — 희귀·전설은 더 오래 흔들림
-  for (let i = 0; i < r.out.length; i++) {
-    if (last?.out !== r.out) return;
-    await wait(i ? 280 : 600);
-    if (!last.open.has(i)) await openCap(i);
+  busy = false;
+  paint();
+  // 페이지엔 방금 결과를 열린 채로 남김(무대를 닫은 뒤 다시 볼 수 있게)
+  const stage = $('#gcStage'); if (stage) {
+    const top = Math.max(...r.out.map(x => x.rar));
+    stage.className = `gc-stage show top${top}`;
+    stage.innerHTML = `<div class="gc-res">${r.out.map((x, i) => `<div class="gc-slot" data-s="${i}"></div>`).join('')}</div><div class="gc-act"></div>`;
+    r.out.forEach((_, i) => openCap(i, true));
   }
+  if (res.again && (api.me()?.gc?.tix ?? 0) >= res.again) draw(res.again);
 }
 async function openCap(i, instant = false) {
   if (!last || last.open.has(i)) return;
