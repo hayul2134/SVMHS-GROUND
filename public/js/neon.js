@@ -7,6 +7,7 @@
 (() => {
   const NS = 'http://www.w3.org/2000/svg', html = document.documentElement;
   const on = () => html.dataset.ckfx === 'neon';
+  let seq = 0;
   const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   function paint(el) {
     if (!el) return;
@@ -14,15 +15,20 @@
       const old = sp.querySelector(':scope > .ntb');
       if (!on()) { old?.remove(); continue; }
       const ch = [...sp.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('');
-      if (old && old.dataset.ch === ch) continue;
+      if (old && old.dataset.ch === ch && +old.dataset.fs === parseFloat(getComputedStyle(sp).fontSize)) continue;   // 글자·크기 같으면 그대로
       old?.remove();
       // 글자 기준선 위치: 폭 0짜리 표식을 기준선에 놓고 잼
       const mk = document.createElement('i'); mk.className = 'nb'; sp.appendChild(mk);
       const y = (mk.offsetTop / parseFloat(getComputedStyle(sp).fontSize)).toFixed(4) + 'em'; mk.remove();   // em으로 → 창 크기가 바뀌어 글자가 커져도 그대로 맞음
-      const svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('class', 'ntb'); svg.setAttribute('aria-hidden', 'true'); svg.dataset.ch = ch;
-      const t = c => `<text class="${c}" x="50%" y="${y}" text-anchor="middle">${esc(ch)}</text>`;
-      svg.innerHTML = t('t1') + t('t2') + t('t3');
+      const svg = document.createElementNS(NS, 'svg'), id = 'ntm' + (++seq), fs = parseFloat(getComputedStyle(sp).fontSize);
+      svg.setAttribute('class', 'ntb'); svg.setAttribute('aria-hidden', 'true'); svg.dataset.ch = ch; svg.dataset.fs = fs;
+      const t = (c, x = '') => `<text class="${c}" x="50%" y="${y}" text-anchor="middle"${x}>${esc(ch)}</text>`;
+      // Outfit 글자는 획끼리 겹친 윤곽(속 선)이 있어 stroke를 그대로 그리면 글자 속에 선이 비침 →
+      // 글자 속을 관 안쪽 두께(가장 굵은 겹의 절반)만큼 깎은 영역을 가려서, 윤곽선 근처의 관만 남김
+      const r = (fs * 0.041).toFixed(2);
+      svg.innerHTML = `<defs><filter id="${id}e" x="-20%" y="-20%" width="140%" height="140%"><feMorphology operator="erode" radius="${r}"/></filter>` +
+        `<mask id="${id}" maskUnits="userSpaceOnUse" x="-50%" y="-50%" width="200%" height="200%"><rect x="-50%" y="-50%" width="200%" height="200%" fill="#fff"/>${t('mk', ` filter="url(#${id}e)"`)}</mask></defs>` +
+        `<g mask="url(#${id})">${t('t1') + t('t2') + t('t3')}</g>`;
       sp.appendChild(svg);
     }
   }
@@ -32,6 +38,7 @@
     if (!el) return;
     all();
     new MutationObserver(all).observe(el, { childList: true });
+    if ('ResizeObserver' in window) new ResizeObserver(all).observe(el);   // 글자 크기가 바뀌면 깎는 두께(px)도 다시
     new MutationObserver(all).observe(html, { attributes: true, attributeFilter: ['data-ckfx'] });
     document.fonts?.ready.then(() => { el.querySelectorAll('.ntb').forEach(s => s.remove()); all(); });   // 글꼴이 늦게 오면 기준선 다시
   };

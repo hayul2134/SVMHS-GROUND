@@ -3624,6 +3624,7 @@ html[data-ckfx=neon] .s-big .sec{text-shadow:none!important;filter:none!importan
 .ntb{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;
   filter:drop-shadow(0 0 .02em var(--ne)) drop-shadow(0 0 .07em color-mix(in srgb,var(--ne) 65%,transparent))}
 .ntb text{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.ntb .mk{fill:#000;stroke:none}
 .ntb .t1{stroke:var(--ne-edge);stroke-width:.082em}
 .ntb .t2{stroke:var(--ne-tube);stroke-width:.062em}
 .ntb .t3{stroke:var(--ne-hot);stroke-width:.02em}
