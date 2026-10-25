@@ -708,19 +708,21 @@ function pkApply() {
   $$('#editForm .pk-seg [data-view]').forEach(b => { const on = b.dataset.view === pkView(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   $$('#editForm select[name=title] option:disabled').forEach(o => { o.hidden = own; });
 }
-// 뽑기 스티커 구분선 (스티커 목록에서 출석 보상 뒤)
-function gcDiv() {
-  const L = gcList(), n = L.filter(attHave).length;
-  return pkDiv(`뽑기 스티커 <small>${n}/${L.length} 뽑음</small><span class="pk-none">아직 뽑은 스티커가 없어요 · 서비스 › 뽑기</span>`, n ? '' : ' zero');
+// 뽑기 스티커 구분선 — 등급(일반·희귀)마다 따로: 등급 칩 + 뽑은 개수 (2026-10-25 하율: 희귀·일반이 섞여 보이지 않게)
+function gcDiv(rar) {
+  const L = gcList().filter(g => g.rar === rar), n = L.filter(attHave).length;
+  return pkDiv(`<span class="pk-rar rr${rar}">${RAR[rar].n}</span>뽑기 스티커 <small>${n}/${L.length} 뽑음</small><span class="pk-none">아직 뽑은 ${RAR[rar].n} 스티커가 없어요 · 서비스 › 뽑기</span>`, (n ? '' : ' zero') + ` gdv rr${rar}`);
 }
 function attPicks(kind, isOn) {
-  return rwList(kind).map(r => {
-    const gc = r.by === 'gacha';
+  const L = rwList(kind);
+  return L.map((r, i) => {
+    const gc = r.by === 'gacha', head = gc && !(L[i - 1]?.by === 'gacha' && L[i - 1].rar === r.rar);
     const tip = gc ? `${r.shn ? '조각 상점' : '뽑기 ' + RAR[r.rar].n} · ${objName(r.v)}` : `${r.by === 'total' ? '총 출석' : '연속 출석'} ${r.d}일 보상 · ${kind === 'color' ? COLOR_NAME[r.v] : objName(r.v)}`;
     const inner = kind === 'color' ? '' : artOf(r.v, 'pka');
-    return (r === GC_ITEMS[0] ? gcDiv() : '') + (attHave(r)
-      ? `<button type="button" data-v="${r.v}" class="att-pk${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
-      : `<button type="button" class="att-pk lock${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${gc ? 'g' : r.d}" data-by="${r.by}" data-tip="🔒 ${tip}" aria-label="${tip} (잠김)">${inner}<span class="pk-lk">${ui('lock')}</span><i>${gc ? '뽑기' : r.d}</i></button>`);
+    const gr = gc ? ` gr${r.rar}` : '';
+    return (head ? gcDiv(r.rar) : '') + (attHave(r)
+      ? `<button type="button" data-v="${r.v}" class="att-pk${gr}${kind === 'color' ? ' c-' + r.v : ''} ${isOn(r.v) ? 'on' : ''}" data-tip="${tip}" aria-label="${tip}">${inner}</button>`
+      : `<button type="button" class="att-pk lock${gr}${kind === 'color' ? ' c-' + r.v : ''}" data-lock="${gc ? 'g' : r.d}" data-by="${r.by}" data-tip="🔒 ${tip}" aria-label="${tip} (잠김)">${inner}<span class="pk-lk">${ui('lock')}</span><i>${gc ? '뽑기' : r.d}</i></button>`);
   }).join('');
 }
 // 스티커 고르기 작은 창 (DM·밸런스 댓글 공용) — 받은 출석 보상 스티커만. 고르면 onPick('r:이름')

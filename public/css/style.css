@@ -2184,6 +2184,14 @@ html.away .mascot *{animation-play-state:paused!important}
 .pick .pk-div:not(:first-child){padding-top:8px;border-top:2px dashed color-mix(in srgb,var(--sub) 35%,transparent)}
 .pick .pk-div small{font-weight:800;color:var(--fire)}
 .pick .pk-div .flm{display:inline-block;width:11px;height:13px}
+/* 뽑기 스티커 등급 구분(2026-10-25): 일반·희귀 칸을 따로 묶고, 등급 칩 + 칸 색으로 한눈에 구분 — 색은 뽑기 화면 등급 색(r1 #cfdbe8 · r2 #7cc6ff)과 같게 */
+.pick .pk-rar{display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:999px;border:2px solid var(--ink);font-size:11px;font-weight:900;line-height:1;color:#22344a}
+.pick .pk-rar.rr1{background:#dfe7f0}
+.pick .pk-rar.rr2{background:#7cc6ff;box-shadow:0 0 0 3px color-mix(in srgb,#7cc6ff 30%,transparent)}
+.pick .pk-div.gdv.rr2{color:#2f7fc4}
+.pick .pk-div.gdv.rr2:not(:first-child){border-top-color:color-mix(in srgb,#5ab8ff 55%,transparent)}
+.pick .att-pk.gr1:not(.on){background:color-mix(in srgb,#cfdbe8 45%,var(--card))}
+.pick .att-pk.gr2:not(.on){background:color-mix(in srgb,#7cc6ff 26%,var(--card));box-shadow:inset 0 0 0 2px color-mix(in srgb,#5ab8ff 70%,transparent)}
 .pick .pk-none{display:none;width:100%;font-weight:800;color:var(--sub)}
 .own-only .pick .att-pk.lock{display:none}
 .own-only .pick .pk-div.zero .pk-none{display:block}
