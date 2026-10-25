@@ -129,7 +129,7 @@ export const gcItem = v => GACHA_ALL.find(g => g.v === v);
 Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포스트잇', ruler: '자', tape: '마스킹테이프', earbud: '무선 이어폰', sharp: '샤프', correct: '수정테이프',
   hbpencil: '연필', glue: '딱풀', calc: '계산기', scissors: '가위', milkbox: '급식 우유', slipper: '실내화', bottle: '물병', stapler: '스테이플러',
   test100: '100점 시험지', memo: '비밀 편지',
-  camrec: '녹화 중 캠코더', reel: '필름 릴', boommic: '붐 마이크', popcorn: '팝콘', schoolcat: '학교 고양이', cheerflag: '응원 깃발',
+  camrec: '녹화 중 캠코더', reel: '필름 릴', boommic: '붐 마이크', popcorn: '팝콘', schoolcat: '고양이', cheerflag: '응원 깃발',
   fxholo: '홀로그램 닉네임', fxstar: '별똥별 등장', fxneon: '네온 시계', fxcrown: '떠 있는 왕관', fxgold: '황금 닉네임', fxkey: '집 열쇠' });
 export const RAR = { 1: { n: '일반', p: 74.9 }, 2: { n: '희귀', p: 22 }, 3: { n: '전설', p: 3 }, 4: { n: '시크릿', p: .1 } };   // p: % (합 100) — 2026-10-25 하율: 시크릿 0.1 · 전설 3 이하
 // 조각(2026-10-25 하율: "조각 → 뽑기권은 메리트 없음, 조각으로 다른 걸") — 뽑기권으로는 못 바꿈.

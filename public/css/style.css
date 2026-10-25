@@ -3379,7 +3379,7 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 @keyframes anShadow{0%,100%{transform:scale(.6);opacity:.12}50%{transform:scale(1.05);opacity:.26}}
 @keyframes anMemo{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}35%{transform:rotate(4deg)}50%{transform:rotate(0)}}
 @keyframes anHeart{0%,30%{transform:translateY(8px) scale(.3);opacity:0}45%{transform:translateY(0) scale(1.15);opacity:1}75%{transform:translateY(-3px) scale(1);opacity:1}100%{transform:translateY(-8px) scale(.9);opacity:0}}
-/* 희귀 교체 6종 움직임 (2026-10-25): 캠코더 REC · 필름 릴 · 붐 마이크 물결 · 팝콘 · 학교 고양이 꼬리 · 응원 깃발 */
+/* 희귀 교체 6종 움직임 (2026-10-25): 캠코더 REC · 필름 릴 · 붐 마이크 물결 · 팝콘 · 고양이 꼬리 · 응원 깃발 */
 .an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-flag{transform-box:fill-box;transform-origin:center}
 .an-rec{animation:anRec 1.2s steps(1) infinite}
 .an-reel{animation:anSpin 2.6s linear infinite}

@@ -356,7 +356,7 @@ const GA = {
     + `<path d="M8.6 21.4H39.4" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`
     + `<g class="an-pop"><circle cx="38.6" cy="8.6" r="3.6" fill="#fff6d6" stroke="${INK}" stroke-width="1.5"/><circle cx="37.6" cy="7.6" r="1" fill="#fff"/></g>`
     + gloss('M13 26 14.4 40', 1.8, .8) + twinkle(6, 9.4, 2.6, '#c6ebff'),
-  schoolcat:   // 학교 고양이: 운동장 치즈냥 — 꼬리를 살랑살랑(.an-tail)
+  schoolcat:   // 고양이: 치즈냥 — 꼬리를 살랑살랑(.an-tail)
     `<g class="an-tail"><path d="M33 39.4Q42.4 39.4 41.6 29.6 41 23.4 44.6 21.2" fill="none" stroke="${INK}" stroke-width="6.4" stroke-linecap="round"/><path d="M33 39.4Q42.4 39.4 41.6 29.6 41 23.4 44.6 21.2" fill="none" stroke="#ffb36b" stroke-width="3.2" stroke-linecap="round"/></g>`
     + jelly('M24 19C32.6 19 36.4 26.6 36.4 33.6Q36.4 42 24 42 11.6 42 11.6 33.6C11.6 26.6 15.4 19 24 19Z', 'gP', '#c4602a',
       `<ellipse cx="24" cy="34" rx="6.4" ry="6" fill="#fff4e4" opacity=".9"/><ellipse cx="18.6" cy="41" rx="3.2" ry="1.8" fill="#fff4e4" stroke="${INK}" stroke-width="1.2"/><ellipse cx="29.4" cy="41" rx="3.2" ry="1.8" fill="#fff4e4" stroke="${INK}" stroke-width="1.2"/>`)
