@@ -1772,6 +1772,7 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 /* 접힌 업데이트 소식: 안쪽 줄은 카드 모양(.ntlist li) 없이 글만 — 2줄 미리보기가 칸 테두리에 반쯤 잘리지 않게 (2026-10-25) */
 .ntlist .ntb:not(.open) .ptitems li{display:list-item;padding:0;background:none;border:0;border-radius:0;box-shadow:none}
 .ntlist .ntb:not(.open) .ptimg{display:none}
+.ntlist .ntb:not(.open) .ptitems{line-height:1.6;margin-bottom:0}
 .ntlist .ntb.open .nb-txt{white-space:pre-wrap;max-height:none;color:var(--ink);padding:10px 12px;border-radius:12px;background:var(--chip);border:2px solid var(--line)}
 .ntlist .nb-more{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:8px 14px;border-radius:12px;border:2px solid var(--ink);background:var(--accent);color:#fff;
   font:inherit;font-weight:900;font-size:14px;box-shadow:var(--sh-s);cursor:pointer}
