@@ -147,6 +147,18 @@ const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 뽑기: 가진 스티커 {값: 나온 횟수}. 개발자는 전부 가진 것으로
+// gc_own(가진 뽑기 보상) 고치기: 읽은 값이 그대로일 때만 씀 → 동시에 뽑기·선물이 와도 서로 덮어써 날아가지 않음.
+// fn(o)가 false를 돌려주면 바꿀 게 없음. 반환: 바꿨으면 true, 바꿀 게 없으면 false, 계속 부딪혀 못 바꿨으면 null
+async function ownEdit(db, uid, fn) {
+  for (let t = 0; t < 8; t++) {
+    const cur = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(uid).first();
+    if (!cur) return null;
+    const o = gcOwn(cur);
+    if (fn(o) === false) return false;
+    if (await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2 AND gc_own = ?3 RETURNING id').bind(JSON.stringify(o), uid, cur.gc_own || '{}').first()) return true;
+  }
+  return null;
+}
 const gcOwn = u => { try { const o = JSON.parse(u?.gc_own || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
 const gcStk = u => isAdm(u) ? GACHA_ALL.filter(g => !g.fx).flatMap(g => [g.v, g.v + SHN]) : gcHave(gcOwn(u));   // 반짝이(_s)도
 // 켜 둔 뽑기 효과 {name, prof, clock, masc} — 가진 것만 인정(개발자는 전부)
@@ -858,15 +870,12 @@ const ROUTES = {
     }
     if (game === 'home' && v <= HOME_MAX - GOAL && !isAdm(me)) {
       // 도착한 사람 모두: 칭호 '하교 성공' (처음 한 번만 표시)
-      { const fr = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(me.id).first(), o = gcOwn(fr);
-        if (!(o[HOME_MARK] > 0)) { arrived = true; o[HOME_MARK] = 1; await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2').bind(JSON.stringify(o), me.id).run(); } }
+      arrived = (await ownEdit(db, me.id, o => { if (o[HOME_MARK] > 0) return false; o[HOME_MARK] = 1; })) === true;
       const won = await db.prepare("INSERT INTO settings (k, v) VALUES ('home_first', ?1) ON CONFLICT (k) DO NOTHING RETURNING k")
         .bind(JSON.stringify({ uid: me.id, at: Date.now() })).first();
       if (won) {
         first = true;
-        const fresh = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(me.id).first();
-        const own = gcOwn(fresh); for (const h of HIDDEN) own[h.v] = 1;
-        await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2').bind(JSON.stringify(own), me.id).run();
+        await ownEdit(db, me.id, o => { for (const h of HIDDEN) o[h.v] = 1; });
         // 사이트 전체 알림: 관리자가 올린 공지가 떠 있지 않을 때만 띠 공지로 48시간 (보상 내용은 말하지 않음 — 히든)
         try {
           const cur = JSON.parse((await db.prepare("SELECT v FROM settings WHERE k = 'notice'").first())?.v || 'null');
@@ -1024,10 +1033,10 @@ const ROUTES = {
       const ok = await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2 AND gc_own = ?3 RETURNING id').bind(JSON.stringify(own), me.id, me.gc_own || '{}').first();
       if (!ok) return err('다시 한 번 눌러 주세요', 409);
     }
-    for (let t = 0; t < 3; t++) {   // 받는 사람 쪽도 이전 값 조건으로(동시에 뽑아도 안 날아가게)
-      const cur = await db.prepare('SELECT gc_own FROM users WHERE id = ?1').bind(u.id).first();
-      const o = gcOwn(cur); o[v] = (o[v] || 0) + 1;
-      if (await db.prepare('UPDATE users SET gc_own = ?1 WHERE id = ?2 AND gc_own = ?3 RETURNING id').bind(JSON.stringify(o), u.id, cur.gc_own || '{}').first()) break;
+    // 받는 사람 쪽도 이전 값 조건으로(동시에 뽑아도 안 날아가게). 끝내 못 넣으면 보낸 사람에게 되돌려 줌(스티커가 사라지지 않게)
+    if (!await ownEdit(db, u.id, o => { o[v] = (o[v] || 0) + 1; })) {
+      if (!isAdm(me)) await ownEdit(db, me.id, o => { o[v] = (o[v] || 0) + 1; });
+      return err('선물이 전해지지 않았어요. 다시 한 번 눌러 주세요', 409);
     }
     const now = Date.now(), pair = pairOf(me.id, u.id);
     await db.batch([
