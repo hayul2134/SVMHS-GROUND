@@ -1127,13 +1127,15 @@ function centerHero(force) {
   const cy = Math.round(cMid + dy);
   if (cy - dh >= hdr + 8 && cy + dh <= innerHeight - 8) st.setProperty('--hcy', cy + 'px'); else st.removeProperty('--hcy');
   // 시간표는 시계와 같은 높이 가운데. 아래 랭킹 카드가 메시지 버튼·화면 아래에 걸릴 때만 그만큼 시간표째 위로 올림(--rkup)
-  const rk = $('#sRk'), tt = SIDE.tt.el; let up = 0;
+  // 화면에 실제로 그려진 위치(getBoundingClientRect)로만 계산 — offsetHeight는 회전·확대가 빠진 값이라 겹침을 덜 재던 문제(2026-10-25)
+  const rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0; let up = 0;
   if (rk && !rk.hidden && document.documentElement.classList.contains('rk2') && tt.classList.contains('open') && st.getPropertyValue('--hcy')) {
-    const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null, lim = (db && db.height ? db.top : innerHeight) - 12;   // 고정(fixed) 요소는 offsetParent가 null이라 그걸로 판단하면 안 됨
-    const th = tt.offsetHeight, over = cy + th / 2 + 16 + rk.offsetHeight - lim;
-    if (over > 0) up = Math.min(over, Math.max(0, cy - th / 2 - (hdr + 10)));
+    const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null, lim = (db && db.height ? db.top : innerHeight) - 14;
+    const rr = rk.getBoundingClientRect(), tr = tt.getBoundingClientRect();
+    const over = rr.bottom + up0 - lim, room = tr.top + up0 - (hdr + 10);   // 올리기 전(up=0) 기준
+    if (over > 0) up = Math.min(over, Math.max(0, room));
   }
-  st.setProperty('--rkup', Math.round(up) + 'px');
+  if (Math.abs(up - up0) >= 1) st.setProperty('--rkup', Math.round(up) + 'px');
 }
 let heroRaf = 0, heroForce = false, TK_H = 0;
 heroReady = true;   // var(호이스팅) — 이 줄 전에 setSide가 불려도 오류 없이 건너뜀
