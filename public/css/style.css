@@ -1013,6 +1013,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .rank .skel{height:38px}
 /* 플레이 화면 */
 body.playing{overflow:hidden}
+body.playing .modal{z-index:75}/* 게임 중 연 랭킹 창이 게임 화면(.play 70) 뒤에 숨지 않게 */
 .play{position:fixed;inset:0;z-index:70;background:var(--bg);background-image:radial-gradient(var(--dot) 1.6px,transparent 1.7px);background-size:22px 22px;display:flex;flex-direction:column;
   padding:calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));animation:fade .2s}
 .ptop{display:flex;align-items:center;justify-content:space-between;max-width:640px;width:100%;margin:0 auto;font-family:var(--disp);font-size:22px;color:var(--on-bg)}

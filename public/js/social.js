@@ -1175,7 +1175,8 @@ function stage(title, html, wide = false) {
   $('#pQuit').onclick = endPlay;
   return $('#parea');
 }
-function endPlay() { quitGame?.(); quitGame = null; $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
+// 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
+function endPlay() { quitGame?.(); quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden) endPlay(); });
 
 let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, 한 판에 한 번)
@@ -1385,7 +1386,7 @@ async function playHome() {
   // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)
   const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck' };
   const kd = e => {
-    const a = KEY[e.key]; if (!a || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea')) return;
+    const a = KEY[e.key]; if (!a || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
     e.preventDefault(); if (e.repeat) return;
     if (over) { if (a === 'jump') restart(); return; }
     R.input(a, true);
