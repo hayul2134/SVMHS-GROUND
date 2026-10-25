@@ -3602,11 +3602,13 @@ html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[
 /* 빛 번짐은 시계 전체가 아니라 숫자 글자마다 → '오전/오후' 뒤에는 빛이 안 생김(2026-10-25 하율) */
 html[data-ckfx=neon] .stage .s-big > :not(.ap){filter:drop-shadow(0 0 .006em var(--ne-deep)) drop-shadow(0 0 .03em var(--ne)) drop-shadow(0 0 .08em color-mix(in srgb,var(--ne) 55%,transparent))}   /* 맨 앞 겹: 관 바깥 진한 테두리 → 크림 배경 위에서도 또렷 */
 html[data-ckfx=neon] .s-big .sec{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:0;text-shadow:.045em .0em 0 var(--ne-tube),.0416em .0172em 0 var(--ne-tube),.0318em .0318em 0 var(--ne-tube),.0172em .0416em 0 var(--ne-tube),.0em .045em 0 var(--ne-tube),-.0172em .0416em 0 var(--ne-tube),-.0318em .0318em 0 var(--ne-tube),-.0416em .0172em 0 var(--ne-tube),-.045em .0em 0 var(--ne-tube),-.0416em -.0172em 0 var(--ne-tube),-.0318em -.0318em 0 var(--ne-tube),-.0172em -.0416em 0 var(--ne-tube),-.0em -.045em 0 var(--ne-tube),.0172em -.0416em 0 var(--ne-tube),.0318em -.0318em 0 var(--ne-tube),.0416em -.0172em 0 var(--ne-tube)}
-/* 밝은 테마의 네온 시계(2026-10-25 하율: 연한 색이 크림 배경에서 잘 안 보임 — 색은 유지): 같은 네온색에 어두운 색을 섞어 관을 진하게,
-   관 바깥에 짙은 테두리를 한 겹 더 → 색상(hue)은 그대로, 명도만 내려 배경과 구분. 어두운 테마는 원래대로 */
-html[data-ckfx=neon]:not([data-theme=dark]){--ne-tube:color-mix(in srgb,var(--ne) 78%,#0b1622);--ne-deep:color-mix(in srgb,var(--ne) 38%,#0b1622)}
-html[data-ckfx=neon]:not([data-theme=dark]) .stage .s-big,html[data-ckfx=neon]:not([data-theme=dark]) .s-big .sec{color:color-mix(in srgb,#fff 40%,var(--ne))}
-html[data-ckfx=neon]:not([data-theme=dark]) .stage .s-big > :not(.ap){filter:drop-shadow(0 0 .004em var(--ne-deep)) drop-shadow(0 0 .004em var(--ne-deep)) drop-shadow(0 0 .03em var(--ne)) drop-shadow(0 0 .08em color-mix(in srgb,var(--ne) 45%,transparent))}
+/* 네온 시계 4차(2026-10-25 하율 "깨진다 + 더 네온 느낌"): 관은 SVG 필터(js/neon.js #sgNeon)로 — text-shadow 고리는 픽셀 맞춤 때문에 확대하면 곡선이 계단처럼 깨져서 폐기.
+   색은 flood-color로 CSS 변수 그대로: 관(--ne-tube) · 하얗게 달아오른 심(--ne-hot) · 밝은 테마에서만 짙은 바깥 테두리(--ne-edge) */
+html{--ne-edge:transparent;--ne-hot:color-mix(in srgb,#fff 82%,var(--ne));--ne-glass:color-mix(in srgb,#fff 45%,var(--ne))}
+html:not([data-theme=dark]){--ne-tube:color-mix(in srgb,var(--ne) 92%,#0b1622);--ne-edge:color-mix(in srgb,var(--ne) 38%,#0b1622);--ne-glass:color-mix(in srgb,#fff 84%,var(--ne))}
+.ne-edge{flood-color:var(--ne-edge)}.ne-tube{flood-color:var(--ne-tube)}.ne-hot{flood-color:var(--ne-hot)}
+html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{color:var(--ne-glass);text-shadow:none;filter:none;animation:none;-webkit-text-stroke:0}
+html[data-ckfx=neon] .stage .s-big > :not(.ap),html[data-ckfx=neon] .s-big .sec{color:var(--ne-glass);text-shadow:none!important;filter:url(#sgNeon)!important}
 /* 네온 시계의 '오전/오후'는 네온 처리 안 함(2026-10-25 하율: 글자까지 네온이면 이상함) — 평소 시계처럼 옅은 일반 글자 */
 html[data-ckfx=neon] .stage .s-big .ap{color:var(--sub)!important;-webkit-text-fill-color:currentColor;-webkit-text-stroke:0;text-shadow:none!important;filter:none;animation:none;font-weight:900;background:none}
 @media (prefers-reduced-motion:reduce){html[data-ckfx=neon] .s-big,html[data-ckfx=neon] .s-big *{animation:none !important}}
