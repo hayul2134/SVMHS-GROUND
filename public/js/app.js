@@ -299,19 +299,13 @@ addEventListener('scroll', onScroll, { passive: true });
 const BOARD_TOP = 48;
 const boardY = () => Math.max(0, $('#boardT').getBoundingClientRect().top + scrollY - BOARD_TOP);
 $('#goDown').onclick = () => scrollTo({ top: boardY(), behavior: 'smooth' });
-// 그 자리에서 아래 카운트다운 카드가 화면 끝에 걸쳐 보이지 않게, 넓은 화면에선 카드를 화면 밖까지 내림 (2026-10-24)
 {
-  // 2026-10-25 하율: 카운트다운·친구가 한 줄에 나란히 → 둘 다 같이 내림(같은 줄 맞춤)
-  const cd = $('#cdCard'), row = [cd, $('#bdCard')].filter(Boolean);
-  const set = v => row.forEach(e => { e.style.marginTop = v; });
-  const f = () => {
-    if (innerWidth < 1000 || !$('#v-home').classList.contains('on')) { set(''); return; }
-    set('');
-    const gap = boardY() + innerHeight - (cd.getBoundingClientRect().top + scrollY) + 90;   // 90: 위로 삐져나온 마스킹테이프·그림자까지 화면 밖으로 (2026-10-24 2차: 28이면 테이프가 바닥에 걸쳐 보였음)
-    set(gap > 0 ? Math.min(gap, innerHeight * .7) + 'px' : '');
-  };
-  if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(f); ro.observe($('#weekTT')); ro.observe($('.board .k-up')); ro.observe($('#mealCard')); }
-  addEventListener('resize', f); f();
+  // 2026-10-25 하율: '한눈에 보기' 아래로 밀어 두던 여백(화면 밖까지 내림)은 간격이 너무 넓다고 해서 없앰.
+  // 카운트다운·친구 나란히 · 친구 카드가 숨으면 카운트다운 혼자 한 줄(.solo) — CSS :has는 hidden 바뀔 때 일부만 다시 그려져서 JS로
+  const cd = $('#cdCard'), bd = $('#bdCard');
+  const solo = () => cd.classList.toggle('solo', !bd || bd.hidden);
+  if (bd) new MutationObserver(solo).observe(bd, { attributes: true, attributeFilter: ['hidden'] });
+  solo();
 }
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
 // 짧은 화면(게임 등)엔 '맨 위로'가 필요 없음 → 페이지가 화면 1.5배보다 짧으면 숨김 (2026-10-24)

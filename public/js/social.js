@@ -387,8 +387,12 @@ async function renderMe() {
         <ul class="plist" id="findList"><li class="skel"></li></ul>
       </section>`;
     findPeople('');
+    if (wantFind) { wantFind = false; requestAnimationFrame(() => { const f = box.querySelector('.findcard'); if (f) scrollTo({ top: f.getBoundingClientRect().top + scrollY - 76, behavior: 'smooth' }); }); }
   } catch (e) { box.innerHTML = `<div class="card"><p class="empty">${esc(e.message)}</p></div>`; }
 }
+// 홈 친구 카드의 '친구 찾기'(2026-10-25 하율): 프로필 화면을 열고 바로 아래 친구 찾기 칸까지 내려 줌
+let wantFind = false;
+document.addEventListener('click', e => { if (e.target.closest('[data-find]')) wantFind = true; }, true);
 async function findPeople(q) {
   const list = $('#findList'); if (!list) return;
   try {
@@ -875,7 +879,7 @@ async function loadBuddies() {
     $('#bdLive').hidden = !fr.length; $('#bdLive').innerHTML = on ? `<i class="dot"></i>지금 <b>${on}</b>명 접속 중` : `친구 <b>${fr.length}</b>명`;
     $('#bdLive').classList.toggle('on', !!on);
     $('#bdBox').innerHTML = fr.length || r.reqs.length ? r.reqs.map(bdReq).join('') + fr.map(u => bdTile(u, r.rest)).join('')
-      : `<li class="bd-empty"><p><b>아직 맞팔 친구가 없어요</b>서로 팔로우하면 여기서 친구가 지금 접속 중인지, 오늘 출석했는지 바로 보여요</p><button class="btn" type="button" data-go="me">친구 찾으러 가기</button></li>`;
+      : `<li class="bd-empty"><p><b>아직 맞팔 친구가 없어요</b>서로 팔로우하면 여기서 친구가 지금 접속 중인지, 오늘 출석했는지 바로 보여요</p><button class="btn" type="button" data-go="me" data-find>친구 찾으러 가기</button></li>`;
     card.hidden = false; paintHeroFr(fr);
   } catch { if (!$('#bdBox .bd')) card.hidden = true; }
   finally { bdBusy = false; }

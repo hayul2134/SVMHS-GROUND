@@ -4387,12 +4387,12 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 .ed-body .pick{padding-top:6px}   /* 맨 윗줄 N 표시가 스크롤 칸에 잘리지 않게 */
 /* 2026-10-25 하율: 카운트다운 · 친구 나란히(각 c6), 카운트다운 두 장은 세로로. 친구 카드가 숨으면 카운트다운이 한 줄 전체 */
 .k-cd .cdrow{grid-template-columns:1fr}
-.bento .k-cd:has(+ #bdCard[hidden]){grid-column:span 12}
-.bento .k-cd:has(+ #bdCard[hidden]) .cdrow{grid-template-columns:1fr 1fr}
+.bento .k-cd.solo{grid-column:span 12}
+.bento .k-cd.solo .cdrow{grid-template-columns:1fr 1fr}
 .k-bd{display:flex;flex-direction:column}
 .k-bd .bdrow{flex:1;align-items:stretch}
 .k-bd .bd-empty{flex-direction:column;align-items:flex-start;justify-content:center}
-@media (max-width:760px){.bento .k-cd:has(+ #bdCard[hidden]) .cdrow{grid-template-columns:1fr}}
+@media (max-width:760px){.bento .k-cd.solo .cdrow{grid-template-columns:1fr}}
 @media (max-width:900px){.bento .k-cd,.bento .k-bd{grid-column:span 12}}
 /* 캐릭터 꾸미기 '무작위' → 주사위 아이콘 (2026-10-25 하율), 누르면 굴러감 */
 .hd-dice{display:inline-flex;align-items:center;justify-content:center;padding-left:0;padding-right:0;min-width:64px}
