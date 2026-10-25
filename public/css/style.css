@@ -3606,8 +3606,8 @@ html[data-ckfx=neon] .stage .s-big > :not(.ap){filter:drop-shadow(0 0 .006em var
 html[data-ckfx=neon] .s-big .sec{color:color-mix(in srgb,#fff 62%,var(--ne));-webkit-text-stroke:0;text-shadow:.045em .0em 0 var(--ne-tube),.0416em .0172em 0 var(--ne-tube),.0318em .0318em 0 var(--ne-tube),.0172em .0416em 0 var(--ne-tube),.0em .045em 0 var(--ne-tube),-.0172em .0416em 0 var(--ne-tube),-.0318em .0318em 0 var(--ne-tube),-.0416em .0172em 0 var(--ne-tube),-.045em .0em 0 var(--ne-tube),-.0416em -.0172em 0 var(--ne-tube),-.0318em -.0318em 0 var(--ne-tube),-.0172em -.0416em 0 var(--ne-tube),-.0em -.045em 0 var(--ne-tube),.0172em -.0416em 0 var(--ne-tube),.0318em -.0318em 0 var(--ne-tube),.0416em -.0172em 0 var(--ne-tube)}
 /* 네온 시계 4차(2026-10-25 하율 "깨진다 + 더 네온 느낌"): 관은 SVG 필터(js/neon.js #sgNeon)로 — text-shadow 고리는 픽셀 맞춤 때문에 확대하면 곡선이 계단처럼 깨져서 폐기.
    색은 flood-color로 CSS 변수 그대로: 관(--ne-tube) · 하얗게 달아오른 심(--ne-hot) · 밝은 테마에서만 짙은 바깥 테두리(--ne-edge) */
-html{--ne-edge:transparent;--ne-hot:color-mix(in srgb,#fff 82%,var(--ne));--ne-glass:color-mix(in srgb,#fff 45%,var(--ne))}
-html:not([data-theme=dark]){--ne-tube:color-mix(in srgb,var(--ne) 92%,#0b1622);--ne-edge:color-mix(in srgb,var(--ne) 38%,#0b1622);--ne-glass:color-mix(in srgb,#fff 84%,var(--ne))}
+html{--ne-tube:var(--ne);--ne-edge:color-mix(in srgb,var(--ne) 75%,#000);--ne-hot:color-mix(in srgb,#fff 88%,var(--ne));--ne-glass:var(--ne)}   /* 글자 자체는 그려지지 않음(필터가 모양만 씀) — 투명이면 모양이 사라지니 불투명 색 */
+html:not([data-theme=dark]){--ne-tube:var(--ne);--ne-edge:color-mix(in srgb,var(--ne) 55%,#0b1622)}   /* 밝은 배경: 관 가장자리를 짙게 해 크림 배경과 구분 */
 .ne-edge{flood-color:var(--ne-edge)}.ne-tube{flood-color:var(--ne-tube)}.ne-hot{flood-color:var(--ne-hot)}
 html[data-ckfx=neon] .stage .s-big,html[data-ckfx=neon] .stage.rest .s-big,html[data-ckfx=neon] .stage.soon .s-big{color:var(--ne-glass);text-shadow:none;filter:none;animation:none;-webkit-text-stroke:0}
 html[data-ckfx=neon] .stage .s-big > :not(.ap),html[data-ckfx=neon] .s-big .sec{color:var(--ne-glass);text-shadow:none!important;filter:url(#sgNeon)!important}
