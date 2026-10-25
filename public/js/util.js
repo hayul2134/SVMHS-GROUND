@@ -42,6 +42,19 @@ export const store = {
   },
 };
 
+/* ----- 자리 비움(2026-10-25 출시 전 시뮬레이션): 5분 동안 아무 입력이 없으면 주기적 요청(DM 알림·친구·밸런스)을 쉼 →
+   수업 중 화면만 켜 둔 기기들이 Cloudflare 무료 요청 한도(하루 10만)를 다 쓰지 않게. 다시 만지면 onWake로 바로 새로 받음 ----- */
+let lastAct = Date.now();
+const wakeFns = [];
+export const IDLE_MS = 5 * 60e3;
+export const idle = () => Date.now() - lastAct > IDLE_MS;
+export const onWake = fn => { wakeFns.push(fn); };
+if (typeof document !== 'undefined') {
+  const act = () => { const was = idle(); lastAct = Date.now(); if (was) for (const f of wakeFns) { try { f(); } catch {} } };
+  for (const ev of ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, act, { passive: true, capture: true });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) act(); });
+}
+
 /* ----- UI 조각 ----- */
 export const skel = n => '<div class="skel"></div>'.repeat(n);
 export const empty = msg => `<p class="empty">${msg}</p>`;

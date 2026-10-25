@@ -1055,7 +1055,7 @@ const ROUTES = {
       : await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND u.is_test = 0 AND u.handle <> ?1 ORDER BY u.st_cur DESC LIMIT ?2`).bind(ADMIN_HANDLE, 300, since).all()).results;
     const live = await liveMany(env, db, rows);
     const list = rows.map((r, i) => ({ ...card(r), grade: r.grade, cls: r.cls, value: isAdm(r) ? ALL_OPEN : live[i], best: isAdm(r) ? ALL_OPEN : r.st_best, pf: !!r.st_pf, title: r.st_title || '', isMe: r.id === me.id, uid: r.id }))
-      .filter(x => x.value > 0).sort((a, b) => b.value - a.value || b.best - a.best).slice(0, 50);
+      .filter(x => x.value > 0).sort((a, b) => b.value - a.value || b.best - a.best || a.uid - b.uid).slice(0, 50);   // 같으면 먼저 가입한 사람(배포 첫날 모두 1일일 때 순서가 매번 바뀌지 않게)
     return json({ scope, list: list.map(({ uid, ...x }) => x) });
   }),
 

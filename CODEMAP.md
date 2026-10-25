@@ -149,3 +149,9 @@ npx wrangler@4 pages dev --port 8788
 - **프로필 꾸미기 창 3차(2026-10-24 리디자인)**: social.js `openEdit` — `.sheet.edw`(최대 1000px, 높이 고정) = 머리 `.ed-hd`(제목·X `.ed-x`) / `.ed-main`(넓은 화면: 왼쪽 미리보기 `.ed-pv` + 오른쪽 탭, 820px 이하: 위 미리보기(접기) + 아래 탭) / 아래 고정 `.ed-ft`(취소·저장). 탭 `data-ed-tab` info·face·stk·fx(폼 `data-tab`, 이 기기 `ed_tab`), 스티커 안 작은 탭 `data-ed-sub` st·rep·deco(`ed_sub`, 칩에 개수 `subN`). 효과 탭 `paintFx`: 뽑기 효과 칸마다 끄기/켜기(바로 `POST gcfx` → `setGc`, 저장 버튼과 무관) + 네온 색 이름 붙은 큰 버튼(`.ed-nc`, 기존 `data-neon-c` 처리). 미리보기 아래 '효과 n개 켜짐' 버튼 → 효과 탭. **모든 창 닫기 애니메이션**: app.js `closeModal`이 `.modal.out`(0.26초 아래로 내려가며 사라짐) 후 닫음, 그 사이 `openModal`하면 취소.
 
 - `public/js/hoverlock.js` (2026-10-25, 하율: "애매하게 마우스를 대면 오브젝트가 미친 듯이 흔들림") — hover 때 움직이는 오브젝트가 가장자리에서 hover 켜짐/꺼짐을 반복하던 문제. 시작 시 스타일시트의 모든 `:hover` 규칙을 `.is-hv` 사본으로 복제, hover되는 요소 전부를 잠금 대상으로. 원래 자리 + 움직인 자리(안쪽 요소 40개 포함, 들어온 뒤 0.6초 동안 합침) 안이거나 실제 `:hover`면 유지. 스크롤·창 크기 변경 시 풀고 다시 잡음. 마우스(정밀 포인터)에서만. **새 hover 효과는 CSS에 `:hover`로 쓰면 자동 적용**(따로 할 일 없음).
+
+## 2026-10-25 출시 전 시뮬레이션 (월요일 배포 대비)
+- 로컬 대역(Pages Functions + D1을 node:sqlite로 흉내, 나이스는 실제 값 고정 데이터) + 헤드리스 크롬으로 가입 러시 31명·출석·뽑기·팔로우·DM·밸런스·게임·1주 정산(11/2)·개발자 화면·XSS 이름을 돌림.
+- **구글 로그인 무한 반복(화면 멈춤)**: GIS 스크립트를 못 불러오면 `mountGoogle`의 실패 표시(글자 바꿈)가 MutationObserver를 다시 불러 끝없이 반복 → 로그인·가입 화면 전체가 멈춤. 실패에도 `data-done`, `gReady = null`(다음에 다시 시도).
+- **자리 비움**: util.js `idle()`(5분 입력 없음)·`onWake()` — DM 알림 poll·친구 목록·밸런스 새로 고침을 쉼(Cloudflare 무료 요청 하루 10만 대비: 켜 둔 탭 1개 ≈ 분당 2~3회).
+- 가입 선물 토스트 5초, 연속 출석 랭킹 동점은 먼저 가입한 순(`a.uid - b.uid`).

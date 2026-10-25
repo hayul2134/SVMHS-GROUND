@@ -1,5 +1,5 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
-import { $, $$, esc, toast, store } from './util.js';
+import { $, $$, esc, toast, store, idle, onWake } from './util.js';
 import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
 import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시(2026-10-25)
@@ -144,11 +144,13 @@ function rkGiftToast(list) {
 }
 function startPoll() {
   clearInterval(pollTimer);
-  pollTimer = setInterval(async () => {
-    if (document.hidden || !S.me || openThread) return;
+  pollTimer = setInterval(pollOnce, 60000);   // 60초마다 (학생 수가 많을 때 Cloudflare 무료 요청 수 아끼기, 대화창 안은 따로 3~15초) · 5분 넘게 안 만지면 쉼(util idle)
+}
+onWake(() => { pollOnce(); if ((document.body.dataset.view || 'home') === 'home' && S.me) loadBuddies(); });
+async function pollOnce() {
+    if (document.hidden || idle() || !S.me || openThread) return;
     try { const r = await call('poll'); const more = r.unread > S.unread; S.unread = r.unread; paintBadges();
     if (more) { if (panelOpen()) renderDm('', $('#dmPBox'), true); else { if (!location.hash.startsWith('#dm')) toast('💬 새 메시지가 왔어요'); loadRecent(); } } } catch {}
-  }, 60000);   // 60초마다 (학생 수가 많을 때 Cloudflare 무료 요청 수 아끼기, 대화창 안은 따로 3~15초)
 }
 
 /* ===== 로그인 · 가입 ===== */
@@ -262,7 +264,7 @@ document.addEventListener('submit', async e => {
     renderMe();
     // 가입 직후 창을 연달아 띄우지 않음(2026-10-24): 프로필 꾸미기 창은 자동으로 안 열고, 첫 출석 축하 창 하나만 뜸.
     // 환영 인사는 출석 창이 닫힌 뒤(또는 바로) 짧게
-    const hi = () => toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉${giftMsg(res)}` : `${S.me.name}, 반가워요!`);
+    const hi = () => toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉${giftMsg(res)}` : `${S.me.name}, 반가워요!`, res?.gift > 0 ? 5000 : 1800);
     setTimeout(() => { const m = document.querySelector('.modal.open'); if (!m) return hi(); const ob = new MutationObserver(() => { if (!m.classList.contains('open')) { ob.disconnect(); setTimeout(hi, 250); } }); ob.observe(m, { attributes: true, attributeFilter: ['class'] }); }, 1200);
   } catch (err) { authErr(f, err, mode); btn.disabled = false; }
   finally { btn.classList.remove('busy'); card.classList.remove('busy'); }
@@ -979,7 +981,7 @@ function paintHomeRank(tab, r) {   // 시간표 카드 아래 1~3등만 (2026-10
 }
 function startBuddies() {
   clearInterval(bdTimer);
-  bdTimer = setInterval(() => { if (!document.hidden && S.me && (document.body.dataset.view || 'home') === 'home') loadBuddies(); }, 90000);
+  bdTimer = setInterval(() => { if (!document.hidden && !idle() && S.me && (document.body.dataset.view || 'home') === 'home') loadBuddies(); }, 90000);
   document.addEventListener('click', e => { const b = e.target.closest('[data-bdm]'); if (!b) return; e.preventDefault(); openPanel(b.dataset.bdm); });
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-rk]');
@@ -1637,7 +1639,10 @@ function mountGoogle() {
     el.dataset.done = '1';
     google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', text: el.dataset.gintent === 'login' ? 'continue_with' : 'signin_with', locale: 'ko', width: Math.min(320, el.clientWidth || 280) });
     el.addEventListener('pointerdown', () => { gIntent = el.dataset.gintent; }, true);   // 어느 버튼을 눌렀는지 기억
-  })).catch(() => els.forEach(el => { el.classList.add('gfail'); el.textContent = '구글 로그인을 불러오지 못했어요'; }));
+  })).catch(() => {   // 실패 표시도 done → 이 글자 바꿈이 다시 MutationObserver를 불러 무한 반복(화면 멈춤)하던 것 막음. 다음에 창을 열면 다시 시도
+    gReady = null;
+    els.forEach(el => { el.dataset.done = '1'; el.classList.add('gfail'); el.textContent = '구글 로그인을 불러오지 못했어요'; });
+  });
 }
 new MutationObserver(mountGoogle).observe(document.body, { childList: true, subtree: true });
 async function onGoogle({ credential }) {
@@ -1700,7 +1705,7 @@ function googleReset(credential, r) {
 const giftMsg = r => r?.gift > 0 ? ` 가입 선물로 뽑기권 ${r.gift}장을 더 드렸어요` : '';
 async function googleDone(mode, res) {
   await refreshMe();
-  toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉${giftMsg(res)}` : `${S.me.name}, 반가워요!`);
+  toast(mode === 'signup' ? `환영해요, ${S.me.name}! 🎉${giftMsg(res)}` : `${S.me.name}, 반가워요!`, res?.gift > 0 ? 5000 : 1800);
   if (!store.get('gtip', false)) { store.set('gtip', true); setTimeout(() => toast('학교 기기라면 다 쓴 뒤 구글에서도 로그아웃해 주세요 🔒'), 2600); }
   ctx.authed?.(S.me, true, mode);
   renderMe();

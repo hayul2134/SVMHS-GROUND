@@ -1,5 +1,5 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
-import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast } from './util.js';
+import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast, idle, onWake } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish } from './neis.js';
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
@@ -844,11 +844,12 @@ function pollBalance() {
   clearTimeout(balTimer);
   const sheet = $('#mBal').classList.contains('open');
   balTimer = setTimeout(async () => {
-    if (!document.hidden && !balBusy && ($('#mBal').classList.contains('open') || balVisible)) await loadBalance();
+    if (!document.hidden && !idle() && !balBusy && ($('#mBal').classList.contains('open') || balVisible)) await loadBalance();
     pollBalance();
   }, sheet ? 30000 : 90000);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && BAL) loadBalance(); });
+onWake(() => { if (BAL && !balBusy && ($('#mBal').classList.contains('open') || balVisible)) loadBalance(); });   // 자리 비움에서 돌아오면 바로
 
 /* ===== 시간표 ===== */
 // 과목 이름 → 직접 그린 스티커 아이콘(index.html 스프라이트 #sj-*). 위에서부터 먼저 맞는 것. 영상고 전공 과목을 먼저, 일반 과목은 뒤에
