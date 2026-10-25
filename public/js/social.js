@@ -1335,7 +1335,7 @@ async function playHome() {
   const fit = () => {
     const w = $('#parea').clientWidth - 6, top = scr.getBoundingClientRect().top + scrollY;
     const hAvail = innerHeight - top - 320;   // 아래 조작 줄 + 친구·전체 랭킹(1~5등)이 스크롤 없이 보이게
-    const dpr = devicePixelRatio || 1, k = Math.min(w / RUN.W, Math.max(2, hAvail / RUN.H));
+    const dpr = devicePixelRatio || 1, k = Math.min(w / RUN.W, Math.max(3, hAvail / RUN.H));   // 최소 3배(세로 312px) — 게임 오버 문구가 잘리지 않게 (2026-10-25 하율)
     const per = k >= 1 ? Math.floor(k * dpr) / dpr : k;
     const cw = Math.min(w, per * RUN.W);
     cv.style.width = cw + 'px'; $('#hr').style.width = cw + 6 + 'px';   // 아래 조작 줄·랭킹 줄도 게임 화면 폭에 맞춤
