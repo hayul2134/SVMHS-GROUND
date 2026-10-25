@@ -130,7 +130,7 @@ function prog(g) {
 // 조각을 많이 쓰는 버튼이라 한 번 누르면 '조각 N개 쓰기?'로 바뀌고 3초 안에 한 번 더 눌러야 실행(arm)
 function shop(g) {
   const miss = GACHA.filter(x => !g.own[x.v]).sort((a, b) => b.rar - a.rar);
-  const shn = GACHA.filter(x => GC.shine[x.rar]), shOwn = shn.filter(x => g.own[x.v + SHN]).length;
+  const shn = GACHA.filter(x => GC.shine[x.rar]).sort((a, b) => b.rar - a.rar), shOwn = shn.filter(x => g.own[x.v + SHN]).length;
   const btn = (k, v, cost) => `<button type="button" class="btn gc-buy" data-gc-${k}="${v}" data-cost="${cost}" ${g.shard < cost ? 'disabled' : ''}><i class="gc-sh" aria-hidden="true"></i>${cost}</button>`;
   const pick = miss.map(x => `<li class="${RCLS[x.rar]}${x.rar === 4 ? ' sec' : ''}"><span class="gc-ic">${x.rar === 4 ? '<span aria-hidden="true">?</span>' : artOf(x.v, 'still')}</span><small>${x.rar === 4 ? '시크릿' : esc(objName(x.v))}</small>${btn('pick', x.v, GC.pick[x.rar])}</li>`).join('');
   const up = shn.map(x => { const has = g.own[x.v], done = g.own[x.v + SHN];

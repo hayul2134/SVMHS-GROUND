@@ -2125,11 +2125,11 @@ async function fillShowArt() {
     const [{ flame }, { CLUBS }] = await Promise.all([import('./attend.js'), import('./clubs.js')]);
     $('#shaFire').innerHTML = flame('big', { tier: 1 });
     $('#shaNext').innerHTML = emo('r:bell', 'sha-a');
-    $('#shcHit').innerHTML = emo('r:plane', 'shc-a');
+    $('#shcHit').innerHTML = emo('r:camrec', 'shc-a');
     $('#shcRow').innerHTML = [['r:eraser', 1], ['r:earbud', 1], ['r:test100', 2], ['r:fxneon', 3]].map(([v, r]) => `<li class="r${r}">${emo(v, 'shc-s')}</li>`).join('');
     $('#shfAvs').innerHTML = ['cat', 'frog', 'penguin', 'dino'].map(k => `<i class="shf-av">${emo('k:' + k)}</i>`).join('');
     $('#shpAv').innerHTML = emo('k:bunny', 'shp-k');
-    $('#shpBan').innerHTML = ['r:plane', 'r:ball'].map(v => `<i>${emo(v, 'shp-s')}</i>`).join('');
+    $('#shpBan').innerHTML = ['r:camrec', 'r:schoolcat'].map(v => `<i>${emo(v, 'shp-s')}</i>`).join('');
     const c = CLUBS[Math.floor(Math.random() * CLUBS.length)];   // 동아리는 매번 무작위 (특정 동아리만 보이지 않게)
     $('#shpClub').innerHTML = `<img src="/clubs/${c[0]}.webp" alt="" width="128" height="128">${esc(c[1])}`;
   } catch { shArt = false; }

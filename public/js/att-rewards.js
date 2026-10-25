@@ -103,10 +103,11 @@ export const GACHA = [
   { v: 'r:hbpencil', rar: 1 }, { v: 'r:glue', rar: 1 }, { v: 'r:calc', rar: 1 }, { v: 'r:scissors', rar: 1 },   // 2026-10-25 추가
   { v: 'r:milkbox', rar: 1 }, { v: 'r:slipper', rar: 1 }, { v: 'r:bottle', rar: 1 }, { v: 'r:stapler', rar: 1 },
   // 희귀 — 움직이는 스티커(학교생활 한 장면). 댓글·DM·프로필·시계 위에서 움직임
-  { v: 'r:plane', rar: 2, d: '창밖으로 날아가는 종이비행기' }, { v: 'r:test100', rar: 2, d: '빨간 동그라미가 그려지는 100점' },
-  { v: 'r:ball', rar: 2, d: '통통 튀는 농구공' }, { v: 'r:memo', rar: 2, d: '하트가 퐁 올라오는 비밀 편지' },
-  { v: 'r:bread', rar: 2, d: '김이 모락모락 나는 매점 빵' }, { v: 'r:fan', rar: 2, d: '빙글빙글 도는 교실 선풍기' },   // 2026-10-25 추가
-  { v: 'r:nap', rar: 2, d: 'Z가 퐁퐁 올라오는 쉬는 시간 낮잠' }, { v: 'r:icecream', rar: 2, d: '녹아서 똑 떨어지는 아이스크림' },
+  { v: 'r:test100', rar: 2, d: '빨간 동그라미가 그려지는 100점' }, { v: 'r:memo', rar: 2, d: '하트가 퐁 올라오는 비밀 편지' },
+  // 2026-10-25 하율: 위 둘만 남기고 교체(영상고엔 매점 없음) — 영상고·학교생활 장면
+  { v: 'r:camrec', rar: 2, d: '빨간 REC 불이 깜빡이는 캠코더' }, { v: 'r:reel', rar: 2, d: '빙글빙글 도는 필름 릴' },
+  { v: 'r:boommic', rar: 2, d: '소리 물결이 퍼지는 붐 마이크' }, { v: 'r:popcorn', rar: 2, d: '하나가 톡 튀어 오르는 팝콘' },
+  { v: 'r:schoolcat', rar: 2, d: '꼬리를 살랑이는 운동장 치즈냥' }, { v: 'r:cheerflag', rar: 2, d: '바람에 펄럭이는 체육대회 응원 깃발' },
   // 전설 — 효과(스티커가 아님): 서비스 › 뽑기 '내 효과'에서 하나씩 켬
   { v: 'r:fxholo', rar: 3, fx: 'name', d: '랭킹·댓글·DM·프로필 어디서나 이름이 홀로그램으로 반짝여요' },
   { v: 'r:fxstar', rar: 3, fx: 'prof', d: '누가 내 프로필을 열면 별똥별이 쏟아져요' },
@@ -121,8 +122,8 @@ export const GACHA_STK = GACHA_ALL.filter(g => !g.fx);   // 스티커로 쓰는 
 export const gcItem = v => GACHA_ALL.find(g => g.v === v);
 Object.assign(OBJ_NAME, { eraser: '지우개', hilite: '형광펜', postit: '포스트잇', ruler: '자', tape: '마스킹테이프', earbud: '무선 이어폰', sharp: '샤프', correct: '수정테이프',
   hbpencil: '연필', glue: '딱풀', calc: '계산기', scissors: '가위', milkbox: '급식 우유', slipper: '실내화', bottle: '물병', stapler: '스테이플러',
-  plane: '종이비행기', test100: '100점 시험지', ball: '농구공', memo: '비밀 편지',
-  bread: '매점 빵', fan: '교실 선풍기', nap: '쉬는 시간 낮잠', icecream: '아이스크림',
+  test100: '100점 시험지', memo: '비밀 편지',
+  camrec: '녹화 중 캠코더', reel: '필름 릴', boommic: '붐 마이크', popcorn: '팝콘', schoolcat: '학교 고양이', cheerflag: '응원 깃발',
   fxholo: '홀로그램 닉네임', fxstar: '별똥별 등장', fxneon: '네온 시계', fxcrown: '떠 있는 왕관', fxgold: '황금 닉네임', fxkey: '집 열쇠' });
 export const RAR = { 1: { n: '일반', p: 74.9 }, 2: { n: '희귀', p: 22 }, 3: { n: '전설', p: 3 }, 4: { n: '시크릿', p: .1 } };   // p: % (합 100) — 2026-10-25 하율: 시크릿 0.1 · 전설 3 이하
 // 조각(2026-10-25 하율: "조각 → 뽑기권은 메리트 없음, 조각으로 다른 걸") — 뽑기권으로는 못 바꿈.
