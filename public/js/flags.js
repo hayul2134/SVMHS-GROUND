@@ -6,7 +6,6 @@
 //   JS: ffOn('이름', isDev) / 서버: ffOn('이름', isAdm(me))
 // 형식: ['이름', '무엇인지 한 줄', '추가한 날짜']
 export const PREVIEW_LIST = [
-  ['rk-split', '홈 전체 랭킹을 시간표와 분리한 별도 카드(1등 금빛·왕관), 시간표는 시계 높이 가운데', '2026-10-25'],
 ];
 export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 export const ffOn = (name, dev) => !PREVIEW.has(name) || !!dev;
