@@ -36,7 +36,10 @@
     if (!el) return;
     all();
     new MutationObserver(all).observe(el, { childList: true });
-    if ('ResizeObserver' in window) new ResizeObserver(all).observe(el);
+    // #bigTime은 inline(<b>)이라 ResizeObserver가 크기 변화를 못 잡음 → 창 크기를 바꾸면 관이 옛 글자 크기로 남던 버그(2026-10-25).
+    // 블록인 부모(.clock)를 지켜보고, 창 크기 변화도 같이 받음
+    if ('ResizeObserver' in window) new ResizeObserver(all).observe(el.parentElement || el);
+    addEventListener('resize', all);
     new MutationObserver(all).observe(html, { attributes: true, attributeFilter: ['data-ckfx'] });
     document.fonts?.ready.then(() => { el.querySelectorAll('.nsvg').forEach(s => s.remove()); all(); });   // 글꼴이 늦게 오면 기준선 다시
   };
