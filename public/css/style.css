@@ -4641,3 +4641,10 @@ html:not(.tl2) .cm-tier .tl-new,html.tl2 .cm-tier .tl-old{display:none}
 html.tl2 .cat-more.cm-tier{background:#ffd84d;color:#1d2a3a;padding:7px 16px;font-size:14px}
 html.tl2 .cat-more.cm-tier .sic{width:19px;height:19px}
 html.tl2 .cat-more.cm-tier:hover{background:#ffe373}
+
+/* 랭킹 스토리 공유 버튼 (2026-10-26, story.js) */
+.sheet h3.rk-h3{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rk-story{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:99px;border:2px solid var(--ink);background:#ffe08a;color:#173048;font:800 12.5px var(--body,inherit);box-shadow:2px 2px 0 var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
+.rk-story .sic{width:16px;height:16px}
+.rk-story:hover{transform:translateY(-2px)}
+.rk-story:disabled{opacity:.6;cursor:progress}

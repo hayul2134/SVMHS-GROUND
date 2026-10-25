@@ -6,6 +6,7 @@
 //   JS: ffOn('이름', isDev) / 서버: ffOn('이름', isAdm(me))
 // 형식: ['이름', '무엇인지 한 줄', '추가한 날짜']
 export const PREVIEW_LIST = [
+  ['story-share', '랭킹 스토리 공유 이미지(1080×1920, 캡처 대신 또렷하게)', '2026-10-26'],
 ];
 export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 export const ffOn = (name, dev) => !PREVIEW.has(name) || !!dev;

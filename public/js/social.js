@@ -1233,11 +1233,23 @@ async function openRank(game, scope = 'week') {
   if (!S.me) { toast('랭킹은 로그인하면 볼 수 있어요'); ctx.go('me'); return; }
   const g = GAMES[game];
   const tabs = [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
-  sheet(`<h3>${ic(g.ic)} ${g.name} 랭킹</h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
+  const scopeName = { week: '이번 주', round: '이번 라운드', all: '역대', friends: '친구', class: '반 대항전' }[scope] || '';
+  sheet(`<h3 class="rk-h3">${ic(g.ic)} ${g.name} 랭킹<button type="button" class="rk-story" id="rkStory" data-ff="story-share" aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
     <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
     const r = await call(`rank?game=${game}&scope=${scope}`);
     const medal = i => i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1;   // 1~3등 금·은·동 배지 (이모지 대신)
+    // 스토리 공유(2026-10-26): 캡처하면 뭉개지니까 1080×1920으로 새로 그린 이미지
+    $('#rkStory').onclick = async ev => {
+      const b = ev.currentTarget; if (b.disabled) return; b.disabled = true;
+      try {
+        const ST = await import('./story.js');
+        const blob = await ST.rankStory($('#rankList'), { title: `${g.name} 랭킹`, scope: scopeName, note: $('#rankNote')?.textContent.startsWith('내 순위') ? $('#rankNote').textContent : '' });
+        const r = await ST.shareBlob(blob, `ground-${game}-rank.png`);
+        if (r === 'saved') toast('스토리용 이미지를 저장했어요! 스토리에 그대로 올려 보세요');
+      } catch { toast('이미지를 만들지 못했어요. 다시 눌러 주세요'); }
+      b.disabled = false;
+    };
     if (scope === 'class') {
       $('#rankList').innerHTML = r.list.length ? r.list.map((c, i) => `<li class="${r.mine && r.mine.grade === c.grade && r.mine.cls === c.cls ? 'me' : ''}"><span class="rk">${medal(i)}</span><span class="pi"><b>${c.grade}학년 ${c.cls}반</b><small>${c.players}명 참가</small></span><b class="rv">${esc(g.fmt(c.value))}</b></li>`).join('')
         : '<li class="empty">아직 아무 반도 기록이 없어요</li>';
