@@ -24,6 +24,8 @@ const GR = {
   tBl: ['#e3f4ff', '#9fd4f7'], tPk: ['#fff0f5', '#ffc3d6'], tNt: ['#2a3a7a', '#4d5fb0'], tGd: ['#fff6c8', '#ffd66a'], tGx: ['#3a2f86', '#18164a'],
 };
 const DEFS = Object.entries(GR).map(([k, [a, b]]) => `<linearGradient id="${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`).join('')
+  // 네온 시계 아이콘 글자 빛: 굵은 테두리 겹치기는 글자가 두 번 찍힌 것처럼 보여서(2026-10-25 하율) 흐린 빛으로
+  + '<filter id="fxNeonGlow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.1" result="b"/><feFlood flood-color="#ff4fd8" flood-opacity=".95"/><feComposite in2="b" operator="in" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
   // 홀로그램(나비 날개): 분홍→하늘→보라→노랑 대각선 (gH2는 반대 방향)
   + '<linearGradient id="gH" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb3e6"/><stop offset=".35" stop-color="#94d8ff"/><stop offset=".7" stop-color="#b39cff"/><stop offset="1" stop-color="#ffe98a"/></linearGradient>'
   + '<radialGradient id="wh-fade"><stop offset=".05" stop-color="#fff"/><stop offset=".75" stop-color="#fff" stop-opacity="0"/></radialGradient>'
@@ -388,7 +390,7 @@ const GA = {
     + gloss('M24.6 13.4 27.6 9.4', 2) + twinkle(10, 12, 3, '#fff3b0') + twinkle(42.6, 38.4, 2.6, '#c6ebff'),
   fxneon:   // 네온 시계: 어두운 판 + 분홍·하늘 네온 숫자
     jelly('M7.6 10H40.4Q44.6 10 44.6 14.2V33.8Q44.6 38 40.4 38H7.6Q3.4 38 3.4 33.8V14.2Q3.4 10 7.6 10Z', 'tGx', '#0e0c2e',
-      `<g font-family="Outfit,Jua,sans-serif" font-weight="800" font-size="15" text-anchor="middle"><text x="24" y="29.2" fill="none" stroke="#ff4fd8" stroke-width="3.4" opacity=".45" textLength="31" lengthAdjust="spacingAndGlyphs">12:30</text><text x="24" y="29.2" fill="#fff" stroke="#ff7ae2" stroke-width=".8" textLength="31" lengthAdjust="spacingAndGlyphs">12:30</text></g>`
+      `<g font-family="Outfit,Jua,sans-serif" font-weight="800" font-size="15" text-anchor="middle"><text x="24" y="29.2" fill="#fff" stroke="#ff7ae2" stroke-width=".8" paint-order="stroke" stroke-linejoin="round" textLength="31" lengthAdjust="spacingAndGlyphs" filter="url(#fxNeonGlow)">12:30</text></g>`
       + `<path d="M7.6 34.6H40.4" stroke="#6fe3ff" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`)
     + gloss('M7 15.4Q7.4 13.2 9.6 13.2', 1.6, .6) + twinkle(43.4, 6.6, 3, '#ff9de9') + twinkle(5.4, 42.4, 2.6, '#9ff0ff'),
   fxcrown:   // 떠 있는 왕관
