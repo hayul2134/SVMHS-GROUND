@@ -3336,10 +3336,11 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .gc-prog p{margin:0;font-size:13px;font-weight:800;color:var(--sub)}.gc-prog p b{color:var(--text)}
 .gc-fxw h3,.gc-col h3.gc-sub{margin:0 0 8px;font:400 20px/1.2 var(--disp)}
 .gc-fxs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.gc-fxs li{display:grid;grid-template-columns:52px 1fr;gap:4px 10px;align-items:center;padding:10px;border:2px solid var(--ink);border-radius:16px;background:var(--card)}
+.gc-fxs li{display:grid;grid-template-columns:52px 1fr;gap:4px 10px;align-items:center;align-content:start;padding:10px;border:2px solid var(--ink);border-radius:16px;background:var(--card)}
 .gc-fxs li.on{background:color-mix(in srgb,#ffd66a 22%,var(--card))}
 .gc-fxs .gc-ic{grid-row:span 2;width:52px;height:52px}.gc-fxs .gc-ic .art{width:100%;height:100%}
 .gc-fxs b{font-size:14px}.gc-fxs small{font-size:12px;color:var(--sub);font-weight:700}
+.gc-fxs .gc-neon{grid-column:1 / -1}
 .gc-fxs .gc-fxb{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px}
 .gc-fxs .gc-fxb button{padding:6px 10px;font-size:12.5px}
 .gc-fxs .gc-fxb button.on{background:var(--ink);color:#fff}
