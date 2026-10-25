@@ -893,7 +893,7 @@ function paintHeroFr(fr) {
   el.hidden = false;
 }
 
-/* ===== 홈 친구 랭킹 (2026-10-25) — 맞팔 친구 + 나. 탭: 연속 출석 · 게임 4종. 꾸민 이름(홀로그램·황금)·대표 스티커·왕관이 보이게
+/* ===== 홈 전체 랭킹 (2026-10-25, 친구 → 전체로 변경) — 전체 학생. 탭: 연속 출석 · 게임 4종. 꾸민 이름(홀로그램·황금)·대표 스티커·왕관이 보이게
    탭마다 5분 동안은 다시 안 불러옴(무료 요청량), 고른 탭은 이 기기에 기억 */
 const RK_TABS = [['att', '연속 출석', 'fire'], ...Object.entries(GAMES).map(([k, g]) => [k, g.name, g.ic])];
 const rkCache = {};
@@ -908,7 +908,7 @@ async function loadHomeRank(force) {
   if (!force && c && Date.now() - c.at < 300e3) return;
   if (!c) $('#rkList').innerHTML = '<li class="skel"></li>';
   try {
-    const r = await call(tab === 'att' ? 'attrank?scope=friends' : `rank?game=${tab}&scope=friends`);
+    const r = await call(tab === 'att' ? 'attrank?scope=all' : `rank?game=${tab}&scope=all`);
     rkCache[tab] = { r, at: Date.now() };
     if (rkTab === tab) paintHomeRank(tab, r);
   } catch (e) { if (!c && rkTab === tab) $('#rkList').innerHTML = `<li class="rk-empty">${esc(e.message)}</li>`; }
@@ -920,7 +920,7 @@ function paintHomeRank(tab, r) {   // 시간표 카드 아래 1~3등만 (2026-10
       <span class="rk-n"><i class="mdl m${i + 1}">${i + 1}</i></span>
       <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
       <b class="rk-v">${val(u)}</b></li>`).join('')
-    : `<li class="rk-empty">${tab === 'att' ? '아직 출석 기록이 있는 친구가 없어요' : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
+    : `<li class="rk-empty">${tab === 'att' ? '아직 출석 기록이 없어요' : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
 }
 function startBuddies() {
   clearInterval(bdTimer);
