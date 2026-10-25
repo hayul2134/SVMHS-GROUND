@@ -175,7 +175,7 @@
           <button class="btn big ghost" type="button" data-intro="login">로그인</button>
         </div>
         <p class="in-note">아이디만 있으면 1분 · 이메일·전화번호 필요 없어요</p>
-        <button class="in-app" type="button" id="inApp" data-ff="app-install"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-app"/></svg><span><b>앱으로 설치하기</b><small>노트북·태블릿·폰 · 다음부터 아이콘으로 바로</small></span></button>
+        <button class="in-app" type="button" id="inApp"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-app"/></svg><span><b>앱으로 설치하기</b><small>노트북·태블릿·폰 · 다음부터 아이콘으로 바로</small></span></button>
         <a class="in-new" href="#inPlay" data-intro-go="inPlay"><b>NEW</b><span>집에 가고 싶어! · 뽑기 시즌 1 · 2주 라운드</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-next"/></svg></a>
       </div>
 
@@ -419,7 +419,7 @@
         <button class="hi" id="btnSkin"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-palette"/></svg></i><span class="tx">테마<small>색깔·캐릭터 바꾸기</small></span></button>
         <button class="hi" id="btnClass"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-gear"/></svg></i><span class="tx">설정<small>반·학과 바꾸기</small></span></button>
         <button class="hi" id="btnShare"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-qr"/></svg></i><span class="tx">QR<small>친구에게 사이트 공유</small></span></button>
-        <button class="hi" id="btnApp" type="button" data-ff="app-install"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-app"/></svg></i><span class="tx">앱 설치<small>아이콘 한 번에 바로 열기</small></span></button>
+        <button class="hi" id="btnApp" type="button"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-app"/></svg></i><span class="tx">앱 설치<small>아이콘 한 번에 바로 열기</small></span></button>
         <button class="hi" id="btnReport"><i class="mi"><svg viewBox="0 0 24 24"><use href="#i-flag"/></svg></i><span class="tx">신고<small>불편한 사람·메시지 알리기</small></span></button>
         <a class="hi" id="btnAdmin" href="/admin/#monitor" hidden><i class="mi" aria-hidden="true">🛠</i><span class="tx">관리자 페이지<small>모니터링·신고·사용자 관리</small></span></a>
         <button class="hi out" id="btnOut" type="button" hidden><i class="mi" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-logout"/></svg></i><span class="tx">로그아웃<small>이 기기에서 내 계정 나가기</small></span></button>
@@ -664,7 +664,7 @@
 </div>
 
 <!-- 한 번만 뜨는 앱 설치 권유(로그인 뒤 12초, 닫으면 다시 안 뜸) -->
-<div class="app-nudge" id="appNudge" data-ff="app-install" role="status"><img src="/icons/icon-192.png?v=4" alt="" width="40" height="40"><p id="appNudgeTx"></p><button class="btn" type="button" id="appNudgeGo">설치</button><button class="an-x" type="button" id="appNudgeX" aria-label="다시 보지 않기">✕</button></div>
+<div class="app-nudge" id="appNudge" role="status"><img src="/icons/icon-192.png?v=4" alt="" width="40" height="40"><p id="appNudgeTx"></p><button class="btn" type="button" id="appNudgeGo">설치</button><button class="an-x" type="button" id="appNudgeX" aria-label="다시 보지 않기">✕</button></div>
 
 <div class="modal" id="mShare" role="dialog" aria-modal="true" aria-labelledby="shareT">
   <div class="sheet">
@@ -741,7 +741,7 @@
           <li><b>안드로이드</b> Chrome <b>⋮</b> → <b>홈 화면에 추가</b></li>
           <li><b>친구에게 공유</b> 메뉴 ☰ → QR</li>
         </ul>
-        <button class="btn" id="installBtn" type="button" hidden data-ff="app-install">내 기기에 설치하는 법</button>
+        <button class="btn" id="installBtn" type="button" hidden>내 기기에 설치하는 법</button>
       </details>
 
       <details class="ig">
