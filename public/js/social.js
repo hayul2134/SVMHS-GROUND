@@ -511,11 +511,11 @@ function pvHtml(u, st) {
 // 실제 프로필 화면 폭(보이는 #meBox가 있으면 그 폭, 없으면 main 안에 .soc를 잠깐 놓고 잼) — 같은 폭으로 그려야 줄바꿈·배치가 실제와 같음
 function realProfW() {
   const live = $('#meBox'); if (live?.offsetWidth) return live.offsetWidth;
-  const host = $('#v-me') ? $('main') : null; if (!host) return 640;
-  const pr = document.createElement('div'); pr.className = 'soc'; pr.style.cssText = 'position:absolute;visibility:hidden;left:0;top:0;height:0;overflow:hidden';
-  const cs = getComputedStyle(host), inner = host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  host.append(pr); const mw = parseFloat(getComputedStyle(pr).maxWidth); pr.remove();
-  return Math.round(Math.min(inner, isNaN(mw) ? inner : mw));
+  // 프로필 화면이 숨어 있으면 잠깐 자리만 차지하지 않게(높이 0·안 보이게) 펼쳐서 실제 폭을 잼 — 화면 폭별 규칙(#v-me .soc 820/910px)이 그대로 걸림
+  const v = $('#v-me'); if (!v || !live) return 640;
+  const keep = v.style.cssText; v.style.cssText = 'display:block!important;visibility:hidden;height:0;overflow:hidden;margin:0;padding:0';
+  const w = live.offsetWidth; v.style.cssText = keep;
+  return w || 640;
 }
 // 첫 화면 시계 복제: id는 지우고, JS로 넣은 위치값(style)도 그대로 옮김(CSP — 속성 복사 대신 cssText)
 function cloneClock(deco) {
@@ -530,19 +530,21 @@ function cloneClock(deco) {
 function fitPv(box) {
   box.querySelectorAll('.pv-real').forEach(w => {
     const sc = w.firstElementChild; if (!sc) return;
-    sc.style.transform = 'none';
-    const W = w.clientWidth; if (!W) return;
+    const W = w.clientWidth - 10; if (W <= 0) return;   // 10: 카드 그림자·기울기 여유
     if (w.classList.contains('pv-rp')) {
-      const nat = +w.dataset.nw || realProfW(); w.dataset.nw = nat;
+      const nat = realProfW();
       sc.style.width = nat + 'px';
       const s = Math.min(1, W / nat);
-      sc.style.transform = `scale(${s})`; w.style.height = Math.ceil(sc.offsetHeight * s) + 'px';
+      sc.style.transform = `scale(${s})`; w.style.height = Math.ceil(sc.offsetHeight * s) + 12 + 'px';
       return;
     }
-    const o = sc.getBoundingClientRect(); let x0 = 0, y0 = 0, x1 = sc.offsetWidth, y1 = sc.offsetHeight;
-    sc.querySelectorAll('.clock, .clock *').forEach(e => { const r = e.getBoundingClientRect(); if (!r.width || !r.height) return; x0 = Math.min(x0, r.left - o.left); y0 = Math.min(y0, r.top - o.top); x1 = Math.max(x1, r.right - o.left); y1 = Math.max(y1, r.bottom - o.top); });
-    const bw = x1 - x0 + 8, bh = y1 - y0 + 8, s = Math.min(1, W / bw);
-    sc.style.transform = `translate(${(W - bw * s) / 2 - (x0 - 4) * s}px, ${-(y0 - 4) * s}px) scale(${s})`;
+    // 시계: 숫자 밖으로 나온 스티커까지 다 넣음. 창이 열리며 커지는 중이어도 맞게 — 화면상 크기를 조상 배율로 나눠 실제 크기로 환산
+    sc.style.transform = 'none';
+    const o = sc.getBoundingClientRect(), k = o.width / (sc.offsetWidth || 1) || 1;
+    let x0 = 0, y0 = 0, x1 = sc.offsetWidth, y1 = sc.offsetHeight;
+    sc.querySelectorAll('.clock, .clock *').forEach(e => { const r = e.getBoundingClientRect(); if (!r.width || !r.height) return; x0 = Math.min(x0, (r.left - o.left) / k); y0 = Math.min(y0, (r.top - o.top) / k); x1 = Math.max(x1, (r.right - o.left) / k); y1 = Math.max(y1, (r.bottom - o.top) / k); });
+    const pad = 10, bw = x1 - x0 + pad * 2, bh = y1 - y0 + pad * 2, Wc = w.clientWidth, s = Math.min(1, Wc / bw);
+    sc.style.transform = `translate(${(Wc - bw * s) / 2 - (x0 - pad) * s}px, ${-(y0 - pad) * s}px) scale(${s})`;
     w.style.height = Math.ceil(bh * s) + 'px';
   });
 }
@@ -662,7 +664,9 @@ function openEdit(o = {}) {
     // 첫 화면 시계가 바뀌면(1초마다·네온 관 붙임) 복제본 숫자도 같이
     ckObs?.disconnect(); const bt = $('#bigTime');
     if (ck && bt) { ckObs = new MutationObserver(() => { const t = box.querySelector('.pv-rc .s-big'); if (!t?.isConnected) { ckObs.disconnect(); return; } t.innerHTML = bt.innerHTML; t.className = bt.className; const st = $('#bigclock'); if (st) ck.className = st.className + ' pv-stage'; }); ckObs.observe(bt, { childList: true, subtree: true, characterData: true, attributes: true }); }
-    fitPv(box); clearTimeout(fitT); fitT = setTimeout(() => fitPv(box), 350);   // 창 열림 애니메이션·글꼴 뒤에 한 번 더
+    fitPv(box); clearTimeout(fitT); fitT = setTimeout(() => fitPv(box), 400);   // 창 열림 애니메이션·글꼴 뒤에 한 번 더
+    document.fonts?.ready?.then(() => box.isConnected && fitPv(box));
+    box.querySelectorAll('.pv-sc').forEach(sc => { const ro = new ResizeObserver(() => { if (!sc.isConnected) { ro.disconnect(); return; } cancelAnimationFrame(sc._f); sc._f = requestAnimationFrame(() => fitPv(box)); }); ro.observe(sc.firstElementChild || sc); });
     clrSync(); subN();
   };
   const subN = () => { const n = { st: `${picked.size}/${stkMax(u)}`, rep: sel.rep ? `${sel.rep.split(',').length}` : '', deco: `${deco.length}/${slots}` }; $$('#editForm [data-subn]').forEach(b => { b.textContent = n[b.dataset.subn]; }); };
