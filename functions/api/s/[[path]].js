@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -1076,7 +1076,7 @@ const ROUTES = {
     const us = ids.length ? (await db.prepare(`SELECT ${PUB} FROM users WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results : [];
     const byId = new Map(us.map(u => [u.id, u]));
     const pub1 = x => ({ rank: x.rank, pts: x.pts, tier: x.tier, games: x.games });
-    return json({ round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, tiers: TIERS,
+    return json({ round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, tiers: TIERS,
       me: mine ? pub1(mine) : null, last: tierLastOf(me),
       top: top.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
   }),
@@ -1177,11 +1177,13 @@ async function tierBoard(db, n) {
   const acc = new Map();
   await Promise.all(Object.keys(GAMES).map(async game => {
     const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
-    rows.forEach((r, i) => { const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts(i + 1, rows.length); a.pts += p; a.games[game] = { r: i + 1, n: rows.length, p }; acc.set(r.uid, a); });
+    let rk = 0;
+    rows.forEach((r, i) => { rk = i > 0 && rows[i - 1].b === r.b ? rk : i + 1;   // 같은 기록 = 같은 순위·같은 점수 (2026-10-26 핫픽스)
+      const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts(rk, rows.length); a.pts += p; a.games[game] = { r: rk, n: rows.length, p }; acc.set(r.uid, a); });
   }));
   const list = [...acc.values()].sort((a, b) => b.pts - a.pts || Object.keys(b.games).length - Object.keys(a.games).length);
-  list.forEach((x, i) => { x.rank = i > 0 && list[i - 1].pts === x.pts ? list[i - 1].rank : i + 1; x.tier = tierAt(x.rank, list.length).k; });
-  const b = { n: cur, from, to, list };
+  list.forEach((x, i) => { x.rank = i > 0 && list[i - 1].pts === x.pts ? list[i - 1].rank : i + 1; x.tier = tierAt(x.rank, list.length, x.pts).k; });
+  const b = { n: cur, from, to, list, mode: tierMode(list.length) };
   tierMemo.set(cur, { at: Date.now(), b });
   return b;
 }

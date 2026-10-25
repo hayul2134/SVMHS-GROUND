@@ -162,20 +162,30 @@ export const wkRange = n => { const s = dnum(RK_START()); return { n, from: ymdO
 // 라운드 티어 (2026-10-25 하율: 순위로 점수 → 티어). 라운드(RK, 2주) 안에서 게임마다 순위 점수(참가자 전원이 받음: 1등 100 ~ 꼴찌 100/n),
 // 4게임 합으로 줄 세워 백분위로 티어. 라운드가 끝나면 users.tier_last에 남기고 새로 시작.
 // 2026-10-25 2차(하율): 롤 티어(아이언~챌린저)로. 챌린저 = 1등(참가 3명 이상) · 그랜드마스터 = 2·3등(6명 이상) · 나머지는 백분위
+// 2026-10-26 하율 핫픽스: 참가자가 적으면 백분위가 크게 건너뜀(4명일 때 1등 챌린저 → 2등 바로 에메랄드) →
+//   TIER_PCT명 미만이면 '점수 구간(pt, 4게임 합 최대 400점)'으로, 그 이상이면 원래 백분위(top)로 매김
+export const TIER_PCT = 20;
 export const TIERS = [
-  { k: 'challenger', n: '챌린저', lb: '1등' },
-  { k: 'grandmaster', n: '그랜드마스터', lb: '2·3등' },
-  { k: 'master', n: '마스터', top: .08, lb: '상위 8%' },
-  { k: 'diamond', n: '다이아몬드', top: .16, lb: '상위 16%' },
-  { k: 'emerald', n: '에메랄드', top: .28, lb: '상위 28%' },
-  { k: 'platinum', n: '플래티넘', top: .42, lb: '상위 42%' },
-  { k: 'gold', n: '골드', top: .58, lb: '상위 58%' },
-  { k: 'silver', n: '실버', top: .74, lb: '상위 74%' },
-  { k: 'bronze', n: '브론즈', top: .88, lb: '상위 88%' },
-  { k: 'iron', n: '아이언', top: 1.01, lb: '그 외' },
+  { k: 'challenger', n: '챌린저', lb: '1등', pl: '1등 · 340점+' },
+  { k: 'grandmaster', n: '그랜드마스터', lb: '2·3등', pl: '2·3등 · 280점+' },
+  { k: 'master', n: '마스터', top: .08, lb: '상위 8%', pt: 340 },
+  { k: 'diamond', n: '다이아몬드', top: .16, lb: '상위 16%', pt: 280 },
+  { k: 'emerald', n: '에메랄드', top: .28, lb: '상위 28%', pt: 220 },
+  { k: 'platinum', n: '플래티넘', top: .42, lb: '상위 42%', pt: 160 },
+  { k: 'gold', n: '골드', top: .58, lb: '상위 58%', pt: 110 },
+  { k: 'silver', n: '실버', top: .74, lb: '상위 74%', pt: 70 },
+  { k: 'bronze', n: '브론즈', top: .88, lb: '상위 88%', pt: 35 },
+  { k: 'iron', n: '아이언', top: 1.01, lb: '그 외', pt: 0 },
 ];
+TIERS.forEach(t => { if (t.pt != null) t.pl = t.pt ? `${t.pt}점+` : '그 외'; });
+export const tierMode = n => n < TIER_PCT ? 'pts' : 'pct';
 export const tierOfK = k => TIERS.find(t => t.k === k) || null;
-export const tierAt = (rank, n) => {
+export const tierAt = (rank, n, pts = 0) => {
+  if (tierMode(n) === 'pts') {   // 사람이 적을 때: 점수 구간. 챌린저·그랜드마스터는 순위 + 점수 둘 다
+    if (rank === 1 && n >= 3 && pts >= TIERS[2].pt) return TIERS[0];
+    if (rank <= 3 && n >= 6 && pts >= TIERS[3].pt) return TIERS[1];
+    return TIERS.slice(2).find(t => pts >= t.pt) || TIERS[TIERS.length - 1];
+  }
   if (rank === 1 && n >= 3) return TIERS[0];
   if (rank <= 3 && n >= 6) return TIERS[1];
   const p = (rank - 1) / Math.max(1, n);
