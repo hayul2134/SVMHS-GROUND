@@ -877,7 +877,7 @@ const subjIcon = n => `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><
 const subjName = s => String(s || '').replace(/^\s*\[[^\]]*\]/, '').replace(/^[\s*#·-]+/, '').replace(/\s*\(\d학년\)\s*$/, '')
   .replace(/^대(?:학)?수(?:학)?능(?:력시험)?\s*모의\s*(?:학력)?평가$/, '수능 모의평가').trim();
 // 분반 수업이 있는 반인데 아직 분반을 안 골랐으면 시간표 아래 한 줄 안내 (2026-10-26)
-const trHint = () => splitOf(cls) && !cls.tr ? '<p class="note">분반 수업이 있는 반이에요 · <button class="link" data-open-class>내 분반 고르기</button></p>' : '';
+const trHint = () => splitOf(cls) && !cls.tr ? '<p class="note tr-note">분반 수업이 있는 반이에요 · <button class="link tr-go" data-open-class><i class="nw-d" aria-hidden="true"></i>내 분반 고르기</button></p>' : '';
 // 분반을 아직 안 골랐으면 분반 수업 칸 아이콘에 빨간 점 + 누르면 반 설정 창 (2026-10-26 하율)
 const trNeed = nm => { const sp = splitOf(cls); return !!(sp && !cls.tr && sp.tracks.some(t => t.re.test(nm || ''))); };
 const trAttr = nm => trNeed(nm) ? ' data-open-class data-tip="내 분반 고르기"' : '';

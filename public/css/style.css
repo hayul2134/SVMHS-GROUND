@@ -4656,3 +4656,8 @@ html.tl2 .cat-more.cm-tier:hover{background:#ffe373}
 .tt li[data-open-class],.week td[data-open-class]{cursor:pointer}
 #trBox.tr-need label[for="selT"]::after{content:"";display:inline-block;width:9px;height:9px;margin-left:6px;vertical-align:2px;border-radius:50%;background:var(--nw);border:2px solid var(--ink);animation:nwPulse 1.8s ease-in-out infinite}
 #trBox.tr-need #selT{outline:3px solid var(--nw);outline-offset:1px}
+
+/* 분반 미선택 안내 버튼을 빨간색으로 (2026-10-26 하율 "여기에 빨간색으로 떠야 보이지") */
+.tr-note .tr-go{position:relative;color:#fff;background:var(--nw);border-color:var(--ink);font-weight:900}
+.tr-note .tr-go:hover{filter:brightness(1.06)}
+.tr-note .tr-go .nw-d{top:-5px;right:-5px;background:#fff}
