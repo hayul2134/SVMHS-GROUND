@@ -327,10 +327,14 @@ export function buildSprites(c) {
       const dx = c.hat === 'ribbon' ? 2 : 0, dy = c.hat === 'ribbon' ? 1 : 0;
       put(g, null, hx + dx, hy + dy, HATS[c.hat], pal);
     }
-    if (B.dead) {   // 눈을 X로
+    if (B.dead) {   // 부딪힌 얼굴 (2026-10-25 하율: 표정이 바뀌게) — X 눈 · 벌린 입 · 식은땀
+      const P = (x, y, c) => { if (x >= 0 && x < SPR_W && y >= 0 && y < SPR_H) g[y * SPR_W + x] = c; };
       const ex = hx + 11, ey = hy + 4;
-      [[ex - 1, ey], [ex + 1, ey], [ex, ey + 1], [ex - 1, ey + 2], [ex + 1, ey + 2]].forEach(([x, y]) => { g[y * SPR_W + x] = OL; });
-      [[ex, ey], [ex, ey + 2], [ex - 1, ey + 1], [ex + 1, ey + 1]].forEach(([x, y]) => { if (g[y * SPR_W + x] === OL) g[y * SPR_W + x] = pal.s; });
+      for (let y = ey; y <= ey + 2; y++) for (let x = ex - 1; x <= ex + 1; x++) if (g[y * SPR_W + x] === OL) P(x, y, pal.s);   // 원래 눈 지우기
+      [[ex - 1, ey], [ex + 1, ey], [ex, ey + 1], [ex - 1, ey + 2], [ex + 1, ey + 2]].forEach(([x, y]) => P(x, y, OL));   // X 눈
+      P(hx + 12, hy + 7, pal.s);                                                    // 볼터치 지움(놀라서 핏기 없음)
+      P(hx + 11, hy + 8, OL); P(hx + 12, hy + 8, OL); P(hx + 11, hy + 9, '#c2405a'); P(hx + 12, hy + 9, OL);   // 'o' 벌린 입
+      P(hx + 14, hy + 2, '#bfe9ff'); P(hx + 14, hy + 3, '#6fc6f4'); P(hx + 15, hy + 3, '#6fc6f4'); P(hx + 14, hy + 4, '#3e8fd8'); P(hx + 15, hy + 4, '#3e8fd8');   // 식은땀
     }
     const cv = document.createElement('canvas'); cv.width = SPR_W; cv.height = SPR_H;
     const cx = cv.getContext('2d');
@@ -789,12 +793,12 @@ export function createRunner(canvas, char, opt = {}) {
         else { g.fillRect(px + 1, py, 1, 3); g.fillRect(px, py + 1, 3, 1); }
       }
     }
-    // 점수 — 공룡 게임처럼 'HI 최고 · 지금' (2026-10-25 하율: 최고 기록도 점수 옆에). 2배 크기 + 반투명 받침·그림자로 또렷하게, HI는 옅게
+    // 점수 — 공룡 게임처럼 '최고 · 지금' (2026-10-25 하율: 최고 기록은 점수 옆에 옅게, 'HI' 글자는 쓰지 말 것, 글자는 1배 크기). 반투명 받침·그림자로 또렷하게
     const val = st.flash > 0 ? st.lastHundred * 100 : st.score;
     const hiV = Math.max(0, Math.floor(+opt.best?.() || 0));   // 내 최고(이 기기 기록, 아래 '내 최고' 줄과 같은 값)
     const num = String(val).padStart(5, '0'), lead = num.length - String(val).length;   // 앞자리 0은 옅게
-    const hiS = hiV > 0 ? 'HI ' + String(Math.min(hiV, 99999)).padStart(5, '0') + ' ' : '';
-    const SC = 2, cw = 4 * SC, tw = (hiS.length + num.length + 1) * cw - SC;
+    const hiS = hiV > 0 ? String(Math.min(hiV, 99999)).padStart(5, '0') + 'm  ' : '';
+    const SC = 1, cw = 4 * SC, tw = (hiS.length + num.length + 1) * cw - SC;
     const night = sk.night > .5, fg = night ? '#ffffff' : '#1d1b38', sh = night ? '#141634' : '#ffffff';
     const bx = W - 4 - tw - 6, by = 3, bw = tw + 6, bh = 5 * SC + 6;
     g.fillStyle = night ? 'rgba(10,12,40,.45)' : 'rgba(255,255,255,.6)';
