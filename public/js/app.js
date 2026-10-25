@@ -1133,16 +1133,19 @@ function centerHero(force) {
 // 랭킹은 뼈대(짧음) → 실제 목록(김)으로 늦게 바뀌고, 그때 등장 애니메이션 중이면 centerHero가 건너뛰어 덜 올라가던 문제(2026-10-25) →
 // centerHero와 따로, 크기가 바뀔 때마다·애니메이션이 끝난 뒤 다시 잼
 let rkT = 0;
+// 화면에 그려진 위치(애니메이션 중이면 틀림) 대신 배치값(offset)으로 계산 → 등장 애니메이션 중에도 처음부터 맞는 자리에 나옴 (2026-10-25: 나왔다가 '툭' 올라가던 문제)
 function fitRk() {
   clearTimeout(rkT);
-  const st = HERO.style, rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0;
-  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !tt.classList.contains('open') || !st.getPropertyValue('--hcy')) { if (up0) st.setProperty('--rkup', '0px'); return; }
-  const de = document.documentElement;
-  if (de.classList.contains('tuck')) return;
-  if (de.classList.contains('boot') || de.classList.contains('pre') || tt.getAnimations().some(a => a.playState === 'running')) { rkT = setTimeout(fitRk, 250); return; }
-  const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null, lim = (db && db.height ? db.top : innerHeight) - 14;
-  const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, rr = rk.getBoundingClientRect(), tr = tt.getBoundingClientRect();
-  const over = rr.bottom + up0 - lim, room = tr.top + up0 - (hdr + 10);
+  const st = HERO.style, rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0, hcy = parseFloat(st.getPropertyValue('--hcy'));
+  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !tt.classList.contains('open') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); return; }
+  if (document.documentElement.classList.contains('tuck')) return;
+  // 메시지 버튼 자리: 보이면 재서 기억, 아직 안 떴으면(로그인 확인 전) 기억해 둔 값
+  const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null;
+  let gap = +store.get('dock_gap', 0) || 92;
+  if (db && db.height) { const g = Math.round(innerHeight - db.top); if (g !== gap) store.set('dock_gap', g); gap = g; }
+  const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, th = tt.offsetHeight, ttTop = hcy - th / 2;   // 올리기 전 시간표 위 끝
+  const rkB = ttTop + rk.offsetTop + rk.offsetHeight + 8;   // +8: 기울기만큼 아래로 나오는 몫
+  const over = rkB - (innerHeight - gap - 14), room = ttTop - (hdr + 10);
   const up = over > 0 ? Math.min(over, Math.max(0, room)) : 0;
   if (Math.abs(up - up0) >= 1) st.setProperty('--rkup', Math.round(up) + 'px');
 }

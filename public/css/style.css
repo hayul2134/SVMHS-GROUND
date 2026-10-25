@@ -3920,6 +3920,7 @@ html.rk2 .s-rk::before{content:"";position:absolute;top:-11px;left:26px;width:70
 /* 서랍 화면: 시간표 카드 밖 아래에 띄움 → 시간표 카드 높이에 안 들어가서 시간표만 시계와 같은 높이 가운데 */
 html.rk2 .drawers .s-ttc > .s-rk{position:absolute;top:calc(100% + 18px);left:4px;right:4px;width:auto;margin:0;transform:rotate(-1.8deg)}
 html.rk2 .s-ttc.stow{top:calc(var(--hcy,50%) - var(--rkup,0px))}
+html.rk2 .drawers .s-ttc > .s-rk .rk-list > .skel{height:142px}   /* 뼈대를 실제 1~3등 높이와 맞춤 → 목록이 들어와도 자리 안 바뀜 */
 html.rk2 .srk-h{display:flex;align-items:center;gap:6px;margin:0 1px 8px}
 html.rk2 .srk-h > a{display:inline-flex;align-items:center;gap:5px;font-family:var(--disp);font-weight:400;font-size:16px;letter-spacing:.02em;color:#fff;text-decoration:none;white-space:nowrap;text-shadow:0 1.5px 0 rgba(10,40,110,.45)}
 html.rk2 .srk-h > a .sic{width:21px;height:21px;filter:drop-shadow(0 1.5px 0 rgba(10,40,110,.4))}
