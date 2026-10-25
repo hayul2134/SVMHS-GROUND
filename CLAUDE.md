@@ -48,7 +48,7 @@
 - **업데이트 규칙(2026-10-25)**: 공지는 하율 화면(개발자 계정)에서만 바로 보이고 하율이 사이트에서 고침, 최종 공지는 월요일 06:00에 한 번에. 수정·새 기능을 올릴 때 `lib/patchqueue.js` 대기열에 공지 한 줄을 같이 커밋(→ 📢 공지 창 '다음 공지 초안'). 새 기능은 `public/js/flags.js` 미리보기 깃발로 개발자에게만 켜고 월요일에 해제. 자세한 절차는 `tools/patchnotes/WEEKLY.md`.
 - 커밋 메시지는 한국어 요약. 작성자: `hayul2134 <hayulbusiness@gmail.com>`.
 - push 전 `git pull --rebase` (다른 세션이 먼저 올렸을 수 있음).
-- 표 구조를 바꾸면 `lib/db.js`의 `SCHEMA_V`를 올리고 기존 DB용 ALTER 마이그레이션을 넣을 것.
+- 표 구조를 바꾸면 `lib/db.js`의 `SCHEMA_V`를 올리고 기존 DB용 ALTER 마이그레이션을 넣을 것. **setup은 판이 바뀔 때마다 전부 다시 도니, 값을 더하는 마이그레이션은 반드시 settings 표시(`INSERT OR IGNORE ... mig_vNN` 성공 시에만)로 한 번만**(2026-10-25 v31 뽑기권 중복 지급 버그).
 - `index.html`에 인라인 스크립트·`style=""` 금지(CSP).
 - 배포 확인: `curl -s "https://svmhs-ground.pages.dev/<파일>?x=$RANDOM"`으로 새 내용이 보일 때까지 폴링. 가능하면 실제 브라우저로 화면 확인.
 - 구조를 바꾸면 `CODEMAP.md`도 같이 갱신.
