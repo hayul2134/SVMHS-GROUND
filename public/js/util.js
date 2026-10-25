@@ -1,7 +1,7 @@
 // 공통 유틸: DOM · 날짜 · 저장소 · 토스트
 
 export const $ = s => document.querySelector(s);
-export const $$ = s => document.querySelectorAll(s);
+export const $$ = (s, r = document) => (r || document).querySelectorAll(s);   // r: 찾을 범위(없으면 문서 전체)
 
 /* ----- 날짜 (나이스는 'YYYYMMDD' 문자열을 씀) ----- */
 export const pad = n => String(n).padStart(2, '0');

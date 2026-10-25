@@ -1432,7 +1432,7 @@ async function renderHomeDday() {
 }
 // 다가오는 일정: 5개만 보이기 (첫 번째는 큰 카드, 나머지는 작은 줄)
 function fitUp() {
-  $$('.up', $('#hUp')).forEach((el, i) => { el.hidden = i >= 5; });
+  $$('#hUp .up').forEach((el, i) => { el.hidden = i >= 5; });
 }
 addEventListener('resize', fitUp);
 async function renderDdayView() {
