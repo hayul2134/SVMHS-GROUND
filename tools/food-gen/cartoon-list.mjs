@@ -1,12 +1,12 @@
 // 카툰 음식 그림 목록: 키 → 그릴 음식 설명(영어, 모델이 잘 알아듣게). 키는 public/food/c/<키>.webp 파일 이름.
 // 메뉴 이름 → 키 연결은 public/js/food.js 의 cartoonKey(). 새 키를 넣으면 거기에도 규칙 추가.
-export const STYLE = 'Cute cartoon food illustration, die-cut sticker style with a thin white border, bold clean dark navy outlines, flat bright appetizing colors with simple cel shading and small white shine highlights, viewed from slightly above, centered, isolated on a plain solid pure white background, no plate unless stated. Absolutely no text, letters, logos or watermarks. The food is not a character: no eyes, no faces.';
+export const STYLE = 'Cartoon food illustration of a single dish only, die-cut sticker style with a thin white border, bold clean dark navy outline around the whole food, flat bright appetizing colors with simple cel shading and small white shine highlights, viewed from slightly above, centered, isolated on a plain solid pure white background, no plate unless stated. Absolutely no text, letters, numbers, labels, logos or watermarks. Inanimate food object only: no character, no mascot, no anthropomorphic features, no eyes, no mouth, no face.';
 
 export const LIST = {
   /* 밥 */
-  rice_white: 'a small dome of cooked Korean bap, fluffy rice grains',
+  rice_white: 'a small rounded mound of plain steamed white rice in a simple round white bowl, individual glossy rice grains visible',
   rice_multigrain: 'a rounded mound of Korean multigrain rice, white rice mixed with brown rice, black rice and beans, purple-brown speckles',
-  rice_black: 'a small dome of cooked Korean heukmi-bap, light purple rice grains mixed with dark purple black rice grains',
+  rice_black: 'a small rounded mound of steamed purple rice in a simple round white bowl, white rice grains mixed with dark purple grains',
   rice_fried: 'Korean fried rice with diced carrot, green onion, egg bits and ham, golden glossy grains',
   rice_kimchi_fried: 'Korean kimchi fried rice, orange-red rice with chopped kimchi and a fried egg on top',
   rice_bibim: 'Korean bibimbap in a bowl: rice topped with colorful vegetables, spinach, carrot, bean sprouts, egg yolk and red chili paste',
@@ -17,7 +17,7 @@ export const LIST = {
   porridge: 'a simple round white bowl of creamy Korean rice porridge juk with sesame and vegetables',
   /* 국 · 찌개 */
   soup_miyeok: 'a simple round white bowl of Korean seaweed soup: dark green wavy seaweed and beef pieces in clear brown broth',
-  soup_egg: 'a simple round white bowl of Korean gyeran-guk egg drop soup: soft cloudy yellow egg pieces floating in clear golden broth with chopped green onion, no noodles',
+  soup_egg: 'a simple round white bowl of clear golden broth with soft wispy ribbons of beaten egg floating in it and chopped green onion, Korean egg soup, no noodles, no whole eggs, no shell',
   soup_beansprout: 'a simple round white bowl of Korean bean sprout soup: yellow bean sprouts and green onion in clear broth with red pepper flakes',
   soup_radish: 'a simple round white bowl of Korean beef radish soup: thin square white radish slices and beef in clear brown broth, green onion',
   soup_doenjang: 'a simple round white bowl of Korean doenjang soybean paste soup: tofu cubes, zucchini, mushrooms in brown broth',
@@ -38,7 +38,7 @@ export const LIST = {
   /* 나물 · 무침 */
   namul_green: 'Korean spinach namul: seasoned green spinach with sesame seeds',
   namul_beansprout: 'Korean bean sprout namul: yellow-white bean sprouts seasoned with sesame and green onion',
-  namul_radish: 'Korean musaengchae: a small heap of short thin julienned radish strips fully coated red-orange with chili flakes, sesame and green onion, crunchy vegetable side dish, not noodles',
+  namul_radish: 'Korean radish salad musaengchae on a small plain white dish: a small mound of short crunchy matchstick-cut radish pieces tossed red-orange in chili flakes with sesame seeds, short chunky pieces like coleslaw, not noodles, not pasta',
   geotjeori: 'Korean lettuce geotjeori: fresh green lettuce leaves tossed with red chili dressing and sesame',
   jinmichae: 'Korean jinmichae: shredded dried squid strips in glossy red chili sauce with sesame',
   mushroom_muchim: 'Korean seasoned king oyster mushrooms with chives and red chili dressing',
@@ -59,7 +59,7 @@ export const LIST = {
   kiwi: 'kiwi halves showing green flesh and black seeds',
   fruit_mixed: 'colorful fruit cocktail cup with mixed fruit pieces',
   /* 튀김 */
-  donkatsu: 'a golden breaded pork cutlet cut into thick strips, plain crispy crumb texture, with a pool of brown sauce beside it',
+  donkatsu: 'a breaded fried cutlet on a small plain white plate, sliced into thick strips, crispy golden crumb coating, brown sauce drizzled across it, food only',
   fried_chicken: 'Korean dakgangjeong: crispy golden fried chicken bites, half tossed in sweet red sauce',
   tangsuyuk: 'Korean sweet and sour pork tangsuyuk: crispy fried pork pieces with glossy sweet sour sauce and vegetables',
   fried_mixed: 'assorted Korean twigim tempura: fried shrimp, sweet potato and vegetable fritters, golden crispy',
@@ -72,7 +72,7 @@ export const LIST = {
   /* 고기 · 볶음 */
   jeyuk: 'Korean spicy stir-fried pork jeyuk bokkeum: pork slices in glossy red chili sauce with onion and green onion',
   dakgalbi: 'Korean spicy chicken stir-fry dakgalbi with cabbage, sweet potato and rice cakes in red sauce',
-  squid_stirfry: 'Korean ojingeo bokkeum: cut squid rings and scored squid pieces stir-fried with onion, carrot and green onion in red chili sauce',
+  squid_stirfry: 'stir-fried squid rings and cut squid tentacle pieces with onion, carrot and green onion in glossy red chili sauce on a small plain white plate, cut pieces only',
   tteokbokki: 'Korean tteokbokki: many long white cylindrical rice cake sticks coated in thick glossy red sauce with triangle fish cake pieces and green onion',
   braised_spicy: 'Korean spicy braised pork ribs in thick red sauce with potato and carrot',
   bulgogi: 'Korean beef bulgogi: thin glossy marinated beef slices with onion, carrot and green onion',
@@ -80,7 +80,7 @@ export const LIST = {
   chicken_braised: 'Korean soy braised chicken jjimdak with glass noodles, potato and carrot in brown sauce',
   duck: 'smoked duck slices with stir-fried vegetables',
   sausage: 'Korean yachae bokkeum: small cocktail frankfurters with criss-cross cuts, stir-fried with onion and green pepper in ketchup sauce',
-  ham: 'a few rectangular slices of pan-fried pink ham with lightly browned edges, plain smooth surface',
+  ham: 'a few rectangular slices of pan-fried pink luncheon meat overlapping on a small plain white plate, browned seared edges',
   fishcake_stirfry: 'Korean stir-fried fish cake strips eomuk bokkeum with onion and carrot, glossy',
   /* 면 */
   noodle_red: 'Korean spicy cold noodles jjolmyeon: chewy noodles in red chili sauce with cucumber and boiled egg half',
@@ -92,13 +92,13 @@ export const LIST = {
   udon: 'a simple round white bowl of udon noodle soup with fish cake and green onion',
   /* 빵 · 간식 */
   pastry: 'flaky golden twist pastries and pie',
-  pizza: 'two triangle pieces of cheese pizza with tomato sauce, green pepper and olive toppings',
+  pizza: 'two triangular slices of pizza with red tomato sauce, melted yellow cheese, green bell pepper and black olive toppings, golden crust',
   burger: 'a small cute hamburger with patty, cheese and lettuce',
   tart: 'egg tarts with golden custard',
-  cake: 'one triangle slice of strawberry cream cake with layers of sponge and cream, a strawberry on top, nothing around it',
-  waffle: 'a square Belgian waffle with a grid pattern, golden brown, with a drizzle of syrup',
+  cake: 'one triangular slice of strawberry shortcake on a small round pale pink plate, yellow sponge layers with cream filling, a red strawberry on top',
+  waffle: 'a square golden brown waffle with a deep grid pattern on a small light blue plate, a drizzle of syrup and a pat of butter',
   donut: 'glazed donuts with sprinkles',
-  bread: 'two golden brown baked bread rolls with a soft shiny crust',
+  bread: 'two round golden-brown bread rolls with shiny baked tops on a small wooden cutting board',
   macaron: 'colorful macarons',
   /* 두부 · 계란 */
   tofu_braised: 'Korean braised tofu dubu jorim: pan-fried tofu slices in red-brown soy chili sauce with green onion',
@@ -117,22 +117,22 @@ export const LIST = {
   donggeurang: 'Korean donggeurang-ttaeng: small round golden egg-coated meat patties',
   /* 그 밖 */
   ssam: 'fresh lettuce leaves for wrapping with a small dish of brown ssamjang paste',
-  yogurt: 'a small white yogurt cup filled with plain yogurt, topped with strawberry and blueberries',
-  pudding: 'a caramel custard pudding on a small dish, glossy brown caramel top',
-  tteok: 'Korean injeolmi rice cakes: small soft rectangular pieces coated in yellow roasted soybean powder',
-  danmuji: 'a few half-moon slices of bright yellow pickled radish danmuji',
-  kkaennip: 'a neat small stack of dark green Korean perilla leaves kkaennip-jangajji glistening in soy sauce, seen from slightly above',
+  yogurt: 'a small round cup of thick plain yogurt seen from above, topped with sliced strawberry and blueberries, glossy surface',
+  pudding: 'a caramel custard flan on a small light blue plate, pale yellow custard with glossy brown caramel sauce on top dripping down the sides',
+  tteok: 'Korean injeolmi: a neat pile of small rectangular rice cake cubes coated in yellow roasted soybean powder on a small plain white dish',
+  danmuji: 'a few half-moon slices of bright yellow pickled radish on a small round plain white dish',
+  kkaennip: 'a small stack of dark green perilla leaves marinated in dark soy sauce with red chili flakes and sesame, on a small round plain white dish',
   pickle: 'Korean pickled vegetables jangajji',
-  anchovy: 'Korean myeolchi bokkeum: a small pile of many tiny dried silver anchovies, each about the size of a grain, stir-fried glossy with almonds and sesame seeds',
-  muk: 'Korean dotorimuk muchim: smooth glossy brown acorn jelly cut in rectangular blocks, with lettuce, cucumber and soy sesame dressing',
-  muk_white: 'Korean cheongpomuk: smooth translucent pale white mung bean jelly cut in thick strips, topped with crumbled roasted seaweed and sesame',
-  mandu: 'four Korean mandu dumplings, half-moon shaped with pleated edges, pan-fried golden brown on one side',
+  anchovy: 'Korean myeolchi bokkeum in a small plain white dish: a heap of hundreds of tiny dried baby anchovies, each a very small thin silver fish like a short silver thread, stir-fried glossy with peanuts and sesame seeds',
+  muk: 'Korean acorn jelly salad on a small plain white plate: smooth glossy translucent brown jelly cubes mixed with green lettuce, cucumber slices and carrot strips with soy sesame dressing',
+  muk_white: 'Korean mung bean jelly on a small light blue plate: translucent pale milky white jelly cut into thick rectangular strips, glossy like soft tofu, sprinkled with sesame seeds and a few small green seaweed flakes',
+  mandu: 'four pan-fried Korean dumplings on a small plain white plate, half-moon shaped with thin wrappers and crimped pleated edges, golden brown crispy spots',
   fish_grilled: 'grilled mackerel fish fillet, crispy skin',
-  fish_braised: 'Korean godeungeo-jorim: chunks of braised mackerel fillet and radish pieces in thick red spicy sauce, cut pieces only, no fish head',
-  potato_stirfry: 'Korean gamja bokkeum: a small heap of thin julienned potato strips stir-fried pale golden with thin carrot strips and green pepper',
-  potato_braised: 'Korean gamja-jorim: small cubes of potato braised glossy brown in soy glaze with sesame seeds',
-  lotus: 'Korean yeongeun-jorim: a few round lotus root slices, each with a ring of small holes, glossy amber soy glaze, sprinkled sesame',
-  mushroom_stirfry: 'stir-fried sliced oyster mushrooms and shiitake slices with onion and carrot strips, glossy, cut pieces only',
+  fish_braised: 'Korean braised mackerel on a small plain white plate: cross-section chunks of mackerel steak and radish pieces in thick red spicy sauce, chunks only, no head, no tail, no whole fish',
+  potato_stirfry: 'thin julienned potato strips stir-fried yellow-golden with thin carrot strips and green pepper strips, a small heap on a small round light blue plate',
+  potato_braised: 'small cubes of potato braised glossy brown in soy glaze with sesame seeds in a small plain white dish',
+  lotus: 'a few round slices of braised lotus root, each slice with a ring of small round holes, glossy amber soy glaze, sprinkled sesame, on a small plain white dish',
+  mushroom_stirfry: 'stir-fried sliced oyster mushrooms and shiitake mushroom slices with onion and carrot strips, glossy, on a small plain white plate, cut pieces only',
   veg_stirfry: 'Korean stir-fried vegetables with sesame',
   cereal: 'a bowl of cereal flakes with milk',
   food_misc: 'a small Korean side dish banchan',

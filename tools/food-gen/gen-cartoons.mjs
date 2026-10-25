@@ -1,5 +1,6 @@
 // 카툰 음식 그림 한꺼번에 만들기 (로컬 생성 서버 localhost:8799 필요 → README)
 // node gen-cartoons.mjs <저장 폴더> [키...]   — 이미 있는 파일은 건너뜀. 무료 한도가 차면 멈춤(다음 날 다시 실행)
+// M=@cf/leonardo/lucid-origin node gen-cartoons.mjs ... → 다른 모델(얼굴이 자꾸 그려질 때)
 // MAX=40 node gen-cartoons.mjs ... → 요청을 40번까지만 보냄 (FLUX schnell 8단계 한 장 ≈ 96뉴런. 하루 무료 10,000 중 남겨 둘 몫이 있을 때)
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { LIST, STYLE } from './cartoon-list.mjs';
@@ -18,6 +19,7 @@ async function one(k) {
   sent++;
   const u = new URL('http://localhost:8799/');
   u.searchParams.set('p', `${LIST[k]}. ${STYLE}`);
+  if (process.env.M) u.searchParams.set('m', process.env.M);   // M=@cf/leonardo/lucid-origin 처럼 모델 바꾸기
   const r = await fetch(u);
   const buf = Buffer.from(await r.arrayBuffer());
   if (!r.ok) {
