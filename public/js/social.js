@@ -1369,7 +1369,7 @@ async function playHome() {
     const mineOut = r.mine && !isDev(S.me) && !top.some(u => u.isMe) ? `<li class="me hr-mine"><span class="hr-n">${r.mine}</span>${av(S.me, 'xs')}<span class="hr-nm">나</span><b>${esc(GAMES.home.fmt(r.myValue))}</b></li>` : '';
     return `<ol>${top.map((u, i) => row(u, i + 1)).join('')}${mineOut}</ol>`;
   };
-  const rkPane = (k, title, body) => `<section class="hr-pane"><header><b>${title}</b><button type="button" class="hr-all" data-rank="home" data-scope="${k}">더 보기</button></header>${body}</section>`;
+  const rkPane = (k, title, body) => `<section class="hr-pane"><div class="hr-ph"><b>${title}</b><button type="button" class="hr-all" data-rank="home" data-scope="${k}">더 보기</button></div>${body}</section>`;
   async function paintRk() {
     const el = $('#hrRk'); if (!el) return;
     const mine = `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></p>`;

@@ -3912,8 +3912,8 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 /* 친구 랭킹(왼쪽) · 전체 랭킹(오른쪽) — 2026-10-25 하율: 버튼 없이 바로 보이게 */
 .hr-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hr-pane{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px 12px;min-width:0}
-.hr-pane header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-.hr-pane header b{font-size:14px;font-weight:900}
+.hr-ph{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.hr-ph b{font-size:14px;font-weight:900}
 .hr-pe{margin:4px 0;color:var(--sub);font-weight:800;font-size:12.5px}
 .hr-rk ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
 .hr-rk li{display:flex;align-items:center;gap:7px;padding:3px 4px;border-radius:10px;white-space:nowrap}
