@@ -1128,7 +1128,7 @@ function centerHero(force) {
   // 시간표는 시계와 같은 높이 가운데. 아래 랭킹 카드가 메시지 버튼·화면 아래에 걸릴 때만 그만큼 시간표째 위로 올림(--rkup)
   const rk = $('#sRk'), tt = SIDE.tt.el; let up = 0;
   if (rk && !rk.hidden && document.documentElement.classList.contains('rk2') && tt.classList.contains('open') && st.getPropertyValue('--hcy')) {
-    const dock = $('#dmDock'), lim = (dock && dock.offsetParent ? dock.getBoundingClientRect().top : innerHeight) - 10;
+    const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null, lim = (db && db.height ? db.top : innerHeight) - 12;   // 고정(fixed) 요소는 offsetParent가 null이라 그걸로 판단하면 안 됨
     const th = tt.offsetHeight, over = cy + th / 2 + 16 + rk.offsetHeight - lim;
     if (over > 0) up = Math.min(over, Math.max(0, cy - th / 2 - (hdr + 10)));
   }
