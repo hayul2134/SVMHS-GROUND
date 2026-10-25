@@ -3415,6 +3415,10 @@ svg.art.shn{overflow:visible}
 .gc-grid .gc-done,.gc-grid .gc-need{position:static;padding:2px 8px;border-radius:99px;font:800 11.5px/1.3 var(--num);color:var(--ink)}
 .gc-grid .gc-done{background:linear-gradient(100deg,#ffe98a,#fff6c8,#ffd34a);border:2px solid var(--ink)}
 .gc-grid .gc-need{color:var(--sub)}
+/* 상점 등급 구분(2026-10-25): 등급 제목 + 희귀 칸은 보라빛 바탕·테두리 */
+.gc-shop .gc-rh{margin:4px 0 -2px}
+.gc-buyl li.r2:not(.lock){border-color:var(--rd);background:color-mix(in srgb,var(--rc) 14%,var(--card))}
+.gc-buyl li.r2.on{background:color-mix(in srgb,var(--rc) 26%,var(--card))}
 .shx1,.shx2,.shx3{transform-box:fill-box;transform-origin:center;animation:shnTw 2.4s ease-in-out infinite}
 .shx2{animation-delay:-.8s}.shx3{animation-delay:-1.6s}
 @keyframes shnTw{0%,100%{transform:scale(.35) rotate(0);opacity:.15}40%{transform:scale(1.1) rotate(25deg);opacity:1}60%{transform:scale(.9) rotate(35deg);opacity:1}}
