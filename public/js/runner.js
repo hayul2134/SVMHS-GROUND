@@ -648,7 +648,9 @@ export function createRunner(canvas, char, opt = {}) {
     st.frames++; st.ms = Math.round(st.frames * 50 / 3);
     st.speed = speedAt(st.ms / 1000);
     const s = scoreAt(st.ms);
-    if (Math.floor(s / 100) > st.lastHundred) { st.lastHundred = Math.floor(s / 100); st.flash = 1; beep(780, 1180, .12, 'square', .04); }
+    // 소리·깜빡임 간격(2026-10-25 하율): 1000m 전엔 100m마다 · 1000m부터 500m마다 · 5000m부터 1000m마다 (멀리 갈수록 덜 시끄럽게)
+    const step = s >= 5000 ? 1000 : s >= 1000 ? 500 : 100, mark = Math.floor(s / step) * step;
+    if (mark > st.lastHundred * 100) { st.lastHundred = mark / 100; st.flash = 1; beep(780, 1180, .12, 'square', .04); }
     st.score = s;
     if (s >= GOAL) return arrive();
     if (st.flash > 0) st.flash -= dt * .9;
