@@ -9,25 +9,49 @@
   const G = {"0":[671,"M337 11C514 11 644 -138 644 -355C644 -571 513 -721 335 -721C157 -721 27 -571 27 -356C27 -140 159 11 337 11ZM335 -143C254 -143 206 -218 206 -356C206 -492 254 -566 335 -566C416 -566 465 -491 465 -355C465 -218 417 -143 335 -143Z"],"1":[390,"M151 0H328V-709H16V-560H151Z"],"2":[576,"M22 0H547V-149H296L422 -272C501 -348 532 -408 532 -492C532 -632 435 -721 282 -721C166 -721 76 -672 18 -578L135 -474C178 -540 217 -567 268 -567C322 -567 357 -535 357 -485C357 -451 341 -423 300 -380L22 -97Z"],"3":[569,"M256 11C428 11 541 -86 541 -231C541 -349 469 -427 372 -437L526 -612V-709H60V-560H288L167 -419V-321C184 -327 216 -331 243 -331C319 -331 366 -295 366 -236C366 -176 319 -140 253 -140C201 -140 149 -164 125 -199L11 -87C69 -24 156 11 256 11Z"],"4":[613,"M18 -145H351V0H526V-145H594V-294H526V-427H351V-294H229L432 -709H240L18 -243Z"],"5":[568,"M257 11C431 11 541 -90 541 -234C541 -361 456 -470 295 -470C267 -470 246 -467 227 -462L238 -560H502V-709H95L60 -372L130 -308C160 -330 199 -344 244 -344C319 -344 365 -302 365 -241C365 -180 319 -140 250 -140C198 -140 146 -164 122 -199L8 -87C66 -24 160 11 257 11Z"],"6":[579,"M289 11C442 11 558 -97 558 -238C558 -372 451 -475 317 -475H315L484 -709H284L81 -412C40 -352 21 -296 21 -237C21 -96 137 11 289 11ZM289 -140C233 -140 192 -183 192 -242C192 -300 233 -344 289 -344C346 -344 387 -301 387 -242C387 -183 346 -140 289 -140Z"],"7":[530,"M108 0H291L513 -611V-709H16V-560H320Z"],"8":[569,"M285 11C442 11 544 -77 544 -198C544 -281 502 -346 436 -377C488 -406 517 -465 517 -526C517 -638 422 -721 285 -721C147 -721 52 -638 52 -526C52 -465 81 -406 132 -377C67 -346 25 -281 25 -198C25 -77 127 11 285 11ZM285 -437C244 -437 215 -466 215 -507C215 -547 244 -576 285 -576C325 -576 354 -546 354 -505C354 -465 325 -437 285 -437ZM285 -138C232 -138 194 -174 194 -224C194 -273 232 -310 285 -310C338 -310 375 -273 375 -224C375 -174 338 -138 285 -138Z"],"9":[579,"M95 0H295L498 -297C539 -357 558 -413 558 -473C558 -613 442 -721 289 -721C137 -721 20 -612 20 -472C20 -337 128 -234 262 -234H264ZM289 -366C233 -366 192 -409 192 -467C192 -526 233 -569 289 -569C346 -569 387 -526 387 -467C387 -409 346 -366 289 -366Z"],":":[300,"M150 -278C207 -278 249 -322 249 -379C249 -436 207 -481 150 -481C92 -481 50 -436 50 -379C50 -322 92 -278 150 -278ZM150 11C207 11 249 -33 249 -90C249 -147 207 -191 150 -191C92 -191 50 -147 50 -90C50 -33 92 11 150 11Z"],".":[304,"M153 11C210 11 252 -33 252 -90C252 -147 210 -191 153 -191C95 -191 53 -147 53 -90C53 -33 95 11 153 11Z"]};
   const NS = 'http://www.w3.org/2000/svg', html = document.documentElement;
   const on = () => html.dataset.ckfx === 'neon';
+  // 글자 간격(2026-10-25 하율 "타이머 간격 일정하게"): 숫자 칸은 폭이 같고(.65em) 숫자는 그 가운데에 그려서,
+  // 폭이 좁은 1 옆은 휑하고 0·9처럼 넓은 숫자끼리는 관이 맞닿아 보였음 → 관의 실제 잉크 폭 기준으로 줄 전체를 다시 배치해
+  // 이웃한 관 사이 빈틈을 모두 같게(GAP). 원래 글자 칸은 그대로라 화면 자리(폭)는 안 바뀜.
+  // 흔들림 방지: 줄은 왼쪽 기준으로 쌓고, 가운데 맞춤은 끝 두 글자(매초·매 프레임 바뀌는 초)를 평균 폭으로 쳐서 계산 →
+  // 초가 바뀌어도 앞 숫자들은 제자리, 분·시가 바뀔 때만 줄 전체가 살짝 다시 가운데로.
+  const INK = {};   // 잉크 좌우 끝(글꼴 단위): path 명령마다 x 좌표만 모음 — H는 x 하나, V는 y 하나, 나머지(M·L·C·Q)는 x,y 쌍
+  for (const k in G) { const xs = []; for (const [, c, a] of G[k][1].matchAll(/([A-Z])([^A-Z]*)/g)) { const v = a.trim().split(/[\s,]+/).filter(Boolean).map(Number); if (c === 'H') xs.push(...v); else if (c !== 'V') v.forEach((n, i) => i % 2 || xs.push(n)); } INK[k] = [Math.min(...xs), Math.max(...xs)]; }
+  const GAP = 145, AVG = 545;   // 글꼴 단위: 잉크 사이 거리(관 두께 82 포함 → 관 사이 빈틈 63), 숫자 평균 잉크 폭
+  const iw = ch => INK[ch][1] - INK[ch][0];
   function paint(el) {
     if (!el) return;
+    const items = [];
     for (const sp of el.querySelectorAll(':scope > .n, :scope > .c')) {
-      const old = sp.querySelector(':scope > .nsvg');
       const ch = [...sp.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join(''), g = G[ch];
+      const old = sp.querySelector(':scope > .nsvg');
       if (!on() || !g) { old?.remove(); sp.classList.remove('ntg'); continue; }
-      const fs = parseFloat(getComputedStyle(sp).fontSize), w = sp.offsetWidth;
-      const key = ch + '|' + fs + '|' + w;
-      if (old && old.dataset.k === key) continue;
-      old?.remove();
-      // 글자 기준선 위치: 폭 0짜리 표식을 기준선에 놓고 잼
-      const mk = document.createElement('i'); mk.className = 'nb'; sp.appendChild(mk);
-      const y = mk.offsetTop; mk.remove();
-      const s = fs / 1000, x = (w - g[0] * s) / 2;   // 칸 가운데 정렬(text-align:center와 같음)
-      const svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('class', 'nsvg'); svg.setAttribute('aria-hidden', 'true'); svg.dataset.k = key;
-      const p = c => `<path class="${c}" d="${g[1]}"/>`;
-      svg.innerHTML = `<g transform="translate(${x.toFixed(2)} ${y}) scale(${s.toFixed(5)})">${p('t1') + p('t2') + p('t3')}</g>`;
-      sp.appendChild(svg); sp.classList.add('ntg');
+      items.push({ sp, ch, g, old });
+    }
+    if (!items.length) return;
+    const fs = parseFloat(getComputedStyle(items[0].sp).fontSize), s = fs / 1000;
+    const first = items[0].sp, last = items[items.length - 1].sp;
+    const L0 = first.offsetLeft, W = (last.offsetLeft + last.offsetWidth - L0) / s;   // 원래 칸들이 차지한 폭(글꼴 단위)
+    const n = items.length, isDg = c => /\d/.test(c);
+    let P = GAP * (n - 1); items.forEach((it, i) => { P += (i >= n - 2 && isDg(it.ch) && n > 3) ? AVG : iw(it.ch); });
+    let X = (W - P) / 2;   // 줄 왼쪽 시작(첫 칸 왼쪽 기준)
+    for (const it of items) {
+      const { sp, ch, g } = it;
+      const x = (L0 - sp.offsetLeft) / s + X - INK[ch][0];   // 이 칸 기준 path 원점
+      X += iw(ch) + GAP;
+      const key = ch + '|' + fs;
+      let svg = it.old;
+      if (!svg || svg.dataset.k !== key) {
+        svg?.remove();
+        const mk = document.createElement('i'); mk.className = 'nb'; sp.appendChild(mk);
+        const y = mk.offsetTop; mk.remove();
+        svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('class', 'nsvg'); svg.setAttribute('aria-hidden', 'true'); svg.dataset.k = key; svg.dataset.y = y;
+        const p = c => `<path class="${c}" d="${g[1]}"/>`;
+        svg.innerHTML = `<g>${p('t1') + p('t2') + p('t3')}</g>`;
+        sp.appendChild(svg); sp.classList.add('ntg');
+      }
+      const tr = `translate(${(x * s).toFixed(2)} ${svg.dataset.y}) scale(${s.toFixed(5)})`;
+      const gEl = svg.firstChild; if (gEl.getAttribute('transform') !== tr) gEl.setAttribute('transform', tr);
     }
   }
   const all = () => paint(document.getElementById('bigTime'));
