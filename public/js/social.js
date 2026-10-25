@@ -15,9 +15,9 @@ import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보�
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const ALL_COLORS = [...COLORS, ...ATT_COLORS];   // 출석 보상 전용 배경 색 포함
-const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','🫧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
+const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','💧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
 // 마우스를 올리면 뜨는 이름표(data-tip)용 이름
-const EMO_NAME = { '😎':'선글라스','🐶':'강아지','🐱':'고양이','🐰':'토끼','🦊':'여우','🐻':'곰','🐼':'판다','🐸':'개구리','🐥':'병아리','🐧':'펭귄','🦄':'유니콘','🐯':'호랑이','🐨':'코알라','🐹':'햄스터','👽':'외계인','🤖':'로봇','👻':'유령','🎃':'호박','🌝':'보름달','🍀':'네잎클로버','🔥':'불꽃','⚡':'번개','🌈':'무지개','🎬':'촬영 슬레이트','🎥':'영화 카메라','🎧':'헤드폰','🎮':'게임패드','🏀':'농구공','⚽':'축구공','🎸':'기타','🍓':'딸기','🍩':'도넛','🧋':'버블티','🍕':'피자','💜':'보라 하트','⭐':'별','✨':'반짝반짝','💖':'반짝 하트','💙':'파란 하트','📸':'사진기','☁️':'구름','🌙':'달','🐾':'발자국','👑':'왕관','💯':'백점','🎀':'리본','🫧':'비눗방울','🪐':'행성','🦋':'나비','🌷':'튤립','🍒':'체리','🎵':'음표','🌊':'파도' };
+const EMO_NAME = { '😎':'선글라스','🐶':'강아지','🐱':'고양이','🐰':'토끼','🦊':'여우','🐻':'곰','🐼':'판다','🐸':'개구리','🐥':'병아리','🐧':'펭귄','🦄':'유니콘','🐯':'호랑이','🐨':'코알라','🐹':'햄스터','👽':'외계인','🤖':'로봇','👻':'유령','🎃':'호박','🌝':'보름달','🍀':'네잎클로버','🔥':'불꽃','⚡':'번개','💧':'물방울','🌈':'무지개','🎬':'촬영 슬레이트','🎥':'영화 카메라','🎧':'헤드폰','🎮':'게임패드','🏀':'농구공','⚽':'축구공','🎸':'기타','🍓':'딸기','🍩':'도넛','🧋':'버블티','🍕':'피자','💜':'보라 하트','⭐':'별','✨':'반짝반짝','💖':'반짝 하트','💙':'파란 하트','📸':'사진기','☁️':'구름','🌙':'달','🐾':'발자국','👑':'왕관','💯':'백점','🎀':'리본','🫧':'비눗방울','🪐':'행성','🦋':'나비','🌷':'튤립','🍒':'체리','🎵':'음표','🌊':'파도' };
 const COLOR_KO = { sky:'하늘색', blue:'파란색', mint:'민트색', lime:'연두색', yellow:'노란색', peach:'살구색', pink:'분홍색', violet:'보라색', ink:'남색' };
 const MAX_STICKERS = 6;
 const stkMax = u => isDev(u) ? 12 : MAX_STICKERS;   // 개발자는 치장 제한 없음(배너 자리 12개)
@@ -970,6 +970,11 @@ async function loadHomeRank(force) {
     if (rkTab === tab) paintHomeRank(tab, r);
   } catch (e) { if (!c && rkTab === tab) $('#rkList').innerHTML = `<li class="rk-empty">${esc(e.message)}</li>`; }
 }
+// 출석 랭킹이 빈 때(오픈 전 주말·첫날 아침): 주말 출석은 안 세니 언제부터 순위가 생기는지 안내 (2026-10-25)
+function attEmpty() {
+  const d = new Date().getDay();
+  return d === 0 || d === 6 ? '출석은 등교일에만 세요<br>월요일 첫 출석부터 순위가 생겨요' : '아직 1등 자리가 비어 있어요<br>오늘 출석하면 바로 이름이 올라가요';
+}
 function paintHomeRank(tab, r) {   // 시간표 카드 아래 1~3등만 (2026-10-25 2차)
   const g = GAMES[tab], list = r.list.slice(0, 3);
   const val = u => g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
@@ -977,7 +982,7 @@ function paintHomeRank(tab, r) {   // 시간표 카드 아래 1~3등만 (2026-10
       <span class="rk-n"><i class="mdl m${i + 1}">${i + 1}</i></span>
       <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
       <b class="rk-v">${val(u)}</b></li>`).join('')
-    : `<li class="rk-empty">${tab === 'att' ? '아직 출석 기록이 없어요' : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
+    : `<li class="rk-empty">${tab === 'att' ? attEmpty() : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
 }
 function startBuddies() {
   clearInterval(bdTimer);

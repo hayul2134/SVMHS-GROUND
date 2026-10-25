@@ -1541,6 +1541,8 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .sh-dots i{width:8px;height:8px;border-radius:50%;background:var(--line);transition:width .25s,background .25s}
 .sh-dots i.on{width:22px;border-radius:5px;background:var(--accent)}
 @media (max-width:520px){ .shs-d{font-size:13.5px} .sh-on .sh-skip{bottom:auto;top:56px;right:12px} }
+/* 세로 태블릿(800×1280 등): 카드와 설명 사이가 너무 떠 보여서 설명을 위로 올리고 조금 크게 (2026-10-25) */
+@media (min-width:600px) and (max-aspect-ratio:4/5){ .sh-on .sh-say{bottom:15vh} .shs-t{font-size:34px} .shs-d{font-size:17px;max-width:600px} }
 
 /* ----- 로그인·가입 페이지 (#introAuth.authpage · 소개 화면 위 전체 화면) ----- */
 .authpage{position:fixed;inset:0;z-index:5;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:minmax(330px,500px) 1fr;

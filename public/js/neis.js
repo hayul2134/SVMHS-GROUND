@@ -68,6 +68,13 @@ export async function getTimetable(cls, from, to) {
   return res.flat();
 }
 
+/** 나이스 '금요일수업'·'수요일 수업' = 그날 다른 요일 시간표로 수업하는 교체일 (2026-10-25)
+ *  → 이름을 '금요일 시간표로 수업'으로 바꾸고 swap 표시 (홈 '다가오는 일정'·D-day 목록에선 빼고 달력에만) */
+const SWAP_RE = /^\s*([월화수목금토일])요일\s*수업\s*$/;
+function swapDay(r) {
+  const m = SWAP_RE.exec(r.EVENT_NM);
+  return m ? { ...r, EVENT_NM: `${m[1]}요일 시간표로 수업`, swap: m[1] } : r;
+}
 export async function getSchedule(from, to) {
   let rows;
   if (api.hasKey) rows = await neis('SchoolSchedule', { AA_FROM_YMD: ymd(from), AA_TO_YMD: ymd(to) });
@@ -80,6 +87,7 @@ export async function getSchedule(from, to) {
   return rows
     .filter(r => r.EVENT_NM && r.EVENT_NM !== '토요휴업일')
     .filter(r => { const k = r.AA_YMD + r.EVENT_NM; if (seen.has(k)) return false; seen.add(k); return true; })
+    .map(swapDay)
     .sort((a, b) => a.AA_YMD.localeCompare(b.AA_YMD));
 }
 

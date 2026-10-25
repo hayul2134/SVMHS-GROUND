@@ -88,6 +88,7 @@ function bellInfo(n) {
 }
 
 // 지금 상태에 맞춘 G의 한마디 (시간대가 아니라 종 시간 기준이라 '수업 중인데 점심 인사' 같은 어긋남이 없음)
+const SAY = { today: '', tmr: '' };   // 학사일정 알림(loadOffDays가 채움)
 function sayLine(b) {
   const p = +((b.state.match(/^(\d)교시/) || [])[1] || 0);
   const hr = bellNow().getHours();
@@ -96,13 +97,14 @@ function sayLine(b) {
     const L = ['새벽 공부 중? 등교 전까지 시간 아껴 쓰자 📚', '작업 중이구나! 지금 집중력 최고일 때야 🔥', '조금만 더 하고 꼭 눈 붙이자 😴', '이 시간까지 깨어 있는 너, 진짜 대단해 ✨', '끝내고 몇 시간 잘 수 있는지 시계 한번 보자 ⏰', '새벽 집중 모드 ON 💪 마무리까지 화이팅', '물 한 잔 마시고 다시 달려 보자 💧', '오늘 한 만큼 내일이 편해질 거야 🌙'];
     return L[Math.floor(bellNow().getMinutes() / 10 + hr * 6) % L.length];
   }
-  if (b.eve) return '내일 학교… 마음의 준비 하자 🫠';
+  if (b.eve) return SAY.tmr || '내일 학교… 마음의 준비 하자 🙃';
+  if (SAY.today && ['등교 전', '조회 중', '쉬는 시간', '점심시간'].includes(b.state)) return SAY.today;
   if (b.state === '주말') return '주말이다! 푹 쉬자 😴';
   if (b.state === '쉬는 날') return '오늘은 쉬는 날! 푹 쉬자 😴';
   if (b.state === '방과 후' && b.free) return b.wkNext ? '주말이다!!! 🎉 일주일 고생했어' : '내일은 쉬는 날! 🎉';
-  if (b.state === '방과 후') return '오늘도 수고했어 👋';
+  if (b.state === '방과 후') return SAY.tmr || '오늘도 수고했어 👋';
   if (b.state === '등교 전') return hr < 7 ? '일찍 일어났네! 오늘도 가보자 ☀️' : '좋은 아침! 오늘도 가보자 ☀️';
-  if (b.state === '조회 중') return '조회 시간, 정신 차려~ 🫡';
+  if (b.state === '조회 중') return '조회 시간, 정신 차려~ 👀';
   if (b.state === '점심시간') return '점심시간! 맛있게 먹고 와 🍚';
   if (b.state === '쉬는 시간') return '쉬는 시간! 잠깐 숨 돌리자 🙌';
   if (p === 4) return '배고프다… 점심까지 조금만 🤤';
@@ -249,9 +251,11 @@ async function loadOffDays() {
       const k = ev.slice(i + 1).find(x => /개학/.test(x.EVENT_NM));
       for (let d = addDays(parseYmd(r.AA_YMD), 1), j = 0; j < 80 && (!k || ymd(d) < k.AA_YMD); d = addDays(d, 1), j++) offDays.add(ymd(d));
     });
-    // 오늘 학교 행사·시험이 있으면 시계 아래에 알림 (그런 날은 종 시간이 평소와 다를 수 있음)
-    const evT = rows.filter(r => r.AA_YMD === t && !isOff(r)).map(r => r.EVENT_NM);
-    if (evT.length) { const el = $('#todayNote'); el.textContent = `오늘 일정 · ${evT.slice(0, 2).join(', ')}${evT.length > 2 ? ' 외' : ''} — 종 시간이 평소와 다를 수 있어요`; el.hidden = false; }
+    // 오늘 학교 행사·시험 / 요일 교체일(나이스 '금요일수업')은 G의 말풍선으로 알려 줌 (2026-10-25: 예전 '#todayNote' 칸이 화면에서 빠져 있어 안 보이던 것 고침)
+    const tk = ymd(addDays(today(), 1)), sw = rows.find(r => r.AA_YMD === t && r.swap), swT = rows.find(r => r.AA_YMD === tk && r.swap);
+    const evT = rows.filter(r => r.AA_YMD === t && !isOff(r) && !r.swap).map(r => r.EVENT_NM.replace(/대수능 모의학력평가|대학수학능력시험 모의평가/, '수능 모의평가').replace(/대학수학능력시험/, '수능').replace(/\(.*?\)/g, '').trim());
+    SAY.today = sw ? `오늘은 ${sw.swap}요일 시간표로 수업해요 📚` : evT.length ? `오늘은 ${evT[0]}! 종 시간이 다를 수 있어요 🔔` : '';
+    SAY.tmr = swT ? `내일은 ${swT.swap}요일 시간표! 준비물 챙기자 🎒` : '';
   } catch {}
   nextKey = '';
   if (!S.ttPick && cls && S.ttShown && ymd(ttTarget()) !== S.ttShown) renderHomeTT();
@@ -513,7 +517,7 @@ async function loadNextMeal() {
     const k = rows.map(r => r.MLSV_YMD).sort()[0];
     nextMeal = k ? { day: parseYmd(k), rows: rows.filter(r => r.MLSV_YMD === k).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE) } : { day: null, rows: [] };
   } catch { if (seq !== nextSeq) return; nextMeal = { day: null, rows: [] }; }
-  paintHeroMeal();
+  if (homeRows.length) paintHeroMeal(); else paintHomeMeal();   // 오늘 급식 없는 날은 '한눈에 보기' 카드도 다음 급식 날로
 }
 const autoMealDay = () => (!S.mealWk && mealsOver() && nextMeal?.day) || null;   // ‹ › 기준이 되는 '지금' 급식 날
 // 첫 화면 급식 카드: 기본은 오늘(끼니 자동), ‹ › 로 다른 날(S.sMealDay)을 넘겨 봄. 끼니 칩으로 조식·중식·석식 바꿔 보기(S.heroPick)
@@ -574,12 +578,18 @@ function paintHeroWeek() {
   wkResize();
 }
 $('#sMealSlots').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { e.stopPropagation(); S.heroPick = b.dataset.m; armReset(); paintHeroMeal(); } });
+// '한눈에 보기' 급식 카드: 오늘 급식이 없는 날(주말·휴업일)엔 위 식판처럼 다음 급식 날을 보여 줌 (2026-10-25 — 두 카드가 어긋나지 않게)
 function paintHomeMeal() {
   if (!S.mealManual && homeRows.length) S.homeMeal = (S.mealSlot === '4' ? homeRows[homeRows.length - 1] : pickMeal(homeRows, S.mealSlot)).MMEAL_SC_CODE;   // '한눈에 보기' 오늘 급식: 다 끝났으면 마지막 끼니
   paintHeroMeal();
-  const sel = S.homeMeal;
-  $('#hMealTabs').innerHTML = homeRows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
-  setTray($('#hMeal'), mealListHtml(homeRows.find(r => r.MMEAL_SC_CODE === sel), today()));
+  const today0 = !!homeRows.length, rows = today0 ? homeRows : nextMeal?.rows, day = today0 ? today() : nextMeal?.day;
+  const ttl = $('#mealCard h2').lastChild, tabs = $('#hMealTabs'), box = $('#hMeal');
+  ttl.nodeValue = !today0 && day ? `${ttLabel(day)} 급식` : '오늘 급식';
+  if (!today0 && !rows) { tabs.innerHTML = ''; box.innerHTML = skel(3); return; }   // 다음 급식 날 찾는 중
+  if (!today0 && !day) { tabs.innerHTML = ''; box.innerHTML = empty(S.mealFail ? '급식 정보를 불러오지 못했어요' : '다음 급식 정보가 아직 안 올라왔어요'); return; }
+  const sel = rows.some(r => r.MMEAL_SC_CODE === S.homeMeal) && (today0 || S.mealManual) ? S.homeMeal : (rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0]).MMEAL_SC_CODE;
+  tabs.innerHTML = rows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
+  setTray(box, mealListHtml(rows.find(r => r.MMEAL_SC_CODE === sel), day));
 }
 async function renderHomeMeal() {
   const box = $('#hMeal'), tabs = $('#hMealTabs');
@@ -587,7 +597,7 @@ async function renderHomeMeal() {
     const [rows] = await Promise.all([getMeals(today()), loadVotes(today())]);
     homeRows = rows.filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
     S.homeLoaded = true; S.mealFail = false; nextMeal = null; nextSeq++;   // 날짜가 바뀌면 다음 급식도 새로 찾음
-    if (!homeRows.length) { tabs.innerHTML = ''; box.innerHTML = empty('오늘은 급식이 없어요'); paintHeroMeal(); return; }
+    if (!homeRows.length) { paintHomeMeal(); return; }
     paintHomeMeal();
     const lunch = homeRows.find(r => r.MMEAL_SC_CODE === '2') || homeRows[0], ll = cleanDish(lunch.DDISH_NM);
     TK.meal = splitTray(ll).main; renderTicker();
@@ -1420,7 +1430,7 @@ async function renderHomeDday() {
   const mine = myDdays().filter(x => parseYmd(x.date) >= t).map(x => ({ ...x, mine: true }));
   let school = [], fail = false;
   try {
-    school = (await loadUpcoming()).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: isOff(r) }));
+    school = (await loadUpcoming()).filter(r => !r.swap).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: isOff(r) }));
   } catch { fail = true; }
   const list = mine.concat(school).sort(byDate).slice(0, 10);
   if (!list.length) { box.innerHTML = empty(fail ? '일정을 불러오지 못했어요' : '60일 안에 예정된 일정이 없어요 · <button class="link" data-go="dday">D-day 추가</button>'); return; }
@@ -1441,7 +1451,7 @@ async function renderDdayView() {
   $('#dMine').innerHTML = ddayListHtml(myDdays().map((x, i) => ({ ...x, i })).sort(byDate));
   $('#dSchool').innerHTML = skel(3);
   try {
-    $('#dSchool').innerHTML = ddayListHtml((await loadUpcoming()).slice(0, 8).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: isOff(r) })));
+    $('#dSchool').innerHTML = ddayListHtml((await loadUpcoming()).filter(r => !r.swap).slice(0, 8).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: isOff(r) })));
   } catch { $('#dSchool').innerHTML = empty('일정을 불러오지 못했어요'); }
 }
 $('#dForm').addEventListener('submit', e => {
@@ -2222,7 +2232,8 @@ async function fillShow() {
   }
   function rowLayout() {
     const { W, H } = L, sz = objs.map(o => [o.offsetWidth, o.offsetHeight]);
-    const rowH = Math.min(H * (W < 600 ? .46 : .52), 440), gap = Math.max(26, W * .035), cy = H * (W < 600 ? .44 : .47);
+    const rowH = Math.min(H * (W < 600 ? .46 : .52), W >= 600 && H > W * 1.2 ? 580 : 440),   // 세로 태블릿(800×1280 등)은 카드가 작고 아래가 비어 보여서 더 크게 (2026-10-25)
+      gap = Math.max(26, W * .035), cy = H * (W < 600 ? .44 : .47);
     let x = 0;
     L.sz = sz;
     // 시계 복제본은 테두리가 바깥으로 넉넉히(좌우 54·위 30·아래 26px) 커지므로 그만큼 크기를 줄이고 양옆 간격을 더 둠
