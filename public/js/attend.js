@@ -7,7 +7,7 @@
 //  4. 이어진 날은 달력·이번 주에서 띠로 연결 → 끊기기 싫은 마음(연속의 시각화)
 //  5. 다음 보상까지 남은 날을 늘 보여 줌 (목표가 분명하게)
 import { $, esc, pad } from './util.js';
-import { REWARDS, KIND, COLOR_NAME, rwOn, rwName, objName } from './att-rewards.js';
+import { REWARDS, KIND, COLOR_NAME, rwOn, rwName, objName, FLAME_AT, rwDay } from './att-rewards.js';
 import { artOf, ui, medal } from './att-art.js';
 export { REWARDS };
 export const unlocked = (best, total, kind) => REWARDS.filter(r => r.kind === kind && rwOn(r, best || 0, total || 0)).map(r => r.v);
@@ -26,7 +26,7 @@ const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
    tier: 0 주황 · 1 붉은 주황 · 2 금빛 · 3 푸른 불꽃. 'burn' 클래스를 붙이면 한 번 활활 타오르고 가만히 멈춤 ----- */
 // 개발자 계정은 연속 출석 무한(서버가 1e6을 보냄) → 화면엔 ∞
 export const fmtN = n => n >= 1e6 ? '∞' : n;
-export const tierOf = n => n >= 100 ? 3 : n >= 30 ? 2 : n >= 7 ? 1 : 0;
+export const tierOf = n => n >= FLAME_AT[2] ? 3 : n >= FLAME_AT[1] ? 2 : n >= FLAME_AT[0] ? 1 : 0;   // 등교일 기준 1주·한 달·백일
 const FIRE = [   // [바깥 위, 바깥 아래, 가운데 위, 가운데 아래, 속 위, 속 아래, 심지, 두께]
   ['#ffa03e', '#ff5a36', '#ffc24c', '#ff8b3a', '#ffe68c', '#ffc64e', '#fff9df', '#cf4127'],
   ['#ff7c3a', '#e2372d', '#ffae3e', '#ff6a2e', '#ffd86c', '#ffb43e', '#fff3d0', '#a82a22'],
@@ -294,11 +294,11 @@ function sheetHtml(r, quiet = false) {
       <li>출석은 <b>등교하는 날만</b> 세요. 주말·공휴일에 들어와도 출석으로 치지 않으니, 쉬는 날은 마음 편히 쉬어요.</li>
       <li>연속 ${r.shieldEvery}일마다 <b>출석 방패</b>를 1개 받아요(최대 ${r.shieldMax}개). 빠진 등교일 하루를 방패가 자동으로 메워 줘요.</li>
       <li>방패를 한 번도 안 쓰고 이어 가면 <b>완벽한 연속</b> — 불꽃에 금빛 후광이 생겨요.</li>
-      <li>불꽃은 7일·30일·100일에 색이 바뀌어요.</li>
+      <li>불꽃은 연속 ${FLAME_AT.join('일·')}일에 색이 바뀌어요. 연속·누적은 모두 <b>등교일</b>만 세요(주말·방학은 빼고).</li>
       <li>보상은 최고 연속 기록·총 출석일 기준이라 한 번 받으면 사라지지 않아요.</li>
       <li>받은 <b>스티커</b>는 이름 옆 대표 스티커, 첫 화면 시계 꾸미기, 밸런스 댓글·DM 스티커로 쓸 수 있어요. 고르기는 프로필 꾸미기에서.</li>
       <li>등교하는 날 출석하면 <b>뽑기권</b>도 1장씩 받아요(연속 5일마다·기념일엔 1장 더). 서비스 › 뽑기에서 써요.</li>
-      <li><b>혜택</b> 보상: 시계 스티커 칸이 늘어나고(1칸 → 최대 3칸), 연속 30일이면 방패를 3개까지 모을 수 있어요.</li></ul></details>
+      <li><b>혜택</b> 보상: 시계 스티커 칸이 늘어나고(1칸 → 최대 3칸), 연속 ${rwDay('perk', 'shield3').d}일이면 방패를 3개까지 모을 수 있어요.</li></ul></details>
     <div class="row"><button class="btn ghost" type="button" data-close>닫기</button></div>`;
 }
 async function loadRank(scope) {

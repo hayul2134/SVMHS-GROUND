@@ -8,49 +8,51 @@
 // 콘과=영상콘텐츠과(방송·영화: 슬레이트·조명·필름 카메라) · 미과=영상미디어과(애니·디자인·3D: 팔레트·3D 큐브·펜 태블릿) · 프과=영상프로듀스과(후반 작업: 편집 타임라인·헤드폰·컬러 휠 — 2026-10-24 하율 정정)
 // 화면에는 과 이름을 쓰지 않고 물건 이름만 씀(OBJ_NAME) — "왜 과로 틀에 박냐"는 말이 안 나오게 (2026-10-24)
 // 프로필 사진은 로고와 같은 씰 — 학과 씰은 30일(파랑)·100일(금빛)·365일(은하수) 등급만 다르고 세 과 모두 같은 날.
+// 2026-10-25 하율: "연속 출석을 평일에만 세니까 7일 기준으로 주면 안 돼" → 등교일 기준으로 다시 맞춤.
+// 등교일 5일 = 1주 · 10일 = 2주 · 20일 ≈ 한 달 · 100일 ≈ 한 학기 · 190일 ≈ 한 해(한 학년도 수업일수). 날짜를 낮추기만 해서 이미 받은 보상은 그대로.
 export const REWARDS = [
   { by: 'best', d: 3, kind: 'sticker', v: 'r:bell' },
-  { by: 'best', d: 5, kind: 'title', v: '불씨' },
-  { by: 'best', d: 7, kind: 'sticker', v: 'r:slate', dept: 'con' },
-  { by: 'best', d: 7, kind: 'sticker', v: 'r:palette', dept: 'med' },
-  { by: 'best', d: 7, kind: 'sticker', v: 'r:timeline', dept: 'pro' },
-  { by: 'best', d: 7, kind: 'title', v: '타오르는 중' },
-  { by: 'best', d: 10, kind: 'avatar', v: 'r:gblue' },
-  { by: 'best', d: 14, kind: 'color', v: 'xflame' },
-  { by: 'best', d: 14, kind: 'perk', v: 'deco2' },
-  { by: 'best', d: 20, kind: 'sticker', v: 'r:clock' },
-  { by: 'best', d: 25, kind: 'color', v: 'xsky' },
-  { by: 'best', d: 30, kind: 'avatar', v: 'r:conblue', dept: 'con' },
-  { by: 'best', d: 30, kind: 'avatar', v: 'r:medblue', dept: 'med' },
-  { by: 'best', d: 30, kind: 'avatar', v: 'r:problue', dept: 'pro' },
-  { by: 'best', d: 30, kind: 'title', v: '꺼지지 않는 불꽃' },
-  { by: 'best', d: 30, kind: 'perk', v: 'shield3' },
-  { by: 'best', d: 40, kind: 'color', v: 'xsunset' },
-  { by: 'best', d: 50, kind: 'sticker', v: 'r:light', dept: 'con' },
-  { by: 'best', d: 50, kind: 'sticker', v: 'r:cube', dept: 'med' },
-  { by: 'best', d: 50, kind: 'sticker', v: 'r:headset', dept: 'pro' },
-  { by: 'best', d: 60, kind: 'color', v: 'xsakura' },
-  { by: 'best', d: 75, kind: 'color', v: 'xaurora' },
-  { by: 'best', d: 90, kind: 'sticker', v: 'r:gseal' },
-  { by: 'best', d: 100, kind: 'avatar', v: 'r:congold', dept: 'con' },
+  { by: 'best', d: 3, kind: 'title', v: '불씨' },
+  { by: 'best', d: 5, kind: 'sticker', v: 'r:slate', dept: 'con' },      // 1주 개근
+  { by: 'best', d: 5, kind: 'sticker', v: 'r:palette', dept: 'med' },
+  { by: 'best', d: 5, kind: 'sticker', v: 'r:timeline', dept: 'pro' },
+  { by: 'best', d: 5, kind: 'title', v: '타오르는 중' },
+  { by: 'best', d: 8, kind: 'avatar', v: 'r:gblue' },
+  { by: 'best', d: 10, kind: 'color', v: 'xflame' },                     // 2주
+  { by: 'best', d: 10, kind: 'perk', v: 'deco2' },
+  { by: 'best', d: 15, kind: 'sticker', v: 'r:clock' },                  // 3주
+  { by: 'best', d: 18, kind: 'color', v: 'xsky' },
+  { by: 'best', d: 20, kind: 'avatar', v: 'r:conblue', dept: 'con' },    // 한 달
+  { by: 'best', d: 20, kind: 'avatar', v: 'r:medblue', dept: 'med' },
+  { by: 'best', d: 20, kind: 'avatar', v: 'r:problue', dept: 'pro' },
+  { by: 'best', d: 20, kind: 'title', v: '꺼지지 않는 불꽃' },
+  { by: 'best', d: 20, kind: 'perk', v: 'shield3' },
+  { by: 'best', d: 30, kind: 'color', v: 'xsunset' },
+  { by: 'best', d: 35, kind: 'sticker', v: 'r:light', dept: 'con' },
+  { by: 'best', d: 35, kind: 'sticker', v: 'r:cube', dept: 'med' },
+  { by: 'best', d: 35, kind: 'sticker', v: 'r:headset', dept: 'pro' },
+  { by: 'best', d: 40, kind: 'color', v: 'xsakura' },                    // 두 달
+  { by: 'best', d: 55, kind: 'color', v: 'xaurora' },
+  { by: 'best', d: 65, kind: 'sticker', v: 'r:gseal' },
+  { by: 'best', d: 100, kind: 'avatar', v: 'r:congold', dept: 'con' },   // 백일(≈ 한 학기)
   { by: 'best', d: 100, kind: 'avatar', v: 'r:medgold', dept: 'med' },
   { by: 'best', d: 100, kind: 'avatar', v: 'r:progold', dept: 'pro' },
   { by: 'best', d: 100, kind: 'title', v: '백일의 전설' },
-  { by: 'best', d: 200, kind: 'color', v: 'xgalaxy' },
-  { by: 'best', d: 250, kind: 'color', v: 'xholo' },
-  { by: 'best', d: 365, kind: 'avatar', v: 'r:congx', dept: 'con' },
-  { by: 'best', d: 365, kind: 'avatar', v: 'r:medgx', dept: 'med' },
-  { by: 'best', d: 365, kind: 'avatar', v: 'r:progx', dept: 'pro' },
-  { by: 'best', d: 365, kind: 'title', v: '꺼지지 않는 불꽃' },
+  { by: 'best', d: 140, kind: 'color', v: 'xgalaxy' },
+  { by: 'best', d: 160, kind: 'color', v: 'xholo' },
+  { by: 'best', d: 190, kind: 'avatar', v: 'r:congx', dept: 'con' },     // 한 해
+  { by: 'best', d: 190, kind: 'avatar', v: 'r:medgx', dept: 'med' },
+  { by: 'best', d: 190, kind: 'avatar', v: 'r:progx', dept: 'pro' },
+  { by: 'best', d: 190, kind: 'title', v: '불사조' },                    // 예전엔 20(30)일 칭호와 이름이 겹쳐 있었음
   { by: 'total', d: 5, kind: 'sticker', v: 'r:nametag' },
   { by: 'total', d: 10, kind: 'sticker', v: 'r:tray' },
   { by: 'total', d: 15, kind: 'avatar', v: 'r:gpink' },
-  { by: 'total', d: 30, kind: 'title', v: '단골손님' },
-  { by: 'total', d: 30, kind: 'perk', v: 'deco3' },
-  { by: 'total', d: 50, kind: 'color', v: 'xgold' },
-  { by: 'total', d: 80, kind: 'sticker', v: 'r:note' },
-  { by: 'total', d: 120, kind: 'avatar', v: 'r:gnight' },
-  { by: 'total', d: 200, kind: 'title', v: '그라운드 지킴이' },
+  { by: 'total', d: 20, kind: 'title', v: '단골손님' },
+  { by: 'total', d: 20, kind: 'perk', v: 'deco3' },
+  { by: 'total', d: 35, kind: 'color', v: 'xgold' },
+  { by: 'total', d: 60, kind: 'sticker', v: 'r:note' },
+  { by: 'total', d: 85, kind: 'avatar', v: 'r:gnight' },
+  { by: 'total', d: 140, kind: 'title', v: '그라운드 지킴이' },
 ];
 export const DEPT = { con: '콘텐츠과', med: '미디어과', pro: '프로듀스과' };   // 내부 분류용(화면 표기 X)
 // 스티커·프로필 사진의 화면 이름 = 물건 이름
@@ -83,7 +85,11 @@ export const shieldMaxOf = (best, total) => perkOn('shield3', best, total) ? 3 :
 export const COLOR_NAME = { xflame: '불꽃', xsky: '솜사탕 하늘', xsunset: '노을', xsakura: '벚꽃', xaurora: '오로라', xgalaxy: '은하수', xholo: '홀로그램', xgold: '금빛' };
 export const ATT_COLORS = REWARDS.filter(r => r.kind === 'color').map(r => r.v);
 // 축하를 크게 하는 날 (보상이 없어도)
-export const MILESTONES = [3, 7, 14, 30, 50, 100, 150, 200, 365];
+export const MILESTONES = [3, 5, 10, 20, 40, 60, 100, 140, 190];   // 등교일 기준(5 = 1주, 20 ≈ 한 달, 190 ≈ 한 해)
+// 불꽃 색이 바뀌는 연속 일수(등교일): 1주 · 한 달 · 백일
+export const FLAME_AT = [5, 20, 100];
+// 보상 일수 찾기(안내 문구용 — 숫자를 문구에 직접 쓰지 않게)
+export const rwDay = (kind, v) => REWARDS.find(r => r.kind === kind && r.v === v);
 export const rwOn = (r, best, total) => (r.by === 'total' ? total : best) >= r.d;
 export const unlockedOf = (best, total, kind) => REWARDS.filter(r => r.kind === kind && rwOn(r, best || 0, total || 0)).map(r => r.v);
 export const rwName = r => r.kind === 'color' ? `‘${COLOR_NAME[r.v]}’` : r.kind === 'title' ? `‘${r.v}’` : r.kind === 'perk' ? PERK_NAME[r.v] : objName(r.v) || r.v;

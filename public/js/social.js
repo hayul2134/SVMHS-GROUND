@@ -4,7 +4,7 @@ import * as ATT from './attend.js';
 import * as GCH from './gacha.js';
 import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시(2026-10-25)
 import { wearOf, wearSvg } from './wear.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX } from './home-score.js';
 import { ffOn } from './flags.js';
@@ -342,7 +342,7 @@ function profileHtml(d) {
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
   const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
-  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${u.gcm ? ' gcm' : ''}${!isDev(u) && sk.cur >= 30 ? ' hot' : ''}">${isDev(u) ? pfxDev() : u.pfx === 'r:fxstar' ? pfxStars() : ''}
+  return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${u.gcm ? ' gcm' : ''}${!isDev(u) && sk.cur >= FLAME_AT[1] ? ' hot' : ''}">${isDev(u) ? pfxDev() : u.pfx === 'r:fxstar' ? pfxStars() : ''}
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
       <div class="phead">
@@ -556,7 +556,7 @@ function openEdit(o = {}) {
       <div class="pick" id="pRep"><button type="button" data-v="" class="att-none ${u.rep ? '' : 'on'}" data-tip="대표 스티커 안 달기">없음</button>${attDiv('sticker')}${attPicks('sticker', x => String(u.rep || '').split(',').includes(x))}</div></section></div>
       <div class="ed-sp" data-sp="deco">${pkSec('첫 화면 시계 스티커', '내 첫 화면 큰 시계 둘레에 붙어요 · 나만 보여요', `<b id="decoN"></b><button type="button" class="pk-clr" data-clr="deco">${ui('peel', 'ic')}모두 떼기</button>`)}
       <div class="pick" id="pDeco">${attDiv('sticker')}${attPicks('sticker', x => deco.includes(x))}</div>
-      <small class="hint">칸은 연속 14일·총 30일 출석으로 하나씩 늘어나요.</small></section></div>
+      <small class="hint">칸은 연속 ${rwDay('perk', 'deco2').d}일·총 ${rwDay('perk', 'deco3').d}일 출석으로 하나씩 늘어나요.</small></section></div>
       <div class="ed-stkft"><p class="hint att-hint">불꽃 칸 색이 칠해진 건 출석 보상이에요. 헤더의 불꽃 버튼에서 기록과 받는 방법을 볼 수 있어요.</p><button type="button" class="pv-clr" data-clr="all" data-tip="카드·대표·시계 스티커를 한 번에 떼요 · 저장해야 반영돼요">${ui('peel', 'ic')}스티커 전부 떼기</button></div>
       </div>
       <div class="ed-pane" data-pane="fx" id="edFx"></div>
@@ -654,7 +654,7 @@ function openEdit(o = {}) {
     if (b.dataset.lock) return lockTip(b);
     const i = deco.indexOf(b.dataset.v);
     if (i >= 0) deco.splice(i, 1);
-    else if (deco.length >= slots) { toast(slots < 3 ? `지금은 ${slots}칸까지! 연속 14일·총 30일 출석하면 칸이 늘어나요` : '시계 스티커는 3개까지!'); return; }
+    else if (deco.length >= slots) { toast(slots < 3 ? `지금은 ${slots}칸까지! 연속 ${rwDay('perk', 'deco2').d}일·총 ${rwDay('perk', 'deco3').d}일 출석하면 칸이 늘어나요` : '시계 스티커는 3개까지!'); return; }
     else deco.push(b.dataset.v);
     b.classList.toggle('on', deco.includes(b.dataset.v)); decoN(); prev('deco');
   };
