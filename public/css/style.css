@@ -3614,7 +3614,7 @@ html[data-ckfx=neon] .stage .s-big .ap{color:var(--sub)!important;-webkit-text-f
 @keyframes sheetDown{to{transform:translateY(60px);opacity:0}}
 
 /* ===== 프로필 꾸미기 창 3차(2026-10-24 리디자인) =====
-   머리(제목·X) / 왼쪽 미리보기(넓은 화면) · 위 미리보기(좁은 화면) / 탭 4개(기본 정보·사진·색·스티커·효과) / 아래 고정 저장·취소.
+   머리(제목·X) / 왼쪽 미리보기(넓은 화면) · 위 미리보기(좁은 화면) / 탭 4개(기본 정보·프로필 꾸미기·스티커·효과) / 아래 고정 저장·취소.
    한 번에 한 탭만 보여서 스크롤이 짧고, 스티커는 다시 카드·대표·시계 작은 탭으로 나눔 */
 .sheet.edw{max-width:min(1000px,100%);padding:0;display:flex;flex-direction:column;overflow:hidden;height:min(780px,calc(100dvh - 32px));text-align:left}
 .ed-hd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 12px 22px;border-bottom:2.5px solid var(--ink)}
@@ -3715,6 +3715,8 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 /* 꾸미기 창 정돈(2026-10-25 하율: 시선이 갈 곳이 섞여 난잡) — 조작 줄을 한 줄로(카드·대표·시계 | 모두 보기·보유한 것만),
    떼기 버튼은 빨간 강조 대신 조용한 테두리 버튼(누를 때만 빨강), '전부 떼기'는 맨 아래로 */
 .ed-subbar .pk-view{margin:0}
+/* 2026-10-25 하율: '모두 보기' 줄이 혼자 한 줄을 차지해 붕 떠 보임 → 프로필 사진 카드 제목 줄 오른쪽에 붙임 */
+.ed .pk-hd .pk-view{margin:0}
 .ed .pk-clr,.ed .pv-clr{background:var(--card);color:var(--text);text-shadow:none;box-shadow:none;border-width:2px}
 .ed .pk-clr:not(:disabled):hover,.ed .pv-clr:not(:disabled):hover{background:#f0646d;color:#fff;box-shadow:2px 2px 0 var(--ink)}
 .ed .pk-clr:disabled,.ed .pv-clr:disabled{opacity:.4}

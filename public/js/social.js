@@ -511,7 +511,7 @@ function openEdit() {
   const deco = [...(u.deco || [])], slots = isDev(u) ? 5 : decoSlots(u.attBest, u.attTotal);
   const tab0 = ['info', 'face', 'stk', 'fx'].includes(store.get('ed_tab')) ? store.get('ed_tab') : 'face';
   const sub0 = ['st', 'rep', 'deco'].includes(store.get('ed_sub')) ? store.get('ed_sub') : 'st';
-  const TABS = [['info', '기본 정보'], ['face', '사진·색'], ['stk', '스티커'], ['fx', '효과']];
+  const TABS = [['info', '기본 정보'], ['face', '프로필 꾸미기'], ['stk', '스티커'], ['fx', '효과']];
   const SUBS = [['st', '카드'], ['rep', '대표'], ['deco', '시계']];
   const viewSeg = `<div class="pk-view" role="group" aria-label="꾸미기 목록 보기"><div class="pk-seg">${[['all', '모두 보기'], ['own', '보유한 것만']].map(([k, n]) => `<button type="button" data-view="${k}" class="${pkView() === k ? 'on' : ''}" aria-pressed="${pkView() === k}">${n}</button>`).join('')}</div></div>`;
   sheet(`<div class="ed-hd"><h3>프로필 꾸미기</h3><button type="button" class="ed-x" data-ed-x aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>
@@ -537,8 +537,7 @@ function openEdit() {
       </div></fieldset>
       </div>
       <div class="ed-pane" data-pane="face">
-      ${viewSeg}
-      ${pkSec('프로필 사진', '내 프로필 · 친구 목록 · DM · 랭킹에 보이는 내 얼굴', '')}
+      ${pkSec('프로필 사진', '내 프로필 · 친구 목록 · DM · 랭킹에 보이는 내 얼굴', viewSeg)}
       <div class="pick" id="pAv">${pkDiv('기본')}${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === (isDev(u) ? '' : u.avatar) ? 'on' : ''}" data-tip="${kavName(a)}" aria-label="${kavName(a)}">${emo(a)}</button>`).join('')}${attDiv('avatar')}${attPicks('avatar', x => !isDev(u) && x === u.avatar)}</div></section>
       ${pkSec('배경 색', '프로필 사진 뒤 동그라미 · 프로필 카드 윗부분 색', '')}
       <div class="pick csw" id="pCo">${pkDiv('기본')}${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attDiv('color')}${attPicks('color', x => x === u.color)}</div></section>
@@ -563,7 +562,7 @@ function openEdit() {
     </form>`);
   pkApply();
   $$('#editForm .pk-seg').forEach(g => { g.onclick = e => { const b = e.target.closest('[data-view]'); if (!b) return; store.set('edit_view', b.dataset.view); pkApply(); }; });
-  // 탭(기본 정보·사진·색·스티커·효과) + 스티커 안 작은 탭(카드·대표·시계) — 한 번에 한 묶음만 보여서 스크롤이 짧음, 마지막 탭은 기억
+  // 탭(기본 정보·프로필 꾸미기·스티커·효과) + 스티커 안 작은 탭(카드·대표·시계) — 한 번에 한 묶음만 보여서 스크롤이 짧음, 마지막 탭은 기억
   const goTab = k => { const f = $('#editForm'); f.dataset.tab = k; store.set('ed_tab', k); $$('#editForm [data-ed-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.edTab === k)); $('#editForm .ed-body').scrollTop = 0; if (k === 'fx') paintFx(); };
   const goSub = k => { const f = $('#editForm'); f.dataset.sub = k; store.set('ed_sub', k); $$('#editForm [data-ed-sub]').forEach(b => b.setAttribute('aria-selected', b.dataset.edSub === k)); $('#editForm .ed-body').scrollTop = 0; };
   $('#socSheet .ed-x').onclick = () => closeSheet();
