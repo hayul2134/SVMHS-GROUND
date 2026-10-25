@@ -811,9 +811,9 @@ function stkTray(btn, onPick) {
 const ttlHtml = t => t === HOME_TITLE ? `<em class="t-first">${esc(HOME_FIRST)}</em>${esc(HOME_TITLE)}` : esc(t);
 function titleOpts(cur) {
   const have = ATT.lockedOf('title').filter(attHave), gcT = gcDone(S.me?.gc?.own);   // 뽑기 시리즈 완성 칭호
-  const own = S.me?.gc?.own || {}, hT = own['r:fxkey'] > 0, h2 = hT || own[HOME_MARK] > 0;   // 히든 칭호: 가진 사람만 보임(잠긴 칸으로도 안 보여 줌)
+  const own = S.me?.gc?.own || {}, hT = own['r:fxkey'] > 0, h2 = hT || own[HOME_MARK] > 0;   // 히든 칭호: 가진 사람만 이름이 보임, 아직이면 잠긴 칸에 '???'로만 (2026-10-25 하율 — 공지엔 안 씀)
   const opt = t => `<option value="${esc(t)}" ${t === cur ? 'selected' : ''}>${esc(t)}</option>`;
-  return `<option value="">없음</option>${hT ? opt(HOME_TITLE) : ''}${h2 ? opt(HOME_TITLE2) : ''}${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}`;
+  return `<option value="">없음</option>${hT ? opt(HOME_TITLE) : ''}${h2 ? opt(HOME_TITLE2) : ''}${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}${h2 ? '' : '<option disabled>🔒 ??? (히든)</option>'}${hT ? '' : '<option disabled>🔒 ??? — 집에 먼저 가는 사람에게 주어지는 칭호입니다</option>'}`;
 }
 
 /* ===== 계정 설정 ===== */
