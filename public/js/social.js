@@ -1733,7 +1733,7 @@ const dueTxt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.get
 function draftCard(d) {
   const row = (x = {}) => `<li data-id="${esc(x.id || '')}" data-pf="${esc(x.ff || '')}" data-img="${esc(x.img || '')}" data-noimg="${x.noimg ? 1 : ''}"><textarea rows="2" maxlength="300" placeholder="공지 한 줄 (이모지·이모티콘 환영)">${esc(x.t || '')}</textarea>${x.img ? `<span class="pdimg"><img src="${esc(x.img)}" alt="" loading="lazy"><button type="button" class="pdix" data-tip="사진 빼기">사진 빼기</button></span>` : ''}${x.ff ? `<small class="pdff">새 기능 · ${esc(x.ff)}</small>` : ''}<button type="button" class="pdx" aria-label="이 줄 빼기" data-tip="이 줄 빼기">✕</button></li>`;
   return `<div class="pdraft" id="pnDraft"><p class="pdh"><b>📝 다음 공지 초안</b><span class="pdme">나만 보여요</span></p>
-    <p class="note">${d.imm ? '<b>바로 공지 기간(11/2 월 06:00까지)</b>: 여기에 줄이 생기거나 저장하는 순간 <b>바로 모두에게 공개</b>돼요.' : `수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.`}</p>
+    <p class="note">${d.imm ? '<b>바로 공지 기간(11/2 월 06:00까지)</b>: 여기서 <b>저장하는 순간 바로 모두에게 공개</b>돼요(자동으로 쌓인 수정 소식은 저장 전엔 안 나가요).' : `수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.`}</p>
     <input class="pdt" maxlength="60" placeholder="${esc(d.defTitle)}" value="${esc(d.title || '')}">
     <ol class="pdl">${d.items.map(row).join('')}</ol>${d.items.length ? '' : '<p class="empty">아직 쌓인 공지가 없어요</p>'}
     <button type="button" class="btn ghost pdadd">＋ 한 줄 추가</button>
