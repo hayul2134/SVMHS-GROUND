@@ -320,7 +320,7 @@ const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's
 function profileHtml(d) {
   const u = d.user, self = d.me;
   // 학년·반 · 학과 · 동아리를 이름 바로 아래 눈에 띄게 (2026-10-25 하율) — 학과는 반 번호로(1·2 콘텐츠, 3·4 미디어, 5·6 프로듀스 — 가입 화면 dephint와 같음)
-  const dep = !isDev(u) && u.cls ? [null, ['con', '콘텐츠과', 'clap'], ['con', '콘텐츠과', 'clap'], ['med', '미디어과', 'palette'], ['med', '미디어과', 'palette'], ['pro', '프로듀스과', 'cut'], ['pro', '프로듀스과', 'cut']][+u.cls] : null;
+  const dep = !isDev(u) && u.cls ? [null, ['con', '콘텐츠과', 'clap'], ['con', '콘텐츠과', 'clap'], ['med', '미디어과', 'palette'], ['med', '미디어과', 'palette'], ['pro', '프로듀스과', 'monitor'], ['pro', '프로듀스과', 'monitor']][+u.cls] : null;
   const chips = [classTxt(u) && `<span class="pi-c pi-cls">${ic('book')}${esc(classTxt(u))}</span>`,
     dep && `<span class="pi-c pi-dep d-${dep[0]}">${ic(dep[2])}${dep[1]}</span>`,
     u.club && `<span class="pi-c pi-club">${clubLogo(u.club, 'pi-logo') || ic('cam')}${esc(u.club)}</span>`].filter(Boolean).join('');
