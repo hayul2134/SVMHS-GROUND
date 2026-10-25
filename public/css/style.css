@@ -4297,3 +4297,64 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 .gfx-skip{display:inline-flex;align-items:center;gap:6px;height:42px!important;padding:0 18px!important;font-size:15px!important;background:#ffffff26!important;border-color:#fffa!important}
 .gfx-skip svg{width:18px;height:18px}
 .gfx-skip:disabled{opacity:.5;cursor:default}
+
+/* ===== 새로 얻은 뽑기 보상 빨간 표시 + 착용 안내 (2026-10-25 하율: "어디서 착용하는지 명확하게, 새로 얻은 건 빨간색으로") — js/gcnew.js ===== */
+:root{--nw:#ff3347}
+.nw-b{position:absolute;top:-7px;right:-7px;z-index:4;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:var(--nw);color:#fff;font:900 11px/15px var(--num);font-style:normal;letter-spacing:.02em;border:2px solid var(--ink);display:grid;place-items:center;pointer-events:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--nw) 30%,transparent);animation:nwPop .45s cubic-bezier(.3,1.6,.5,1)}
+.nw-b.st{position:static;display:inline-grid;vertical-align:-4px;margin-right:4px;animation:none}
+.nw-d{position:absolute;top:-3px;right:-3px;z-index:4;width:12px;height:12px;border-radius:50%;background:var(--nw);border:2px solid var(--ink);pointer-events:none;animation:nwPulse 1.8s ease-in-out infinite}
+.nw-p{flex:none;margin-left:auto;font:900 11.5px/1 var(--num);font-style:normal;color:#fff;background:var(--nw);padding:5px 9px;border-radius:99px;border:2px solid var(--ink);white-space:nowrap;animation:nwPulse 1.8s ease-in-out infinite}
+@keyframes nwPop{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes nwPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--nw) 55%,transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--nw) 0%,transparent)}}
+/* 칸: 빨간 테두리 + N */
+.pick .is-new,.ed-fxb .is-new,.gc-fxb .is-new{position:relative;outline:3px solid var(--nw);outline-offset:1px}
+.gc-grid li.is-new{border-color:var(--nw);box-shadow:0 0 0 2px var(--nw)}
+.gc-grid li .nw-b{left:50%;right:auto;top:-10px;translate:-50% 0}
+.gc-grid li.on .gc-ic[data-gc-wear]{cursor:pointer}
+/* 탭·작은 탭: 가로 스크롤 줄 안이라 잘리지 않게 글자 옆에 붙임 */
+.ed-tabs .nw-d,.ed-sub .nw-d{position:static;display:inline-block;margin-left:6px;vertical-align:1px}
+.ed-tabs [data-nw-kind].has-new:not([aria-selected=true]){border-color:var(--nw)}
+.burger .nw-d{top:3px;right:3px}
+.hi.has-new{background:color-mix(in srgb,var(--nw) 9%,transparent)}
+@media (prefers-reduced-motion:reduce){.nw-b,.nw-d,.nw-p{animation:none}}
+/* 착용하러 가기로 열었을 때 그 칸 반짝 */
+.nw-flash{animation:nwFlash 1.7s ease-out}
+@keyframes nwFlash{0%,40%,80%{outline:4px solid var(--nw);outline-offset:3px}20%,60%,100%{outline-color:transparent;outline-offset:1px}}
+/* 결과 카드 '붙이러 가기' */
+.gc-wearb{position:relative;z-index:1;margin-top:2px;padding:5px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--nw);color:#fff;font:900 12px/1.2 inherit;font-family:inherit;cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.gc-wearb:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+.gc-wearb:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+/* 새로 얻은 것 띠 */
+.gc-newb{border-color:var(--nw);box-shadow:4px 4px 0 var(--nw);display:grid;gap:12px;padding:16px 18px}
+.gn-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.gn-t{display:inline-flex;align-items:center;gap:7px;font-size:17px;font-weight:900;color:var(--nw)}
+.gn-dot{width:11px;height:11px;border-radius:50%;background:var(--nw);border:2px solid var(--ink);animation:nwPulse 1.8s ease-in-out infinite}
+.gn-hd small{font-size:13px;font-weight:700;color:var(--sub)}
+.gn-red{color:var(--nw)}
+.gn-l{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.gn-l button{width:52px;height:52px;padding:5px;border-radius:14px;border:2.5px solid var(--nw);background:var(--card);cursor:pointer;transition:transform .12s}
+.gn-l button:hover{transform:translateY(-2px) rotate(-4deg)}
+.gn-l .art{width:100%;height:100%}
+.gn-more{align-self:center;font:900 13px var(--num);color:var(--sub)}
+.gn-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.gn-go{background:var(--nw);color:#fff;display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px}
+.gn-go .gw-path b{background:rgba(255,255,255,.22);color:#fff;border-color:rgba(255,255,255,.7)}
+.gn-go .gw-path i{color:#fff}
+.gn-x{margin-left:auto;font-size:12.5px;padding:7px 12px}
+/* 어디서 착용해요? */
+.gc-where h3{margin:0 0 10px}
+.gc-where ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.gc-where li{display:grid;grid-template-columns:136px auto 1fr auto;align-items:center;gap:6px 12px;padding:9px 12px;border:2px solid var(--line);border-radius:14px}
+.gc-where li small{font-size:12.5px;font-weight:700;color:var(--sub);line-height:1.45}
+.gc-where li small b{color:var(--text)}
+.gc-where li .btn{padding:6px 12px;font-size:12.5px}
+.gw-k{justify-self:start;padding:4px 10px;border-radius:99px;border:2px solid var(--ink);font-weight:900;font-size:12.5px;color:var(--onc,#1d2a3a);white-space:nowrap}
+.gw-k.k1{background:var(--sky)}.gw-k.k2{background:linear-gradient(100deg,#ffe98a,#fff6c8,#ffd34a)}.gw-k.k3{background:linear-gradient(135deg,#ffb3e6,#94d8ff,#ffe98a)}.gw-k.k4{background:var(--lime)}
+.gw-path{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;white-space:nowrap}
+.gw-path b{padding:2px 8px;border-radius:8px;border:1.5px solid var(--ink);background:var(--chip);font-size:12.5px;font-weight:900;color:var(--text)}
+.gw-path i{font-style:normal;font-weight:900;color:var(--sub)}
+.gw-new{margin:10px 0 0;font-size:13px;font-weight:700;color:var(--sub)}
+.gw-new b{color:var(--nw)}
+@media (max-width:760px){.gc-where li{grid-template-columns:1fr auto}.gc-where li .gw-path,.gc-where li small{grid-column:1 / -1}.gc-where li .btn{grid-row:1;grid-column:2}}
+.pick .att-pk i.nw-b{top:-7px;right:-7px;bottom:auto;z-index:4;font:900 10.5px/15px var(--num);color:#fff;background:var(--nw);border-radius:99px;padding:0 5px}
+.ed-body .pick{padding-top:6px}   /* 맨 윗줄 N 표시가 스크롤 칸에 잘리지 않게 */

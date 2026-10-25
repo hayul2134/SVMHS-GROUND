@@ -9,6 +9,7 @@ import { $, esc, toast, store } from './util.js';
 import { GACHA, HIDDEN, HOME_TITLE, RAR, GC, FX, GC_TITLE, RK, SHN, objName, neonPick } from './att-rewards.js';
 import { artOf, ensureSprite, stillHref } from './att-art.js';
 import { play } from './gacha-fx.js';
+import * as NW from './gcnew.js';   // 새로 얻은 것 빨간 표시 + 어디서 착용하는지 안내(2026-10-25)
 import { SPOTS, spotPref, setSpotPref, resolveSpot, wearSvg, anchorOf, setAdj } from './wear.js';
 
 let api;   // social.js에서 받음: call · refreshMe · me() · setGc(g)
@@ -51,6 +52,9 @@ export function init(a) {
   api = a;
   document.addEventListener('click', onClick);
   document.addEventListener('change', e => { const c = e.target.closest?.('[data-gc-skip]'); if (c) { setSkipPref(c.checked); toast(c.checked ? '이제 애니메이션 없이 바로 결과가 나와요' : '뽑기 애니메이션을 다시 보여 줘요'); } });
+  document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-gc-wear][role=button]')) { e.preventDefault(); e.target.click(); } });
+  // 꾸미기에서 붙이거나 켜서 '새로 얻음'이 줄면 뽑기 화면의 안내 띠·빨간 표시도 같이
+  document.addEventListener('sg:gcnew', () => { const nb = $('#gcNewb'); if (nb) nb.outerHTML = newBanner(); const box = $('#gcBox'); if (box) NW.paint(box); });
 }
 export async function render() {
   const box = $('#gcBox'); if (!box) return;
@@ -79,6 +83,8 @@ function paint() {
       </div>
     </section>
     <section class="gc-stage" id="gcStage" aria-live="polite">${keep || ''}</section>
+    ${newBanner()}
+    ${whereBox()}
     ${fxBox(g)}
     ${shop(g)}
     <section class="gc-col card">
@@ -87,7 +93,7 @@ function paint() {
       ${prog(g)}
       ${gift ? giftBox() : ''}
       ${[4, 3, 2, 1].map(r => { const list = GACHA.filter(x => x.rar === r && (view === 'all' || g.own[x.v])); return list.length ? `<h4 class="gc-rh ${RCLS[r]}">${RAR[r].n}<small>${RAR[r].p}% · ${TIER[r]}</small></h4><ul class="gc-grid">${list.map(x => cell(x, g.own[x.v] || 0)).join('')}</ul>` : ''; }).join('') || '<p class="gc-none">아직 뽑은 게 없어요. 첫 뽑기를 해 보세요!</p>'}
-      <p class="gc-use">일반·희귀 스티커는 <b>프로필 스티커 · 이름 옆 대표 스티커 · 첫 화면 시계 꾸미기 · 댓글·DM 스티커</b>로 써요. 2개 이상 가진 스티커는 <b>맞팔 친구에게 선물</b>할 수 있어요. <a href="#me" data-go="me">프로필 꾸미기 →</a></p>
+      <p class="gc-use">가진 칸을 누르면 <b>꾸미기</b>에서 바로 그 칸이 열려요. 2개 이상 가진 스티커는 <b>맞팔 친구에게 선물</b>할 수 있어요.</p>
     </section>
     <details class="gc-rule card"><summary>확률 · 규칙</summary>
       <table class="gc-rates"><thead><tr><th>등급</th><th>확률</th><th>종류</th><th>한 종류당</th></tr></thead><tbody>
@@ -103,6 +109,28 @@ function paint() {
     </details>`;
   tuneInit();
   lazyAnim();
+  NW.paint(box);
+}
+// 착용하러 가기: 스티커 → 꾸미기 › 스티커(카드 탭), 효과 → 꾸미기 › 효과. 그 칸으로 스크롤·반짝(social.js openEdit)
+const wearOpt = v => NW.kindOf(v) === 'fx' ? { tab: 'fx', v } : { tab: 'stk', sub: 'st', v };
+const PATH = { stk: ['☰ 메뉴', '꾸미기', '스티커'], fx: ['☰ 메뉴', '꾸미기', '효과'] };
+const path = k => `<span class="gw-path">${PATH[k].map(x => `<b>${x}</b>`).join('<i aria-hidden="true">›</i>')}</span>`;
+// 새로 얻었는데 아직 안 써 본 것 — 빨간 띠(꾸미기에서 누르면 사라짐)
+function newBanner() {
+  const L = NW.list(); if (!L.length) return '<div id="gcNewb" hidden></div>';
+  const st = L.filter(v => NW.kindOf(v) === 'stk'), fx = L.filter(v => NW.kindOf(v) === 'fx');
+  return `<section class="gc-newb card" id="gcNewb"><div class="gn-hd"><b class="gn-t"><i class="gn-dot" aria-hidden="true"></i>새로 얻은 것 ${L.length}개</b><small>아직 안 써 봤어요 — 꾸미기에서 <b class="gn-red">빨간 표시</b>가 붙은 칸을 누르면 착용돼요</small></div>
+    <ul class="gn-l">${L.slice(0, 10).map(v => `<li><button type="button" data-gc-wear="${esc(v)}" data-tip="${esc(objName(v))} · ${NW.kindOf(v) === 'fx' ? '효과에서 켜기' : '스티커에서 붙이기'}" aria-label="${esc(objName(v))} 착용하러 가기">${artOf(v, 'still')}</button></li>`).join('')}${L.length > 10 ? `<li class="gn-more">+${L.length - 10}</li>` : ''}</ul>
+    <div class="gn-act">${st.length ? `<button type="button" class="btn gn-go" data-gc-wear="${esc(st[0])}">스티커 ${st.length}개 붙이러 가기 ${path('stk')}</button>` : ''}${fx.length ? `<button type="button" class="btn gn-go" data-gc-wear="${esc(fx[0])}">효과 ${fx.length}개 켜러 가기 ${path('fx')}</button>` : ''}<button type="button" class="btn ghost gn-x" data-gc-nwclr>표시만 지우기</button></div></section>`;
+}
+// 뽑은 건 어디서 쓰나요? — 등급별 착용 위치를 한눈에(2026-10-25 하율: "어디로 가면 착용할 수 있는지 명확하게")
+function whereBox() {
+  return `<section class="gc-where card"><h3>뽑은 건 어디서 착용해요?</h3><ul>
+    <li><span class="gw-k k1">일반·희귀 스티커</span>${path('stk')}<small><b>카드</b> = 프로필 카드 · <b>대표</b> = 이름 옆 · <b>시계</b> = 첫 화면 시계 — 탭에서 고르고 <b>저장</b></small><button type="button" class="btn ghost" data-gc-wtab="stk">바로 가기</button></li>
+    <li><span class="gw-k k2">반짝이 스티커</span>${path('stk')}<small>조각 상점에서 바꾼 금빛 스티커 — 원래 스티커 바로 뒤 칸</small><button type="button" class="btn ghost" data-gc-wtab="stk">바로 가기</button></li>
+    <li><span class="gw-k k3">전설·시크릿 효과</span>${path('fx')}<small>누르면 저장 없이 <b>바로 켜져요</b> · 아래 ‘내 효과’에서도 켤 수 있어요</small><button type="button" class="btn ghost" data-gc-wtab="fx">바로 가기</button></li>
+    <li><span class="gw-k k4">댓글·DM 스티커</span><span class="gw-path"><b>밸런스 댓글 · DM</b><i aria-hidden="true">›</i><b>스티커 버튼</b></span><small>따로 착용할 필요 없이 가진 스티커를 바로 보낼 수 있어요</small></li>
+  </ul><p class="gw-new"><i class="nw-b st" aria-hidden="true">N</i> 새로 얻은 건 <b>빨간 표시</b>가 따라가요: ☰ 메뉴 → 꾸미기 → 탭 → 그 칸</p></section>`;
 }
 // 렉 방지(2026-10-25 실측: 도감·상점이 한꺼번에 움직이면 120→19fps): 화면에 보이는 스티커만 움직이고, 나머지는 멈춘 그림(stillHref)으로 바꿔 둠
 let io = null;
@@ -123,8 +151,8 @@ function cell(x, n) {
   const canGift = !x.fx && n >= 2;
   const sh = api.me()?.gc?.own?.[x.v + SHN] > 0;   // 반짝이로 바꾼 스티커는 도감에도 반짝이로
   // 이름표는 카드형(이름 / 설명 / 등급·횟수) — 한 줄로 길게 붙이면 안 읽힘(2026-10-25 하율). data-tip은 낭독·대체용 한 줄
-  const meta = [RAR[x.rar].n, n ? `${n}번 나옴` : '아직 못 뽑음', sh ? '반짝이' : ''].filter(Boolean).join(' · ');
-  return `<li class="${RCLS[x.rar]}${n ? ' on' : ' lock'}" data-tip="${esc(tip + (sh ? ' · 반짝이' : ''))}" data-tip-t="${esc(objName(x.v))}" data-tip-d="${esc(x.d || '')}" data-tip-m="${esc(meta)}" data-tip-r="${x.rar}"><span class="gc-ic">${artOf(sh ? x.v + SHN : x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}${canGift ? `<button type="button" class="gc-gift" data-gc-gift="${x.v}" aria-label="${esc(objName(x.v))} 친구에게 선물">선물</button>` : ''}</li>`;
+  const meta = [RAR[x.rar].n, n ? `${n}번 나옴` : '아직 못 뽑음', sh ? '반짝이' : '', n ? (x.fx ? '꾸미기 › 효과에서 켜요' : '꾸미기 › 스티커에서 붙여요') : ''].filter(Boolean).join(' · ');
+  return `<li class="${RCLS[x.rar]}${n ? ' on' : ' lock'}" data-tip="${esc(tip + (sh ? ' · 반짝이' : ''))}" data-tip-t="${esc(objName(x.v))}" data-tip-d="${esc(x.d || '')}" data-tip-m="${esc(meta)}" data-tip-r="${x.rar}"${n ? ` data-nw="${x.v}" data-nw-view data-nw-t="NEW"` : ''}><span class="gc-ic"${n ? ` role="button" tabindex="0" data-gc-wear="${x.v}" aria-label="${esc(objName(x.v))} 착용하러 가기"` : ''}>${artOf(sh ? x.v + SHN : x.v)}</span><small>${esc(objName(x.v))}</small>${n > 1 ? `<em>×${n}</em>` : ''}${canGift ? `<button type="button" class="gc-gift" data-gc-gift="${x.v}" aria-label="${esc(objName(x.v))} 친구에게 선물">선물</button>` : ''}</li>`;
 }
 // 시리즈 진행: 빈칸을 먼저 보여 주고, 다 모으면 무엇을 받는지 같이 보여 줌(세트 수집 설계)
 function prog(g) {
@@ -157,7 +185,7 @@ function fxBox(g) {
     const show = pool.find(x => x.v === on) || mine[0] || GACHA.find(x => x.fx === slot && x.rar === 3);
     const np = slot === 'clock' && on === 'r:fxneon' ? `<div class="gc-neon"><small>네온 색</small>${neonPick(store.get('neon_c', 'pink'))}</div>` : slot === 'masc' && on ? wearBox(on) : '';
     return `<li class="${on ? 'on' : mine.length ? '' : 'none'}"><span class="gc-ic">${mine.length ? artOf(show.v) : ''}</span><b>${nm}</b><small>${mine.length ? esc(objName(show.v)) + (on ? ' · 켜짐' : ' · 꺼짐') : '전설에서 나와요 — ' + esc(show.d)}</small>
-      ${mine.length ? `<div class="gc-fxb">${mine.map(x => `<button type="button" class="btn ghost${on === x.v ? ' on' : ''}" data-gc-fx="${slot}" data-v="${on === x.v ? '' : x.v}">${on === x.v ? esc(objName(x.v)) + ' 끄기' : esc(objName(x.v)) + ' 켜기'}</button>`).join('')}</div>` : ''}${np}</li>`;
+      ${mine.length ? `<div class="gc-fxb">${mine.map(x => `<button type="button" class="btn ghost${on === x.v ? ' on' : ''}" data-gc-fx="${slot}" data-v="${on === x.v ? '' : x.v}" data-nw="${x.v}">${on === x.v ? esc(objName(x.v)) + ' 끄기' : esc(objName(x.v)) + ' 켜기'}</button>`).join('')}</div>` : ''}${np}</li>`;
   }).join('')}</ul></section>`;
 }
 // 착용 소품(왕관): 어디에 씌울지 + '그림 넣기' 캐릭터면 머리 위치 맞추기(끌어서) — wear.js
@@ -227,7 +255,7 @@ async function openCap(i, instant = false) {
     await wait(260);
   }
   slot.innerHTML = `<div class="gc-got ${RCLS[x.rar]}${instant ? '' : ' in'}">${x.rar > 1 ? '<i class="gc-rays" aria-hidden="true"></i>' : ''}<span class="gc-ic">${artOf(x.v)}</span>
-    <b class="gc-rt">${RAR[x.rar].n}</b><small>${esc(objName(x.v))}</small>${x.new ? '<em class="gc-new">NEW</em>' : `<em class="gc-dup">조각 +${x.shard}</em>`}${gcItem(x.v)?.fx && x.new ? '<em class="gc-dup gc-fxk">내 효과에서 켜기</em>' : ''}</div>`;
+    <b class="gc-rt">${RAR[x.rar].n}</b><small>${esc(objName(x.v))}</small>${x.new ? '<em class="gc-new">NEW</em>' : `<em class="gc-dup">조각 +${x.shard}</em>`}${x.new ? `<button type="button" class="gc-wearb" data-gc-wear="${x.v}">${gcItem(x.v)?.fx ? '효과 켜러 가기' : '스티커 붙이러 가기'} ›</button>` : ''}</div>`;
   if (x.rar >= 3 && !instant) flash(x.rar);
   if (last.open.size === last.out.length) done();
 }
@@ -284,6 +312,9 @@ function onClick(e) {
   const bu = t.closest('[data-gc-pick],[data-gc-shine]');
   if (bu && !bu.disabled) { const k = bu.dataset.gcPick ? 'pick' : 'shine'; if (bu === armed) buy(k, bu.dataset.gcPick || bu.dataset.gcShine); else arm(bu); return; }
   const fb = t.closest('[data-gc-fx]'); if (fb) { setFx(fb.dataset.gcFx, fb.dataset.v); return; }
+  const we = t.closest('[data-gc-wear]'); if (we) { api.edit?.(wearOpt(we.dataset.gcWear)); return; }
+  const wt = t.closest('[data-gc-wtab]'); if (wt) { const L = NW.list().filter(v => NW.kindOf(v) === wt.dataset.gcWtab); api.edit?.(L[0] ? wearOpt(L[0]) : wt.dataset.gcWtab === 'fx' ? { tab: 'fx' } : { tab: 'stk', sub: 'st' }); return; }
+  if (t.closest('[data-gc-nwclr]')) { NW.seenAll(NW.list()); toast('새로 얻음 표시를 지웠어요'); return; }
   const wa = t.closest('[data-wear-at]'); if (wa) { setSpotPref(wa.dataset.wearAt); paint(); return; }
   if (t.closest('[data-wt-auto]')) { const a = myArt(); if (a) setAdj(a, null); paint(); toast('자동 위치로 돌렸어요'); return; }
   const gb = t.closest('[data-gc-gift]'); if (gb) { openGift(gb.dataset.gcGift); return; }
