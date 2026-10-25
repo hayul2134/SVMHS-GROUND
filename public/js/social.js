@@ -1317,6 +1317,7 @@ async function playHome() {
   const cv = $('#hrCv'), ov = $('#hrOv'), scr = $('#hrScr');
   let char = RUN.loadChar(), sound = store.get('home_snd', false);
   let best = store.get('home_best', 0);
+  let last = store.get('home_last', null);   // 직전 판 기록 (2026-10-25 하율: 점수 옆에 전 기록)
   // 화면 크기 (2026-10-25): 가로 폭 + 세로 남는 자리까지 보고 최대한 크게. 한 도트 = 기기 픽셀 정수배(dpr 2면 0.5px 단위)라 도트 크기가 고르게
   const fit = () => {
     const w = $('#parea').clientWidth - 6, top = scr.getBoundingClientRect().top + scrollY;
@@ -1335,8 +1336,9 @@ async function playHome() {
       over = true; deadAt = performance.now(); const no = ++runNo; $('#hr').classList.remove('on');
       const nb = score > best;
       if (nb) { best = score; store.set('home_best', best); }
+      const prev = last; last = score; store.set('home_last', score);
       ov.hidden = false; ov.classList.add('dead'); ov.classList.toggle('win', !!win);
-      ov.innerHTML = `<b>${win ? '집 도착! 수고했어요' : '앗, 집에 못 갔다…'}</b><span><em>${score.toLocaleString('ko-KR')}m</em> · ${(ms / 1000).toFixed(1)}초${nb ? ' · <i>최고 기록!</i>' : ''}</span>
+      ov.innerHTML = `<b>${win ? '집 도착! 수고했어요' : '앗, 집에 못 갔다…'}</b><span><em>${score.toLocaleString('ko-KR')}m</em> · ${(ms / 1000).toFixed(1)}초${nb ? ' · <i>최고 기록!</i>' : ''}${prev != null ? `<u class="hr-prev">직전 ${prev.toLocaleString('ko-KR')}m${score !== prev ? `<i class="${score > prev ? 'up' : 'dn'}">${score > prev ? '▲' : '▼'}${Math.abs(score - prev).toLocaleString('ko-KR')}</i>` : ''}</u>` : ''}</span>
         <small class="hr-msg" id="hrMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요'}</small><small class="hr-go">${matchMedia('(pointer:coarse)').matches ? '화면을 눌러 다시' : '스페이스 · ↑ · 클릭으로 다시'}</small>`;
       if (!S.me) return;
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
