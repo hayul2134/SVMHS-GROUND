@@ -1217,8 +1217,8 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
 }
 // 기록 저장(서버가 판 기록·티켓으로 다시 검사) — 결과 화면 없이 그 자리에서 다시 하는 게임(나 집에 갈래!)도 같이 씀
 async function saveScore(game, value, rounds) {
-  const r = await call('score', { game, value, rounds, ticket: await ticket });
-  ticket = null;
+  const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
+  const r = await call('score', { game, value, rounds, ticket: await t });
   if ($('#v-game').classList.contains('on')) renderGame();
   return r;
 }
@@ -1351,8 +1351,9 @@ async function playHome() {
       if (nb) { best = score; store.set('home_best', best); }
       const prev = last; last = score; store.set('home_last', score);
       ov.hidden = false; ov.classList.add('dead'); ov.classList.toggle('win', !!win);
-      ov.innerHTML = `<b>${win ? '집 도착! 수고했어요' : '앗, 집에 못 갔다…'}</b><span><em>${score.toLocaleString('ko-KR')}m</em> · ${(ms / 1000).toFixed(1)}초${nb ? ' · <i>최고 기록!</i>' : ''}${prev != null ? `<u class="hr-prev">직전 ${prev.toLocaleString('ko-KR')}m${score !== prev ? `<i class="${score > prev ? 'up' : 'dn'}">${score > prev ? '▲' : '▼'}${Math.abs(score - prev).toLocaleString('ko-KR')}</i>` : ''}</u>` : ''}</span>
-        <small class="hr-msg" id="hrMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요'}</small><small class="hr-go">${matchMedia('(pointer:coarse)').matches ? '화면을 눌러 다시' : '스페이스 · ↑ · 클릭으로 다시'}</small>`;
+      // 결과 카드 하나에 기록·직전·저장 상태를 정리 (2026-10-25 하율: 게임 화면에 다 때려 넣어 잘리고 여백 없음 → 정돈)
+      ov.innerHTML = `<b>${win ? '집 도착! 수고했어요' : '앗, 집에 못 갔다…'}</b><div class="hr-card"><p class="hr-sc"><em>${score.toLocaleString('ko-KR')}m</em><span>${(ms / 1000).toFixed(1)}초</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>${prev != null ? `<p class="hr-prev">직전 ${prev.toLocaleString('ko-KR')}m${score !== prev ? `<i class="${score > prev ? 'hr-up' : 'hr-dn'}">${score > prev ? '▲' : '▼'}${Math.abs(score - prev).toLocaleString('ko-KR')}</i>` : ''}</p>` : ''}
+        <small class="hr-msg" id="hrMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요'}</small></div><small class="hr-go">${matchMedia('(pointer:coarse)').matches ? '화면을 눌러 다시' : '스페이스 · ↑ · 클릭으로 다시'}</small>`;
       if (!S.me) return;
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
         if (no !== runNo || !$('#hrMsg')) return;
