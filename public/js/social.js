@@ -297,7 +297,7 @@ document.addEventListener('input', e => {
 });
 
 /* ===== 라운드 티어 배지 (2026-10-25) ===== */
-const tierIc = k => `<svg class="tri" viewBox="0 0 48 44" aria-hidden="true"><use href="#tr-${k}"/></svg>`;   // 티어 엠블럼(index.html #tr-*)
+const tierIc = k => `<svg class="tri${ffOn('tier-look', isDev(S.me)) ? ' tri2' : ''}" viewBox="0 0 48 44" aria-hidden="true"><use href="#${ffOn('tier-look', isDev(S.me)) ? 'tr2' : 'tr'}-${k}"/></svg>`;   // tr2 = 2차 엠블럼(미리보기)   // 티어 엠블럼(index.html #tr-*)
 const tierBadge = (k, extra = '', tip = '') => { const t = tierOfK(k); return t ? `<span class="tierb t-${t.k}"${tip ? ` data-tip="${esc(tip)}"` : ''}>${tierIc(t.k)}${t.n}${extra}</span>` : ''; };
 const tierChips = tr => !tr ? '' : (tr.cur ? tierBadge(tr.cur.k, '', `이번 라운드 ${tierOfK(tr.cur.k).n} · ${tr.cur.rank}위 · ${tr.cur.pts}점`) : '')
   + (tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '');

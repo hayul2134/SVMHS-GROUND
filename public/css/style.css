@@ -4103,7 +4103,7 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .tierb small{font-weight:800;font-size:10.5px;color:var(--sub)}
 .t-challenger.tierb{background:linear-gradient(120deg,#d7e4ff,#b9a4ff,#a8f0e0,#d7e4ff);background-size:200% 100%;animation:tierShine 4s linear infinite}
 :root[data-theme="dark"] .t-challenger.tierb{color:#1d2a3a}
-:root[data-theme="dark"] .tr-stairs li.t-challenger b{background-image:linear-gradient(90deg,#9fc0ff,#e2b4ff,#ffd76a,#9fc0ff)}
+:root[data-theme="dark"] .tr-stairs li.t-challenger b{color:#9fc0ff}
 @keyframes tierShine{to{background-position:-200% 0}}
 .tierl .tierb{opacity:.85;box-shadow:none;border-style:dashed}
 .ptier{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0}
@@ -4568,7 +4568,7 @@ html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
 .tr2 .tm.apex{background:radial-gradient(120% 140% at 0% 50%,color-mix(in srgb,var(--tc) 55%,#1b2142) 0%,#1b2142 70%);color:#fff}
 .tr2 .tm.apex small,.tr2 .tm.apex .tm-st{color:#dfe6ff}
 .tm-em{position:relative;flex:none;width:84px;height:78px;display:grid;place-items:center}
-.tm-em .tri{position:relative;width:84px;height:77px;filter:drop-shadow(2px 3px 0 color-mix(in srgb,var(--ink) 28%,transparent));animation:tmBob 3.2s ease-in-out infinite}
+.tm-em .tri{position:relative;width:100px;height:92px;margin:-8px;filter:drop-shadow(2px 3px 0 color-mix(in srgb,var(--ink) 28%,transparent));animation:tmBob 3.2s ease-in-out infinite}
 .tr2 .tm.none .tm-em .tri{filter:grayscale(.6) opacity(.6);animation:none}
 .tm-halo{position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--tc) 70%,#fff) 0%,transparent 64%);opacity:.75}
 .tr2 .tm.apex .tm-halo{inset:-30px;background:repeating-conic-gradient(color-mix(in srgb,var(--tc) 60%,transparent) 0 9deg,transparent 9deg 24deg);-webkit-mask:radial-gradient(circle,#000 18%,transparent 66%);mask:radial-gradient(circle,#000 18%,transparent 66%);animation:chSpin 14s linear infinite;opacity:.9}
@@ -4594,7 +4594,7 @@ html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
 .tr-stairs li{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0}
 .tr-stairs li:nth-child(1){--i:0}.tr-stairs li:nth-child(2){--i:1}.tr-stairs li:nth-child(3){--i:2}.tr-stairs li:nth-child(4){--i:3}.tr-stairs li:nth-child(5){--i:4}.tr-stairs li:nth-child(6){--i:5}.tr-stairs li:nth-child(7){--i:6}.tr-stairs li:nth-child(8){--i:7}.tr-stairs li:nth-child(9){--i:8}.tr-stairs li:nth-child(10){--i:9}  /* CSP라 style 속성 대신 */
 .tl-em{position:relative;z-index:1;margin-bottom:5px;transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
-.tl-em .tri{display:block;width:54px;height:50px;filter:drop-shadow(1.5px 2px 0 color-mix(in srgb,var(--ink) 25%,transparent))}
+.tl-em .tri{display:block;width:66px;height:60px;filter:drop-shadow(1.5px 2px 0 color-mix(in srgb,var(--ink) 25%,transparent))}
 .tl-bar{width:min(100%,66px);height:calc(14px + var(--i) * 11px);border:2.5px solid var(--ink);border-bottom:0;border-radius:12px 12px 0 0;position:relative;overflow:hidden;
   background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 72%,#fff) 0%,var(--tc) 100%)}
 .tl-bar::before{content:"";position:absolute;left:5px;top:5px;bottom:0;width:5px;border-radius:4px;background:#fff;opacity:.45}
@@ -4610,7 +4610,7 @@ html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
 .tr-stairs li.t-challenger .tl-bar{background:linear-gradient(180deg,#5a7bea 0%,#2a3a8c 55%,#161b36 100%)}
 .tr-stairs li.t-challenger .tl-bar i,.tr-stairs li.t-challenger .tl-bar{isolation:isolate}
 .tr-stairs li.t-challenger .tl-em{animation:tlFloat 2.8s ease-in-out infinite}
-.tr-stairs li.t-challenger b{background:linear-gradient(90deg,#2f5fd0,#9b3fd0,#d08a00,#2f5fd0);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:tierShine 4s linear infinite}
+.tr-stairs li.t-challenger b{color:#2f5fd0}
 @keyframes tlFloat{50%{translate:0 -5px}}
 /* 내 티어 */
 .tr-stairs li.on .tl-bar{box-shadow:inset 0 0 0 3px color-mix(in srgb,#fff 55%,transparent)}
@@ -4628,3 +4628,6 @@ html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
   .tm-how{gap:6px}.tm-how li{padding:8px 10px}.tm-how small{display:none}
 }
 @media (prefers-reduced-motion:reduce){.tm-em .tri,.tm-halo,.tr-stairs li .tl-em,.tr-stairs li.t-challenger b{animation:none!important}}
+/* 2차 엠블럼(tri2)은 테두리 안쪽 여백이 있어 작은 배지에서 살짝 크게 */
+.tierb .tri.tri2{width:27px;height:25px;margin:-5px -2px -5px -3px}
+.tr-top .tierb .tri.tri2,.ptier .tierb .tri.tri2{width:27px;height:25px}
