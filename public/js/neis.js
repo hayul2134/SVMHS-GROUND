@@ -60,12 +60,36 @@ export async function getMealsRange(from, to) {
   return (await Promise.all(days.map(d => settle(getMeals(d))))).flat();
 }
 
-export async function getTimetable(cls, from, to) {
+async function rawTT(cls, from, to) {
   if (api.hasKey) return neis('hisTimetable', { GRADE: cls.g, CLASS_NM: cls.c, TI_FROM_YMD: ymd(from), TI_TO_YMD: ymd(to) });
   const days = [];
   for (let d = new Date(from); d <= to; d = addDays(d, 1)) if (d.getDay() % 6) days.push(new Date(d));
   const res = await Promise.all(days.map(d => settle(neis('hisTimetable', { GRADE: cls.g, CLASS_NM: cls.c, ALL_TI_YMD: ymd(d) }))));
   return res.flat();
+}
+
+/** 분반 수업 (2026-10-26 하율): 두 반 학생이 섞여서 듣는데 나이스엔 반마다 한 과목만 올라감
+ *  (2-5 월 1~2교시 = 시각디자인 단원, 2-6 같은 시간 = 프리프로덕션 연출). 학생이 반 설정에서 고른 분반(cls.tr)이
+ *  우리 반 기본 분반과 다르면, 그 칸만 상대 반 나이스 과목으로 바꿔 보여 줌. re = 그 분반 과목(NCS 단원) 이름 */
+export const SPLITS = [
+  { g: '2', cs: ['5', '6'], tracks: [
+    { id: 'vd', name: '시각디자인', c: '5', re: /시안\s*디자인|최종\s*디자인|시각\s*디자인/ },
+    { id: 'pp', name: '프리프로덕션 연출', c: '6', re: /프리\s*프로덕션/ },
+  ] },
+];
+export const splitOf = cls => (cls && SPLITS.find(s => s.g === cls.g && s.cs.includes(cls.c))) || null;
+
+export async function getTimetable(cls, from, to) {
+  const rows = await rawTT(cls, from, to), sp = splitOf(cls);
+  const mine = sp && sp.tracks.find(t => t.id === cls.tr), home = sp && sp.tracks.find(t => t.c === cls.c);
+  if (!mine || !home || mine === home) return rows;
+  const other = await rawTT({ g: cls.g, c: mine.c }, from, to).catch(() => []);
+  const om = new Map(other.map(r => [r.ALL_TI_YMD + '_' + +r.PERIO, r]));
+  return rows.map(r => {
+    if (!home.re.test(r.ITRT_CNTNT || '')) return r;
+    const o = om.get(r.ALL_TI_YMD + '_' + +r.PERIO);
+    return o && mine.re.test(o.ITRT_CNTNT || '') ? { ...r, ITRT_CNTNT: o.ITRT_CNTNT } : r;
+  });
 }
 
 /** 나이스 '금요일수업'·'수요일 수업' = 그날 다른 요일 시간표로 수업하는 교체일 (2026-10-25)

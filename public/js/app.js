@@ -1,6 +1,6 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
 import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast, idle, onWake } from './util.js';
-import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish } from './neis.js';
+import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish, splitOf } from './neis.js';
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
 import './tip.js';
@@ -16,7 +16,7 @@ const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday', 'me', 'u', 'dm', 'game', 'ga
 
 /* ===== 저장된 값 불러오기 (손상·조작된 값은 버림) ===== */
 const validClass = c => c && +c.g >= 1 && +c.g <= MAX_GRADE && +c.c >= 1 && +c.c <= MAX_CLASS
-  ? { g: String(+c.g), c: String(+c.c), dep: typeof c.dep === 'string' ? c.dep.slice(0, 30) : '' } : null;
+  ? { g: String(+c.g), c: String(+c.c), dep: typeof c.dep === 'string' ? c.dep.slice(0, 30) : '', tr: typeof c.tr === 'string' ? c.tr.slice(0, 8) : '' } : null;
 const myDdays = () => {
   const l = store.get('ddays', []);
   return Array.isArray(l) ? l.filter(x => x && typeof x.name === 'string' && isYmd(x.date)).slice(0, MAX_DDAY) : [];
@@ -876,6 +876,8 @@ const subjIcon = n => `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><
 // '대수능 모의학력평가' → '수능 모의평가'(수능 모의고사라는 뜻은 살리고 짧게, 2026-10-24)
 const subjName = s => String(s || '').replace(/^\s*\[[^\]]*\]/, '').replace(/^[\s*#·-]+/, '').replace(/\s*\(\d학년\)\s*$/, '')
   .replace(/^대(?:학)?수(?:학)?능(?:력시험)?\s*모의\s*(?:학력)?평가$/, '수능 모의평가').trim();
+// 분반 수업이 있는 반인데 아직 분반을 안 골랐으면 시간표 아래 한 줄 안내 (2026-10-26)
+const trHint = () => splitOf(cls) && !cls.tr ? '<p class="note">분반 수업이 있는 반이에요 · <button class="link" data-open-class>내 분반 고르기</button></p>' : '';
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
 function ttTarget(n = now()) {
@@ -919,7 +921,7 @@ async function renderHomeTT() {
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     if (S.ttWk) { nextKey = ''; await fillWeek(box, S.ttWk, () => seq !== ttSeq || !S.ttWk); wkResize(); return; }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm]) => `<li data-p="${a}" data-p2="${z}"${z > a ? ' class="multi"' : ''}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>')
+      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm]) => `<li data-p="${a}" data-p2="${z}"${z > a ? ' class="multi"' : ''}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
@@ -1661,10 +1663,20 @@ async function fillClasses(g, keep) {
   if (list.some(x => x.c === want)) sel.value = want;
 }
 $('#selC').innerHTML = classOpts(baseClasses());
-$('#selG').addEventListener('change', () => fillClasses($('#selG').value));
+$('#selG').addEventListener('change', () => fillClasses($('#selG').value).then(fillTrack));
+$('#selC').addEventListener('change', () => fillTrack());
+// 분반 고르기: 고른 학년·반이 분반 수업 반일 때만 보임 (기본 = 우리 반 나이스 과목)
+function fillTrack() {
+  const sp = splitOf({ g: $('#selG').value, c: $('#selC').value }), box = $('#trBox');
+  box.hidden = !sp;
+  if (!sp) return;
+  const home = sp.tracks.find(t => t.c === $('#selC').value), cur = cls && cls.g === $('#selG').value && cls.c === $('#selC').value ? cls.tr : '';
+  $('#selT').innerHTML = sp.tracks.map(t => `<option value="${t.id}">${esc(t.name)}${t === home ? ' (우리 반 기본)' : ''}</option>`).join('');
+  $('#selT').value = cur || home.id;
+}
 function openClass() {
   if (cls) $('#selG').value = cls.g;
-  fillClasses($('#selG').value, cls ? cls.c : '');
+  fillClasses($('#selG').value, cls ? cls.c : '').then(fillTrack);
   openModal('#mClass');
 }
 /* 가입·로그인한 계정에 학년·반이 있으면 이 기기 반 설정으로 그대로 씀 (2026-10-24: 가입 때 고른 반이 시간표에 안 들어가고
@@ -1685,6 +1697,7 @@ $('#saveClass').onclick = () => {
   const next = validClass({ g: $('#selG').value, c: $('#selC').value });
   if (!next) return;
   if (cls && cls.g === next.g && cls.c === next.c) next.dep = cls.dep;
+  if (splitOf(next)) next.tr = $('#selT').value || '';
   cls = next; store.set('class', cls);
   closeModal($('#mClass')); renderClassChip(); renderHomeTT(); renderCountdown();
   if ($('#v-tt').classList.contains('on')) renderTTView();
