@@ -4636,3 +4636,8 @@ html.prelogin .app-nudge,html.is-app .app-nudge{display:none}
 .tri2 .tw-blink{transform-box:fill-box;transform-origin:center;animation:twBlink 2.4s ease-in-out infinite}
 @keyframes twBlink{50%{opacity:.35;transform:scale(.7)}}
 @media (prefers-reduced-motion:reduce){.tri2 .tw-blink{animation:none}}
+/* 서비스 › 게임 '티어' 버튼(2026-10-25 하율: '기록·랭킹' → '티어', 노란색으로 잘 보이게) — 깃발 tier-look(html.tl2) */
+html:not(.tl2) .cm-tier .tl-new,html.tl2 .cm-tier .tl-old{display:none}
+html.tl2 .cat-more.cm-tier{background:#ffd84d;color:#1d2a3a;padding:7px 16px;font-size:14px}
+html.tl2 .cat-more.cm-tier .sic{width:19px;height:19px}
+html.tl2 .cat-more.cm-tier:hover{background:#ffe373}
