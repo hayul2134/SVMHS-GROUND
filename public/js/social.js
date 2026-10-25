@@ -1411,6 +1411,7 @@ async function playHome() {
         $('#hrMsg').innerHTML = r.first ? `<b>히든 보상!</b> 처음으로 집에 온 단 한 사람 — 착용 소품 ‘집 열쇠’ · 칭호 ‘${esc(HOME_TITLE)}’를 받았어요`
           : r.arrived ? `<b>집 도착!</b> 칭호 ‘${esc(HOME_TITLE2)}’를 받았어요 — 프로필 꾸미기에서 달 수 있어요`
           : (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
+        syncBest(r.best);
         if (r.first || r.arrived) refreshMe();
         if (r.cheer) cheer('home', r.rank, r.best);
         paintRk(true);
@@ -1433,6 +1434,8 @@ async function playHome() {
     return `<ol>${top.map((u, i) => row(u, i + 1)).join('')}${mineOut}</ol>`;
   };
   const rkPane = (k, title, body) => `<section class="hr-pane"><div class="hr-ph"><b>${title}</b><button type="button" class="hr-all" data-rank="home" data-scope="${k}">더 보기</button></div>${body}</section>`;
+  // 로그인 중이면 '내 최고'(아래 줄·게임 화면 HI)는 서버 기록으로 맞춤 — 기기마다 따로 쌓인 값과 결과 카드의 '내 최고'가 달랐음 (2026-10-25)
+  function syncBest(v) { if (v == null || !isFinite(v)) return; const b = HOME_MAX - v; if (b >= 0 && b !== best) { best = b; store.set('home_best', b); } }
   async function paintRk() {
     const el = $('#hrRk'); if (!el) return;
     const mine = `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></p>`;
@@ -1440,7 +1443,9 @@ async function playHome() {
     if (!el.innerHTML) el.innerHTML = mine + `<div class="hr-cols">${rkPane('friends', '친구 랭킹', '<p class="hr-pe">불러오는 중…</p>')}${rkPane('all', '전체 랭킹', '<p class="hr-pe">불러오는 중…</p>')}</div>`;
     const [f, a] = await Promise.all([call('rank?game=home&scope=friends').catch(() => null), call('rank?game=home&scope=all').catch(() => null)]);
     if (!$('#hrRk')) return;
-    el.innerHTML = mine + `<div class="hr-cols">${rkPane('friends', '친구 랭킹', f ? rkRows(f, '아직 친구 기록이 없어요. 첫 기록을 남겨 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}${rkPane('all', '전체 랭킹', a ? rkRows(a, '아직 기록이 없어요. 첫 1등을 노려 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}</div>`;
+    syncBest(a?.myValue);
+    const mine2 = `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></p>`;
+    el.innerHTML = mine2 + `<div class="hr-cols">${rkPane('friends', '친구 랭킹', f ? rkRows(f, '아직 친구 기록이 없어요. 첫 기록을 남겨 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}${rkPane('all', '전체 랭킹', a ? rkRows(a, '아직 기록이 없어요. 첫 1등을 노려 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}</div>`;
   }
   paintRk();
   window.__home = R;   // 테스트용 (헤드리스 점검)

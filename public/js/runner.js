@@ -789,18 +789,22 @@ export function createRunner(canvas, char, opt = {}) {
         else { g.fillRect(px + 1, py, 1, 3); g.fillRect(px, py + 1, 3, 1); }
       }
     }
-    // 점수 (2026-10-25: HI 기록은 빼고 지금 거리만 2배 크기 + 반투명 받침·그림자로 또렷하게. 내 최고는 게임 아래 줄에 있음)
+    // 점수 — 공룡 게임처럼 'HI 최고 · 지금' (2026-10-25 하율: 최고 기록도 점수 옆에). 2배 크기 + 반투명 받침·그림자로 또렷하게, HI는 옅게
     const val = st.flash > 0 ? st.lastHundred * 100 : st.score;
+    const hiV = Math.max(0, Math.floor(+opt.best?.() || 0));   // 내 최고(이 기기 기록, 아래 '내 최고' 줄과 같은 값)
     const num = String(val).padStart(5, '0'), lead = num.length - String(val).length;   // 앞자리 0은 옅게
-    const SC = 2, cw = 4 * SC, tw = (num.length + 1) * cw - SC;
+    const hiS = hiV > 0 ? 'HI ' + String(Math.min(hiV, 99999)).padStart(5, '0') + ' ' : '';
+    const SC = 2, cw = 4 * SC, tw = (hiS.length + num.length + 1) * cw - SC;
     const night = sk.night > .5, fg = night ? '#ffffff' : '#1d1b38', sh = night ? '#141634' : '#ffffff';
     const bx = W - 4 - tw - 6, by = 3, bw = tw + 6, bh = 5 * SC + 6;
     g.fillStyle = night ? 'rgba(10,12,40,.45)' : 'rgba(255,255,255,.6)';
     g.fillRect(bx + 1, by, bw - 2, bh); g.fillRect(bx, by + 1, bw, bh - 2);   // 모서리 깎은 받침
+    const tx = bx + 3, ty = by + 3, dim = mix(fg, night ? '#3d3f7a' : '#dff3ff', .55), hiC = mix(fg, night ? '#3d3f7a' : '#dff3ff', .4);
+    let x0 = tx;
+    if (hiS) { pxText(g, hiS, tx + 1, ty + 1, sh, SC); x0 = pxText(g, hiS, tx, ty, hiC, SC); }   // 최고 기록은 깜빡이지 않음
     const blink = st.flash > 0 && Math.floor(st.flash * 8) % 2 === 0;
     if (!blink) {
-      const tx = bx + 3, ty = by + 3, dim = mix(fg, night ? '#3d3f7a' : '#dff3ff', .55);
-      const put = (dx, dy, cZero, cRest) => { let x = pxText(g, num.slice(0, lead), tx + dx, ty + dy, cZero, SC); x = pxText(g, num.slice(lead), x, ty + dy, cRest, SC); pxText(g, 'm', x, ty + dy, cRest, SC); };
+      const put = (dx, dy, cZero, cRest) => { let x = pxText(g, num.slice(0, lead), x0 + dx, ty + dy, cZero, SC); x = pxText(g, num.slice(lead), x, ty + dy, cRest, SC); pxText(g, 'm', x, ty + dy, cRest, SC); };
       put(1, 1, sh, sh);           // 그림자
       put(0, 0, dim, fg);          // 글자
     }
