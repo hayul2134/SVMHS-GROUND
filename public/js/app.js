@@ -878,6 +878,10 @@ const subjName = s => String(s || '').replace(/^\s*\[[^\]]*\]/, '').replace(/^[\
   .replace(/^대(?:학)?수(?:학)?능(?:력시험)?\s*모의\s*(?:학력)?평가$/, '수능 모의평가').trim();
 // 분반 수업이 있는 반인데 아직 분반을 안 골랐으면 시간표 아래 한 줄 안내 (2026-10-26)
 const trHint = () => splitOf(cls) && !cls.tr ? '<p class="note">분반 수업이 있는 반이에요 · <button class="link" data-open-class>내 분반 고르기</button></p>' : '';
+// 분반을 아직 안 골랐으면 분반 수업 칸 아이콘에 빨간 점 + 누르면 반 설정 창 (2026-10-26 하율)
+const trNeed = nm => { const sp = splitOf(cls); return !!(sp && !cls.tr && sp.tracks.some(t => t.re.test(nm || ''))); };
+const trAttr = nm => trNeed(nm) ? ' data-open-class data-tip="내 분반 고르기"' : '';
+const trDot = nm => trNeed(nm) ? '<i class="nw-d" aria-hidden="true"></i>' : '';
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
 function ttTarget(n = now()) {
@@ -921,7 +925,7 @@ async function renderHomeTT() {
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     if (S.ttWk) { nextKey = ''; await fillWeek(box, S.ttWk, () => seq !== ttSeq || !S.ttWk); wkResize(); return; }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm]) => `<li data-p="${a}" data-p2="${z}"${z > a ? ' class="multi"' : ''}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
+      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm]) => `<li data-p="${a}" data-p2="${z}"${z > a ? ' class="multi"' : ''}${trAttr(nm)}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}${trDot(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
@@ -954,7 +958,7 @@ async function fillWeek(box, mon, stale) {
       let n = 1;
       while (v && p + n <= maxP && map[k + '_' + (p + n)] === v && !(p + n === 5 && p + n - 1 === 4)) { skip[k + '_' + (p + n)] = 1; n++; }
       const c = [k === t ? 'today' : k < t ? 'past' : '', v ? '' : 'e', n > 1 ? 'dbl' : ''].filter(Boolean).join(' ');
-      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}>${v ? `<i class="si" aria-hidden="true">${subjIcon(v)}</i><span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
+      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}${v ? trAttr(v) : ''}>${v ? `<i class="si" aria-hidden="true">${subjIcon(v)}${trDot(v)}</i><span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
     };
     const pn = p => { const b = BELL.find(x => x.p === p); return `<td class="pn"><b>${p}</b>${b ? `<small>${String(b.start / 3600 | 0).padStart(2, '0')}:${String(b.start % 3600 / 60).padStart(2, '0')}</small>` : ''}</td>`; };
     let h = '<table class="week"><thead><tr><th></th>' + days.map(d => { const k = ymd(d); return `<th class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`; }).join('') + '</tr></thead><tbody>';
@@ -1665,6 +1669,7 @@ async function fillClasses(g, keep) {
 $('#selC').innerHTML = classOpts(baseClasses());
 $('#selG').addEventListener('change', () => fillClasses($('#selG').value).then(fillTrack));
 $('#selC').addEventListener('change', () => fillTrack());
+$('#selT').addEventListener('change', () => $('#trBox').classList.remove('tr-need'));
 // 분반 고르기: 고른 학년·반이 분반 수업 반일 때만 보임 (기본 = 우리 반 나이스 과목)
 function fillTrack() {
   const sp = splitOf({ g: $('#selG').value, c: $('#selC').value }), box = $('#trBox');
@@ -1673,6 +1678,7 @@ function fillTrack() {
   const home = sp.tracks.find(t => t.c === $('#selC').value), cur = cls && cls.g === $('#selG').value && cls.c === $('#selC').value ? cls.tr : '';
   $('#selT').innerHTML = sp.tracks.map(t => `<option value="${t.id}">${esc(t.name)}${t === home ? ' (우리 반 기본)' : ''}</option>`).join('');
   $('#selT').value = cur || home.id;
+  $('#trBox').classList.toggle('tr-need', !cur);
 }
 function openClass() {
   if (cls) $('#selG').value = cls.g;
