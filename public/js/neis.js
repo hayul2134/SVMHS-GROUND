@@ -69,19 +69,20 @@ async function rawTT(cls, from, to) {
 }
 
 /** 분반 수업 (2026-10-26 하율): 두 반 학생이 섞여서 듣는데 나이스엔 반마다 한 과목만 올라감
- *  (2-5 월 1~2교시 = 시각디자인 단원, 2-6 같은 시간 = 프리프로덕션 연출). 학생이 반 설정에서 고른 분반(cls.tr)이
- *  우리 반 기본 분반과 다르면, 그 칸만 상대 반 나이스 과목으로 바꿔 보여 줌. re = 그 분반 과목(NCS 단원) 이름 */
+ *  (2-5 월 1~2교시 = 시각디자인 단원, 2-6 같은 시간 = 프리프로덕션 연출). 학생이 반 설정에서 고른 분반(cls.tk)이
+ *  (2026-10-26 하율: 반이 아니라 시디·프로덕션으로 나뉨 → 반 기본값 없이 학생이 직접 고름, 저장 키 tk)
+ *  우리 반 나이스 과목과 다르면, 그 칸만 상대 반 나이스 과목으로 바꿔 보여 줌. re = 그 분반 과목(NCS 단원) 이름 */
 export const SPLITS = [
   { g: '2', cs: ['5', '6'], tracks: [
     { id: 'vd', name: '시각디자인', c: '5', re: /시안\s*디자인|최종\s*디자인|시각\s*디자인/ },
-    { id: 'pp', name: '프리프로덕션 연출', c: '6', re: /프리\s*프로덕션/ },
+    { id: 'pp', name: '프로덕션', c: '6', re: /프리\s*프로덕션/ },
   ] },
 ];
 export const splitOf = cls => (cls && SPLITS.find(s => s.g === cls.g && s.cs.includes(cls.c))) || null;
 
 export async function getTimetable(cls, from, to) {
   const rows = await rawTT(cls, from, to), sp = splitOf(cls);
-  const mine = sp && sp.tracks.find(t => t.id === cls.tr), home = sp && sp.tracks.find(t => t.c === cls.c);
+  const mine = sp && sp.tracks.find(t => t.id === cls.tk), home = sp && sp.tracks.find(t => t.c === cls.c);
   if (!mine || !home || mine === home) return rows;
   const other = await rawTT({ g: cls.g, c: mine.c }, from, to).catch(() => []);
   const om = new Map(other.map(r => [r.ALL_TI_YMD + '_' + +r.PERIO, r]));

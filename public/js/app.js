@@ -16,7 +16,7 @@ const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday', 'me', 'u', 'dm', 'game', 'ga
 
 /* ===== 저장된 값 불러오기 (손상·조작된 값은 버림) ===== */
 const validClass = c => c && +c.g >= 1 && +c.g <= MAX_GRADE && +c.c >= 1 && +c.c <= MAX_CLASS
-  ? { g: String(+c.g), c: String(+c.c), dep: typeof c.dep === 'string' ? c.dep.slice(0, 30) : '', tr: typeof c.tr === 'string' ? c.tr.slice(0, 8) : '' } : null;
+  ? { g: String(+c.g), c: String(+c.c), dep: typeof c.dep === 'string' ? c.dep.slice(0, 30) : '', tk: typeof c.tk === 'string' ? c.tk.slice(0, 8) : '' } : null;
 const myDdays = () => {
   const l = store.get('ddays', []);
   return Array.isArray(l) ? l.filter(x => x && typeof x.name === 'string' && isYmd(x.date)).slice(0, MAX_DDAY) : [];
@@ -877,9 +877,9 @@ const subjIcon = n => `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><
 const subjName = s => String(s || '').replace(/^\s*\[[^\]]*\]/, '').replace(/^[\s*#·-]+/, '').replace(/\s*\(\d학년\)\s*$/, '')
   .replace(/^대(?:학)?수(?:학)?능(?:력시험)?\s*모의\s*(?:학력)?평가$/, '수능 모의평가').trim();
 // 분반 수업이 있는 반인데 아직 분반을 안 골랐으면 시간표 아래 한 줄 안내 (2026-10-26)
-const trHint = () => splitOf(cls) && !cls.tr ? '<p class="note tr-note">분반 수업이 있는 반이에요 · <button class="link tr-go" data-open-class><i class="nw-d" aria-hidden="true"></i>내 분반 고르기</button></p>' : '';
+const trHint = () => splitOf(cls) && !cls.tk ? '<p class="note tr-note">시디·프로덕션 분반을 골라 주세요 · <button class="link tr-go" data-open-class><i class="nw-d" aria-hidden="true"></i>내 분반 고르기</button></p>' : '';
 // 분반을 아직 안 골랐으면 분반 수업 칸 아이콘에 빨간 점 + 누르면 반 설정 창 (2026-10-26 하율)
-const trNeed = nm => { const sp = splitOf(cls); return !!(sp && !cls.tr && sp.tracks.some(t => t.re.test(nm || ''))); };
+const trNeed = nm => { const sp = splitOf(cls); return !!(sp && !cls.tk && sp.tracks.some(t => t.re.test(nm || ''))); };
 const trAttr = nm => trNeed(nm) ? ' data-open-class data-tip="내 분반 고르기"' : '';
 const trDot = nm => trNeed(nm) ? '<i class="nw-d" aria-hidden="true"></i>' : '';
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
@@ -1669,15 +1669,16 @@ async function fillClasses(g, keep) {
 $('#selC').innerHTML = classOpts(baseClasses());
 $('#selG').addEventListener('change', () => fillClasses($('#selG').value).then(fillTrack));
 $('#selC').addEventListener('change', () => fillTrack());
-$('#selT').addEventListener('change', () => $('#trBox').classList.remove('tr-need'));
+$('#selT').addEventListener('change', () => $('#trBox').classList.toggle('tr-need', !$('#selT').value));
 // 분반 고르기: 고른 학년·반이 분반 수업 반일 때만 보임 (기본 = 우리 반 나이스 과목)
 function fillTrack() {
   const sp = splitOf({ g: $('#selG').value, c: $('#selC').value }), box = $('#trBox');
   box.hidden = !sp;
   if (!sp) return;
-  const home = sp.tracks.find(t => t.c === $('#selC').value), cur = cls && cls.g === $('#selG').value && cls.c === $('#selC').value ? cls.tr : '';
-  $('#selT').innerHTML = sp.tracks.map(t => `<option value="${t.id}">${esc(t.name)}${t === home ? ' (우리 반 기본)' : ''}</option>`).join('');
-  $('#selT').value = cur || home.id;
+  // 반이 아니라 시디·프로덕션으로 나뉨 → 반 기본값 없이 직접 고르게 (2026-10-26 하율)
+  const cur = cls && cls.g === $('#selG').value && cls.c === $('#selC').value ? cls.tk : '';
+  $('#selT').innerHTML = '<option value="">골라 주세요</option>' + sp.tracks.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  $('#selT').value = cur || '';
   $('#trBox').classList.toggle('tr-need', !cur);
 }
 function openClass() {
@@ -1703,7 +1704,7 @@ $('#saveClass').onclick = () => {
   const next = validClass({ g: $('#selG').value, c: $('#selC').value });
   if (!next) return;
   if (cls && cls.g === next.g && cls.c === next.c) next.dep = cls.dep;
-  if (splitOf(next)) next.tr = $('#selT').value || '';
+  if (splitOf(next)) next.tk = $('#selT').value || '';
   cls = next; store.set('class', cls);
   closeModal($('#mClass')); renderClassChip(); renderHomeTT(); renderCountdown();
   if ($('#v-tt').classList.contains('on')) renderTTView();
