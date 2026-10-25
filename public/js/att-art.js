@@ -401,7 +401,7 @@ const GA = {
     + `<g stroke="${INK}" stroke-width="1.4"><circle cx="6.4" cy="17.4" r="2.6" fill="url(#gY)"/><circle cx="24" cy="9.6" r="2.8" fill="url(#gY)"/><circle cx="41.6" cy="17.4" r="2.6" fill="url(#gY)"/></g>`
     + `<ellipse cx="24" cy="44" rx="12" ry="2" fill="${INK}" opacity=".16"/>`
     + gloss('M12.4 25.6 14 29.6', 2) + twinkle(43.6, 7, 2.8, '#fff3b0') + twinkle(4.6, 35, 2.4, '#c6ebff'),
-  fxkey:   // 집 열쇠(히든 — 나 집에 갈래! 첫 10만 m)
+  fxkey:   // 집 열쇠(히든 — 집에 가고 싶어! 첫 10만 m)
     jelly('M15 12A10 10 0 1 0 24.6 25H34V30.6H37.4V27.6H40V31.2H43.6V19.4H24.6A10 10 0 0 0 15 12Z', 'gY', '#d98a10',
       shade('M24.6 23H43.6V25H24.6Z', '#f0a21c', .75)
       + `<path d="M15 16.4 20.6 21.4V27.6H9.4V21.4Z" fill="#fffbe8" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/><path d="M13.6 27.6V24.2H16.4V27.6" fill="#f0646d" stroke="${INK}" stroke-width="1.1"/>`)

@@ -1249,7 +1249,7 @@ img.in-st{background:#fff;border:var(--bd);border-radius:22px;padding:6px;box-sh
 .in-pk button{flex:none;padding:8px 16px}
 .in-p kbd{display:inline-block;padding:0 6px;border-radius:6px;border:1.5px solid var(--line);border-bottom-width:3px;background:var(--card);font-family:var(--num);font-size:12.5px;font-weight:800;color:var(--text)}
 .in-pl-box{min-width:0}
-/* 나 집에 갈래! 맛보기 */
+/* 집에 가고 싶어! 맛보기 */
 .in-hr{position:relative;display:grid;justify-items:center;gap:10px;padding:12px;border-radius:24px;background:var(--card);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);rotate:1deg;outline:none;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .in-hr:focus-visible{box-shadow:5px 5px 0 var(--ink),0 0 0 4px color-mix(in srgb,var(--accent) 45%,transparent)}
 .in-hr canvas{display:block;box-sizing:border-box;width:100%;aspect-ratio:320/104;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:12px;border:2.5px solid var(--ink);background:#bfe6ff;cursor:pointer}
@@ -2237,7 +2237,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .att-rw .art .olx,.att-gift .art .olx,.att-next .art .olx,.stk .art .olx,.gc-got .gc-ic .art .olx,.gc-grid .gc-ic .art .olx,svg.art.shn .glx{display:inline}
 @media (prefers-reduced-motion:reduce){.att-fire .halo,.att-burst{animation:none}.att-burst .cf{display:none}}
 
-/* ===== 나 집에 갈래! (픽셀 러너, social.js playHome · js/runner.js) ===== */
+/* ===== 집에 가고 싶어! (픽셀 러너, social.js playHome · js/runner.js) ===== */
 .ptop.wide,.parea.wide{max-width:1240px}
 .parea.wide{justify-content:flex-start;padding-top:8px;overflow:auto}
 .hr{display:flex;flex-direction:column;gap:12px;position:relative}
@@ -3910,7 +3910,7 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .pquit:active{transform:translate(2px,2px);box-shadow:none}
 .pquit svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
-/* ===== 나 집에 갈래!: 그 자리 게임 오버 + 아래 친구 랭킹 줄 (2026-10-25) ===== */
+/* ===== 집에 가고 싶어!: 그 자리 게임 오버 + 아래 친구 랭킹 줄 (2026-10-25) ===== */
 .hr-ov.dead{background:rgba(42,40,70,.3);gap:12px;padding:clamp(14px,4%,28px)}
 .hr-ov.dead b{font-size:clamp(20px,3.8vw,36px)}
 .hr-ov.dead.win{background:rgba(255,210,94,.22)}.hr-ov.dead.win b{transform:none;animation:hrBob 1.2s steps(2) infinite}
@@ -3953,7 +3953,7 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 .hr-rk li b{font-family:var(--num,inherit);font-weight:900}
 .hr-all{padding:3px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;flex:none}
 @media (max-width:640px){.hr-cols{grid-template-columns:1fr}}
-/* 나 집에 갈래!: 위쪽에 붙임 — 가운데 정렬은 위가 많이 비고, 내려간 만큼 세로 여유가 줄어 게임 화면이 작아졌음 (2026-10-25 2차) */
+/* 집에 가고 싶어!: 위쪽에 붙임 — 가운데 정렬은 위가 많이 비고, 내려간 만큼 세로 여유가 줄어 게임 화면이 작아졌음 (2026-10-25 2차) */
 .parea.wide:has(> .hr){justify-content:flex-start;padding-top:clamp(8px,3vh,28px);padding-bottom:24px}
 .hr{max-width:100%;align-self:center}
 
@@ -4026,7 +4026,7 @@ li.on .ed-fxh small{color:var(--fire,#e8742b)}
 
 /* 서비스 버튼 → '서비스' 제목이 헤더 버튼(약 56px) 바로 아래에 오게 (2026-10-25) */
 #appsT{scroll-margin-top:64px}
-/* 나 집에 갈래! 소리 버튼: 글자 대신 스피커 아이콘 (2026-10-25) */
+/* 집에 가고 싶어! 소리 버튼: 글자 대신 스피커 아이콘 (2026-10-25) */
 .hr-snd{display:grid;place-items:center;width:52px;height:48px;padding:0}
 .hr-snd svg{width:26px;height:26px}
 .hr-snd:not(.on){color:var(--sub)}

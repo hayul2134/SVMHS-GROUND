@@ -1952,7 +1952,7 @@ function inBest(k, html) {   // 맛보기 게임마다 최고 기록 띠 (지금
   el.hidden = !t; if (t) el.innerHTML = t + '<button type="button" data-intro="signup">가입하고 랭킹에 올리기</button>';
 }
 let inPk = 'home';
-/* ===== 소개 맛보기 (2026-10-25): 나 집에 갈래!(기본) · 반응속도 — 기록은 저장 안 함, 가입하면 진짜 게임에서 랭킹에 올라감 ===== */
+/* ===== 소개 맛보기 (2026-10-25): 집에 가고 싶어!(기본) · 반응속도 — 기록은 저장 안 함, 가입하면 진짜 게임에서 랭킹에 올라감 ===== */
 // 반응속도
 {
   const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, best = 0, tries = 0;
@@ -1975,7 +1975,7 @@ let inPk = 'home';
   pad_.addEventListener('pointerdown', hit);
   pad_.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) hit(e); });   // 키보드로도 할 수 있게
 }
-// 나 집에 갈래! 맛보기: runner.js를 그대로 씀 (화면에 보일 때만 불러와 돌리고, 지나가면 멈춤). 키보드는 게임 칸에 포커스가 있을 때만(소개 스크롤·쇼케이스 ↓↑와 안 겹치게)
+// 집에 가고 싶어! 맛보기: runner.js를 그대로 씀 (화면에 보일 때만 불러와 돌리고, 지나가면 멈춤). 키보드는 게임 칸에 포커스가 있을 때만(소개 스크롤·쇼케이스 ↓↑와 안 겹치게)
 {
   const box = $('#inHr'), cv = $('#inHrCv'), ov = $('#inHrOv'), scr = $('#inHrScr');
   let RUN = null, R = null, char = null, over = false, deadAt = 0, best = 0, seen = false, loading = false;
@@ -2006,7 +2006,7 @@ let inPk = 'home';
     });
     fit();
   }
-  const stop = () => { if (!R) return; R.destroy(); R = null; over = false; ov.hidden = false; ov.classList.remove('dead'); ov.innerHTML = '<b>나 집에 갈래!</b><small>눌러서 출발</small>'; box.classList.remove('on'); };
+  const stop = () => { if (!R) return; R.destroy(); R = null; over = false; ov.hidden = false; ov.classList.remove('dead'); ov.innerHTML = '<b>집에 가고 싶어!</b><small>눌러서 출발</small>'; box.classList.remove('on'); };
   const restart = () => { if (performance.now() - deadAt < 400) return; over = false; ov.classList.remove('dead'); R.reset(); R.jump(); };
   const act = (a, down) => { if (!R) { if (down) { seen = true; start().then(() => { if (a === 'jump' && R?.st.scene === 'ready') R.jump(); }); } return; } if (over) { if (down && a === 'jump') restart(); return; } R.input(a, down); };
   const hold = (el, a) => {
@@ -2090,7 +2090,7 @@ const SH_INFO = [
   ['우리 반 시간표', '학년·반만 고르면 끝. 지금 교시를 짚어 주고, 마지막 교시가 끝나면 다음 날 시간표로'],
   ['오늘의 밸런스 게임', '평일마다 새 질문 하나. 마지막 교시가 끝나면 결과 공개, 댓글로 토론'],
   ['출석 체크', '등교일마다 들어오기만 하면 도장 쾅. 불꽃이 커질수록 스티커·프로필 사진·칭호가 열려요'],
-  ['게임 · 2주 라운드', '나 집에 갈래! · 반응속도 · 1 to 25 · 컷 타이밍. 2주마다 새로 겨뤄서 티어를 받고, 1~3등은 뽑기권'],
+  ['게임 · 2주 라운드', '집에 가고 싶어! · 반응속도 · 1 to 25 · 컷 타이밍. 2주마다 새로 겨뤄서 티어를 받고, 1~3등은 뽑기권'],
   ['뽑기 시즌 1', '일반은 스티커, 희귀는 움직이는 스티커, 전설은 네온 시계·홀로그램 닉네임 같은 효과. 돈으로 사는 건 없어요'],
   ['친구 · DM', '맞팔 친구가 지금 접속 중인지 첫 화면에서 바로. DM은 맞팔끼리만 주고받아요'],
   ['프로필 꾸미기', '캐릭터 사진·배경·스티커·칭호·동아리 로고까지. 뽑기 효과로 이름이 반짝여요'],

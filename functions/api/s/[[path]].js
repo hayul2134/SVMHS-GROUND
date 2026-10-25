@@ -18,7 +18,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   reaction: { min: 140, max: 1500, play: 5000 },      // 반응속도 5번 평균 (매번 1초 이상 기다림)
   num25: { min: 5000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
-  home: { min: 1, max: HOME_MAX - 1, play: 1000 },     // 나 집에 갈래!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음)
+  home: { min: 1, max: HOME_MAX - 1, play: 1000 },     // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 function checkRounds(game, v, r, elapsed) {
@@ -865,7 +865,7 @@ const ROUTES = {
         try {
           const cur = JSON.parse((await db.prepare("SELECT v FROM settings WHERE k = 'notice'").first())?.v || 'null');
           if (!cur || (cur.until && cur.until < Date.now())) {
-            const n = { id: randHex(4), text: `${me.name}님이 처음으로 집에 도착했어요! (나 집에 갈래! 100,000m)`.slice(0, 120), body: '', tone: 'fun', link: '#game', at: Date.now(), until: Date.now() + 48 * 3600e3 };
+            const n = { id: randHex(4), text: `${me.name}님이 처음으로 집에 도착했어요! (집에 가고 싶어! 100,000m)`.slice(0, 120), body: '', tone: 'fun', link: '#game', at: Date.now(), until: Date.now() + 48 * 3600e3 };
             await db.batch([
               db.prepare("INSERT INTO settings (k, v) VALUES ('notice', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(n)),
               db.prepare('INSERT INTO notices (id, text, tone, link, at, until, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)').bind(n.id, n.text, n.tone, n.link, n.at, n.until, n.body),
