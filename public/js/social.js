@@ -298,6 +298,23 @@ const tierBadge = (k, extra = '', tip = '') => { const t = tierOfK(k); return t 
 const tierChips = tr => !tr ? '' : (tr.cur ? tierBadge(tr.cur.k, '', `이번 라운드 ${tierOfK(tr.cur.k).n} · ${tr.cur.rank}위 · ${tr.cur.pts}점`) : '')
   + (tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '');
 
+/* ===== 역대 1등 왕관 패 (2026-10-25 하율: 더 자세하고 화려하게) — 기록 · 며칠째 1위 · 2등과 차이 · 참가 인원 ===== */
+const CROWN_GAP = { home: v => v.toLocaleString('ko-KR') + 'm', reaction: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초', cut: v => v + 'ms' };
+function crownHtml(c) {
+  if (typeof c === 'string') c = { g: c };   // 옛 응답 형식(게임 이름만)
+  const g = GAMES[c.g]; if (!g) return '';
+  const days = c.at ? Math.max(1, Math.floor((Date.now() - c.at) / 864e5) + 1) : 0;
+  const since = c.at ? new Date(c.at) : null;
+  const meta = [c.n && `<span>${ic('trophy')}${c.n}명 중 1위</span>`,
+    days && `<span data-tip="${since.getMonth() + 1}월 ${since.getDate()}일부터">${ic('fire')}${days}일째 지키는 중</span>`,
+    c.gap != null ? `<span>${ic('ruler')}2등과 ${c.gap ? esc(CROWN_GAP[c.g]?.(c.gap) ?? c.gap) : '동점'} 차이</span>` : c.n ? `<span>${ic('flag')}유일한 도전자</span>` : ''].filter(Boolean).join('');
+  return `<div class="crown2" aria-label="${esc(g.name)} 역대 1등${c.best != null ? ' · ' + esc(g.fmt(c.best)) : ''}">
+    <i class="cr-shine" aria-hidden="true"></i><i class="cr-spk s1" aria-hidden="true"></i><i class="cr-spk s2" aria-hidden="true"></i><i class="cr-spk s3" aria-hidden="true"></i>
+    <span class="cr-medal" aria-hidden="true">${ic('crown', 'cr-crown')}<b>1</b></span>
+    <span class="cr-txt"><small>${ic(g.ic)}${esc(g.name)} · 역대 1등</small>${c.best != null ? `<b class="cr-rec">${esc(g.fmt(c.best))}</b>` : '<b class="cr-rec">1등</b>'}${meta ? `<span class="cr-meta">${meta}</span>` : ''}</span>
+  </div>`;
+}
+
 /* ===== 프로필 카드 ===== */
 const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12'];
 function profileHtml(d) {
@@ -311,7 +328,7 @@ function profileHtml(d) {
   const streak = !(sk.cur || sk.best) ? '' : `<button type="button" class="pstreak${sk.cur ? tier : ' off'}${sk.pf && sk.cur >= 3 ? ' pf' : ''}" ${self ? 'data-att-open' : ''} data-tip="최고 ${ATT.fmtN(sk.best)}일 · 총 ${sk.total}일 출석${sk.pf && sk.cur >= 3 ? ' · 완벽한 연속' : ''}">${ATT.flame('fsm', { off: !sk.cur, tier: ATT.tierOf(sk.cur || 0) })}<b>${sk.cur >= 1e6 ? '무한 연속 출석' : sk.cur ? `${sk.cur}일 연속 출석` : '연속 출석 쉬는 중'}</b></button>`;
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}${u.title === HOME_TITLE ? ' first' : ''}"><span>${ui('tag', 'ic')}${ttlHtml(u.title)}</span></p>` : '';
   const tch = tierChips(d.tier);
-  const crowns = (d.crowns || []).map(g => `<span class="crown">${ic('crown')}${esc(GAMES[g]?.name || g)} 1등</span>`).join('');
+  const crowns = (d.crowns || []).map(crownHtml).join('');
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self

@@ -1172,8 +1172,15 @@ async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 �
   return (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid) WHERE b < ?2`).bind(game, best).first()).r;
 }
 
-async function topCrowns(db, uid) {   // 역대 1등인 게임 목록
+async function topCrowns(db, uid) {   // 역대 1등인 게임 + 자세히(기록·언제부터·2등과 차이·참가 인원) — 2026-10-25 하율 요청
   const games = Object.keys(GAMES);
-  const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid FROM scores WHERE game = ?1 AND ${NOT_DEV} ORDER BY best, at LIMIT 1`).bind(game).first()));
-  return games.filter((_, i) => tops[i]?.uid === uid);
+  const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND ${NOT_DEV} ORDER BY best, at LIMIT 1`).bind(game).first()));
+  const mine = games.map((g, i) => [g, tops[i]]).filter(([, t]) => t?.uid === uid);
+  return Promise.all(mine.map(async ([g, t]) => {
+    const [sec, cnt] = await Promise.all([
+      db.prepare(`SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${NOT_DEV} AND uid != ?2`).bind(g, uid).first(),
+      db.prepare(`SELECT COUNT(DISTINCT uid) AS n FROM scores WHERE game = ?1 AND ${NOT_DEV}`).bind(g).first(),
+    ]);
+    return { g, best: t.best, at: t.at, gap: sec?.b != null ? sec.b - t.best : null, n: cnt?.n || 1 };
+  }));
 }
