@@ -1,34 +1,20 @@
 // SVMHS GROUND — 관리자 API (/api/admin/*). 화면은 public/admin/
 // 로그인: 사이트에서 관리자 계정(lib/db.js ADMIN_HANDLE)으로 로그인 → 비밀번호 재확인(/api/s/admin-pass) → 12시간 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만).
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
+import { randHex, sha256, hashPw, cookieOf as readCookie, clean } from '../../../lib/sec.js';
 import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, logErr } from '../../../lib/db.js';
 import { defaultBalance, balDay } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
-const SESSION_H = 12;
 const GAMES = ['reaction', 'num25', 'cut', 'home'];
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), { status, headers: { ...HEADERS, ...extra } });
 const err = (msg, status = 400) => json({ error: msg }, status);
 const DAY = 86400e3;
 const kstStart = (t = Date.now()) => { const k = t + 9 * 3600e3; return k - (k % DAY) - 9 * 3600e3; };   // 오늘 0시(한국)의 UTC ms
-const clean = (s, max, multiline = false) => {
-  let t = String(s ?? '').replace(multiline ? /[\u0000-\u0009\u000B-\u001F\u007F]/g : /[\u0000-\u001F\u007F]/g, '');
-  t = multiline ? t.replace(/\n{3,}/g, '\n\n') : t.replace(/\s+/g, ' ');
-  return [...t.trim()].slice(0, max).join('');
-};
 
 /* ----- 보안 도구 ----- */
-const enc = new TextEncoder();
-const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-const randHex = n => hex(crypto.getRandomValues(new Uint8Array(n)));
-const sha256 = async s => hex(await crypto.subtle.digest('SHA-256', enc.encode(s)));
-const sameStr = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-async function hashPw(pw, salt) {   // 소셜 API와 같은 방식 (비밀번호 초기화용)
-  const key = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
-  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 100000 }, key, 256));
-}
-const cookieOf = req => (req.headers.get('cookie') || '').split(/;\s*/).find(c => c.startsWith(COOKIE + '='))?.slice(COOKIE.length + 1) || '';
+const cookieOf = req => readCookie(req, COOKIE);
 const setCookie = (req, token, maxAge) => `${COOKIE}=${token}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${new URL(req.url).protocol === 'https:' ? '; Secure' : ''}`;
 // 관리자 세션: 토큰은 해시로만 저장. 관리자 계정이 지워졌거나 정지되면 세션도 무효
 async function isAdmin(req, db) {

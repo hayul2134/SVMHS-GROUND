@@ -617,7 +617,6 @@ export const foodImg = name => { const k = cartoonKey(name); return CARTOON.has(
 export const foodKind = n => (RULES.find(([re]) => re.test(n)) || [, 'misc'])[1];
 
 /** 메뉴 이름 → SVG. shape: 'n'(위 칸) | 'half'(위 가운데 반쪽) | 'big'(밥·국 칸) | 'seg'(한 칸에 여러 개일 때 한 줄) */
-const HOT = new Set(['rice', 'soup', 'porridge', 'sauceRice', 'mixRice']);
 // 그림의 바탕색이 진한지 (진하면 이름표를 D-day 글씨처럼 흰 그림자로)
 const isDark = hex => { const m = /^#([\da-f]{6})$/i.exec(hex || ''); if (!m) return false; const v = parseInt(m[1], 16); return ((v >> 16) * .299 + (v >> 8 & 255) * .587 + (v & 255) * .114) / 255 < .52; };
 // 칸 비율(가로/세로)을 몇 단계로 묶음 → 그림을 칸 모양 그대로 그려서 잘리거나 작아 보이지 않게

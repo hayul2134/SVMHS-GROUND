@@ -6,7 +6,7 @@
 // 연출(2026-10-25 2차): 화면 전체 무대 gacha-fx.js — 은색 캡슐(등급 숨김) → 금 가며 등급 승급. 끝나면 결과를 아래 #gcStage에 열린 채로 남김.
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
 import { $, esc, toast, store } from './util.js';
-import { GACHA, HIDDEN, HOME_TITLE, RAR, GC, FX, GC_TITLE, RK, SHN, MILESTONES, objName, neonPick } from './att-rewards.js';
+import { GACHA, HIDDEN, RAR, GC, FX, GC_TITLE, RK, SHN, MILESTONES, objName, neonPick } from './att-rewards.js';
 import { artOf, ensureSprite, stillHref } from './att-art.js';
 import { play } from './gacha-fx.js';
 import * as NW from './gcnew.js';   // 새로 얻은 것 빨간 표시 + 어디서 착용하는지 안내(2026-10-25)
@@ -45,7 +45,6 @@ const machine = (k = '') => `<svg class="gc-mc" viewBox="0 0 160 206" aria-hidde
   <g transform="translate(108 178)"><g class="gc-out">${capSvg(0, 0, 'r1', 9)}</g></g>
 </svg>`;
 // 결과 캡슐 (열리기 전): 위 반쪽 색이 등급
-const bigCap = (c, i) => `<button type="button" class="gc-cap ${c}" data-i="${i}" aria-label="캡슐 열기"><svg viewBox="-30 -30 60 60" aria-hidden="true"><circle r="26" fill="#173048" transform="translate(2 3)"/><g class="bot"><circle r="26" fill="#fff" stroke="#173048" stroke-width="3.6"/></g><g class="top"><path d="M-26 0A26 26 0 0 1 26 0Z" class="ct" stroke="#173048" stroke-width="3.6" stroke-linejoin="round"/><path d="M-18 -9Q-12 -20 0 -21" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".9"/></g><path d="M-26 0H26" stroke="#173048" stroke-width="3.6"/></svg></button>`;
 
 /* ----- 화면 ----- */
 export function init(a) {

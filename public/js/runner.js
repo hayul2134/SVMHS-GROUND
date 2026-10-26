@@ -2,7 +2,7 @@
 // 화면 논리 해상도 320×104 픽셀을 정수 배로 키워 그린다(이미지 부드럽게 끄기 → 또렷한 픽셀).
 // 점수는 home-score.js(서버와 공용): 살아남은 시간 → 거리(m). 고정 타임스텝 1/60초.
 // 캐릭터는 문자 그림(템플릿)을 부위별 색으로 칠해 프레임마다 미리 그려 둔다(바꿀 때만 다시).
-import { V0, VMAX, UNIT, GOAL, speedAt, scoreAt, distAt } from './home-score.js';
+import { V0, UNIT, GOAL, speedAt, scoreAt, distAt } from './home-score.js';
 import { store } from './util.js';
 
 export const W = 320, H = 104, GROUND = 92, PX = 26;   // 화면 크기 · 땅 높이(발바닥 y) · 캐릭터 x

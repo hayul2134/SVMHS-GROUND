@@ -2,10 +2,11 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
+import { randHex, sha256, hashPw, sameStr, cookieOf, clean } from '../../../lib/sec.js';
 import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
@@ -85,12 +86,6 @@ const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj)
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...SECURITY_HEADERS, ...extra },
 });
 const err = (msg, status = 400) => json({ error: msg }, status);
-// 사용자 글: 제어문자 제거 · 공백 정리 · 길이 제한
-const clean = (s, max, multiline = false) => {
-  let t = String(s ?? '').replace(multiline ? /[\u0000-\u0009\u000B-\u001F\u007F​-‏‪-‮⁦-⁩]/g : /[\u0000-\u001F\u007F​-‏‪-‮⁦-⁩]/g, '');
-  t = multiline ? t.replace(/\n{3,}/g, '\n\n') : t.replace(/\s+/g, ' ');
-  return [...t.trim()].slice(0, max).join('');
-};
 
 /* ===== 욕설 기본 필터 (프로필에 공개되는 글: 아이디·닉네임·소개·상태·동아리) =====
    띄어쓰기·특수문자·숫자를 빼고 검사 ('시 발', '씨1발' 등). 완벽하진 않음 → 나머지는 신고로 처리. DM은 사적인 대화라 검사하지 않음 */
@@ -110,19 +105,9 @@ async function verifyGoogle(env, cred) {
   } catch { return null; }
 }
 
-/* ===== 보안 도구 ===== */
-const enc = new TextEncoder();
-const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-const randHex = n => hex(crypto.getRandomValues(new Uint8Array(n)));
-const sha256 = async s => hex(await crypto.subtle.digest('SHA-256', enc.encode(s)));
-async function hashPw(pw, salt) {
-  const key = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
-  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 100000 }, key, 256));
-}
-const sameStr = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+/* ===== 보안 도구 (공용은 lib/sec.js) ===== */
 // 없는 아이디로 로그인할 때도 같은 시간이 걸리게 하는 가짜 해시 (응답 시간으로 아이디 존재 여부를 알 수 없게)
 const DUMMY = { pw: '0'.repeat(64), salt: '00000000000000000000000000000000' };
-const cookieOf = (req, name) => (req.headers.get('cookie') || '').split(/;\s*/).find(c => c.startsWith(name + '='))?.slice(name.length + 1) || '';
 const setCookie = (req, token, maxAge) => {
   const secure = new URL(req.url).protocol === 'https:' ? '; Secure' : '';
   return `${COOKIE}=${token}; Path=/api/s; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;

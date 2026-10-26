@@ -595,7 +595,7 @@ function paintHomeMeal() {
   setTray(box, mealListHtml(rows.find(r => r.MMEAL_SC_CODE === sel), day));
 }
 async function renderHomeMeal() {
-  const box = $('#hMeal'), tabs = $('#hMealTabs');
+  const box = $('#hMeal');
   try {
     const [rows] = await Promise.all([getMeals(today()), loadVotes(today())]);
     homeRows = rows.filter(r => MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
@@ -1211,7 +1211,6 @@ function setLbl(el, text, off, wk) {
   card?.classList.toggle('wk', wk);
   card?.querySelectorAll('.s-nb').forEach(b => b.setAttribute('aria-label', `${b.dataset.d < 0 ? '이전' : '다음'} ${wk ? '주' : '날'} ${what}`));
 }
-function markOff(el, off) { el.classList.toggle('off', off); if (off) { el.dataset.tip = '오늘로 돌아가기'; el.setAttribute('aria-label', el.textContent + ' · 눌러서 오늘로'); } else { delete el.dataset.tip; el.removeAttribute('aria-label'); } }
 const stepSchool = (d, k) => { let x = d, i = 0; do x = addDays(x, k); while (!isSchoolDay(x) && ++i < 21); return x; };
 let resetT = 0;
 function armReset() {
@@ -2030,14 +2029,14 @@ let inPk = 'home';
 /* ===== 소개 맛보기 (2026-10-25): 집에 가고 싶어!(기본) · 반응속도 — 기록은 저장 안 함, 가입하면 진짜 게임에서 랭킹에 올라감 ===== */
 // 반응속도
 {
-  const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, best = 0, tries = 0;
+  const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, best = 0;
   const show = (cls, html) => { pad_.className = 'rx in-rx ' + cls; pad_.innerHTML = html; };
   const grade = ms => ms < 230 ? '이 정도면 반 대표감!' : ms < 290 ? '꽤 빠른데요?' : ms < 380 ? '평범한 반응속도' : '아직 잠이 덜 깼나 봐요';
   const hit = e => {
     e.preventDefault();
     if (st === 'wait') { clearTimeout(tm); st = 'shown'; show('early', '<b>앗, 너무 빨라요!</b><small>초록색이 될 때까지 참기 · 탭해서 다시</small>'); return; }
     if (st === 'go') {
-      const ms = Math.round(performance.now() - t0); tries++;
+      const ms = Math.round(performance.now() - t0);
       st = 'shown'; show('done', `<b>${ms}ms</b><small>${grade(ms)} · 탭해서 한 번 더</small>`);
       if (!best || ms < best) best = ms;
       const el = $('#inBest'); el.hidden = false;
@@ -2208,10 +2207,8 @@ async function fillShowArt() {
 }
 async function fillShow() {
   fillShowArt();
-  const day = ymd(today()), cell = (x, cls) => { if (!x) return `<span class="c ${cls}"></span>`; const k = foodImg(x); return `<span class="c ${cls}">${k ? `<img src="/food/c/${k}.webp" alt="" loading="lazy">` : '<i></i>'}<b>${esc(x)}</b></span>`; };
-  const [meal, rows] = await Promise.all([
-    getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []),
-    Promise.resolve([])]);
+  const cell = (x, cls) => { if (!x) return `<span class="c ${cls}"></span>`; const k = foodImg(x); return `<span class="c ${cls}">${k ? `<img src="/food/c/${k}.webp" alt="" loading="lazy">` : '<i></i>'}<b>${esc(x)}</b></span>`; };
+  const meal = await getMeals(today()).then(r => r.filter(x => MEALS[x.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE)).catch(() => []);
   const r = meal.length ? pickMeal(meal, mealSlot()) : null;
   let m = SH_EX_MEAL;
   if (r) { const t = splitTray(cleanDish(r.DDISH_NM)), rest = [...t.top[1], ...t.top[2], ...t.top[3]]; m = { main: t.top[0][0] || rest.shift(), sides: rest.slice(0, 4), rice: t.rice, soup: t.soup }; }
@@ -2440,7 +2437,7 @@ async function fillShow() {
      장면(STOPS): 스티커만 → 첫 화면 → 급식 → 시계 → … → 일정. 마지막 장면에서 한 번 더 내리면 쇼케이스를 빠져나가 그 아래는 평소처럼 스크롤.
      맨 처음 장면에서 올리면 위(첫 화면)로 평소처럼 돌아감. 휠·트랙패드·터치·키보드(↓↑ PageDown/Up 스페이스) 모두 같은 규칙 */
   const STOPS = [0, (T_SHOW + T_HOLD) / 2, ...Array.from({ length: N }, (_, j) => T_ROW + j * (T_END - T_ROW) / (N - 1))];
-  let stopI = -1, lockUntil = 0, lastWheel = 0, wheelMag = 0, leaving = 0, touchY = null, touchMoved = false;
+  let stopI = -1, lockUntil = 0, lastWheel = 0, leaving = 0, touchY = null, touchMoved = false;
   const inShow = () => { const rp = rawP(); return rp > -.0005 && rp < 1.0005; };
   const goStop = k => { stopI = k; root.scrollTop = secTop + STOPS[k] * L.range; kick(); };   // 화면은 붙어 있으니 스크롤 위치는 바로 옮기고, 움직임은 render가 부드럽게
   const leave = dir => {   // 쇼케이스 밖으로: 아래면 다음 내용이 보이게, 위면 첫 화면으로 부드럽게

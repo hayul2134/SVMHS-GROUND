@@ -1,10 +1,9 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
 import { $, $$, esc, toast, store, idle, onWake } from './util.js';
 import * as ATT from './attend.js';
-import * as GCH from './gacha.js';
 import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시(2026-10-25)
 import { wearOf, wearSvg } from './wear.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
 import { ffOn, RELEASED } from './flags.js';
@@ -1428,7 +1427,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 
 /* 1) 반응속도: 5번 평균 */
 function playReaction() {
-  const area = stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol>`);
+  stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol>`);
   const pad = $('#rx'), log = $('#rxlog');
   const times = []; let state = 'idle', t0 = 0, timer = 0, alive = true;
   quitGame = () => { alive = false; clearTimeout(timer); };
@@ -1456,7 +1455,7 @@ function playReaction() {
 /* 2) 1 to 25: 틀리면 +1초 */
 function playNum25() {
   const nums = Array.from({ length: 25 }, (_, i) => i + 1).sort(() => Math.random() - .5);
-  const area = stage(ic('n25') + ' 1 to 25', `<div class="n25top"><span>다음 <b id="nNext">1</b></span><span id="nTime">0.00초</span></div>
+  stage(ic('n25') + ' 1 to 25', `<div class="n25top"><span>다음 <b id="nNext">1</b></span><span id="nTime">0.00초</span></div>
     <div class="n25" id="n25">${nums.map(n => `<button data-n="${n}">${n}</button>`).join('')}</div><p class="note center">틀리게 누르면 +1초</p>`);
   let next = 1, t0 = 0, pen = 0, raf = 0, alive = true; const taps = [];
   quitGame = () => { alive = false; cancelAnimationFrame(raf); };
@@ -1476,7 +1475,7 @@ function playNum25() {
 
 /* 3) 컷 타이밍: 움직이는 플레이헤드를 컷 지점에서 멈추기 (5번, 점점 빨라짐) */
 function playCut() {
-  const area = stage(ic('clap') + ' 컷 타이밍', `<p class="cutinfo"><span id="cRound">1 / 5</span> · 누적 오차 <b id="cSum">0ms</b></p>
+  stage(ic('clap') + ' 컷 타이밍', `<p class="cutinfo"><span id="cRound">1 / 5</span> · 누적 오차 <b id="cSum">0ms</b></p>
     <div class="tl" id="tl"><div class="tl-ruler"></div><i class="tl-mark" id="cMark"></i><i class="tl-head" id="cHead"></i></div>
     <p class="cutmsg" id="cMsg">빨간 컷 지점에 플레이헤드가 오면 CUT!</p>
     <button class="btn big cutbtn" id="cBtn">✂ CUT</button>`);
@@ -1696,7 +1695,6 @@ async function playHome() {
   let pvTimer = 0;
   function closeDress() { box.hidden = true; clearInterval(pvTimer); $('#hr').classList.remove('dressing'); }
   function paintDress() {
-    const sw = (o, i) => o.colors[i][0];
     box.innerHTML = `<div class="hd-pv"><canvas id="hdCv" aria-label="내 캐릭터"></canvas><div class="hd-frs">${['run1', 'jump', 'duck1'].map((f, i) => `<button type="button" data-hf="${f}" class="${i ? '' : 'on'}">${['달리기', '점프', '숙이기'][i]}</button>`).join('')}</div>
         <div class="row"><button type="button" class="btn ghost hd-dice" id="hdRnd" aria-label="무작위로 꾸미기" title="무작위로 꾸미기"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-dice"/></svg></button><button type="button" class="btn" id="hdDone">완료</button></div></div>
       <div class="hd-opts">${RUN.OPTS.map(o => `<div class="hd-g"><p>${o.name}</p><div class="hd-ch">${o.colors
@@ -1741,8 +1739,9 @@ function expWarn() {
 export async function init(c) {
   ctx = c; c.stkTray = stkTray;   // app.js 밸런스 댓글에서도 씀
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
-  c.RENDER.gacha = () => GCH.render();
-  GCH.init({ call, refreshMe, me: () => S.me, setGc, edit: o => { if (S.me) openEdit(o); } });
+  // 뽑기(gacha.js·gacha-fx.js)는 뽑기 화면을 처음 열 때만 불러옴 — 첫 화면에서 받는 코드 줄이기
+  let gch = null;
+  c.RENDER.gacha = () => (gch ||= import('./gacha.js').then(m => { m.init({ call, refreshMe, me: () => S.me, setGc, edit: o => { if (S.me) openEdit(o); } }); return m; })).then(m => m.render());
 NW.init(() => S.me);
   c.report = openReport;
   c.authForm = authHtml;   // 소개 화면의 로그인/가입 폼
