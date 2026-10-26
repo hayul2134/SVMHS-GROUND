@@ -4825,7 +4825,7 @@ html.tpad .t-grandmaster.tierb{background:linear-gradient(120deg,#ffd9d3,#ff9d92
 
 /* 2026-10-26 게임 중에도 왼쪽 위 집 버튼 유지 — 헤더를 게임 화면(.play 70) 위로 올리고 집 버튼만 보이게 */
 body.playing header{z-index:72}
-body.playing header::before{opacity:0}
+html body.playing header::before{display:none}/* 스크롤 블러 층이 게임 제목·나가기를 흐리게 덮던 문제 */
 body.playing header .hd > :not(#btnHome){visibility:hidden;pointer-events:none}
 body.playing header #btnHome{display:grid}
 /* 시간표 동아리 칸: 깃발 대신 내 동아리 로고 (2026-10-26) — 흰 네모 + 잉크 테두리, 로고가 꽉 차지 않게 안쪽 여백 */
