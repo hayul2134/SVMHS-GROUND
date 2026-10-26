@@ -31,13 +31,9 @@ function checkRounds(game, v, r, elapsed) {
   const sum = n.reduce((a, b) => a + b, 0), spread = Math.max(...n) - Math.min(...n);
   const idx = f => n.map((x, i) => (f(x) ? i : -1)).filter(i => i >= 0);
   const which = is => is.map(i => `${i + 1}번째 판(${n[i]}ms)`).join(', ');
-  if (game === 'reaction') {   // 5번 각각 110ms 이상(예측해서 누르기 방지)·평균이 v·5번이 거의 같으면 기계
+  if (game === 'reaction') {   // 평균이 v · 5번이 거의 같으면 기계 · 플레이 시간 (판 하나 빠른 건 통과)
     if (n.length !== 5) return H(`판 수가 5가 아님(${n.length})`, `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
-    const fast = idx(x => x < 110), slow = idx(x => x > 1500);
-    if (fast.length) return H(`110ms보다 빠른 판(${fast.map(i => n[i]).join('·')}ms) — 미리 누름 의심`,
-      `${which(fast)}이 너무 빨라요. 사람은 초록색을 보고 누르기까지 보통 0.11초(110ms) 넘게 걸려서, 초록색으로 바뀌기 전에 미리 누른 걸로 보여요.`, fast);
-    if (slow.length) return H(`1500ms 넘는 판(${slow.map(i => n[i]).join('·')}ms)`,
-      `${which(slow)}이 1.5초를 넘었어요. 한 판이 너무 오래 걸리면 평균 계산이 맞지 않아요.`, slow);
+    // 판 하나가 빠르거나 느린 건 보류하지 않음 — 평균(기록)이 120ms 아래면 위의 범위 검사에서 걸림 (2026-10-26 13:37 하율 "평균이 이상하지 않는 이상 보류는 하지 말아")
     if (Math.abs(Math.round(sum / 5) - v) > 1) return H(`평균(${Math.round(sum / 5)})과 기록(${v})이 다름`, `5판의 평균(${Math.round(sum / 5)}ms)과 최종 기록(${v}ms)이 서로 달라요.`);
     if (spread < 6) return H(`5판 차이가 ${spread}ms뿐 — 매크로 의심`, `5판 기록이 거의 똑같아요(가장 빠른 판과 느린 판 차이 ${spread}ms). 사람이 누르면 판마다 조금씩 달라지는데, 이렇게 일정하면 자동 클릭으로 보일 수 있어요.`);
     if (elapsed < 5000 + sum) return H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임한 시간이 ${sec(elapsed)}로 너무 짧아요. 판마다 최소 1초는 기다려야 해서 이렇게 빨리 끝날 수 없어요.`);
