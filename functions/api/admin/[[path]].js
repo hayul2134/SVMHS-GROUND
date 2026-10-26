@@ -3,7 +3,7 @@
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
 import { randHex, sha256, hashPw, cookieOf as readCookie, clean } from '../../../lib/sec.js';
 import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, logErr } from '../../../lib/db.js';
-import { defaultBalance, balDay } from '../../../lib/balance.js';
+import { previewBalance, balDay, isBalDay } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
 const GAMES = ['reaction', 'num25', 'cut', 'home'];
@@ -500,22 +500,18 @@ const ROUTES = {
 
   /* ----- 밸런스 게임 ----- */
   'GET balance': async ({ db }) => {
-    const today = balDay(), custom = (await db.prepare('SELECT ymd, q, a, b FROM balance_custom WHERE ymd >= ?1 ORDER BY ymd').bind(today).all()).results;
-    const byDay = new Map(custom.map(c => [c.ymd, c]));
-    const days = [];   // 지금 보이는 날부터 평일 10일 (주말엔 새 질문 없음)
-    for (let i = 0; days.length < 10 && i < 20; i++) {
+    const today = balDay(), ymds = [];   // 지금 보이는 날부터 밸런스 날 10일 (토요일은 쉼 — 2026-10-27부터 일요일 포함)
+    for (let i = 0; ymds.length < 10 && i < 20; i++) {
       const ymd = kstYmd(Date.parse(`${today.slice(0, 4)}-${today.slice(4, 6)}-${today.slice(6, 8)}T12:00:00+09:00`) + i * DAY);
-      const dw = new Date(`${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}T12:00:00+09:00`).getUTCDay();
-      if (dw === 0 || dw === 6) continue;
-      const c = byDay.get(ymd), d = defaultBalance(ymd);
-      days.push({ ymd, custom: !!c, q: c ? c.q : d[0], a: c ? c.a : d[1], b: c ? c.b : d[2] });
+      if (isBalDay(ymd)) ymds.push(ymd);
     }
+    const { days, left } = await previewBalance(db, ymds);
     const [votes, comments] = await db.batch([
       db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(today),
       db.prepare('SELECT c.id, c.body, c.at, u.handle, u.name FROM balance_comments c JOIN users u ON u.id = c.uid WHERE c.ymd = ?1 ORDER BY c.id DESC LIMIT 200').bind(today),
     ]);
     const v = votes.results;
-    return json({ days, today: { ymd: today, a: v.find(x => x.pick === 'a')?.n || 0, b: v.find(x => x.pick === 'b')?.n || 0 }, comments: comments.results });
+    return json({ days, left, today: { ymd: today, a: v.find(x => x.pick === 'a')?.n || 0, b: v.find(x => x.pick === 'b')?.n || 0 }, comments: comments.results });
   },
   'POST balancecdel': async ({ db, body }) => {
     const r = await db.prepare('DELETE FROM balance_comments WHERE id = ?1 RETURNING body').bind(+body.id || 0).first();

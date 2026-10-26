@@ -1,7 +1,7 @@
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
-import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
+import { balanceOf, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
 import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
@@ -239,8 +239,9 @@ export async function onRequest({ request: req, env, params }) {
 /* ===== 밸런스 게임 상태 (투표 전엔 결과·댓글을 숨김 — 마감 뒤엔 모두에게 공개) ===== */
 async function balState(env, db, me) {
   const ymd = balDay(), now = Date.now();
-  const c = await db.prepare('SELECT q, a, b FROM balance_custom WHERE ymd = ?1').bind(ymd).first();
-  const [q, a, b] = c ? [c.q, c.a, c.b] : defaultBalance(ymd);
+  const qab = await balanceOf(db, ymd);   // 한 번 나온 질문은 다시 안 나옴 — 남은 질문이 없으면 게임을 숨김
+  if (!qab) return { enabled: false };
+  const [q, a, b] = qab;
   const last = await lastPeriod(env, db, ymd), opens = openAt(ymd), closes = closeAt(ymd, last), open = now >= opens && now < closes;
   const [votes, mineRow, ncom] = await db.batch([
     db.prepare('SELECT pick, COUNT(*) AS n FROM balance_votes WHERE ymd = ?1 GROUP BY pick').bind(ymd),

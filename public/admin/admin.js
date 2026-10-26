@@ -434,8 +434,8 @@ VIEWS.balance = async () => {
       <div class="vs"><div><span class="sub">A · ${esc(d.days[0].a)}</span><br><b>${t.a}</b>표 <span class="sub">${tot ? Math.round(t.a / tot * 100) + '%' : ''}</span></div><div><span class="sub">B · ${esc(d.days[0].b)}</span><br><b>${t.b}</b>표 <span class="sub">${tot ? Math.round(t.b / tot * 100) + '%' : ''}</span></div></div>
       ${tot ? `<div class="vbar" id="vbar"><i data-w="${t.a / tot}"></i><i data-w="${t.b / tot}"></i></div>` : ''}
     </section>
-    <section class="card"><h3>앞으로 평일 10일 질문</h3>
-      <p class="sub sp-b">월~금 하루 한 문제 · 6시 공개 · 마지막 교시 끝 +10분 마감(나이스 시간표 기준). 기본 질문은 목록에서 자동으로 돌아가요. <b>지금 질문을 바꾸면 그날 표·댓글은 초기화돼요.</b></p>
+    <section class="card"><h3>앞으로 10번의 질문 <small class="sub">남은 기본 질문 ${d.left ?? '-'}개${d.left != null && d.left < 30 ? ' · <b>곧 떨어져요 — lib/balance.js에 추가</b>' : ''}</small></h3>
+      <p class="sub sp-b">일~금 하루 한 문제(토요일 쉼) · 6시 공개 · 밤 11시 마감. 기본 질문은 한 번 나오면 다시 안 나와요(아직 안 정해진 날은 예상). <b>지금 질문을 바꾸면 그날 표·댓글은 초기화돼요.</b></p>
       ${d.days.map((x, i) => `<div class="bal" data-ymd="${x.ymd}">
         <div class="d">${ymdLabel(x.ymd)}<small>${i === 0 ? '지금' : ''}</small></div>
         <div class="qq"><b>${esc(x.q)} ${x.custom ? '<span class="tag cus">직접 정함</span>' : ''}</b><span>${esc(x.a)} vs ${esc(x.b)}</span></div>
