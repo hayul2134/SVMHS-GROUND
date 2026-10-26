@@ -4745,5 +4745,6 @@ html.tf .tr-top[open] summary{box-shadow:1.5px 1.5px 0 var(--ink);transform:tran
 html .rk-v .rk-tr,html.tf .rk-v .rk-tr{position:relative;width:100%;justify-content:center;padding-left:26px;padding-right:6px;box-sizing:border-box}
 html .rk-v .rk-tr .tri{position:absolute;left:4px;top:50%;translate:0 -50%;margin:0}
 html.tf .rk-v .rk-tr .tri{left:2px}
+html .rk-v .rk-tr:not(.t-master,.t-grandmaster,.t-challenger) .tri{translate:0 calc(-50% - 2px)}   /* 왕관 없는 티어는 그림이 viewBox 아래쪽에 있어 2px 올림 */
 html.rk2 .rk.p1 .rk-v:has(.rk-tr){margin-right:-3.5px}   /* 1등 줄은 안쪽 여백이 2px 더 커서 맞춤 */
 html.rk2 .rk.p3 .rk-v:has(.rk-tr){margin-left:-1px;margin-right:1px}
