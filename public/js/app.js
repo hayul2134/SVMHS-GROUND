@@ -945,7 +945,8 @@ function ttBlocks(rows) {
     const p = +r.PERIO, nm = subjName(r.ITRT_CNTNT), last = out[out.length - 1];
     if (last && last[2] === nm && last[1] === p - 1 && p !== 5) last[1] = p; else out.push([p, p, nm]);
   }
-  return out;
+  // 2시간 연속은 묶지 않고 두 줄로 따로 표시 (2026-10-26 하율: "2시간이면 그냥 2개로") — 3시간 이상만 묶음
+  return out.flatMap(b => b[1] - b[0] === 1 ? [[b[0], b[0], b[2]], [b[1], b[1], b[2]]] : [b]);
 }
 // 월~금 시간표 표 (홈 아래쪽 카드와 시간표 화면이 같이 씀)
 const weekLbl = mon => { const fri = addDays(mon, 4); return `${mon.getMonth() + 1}/${mon.getDate()} ~ ${fri.getMonth() + 1}/${fri.getDate()}`; };
