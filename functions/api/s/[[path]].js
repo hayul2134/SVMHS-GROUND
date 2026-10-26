@@ -37,9 +37,9 @@ function checkRounds(game, v, r, elapsed) {
     if (Math.abs(Math.round(sum / 5) - v) > 1) return H(`평균(${Math.round(sum / 5)})과 기록(${v})이 다름`, `5판의 평균(${Math.round(sum / 5)}ms)과 최종 기록(${v}ms)이 서로 달라요.`);
     if (spread < 6) return H(`5판 차이가 ${spread}ms뿐 — 매크로 의심`, `5판 기록이 거의 똑같아요(가장 빠른 판과 느린 판 차이 ${spread}ms). 사람이 누르면 판마다 조금씩 달라지는데, 이렇게 일정하면 자동 클릭으로 보일 수 있어요.`);
     if (elapsed < 5000 + sum) return H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임한 시간이 ${sec(elapsed)}로 너무 짧아요. 판마다 최소 1초는 기다려야 해서 이렇게 빨리 끝날 수 없어요.`);
-  } else if (game === 'num25') {   // 25번 누른 시각(첫 탭 = 0) + 틀린 벌점: 순서대로 늘고, 탭 사이 60ms 이상
+  } else if (game === 'num25') {   // 25번 누른 시각(첫 탭 = 0, 예전 화면은 느린 기기에서 1~몇 ms가 찍혀 0~5 허용 — 2026-10-26 하율) + 틀린 벌점: 순서대로 늘고, 탭 사이 60ms 이상
     const pen = n.length === 26 ? n.pop() : -1;
-    if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] !== 0) return H('판 기록 형식이 다름', '1부터 25까지 누른 기록이 제대로 오지 않았어요.');
+    if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] < 0 || n[0] > 5) return H('판 기록 형식이 다름', '1부터 25까지 누른 기록이 제대로 오지 않았어요.');
     for (let i = 1; i < 25; i++) if (n[i] - n[i - 1] < 60) return H(`${i}→${i + 1} 탭 간격 ${n[i] - n[i - 1]}ms(60ms 미만) — 매크로 의심`,
       `${i}번에서 ${i + 1}번으로 넘어가는 데 ${n[i] - n[i - 1]}ms밖에 안 걸렸어요. 다음 숫자를 찾아 누르는 데 0.06초(60ms)보다 빠를 수는 없어서 자동 클릭으로 보일 수 있어요.`);
     if (Math.abs(n[24] + pen - v) > 5) return H(`판 기록 합(${n[24] + pen})과 기록(${v})이 다름`, `누른 시각과 벌점을 더한 값(${sec(n[24] + pen)})이 최종 기록(${sec(v)})과 달라요.`);

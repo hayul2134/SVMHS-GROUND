@@ -1465,8 +1465,8 @@ function playNum25() {
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     e.preventDefault();
     if (+b.dataset.n === next) {
-      if (next === 1) { t0 = performance.now(); tick(); }
-      taps.push(Math.round(performance.now() - t0));
+      if (next === 1) { t0 = performance.now(); taps.push(0); tick(); }   // 첫 탭은 시작점이라 늘 0 (예전엔 tick() 뒤에 재서 느린 기기에서 1ms가 찍혀 보류됨, 2026-10-26)
+      else taps.push(Math.round(performance.now() - t0));
       b.disabled = true; b.classList.add('ok'); next++;
       $('#nNext').textContent = next > 25 ? '끝!' : next;
       if (next > 25) { cancelAnimationFrame(raf); const ms = taps[24] + pen; setTimeout(() => alive && finish('num25', Math.min(ms, 600000), '', [...taps, pen]), 300); }
