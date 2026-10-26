@@ -119,7 +119,7 @@ export async function rankStory(list, { title, scope = '', note = '' }) {
     // 순위
     if (r.medal?.img) {
       c.drawImage(r.medal.img, x + 20, mid - 42, 80, 80);
-      c.fillStyle = r.medal.color || INK; c.font = `900 32px ${NUM}`; c.textAlign = 'center'; c.fillText(r.medal.n, x + 60, mid - 18);
+      // 숫자는 트로피 그림 안에 들어 있음(2026-10-26)
     } else { c.fillStyle = SUB; c.font = `900 46px ${NUM}`; c.textAlign = 'center'; c.fillText(r.rank, x + 60, mid + 2); }
     // 아바타
     let tx = x + 128;
