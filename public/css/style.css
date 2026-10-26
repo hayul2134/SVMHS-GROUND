@@ -4786,3 +4786,10 @@ html.rk2 .rk.p3 .rk-v:has(.rk-tr){margin-left:-1px;margin-right:1px}
 .tplate.t-challenger .tp-tx small,.tplate.t-challenger .tp-tx em,.tplate.t-grandmaster .tp-tx small,.tplate.t-grandmaster .tp-tx em,.tplate.t-master .tp-tx small,.tplate.t-master .tp-tx em{color:#5a4a3c}
 @media (prefers-reduced-motion:reduce){.tplate::after,.tplate.t-challenger{animation:none}}
 .rk-story[hidden]{display:none!important}
+
+/* ===== [미리보기:tier-pad] 티어 배지 여백 + 그랜드마스터 반짝이 (2026-10-26 하율) ===== */
+html.tpad .tierb{gap:7px;padding:5px 14px 5px 9px}
+html.tpad .tierb .tri{margin:-1px 0}
+html.tpad .tierb .tri.tri2{margin:-2px 0 -2px -1px}
+html.tpad .t-grandmaster.tierb{background:linear-gradient(120deg,#ffd9d3,#ff9d92,#ffd2a8,#ffb9d6,#ffd9d3);background-size:200% 100%;animation:tierShine 4s linear infinite}
+:root[data-theme="dark"] html.tpad .t-grandmaster.tierb,html.tpad[data-theme="dark"] .t-grandmaster.tierb{color:#1d2a3a}
