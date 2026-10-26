@@ -537,9 +537,9 @@
 
     <section class="apps" id="apps" aria-labelledby="appsT">
       <h2 class="sec-t" id="appsT">서비스</h2>
-      <!-- 2026-10-24 카테고리로 나눔(2026-10-25 순서: 게임 → 뽑기 → 학교생활): 게임(아이콘을 누르면 그 게임 바로 시작, social.js [data-play]) · 뽑기(가운데 한 장, 출석 체크는 헤더 불꽃 버튼) · 학교생활. 프로필·설정·공유·DM·테마·이용 안내·급식은 헤더 메뉴·메시지 버튼·급식 카드에 이미 있음 -->
+      <!-- 2026-10-24 카테고리로 나눔(2026-10-25 순서: 게임 → 뽑기 → 학교생활 / 2026-10-26 하율: 뽑기와 티어 보기를 한 카테고리 '랭크·뽑기'로): 게임(아이콘을 누르면 그 게임 바로 시작, social.js [data-play]) · 랭크·뽑기(내 티어 + 뽑기 가로 카드 두 장, 출석 체크는 헤더 불꽃 버튼) · 학교생활. 프로필·설정·공유·DM·테마·이용 안내·급식은 헤더 메뉴·메시지 버튼·급식 카드에 이미 있음 -->
       <div class="svcat">
-        <div class="cat-h"><h3>게임</h3><button class="cat-more cm-tier" type="button" data-go="game"><svg class="sic tl-old" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg><svg class="tri cm-em tl-new" viewBox="0 0 48 44" aria-hidden="true"><use href="#tr2-challenger"/></svg><span class="tl-old">기록·랭킹</span><span class="tl-new">내 티어 보기</span><svg class="cm-go tl-new" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="cat-h"><h3>게임</h3></div>
         <div class="appgrid catgrid">
         <button class="app gapp g-home" data-play="home"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-run"/></svg></i>집에 가고 싶어!</button>
         <button class="app gapp g-reaction" data-play="reaction"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-bolt"/></svg></i>반응속도<b class="beta">Beta</b></button>
@@ -548,8 +548,9 @@
         </div>
       </div>
       <div class="svcat">
-        <div class="cat-h"><h3>뽑기</h3></div>
-        <div class="appgrid catgrid">
+        <div class="cat-h"><h3>랭크·뽑기</h3></div>
+        <div class="appgrid catgrid rg-grid">
+        <button class="app gc-app tr-app" type="button" data-go="game"><i class="ai"><svg class="tri" viewBox="0 0 48 44" aria-hidden="true"><use href="#tr2-challenger"/></svg></i><span class="gc-txt"><b class="gc-name">내 티어</b><span class="gc-tix">티어·랭킹 보러 가기</span></span></button>
         <button class="app gc-app" data-go="gacha"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-gacha"/></svg></i><span class="gc-txt"><b class="gc-name">뽑기</b><span class="gc-tix" data-gc-tix>캡슐 뽑으러 가기</span></span></button>
         </div>
       </div>

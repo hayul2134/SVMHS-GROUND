@@ -4808,3 +4808,14 @@ html.tpad .t-grandmaster.tierb{background:linear-gradient(120deg,#ffd9d3,#ff9d92
 .tr2 .tm.t-radiant .tm-halo{background:repeating-conic-gradient(rgba(255,226,122,.5) 0 9deg,transparent 9deg 24deg)}
 @media (prefers-reduced-motion:reduce){.tri-rd,.tri-rd .rd-rays,.tplate.t-radiant,.tplate.t-radiant .tp-tx b,.tr2 .tm.t-radiant .tm-tx b{animation:none!important}}
 .tm-em .tri.tri-rd{animation:tmBob 3.2s ease-in-out infinite,rdGlow 2.6s ease-in-out infinite}
+
+/* ===== 서비스 › 랭크·뽑기 (2026-10-26 하율: 뽑기와 티어 보기를 같은 카테고리로) =====
+   게임 제목 옆 '내 티어 보기' 버튼을 빼고, 뽑기 카드와 같은 틀의 '내 티어' 가로 카드로 나란히(각 두 칸). 좁은 화면은 위아래로 */
+.rg-grid .gc-app{grid-column:span 2}
+.tr-app{background:linear-gradient(135deg,color-mix(in srgb,#ffd45a 34%,var(--card)),var(--card) 72%)}
+.tr-app .ai{background:linear-gradient(160deg,#fff3b0,#ffd45a 55%,#ffb53d)}
+.tr-app .ai .tri{width:62px;height:57px;overflow:visible;filter:drop-shadow(0 2px 0 rgba(0,0,0,.22))}
+.tr-app:hover .ai .tri{animation:gwig .5s ease}
+@media (prefers-reduced-motion:reduce){.tr-app:hover .ai .tri{animation:none}}
+@media (max-width:560px){.tr-app .ai .tri{width:48px;height:44px}}
+@media (max-width:460px){.rg-grid .gc-app{grid-column:1 / -1}}
