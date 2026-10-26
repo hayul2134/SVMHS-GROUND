@@ -446,6 +446,16 @@ const ROUTES = {
     return json({ ok: true });
   },
 
+  // 기록 직접 넣기(2026-10-26 하율: 문의로 반영 요청한 기록) — 보류 기능 전에 버려진 기록 등. 그 날 기록보다 좋을 때만 바뀜
+  'POST addscore': async ({ db, body }) => {
+    const u = await userOf(db, body.handle), v = Math.round(+body.value);
+    if (!u || !GAMES.includes(body.game) || !/^\d{8}$/.test(body.day || '') || !(v > 0 && v < 1e7)) return err('잘못된 요청이에요');
+    await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
+      ON CONFLICT (uid, game, day) DO UPDATE SET best = MIN(best, excluded.best), at = CASE WHEN excluded.best < best THEN excluded.at ELSE at END`).bind(u.id, body.game, body.day, v, Date.now()).run();
+    await log(db, '게임 기록 직접 반영', `@${u.handle} · ${body.game} · ${body.day} · ${v}${body.note ? ' · ' + clean(body.note, 60) : ''}`);
+    return json({ ok: true });
+  },
+
   'POST resetday': async ({ db, body }) => {
     if (!GAMES.includes(body.game) || !/^\d{8}$/.test(body.day || '')) return err('잘못된 요청이에요');
     const r = await db.prepare('DELETE FROM scores WHERE game = ?1 AND day = ?2').bind(body.game, body.day).run();
