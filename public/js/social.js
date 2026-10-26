@@ -305,7 +305,12 @@ const tierBadge = (k, extra = '', tip = '') => { const t = tierOfK(k); return t 
 const tierChips = tr => !tr ? '' : (tr.cur ? tierBadge(tr.cur.k, '', `이번 라운드 ${tierOfK(tr.cur.k).n} · ${tr.cur.rank}위 · ${tr.cur.pts}점`) : '')
   + (tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '');
 // 프로필 티어 명판(2026-10-26 하율: "프로필에 티어가 더 잘 보일 수 있게") — 큰 엠블럼 + 티어 이름 + 순위·점수, 지난 라운드는 옆에 작게
-const tierPlate = tr => {
+// 레디언트(2026-10-26 하율): 개발자 계정 전용 티어 — 로고(G) 엠블럼 + 반짝임. 티어표(TIERS·계단·TOP 10)엔 없고 프로필·내 티어 칸에만
+const RADIANT = { k: 'radiant', n: '레디언트' };
+const radOn = u => isDev(u) && ffOn('tier-radiant', isDev(S.me));
+const radIc = () => '<svg class="tri tri2 tri-rd" viewBox="0 0 48 44" aria-hidden="true"><use href="#tr2-radiant"/></svg>';
+const tierPlate = (tr, u) => {
+  if (radOn(u)) return `<div class="ptier2"><div class="tplate t-radiant" data-tip="개발자 전용 티어 · 순위·티어표에는 나오지 않아요"><span class="tp-em">${radIc()}</span><span class="tp-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><em>SVMHS GROUND를 만든 사람</em></span></div></div>`;
   if (!tr || (!tr.cur && !tr.last)) return '';
   const c = tr.cur && tierOfK(tr.cur.k);
   const last = tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '';
@@ -361,7 +366,7 @@ function profileHtml(d) {
         ${av(u, 'big', avWear(u.mfx) + (isDev(u) ? pdBurst() : ''))}
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-          <div class="pnrow"><h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2><p class="pstats ig"><button type="button" data-people="followers" data-h="${esc(u.handle)}">팔로워 <b>${d.counts.followers}</b></button><button type="button" data-people="following" data-h="${esc(u.handle)}">팔로잉 <b>${d.counts.following}</b></button></p></div>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}${ffOn('tier-profile', isDev(S.me)) ? tierPlate(d.tier) : tch ? `<p class="ptier">${tch}</p>` : ''}
+          <div class="pnrow"><h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2><p class="pstats ig"><button type="button" data-people="followers" data-h="${esc(u.handle)}">팔로워 <b>${d.counts.followers}</b></button><button type="button" data-people="following" data-h="${esc(u.handle)}">팔로잉 <b>${d.counts.following}</b></button></p></div>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}${ffOn('tier-profile', isDev(S.me)) || radOn(u) ? tierPlate(d.tier, u) : tch ? `<p class="ptier">${tch}</p>` : ''}
           <p class="phandle">${[isDev(u) ? `<span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span>` : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
@@ -1174,11 +1179,12 @@ async function loadTier() {
     const rev = [...TIERS].reverse();
     const cnt = d.cnt || {};
     const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}" data-tk="${x.k}" role="button" tabindex="0" aria-expanded="false" aria-label="${x.n} — 지금 ${cnt[x.k] || 0}명, 눌러서 보기">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><span class="tl-lab"><b>${x.n}</b><small>${lbSt(x)}</small><span class="tl-cnt${cnt[x.k] ? '' : ' z'}">${cnt[x.k] || 0}명</span></span></li>`).join('');
-    const k = t ? t.k : 'iron';
+    const k = t ? t.k : 'iron', rad = !t && radOn(S.me);   // 개발자는 순위에 안 나와 티어가 없음 → 레디언트
     box.classList.add('tr2');
     box.innerHTML = `<div class="tr2-top">
-      <div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
-        <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>
+      ${rad ? `<div class="tm t-radiant apex"><span class="tm-em"><i class="tm-halo"></i>${radIc()}</span>
+        <div class="tm-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><span class="tm-st">순위·티어표에는 나오지 않아요</span></div></div>` : `<div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
+        <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>`}
       <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>잘한 ${BEST_N}개 게임 점수를 합쳐 줄 세우기<small>같으면 전체 합으로 가려요</small></span></li><li><b>3</b><span>${byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li></ol>
     </div>
     <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>

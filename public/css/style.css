@@ -4793,3 +4793,19 @@ html.tpad .tierb .tri{margin:-1px 0}
 html.tpad .tierb .tri.tri2{margin:-2px 0 -2px -1px}
 html.tpad .t-grandmaster.tierb{background:linear-gradient(120deg,#ffd9d3,#ff9d92,#ffd2a8,#ffb9d6,#ffd9d3);background-size:200% 100%;animation:tierShine 4s linear infinite}
 :root[data-theme="dark"] html.tpad .t-grandmaster.tierb,html.tpad[data-theme="dark"] .t-grandmaster.tierb{color:#1d2a3a}
+/* ===== 레디언트 — 개발자 전용 티어(2026-10-26, social.js radIc · index.html #tr2-radiant) ===== */
+.t-radiant{--tc:#7cc4ff}
+.tri-rd{overflow:visible;animation:rdGlow 2.6s ease-in-out infinite}
+.tri-rd .rd-rays{transform-box:view-box;transform-origin:24px 23.5px;animation:rdSpin 16s linear infinite}
+.tri-rd .rd-s2{animation-delay:-.8s}.tri-rd .rd-s3{animation-delay:-1.6s}
+@keyframes rdSpin{to{rotate:360deg}}
+@keyframes rdGlow{0%,100%{filter:drop-shadow(0 0 2px rgba(255,217,107,.55)) drop-shadow(1.5px 2px 0 rgba(29,42,58,.3))}50%{filter:drop-shadow(0 0 9px rgba(140,210,255,.95)) drop-shadow(1.5px 2px 0 rgba(29,42,58,.3))}}
+.tplate.t-radiant{background:linear-gradient(115deg,#fff3c2,#cfe9ff,#e2d6ff,#c9f3ea,#fff3c2);background-size:240% 100%;animation:tierShine 5s linear infinite;color:#1d2a3a}
+.tplate.t-radiant .tp-tx small,.tplate.t-radiant .tp-tx em{color:#4a5a70}
+.tplate.t-radiant .tp-tx b{background:linear-gradient(90deg,#2f6fd8,#7a5ce0,#2f6fd8);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:tierShine 3s linear infinite}
+.tp-em .tri-rd{animation:rdGlow 2.6s ease-in-out infinite}
+.tr2 .tm.t-radiant{background:radial-gradient(120% 140% at 0% 50%,#3d5fb8 0%,#1b2142 70%)}
+.tr2 .tm.t-radiant .tm-tx b{background:linear-gradient(90deg,#ffe27a,#9fd8ff,#d4c2ff,#ffe27a);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:tierShine 3s linear infinite}
+.tr2 .tm.t-radiant .tm-halo{background:repeating-conic-gradient(rgba(255,226,122,.5) 0 9deg,transparent 9deg 24deg)}
+@media (prefers-reduced-motion:reduce){.tri-rd,.tri-rd .rd-rays,.tplate.t-radiant,.tplate.t-radiant .tp-tx b,.tr2 .tm.t-radiant .tm-tx b{animation:none!important}}
+.tm-em .tri.tri-rd{animation:tmBob 3.2s ease-in-out infinite,rdGlow 2.6s ease-in-out infinite}
