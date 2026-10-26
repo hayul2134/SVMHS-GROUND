@@ -102,7 +102,7 @@ function paintBadges() {
   $('#btnOut').hidden = !S.me;   // 로그인돼 있을 때만 메뉴 맨 아래 빨간 로그아웃
   $('#btnEdit').hidden = !S.me;   // 메뉴 '프로필' 바로 아래 '꾸미기' (로그인했을 때만)
   $('#btnAdmin').hidden = !dev;   // 관리자 계정일 때만 메뉴에 표시 (권한은 서버가 검사)
-  ['#btnClass', '#btnShare', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·QR·신고 필요 없음
+  ['#btnClass', '#btnReport'].forEach(id => { $(id).hidden = dev; });   // 개발자 계정엔 설정·신고 필요 없음 (QR 공유는 개발자도 씀)
   $('#btnMe .mi').innerHTML = S.me ? av({ ...S.me, online: false }, 'tiny') : '<svg viewBox="0 0 24 24"><use href="#i-user"/></svg>';
   NW.paint();   // ☰ 메뉴·꾸미기의 빨간 '새로 얻음' 표시
 }
