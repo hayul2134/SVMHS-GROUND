@@ -1176,6 +1176,26 @@ const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
 const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr']) heroRO.observe($(s));
 new ResizeObserver(() => fitRk()).observe($('#sRk'));
+// 서랍 카드(급식판·시간표) 키가 바뀌면(다른 날 넘김·교시 수·연속 과목 합치기 등) 가운데 기준이라 위아래 끝이 '툭' 튀던 문제 (2026-10-26 하율)
+// → 가운데는 그대로 고정하고, 바뀐 만큼을 translate로 되돌렸다가 0으로 미끄러지게(FLIP). 가운데 높이·랭킹 몫(--rkup) 변화는 CSS top 전환이 맡음
+{ const lastH = new Map(), calm = matchMedia('(prefers-reduced-motion: reduce)');
+  const ro = new ResizeObserver(es => {
+    let moved = false;
+    for (const e of es) {
+      const el = e.target, h = el.offsetHeight, h0 = lastH.get(el); lastH.set(el, h);
+      if (h0 == null || Math.abs(h - h0) < 2) continue;
+      moved = true;
+      const H = document.documentElement;
+      if (calm.matches || !el.classList.contains('stow') || !el.classList.contains('open') || H.classList.contains('tuck') || H.classList.contains('boot') || H.classList.contains('pre')) continue;
+      // 가운데 고정이면 위 끝은 (h0-h)/2만큼 움직임 → 그만큼 반대로 놓고 시작
+      const d = (h - h0) / 2 + (parseFloat(getComputedStyle(el).translate.split(' ')[1]) || 0);
+      el.getAnimations().forEach(a => { if (a.id === 'sideFlip') a.cancel(); });
+      el.animate([{ translate: `0 ${d}px` }, { translate: '0 0' }], { id: 'sideFlip', duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' });
+    }
+    if (moved) { fitRk(); heroLater(); }   // 키가 바뀌면 랭킹 몫·화면 안 들어감 여부도 다시
+  });
+  for (const k in SIDE) ro.observe(SIDE[k].el);
+}
 addEventListener('load', () => setTimeout(fitRk, 1500));
 new MutationObserver(() => heroLater()).observe($('#play'), { attributes: true, attributeFilter: ['hidden'] });
 new MutationObserver(() => heroLater()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });   // 첫 화면으로 돌아오면 밀린 계산 반영
