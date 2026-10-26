@@ -1362,7 +1362,7 @@ function stage(title, html, wide = false) {
   return $('#parea');
 }
 // 게임 중에도 왼쪽 위 집 버튼(#btnHome)을 그대로 보여 줌 (2026-10-26)
-// 집 버튼 왼쪽 끝·나가기 오른쪽 끝을 게임 화면(집에 가고 싶어!는 화면 틀 .hr-scr, 나머지는 게임 칸) 양 끝에 맞추고, 제목은 집 버튼 오른쪽에
+// 집 버튼은 헤더 원래 자리 그대로. 게임 제목 왼쪽 끝·나가기 오른쪽 끝을 게임 화면(집에 가고 싶어!는 화면 틀 .hr-scr, 나머지는 게임 칸) 양 끝에 맞춤 — 제목이 집 버튼과 겹치면 버튼 오른쪽으로
 let homeRO = null;
 function fitHome() {
   const t = $('#gamePlay .ptop'), h = $('#btnHome'), g = $('#gamePlay .hr-scr') || $('#parea')?.firstElementChild;
@@ -1371,9 +1371,9 @@ function fitHome() {
   const a = h.getBoundingClientRect(), p = t.getBoundingClientRect(), r = g.getBoundingClientRect();
   if (!a.width || !r.width) return;
   const L = Math.max(r.left, 8), R = Math.min(r.right, innerWidth - 8);
-  t.style.paddingLeft = Math.max(0, L - p.left + a.width + 12) + 'px';
+  const vert = a.bottom > p.top && a.top < p.bottom;   // 집 버튼과 제목 줄이 같은 높이일 때만 겹침 검사
+  t.style.paddingLeft = Math.max(0, Math.max(L, vert ? a.right + 12 : 0) - p.left) + 'px';
   t.style.paddingRight = Math.max(0, p.right - R) + 'px';
-  h.style.translate = `${Math.round(L - a.left)}px ${Math.round((p.top + p.bottom - a.top - a.bottom) / 2)}px`;
   if (!homeRO && window.ResizeObserver) { homeRO = new ResizeObserver(() => requestAnimationFrame(fitHome)); homeRO.observe(g); }
 }
 function unfitHome() { homeRO?.disconnect(); homeRO = null; const h = $('#btnHome'); if (h) h.style.translate = ''; }
