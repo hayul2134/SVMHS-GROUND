@@ -1128,6 +1128,11 @@ const ROUTES = {
       const all = b.list.filter(x => x.tier === k), mem = all.slice(0, 200), byId = await usersOf(mem.map(x => x.uid));
       return json({ k, n: all.length, list: mem.map(x => ({ ...card(byId.get(x.uid)), rank: x.rank, pts: x.pts, isMe: x.uid === me.id })).filter(x => x.handle) });
     }
+    // ?all=1 → 이번 라운드 전체 순위(최대 500명) — 2026-10-26 하율 'TOP 10 아래 버튼으로 전체 순위'
+    if (url.searchParams.get('all')) {
+      const mem = b.list.slice(0, 500), byId = await usersOf(mem.map(x => x.uid));
+      return json({ n: b.list.length, list: mem.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
+    }
     const cnt = {}; b.list.forEach(x => { cnt[x.tier] = (cnt[x.tier] || 0) + 1; });
     const top = b.list.slice(0, 10), byId = await usersOf(top.map(x => x.uid));
     return json({ cnt, round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, tiers: TIERS,

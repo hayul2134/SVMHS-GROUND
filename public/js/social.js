@@ -1175,7 +1175,10 @@ async function loadTier() {
   const lbSt = x => lbOf(x).split(' · ').map((t, i, a) => `<i class="${a.length > 1 && !i ? 'tl-rk' : 'tl-pt'}">${t}</i>`).join('<i class="tl-dot"> · </i>');   // 계단 라벨: '1등 · 340점+' → 두 줄로 나눌 수 있게   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
   const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
   const per = m ? Object.entries(GAMES).map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
-  const top = d.top.length ? d.top.map(u => `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
+  const top = d.top.length ? d.top.map(trRow).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
+  // TOP 10은 펼친 채로, 그 아래 '전체 순위 보기'(2026-10-26 하율 요청)
+  const allOn = ffOn('tier-all', isDev(S.me)), opn = allOn ? ' open' : '';   // 미리보기 깃발 tier-all
+  const more = allOn && d.players > d.top.length ? `<button type="button" class="btn ghost tr-all" aria-expanded="false">${ic('trophy')}<span>전체 순위 보기 · ${d.players}명</span></button>` : '';
   // 2026-10-25 하율 '티어 더 예쁘게' — 미리보기 깃발 tier-look(개발자 화면 먼저, 월요일 공개)
   if (ffOn('tier-look', isDev(S.me))) {
     const APEX = new Set(['master', 'grandmaster', 'challenger']);
@@ -1194,8 +1197,8 @@ async function loadTier() {
     <ol class="tr-stairs">${stairs}</ol>
     <div class="tr-who" hidden></div>
     ${per ? `<ul class="tr-games">${per}</ul>` : ''}
-    <details class="tr-top"><summary>${ic('trophy')}<span>티어 순위 TOP 10</span><i class="trt-go" aria-hidden="true"></i></summary><ol>${top}</ol></details>`;
-    tierWho(box);
+    <details class="tr-top"${opn}><summary>${ic('trophy')}<span>티어 순위 TOP 10</span><i class="trt-go" aria-hidden="true"></i></summary><ol>${top}</ol>${more}</details>`;
+    tierWho(box); trAll(box, top);
     const sl = box.querySelector('.tr-stairs'), on = sl?.querySelector('li.on');   // 폰: 가로로 넘기는 계단을 내 티어 쪽으로
     if (on && sl.scrollWidth > sl.clientWidth) sl.scrollLeft = on.offsetLeft - (sl.clientWidth - on.offsetWidth) / 2;
     return;
@@ -1204,7 +1207,27 @@ async function loadTier() {
       <p class="tr-how">게임마다 이번 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 잘한 ${BEST_N}개 게임 점수를 합쳐 순위를 매기고, ${byPts ? `참가자가 ${TIER_PCT}명보다 적을 땐 점수 구간으로, 그 뒤엔 상위 몇 %인지로` : '상위 몇 %인지로'} 티어가 정해져요. 라운드가 끝나면 새로 시작하고 지난 티어는 프로필에 배지로 남아요.</p></div>
     <ol class="tr-ladder">${ladder}</ol>
     ${per ? `<ul class="tr-games">${per}</ul>` : ''}
-    <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;
+    <details class="tr-top"${opn}><summary>티어 순위 TOP 10</summary><ol>${top}</ol>${more}</details>`;
+  trAll(box, top);
+}
+
+// 티어 순위 한 줄
+function trRow(u) { return `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`; }
+// TOP 10 아래 '전체 순위 보기' ↔ 'TOP 10만 보기'(2026-10-26 하율 요청) — 한 번 불러온 전체 목록은 기억
+function trAll(box, top10) {
+  const btn = box.querySelector('.tr-all'), ol = box.querySelector('.tr-top ol'); if (!btn || !ol) return;
+  const lab = btn.querySelector('span'), base = lab.textContent;
+  let all = null, open = false;
+  btn.onclick = async () => {
+    if (open) { open = false; ol.innerHTML = top10; lab.textContent = base; btn.setAttribute('aria-expanded', 'false'); box.querySelector('.tr-top').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+    if (!all) {
+      btn.disabled = true; lab.textContent = '불러오는 중…';
+      try { const r = await call('tier?all=1'); all = r.list.map(trRow).join('') + (r.n > r.list.length ? `<li class="empty">외 ${r.n - r.list.length}명</li>` : ''); }
+      catch { btn.disabled = false; lab.textContent = '불러오지 못했어요 · 다시 누르기'; return; }
+      btn.disabled = false;
+    }
+    open = true; ol.innerHTML = all; lab.textContent = 'TOP 10만 보기'; btn.setAttribute('aria-expanded', 'true');
+  };
 }
 
 // 티어 계단을 누르면 그 티어에 지금 있는 사람 목록(2026-10-26 하율 요청) — 같은 티어를 다시 누르면 닫힘

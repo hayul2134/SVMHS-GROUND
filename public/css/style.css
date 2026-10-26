@@ -4137,6 +4137,9 @@ html:not(.dev-pv) [data-ff]{display:none!important}
 .tr-top ol{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px}
 .tr-top li{display:flex;align-items:center;gap:8px;padding:3px 8px;border-radius:10px}
 .tr-top li.me{background:var(--chip)}
+.tr-top .tr-all{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px 0 2px;font-weight:900}
+.tr-top .tr-all .sic{width:18px;height:18px}
+.tr-top li.empty{justify-content:center;color:var(--sub);font-size:13px}
 .tr-top .tr-n{width:22px;text-align:center;font:900 14px var(--num,inherit);color:var(--sub)}
 .tr-top li a{display:flex;align-items:center;gap:6px;min-width:0;color:var(--text);text-decoration:none}
 .tr-top li a b{display:flex;align-items:center;gap:3px;min-width:0;white-space:nowrap;overflow:hidden;font-size:14px}
