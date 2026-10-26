@@ -310,7 +310,7 @@ const RADIANT = { k: 'radiant', n: '레디언트' };
 const radOn = u => isDev(u) && ffOn('tier-radiant', isDev(S.me));
 const radIc = () => '<svg class="tri tri2 tri-rd" viewBox="0 0 48 44" aria-hidden="true"><use href="#tr2-radiant"/></svg>';
 const tierPlate = (tr, u) => {
-  if (radOn(u)) return `<div class="ptier2"><div class="tplate t-radiant" data-tip="개발자 전용 티어 · 순위·티어표에는 나오지 않아요"><span class="tp-em">${radIc()}</span><span class="tp-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><em>SVMHS GROUND를 만든 사람</em></span></div></div>`;
+  if (radOn(u)) return `<div class="ptier2"><div class="tplate t-radiant" data-tip="개발자 전용 티어 · 순위·티어표에는 나오지 않아요"><span class="tp-em">${radIc()}</span><span class="tp-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><em>순위에 포함되지 않아요</em></span></div></div>`;
   if (!tr || (!tr.cur && !tr.last)) return '';
   const c = tr.cur && tierOfK(tr.cur.k);
   const last = tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '';
