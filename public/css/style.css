@@ -4726,7 +4726,7 @@ html.tf .tr-stairs li small{margin-top:5px;height:33px;display:flex;flex-directi
 html.tf .tr-stairs li small .tl-dot{display:none}
 html.tf .tr-stairs li small .tl-rk{font-size:12px;color:var(--text);opacity:.7}
 html.tf .tr-stairs li small .tl-pt{font-size:14px}
-html.tf .tl-cnt{margin-top:6px}
+html.tf .tl-cnt{margin-top:6px;font-size:12px;line-height:16px}   /* 0명/N명 칩 높이가 달라 계단 바닥선이 1px씩 어긋나던 것 (2026-10-26) */
 html.tf .tl-cnt:not(.z){background:var(--tc);color:#1d2a3a;font-size:12px}
 html.tf .tr-stairs li.apex .tl-cnt:not(.z){color:#fff}
 /* TOP 10 버튼: 접힌 글자 → 금빛 큰 버튼 */
