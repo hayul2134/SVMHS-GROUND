@@ -409,7 +409,7 @@ const voteMark = (name, v) => {
   if (!v) return '';
   const n = v.counts[name] || 0;
   if (!n) return '';   // 표 없는 메뉴는 숫자 숨김 (화면이 덜 복잡하게)
-  return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? sji('crown') : '♥ '}${n}</i>`;
+  return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? sji('trophy') : '♥ '}${n}</i>`;
 };
 const dishAttr = (name, v) => v && v.open ? ` data-dish="${esc(name)}" role="button" tabindex="0" aria-label="${esc(name)}에 투표"` : '';
 // 메뉴 이름: 6글자 이상이면 두 줄로. 재료·조리법 단어(고추장|조림…) 경계 중 가운데에 가장 가까운 곳에서 나눔
@@ -696,7 +696,7 @@ function balOpt(k, big) {
   const pct = total ? Math.round(counts[k] / total * 100) : 0, w = closed ? balWinner(counts) : '';
   const cls = ['bo', 'bo-' + k, mine === k && 'picked', show && 'shown', w === k && 'win', w && w !== k && w !== 'tie' && 'lose', w === 'tie' && 'tie'].filter(Boolean).join(' ');
   return `<button class="${cls}" type="button" data-pick="${k}" aria-pressed="${mine === k}"${closed ? ' aria-disabled="true"' : ''}>`
-    + `<i class="bo-fill" aria-hidden="true" data-pct="${show ? pct : 0}"></i>${w === k ? `<i class="bo-crown" aria-hidden="true">${sji('crown')}</i>` : ''}`
+    + `<i class="bo-fill" aria-hidden="true" data-pct="${show ? pct : 0}"></i>${w === k ? `<i class="bo-crown" aria-hidden="true">${sji('trophy')}</i>` : ''}`
     + `<span class="bo-t">${esc(BAL[k])}</span>${mine === k ? '<i class="bo-ck" aria-hidden="true">✔</i>' : ''}${w === k ? '<span class="bo-stamp">WIN</span>' : ''}${show ? `<b class="bo-p">${pct}%${big ? `<small>${counts[k]}표</small>` : ''}</b>` : ''}</button>`;
 }
 const fillBars = root => root.querySelectorAll('.bo-fill').forEach(el => { el.style.transform = `scaleX(${(+el.dataset.pct / 100).toFixed(3)})`; });

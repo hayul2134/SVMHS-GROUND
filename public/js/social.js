@@ -324,7 +324,7 @@ function crownHtml(c) {
     c.gap != null ? `<span>${ic('ruler')}2등과 ${c.gap ? esc(CROWN_GAP[c.g]?.(c.gap) ?? c.gap) : '동점'} 차이</span>` : c.n ? `<span>${ic('flag')}유일한 도전자</span>` : ''].filter(Boolean).join('');
   return `<div class="crown2" aria-label="${esc(g.name)} 역대 1등${c.best != null ? ' · ' + esc(g.fmt(c.best)) : ''}">
     <i class="cr-shine" aria-hidden="true"></i><i class="cr-spk s1" aria-hidden="true"></i><i class="cr-spk s2" aria-hidden="true"></i><i class="cr-spk s3" aria-hidden="true"></i>
-    <span class="cr-medal" aria-hidden="true">${ic('crown', 'cr-crown')}<b>1</b></span>
+    <span class="cr-medal" aria-hidden="true">${ic('trophy', 'cr-crown')}<b>1</b></span>
     <span class="cr-txt"><small>${ic(g.ic)}${esc(g.name)} · 역대 1등</small>${c.best != null ? `<b class="cr-rec">${esc(g.fmt(c.best))}</b>` : '<b class="cr-rec">1등</b>'}${meta ? `<span class="cr-meta">${meta}</span>` : ''}</span>
   </div>`;
 }
@@ -1149,7 +1149,7 @@ async function renderGame() {
     return `<article class="card gcard g-${k}">${g.beta ? '<b class="beta">Beta</b>' : ''}
       <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
       ${x ? `<div class="gstat"><span>내 최고 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
-        <p class="gtop">${ic('crown')}${x.top ? `1등 <a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '1등 자리가 비어 있어요!'}</p>` : ''}
+        <p class="gtop">${ic('trophy')}${x.top ? `1등 <a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '1등 자리가 비어 있어요!'}</p>` : ''}
       <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost" data-rank="${k}">${ic('trophy')}랭킹</button></div>
     </article>`;
   }).join('')}</div>
@@ -1357,7 +1357,7 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
       (r.bad || []).forEach(i => $('#parea .rdet')?.children[i]?.classList.add('bad'));
       $('#rMsg').outerHTML = heldBox(r); return;
     }
-    $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('crown') : '');
+    $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('trophy') : '');
     if (r.cheer) cheer(game, r.rank, r.best);
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
 }
