@@ -8,7 +8,7 @@ import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACH
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
 import { ffOn, RELEASED } from './flags.js';
-import { TIERS, TIER_PCT, tierOfK } from './att-rewards.js';
+import { TIERS, TIER_PCT, BEST_N, tierOfK } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
@@ -1159,14 +1159,14 @@ async function renderGame() {
 // 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
 async function loadTier() {
   const box = $('#tierBox'); if (!box) return;
-  if (!RK.start) { box.innerHTML = `<div class="tr-head"><div class="tr-me">${tierIc('iron')}<div><small>라운드 티어</small><b>곧 시작</b><span>정식 업데이트 주부터 2주마다 매겨요</span></div></div><p class="tr-how">게임마다 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 4개 게임 점수를 합쳐 아이언부터 챌린저까지 티어가 정해져요.</p></div>`; return; }
+  if (!RK.start) { box.innerHTML = `<div class="tr-head"><div class="tr-me">${tierIc('iron')}<div><small>라운드 티어</small><b>곧 시작</b><span>정식 업데이트 주부터 2주마다 매겨요</span></div></div><p class="tr-how">게임마다 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 잘한 ${BEST_N}개 게임 점수를 합쳐 아이언부터 챌린저까지 티어가 정해져요.</p></div>`; return; }
   let d; try { d = await call('tier'); } catch { box.hidden = true; return; }
   if (!$('#tierBox')) return;
   const m = d.me, t = m && tierOfK(m.tier);
   const byPts = d.mode === 'pts', lbOf = x => byPts ? x.pl : x.lb;
   const lbSt = x => lbOf(x).split(' · ').map((t, i, a) => `<i class="${a.length > 1 && !i ? 'tl-rk' : 'tl-pt'}">${t}</i>`).join('<i class="tl-dot"> · </i>');   // 계단 라벨: '1등 · 340점+' → 두 줄로 나눌 수 있게   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
   const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
-  const per = m ? Object.entries(GAMES).map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · <em>+${x.p}</em>` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
+  const per = m ? Object.entries(GAMES).map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
   const top = d.top.length ? d.top.map(u => `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
   // 2026-10-25 하율 '티어 더 예쁘게' — 미리보기 깃발 tier-look(개발자 화면 먼저, 월요일 공개)
   if (ffOn('tier-look', isDev(S.me))) {
@@ -1179,7 +1179,7 @@ async function loadTier() {
     box.innerHTML = `<div class="tr2-top">
       <div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
         <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>
-      <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>4개 게임 점수를 합쳐 줄 세우기</span></li><li><b>3</b><span>${byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li></ol>
+      <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>잘한 ${BEST_N}개 게임 점수를 합쳐 줄 세우기<small>같으면 전체 합으로 가려요</small></span></li><li><b>3</b><span>${byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li></ol>
     </div>
     <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>
     <ol class="tr-stairs">${stairs}</ol>
@@ -1192,7 +1192,7 @@ async function loadTier() {
     return;
   }
   box.innerHTML = `<div class="tr-head"><div class="tr-me ${t ? 't-' + t.k : ''}">${t ? `${tierIc(t.k)}<div><small>이번 라운드 내 티어</small><b>${t.n}</b><span>${m.rank}위 / ${d.players}명 · ${m.pts}점</span></div>` : `${tierIc('iron')}<div><small>이번 라운드 내 티어</small><b>-</b><span>게임을 한 판 하면 티어가 생겨요</span></div>`}</div>
-      <p class="tr-how">게임마다 이번 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 4개 게임 점수를 합쳐 순위를 매기고, ${byPts ? `참가자가 ${TIER_PCT}명보다 적을 땐 점수 구간으로, 그 뒤엔 상위 몇 %인지로` : '상위 몇 %인지로'} 티어가 정해져요. 라운드가 끝나면 새로 시작하고 지난 티어는 프로필에 배지로 남아요.</p></div>
+      <p class="tr-how">게임마다 이번 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 잘한 ${BEST_N}개 게임 점수를 합쳐 순위를 매기고, ${byPts ? `참가자가 ${TIER_PCT}명보다 적을 땐 점수 구간으로, 그 뒤엔 상위 몇 %인지로` : '상위 몇 %인지로'} 티어가 정해져요. 라운드가 끝나면 새로 시작하고 지난 티어는 프로필에 배지로 남아요.</p></div>
     <ol class="tr-ladder">${ladder}</ol>
     ${per ? `<ul class="tr-games">${per}</ul>` : ''}
     <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;

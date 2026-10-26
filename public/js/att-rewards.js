@@ -160,21 +160,23 @@ export const JOIN = { tix: 5, start: '2026-10-25', days: 15 };
 export const joinBonus = today => { const st = JOIN.start || RK.start; if (!st) return 0; const d = dnum(today) - dnum(st.replace(/-/g, '')); return d >= 0 && d < JOIN.days ? JOIN.tix : 0; };
 export const wkRange = n => { const s = dnum(RK_START()); return { n, from: ymdOf(s + n * RK.wdays), to: ymdOf(s + n * RK.wdays + RK.wdays - 1) }; };
 // 라운드 티어 (2026-10-25 하율: 순위로 점수 → 티어). 라운드(RK, 2주) 안에서 게임마다 순위 점수(참가자 전원이 받음: 1등 100 ~ 꼴찌 100/n),
-// 4게임 합으로 줄 세워 백분위로 티어. 라운드가 끝나면 users.tier_last에 남기고 새로 시작.
+// 게임 점수 합으로 줄 세워 백분위로 티어(2026-10-26부터 잘한 BEST_N개만 합산). 라운드가 끝나면 users.tier_last에 남기고 새로 시작.
 // 2026-10-25 2차(하율): 롤 티어(아이언~챌린저)로. 챌린저 = 1등(참가 3명 이상) · 그랜드마스터 = 2·3등(6명 이상) · 나머지는 백분위
 // 2026-10-26 하율 핫픽스: 참가자가 적으면 백분위가 크게 건너뜀(4명일 때 1등 챌린저 → 2등 바로 에메랄드) →
-//   TIER_PCT명 미만이면 '점수 구간(pt, 4게임 합 최대 400점)'으로, 그 이상이면 원래 백분위(top)로 매김
+//   TIER_PCT명 미만이면 '점수 구간(pt, 잘한 3게임 합 최대 300점)'으로, 그 이상이면 원래 백분위(top)로 매김
 export const TIER_PCT = 20;
+// 2026-10-26 하율 핫픽스: 4게임 중 잘한 3개 점수만 합산(최대 300점) → 점수 구간도 3/4로 줄임(마스터 340→255 …)
+export const BEST_N = 3;
 export const TIERS = [
   { k: 'challenger', n: '챌린저', lb: '1등', pl: '1등' },   // 2026-10-26 핫픽스(하율: "챌린저, 그랜드마스터까지는 필수적으로 존재"): 점수·인원과 상관없이 1등 = 챌린저, 2·3등 = 그랜드마스터
   { k: 'grandmaster', n: '그랜드마스터', lb: '2·3등', pl: '2·3등' },
-  { k: 'master', n: '마스터', top: .08, lb: '상위 8%', pt: 340 },
-  { k: 'diamond', n: '다이아몬드', top: .16, lb: '상위 16%', pt: 280 },
-  { k: 'emerald', n: '에메랄드', top: .28, lb: '상위 28%', pt: 220 },
-  { k: 'platinum', n: '플래티넘', top: .42, lb: '상위 42%', pt: 160 },
-  { k: 'gold', n: '골드', top: .58, lb: '상위 58%', pt: 110 },
-  { k: 'silver', n: '실버', top: .74, lb: '상위 74%', pt: 70 },
-  { k: 'bronze', n: '브론즈', top: .88, lb: '상위 88%', pt: 35 },
+  { k: 'master', n: '마스터', top: .08, lb: '상위 8%', pt: 255 },
+  { k: 'diamond', n: '다이아몬드', top: .16, lb: '상위 16%', pt: 210 },
+  { k: 'emerald', n: '에메랄드', top: .28, lb: '상위 28%', pt: 165 },
+  { k: 'platinum', n: '플래티넘', top: .42, lb: '상위 42%', pt: 120 },
+  { k: 'gold', n: '골드', top: .58, lb: '상위 58%', pt: 80 },
+  { k: 'silver', n: '실버', top: .74, lb: '상위 74%', pt: 50 },
+  { k: 'bronze', n: '브론즈', top: .88, lb: '상위 88%', pt: 25 },
   { k: 'iron', n: '아이언', top: 1.01, lb: '그 외', pt: 0 },
 ];
 TIERS.forEach(t => { if (t.pt != null) t.pl = t.pt ? `${t.pt}점+` : '그 외'; });

@@ -2,7 +2,7 @@
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { defaultBalance, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcRar, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -1235,8 +1235,17 @@ async function tierBoard(db, n) {
     rows.forEach((r, i) => { rk = i > 0 && rows[i - 1].b === r.b ? rk : i + 1;   // 같은 기록 = 같은 순위·같은 점수 (2026-10-26 핫픽스)
       const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts(rk, rows.length); a.pts += p; a.games[game] = { r: rk, n: rows.length, p }; acc.set(r.uid, a); });
   }));
-  const list = [...acc.values()].sort((a, b) => b.pts - a.pts || Object.keys(b.games).length - Object.keys(a.games).length);
-  list.forEach((x, i) => { x.rank = i > 0 && list[i - 1].pts === x.pts ? list[i - 1].rank : i + 1; x.tier = tierAt(x.rank, list.length, x.pts).k; });
+  // 2026-10-26 하율 핫픽스: 잘한 3개 게임 점수만 합산(BEST_N) — 싫은 게임 하나는 안 해도 되게.
+  //   pts = 잘한 3개 합(티어 기준), all = 4개 전체 합. 동점이면 all → 1등 횟수 순으로 가림(챌린저가 둘 나오지 않게)
+  for (const a of acc.values()) {
+    const g = Object.entries(a.games).sort((x, y) => y[1].p - x[1].p);
+    g.forEach(([, v], i) => { if (i >= BEST_N) v.x = 1; });   // x = 합산에서 빠진 게임
+    a.all = a.pts; a.pts = g.slice(0, BEST_N).reduce((t, [, v]) => t + v.p, 0);
+    a.first = g.filter(([, v]) => v.r === 1).length;
+  }
+  const cmp = (a, b) => b.pts - a.pts || b.all - a.all || b.first - a.first;
+  const list = [...acc.values()].sort((a, b) => cmp(a, b) || Object.keys(b.games).length - Object.keys(a.games).length);
+  list.forEach((x, i) => { x.rank = i > 0 && !cmp(list[i - 1], x) ? list[i - 1].rank : i + 1; x.tier = tierAt(x.rank, list.length, x.pts).k; });
   const b = { n: cur, from, to, list, mode: tierMode(list.length) };
   tierMemo.set(cur, { at: Date.now(), b });
   return b;
