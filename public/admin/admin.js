@@ -186,7 +186,6 @@ VIEWS.monitor = async () => {
   const d = await call('monitor');
   if (cur !== 'monitor') return;
   const tile = (n, label, k = '') => `<div class="stat ${k}"><b>${n}</b><span>${label}</span></div>`;
-  const hmax = Math.max(1, ...d.hours.dm, ...d.hours.score, ...d.hours.signup);
   const nowH = (new Date(Date.now() + 9 * 3600e3)).getUTCHours();
   const meals = { 1: '조식', 2: '중식', 3: '석식' };
   const t = d.db.tables;
@@ -211,9 +210,17 @@ VIEWS.monitor = async () => {
       </section>
       <div class="stack wide">
       <section class="card"><h3>⏱ 오늘 시간대별</h3>
-        <div class="chart" id="hchart">${d.hours.dm.map((_, h) => `<div class="col${h === nowH ? ' nowh' : ''}" title="${h}시 · 가입 ${d.hours.signup[h]} · 게임 기록 ${d.hours.score[h]} · DM ${d.hours.dm[h]}"><i class="k1" data-h="${d.hours.signup[h] / hmax}"></i><i class="k2" data-h="${d.hours.score[h] / hmax}"></i><i class="k3" data-h="${d.hours.dm[h] / hmax}"></i></div>`).join('')}</div>
-        <div class="xlab">${d.hours.dm.map((_, h) => `<span>${h % 3 ? '' : h}</span>`).join('')}</div>
-        <p class="legend"><span><i class="k1"></i>가입</span><span><i class="k2"></i>게임 기록</span><span><i class="k3"></i>DM 수 (내용은 안 봄)</span><span>가장 큰 값 ${hmax}</span></p>
+        ${(() => {
+          const H = d.hours, tot = H.dm.map((_, h) => H.signup[h] + H.score[h] + H.dm[h]);
+          const sum = a => a.reduce((x, y) => x + y, 0), tmax = Math.max(1, ...tot), peak = tot.indexOf(Math.max(...tot));
+          const pct = n => (n / tmax * 100).toFixed(1) + '%';
+          // 아래부터 가입(하늘) → 게임 기록(민트) → DM(노랑), 경계는 잉크 1px
+          const grad = (a, b, n) => { const p1 = a / n * 100, p2 = (a + b) / n * 100, L = 'var(--ink)'; return `linear-gradient(to top, var(--sky) 0 ${p1}%, ${a && a < n ? `${L} ${p1}% calc(${p1}% + 1px), ` : ''}var(--lime) calc(${p1}% + ${a && a < n ? 1 : 0}px) ${p2}%, ${b && a + b < n ? `${L} ${p2}% calc(${p2}% + 1px), ` : ''}var(--yellow) calc(${p2}% + ${b && a + b < n ? 1 : 0}px) 100%)`; };
+          return `<div class="hsum"><span><i class="k1"></i>가입 <b class="num">${sum(H.signup)}</b></span><span><i class="k2"></i>게임 기록 <b class="num">${sum(H.score)}</b></span><span><i class="k3"></i>DM <b class="num">${sum(H.dm)}</b></span><span class="pk">${tot[peak] ? `가장 바쁜 시간 <b>${peak}시</b> (${tot[peak]}건)` : '오늘 활동 없음'}</span></div>
+        <div class="hc" id="hchart">${tot.map((n, h) => `<div class="col${h === nowH ? ' nowh' : ''}${h === peak && n ? ' pk' : ''}" title="${h}시 · 가입 ${H.signup[h]} · 게임 기록 ${H.score[h]} · DM ${H.dm[h]}">${n ? `<div class="bar" style="height:${pct(n)};background:${grad(H.signup[h], H.score[h], n)}"><b>${n}</b></div>` : ''}</div>`).join('')}</div>
+        <div class="xlab hx">${tot.map((_, h) => (h === nowH ? `<span class="now">지금</span>` : `<span>${h % 3 || Math.abs(h - nowH) < 2 ? '' : h + '시'}</span>`)).join('')}</div>
+        <p class="sub sp">막대 위 숫자 = 그 시간 전체 건수 (색은 종류별 몫 · DM은 개수만, 내용은 안 봄)</p>`;
+        })()}
       </section>
         <section class="card"><h3>🍱 오늘 투표</h3>
           ${d.votes.meal.length ? `<ul class="mlist">${d.votes.meal.slice(0, 12).map(v => `<li><span><b>${esc(v.dish)}</b> <span class="sub">${meals[v.meal] || v.meal}</span></span><b class="num">${v.n}표</b></li>`).join('')}</ul>` : '<p class="empty">급식 투표가 아직 없어요</p>'}
@@ -228,7 +235,6 @@ VIEWS.monitor = async () => {
     <section class="card"><h3>🧯 서버 오류 <span class="sub">최근 60개 · 14일 보관</span>${d.errors.length ? '<button class="btn sm bad" type="button" data-act="errclear">기록 비우기</button>' : ''}</h3>
       ${d.errors.length ? `<ul class="log">${d.errors.map(x => `<li><span class="t">${full(x.at)}</span><b>${esc(SRC[x.src] || x.src)} <code>${esc(x.route)}</code></b><span>${esc(x.msg)}</span></li>`).join('')}</ul>` : '<p class="empty">오류가 없어요 👍</p>'}
     </section>`;
-  document.querySelectorAll('#hchart i').forEach(i => { i.style.height = (+i.dataset.h * 100) + '%'; });
   const tick = () => { if (cur !== 'monitor') return; if (document.hidden) monTimer = setTimeout(tick, 20e3); else VIEWS.monitor().catch(() => { monTimer = setTimeout(tick, 20e3); }); };
   monTimer = setTimeout(tick, 20e3);
 };
