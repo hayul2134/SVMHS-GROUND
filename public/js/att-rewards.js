@@ -166,8 +166,8 @@ export const wkRange = n => { const s = dnum(RK_START()); return { n, from: ymdO
 //   TIER_PCT명 미만이면 '점수 구간(pt, 4게임 합 최대 400점)'으로, 그 이상이면 원래 백분위(top)로 매김
 export const TIER_PCT = 20;
 export const TIERS = [
-  { k: 'challenger', n: '챌린저', lb: '1등', pl: '1등 · 340점+' },
-  { k: 'grandmaster', n: '그랜드마스터', lb: '2·3등', pl: '2·3등 · 280점+' },
+  { k: 'challenger', n: '챌린저', lb: '1등', pl: '1등 · 340점+' },   // 2026-10-26 핫픽스: 점수 구간 모드에선 챌린저·그마 모두 마스터 점수(340) 이상인 사람 중 순위로
+  { k: 'grandmaster', n: '그랜드마스터', lb: '2·3등', pl: '2·3등 · 340점+' },
   { k: 'master', n: '마스터', top: .08, lb: '상위 8%', pt: 340 },
   { k: 'diamond', n: '다이아몬드', top: .16, lb: '상위 16%', pt: 280 },
   { k: 'emerald', n: '에메랄드', top: .28, lb: '상위 28%', pt: 220 },
@@ -183,7 +183,7 @@ export const tierOfK = k => TIERS.find(t => t.k === k) || null;
 export const tierAt = (rank, n, pts = 0) => {
   if (tierMode(n) === 'pts') {   // 사람이 적을 때: 점수 구간. 챌린저·그랜드마스터는 순위 + 점수 둘 다
     if (rank === 1 && n >= 3 && pts >= TIERS[2].pt) return TIERS[0];
-    if (rank <= 3 && n >= 6 && pts >= TIERS[3].pt) return TIERS[1];
+    if (rank <= 3 && n >= 6 && pts >= TIERS[2].pt) return TIERS[1];   // 마스터(340) 미만은 순위가 높아도 점수 구간 그대로
     return TIERS.slice(2).find(t => pts >= t.pt) || TIERS[TIERS.length - 1];
   }
   if (rank === 1 && n >= 3) return TIERS[0];
