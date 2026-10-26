@@ -4740,9 +4740,10 @@ html.tf .trt-go{width:9px;height:9px;border-right:3px solid currentColor;border-
 html.tf .tr-top[open] .trt-go{transform:rotate(225deg) translate(-2px,-2px)}
 html.tf .tr-top[open] summary{box-shadow:1.5px 1.5px 0 var(--ink);transform:translateY(1px)}
 @media (prefers-reduced-motion:reduce){html.tf .rk-tabs button.rkt-tier,html.tf .rk-tabs button.rkt-tier::after,html.tf .rk-tr::after,html.tf .tr-top summary::after{animation:none}}
-/* 홈 랭킹 티어 탭: 칩 뒤 알약 배경 없앰 + 티어 글씨 기준 가운데 정렬(아이콘만큼 왼쪽으로) (2026-10-26 하율) */
+/* 홈 랭킹 티어 탭: 칩 뒤 알약 배경 없앰 + 칩 폭을 똑같이 맞추고 아이콘은 왼쪽 고정, 티어 글씨는 가운데 (2026-10-26 하율) */
 .rk-v:has(.rk-tr),html.rk2 .rk-v:has(.rk-tr),html.rk2 .rk.p1 .rk-v:has(.rk-tr){width:112px;justify-content:center;padding:0;background:none;border:0;overflow:visible}
-.rk-v .rk-tr{margin-left:-23px}
-html.tf .rk-v .rk-tr{margin-left:-22px}
+html .rk-v .rk-tr,html.tf .rk-v .rk-tr{position:relative;width:100%;justify-content:center;padding-left:26px;padding-right:6px;box-sizing:border-box}
+html .rk-v .rk-tr .tri{position:absolute;left:4px;top:50%;translate:0 -50%;margin:0}
+html.tf .rk-v .rk-tr .tri{left:2px}
 html.rk2 .rk.p1 .rk-v:has(.rk-tr){margin-right:-3.5px}   /* 1등 줄은 안쪽 여백이 2px 더 커서 맞춤 */
 html.rk2 .rk.p3 .rk-v:has(.rk-tr){margin-left:-1px;margin-right:1px}
