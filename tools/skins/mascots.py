@@ -177,7 +177,7 @@ def M_dino():
     return (SHADOW + tail('M66 86 Q82 88 90 78', c, l, 9) + body(c, l, '#e2f8ea', wave=True)
             + f"<path d='M33 20 l4 -13 l7 8 l6 -14 l6 14 l7 -8 l4 13z' fill='{s}' {ln('#d6a842', 2.2)}/>" + mochi(c, l, top=17)
             + eyes(53) + blush(60, 19) + "<circle cx='47' cy='58' r='1' fill='#5fae86'/><circle cx='53' cy='58' r='1' fill='#5fae86'/>"
-            + mouth(60.5, 3.2) + f"<path d='M44.5 61 l1.4 2.4 l1.4 -2z' fill='#fff' {ln('#5fae86', 1)}/>")
+            + "<path d='M47.3 61.8 l1.1 2.3 l1.1 -2.3z' fill='#fff' stroke='#5fae86' stroke-width='.5' stroke-linejoin='round'/>" + mouth(60.5, 3.2))
 
 
 def M_ghost():
