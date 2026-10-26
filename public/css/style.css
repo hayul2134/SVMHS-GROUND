@@ -4703,7 +4703,7 @@ html.tf .rk-tabs button .rkt-l{line-height:1}
 html.tf .rk-tabs button .tri{width:21px;height:20px;margin:-3px -1px -3px -2px;overflow:visible}
 html.tf .rk-tabs button.rkt-tier{position:relative;overflow:hidden;color:#5a3a00;background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%);border:1.5px solid #fff6c9;box-shadow:0 0 10px rgba(255,214,102,.65);animation:tfGlow 2.2s ease-in-out infinite}
 html.tf .rk-tabs button.rkt-tier::after{content:"";position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);animation:tfShine 2.6s ease-in-out infinite;pointer-events:none}
-html.tf .rk-tabs button.rkt-tier[aria-selected="true"]{border-color:var(--ink);box-shadow:1.5px 1.5px 0 var(--ink),0 0 12px rgba(255,214,102,.7)}
+html.tf .rk-tabs.sw > button.rkt-tier[aria-selected],html.tf .rk-tabs button.rkt-tier[aria-selected="true"]{background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%);color:#5a3a00;border-color:var(--ink);box-shadow:1.5px 1.5px 0 var(--ink),0 0 12px rgba(255,214,102,.7)}
 html.tf .rk-tabs button.rkt-tier .rkt-l{position:relative;z-index:1}
 /* 랭킹 줄 티어 표시: 글자 → 티어 색 배지 */
 html.tf .rk-tr{position:relative;overflow:hidden;gap:4px;padding:2px 9px 2px 3px;border-radius:999px;border:2px solid var(--ink);font-size:12.5px;font-weight:900;color:#1d2a3a;
