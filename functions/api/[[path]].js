@@ -59,17 +59,28 @@ export async function onRequest({ request, env, params }) {
   }
   if (env.NEIS_KEY) q.set('KEY', env.NEIS_KEY);
 
-  try {
-    const res = await fetch(`https://open.neis.go.kr/hub/${svc}?${q}`, { cf: { cacheTtl: 1800, cacheEverything: true } });
-    if (!res.ok) { await logErr(env.DB, 'neis', request, `나이스 응답 ${res.status}`); return json({ error: 'upstream error' }, 502); }
-    const body = await res.text();
-    return new Response(body, {
-      headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=600', ...SECURITY_HEADERS },
-    });
-  } catch (e) {
-    await logErr(env.DB, 'neis', request, `나이스 연결 실패: ${e?.message || e}`);
-    return json({ error: 'upstream failed' }, 502);
+  // 나이스는 가끔 몇 초씩 530·502 같은 일시 오류를 냄 → 최대 3번(0.4초·1.2초 간격) 시도하고, 끝내 실패할 때만 오류 기록
+  // 실패 응답은 캐시하지 않음(cacheTtlByStatus) → 한 번 실패가 30분 동안 남지 않게
+  const url = `https://open.neis.go.kr/hub/${svc}?${q}`;
+  let last = '';
+  for (let i = 0; i < 3; i++) {
+    if (i) await new Promise(r => setTimeout(r, i === 1 ? 400 : 1200));
+    try {
+      const res = await fetch(url, { cf: { cacheTtlByStatus: { '200-299': 1800, '300-599': 0 }, cacheEverything: true }, signal: AbortSignal.timeout(5000) });
+      if (res.ok) {
+        const body = await res.text();
+        return new Response(body, {
+          headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=600', ...SECURITY_HEADERS },
+        });
+      }
+      last = `나이스 응답 ${res.status}`;
+      if (res.status < 500 && res.status !== 429) break; // 요청 자체가 잘못된 경우는 다시 해도 같음
+    } catch (e) {
+      last = `나이스 연결 실패: ${e?.message || e}`;
+    }
   }
+  await logErr(env.DB, 'neis', request, `${last} (3번 시도)`);
+  return json({ error: 'upstream error' }, 502);
 }
 
 /* ===== 급식 인기투표 (D1 바인딩 DB 필요) =====
