@@ -1811,18 +1811,19 @@ async function checkNotices() {   // 새 공지·새 업데이트 소식이 있�
 }
 const dueTxt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} (${'일월화수목금토'[d.getDay()]}) ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 // 개발자 전용: 다음 공지 초안 편집 카드
-function draftCard(d) {
+function draftCard(d, hot) {   // hot: 핫픽스 초안이면 그 고친 날('YYYY-MM-DD')
   const row = (x = {}) => `<li data-id="${esc(x.id || '')}" data-pf="${esc(x.ff || '')}" data-img="${esc(x.img || '')}" data-noimg="${x.noimg ? 1 : ''}"><textarea rows="2" maxlength="300" placeholder="공지 한 줄 (이모지·이모티콘 환영)">${esc(x.t || '')}</textarea>${x.img ? `<span class="pdimg"><img src="${esc(x.img)}" alt="" loading="lazy"><button type="button" class="pdix" data-tip="사진 빼기">사진 빼기</button></span>` : ''}${x.ff ? `<small class="pdff">새 기능 · ${esc(x.ff)}</small>` : ''}<button type="button" class="pdx" aria-label="이 줄 빼기" data-tip="이 줄 빼기">✕</button></li>`;
-  return `<div class="pdraft" id="pnDraft"><p class="pdh"><b>📝 다음 공지 초안</b><span class="pdme">나만 보여요</span></p>
-    <p class="note">${d.imm ? '<b>바로 공지 기간(11/2 월 06:00까지)</b>: 여기서 <b>저장하는 순간 바로 모두에게 공개</b>돼요(자동으로 쌓인 수정 소식은 저장 전엔 안 나가요).' : `수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.`}</p>
+  return `<div class="pdraft${hot ? ' pdhot' : ''}"${hot ? ` data-hot="${esc(hot)}"` : ' id="pnDraft"'}><p class="pdh"><b>${hot ? '🔧 핫픽스 공지 초안' : '📝 다음 공지 초안'}</b><span class="pdme">나만 보여요</span></p>
+    <p class="note">${hot ? `바로 고친 수정들이에요. 문구를 고치고 <b>공개에 체크해 저장</b>해야 <b>${esc(dueTxt(d.due))}</b>에 모두에게 올라가요. 체크 안 하면 시간이 지나도 안 올라가고, 나중에 체크해 저장하면 그때 바로 올라가요.` : d.imm ? '<b>바로 공지 기간(11/2 월 06:00까지)</b>: 여기서 <b>저장하는 순간 바로 모두에게 공개</b>돼요(자동으로 쌓인 수정 소식은 저장 전엔 안 나가요).' : `수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.`}</p>
     <input class="pdt" maxlength="60" placeholder="${esc(d.defTitle)}" value="${esc(d.title || '')}">
     <ol class="pdl">${d.items.map(row).join('')}</ol>${d.items.length ? '' : '<p class="empty">아직 쌓인 공지가 없어요</p>'}
     <button type="button" class="btn ghost pdadd">＋ 한 줄 추가</button>
     <label class="pdok"><input type="checkbox" ${d.approved ? 'checked' : ''}><span>${esc(dueTxt(d.due))}에 모두에게 공개</span></label>
     <div class="row"><button type="button" class="btn pdsave">저장</button></div></div>`;
 }
-function bindDraft() {
-  const box = $('#pnDraft'); if (!box) return;
+function bindDraft() { $$('#socSheet .pdraft').forEach(bindDraftBox); }
+function bindDraftBox(box) {
+  const hot = box.dataset.hot || '';
   const list = box.querySelector('.pdl');
   const rowHtml = () => { const t = document.createElement('template'); t.innerHTML = draftCard({ ...pnDraft, items: [{}] }); return t.content.querySelector('.pdl li'); };
   box.addEventListener('click', e => { if (e.target.closest('.pdx')) e.target.closest('li').remove(); else if (e.target.closest('.pdix')) { const li = e.target.closest('li'); li.dataset.img = ''; li.dataset.noimg = '1'; e.target.closest('.pdimg').remove(); } });
@@ -1830,7 +1831,7 @@ function bindDraft() {
   box.querySelector('.pdsave').onclick = async e => {
     const b = e.currentTarget; b.disabled = true;
     try {
-      const j = await call('patch', { title: box.querySelector('.pdt').value, ok: box.querySelector('.pdok input').checked,
+      const j = await call('patch', { ...(hot ? { hot } : {}), title: box.querySelector('.pdt').value, ok: box.querySelector('.pdok input').checked,
         items: [...list.children].map(li => ({ id: li.dataset.id, ff: li.dataset.pf, img: li.dataset.img, noimg: !!li.dataset.noimg, t: li.querySelector('textarea').value })) });
       pnDraft = j.draft; ptList = null;
       toast(j.published ? '공개 시각이 지나서 바로 모두에게 올렸어요 🎉' : '초안을 저장했어요');
@@ -1854,7 +1855,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
   $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => card(n.live, NT_IC[n.tone] || '',
       n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text), n.body ? esc(n.body) : '',
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
-    ${patches || pnDraft ? `<h3 class="sp">🛠 업데이트 소식</h3>${pnDraft && isDev(S.me) ? draftCard(pnDraft) : ''}${patches ? `<ul class="ntlist">${patches}</ul>` : ''}` : ''}
+    ${patches || pnDraft ? `<h3 class="sp">🛠 업데이트 소식</h3>${pnDraft && isDev(S.me) ? (pnDraft.hot || []).map(h => draftCard({ ...h, approved: h.ok }, h.day)).join('') + draftCard(pnDraft) : ''}${patches ? `<ul class="ntlist">${patches}</ul>` : ''}` : ''}
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
   $$('#socSheet .ntb').forEach(b => {   // 2줄 안에 다 들어가는 짧은 내용은 '자세히 보기' 버튼을 숨김
     const t = b.querySelector('.nb-txt');
