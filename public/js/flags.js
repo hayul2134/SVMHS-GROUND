@@ -12,4 +12,6 @@ export const PREVIEW_LIST = [
   ['story-share', '랭킹 스토리 공유 이미지(1080×1920, 캡처 대신 또렷하게)', '2026-10-26'],
 ];
 export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
-export const ffOn = (name, dev) => !PREVIEW.has(name) || !!dev;
+// 게시된 패치 공지에 든 깃발은 자동으로 모두에게 열림(2026-10-26 하루 패치 — social.js가 /api/s/patch 게시본의 ff로 채움)
+export const RELEASED = new Set();
+export const ffOn = (name, dev) => !PREVIEW.has(name) || RELEASED.has(name) || !!dev;

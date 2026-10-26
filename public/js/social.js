@@ -7,7 +7,7 @@ import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, neonPick, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
-import { ffOn } from './flags.js';
+import { ffOn, RELEASED } from './flags.js';
 import { TIERS, TIER_PCT, tierOfK } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
@@ -123,11 +123,14 @@ function applyFx() {
 }
 // 뽑기 상태 받기(뽑기 화면·꾸미기 효과 탭 공용)
 function setGc(g) { if (S.me && g) { S.me.gc = { ...S.me.gc, tix: g.tix ?? S.me.gc?.tix, shard: g.shard ?? S.me.gc?.shard, pity: g.pity ?? S.me.gc?.pity, leg: g.leg ?? S.me.gc?.leg, own: g.own || S.me.gc?.own, fx: g.fx || S.me.gc?.fx || {} }; applyFx(); paintTix(); NW.paint(); } }
+// 게시된 패치 공지의 새 기능 깃발(ff)을 모두에게 엶 — 한 번만 받아 둠
+let relP = null;
+const loadReleased = () => relP || (relP = fetch('/api/s/patch', { credentials: 'same-origin', cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).then(j => { for (const x of j.list || []) for (const f of x.ff || []) RELEASED.add(f); }).catch(() => {}));
 async function refreshMe() {
   try {
-    const r = await call('me');
+    const [r] = await Promise.all([call('me'), loadReleased()]);
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
-    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me)));   // 미리보기 기능([data-ff]) 개발자에게만 보이게
+    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me)));   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
@@ -1277,7 +1280,7 @@ async function openRank(game, scope = 'week') {
   const g = GAMES[game];
   const tabs = [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   const scopeName = { week: '이번 주', round: '이번 라운드', all: '역대', friends: '친구', class: '반 대항전' }[scope] || '';
-  sheet(`<h3 class="rk-h3">${ic(g.ic)} ${g.name} 랭킹<button type="button" class="rk-story" id="rkStory" data-ff="story-share" aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
+  sheet(`<h3 class="rk-h3">${ic(g.ic)} ${g.name} 랭킹<button type="button" class="rk-story" id="rkStory"${ffOn('story-share', isDev(S.me)) ? '' : ' hidden'} aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
     <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
     const r = await call(`rank?game=${game}&scope=${scope}`);
@@ -1825,8 +1828,8 @@ const dueTxt = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.get
 // 개발자 전용: 다음 공지 초안 편집 카드
 function draftCard(d, hot) {   // hot: 핫픽스 초안이면 그 고친 날('YYYY-MM-DD')
   const row = (x = {}) => `<li data-id="${esc(x.id || '')}" data-pf="${esc(x.ff || '')}" data-img="${esc(x.img || '')}" data-noimg="${x.noimg ? 1 : ''}"><textarea rows="2" maxlength="300" placeholder="공지 한 줄 (이모지·이모티콘 환영)">${esc(x.t || '')}</textarea>${x.img ? `<span class="pdimg"><img src="${esc(x.img)}" alt="" loading="lazy"><button type="button" class="pdix" data-tip="사진 빼기">사진 빼기</button></span>` : ''}${x.ff ? `<small class="pdff">새 기능 · ${esc(x.ff)}</small>` : ''}<button type="button" class="pdx" aria-label="이 줄 빼기" data-tip="이 줄 빼기">✕</button></li>`;
-  return `<div class="pdraft${hot ? ' pdhot' : ''}"${hot ? ` data-hot="${esc(hot)}"` : ' id="pnDraft"'}><p class="pdh"><b>${hot ? '🔧 핫픽스 공지 초안' : '📝 다음 공지 초안'}</b><span class="pdme">나만 보여요</span></p>
-    <p class="note">${hot ? `바로 고친 수정들이에요. 문구를 고치고 <b>공개에 체크해 저장</b>해야 <b>${esc(dueTxt(d.due))}</b>에 모두에게 올라가요. 체크 안 하면 시간이 지나도 안 올라가고, 나중에 체크해 저장하면 그때 바로 올라가요.` : d.imm ? '<b>바로 공지 기간(11/2 월 06:00까지)</b>: 여기서 <b>저장하는 순간 바로 모두에게 공개</b>돼요(자동으로 쌓인 수정 소식은 저장 전엔 안 나가요).' : `수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.`}</p>
+  return `<div class="pdraft${hot ? ' pdhot' : ''}"${hot ? ` data-hot="${esc(hot)}"` : ' id="pnDraft"'}><p class="pdh"><b>${hot ? `📝 ${+hot.slice(5, 7)}/${+hot.slice(8)} 고친 것 · 패치 공지 초안` : '📝 모아 둔 공지 초안'}</b><span class="pdme">나만 보여요</span></p>
+    <p class="note">${hot ? `이날 고치고 추가한 것들이에요. 문구를 고치고 <b>공개에 체크해 저장</b>해야 <b>${esc(dueTxt(d.due))}</b>에 모두에게 올라가요(새 기능도 그때 모두에게 열려요). 체크 안 하면 시간이 지나도 안 올라가고, 나중에 체크해 저장하면 그때 바로 올라가요.` : d.imm ? '<b>바로 공지 기간(11/2 월 06:00까지)</b>: 여기서 <b>저장하는 순간 바로 모두에게 공개</b>돼요(자동으로 쌓인 수정 소식은 저장 전엔 안 나가요).' : `수정을 올리면 여기에 바로 쌓여요. 고치거나 빼고 저장하면, 체크해 둔 초안만 <b>${esc(dueTxt(d.due))}</b>에 모두에게 한 번에 공개돼요.`}</p>
     <input class="pdt" maxlength="60" placeholder="${esc(d.defTitle)}" value="${esc(d.title || '')}">
     <ol class="pdl">${d.items.map(row).join('')}</ol>${d.items.length ? '' : '<p class="empty">아직 쌓인 공지가 없어요</p>'}
     <button type="button" class="btn ghost pdadd">＋ 한 줄 추가</button>
@@ -1867,7 +1870,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
   $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => card(n.live, NT_IC[n.tone] || '',
       n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text), n.body ? esc(n.body) : '',
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
-    ${patches || pnDraft ? `<h3 class="sp">🛠 업데이트 소식</h3>${pnDraft && isDev(S.me) ? (pnDraft.hot || []).map(h => draftCard({ ...h, approved: h.ok }, h.day)).join('') + draftCard(pnDraft) : ''}${patches ? `<ul class="ntlist">${patches}</ul>` : ''}` : ''}
+    ${patches || pnDraft ? `<h3 class="sp">🛠 업데이트 소식</h3>${pnDraft && isDev(S.me) ? (pnDraft.hot || []).map(h => draftCard({ ...h, approved: h.ok }, h.day)).join('') + (pnDraft.items?.length ? draftCard(pnDraft) : '') : ''}${patches ? `<ul class="ntlist">${patches}</ul>` : ''}` : ''}
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
   $$('#socSheet .ntb').forEach(b => {   // 2줄 안에 다 들어가는 짧은 내용은 '자세히 보기' 버튼을 숨김
     const t = b.querySelector('.nb-txt');

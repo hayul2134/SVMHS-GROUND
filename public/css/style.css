@@ -4785,3 +4785,4 @@ html.rk2 .rk.p3 .rk-v:has(.rk-tr){margin-left:-1px;margin-right:1px}
 .tplate.t-challenger,.tplate.t-grandmaster,.tplate.t-master{color:#2a1e14}
 .tplate.t-challenger .tp-tx small,.tplate.t-challenger .tp-tx em,.tplate.t-grandmaster .tp-tx small,.tplate.t-grandmaster .tp-tx em,.tplate.t-master .tp-tx small,.tplate.t-master .tp-tx em{color:#5a4a3c}
 @media (prefers-reduced-motion:reduce){.tplate::after,.tplate.t-challenger{animation:none}}
+.rk-story[hidden]{display:none!important}
