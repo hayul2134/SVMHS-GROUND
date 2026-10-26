@@ -3276,7 +3276,7 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .gc-stage{display:none}
 .gc-stage.show{display:block;padding:20px 14px;border-radius:var(--radius);border:var(--bd);box-shadow:var(--sh);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--lime) 30%,var(--card)),var(--card) 70%)}
 .gc-stage.top3{background:radial-gradient(circle at 50% 40%,color-mix(in srgb,#ffd66a 40%,var(--card)),var(--card) 70%)}
-.gc-res{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.gc-res{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:14px}
 .gc-slot{width:132px;min-height:168px;display:grid;place-items:center}
 .gc-cap{width:96px;height:96px;padding:0;background:none;border:0;cursor:pointer;animation:gcDrop .5s cubic-bezier(.3,1.5,.5,1) backwards}
 .gc-slot:nth-child(2) .gc-cap{animation-delay:.08s}.gc-slot:nth-child(3) .gc-cap{animation-delay:.16s}.gc-slot:nth-child(4) .gc-cap{animation-delay:.24s}.gc-slot:nth-child(5) .gc-cap{animation-delay:.32s}
@@ -3303,7 +3303,7 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .gc-new,.gc-dup{position:relative;z-index:1;font:800 11.5px/1 var(--num);font-style:normal;padding:4px 8px;border-radius:99px;border:2px solid var(--ink)}
 .gc-new{background:var(--red);color:#fff}
 .gc-dup{background:var(--chip);color:var(--sub)}
-.gc-act{display:flex;justify-content:center;margin-top:14px}
+.gc-act{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:14px}
 .gc-act .btn{padding:9px 18px}
 @media (max-width:560px){.gc-slot{width:96px;min-height:140px}.gc-cap{width:76px;height:76px}.gc-got .gc-ic{width:70px;height:70px}}
 /* 도감 */
@@ -4415,10 +4415,8 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 /* 착용하러 가기로 열었을 때 그 칸 반짝 */
 .nw-flash{animation:nwFlash 1.7s ease-out}
 @keyframes nwFlash{0%,40%,80%{outline:4px solid var(--nw);outline-offset:3px}20%,60%,100%{outline-color:transparent;outline-offset:1px}}
-/* 결과 카드 '붙이러 가기' */
-.gc-wearb{position:relative;z-index:1;margin-top:2px;padding:5px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--nw);color:#fff;font:900 12px/1.2 inherit;font-family:inherit;cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .1s,box-shadow .1s}
-.gc-wearb:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
-.gc-wearb:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+/* 결과 아래 '붙이러 가기' — 결과 닫기 옆 (예전엔 칸 안 + font 단축 속성 오류로 글씨가 크게·얇게 깨짐) */
+.gc-wearb{background:var(--nw);color:#fff;white-space:nowrap}
 /* 새로 얻은 것 띠 */
 .gc-newb{border-color:var(--nw);box-shadow:4px 4px 0 var(--nw);display:grid;gap:12px;padding:16px 18px}
 .gn-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}

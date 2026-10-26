@@ -259,7 +259,7 @@ async function openCap(i, instant = false) {
     await wait(260);
   }
   slot.innerHTML = `<div class="gc-got ${RCLS[x.rar]}${instant ? '' : ' in'}">${x.rar > 1 ? '<i class="gc-rays" aria-hidden="true"></i>' : ''}<span class="gc-ic">${artOf(x.v)}</span>
-    <b class="gc-rt">${RAR[x.rar].n}</b><small>${esc(objName(x.v))}</small>${x.new ? '<em class="gc-new">NEW</em>' : `<em class="gc-dup">조각 +${x.shard}</em>`}${x.new ? `<button type="button" class="gc-wearb" data-gc-wear="${x.v}">${gcItem(x.v)?.fx ? '효과 켜러 가기' : '스티커 붙이러 가기'} ›</button>` : ''}</div>`;
+    <b class="gc-rt">${RAR[x.rar].n}</b><small>${esc(objName(x.v))}</small>${x.new ? '<em class="gc-new">NEW</em>' : `<em class="gc-dup">조각 +${x.shard}</em>`}</div>`;
   if (x.rar >= 3 && !instant) flash(x.rar);
   if (last.open.size === last.out.length) done();
 }
@@ -268,7 +268,10 @@ function done() {
   const keep = $('#gcStage')?.innerHTML;
   paint();
   const st = $('#gcStage'); if (st && keep) { st.innerHTML = keep.replace(/ in"/g, '"'); st.className = 'gc-stage show'; }
-  const act = $('.gc-act'); if (act) act.innerHTML = `<button type="button" class="btn ghost" data-gc-close>결과 닫기</button>`;
+  // 새로 얻은 것 착용 버튼은 칸 안이 아니라 '결과 닫기' 옆에 하나로(칸 높이·정렬 유지, 2026-10-26)
+  const nv = (last?.out || []).filter(x => x.new).map(x => x.v);
+  const nst = nv.filter(v => !gcItem(v)?.fx), nfx = nv.filter(v => gcItem(v)?.fx);
+  const act = $('.gc-act'); if (act) act.innerHTML = `${nst.length ? `<button type="button" class="btn gc-wearb" data-gc-wear="${esc(nst[0])}">새 스티커 ${nst.length}개 붙이러 가기 ›</button>` : ''}${nfx.length ? `<button type="button" class="btn gc-wearb" data-gc-wear="${esc(nfx[0])}">새 효과 ${nfx.length}개 켜러 가기 ›</button>` : ''}<button type="button" class="btn ghost" data-gc-close>결과 닫기</button>`;
 }
 function paintBtns() {
   const g = api.me()?.gc; if (!g) return;
