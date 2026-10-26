@@ -3013,12 +3013,13 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .clock .dk.du.on{display:block}
 .clock .dk.du .dua{width:100%;height:100%;display:block;filter:drop-shadow(2px 2px 0 rgba(23,48,72,.18))}
 .clock.d1 .dk.k1,.clock.d2 .dk.k4,.clock.d3 .dk.k2{display:none}
-.dk.du1{width:clamp(40px,6.6vw,72px);height:clamp(40px,6.6vw,72px);left:-9%;top:-14%;transform:rotate(-12deg)}
-.dk.du2{width:clamp(34px,5.4vw,60px);height:clamp(34px,5.4vw,60px);right:-9%;bottom:-2%;transform:rotate(10deg)}
-.dk.du3{width:clamp(28px,4.4vw,48px);height:clamp(28px,4.4vw,48px);right:-4%;top:-20%;transform:rotate(14deg)}
-.clock:has(.s-big.long) .dk.du1,.clock:has(.s-big.long2) .dk.du1{width:clamp(30px,4.6vw,52px);height:clamp(30px,4.6vw,52px);left:-10%;top:-26%}
-.clock:has(.s-big.long) .dk.du2,.clock:has(.s-big.long2) .dk.du2{width:clamp(28px,4vw,44px);height:clamp(28px,4vw,44px);right:-10%;bottom:-20%}
-.clock:has(.s-big.long) .dk.du3,.clock:has(.s-big.long2) .dk.du3{right:-11%;top:-10%}
+/* 시계 스티커 자리(2026-10-26 하율 '오브젝트가 시계를 많이 안 가리게'): 시계 상자 % 대신 스티커 자기 크기(--sz) 기준으로 모서리 바깥에 붙임 → 숫자·'초'·밀리초를 거의 안 가림 */
+.dk.du{width:var(--sz);height:var(--sz)}
+.dk.du1{--sz:clamp(40px,6.6vw,72px);left:calc(var(--sz) * -.78);top:calc(var(--sz) * -.6);transform:rotate(-12deg)}
+.dk.du2{--sz:clamp(34px,5.4vw,60px);right:calc(var(--sz) * -.85);bottom:calc(var(--sz) * -.4);transform:rotate(10deg)}
+.dk.du3{--sz:clamp(28px,4.4vw,48px);right:calc(var(--sz) * -.75);top:calc(var(--sz) * -.65);transform:rotate(14deg)}
+.clock:has(.s-big.long) .dk.du1,.clock:has(.s-big.long2) .dk.du1{--sz:clamp(30px,4.6vw,52px)}
+.clock:has(.s-big.long) .dk.du2,.clock:has(.s-big.long2) .dk.du2{--sz:clamp(28px,4vw,44px)}
 @media (prefers-reduced-motion:no-preference){
   .boot .dk.du1{animation:dkIn .55s cubic-bezier(.3,1.8,.5,1) .55s backwards}
   .boot .dk.du2{animation:dkIn .55s cubic-bezier(.3,1.8,.5,1) .74s backwards}
@@ -3048,10 +3049,8 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .pick .att-none{font-size:13px;font-weight:900;color:var(--text)}
 
 /* 개발자 치장 (2026-10-23): 시계 스티커 4·5칸, 프로필 배너 스티커 7~12, 무지개 칭호, 대표 스티커 여러 개 */
-.dk.du4{width:clamp(30px,4.8vw,52px);height:clamp(30px,4.8vw,52px);left:-2%;bottom:-16%;transform:rotate(-8deg)}
-.dk.du5{width:clamp(24px,3.8vw,42px);height:clamp(24px,3.8vw,42px);left:-16%;top:38%;transform:rotate(12deg)}
-.clock:has(.s-big.long) .dk.du4,.clock:has(.s-big.long2) .dk.du4{bottom:-28%}
-.clock:has(.s-big.long) .dk.du5,.clock:has(.s-big.long2) .dk.du5{left:-17%}
+.dk.du4{--sz:clamp(30px,4.8vw,52px);left:calc(var(--sz) * -.55);bottom:calc(var(--sz) * -.7);transform:rotate(-8deg)}
+.dk.du5{--sz:clamp(24px,3.8vw,42px);left:calc(var(--sz) * -1.2);top:calc(50% - var(--sz) * .5);transform:rotate(12deg)}
 @media (prefers-reduced-motion:no-preference){.boot .dk.du4{animation:dkIn .55s cubic-bezier(.3,1.8,.5,1) .8s backwards}.boot .dk.du5{animation:dkIn .55s cubic-bezier(.3,1.8,.5,1) .88s backwards}}
 .stk.s7{left:34%;top:78%;font-size:20px;animation-delay:.2s;transform:rotate(8deg)}.stk.s8{right:12%;top:74%;font-size:22px;animation-delay:.6s;transform:rotate(-10deg)}
 .stk.s9{left:58%;top:30%;font-size:20px;animation-delay:1s}.stk.s10{left:30%;top:24%;font-size:18px;animation-delay:1.4s;transform:rotate(-6deg)}
@@ -3573,11 +3572,12 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .pv-clk.neon .pv-tm .pv-ap{color:var(--sub);text-shadow:none!important}
 .pv-dk{position:absolute;display:block;pointer-events:none;line-height:0}
 .pv-dk > *{width:100% !important;height:100% !important;display:block;filter:drop-shadow(2px 2px 0 rgba(23,48,72,.18))}
-.pv-dk.k1{width:.36em;height:.36em;left:-9%;top:-14%;transform:rotate(-12deg)}
-.pv-dk.k2{width:.30em;height:.30em;right:-9%;bottom:-2%;transform:rotate(10deg)}
-.pv-dk.k3{width:.24em;height:.24em;right:-4%;top:-20%;transform:rotate(14deg)}
-.pv-dk.k4{width:.26em;height:.26em;left:-2%;bottom:-16%;transform:rotate(-8deg)}
-.pv-dk.k5{width:.21em;height:.21em;left:-16%;top:38%;transform:rotate(12deg)}
+.pv-dk{width:var(--sz);height:var(--sz)}
+.pv-dk.k1{--sz:.36em;left:calc(var(--sz) * -.78);top:calc(var(--sz) * -.6);transform:rotate(-12deg)}
+.pv-dk.k2{--sz:.30em;right:calc(var(--sz) * -.85);bottom:calc(var(--sz) * -.4);transform:rotate(10deg)}
+.pv-dk.k3{--sz:.24em;right:calc(var(--sz) * -.75);top:calc(var(--sz) * -.65);transform:rotate(14deg)}
+.pv-dk.k4{--sz:.26em;left:calc(var(--sz) * -.55);bottom:calc(var(--sz) * -.7);transform:rotate(-8deg)}
+.pv-dk.k5{--sz:.21em;left:calc(var(--sz) * -1.2);top:calc(50% - var(--sz) * .5);transform:rotate(12deg)}
 /* 켜 둔 뽑기 효과 칩 */
 .pv-hit{animation:pvHit .6s ease-out}
 @keyframes pvHit{0%{filter:brightness(1.35);transform:scale(1.04)}100%{filter:none;transform:none}}
