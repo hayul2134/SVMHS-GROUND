@@ -819,6 +819,9 @@ function stkTray(btn, onPick) {
     ? `<div class="stk-grid">${have.map(r => `<button type="button" data-v="${r.v}" aria-label="스티커 보내기">${artOf(r.v, 'pka')}</button>`).join('')}</div>${next ? `<small>${next.by === 'total' ? '총' : '연속'} ${next.d}일 출석하면 하나 더!</small>` : ''}`
     : `<p>${ATT.flame('fsm', { tier: 1 })} 출석 보상으로 받은 스티커를 보낼 수 있어요.<br><b>${next.by === 'total' ? '총' : '연속'} ${next.d}일</b> 출석하면 첫 스티커!</p>`;
   btn.parentElement.append(t);
+  // 창(모달) 위로 잘리면 아래로 펼침 (2026-10-26)
+  const box = btn.closest('.sheet,.modal') , tr = t.getBoundingClientRect(), top = box ? Math.max(0, box.getBoundingClientRect().top) : 0;
+  if (tr.top < top + 6) t.classList.add('dn');
   const close = ev => { if (!t.isConnected) return off(); if (ev.type === 'keydown' ? ev.key === 'Escape' : !t.contains(ev.target) && ev.target !== btn && !btn.contains(ev.target)) { t.remove(); off(); } };
   const off = () => { document.removeEventListener('pointerdown', close, true); document.removeEventListener('keydown', close, true); };
   setTimeout(() => { document.addEventListener('pointerdown', close, true); document.addEventListener('keydown', close, true); });

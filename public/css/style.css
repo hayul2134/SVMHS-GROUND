@@ -3031,11 +3031,12 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .stk-btn .ic{width:24px;height:24px}
 .stk-btn:active{transform:scale(.92)}
 .bs-form.lock .stk-btn{opacity:.45}
-.stk-tray{position:absolute;left:6px;bottom:calc(100% + 8px);z-index:30;width:min(300px,calc(100% - 12px));padding:10px;background:var(--card);color:var(--text);border:var(--bd);border-radius:18px;box-shadow:var(--sh);animation:trayIn .18s ease-out}
+.stk-tray{position:absolute;left:6px;bottom:calc(100% + 8px);z-index:30;width:min(300px,calc(100% - 12px));max-height:min(236px,60vh);overflow-y:auto;overscroll-behavior:contain;padding:10px;background:var(--card);color:var(--text);border:var(--bd);border-radius:18px;box-shadow:var(--sh);animation:trayIn .18s ease-out}
 .stk-tray .stk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
-.stk-tray .stk-grid button{aspect-ratio:1;border-radius:14px;background:var(--fire-bg,var(--chip));display:grid;place-items:center;padding:6px;transition:transform .1s}
+.stk-tray .stk-grid button{position:relative;min-width:0;aspect-ratio:1;border-radius:14px;background:var(--fire-bg,var(--chip));display:grid;place-items:center;padding:6px;transition:transform .1s}
 .stk-tray .stk-grid button:hover{transform:scale(1.08) rotate(-4deg)}
-.stk-tray .stk-grid .pka{width:100%;height:100%}
+.stk-tray .stk-grid .pka{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px)}   /* 2026-10-26: 칸 높이가 그림(SVG 기본 150px)을 따라 늘어나던 문제 — 그림을 칸 크기에서 빼서 정사각형 유지 */
+.stk-tray.dn{bottom:auto;top:calc(100% + 8px)}
 .stk-tray small,.stk-tray p{display:block;margin:8px 2px 0;font-size:13px;font-weight:700;line-height:1.45;opacity:.85}
 .stk-tray p{margin:0}
 @keyframes trayIn{from{opacity:0;transform:translateY(6px) scale(.96)}}
