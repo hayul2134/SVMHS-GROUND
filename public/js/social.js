@@ -998,7 +998,7 @@ function paintHomeRank(tab, r) {   // 시간표 아래 따로 떨어진 랭킹 �
   const val = u => tab === 'tier' ? `<span class="rk-tr t-${esc(u.tier)}" data-tip="${u.pts}점">${tierIc(u.tier)}${esc(tierOfK(u.tier)?.n || '')}</span>` : g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
   $('#rkList').innerHTML = list.length ? list.map((u, i) => `<li class="rk p${i + 1}${u.isMe ? ' me' : ''}">
       <span class="rk-n"><i class="mdl m${i + 1}">${i + 1}</i></span>
-      <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}"><span class="rk-av">${i === 0 ? `<i class="rk-cr">${ic('crown')}</i>` : ''}${av(u, 'xs', avWear(u.mfx))}</span><b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
+      <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}"><span class="rk-av">${av(u, 'xs', avWear(u.mfx))}</span><b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
       <b class="rk-v">${val(u)}</b></li>`).join('')
     : `<li class="rk-empty">${tab === 'att' ? attEmpty() : tab === 'tier' ? '이번 라운드 기록이 아직 없어요<br>게임을 하면 티어가 매겨져요' : `${esc(g.name)} 기록이 아직 없어요 <button type="button" data-play="${tab}">첫 기록 남기기</button>`}</li>`;
 }
