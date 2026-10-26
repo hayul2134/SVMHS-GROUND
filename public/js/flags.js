@@ -18,5 +18,5 @@ export const PREVIEW_LIST = [
 export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 // 게시된 패치 공지에 든 깃발은 자동으로 모두에게 열림(2026-10-26 하루 패치 — social.js가 /api/s/patch 게시본의 ff로 채움)
 // 2026-10-26 10:03 하율: "전부 적용시켜" — 미리보기 4개 모두에게 바로 공개(공지는 10/26 패치 공지 컨펌 후 그대로)
-export const RELEASED = new Set(['tier-profile', 'tier-fancy', 'rank-tier', 'story-share', 'tier-pad']);   // tier-pad: 2026-10-26 10:10 하율 "패치 적용해"
+export const RELEASED = new Set(['tier-profile', 'tier-fancy', 'rank-tier', 'story-share', 'tier-pad', 'club-tt']);   // tier-pad: 2026-10-26 10:10 하율 "패치 적용해" · club-tt: 13:30 "바로 패치 진행해"
 export const ffOn = (name, dev) => !PREVIEW.has(name) || RELEASED.has(name) || !!dev;
