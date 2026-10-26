@@ -1153,7 +1153,8 @@ async function loadTier() {
   let d; try { d = await call('tier'); } catch { box.hidden = true; return; }
   if (!$('#tierBox')) return;
   const m = d.me, t = m && tierOfK(m.tier);
-  const byPts = d.mode === 'pts', lbOf = x => byPts ? x.pl : x.lb;   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
+  const byPts = d.mode === 'pts', lbOf = x => byPts ? x.pl : x.lb;
+  const lbSt = x => lbOf(x).split(' · ').map((t, i, a) => `<i class="${a.length > 1 && !i ? 'tl-rk' : 'tl-pt'}">${t}</i>`).join('<i class="tl-dot"> · </i>');   // 계단 라벨: '1등 · 340점+' → 두 줄로 나눌 수 있게   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
   const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
   const per = m ? Object.entries(GAMES).map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · <em>+${x.p}</em>` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
   const top = d.top.length ? d.top.map(u => `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
@@ -1162,7 +1163,7 @@ async function loadTier() {
     const APEX = new Set(['master', 'grandmaster', 'challenger']);
     const rev = [...TIERS].reverse();
     const cnt = d.cnt || {};
-    const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}" data-tk="${x.k}" role="button" tabindex="0" aria-expanded="false" aria-label="${x.n} — 지금 ${cnt[x.k] || 0}명, 눌러서 보기">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><b>${x.n}</b><small>${lbOf(x)}</small><span class="tl-cnt${cnt[x.k] ? '' : ' z'}">${cnt[x.k] || 0}명</span></li>`).join('');
+    const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}" data-tk="${x.k}" role="button" tabindex="0" aria-expanded="false" aria-label="${x.n} — 지금 ${cnt[x.k] || 0}명, 눌러서 보기">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><span class="tl-lab"><b>${x.n}</b><small>${lbSt(x)}</small><span class="tl-cnt${cnt[x.k] ? '' : ' z'}">${cnt[x.k] || 0}명</span></span></li>`).join('');
     const k = t ? t.k : 'iron';
     box.classList.add('tr2');
     box.innerHTML = `<div class="tr2-top">
