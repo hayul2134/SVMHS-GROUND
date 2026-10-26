@@ -162,6 +162,7 @@ const pub = u => u && ({
 const isAdm = u => u?.handle === ADMIN_HANDLE;
 const ALL_OPEN = 1e6;
 // 개발자는 어떤 랭킹·1등 표시에도 안 나옴 (scores 쿼리에 붙이는 조건)
+const OWNER_HANDLE = 'hayul2094';   // 하율 본인(학생용) 계정
 const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE}')`;
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
@@ -1098,7 +1099,15 @@ const ROUTES = {
       : await db.prepare(`SELECT ${U} FROM users u WHERE u.st_cur > 0 AND u.st_last >= ?3 AND u.is_test = 0 AND u.handle <> ?1 ORDER BY u.st_cur DESC LIMIT ?2`).bind(ADMIN_HANDLE, 300, since).all()).results;
     const live = await liveMany(env, db, rows);
     const list = rows.map((r, i) => ({ ...card(r), grade: r.grade, cls: r.cls, value: isAdm(r) ? ALL_OPEN : live[i], best: isAdm(r) ? ALL_OPEN : r.st_best, pf: !!r.st_pf, title: r.st_title || '', isMe: r.id === me.id, uid: r.id }))
-      .filter(x => x.value > 0).sort((a, b) => b.value - a.value || b.best - a.best || a.uid - b.uid).slice(0, 50);   // 같으면 먼저 가입한 사람(배포 첫날 모두 1일일 때 순서가 매번 바뀌지 않게)
+      .filter(x => x.value > 0).sort((a, b) => b.value - a.value || b.best - a.best || a.uid - b.uid);   // 같으면 먼저 가입한 사람(배포 첫날 모두 1일일 때 순서가 매번 바뀌지 않게)
+    // 하율 본인 계정은 연속 출석 랭킹에서 5위 이하로만 보이게(2026-10-26 하율 요청) — 실제 출석 기록은 그대로, 순위 표시만
+    const hi = list.findIndex(x => x.handle === OWNER_HANDLE);
+    if (hi >= 0 && hi < 4) {
+      const [h] = list.splice(hi, 1), at = Math.min(4, list.length), up = list[at - 1];
+      if (up) { h.value = Math.min(h.value, up.value); h.best = Math.min(h.best, up.best); }
+      list.splice(at, 0, h);
+    }
+    list.length = Math.min(list.length, 50);
     return json({ scope, list: list.map(({ uid, ...x }) => x) });
   }),
 
