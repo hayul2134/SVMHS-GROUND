@@ -217,7 +217,7 @@ VIEWS.monitor = async () => {
           // 아래부터 가입(하늘) → 게임 기록(민트) → DM(노랑), 경계는 잉크 1px
           const grad = (a, b, n) => { const p1 = a / n * 100, p2 = (a + b) / n * 100, L = 'var(--ink)'; return `linear-gradient(to top, var(--sky) 0 ${p1}%, ${a && a < n ? `${L} ${p1}% calc(${p1}% + 1px), ` : ''}var(--lime) calc(${p1}% + ${a && a < n ? 1 : 0}px) ${p2}%, ${b && a + b < n ? `${L} ${p2}% calc(${p2}% + 1px), ` : ''}var(--yellow) calc(${p2}% + ${b && a + b < n ? 1 : 0}px) 100%)`; };
           return `<div class="hsum"><span><i class="k1"></i>가입 <b class="num">${sum(H.signup)}</b></span><span><i class="k2"></i>게임 기록 <b class="num">${sum(H.score)}</b></span><span><i class="k3"></i>DM <b class="num">${sum(H.dm)}</b></span><span class="pk">${tot[peak] ? `가장 바쁜 시간 <b>${peak}시</b> (${tot[peak]}건)` : '오늘 활동 없음'}</span></div>
-        <div class="hc" id="hchart">${tot.map((n, h) => `<div class="col${h === nowH ? ' nowh' : ''}${h === peak && n ? ' pk' : ''}" title="${h}시 · 가입 ${H.signup[h]} · 게임 기록 ${H.score[h]} · DM ${H.dm[h]}">${n ? `<div class="bar" style="height:${pct(n)};background:${grad(H.signup[h], H.score[h], n)}"><b>${n}</b></div>` : ''}</div>`).join('')}</div>
+        <div class="hc" id="hchart">${tot.map((n, h) => `<div class="col${h === nowH ? ' nowh' : ''}${h === peak && n ? ' pk' : ''}" title="${h}시 · 가입 ${H.signup[h]} · 게임 기록 ${H.score[h]} · DM ${H.dm[h]}">${n ? `<div class="bar" data-h="${pct(n)}" data-g="${grad(H.signup[h], H.score[h], n)}"><b>${n}</b></div>` : ''}</div>`).join('')}</div>
         <div class="xlab hx">${tot.map((_, h) => (h === nowH ? `<span class="now">지금</span>` : `<span>${h % 3 || Math.abs(h - nowH) < 2 ? '' : h + '시'}</span>`)).join('')}</div>
         <p class="sub sp">막대 위 숫자 = 그 시간 전체 건수 (색은 종류별 몫 · DM은 개수만, 내용은 안 봄)</p>`;
         })()}
@@ -235,6 +235,8 @@ VIEWS.monitor = async () => {
     <section class="card"><h3>🧯 서버 오류 <span class="sub">최근 60개 · 14일 보관</span>${d.errors.length ? '<button class="btn sm bad" type="button" data-act="errclear">기록 비우기</button>' : ''}</h3>
       ${d.errors.length ? `<ul class="log">${d.errors.map(x => `<li><span class="t">${full(x.at)}</span><b>${esc(SRC[x.src] || x.src)} <code>${esc(x.route)}</code></b><span>${esc(x.msg)}</span></li>`).join('')}</ul>` : '<p class="empty">오류가 없어요 👍</p>'}
     </section>`;
+  // 관리자 페이지 CSP가 style="" 속성을 막음 → 높이·색은 JS로 넣음
+  document.querySelectorAll('#hchart .bar').forEach(b => { b.style.height = b.dataset.h; b.style.background = b.dataset.g; });
   const tick = () => { if (cur !== 'monitor') return; if (document.hidden) monTimer = setTimeout(tick, 20e3); else VIEWS.monitor().catch(() => { monTimer = setTimeout(tick, 20e3); }); };
   monTimer = setTimeout(tick, 20e3);
 };
