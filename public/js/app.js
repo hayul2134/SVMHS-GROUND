@@ -1781,8 +1781,21 @@ function placeClockWear() {
     w.style.setProperty('--cf', fs + 'px');
   });
 }
+// 큰 시계의 ':'(또는 '.')가 시계 칸 정가운데에 오게 짧은 쪽에 여백(em)을 줌 — '8:28'·'오후 12:49'처럼 좌우 글자 수가 달라도 콜론이 화면 가운데 (2026-10-26 하율)
+function balColon() {
+  const bt = $('#bigTime'), kids = bt ? [...bt.children] : [], i = kids.findIndex(e => e.classList.contains('c'));
+  if (!bt) return;
+  const fs = parseFloat(getComputedStyle(bt).fontSize) || 100;
+  let pl = 0, pr = 0;
+  if (i >= 0 && kids.filter(e => e.classList.contains('c')).length === 1) {
+    const w = a => a.reduce((t, e) => t + e.getBoundingClientRect().width, 0), d = (w(kids.slice(i + 1)) - w(kids.slice(0, i))) / fs;
+    if (d > 0) pl = d; else pr = -d;
+  }
+  bt.style.paddingLeft = pl ? pl.toFixed(3) + 'em' : ''; bt.style.paddingRight = pr ? pr.toFixed(3) + 'em' : '';
+}
 { const bt = $('#bigTime');
-  if (bt) { new MutationObserver(() => { if (wearSpot() === 'clock') placeClockWear(); }).observe(bt, { childList: true });
+  if (bt) { new MutationObserver(() => { balColon(); if (wearSpot() === 'clock') placeClockWear(); }).observe(bt, { childList: true });
+    document.fonts?.ready?.then(balColon);
     new ResizeObserver(() => { if (wearSpot() === 'clock') placeClockWear(); }).observe(bt); }
   document.fonts?.ready?.then(() => { if (wearSpot() === 'clock') placeClockWear(); }); }
 // 내 그림 캐릭터: 머리 자리(자동 감지 또는 손으로 맞춘 위치)에 소품을 겹쳐 둠
