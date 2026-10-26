@@ -1343,11 +1343,14 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
   if (!S.me) return;
   try {
     const r = await saveScore(game, value, rounds);
+    if (r.held) { $('#rMsg').innerHTML = HELD_MSG; return; }
     $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('crown') : '');
     if (r.cheer) cheer(game, r.rank, r.best);
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
 }
 // 기록 저장(서버가 판 기록·티켓으로 다시 검사) — 결과 화면 없이 그 자리에서 다시 하는 게임(집에 가고 싶어!)도 같이 씀
+// 검사에 걸린 기록은 서버가 버리지 않고 보류(2026-10-26 하율) — 개발자가 관리자 화면에서 반영/버림
+const HELD_MSG = '⏸ <b>기록 보류</b> — 검사에서 확인이 필요한 기록이라 개발자가 확인한 뒤 랭킹에 반영돼요';
 async function saveScore(game, value, rounds) {
   const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
   const r = await call('score', { game, value, rounds, ticket: await t });
@@ -1495,6 +1498,7 @@ async function playHome() {
       if (!S.me) return;
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
         if (no !== runNo || !$('#hrMsg')) return;
+        if (r.held) { $('#hrMsg').innerHTML = HELD_MSG; return; }
         $('#hrMsg').innerHTML = r.first ? `<b>히든 보상!</b> 처음으로 집에 온 단 한 사람 — 착용 소품 ‘집 열쇠’ · 칭호 ‘${esc(HOME_TITLE)}’를 받았어요`
           : r.arrived ? `<b>집 도착!</b> 칭호 ‘${esc(HOME_TITLE2)}’를 받았어요 — 프로필 꾸미기에서 달 수 있어요`
           : (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
@@ -1520,6 +1524,7 @@ async function playHome() {
       const prize = !S.me ? '<p class="hr-prize">로그인하면 도착 칭호를 받을 수 있어요</p>'
         : !r ? '<p class="hr-prize wait">칭호 확인 중…</p>'
         : r.err ? `<p class="hr-prize">${esc(r.err)}</p>`
+        : r.held ? `<p class="hr-prize">${HELD_MSG}</p>`
         : first ? `<div class="hr-hidden"><i>히든 칭호 발견!</i><p>처음으로 히든 칭호를 발견했어요</p><p class="hr-ttl"><span class="t-first">${esc(HOME_FIRST)}</span> ${esc(HOME_TITLE)}</p><small>착용 소품 ‘집 열쇠’도 함께 받았어요 · 프로필 꾸미기에서 달 수 있어요</small></div>`
         : `<p class="hr-prize">${r.arrived ? '칭호를 얻었어요' : '보유 중인 칭호'} <b class="hr-ttl">${esc(HOME_TITLE2)}</b>${r.arrived ? ' · 프로필 꾸미기에서 달 수 있어요' : ''}</p>`;
       ov.innerHTML = `<b class="hr-win">${title}<br>축하합니다!</b>${prize}
@@ -1531,6 +1536,7 @@ async function playHome() {
     const sv = saveScore('home', HOME_MAX - score, [score, ms]);
     goTicket = sv.then(r => r.next || '').catch(() => '');
     sv.then(r => {
+      if (r.held) { if (no === runNo && choosing) paint(r); return; }
       syncBest(r.best);
       if (r.first || r.arrived) refreshMe();
       if (r.cheer) cheer('home', r.rank, r.best);

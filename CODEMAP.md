@@ -107,6 +107,7 @@ npx wrangler@4 pages dev --port 8788
 - 밸런스: `balance_custom`에 날짜별 질문 덮어쓰기(평일 10일 표시). 지금 질문을 바꾸면 그날 표·댓글 초기화. 지금 질문 댓글 목록·삭제(`balancecdel`).
 
 ## 의견 · 공지 버튼 (헤더)
+- ⏸ 보류된 게임 기록(2026-10-26 하율: "기록이 이상하다고 삭제하지 말고 보류"): `POST /api/s/score`에서 하한·상한·플레이 시간·`checkRounds` 검사에 걸리면 거절하지 않고 `held_scores`(uid·game·value·rounds JSON·reason·elapsed·day·at·st 0 대기/1 반영/2 버림)에 넣고 `{held:true}` 반환 → 결과 화면에 '기록 보류' 안내(`social.js HELD_MSG`). 판 기록이 아예 없으면(예전 화면) 여전히 '새로 고침' 오류. 한 사람 대기 30건 넘으면 429. 관리자 '게임 기록' 위 '⏸ 보류된 기록' 표(판 기록·걸린 이유·지금 최고) → `POST /api/admin/held {id, ok}` 반영 시 그 날 `scores`에 더 좋을 때만 넣음. 대시보드 '보류된 게임 기록' 칸. 탈퇴·계정 삭제 때 같이 지움. `checkRounds` 문구는 관리자용 이유(학생에겐 안 보임).
 - 💡 의견(노란 알약, 좁은 화면은 아이콘만) → `social.js openFeedback()` → `POST /api/s/feedback`(로그인 필요, 1시간 6번 · 이 경로만 요청 4MB까지) → `feedback` 표 + **사진 최대 5장**(2026-10-23: 브라우저 `shrinkImg()`가 긴 변 1600px JPEG·장당 약 450KB 이하로 줄여 data URL로 보냄, 캡처 붙여넣기 지원 → 서버가 형식·파일 머리·1MB 확인 후 `feedback_img`(fid,i,type,data BLOB)에 저장, 관리자 화면은 `GET /api/admin/fbimg/<id>/<i>`로 썸네일) → 관리자 '💡 의견' 탭에서 확인·메모·삭제. 탈퇴·계정 삭제 시 같이 지움.
 - 📢 공지 → `openNotices()` → `GET /api/notices`(최근 20개, 30초 캐시). 관리자가 공지를 올리면 `notices` 표에도 기록(앞 공지는 끝난 것으로). 마지막으로 본 공지 id `sg_notice_seen`과 다르면 버튼에 빨간 점. (목록을 열어도 닫은 띠 공지는 다시 안 뜸 — 2026-10-25)
 

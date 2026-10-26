@@ -21,26 +21,34 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   home: { min: 1, max: HOME_MAX - 1, play: 1000 },     // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
-function checkRounds(game, v, r, elapsed) {
-  if (!Array.isArray(r)) return '새로 고침한 뒤 다시 해 주세요';
+function checkRounds(game, v, r, elapsed) {   // 오류 문구는 관리자 보류 목록에 남는 이유(학생에겐 안 보임)
+  if (!Array.isArray(r)) return '판 기록 없음(예전 화면)';
   const n = r.map(x => Math.round(+x));
-  if (n.some(x => !Number.isFinite(x))) return '기록이 이상해요';
+  if (n.some(x => !Number.isFinite(x))) return '판 기록에 숫자가 아닌 값';
   const sum = n.reduce((a, b) => a + b, 0), spread = Math.max(...n) - Math.min(...n);
   if (game === 'reaction') {   // 5번 각각 110ms 이상(예측해서 누르기 방지)·평균이 v·5번이 거의 같으면 기계
-    if (n.length !== 5 || n.some(x => x < 110 || x > 1500)) return '기록이 이상해요';
-    if (Math.abs(Math.round(sum / 5) - v) > 1 || spread < 6) return '기록이 이상해요';
-    if (elapsed < 5000 + sum) return '기록이 이상해요';   // 매번 1초 넘게 기다림
+    if (n.length !== 5) return `판 수가 5가 아님(${n.length})`;
+    const fast = n.filter(x => x < 110), slow = n.filter(x => x > 1500);
+    if (fast.length) return `110ms보다 빠른 판(${fast.join('·')}ms) — 미리 누름 의심`;
+    if (slow.length) return `1500ms 넘는 판(${slow.join('·')}ms)`;
+    if (Math.abs(Math.round(sum / 5) - v) > 1) return `평균(${Math.round(sum / 5)})과 기록(${v})이 다름`;
+    if (spread < 6) return `5판 차이가 ${spread}ms뿐 — 매크로 의심`;
+    if (elapsed < 5000 + sum) return `플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`;
   } else if (game === 'num25') {   // 25번 누른 시각(첫 탭 = 0) + 틀린 벌점: 순서대로 늘고, 탭 사이 60ms 이상
     const pen = n.length === 26 ? n.pop() : -1;
-    if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] !== 0) return '기록이 이상해요';
-    for (let i = 1; i < 25; i++) if (n[i] - n[i - 1] < 60) return '기록이 이상해요';
-    if (Math.abs(n[24] + pen - v) > 5 || elapsed < n[24]) return '기록이 이상해요';
+    if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] !== 0) return '판 기록 형식이 다름';
+    for (let i = 1; i < 25; i++) if (n[i] - n[i - 1] < 60) return `${i}→${i + 1} 탭 간격 ${n[i] - n[i - 1]}ms(60ms 미만) — 매크로 의심`;
+    if (Math.abs(n[24] + pen - v) > 5) return `판 기록 합(${n[24] + pen})과 기록(${v})이 다름`;
+    if (elapsed < n[24]) return '플레이 시간보다 기록이 김';
   } else if (game === 'home') {   // [거리 m, 달린 시간 ms]: 거리는 시간으로만 정해짐(home-score.js) + 실제로 흐른 시간보다 오래 달릴 수 없음
-    if (n.length !== 2) return '기록이 이상해요';
+    if (n.length !== 2) return '판 기록 형식이 다름';
     const [m, ms] = n;
-    if (m < 1 || ms < 300 || ms > 6 * 3600e3 || HOME_MAX - m !== v || scoreAt(ms) !== m || ms > elapsed + 1000) return '기록이 이상해요';
+    if (m < 1 || ms < 300 || ms > 6 * 3600e3) return `달린 시간 이상(${ms}ms)`;
+    if (HOME_MAX - m !== v || scoreAt(ms) !== m) return `거리(${m}m)가 달린 시간(${(ms / 1000).toFixed(1)}초)과 안 맞음`;
+    if (ms > elapsed + 1000) return `실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`;
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
-    if (n.length !== 5 || n.some(x => x < 0 || x > 1000) || sum !== v) return '기록이 이상해요';
+    if (n.length !== 5 || n.some(x => x < 0 || x > 1000)) return '판 기록 형식이 다름';
+    if (sum !== v) return `판 기록 합(${sum})과 기록(${v})이 다름`;
   }
   return null;
 }
@@ -435,7 +443,7 @@ const ROUTES = {
     }
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM held_scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(me.id)));
     return endAdmin(db, req, me, json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) }));
@@ -839,13 +847,24 @@ const ROUTES = {
   'POST score': needMe(async ({ db, me, body }) => {
     const game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
-    if (!g || !Number.isFinite(v) || v < g.min || v > g.max) return err('기록이 이상해요');
+    if (!g || !Number.isFinite(v) || v < 0 || v > 1e7) return err('기록이 이상해요');
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
     const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
     const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
-    if (elapsed < g.play) return err('기록이 이상해요');
-    { const bad = checkRounds(game, v, body.rounds, elapsed); if (bad) return err(bad); }
+    // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
+    if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
+    const why = v < g.min ? `너무 빠른 기록(하한 ${g.min})` : v > g.max ? `범위를 넘은 기록(상한 ${g.max})`
+      : elapsed < g.play ? `플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)` : checkRounds(game, v, body.rounds, elapsed);
+    if (why) {
+      const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();
+      if (wait.n >= 30) return err('확인을 기다리는 기록이 많아요. 개발자가 확인할 때까지 조금만 기다려 주세요', 429);
+      const rounds = JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500);
+      await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
+        .bind(me.id, game, v, rounds, why.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
+      const mine = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
+      return json({ ok: true, held: true, best: mine?.b ?? null });
+    }
     const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const [prev, allPrev] = await Promise.all([
       db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),

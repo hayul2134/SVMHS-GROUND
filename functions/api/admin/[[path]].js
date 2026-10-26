@@ -127,6 +127,7 @@ const ROUTES = {
       one(`SELECT ((at + 32400000) / 86400000) AS d, COUNT(*) AS n FROM messages WHERE at >= ?1 GROUP BY d`).bind(t0 - 13 * DAY),
       one(`SELECT grade, cls, COUNT(*) AS n FROM users WHERE grade > 0 AND cls > 0 AND ${NA} GROUP BY grade, cls ORDER BY grade, cls`),
       one('SELECT COUNT(*) AS n FROM feedback WHERE done = 0 AND rd = 0'),   // 15: 안 읽은 의견
+      one('SELECT COUNT(*) AS n FROM held_scores WHERE st = 0'),   // 16: 확인 기다리는 보류 기록
     ]);
     const n = i => r[i].results[0].n;
     const days = [];
@@ -143,7 +144,7 @@ const ROUTES = {
     let notice = null; try { notice = JSON.parse(st.notice || 'null'); } catch {}
     const dbWrite = await canWrite(db);   // 계정 전체 무료 한도를 넘으면 false
     return json({
-      counts: { users: n(0), activeToday: n(1), online: n(2), newToday: n(3), dmsToday: n(4), playsToday: n(5), openReports: n(6), openFeedback: n(15), mealVotes: n(7), balanceVotes: n(8), banned: n(9), follows: n(10) },
+      counts: { users: n(0), activeToday: n(1), online: n(2), newToday: n(3), dmsToday: n(4), playsToday: n(5), openReports: n(6), openFeedback: n(15), heldScores: n(16), mealVotes: n(7), balanceVotes: n(8), banned: n(9), follows: n(10) },
       days, classes: r[14].results,
       status: { dbWrite, neisKey: Boolean(env.NEIS_KEY), joinCode: Boolean(joinCodeOf(env, st)), signup: signupOpen(st), dm: dmOpen(st), notice: !!(notice && notice.text && !(notice.until && notice.until < now)) },
     });
@@ -391,7 +392,7 @@ const ROUTES = {
     if (String(body.confirm || '').toLowerCase() !== u.handle) return err('확인용 아이디가 달라요');
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM held_scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(u.id)));
     await log(db, '계정 삭제', `@${u.handle} (${u.name})`);
@@ -415,6 +416,33 @@ const ROUTES = {
     if (body.day === 'all') await db.prepare('DELETE FROM scores WHERE uid = ?1 AND game = ?2').bind(u.id, body.game).run();   // 그 사람 이 게임 기록 전부
     else await db.prepare('DELETE FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(u.id, body.game, body.day).run();
     await log(db, '게임 기록 삭제', `@${u.handle} · ${body.game} · ${body.day}`);
+    return json({ ok: true });
+  },
+
+  // 보류된 기록(2026-10-26): 서버 검사에 걸린 기록. 반영하면 그 날짜 기록으로 들어가(더 좋을 때만) 랭킹에 올라감, 버리면 기록만 남김
+  'GET held': async ({ db, url }) => {
+    const open = url.searchParams.get('state') !== 'done';
+    const rows = (await db.prepare(`SELECT h.id, h.game, h.value, h.rounds, h.reason, h.elapsed, h.day, h.at, h.st, u.handle, u.name, u.avatar, u.grade, u.cls,
+      (SELECT MIN(best) FROM scores s WHERE s.uid = h.uid AND s.game = h.game) AS best
+      FROM held_scores h JOIN users u ON u.id = h.uid WHERE h.st ${open ? '= 0' : '> 0'} ORDER BY h.id DESC LIMIT 200`).all()).results;
+    const cnt = await db.prepare('SELECT SUM(st = 0) AS open, COUNT(*) AS total FROM held_scores').first();
+    return json({ list: rows, open: cnt.open || 0, total: cnt.total || 0 });
+  },
+
+  'POST held': async ({ db, body }) => {
+    const id = Math.floor(+body.id), ok = body.ok === true;
+    const h = id > 0 && await db.prepare('SELECT h.*, u.handle FROM held_scores h JOIN users u ON u.id = h.uid WHERE h.id = ?1').bind(id).first();
+    if (!h) return err('없는 기록이에요', 404);
+    if (h.st !== 0) return err('이미 처리한 기록이에요');
+    if (ok) {
+      if (!GAMES.includes(h.game) || !(h.value > 0)) return err('반영할 수 없는 기록이에요');
+      await db.batch([
+        db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
+          ON CONFLICT (uid, game, day) DO UPDATE SET best = MIN(best, excluded.best), at = CASE WHEN excluded.best < best THEN excluded.at ELSE at END`).bind(h.uid, h.game, h.day, h.value, h.at),
+        db.prepare('UPDATE held_scores SET st = 1 WHERE id = ?1').bind(id),
+      ]);
+    } else await db.prepare('UPDATE held_scores SET st = 2 WHERE id = ?1').bind(id).run();
+    await log(db, ok ? '보류 기록 반영' : '보류 기록 버림', `@${h.handle} · ${h.game} · ${h.value}`);
     return json({ ok: true });
   },
 
