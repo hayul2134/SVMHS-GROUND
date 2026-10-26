@@ -4676,6 +4676,19 @@ html:not(.tl2) .cm-tier .tl-new,html.tl2 .cm-tier .tl-old{display:none}
 html.tl2 .cat-more.cm-tier{background:#ffd84d;color:#1d2a3a;padding:7px 16px;font-size:14px}
 html.tl2 .cat-more.cm-tier .sic{width:19px;height:19px}
 html.tl2 .cat-more.cm-tier:hover{background:#ffe373}
+/* 서비스 › 게임 '내 티어 보기' 버튼 (2026-10-26 하율: 티어 버튼이 더 잘 보이게) — 챌린저 엠블럼 + 금빛 그라디언트 + 은은한 빛·지나가는 반짝임, Beta 배지와 안 겹치게 아래 여백 */
+html.tl2 .svcat .cat-h:has(.cm-tier){margin-bottom:24px}
+html.tl2 .cat-more.cm-tier{position:relative;overflow:hidden;gap:7px;padding:8px 14px 8px 9px;font-size:15.5px;letter-spacing:-.01em;color:#4a2f00;border:2.5px solid var(--ink);background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%);box-shadow:3px 3px 0 var(--ink),0 0 0 0 rgba(255,214,102,0);animation:cmGlow 2.4s ease-in-out infinite}
+html.tl2 .cat-more.cm-tier::after{content:"";position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);animation:tfShine 3s ease-in-out infinite;pointer-events:none}
+html.tl2 .cat-more.cm-tier > *{position:relative;z-index:1}
+html.tl2 .cat-more.cm-tier .cm-em{width:36px;height:33px;margin:-8px -2px -8px -2px;overflow:visible;filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.25))}
+html.tl2 .cat-more.cm-tier .cm-go{width:15px;height:15px;margin-left:-2px;transition:transform .15s}
+html.tl2 .cat-more.cm-tier:hover{background:linear-gradient(135deg,#fff7c8 0%,#ffdc72 50%,#ffc055 100%);transform:translate(-1px,-2px)}
+html.tl2 .cat-more.cm-tier:hover .cm-go{transform:translateX(3px)}
+html.tl2 .cat-more.cm-tier:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+@keyframes cmGlow{50%{box-shadow:3px 3px 0 var(--ink),0 0 16px 3px rgba(255,200,60,.6)}}
+html:not(.tl2) .cm-tier .cm-go,html:not(.tl2) .cm-tier .cm-em{display:none}
+@media (prefers-reduced-motion:reduce){html.tl2 .cat-more.cm-tier,html.tl2 .cat-more.cm-tier::after{animation:none}}
 
 /* 랭킹 스토리 공유 버튼 (2026-10-26, story.js) */
 .sheet h3.rk-h3{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
