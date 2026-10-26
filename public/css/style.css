@@ -4751,3 +4751,21 @@ html .rk-v .rk-tr:not(.t-master,.t-grandmaster,.t-challenger) .tri{translate:0 c
 html.rk2 .rk.p1 .rk-v:has(.rk-tr){margin-right:-3.5px}   /* 1등 줄은 안쪽 여백이 2px 더 커서 맞춤 */
 html.rk2 .rk.p3 .rk-v:has(.rk-tr){margin-left:-1px;margin-right:1px}
 .tierb:not(.t-master,.t-grandmaster,.t-challenger) .tri{position:relative;top:-2px}   /* 왕관 없는 티어 아이콘이 아래로 처져 보이던 것 (2026-10-26) */
+
+/* ===== [미리보기:tier-profile] 프로필 티어 명판 (2026-10-26 하율: "프로필에 티어가 더 잘 보일 수 있게") ===== */
+.ptier2{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:10px 0 2px}
+.tplate{position:relative;display:inline-flex;align-items:center;gap:10px;padding:6px 18px 6px 8px;border-radius:18px;border:2.5px solid var(--ink);overflow:hidden;
+  background:linear-gradient(110deg,color-mix(in srgb,var(--tc) 55%,var(--card)) 0%,color-mix(in srgb,var(--tc) 22%,var(--card)) 100%);box-shadow:3px 3px 0 var(--ink);color:var(--text)}
+.tplate::after{content:"";position:absolute;inset:0 auto 0 0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-130%) skewX(-20deg);animation:tfShine 4.5s ease-in-out infinite;pointer-events:none}
+.tp-em{display:grid;place-items:center;width:52px;height:48px;flex:none}
+.tp-em .tri,.tp-em .tri.tri2{width:52px;height:48px;margin:0;top:0;filter:drop-shadow(1.5px 2px 0 color-mix(in srgb,var(--ink) 30%,transparent))}
+.tp-tx{display:flex;flex-direction:column;line-height:1.15}
+.tp-tx small{font-size:10.5px;font-weight:800;color:color-mix(in srgb,var(--text) 70%,transparent)}
+.tp-tx b{font-size:20px;font-weight:900;letter-spacing:-.01em}
+.tp-tx em{font-style:normal;font-size:11.5px;font-weight:800;color:color-mix(in srgb,var(--text) 78%,transparent)}
+.tplate.t-challenger{background:linear-gradient(120deg,#d7e4ff,#b9a4ff,#a8f0e0,#d7e4ff);background-size:200% 100%;animation:tierShine 4s linear infinite}
+.tplate.t-grandmaster{background:linear-gradient(110deg,#ffb3a8,#ffd9d2)}
+.tplate.t-master{background:linear-gradient(110deg,#dcb6f2,#f1e2fa)}
+.tplate.t-challenger,.tplate.t-grandmaster,.tplate.t-master{color:#2a1e14}
+.tplate.t-challenger .tp-tx small,.tplate.t-challenger .tp-tx em,.tplate.t-grandmaster .tp-tx small,.tplate.t-grandmaster .tp-tx em,.tplate.t-master .tp-tx small,.tplate.t-master .tp-tx em{color:#5a4a3c}
+@media (prefers-reduced-motion:reduce){.tplate::after,.tplate.t-challenger{animation:none}}

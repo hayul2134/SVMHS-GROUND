@@ -301,6 +301,13 @@ const tierIc = k => `<svg class="tri${ffOn('tier-look', isDev(S.me)) ? ' tri2' :
 const tierBadge = (k, extra = '', tip = '') => { const t = tierOfK(k); return t ? `<span class="tierb t-${t.k}"${tip ? ` data-tip="${esc(tip)}"` : ''}>${tierIc(t.k)}${t.n}${extra}</span>` : ''; };
 const tierChips = tr => !tr ? '' : (tr.cur ? tierBadge(tr.cur.k, '', `이번 라운드 ${tierOfK(tr.cur.k).n} · ${tr.cur.rank}위 · ${tr.cur.pts}점`) : '')
   + (tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '');
+// 프로필 티어 명판(2026-10-26 하율: "프로필에 티어가 더 잘 보일 수 있게") — 큰 엠블럼 + 티어 이름 + 순위·점수, 지난 라운드는 옆에 작게
+const tierPlate = tr => {
+  if (!tr || (!tr.cur && !tr.last)) return '';
+  const c = tr.cur && tierOfK(tr.cur.k);
+  const last = tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '';
+  return c ? `<div class="ptier2"><div class="tplate t-${c.k}"><span class="tp-em">${tierIc(c.k)}</span><span class="tp-tx"><small>이번 라운드 티어</small><b>${c.n}</b><em>${tr.cur.rank}위 · ${tr.cur.pts}점</em></span></div>${last}</div>` : `<p class="ptier">${last}</p>`;
+};
 
 /* ===== 역대 1등 왕관 패 (2026-10-25 하율: 더 자세하고 화려하게) — 기록 · 며칠째 1위 · 2등과 차이 · 참가 인원 ===== */
 const CROWN_GAP = { home: v => v.toLocaleString('ko-KR') + 'm', reaction: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초', cut: v => v + 'ms' };
@@ -351,7 +358,7 @@ function profileHtml(d) {
         ${av(u, 'big', avWear(u.mfx) + (isDev(u) ? pdBurst() : ''))}
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-          <div class="pnrow"><h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2><p class="pstats ig"><button type="button" data-people="followers" data-h="${esc(u.handle)}">팔로워 <b>${d.counts.followers}</b></button><button type="button" data-people="following" data-h="${esc(u.handle)}">팔로잉 <b>${d.counts.following}</b></button></p></div>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}${tch ? `<p class="ptier">${tch}</p>` : ''}
+          <div class="pnrow"><h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2><p class="pstats ig"><button type="button" data-people="followers" data-h="${esc(u.handle)}">팔로워 <b>${d.counts.followers}</b></button><button type="button" data-people="following" data-h="${esc(u.handle)}">팔로잉 <b>${d.counts.following}</b></button></p></div>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}${ffOn('tier-profile', isDev(S.me)) ? tierPlate(d.tier) : tch ? `<p class="ptier">${tch}</p>` : ''}
           <p class="phandle">${[isDev(u) ? `<span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span>` : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
