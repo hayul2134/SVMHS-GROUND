@@ -1358,8 +1358,20 @@ function stage(title, html, wide = false) {
   el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
+  fitHome();
   return $('#parea');
 }
+// 게임 중에도 왼쪽 위 집 버튼(#btnHome)을 그대로 보여 줌 — 게임 제목과 겹치면 제목을 버튼 오른쪽으로 밀어냄 (2026-10-26)
+function fitHome() {
+  const t = $('#gamePlay .ptop'), h = $('#btnHome'); if (!t || !h) return;
+  t.style.paddingLeft = '';
+  const a = h.getBoundingClientRect(), b = t.getBoundingClientRect();
+  const over = a.right + 12 - b.left;
+  if (a.width && over > 0 && a.bottom > b.top && a.top < b.bottom) t.style.paddingLeft = over + 'px';
+}
+addEventListener('resize', () => { if (document.body.classList.contains('playing')) fitHome(); });
+// 게임 중 집 버튼을 누르면 게임을 닫고 처음 화면으로 (이동 자체는 app.js의 [data-go] 처리)
+document.addEventListener('click', e => { if (e.target.closest('[data-go]') && document.body.classList.contains('playing')) endPlay(); });
 // 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
 function endPlay() { quitGame?.(); quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden) endPlay(); });

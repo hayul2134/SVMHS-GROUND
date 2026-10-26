@@ -4822,3 +4822,9 @@ html.tpad .t-grandmaster.tierb{background:linear-gradient(120deg,#ffd9d3,#ff9d92
 @media (prefers-reduced-motion:reduce){.tr-app:hover .ai .tri{animation:none}}
 @media (max-width:560px){.tr-app .ai .tri{width:48px;height:44px}}
 @media (max-width:460px){.rg-grid .gc-app{grid-column:1 / -1}}
+
+/* 2026-10-26 게임 중에도 왼쪽 위 집 버튼 유지 — 헤더를 게임 화면(.play 70) 위로 올리고 집 버튼만 보이게 */
+body.playing header{z-index:72}
+body.playing header::before{opacity:0}
+body.playing header .hd > :not(#btnHome){visibility:hidden;pointer-events:none}
+body.playing header #btnHome{display:grid}
