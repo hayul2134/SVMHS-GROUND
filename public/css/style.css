@@ -4828,3 +4828,6 @@ body.playing header{z-index:72}
 body.playing header::before{opacity:0}
 body.playing header .hd > :not(#btnHome){visibility:hidden;pointer-events:none}
 body.playing header #btnHome{display:grid}
+/* 시간표 동아리 칸: 깃발 대신 내 동아리 로고 (2026-10-26) — 흰 네모 + 잉크 테두리, 로고가 꽉 차지 않게 안쪽 여백 */
+img.sic-club{box-sizing:border-box;width:1.3em;height:1.3em;padding:2px;border-radius:.3em;background:#fff;object-fit:contain;box-shadow:0 0 0 1.5px var(--ink);vertical-align:-.28em}
+.week td .si img.sic-club{width:1.25em;height:1.25em}

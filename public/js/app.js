@@ -6,7 +6,9 @@ import { emo, ui, stkMsg, repTag } from './att-art.js';
 import './tip.js';
 import './kao.js';   // 글자 이모티콘 줄바꿈 금지 (2026-10-25)
 import './seg.js';   // 전환 버튼 묶음 → 스위치처럼 미끄러지는 알약 (2026-10-25)
-import { initInstall } from './install.js';   // 앱으로 설치하기 (2026-10-25)
+import { initInstall } from './install.js';
+import { clubLogo } from './clubs.js';
+import { ffOn } from './flags.js';   // 앱으로 설치하기 (2026-10-25)
 import { wearG, wearSvg, spotPref, resolveSpot, anchorOf } from './wear.js';
 
 /* ===== 설정 ===== */
@@ -871,7 +873,13 @@ const SUBJ_IC = [[/편집|포스트\s*프로덕션/, 'cut'], [/CG|VFX|모션|애
   [/미적분|수학|확률|통계|기하/, 'ruler'], [/영어|English/i, 'en'], [/일본어|중국어|한문|외국어/, 'globe'], [/한국사|역사/, 'scroll'],
   [/화법|언어|국어|문학|독서|작문|매체/, 'ko'], [/사회|윤리|지리|정치|법/, 'globe'], [/과학|물리|화학|생명|지구/, 'flask'],
   [/스포츠|체육|운동/, 'ball'], [/음악/, 'music'], [/기술|가정/, 'tool'], [/진로/, 'compass'], [/동아리/, 'flag'], [/자율|자치|학급/, 'vote'], [/봉사/, 'heart'], [/시험|평가/, 'test']];
-const subjIcon = n => `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${(SUBJ_IC.find(([re]) => re.test(n)) || [, 'book'])[1]}"/></svg>`;
+// 동아리 시간은 깃발 대신 내가 고른 동아리 로고 (2026-10-26 하율, 미리보기 club-tt) — 동아리 없음·목록에 없는 동아리면 깃발 그대로
+let myClub = '';
+const subjIcon = n => {
+  const k = (SUBJ_IC.find(([re]) => re.test(n)) || [, 'book'])[1];
+  if (k === 'flag' && myClub && ffOn('club-tt', document.documentElement.classList.contains('dev-pv'))) { const lg = clubLogo(myClub, 'sic sic-club'); if (lg) return lg; }
+  return `<svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
+};
 // 나이스 원문 정리: '* 영상 CG작업' 같은 앞 기호·'[보강]' 꼬리표 제거, 끝의 '(3학년)' 제거,
 // '대수능 모의학력평가' → '수능 모의평가'(수능 모의고사라는 뜻은 살리고 짧게, 2026-10-24)
 const subjName = s => String(s || '').replace(/^\s*\[[^\]]*\]/, '').replace(/^[\s*#·-]+/, '').replace(/\s*\(\d학년\)\s*$/, '')
@@ -2110,6 +2118,7 @@ $('#intro').addEventListener('click', e => { const a = e.target.closest('[data-i
 SOC.authed = (me, on = true, how) => {
   try { if (me) localStorage.setItem('sg_in', '1'); else localStorage.removeItem('sg_in'); } catch {}
   const who = me?.handle || '';
+  if (!me) SOC.setClub?.('');   // 로그아웃하면 동아리 칸은 다시 깃발
   if (who !== noticeWho) { noticeWho = who; if (homeBooted) loadNotice(); }   // 계정이 바뀌면 그 계정이 닫은 공지 기준으로 다시
   if (!on) return;                                   // 서버 확인 불가: 지금 상태 유지 (로그인 안 된 기기는 소개 화면 그대로)
   if (me) { adoptClass(me); if (introOn()) { intro(false); if (how === 'login' && !cls) setTimeout(openClass, 400); } }
@@ -2546,6 +2555,8 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 // 소셜 화면의 링크(#u/…, #dm/…)도 hashchange로 처리됨
 SOC.getClass = () => cls;
+// 로그인 정보가 오면(프로필에서 동아리를 바꿔도) 시간표의 동아리 칸 아이콘을 다시 그림
+SOC.setClub = c => { c = c || ''; if (c === myClub) return; myClub = c; renderHomeTT(); if ($('#v-tt').classList.contains('on')) renderTTView(); };
 const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => { if (introOn()) toast('불러오지 못했어요. 새로 고침해 주세요'); });
 loadConfig().finally(async () => {
   cfgReady = true; bootHome();

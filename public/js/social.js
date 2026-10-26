@@ -135,7 +135,7 @@ async function refreshMe() {
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
   applyFx();
-  if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
+  if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); ctx?.setClub?.(S.me?.club); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
   if (!panelOpen()) loadRecent();
   if (!S.meErr) loadBuddies();
 }
