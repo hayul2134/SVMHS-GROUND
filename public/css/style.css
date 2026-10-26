@@ -4836,3 +4836,12 @@ img.sic-club{box-sizing:border-box;width:1.3em;height:1.3em;padding:2px;border-r
    게임 화면이 창보다 길 때는 게임 화면 자체가 스크롤되게 */
 html:has(body.playing){overflow:hidden}
 .play{overflow-y:auto;overscroll-behavior:contain}
+
+/* 프로필 소개 없는(slim) 카드 오른쪽이 비던 문제 (2026-10-26): 팔로워 칸이 이름 옆으로 옮겨 가 .pside에 2개만 남았는데 3칸 틀이 그대로라
+   오른쪽 1칸이 비고 출석 알약이 늘어나 큰 원이 됨 → 출석 1칸 + 게임 기록 2×2로 꽉 채우고, 출석 칸은 둥근 네모로 */
+.pcols.slim .pside{grid-template-columns:minmax(150px,.8fr) minmax(0,2.6fr)}
+.pcols.slim .pside:not(:has(> .pstreak)){grid-template-columns:minmax(0,1fr)}
+.pcols.slim .pside .pstreak{border-radius:18px;flex-direction:column;gap:4px;text-align:center}
+.pcols.slim .pside .pbest{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:720px){.pcols.slim .pside{grid-template-columns:minmax(0,1fr)}.pcols.slim .pside .pstreak{flex-direction:row}}
+@media (max-width:460px){.pcols.slim .pside .pbest{grid-template-columns:minmax(0,1fr)}}
