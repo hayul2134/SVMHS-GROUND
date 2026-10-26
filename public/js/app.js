@@ -1121,7 +1121,12 @@ function centerHero(force) {
   for (const el of HERO.querySelectorAll('#bigTime, #more')) { const b = el.getBoundingClientRect(), oy = offOf(el)[1]; if (b.height) { cT = Math.min(cT, b.top - oy); cB = Math.max(cB, b.bottom - oy); } }
   const cMid = isFinite(cT) ? (cT + cB) / 2 + sy : (T + B) / 2;   // 카드 가운데가 맞춰질 높이(옮기기 전, 문서 기준)
   const dh = Math.max(SIDE.meal.el.offsetHeight, SIDE.tt.el.offsetHeight) / 2;
-  let dx = Math.round(innerWidth / 2 - (L + R) / 2), dy = (top + bot) / 2 - (T + B) / 2;
+  // 가로: 말풍선·시계 스티커(왼쪽으로 더 튀어나옴)까지 넣어 재면 본체가 오른쪽으로 밀려 보임(2026-10-26 하율 '시계가 중앙에 안 맞음', 1512px에서 14px)
+  // → 본체(제목·큰 시계·상태 줄)의 가운데를 화면 가운데에 맞춤. 장식은 본체를 따라감
+  let cL = Infinity, cR = -Infinity;
+  for (const el of HERO.querySelectorAll('#bellLbl, #bigTime, #more')) { const b = el.getBoundingClientRect(), ox = offOf(el)[0]; if (b.width) { cL = Math.min(cL, b.left - ox); cR = Math.max(cR, b.right - ox); } }
+  const cx = isFinite(cL) ? (cL + cR) / 2 : (L + R) / 2;
+  let dx = Math.round(innerWidth / 2 - cx), dy = (top + bot) / 2 - (T + B) / 2;
   if (B + dy > bot) dy = bot - B;
   if (T + dy < top) dy = Math.min(0, top - T);
   dy = Math.round(dy);
