@@ -1048,6 +1048,9 @@ body.playing .modal{z-index:75}/* 게임 중 연 랭킹 창이 게임 화면(.pl
 .rval{font:800 clamp(40px,10vw,64px)/1.1 var(--num)}
 .rdet{font:700 13px var(--num);color:var(--sub)}
 .rmsg{font-weight:700}
+.rdet .bad{color:#e5484d;text-decoration:underline wavy;text-underline-offset:3px}
+.rheld{max-width:440px;margin:4px auto 0;padding:12px 14px;border:2px solid var(--ink);border-radius:14px;background:#fff6d6;color:#3a2a00;text-align:left;line-height:1.5;box-shadow:3px 3px 0 var(--ink)}
+.rheld b{display:block;font-size:15px;margin-bottom:4px}.rheld p{margin:0 0 6px;font-weight:700;font-size:14px;word-break:keep-all}.rheld small{display:block;font-size:12px;opacity:.85;word-break:keep-all}.rheld-fb{all:unset;cursor:pointer;font-weight:800;text-decoration:underline;text-underline-offset:2px}
 .result .row{display:flex;gap:10px;margin-top:12px;width:100%}.result .row .btn{flex:1}
 :root[data-theme="dark"] .crown,:root[data-theme="dark"] .gtop a,:root[data-theme="dark"] .rank li.me{background:#4a3c10;color:#ffe08a}
 :root[data-theme="dark"] .av .dot{border-color:var(--card)}

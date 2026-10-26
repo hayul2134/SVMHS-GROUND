@@ -1350,14 +1350,19 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
   if (!S.me) return;
   try {
     const r = await saveScore(game, value, rounds);
-    if (r.held) { $('#rMsg').innerHTML = HELD_MSG; return; }
+    if (r.held) {   // 왜 보류됐는지 + 문제 판 빨간 표시 (2026-10-26 하율)
+      (r.bad || []).forEach(i => $('#parea .rdet')?.children[i]?.classList.add('bad'));
+      $('#rMsg').outerHTML = heldBox(r); return;
+    }
     $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('crown') : '');
     if (r.cheer) cheer(game, r.rank, r.best);
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
 }
 // 기록 저장(서버가 판 기록·티켓으로 다시 검사) — 결과 화면 없이 그 자리에서 다시 하는 게임(집에 가고 싶어!)도 같이 씀
 // 검사에 걸린 기록은 서버가 버리지 않고 보류(2026-10-26 하율) — 개발자가 관리자 화면에서 반영/버림
-const HELD_MSG = '⏸ <b>기록 보류</b> — 검사에서 확인이 필요한 기록이라 개발자가 확인한 뒤 랭킹에 반영돼요';
+// 결과 화면용: 왜 보류됐는지(서버 r.why) → 그래서 어떻게 됐는지
+const heldBox = r => `<div class="rheld" id="rMsg"><b>기록 보류</b><p>${esc(r.why || '확인이 필요한 기록이에요.')}</p><small>그래서 이 기록은 바로 랭킹에 올리지 않고 맡아 뒀어요. 개발자가 확인한 뒤 문제없으면 랭킹에 반영돼요. 억울하면 <button type="button" class="rheld-fb" data-fb>의견 보내기</button>로 알려 주세요!</small></div>`;
+const heldLine = r => `<b>기록 보류</b> ${esc(r.why || '')} 개발자가 확인한 뒤 반영돼요`;
 async function saveScore(game, value, rounds) {
   const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
   const r = await call('score', { game, value, rounds, ticket: await t });
@@ -1386,7 +1391,7 @@ function playReaction() {
       if (times.length >= 5) {
         state = 'done';
         const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-        setTimeout(() => alive && finish('reaction', Math.min(avg, 1500), `<p class="rdet">${times.map(t => t + 'ms').join(' · ')}</p>`, times.map(t => Math.min(t, 1500))), 500);
+        setTimeout(() => alive && finish('reaction', Math.min(avg, 1500), `<p class="rdet">${times.map(t => `<span>${t}ms</span>`).join(' · ')}</p>`, times.map(t => Math.min(t, 1500))), 500);
         pad.className = 'rx done'; pad.innerHTML = `<b>${ms}ms</b>`;
       } else { state = 'shown'; pad.className = 'rx shown'; pad.innerHTML = `<b>${ms}ms</b><small>탭해서 다음 (${times.length + 1} / 5)</small>`; }
     }
@@ -1447,7 +1452,7 @@ function playCut() {
     errs.push(e); sum += e; $('#cSum').textContent = sum + 'ms';
     $('#cMsg').innerHTML = e <= 15 ? `<b class="perfect">PERFECT! ${e}ms</b>` : e <= 50 ? `<b class="great">GREAT ${e}ms</b>` : e <= 120 ? `<b>GOOD ${e}ms</b>` : `<b class="miss">${e >= 1000 ? 'MISS' : e + 'ms'}</b>`;
     round++;
-    if (round >= 5) { btn.disabled = true; setTimeout(() => alive && finish('cut', Math.min(sum, 6000), `<p class="rdet">${errs.map(x => x + 'ms').join(' · ')}</p>`, errs), 700); }
+    if (round >= 5) { btn.disabled = true; setTimeout(() => alive && finish('cut', Math.min(sum, 6000), `<p class="rdet">${errs.map(x => `<span>${x}ms</span>`).join(' · ')}</p>`, errs), 700); }
     else setTimeout(() => alive && start(), 650);
   };
   btn.addEventListener('pointerdown', e => { e.preventDefault(); if (running) stop(performance.now() - t0); });
@@ -1505,7 +1510,7 @@ async function playHome() {
       if (!S.me) return;
       saveScore('home', HOME_MAX - Math.max(1, score), [Math.max(1, score), ms]).then(r => {
         if (no !== runNo || !$('#hrMsg')) return;
-        if (r.held) { $('#hrMsg').innerHTML = HELD_MSG; return; }
+        if (r.held) { $('#hrMsg').innerHTML = heldLine(r); return; }
         $('#hrMsg').innerHTML = r.first ? `<b>히든 보상!</b> 처음으로 집에 온 단 한 사람 — 착용 소품 ‘집 열쇠’ · 칭호 ‘${esc(HOME_TITLE)}’를 받았어요`
           : r.arrived ? `<b>집 도착!</b> 칭호 ‘${esc(HOME_TITLE2)}’를 받았어요 — 프로필 꾸미기에서 달 수 있어요`
           : (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
@@ -1531,7 +1536,7 @@ async function playHome() {
       const prize = !S.me ? '<p class="hr-prize">로그인하면 도착 칭호를 받을 수 있어요</p>'
         : !r ? '<p class="hr-prize wait">칭호 확인 중…</p>'
         : r.err ? `<p class="hr-prize">${esc(r.err)}</p>`
-        : r.held ? `<p class="hr-prize">${HELD_MSG}</p>`
+        : r.held ? `<p class="hr-prize">${heldLine(r)}</p>`
         : first ? `<div class="hr-hidden"><i>히든 칭호 발견!</i><p>처음으로 히든 칭호를 발견했어요</p><p class="hr-ttl"><span class="t-first">${esc(HOME_FIRST)}</span> ${esc(HOME_TITLE)}</p><small>착용 소품 ‘집 열쇠’도 함께 받았어요 · 프로필 꾸미기에서 달 수 있어요</small></div>`
         : `<p class="hr-prize">${r.arrived ? '칭호를 얻었어요' : '보유 중인 칭호'} <b class="hr-ttl">${esc(HOME_TITLE2)}</b>${r.arrived ? ' · 프로필 꾸미기에서 달 수 있어요' : ''}</p>`;
       ov.innerHTML = `<b class="hr-win">${title}<br>축하합니다!</b>${prize}

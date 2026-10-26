@@ -21,34 +21,45 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   home: { min: 1, max: HOME_MAX - 1, play: 1000 },     // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
-function checkRounds(game, v, r, elapsed) {   // 오류 문구는 관리자 보류 목록에 남는 이유(학생에겐 안 보임)
-  if (!Array.isArray(r)) return '판 기록 없음(예전 화면)';
+// 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
+const H = (a, u, bad) => ({ a, u, bad });
+const sec = ms => (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + '초';
+function checkRounds(game, v, r, elapsed) {
+  if (!Array.isArray(r)) return H('판 기록 없음(예전 화면)', '판마다의 기록이 같이 오지 않았어요.');
   const n = r.map(x => Math.round(+x));
-  if (n.some(x => !Number.isFinite(x))) return '판 기록에 숫자가 아닌 값';
+  if (n.some(x => !Number.isFinite(x))) return H('판 기록에 숫자가 아닌 값', '판마다의 기록 중에 숫자가 아닌 값이 섞여 있어요.');
   const sum = n.reduce((a, b) => a + b, 0), spread = Math.max(...n) - Math.min(...n);
+  const idx = f => n.map((x, i) => (f(x) ? i : -1)).filter(i => i >= 0);
+  const which = is => is.map(i => `${i + 1}번째 판(${n[i]}ms)`).join(', ');
   if (game === 'reaction') {   // 5번 각각 110ms 이상(예측해서 누르기 방지)·평균이 v·5번이 거의 같으면 기계
-    if (n.length !== 5) return `판 수가 5가 아님(${n.length})`;
-    const fast = n.filter(x => x < 110), slow = n.filter(x => x > 1500);
-    if (fast.length) return `110ms보다 빠른 판(${fast.join('·')}ms) — 미리 누름 의심`;
-    if (slow.length) return `1500ms 넘는 판(${slow.join('·')}ms)`;
-    if (Math.abs(Math.round(sum / 5) - v) > 1) return `평균(${Math.round(sum / 5)})과 기록(${v})이 다름`;
-    if (spread < 6) return `5판 차이가 ${spread}ms뿐 — 매크로 의심`;
-    if (elapsed < 5000 + sum) return `플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`;
+    if (n.length !== 5) return H(`판 수가 5가 아님(${n.length})`, `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
+    const fast = idx(x => x < 110), slow = idx(x => x > 1500);
+    if (fast.length) return H(`110ms보다 빠른 판(${fast.map(i => n[i]).join('·')}ms) — 미리 누름 의심`,
+      `${which(fast)}이 너무 빨라요. 사람은 초록색을 보고 누르기까지 보통 0.11초(110ms) 넘게 걸려서, 초록색으로 바뀌기 전에 미리 누른 걸로 보여요.`, fast);
+    if (slow.length) return H(`1500ms 넘는 판(${slow.map(i => n[i]).join('·')}ms)`,
+      `${which(slow)}이 1.5초를 넘었어요. 한 판이 너무 오래 걸리면 평균 계산이 맞지 않아요.`, slow);
+    if (Math.abs(Math.round(sum / 5) - v) > 1) return H(`평균(${Math.round(sum / 5)})과 기록(${v})이 다름`, `5판의 평균(${Math.round(sum / 5)}ms)과 최종 기록(${v}ms)이 서로 달라요.`);
+    if (spread < 6) return H(`5판 차이가 ${spread}ms뿐 — 매크로 의심`, `5판 기록이 거의 똑같아요(가장 빠른 판과 느린 판 차이 ${spread}ms). 사람이 누르면 판마다 조금씩 달라지는데, 이렇게 일정하면 자동 클릭으로 보일 수 있어요.`);
+    if (elapsed < 5000 + sum) return H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임한 시간이 ${sec(elapsed)}로 너무 짧아요. 판마다 최소 1초는 기다려야 해서 이렇게 빨리 끝날 수 없어요.`);
   } else if (game === 'num25') {   // 25번 누른 시각(첫 탭 = 0) + 틀린 벌점: 순서대로 늘고, 탭 사이 60ms 이상
     const pen = n.length === 26 ? n.pop() : -1;
-    if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] !== 0) return '판 기록 형식이 다름';
-    for (let i = 1; i < 25; i++) if (n[i] - n[i - 1] < 60) return `${i}→${i + 1} 탭 간격 ${n[i] - n[i - 1]}ms(60ms 미만) — 매크로 의심`;
-    if (Math.abs(n[24] + pen - v) > 5) return `판 기록 합(${n[24] + pen})과 기록(${v})이 다름`;
-    if (elapsed < n[24]) return '플레이 시간보다 기록이 김';
+    if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] !== 0) return H('판 기록 형식이 다름', '1부터 25까지 누른 기록이 제대로 오지 않았어요.');
+    for (let i = 1; i < 25; i++) if (n[i] - n[i - 1] < 60) return H(`${i}→${i + 1} 탭 간격 ${n[i] - n[i - 1]}ms(60ms 미만) — 매크로 의심`,
+      `${i}번에서 ${i + 1}번으로 넘어가는 데 ${n[i] - n[i - 1]}ms밖에 안 걸렸어요. 다음 숫자를 찾아 누르는 데 0.06초(60ms)보다 빠를 수는 없어서 자동 클릭으로 보일 수 있어요.`);
+    if (Math.abs(n[24] + pen - v) > 5) return H(`판 기록 합(${n[24] + pen})과 기록(${v})이 다름`, `누른 시각과 벌점을 더한 값(${sec(n[24] + pen)})이 최종 기록(${sec(v)})과 달라요.`);
+    if (elapsed < n[24]) return H('플레이 시간보다 기록이 김', `실제로 게임한 시간(${sec(elapsed)})보다 기록(${sec(n[24])})이 더 길어요.`);
   } else if (game === 'home') {   // [거리 m, 달린 시간 ms]: 거리는 시간으로만 정해짐(home-score.js) + 실제로 흐른 시간보다 오래 달릴 수 없음
-    if (n.length !== 2) return '판 기록 형식이 다름';
+    if (n.length !== 2) return H('판 기록 형식이 다름', '달린 거리와 시간이 제대로 오지 않았어요.');
     const [m, ms] = n;
-    if (m < 1 || ms < 300 || ms > 6 * 3600e3) return `달린 시간 이상(${ms}ms)`;
-    if (HOME_MAX - m !== v || scoreAt(ms) !== m) return `거리(${m}m)가 달린 시간(${(ms / 1000).toFixed(1)}초)과 안 맞음`;
-    if (ms > elapsed + 1000) return `실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`;
+    if (m < 1 || ms < 300 || ms > 6 * 3600e3) return H(`달린 시간 이상(${ms}ms)`, `달린 시간(${sec(ms)})이 가능한 범위를 벗어났어요.`);
+    if (HOME_MAX - m !== v || scoreAt(ms) !== m) return H(`거리(${m}m)가 달린 시간(${(ms / 1000).toFixed(1)}초)과 안 맞음`,
+      `${(ms / 1000).toFixed(1)}초 동안 달리면 ${scoreAt(ms).toLocaleString('ko-KR')}m인데 ${m.toLocaleString('ko-KR')}m로 기록됐어요. 이 게임은 달린 시간으로 거리가 정해져서 둘이 맞아야 해요.`);
+    if (ms > elapsed + 1000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
-    if (n.length !== 5 || n.some(x => x < 0 || x > 1000)) return '판 기록 형식이 다름';
-    if (sum !== v) return `판 기록 합(${sum})과 기록(${v})이 다름`;
+    if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
+    const off = idx(x => x < 0 || x > 1000);
+    if (off.length) return H('오차가 0~1000ms 밖', `${which(off)}의 오차가 가능한 범위(0~1초)를 벗어났어요.`, off);
+    if (sum !== v) return H(`판 기록 합(${sum})과 기록(${v})이 다름`, `5판 오차를 더한 값(${sum}ms)과 최종 기록(${v}ms)이 달라요.`);
   }
   return null;
 }
@@ -854,16 +865,19 @@ const ROUTES = {
     const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
-    const why = v < g.min ? `너무 빠른 기록(하한 ${g.min})` : v > g.max ? `범위를 넘은 기록(상한 ${g.max})`
-      : elapsed < g.play ? `플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)` : checkRounds(game, v, body.rounds, elapsed);
+    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm' }[game];
+    const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
+      : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
+      : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
+      : checkRounds(game, v, body.rounds, elapsed);
     if (why) {
       const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();
       if (wait.n >= 30) return err('확인을 기다리는 기록이 많아요. 개발자가 확인할 때까지 조금만 기다려 주세요', 429);
       const rounds = JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500);
       await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
-        .bind(me.id, game, v, rounds, why.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
+        .bind(me.id, game, v, rounds, why.a.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
       const mine = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
-      return json({ ok: true, held: true, best: mine?.b ?? null });
+      return json({ ok: true, held: true, why: why.u, bad: why.bad || [], best: mine?.b ?? null });
     }
     const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const [prev, allPrev] = await Promise.all([
