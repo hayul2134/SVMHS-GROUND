@@ -127,7 +127,7 @@ async function refreshMe() {
   try {
     const r = await call('me');
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
-    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me)));   // 미리보기 기능([data-ff]) 개발자에게만 보이게
+    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me)));   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
@@ -965,7 +965,8 @@ async function loadHomeRank(force) {
   const card = $('#sRk'); if (!card || !S.me) return;
   const RK_TABS = rkTabs();
   if (!RK_TABS.some(t => t[0] === rkTab)) rkTab = 'att';
-  $('#rkTabs').innerHTML = RK_TABS.map(([k, n, i]) => `<button type="button" role="tab" aria-selected="${k === rkTab}" data-rk="${k}" data-tip="${n}" aria-label="${n}">${i ? ic(i) : tierIc('challenger')}</button>`).join('');
+  const tf = ffOn('tier-fancy', isDev(S.me));   // 2026-10-26 하율: 티어 순위 버튼 더 잘 보이고 화려하게 — 글자 붙은 탭
+  $('#rkTabs').innerHTML = RK_TABS.map(([k, n, i]) => `<button type="button" role="tab" aria-selected="${k === rkTab}" data-rk="${k}"${tf ? ` class="rkt-${k}"` : ` data-tip="${n}"`} aria-label="${n}">${i ? ic(i) : tierIc('challenger')}${tf ? `<span class="rkt-l">${n}</span>` : ''}</button>`).join('');
   card.hidden = false;
   const tab = rkTab, c = rkCache[tab];
   if (c) paintHomeRank(tab, c.r);
@@ -984,7 +985,7 @@ function attEmpty() {
 }
 function paintHomeRank(tab, r) {   // 시간표 아래 따로 떨어진 랭킹 카드, 1~3등 (2026-10-25 3차: 분리 + 1등 금빛 강조)
   const g = GAMES[tab], list = r.list.slice(0, 3);
-  const val = u => tab === 'tier' ? `<span class="rk-tr" data-tip="${u.pts}점">${tierIc(u.tier)}${esc(tierOfK(u.tier)?.n || '')}</span>` : g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
+  const val = u => tab === 'tier' ? `<span class="rk-tr t-${esc(u.tier)}" data-tip="${u.pts}점">${tierIc(u.tier)}${esc(tierOfK(u.tier)?.n || '')}</span>` : g ? esc(g.fmt(u.value)) : `${ATT.flame('fsm', { tier: ATT.tierOf(u.value) })}${esc(ATT.fmtN(u.value))}<small>일</small>`;
   $('#rkList').innerHTML = list.length ? list.map((u, i) => `<li class="rk p${i + 1}${u.isMe ? ' me' : ''}">
       <span class="rk-n"><i class="mdl m${i + 1}">${i + 1}</i></span>
       <a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}"><span class="rk-av">${i === 0 ? `<i class="rk-cr">${ic('crown')}</i>` : ''}${av(u, 'xs', avWear(u.mfx))}</span><b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a>
@@ -1173,7 +1174,7 @@ async function loadTier() {
     <ol class="tr-stairs">${stairs}</ol>
     <div class="tr-who" hidden></div>
     ${per ? `<ul class="tr-games">${per}</ul>` : ''}
-    <details class="tr-top"><summary>티어 순위 TOP 10</summary><ol>${top}</ol></details>`;
+    <details class="tr-top"><summary>${ic('trophy')}<span>티어 순위 TOP 10</span><i class="trt-go" aria-hidden="true"></i></summary><ol>${top}</ol></details>`;
     tierWho(box);
     const sl = box.querySelector('.tr-stairs'), on = sl?.querySelector('li.on');   // 폰: 가로로 넘기는 계단을 내 티어 쪽으로
     if (on && sl.scrollWidth > sl.clientWidth) sl.scrollLeft = on.offsetLeft - (sl.clientWidth - on.offsetWidth) / 2;
