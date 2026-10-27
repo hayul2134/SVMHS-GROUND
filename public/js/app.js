@@ -410,8 +410,8 @@ const voteOf = (k, meal) => {
 };
 const voteMark = (name, v) => {
   if (!v) return '';
-  if (!v.total) return '';   // 아무도 투표 안 했으면 숫자 숨김
-  const n = v.counts[name] || 0, best = n && n === v.top;   // 투표가 시작되면 모든 메뉴에 표 수 표시, 단독 1등만 트로피
+  const n = v.counts[name] || 0, best = n && n === v.top;   // 표를 받은 메뉴는 모두 표 수 표시(0표는 숨김), 단독 1등만 트로피
+  if (!n) return '';
   return `<i class="vc${best ? ' best' : ''}">${best ? sji('trophy') : '♥ '}${n}</i>`;
 };
 const dishAttr = (name, v) => v && v.open ? ` data-dish="${esc(name)}" role="button" tabindex="0" aria-label="${esc(name)}에 투표"` : '';
