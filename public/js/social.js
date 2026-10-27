@@ -1533,10 +1533,10 @@ async function playGear() {
         <aside class="gr-side"><p class="gr-lb">다음</p><div class="gr-next"><canvas class="gr-mini" id="grN0" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN1" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN2" width="52" height="28"></canvas></div></aside>
       </div>
       <div class="gr-touch">
-        <button type="button" class="btn ghost" data-gk="left" aria-label="왼쪽">◀</button><button type="button" class="btn ghost" data-gk="right" aria-label="오른쪽">▶</button>
-        <button type="button" class="btn ghost" data-gk="ccw" aria-label="왼쪽으로 돌리기">↺</button><button type="button" class="btn" data-gk="cw" aria-label="오른쪽으로 돌리기">↻</button>
-        <button type="button" class="btn ghost" data-gk="down" aria-label="천천히 내리기">▼</button><button type="button" class="btn" data-gk="drop" aria-label="바로 내리기">⤓</button>
-        <button type="button" class="btn ghost" data-gk="hold" aria-label="보관">보관</button></div>
+        <div class="gt gt-l"><button type="button" class="btn ghost" data-gk="left" aria-label="왼쪽">◀</button><button type="button" class="btn ghost" data-gk="right" aria-label="오른쪽">▶</button>
+        <button type="button" class="btn ghost" data-gk="down" aria-label="천천히 내리기">▼</button></div>
+        <div class="gt gt-r"><button type="button" class="btn ghost" data-gk="ccw" aria-label="왼쪽으로 돌리기">↺</button><button type="button" class="btn" data-gk="cw" aria-label="오른쪽으로 돌리기">↻</button>
+        <button type="button" class="btn" data-gk="drop" aria-label="바로 내리기">⤓</button><button type="button" class="btn ghost" data-gk="hold" aria-label="보관">보관</button></div></div>
       <div class="hr-bar gr-bar"><p class="hr-keys"><kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>↑</kbd> 돌리기 · <kbd>↓</kbd> 내리기 · <kbd>Space</kbd> 바로 놓기 · <kbd>C</kbd> 보관 · <kbd>P</kbd> 멈춤</p>
         <button type="button" class="btn ghost hr-snd" id="grSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div class="hr-rk" id="grRk"></div>
@@ -1600,24 +1600,33 @@ async function playGear() {
     R.reset(); shown = 0; ready(); paintHud(); paintQ(); return true;
   };
   // 화면 크기: 판(120×240)을 정수 배(기기 픽셀 기준)로 — 옆 칸(보관·다음)과 아래 버튼·랭킹이 스크롤 없이 보이게
+  // 2026-10-27 기기별 최적화: 가로로 눕힌 폰(세로 600px 이하 + 터치)은 조작 버튼을 판 양옆으로(.gr CSS) → 세로는 판만 들어가면 되고, 가로는 버튼 자리를 뺌.
+  //   판이 작아지면 시작·끝 안내를 줄여 보여 줌(data-bs: s 300px 미만 · xs 190px 미만, data-bh: 판 높이 380px 미만)
+  const sideMQ = matchMedia('(pointer:coarse) and (orientation:landscape) and (max-height:600px)');
   const fit = () => {
     // 폭은 창 기준(게임 칸 폭이 앱 창에서 좁게 잡히던 경우 대비 — 2026-10-27 2차)
     // 2026-10-27 3차 하율 "전체적으로 크기 키우고 바로 다음 블록은 더 크게": 보관·바로 다음 = 큰 칸, 그 뒤 2개 = 작은 칸. 옆 칸 폭은 큰 칸에 맞춤
+    // 기기별 최적화(2026-10-27): 눕힌 폰은 양옆 터치 버튼 자리(extra)를 빼고, 세로는 판만 들어가게(hRes) · 최소 1배
+    const sideBtns = sideMQ.matches, extra = sideBtns ? 2 * 150 + 20 : 0, hRes = sideBtns ? 12 : touchy ? 170 : 62, minK = sideBtns ? 1 : 1.5;
     const w = Math.min(innerWidth - 24, 1240), top = $('#grScr').getBoundingClientRect().top, dpr = devicePixelRatio || 1;
     const bigOf = q => Math.round(Math.min(52 * Math.min(3.4, q * 1.2), innerWidth * (innerWidth < 520 ? .13 : .17)));
-    let q = 2.5; for (let i = 0; i < 3; i++) q = Math.max(1.5, Math.min((w - 2 * (bigOf(q) + 22) - 40) / GEAR.BW, (innerHeight - top - (touchy ? 170 : 24)) / GEAR.BH));
-    const big = bigOf(q), side = 2 * (big + 22) + 40;
+    let q = 2.5; for (let i = 0; i < 3; i++) q = Math.max(minK, Math.min((w - 2 * (bigOf(q) + 22) - 40 - extra) / GEAR.BW, (innerHeight - top - hRes) / GEAR.BH));
+    const big = bigOf(q), side = 2 * (big + 22) + 40 + extra;
     document.querySelectorAll('#gr .gr-side').forEach(el => { el.style.width = big + 22 + 'px'; });
+    $('#gr').style.setProperty('--sw', big + 22 + 'px');   // 아래 키 안내·랭킹 줄 폭도 커진 옆 칸에 맞춤(안 맞추면 키 안내가 두 줄로 꺾임)
     // 2026-10-27 하율 "화면이 이상해": 앱 창(배율이 소수인 기기)에서 내림 때문에 최소 크기보다 작아지고, 창 높이가 바뀌어도 다시 안 맞춰 판이 손바닥만 했음
-    //   → 최소 1.5배는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
-    const k = Math.min((w - side) / GEAR.BW, (innerHeight - top - (touchy ? 170 : 24)) / GEAR.BH);
-    const per = Math.max(Math.ceil(1.5 * dpr), Math.floor(k * dpr)) / dpr;
+    //   → 최소 크기는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
+    const k = Math.min((w - side) / GEAR.BW, (innerHeight - top - hRes) / GEAR.BH);
+    let per = Math.max(Math.ceil(minK * dpr), Math.floor(k * dpr)) / dpr;
+    if (per < k * .88) per = Math.max(minK, Math.floor(k * 20) / 20);   // 정수 배로 내리면 판이 너무 작아질 때(눕힌 폰 1.3배→1배)만 소수 배
+    const gr = $('#gr'), bw = per * GEAR.BW, bh = per * GEAR.BH;
+    gr.dataset.bs = bw < 190 ? 'xs' : bw < 300 ? 's' : ''; gr.dataset.bh = bh < 380 ? 's' : '';
     cv.style.width = per * GEAR.BW + 'px';
     document.querySelectorAll('#gr .gr-mini').forEach(c => { c.style.width = (c.classList.contains('sm') ? Math.round(big * .62) : big) + 'px'; });
     $('#gr').style.setProperty('--gw', Math.round(per * GEAR.BW) + 'px');
   };
   fit(); const fitT = [setTimeout(fit, 250), setTimeout(fit, 1000)];   // 창이 열리며 크기가 바뀌는 앱 창 대비
-  const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe($('#parea')); ro.observe(document.documentElement); addEventListener('resize', fit);
+  const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe($('#parea')); ro.observe(document.documentElement); addEventListener('resize', fit); sideMQ.addEventListener?.('change', fit);
   // 키보드
   // 글자 키는 e.code(자판 위치)로 — 한글 입력 상태면 C가 'ㅊ'으로 와서 보관(C)·돌리기(Z·X)·멈춤(P)이 안 먹던 문제 (2026-10-27 하율 "보관 기능이 제대로 안돼")
   const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', KeyX: 'cw', KeyZ: 'ccw', Space: 'drop', KeyC: 'hold', ShiftLeft: 'hold', ShiftRight: 'hold', KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'cw' };
@@ -1693,7 +1702,7 @@ async function playGear() {
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound); };
   paintSnd();
   sndBtn.onclick = () => { sound = !sound; store.set('gear_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
-  quitGame = () => { R.destroy(); clearInterval(hudT); fitT.forEach(clearTimeout); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
+  quitGame = () => { R.destroy(); clearInterval(hudT); fitT.forEach(clearTimeout); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); sideMQ.removeEventListener?.('change', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
 }
 
 let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
@@ -1718,7 +1727,11 @@ async function playHome() {
   const fit = () => {
     const w = $('#parea').clientWidth - 6, top = scr.getBoundingClientRect().top + scrollY;
     const hAvail = innerHeight - top - 320;   // 아래 조작 줄 + 친구·전체 랭킹(1~5등)이 스크롤 없이 보이게
-    const dpr = devicePixelRatio || 1, k = Math.min(w / RUN.W, Math.max(3, hAvail / RUN.H));   // 최소 3배(세로 312px) — 게임 오버 문구가 잘리지 않게 (2026-10-25 하율)
+    // 최소 3배(세로 312px) — 게임 오버 문구가 잘리지 않게 (2026-10-25 하율). 단 가로로 눕힌 폰처럼 세로가 짧으면
+    // 점프·숙이기 버튼이 화면 밖으로 밀려나지 않게 '게임 화면 + 터치 버튼'이 한 화면에 들어오는 만큼만 (2026-10-27, 최소 2배)
+    const tch = $('#hr .hr-touch'), ctrl = tch && tch.offsetHeight ? tch.offsetHeight + 12 : 0;
+    const hFit = innerHeight - top - ctrl - 14;
+    const dpr = devicePixelRatio || 1, k = Math.min(w / RUN.W, Math.max(Math.max(2, Math.min(3, hFit / RUN.H)), hAvail / RUN.H));
     const per = k >= 1 ? Math.floor(k * dpr) / dpr : k;
     const cw = Math.min(w, per * RUN.W);
     cv.style.width = cw + 'px'; $('#hr').style.width = cw + 6 + 'px';   // 아래 조작 줄·랭킹 줄도 게임 화면 폭에 맞춤

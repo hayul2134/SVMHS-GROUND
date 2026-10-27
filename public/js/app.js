@@ -2632,3 +2632,27 @@ function showFieldTip(el, focus = true) {
 }
 ['input', 'change'].forEach(ev => document.addEventListener(ev, e => { if (e.target.classList?.contains('f-bad')) hideFieldTip(); }, true));
 addEventListener('resize', hideFieldTip);
+
+/* ===== 글자 맞춤 (2026-10-27 기기별 화면 최적화) =====
+   칸이 좁은 기기(가로 태블릿 1024px·작은 폰)에서 글자가 칸 밖으로 잘리던 것:
+   급식판 메뉴 이름표(예: '치즈돈가스&소스'), 밸런스 선택지('주 4일, 대신 하루 10시간'), 주간 시간표 과목 이름.
+   줄 수·칸 크기는 그대로 두고(시계 묶음 위치 계산이 바뀌지 않게) 넘칠 때만 글자 크기를 그 칸에 맞게 줄임 — 최소 크기 아래로는 안 줄임 */
+const FIT_TXT = [['.tray .lbl,.drink .lbl', 8.5], ['.bt-opts .bo-t', 11], ['table.week .sj', 10.5]];
+function fitTexts() {
+  for (const [sel, min] of FIT_TXT) for (const el of document.querySelectorAll(sel)) {
+    el.style.fontSize = '';
+    if (!el.clientWidth || el.scrollWidth <= el.clientWidth + 1) continue;
+    for (let i = 0; i < 3 && el.scrollWidth > el.clientWidth + 1; i++) {
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (fs <= min) break;
+      el.style.fontSize = Math.max(min, Math.floor(fs * el.clientWidth / el.scrollWidth * 4) / 4 - (i ? .25 : 0)) + 'px';
+    }
+  }
+}
+let fitRaf = 0;
+const fitSoon = () => { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitTexts); };
+new MutationObserver(ms => { for (const m of ms) if (m.target.closest?.('.bt-opts,.tray-set,table.week,.s-meal,#sMeal') || [...m.addedNodes].some(n => n.querySelector?.('.lbl,.bo-t,.sj'))) return fitSoon(); })
+  .observe(document.body, { childList: true, subtree: true });
+addEventListener('resize', fitSoon);
+document.fonts?.ready.then(fitSoon);
+fitSoon();

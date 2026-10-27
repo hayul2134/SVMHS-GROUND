@@ -950,7 +950,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 .thread .tm{display:grid;justify-items:end;gap:4px;font-size:12px;color:var(--sub);font-weight:700;flex:none}
 .thread.new .pi small{color:var(--text);font-weight:900}
 .nb{font-style:normal;background:var(--red);color:#fff;font:900 11px/18px var(--num);min-width:20px;height:20px;padding:0 6px;border-radius:999px;text-align:center;border:2px solid var(--ink)}
-.chat{display:flex;flex-direction:column;padding:0;overflow:hidden;height:calc(100dvh - 190px);min-height:380px}
+.chat{display:flex;flex-direction:column;padding:0;overflow:hidden;height:calc(100dvh - 210px);min-height:380px}
 .chead{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:var(--bd);background:var(--chip)}
 .chead .back{font-size:34px;line-height:1;text-decoration:none;padding:0 8px 4px;font-weight:300}
 .chead .who{display:flex;align-items:center;gap:10px;text-decoration:none;min-width:0}
@@ -4756,6 +4756,64 @@ html:has(body.playing){overflow:hidden}
 .gr-touch .btn{flex:1;min-width:0;min-height:58px;padding:0 4px;font-size:20px;touch-action:none;-webkit-user-select:none;user-select:none}
 .gr-touch [data-gk="hold"]{font-size:14px}
 @media (pointer:coarse){.gr-touch{display:flex}}
-.gr-bar,.gr #grRk{width:calc(var(--gw,240px) + 2 * clamp(64px,11vw,110px) + 2 * clamp(8px,2vw,18px));max-width:100%;margin:0 auto}
+.gr-bar,.gr #grRk{width:calc(var(--gw,240px) + 2 * var(--sw,clamp(64px,11vw,110px)) + 2 * clamp(8px,2vw,18px));max-width:100%;margin:0 auto}
 @media (max-width:520px){.gr-side{width:58px;padding:6px 4px}.gr-lb{font-size:13px}.gr-lb kbd{display:none}.gr-stat dd{font-size:14px}}
 @media (prefers-reduced-motion:reduce){.gr-pop.on,.gr-fx{animation-duration:.01s}.gr-scr.hit,.gr-scr.hit4{animation:none}}
+
+/* ===== 2026-10-27 기기별 화면 최적화 (폰 세로·가로 · 태블릿 · 노트북) ===== */
+/* 홈 전체 랭킹: 카드가 좁은 가로 태블릿(1024px 근처)에서 '연속 출석·티어' 탭이 카드·화면 밖으로 밀려나던 것 → 자리가 모자라면 다음 줄로 */
+.srk-h{flex-wrap:wrap;row-gap:6px}
+.srk-h .rk-tabs{flex-wrap:nowrap}
+/* 게임 제목: 좁은 폰에서 두 줄로 꺾이지 않게 */
+@media (max-width:420px){.ptop b{font-size:18px;white-space:nowrap}}
+/* 반응속도: 눕힌 폰에서 칸이 제목 바로 밑에 붙지 않게 */
+.parea:has(> .rx){padding-top:6px}
+/* 1 to 25: 세로가 짧은 화면(눕힌 폰·작은 노트북)에서도 25칸이 한 화면에 — 남는 세로 높이에 맞춰 판 크기를 줄임 */
+.n25{max-width:min(440px,max(180px,calc(100dvh - 210px)))}
+.n25top{max-width:min(440px,max(180px,calc(100dvh - 210px)));width:100%;margin-left:auto;margin-right:auto}
+
+/* 반납 5분 전!: 판이 작을 때 시작·끝 안내가 판 밖으로 잘리던 것 (social.js fit()이 판 크기로 data-bs·data-bh를 붙임) */
+.gr-ov.hr-ov span{white-space:normal;max-width:100%;word-break:keep-all}
+.gr[data-bs="s"] .gr-ov{gap:5px;padding:8px 6px}
+.gr[data-bs="s"] .gr-ov.hr-ov b{font-size:22px;-webkit-text-stroke-width:1.5px;text-shadow:2px 2px 0 #2a2846}
+.gr[data-bs="s"] .gr-ov.hr-ov span{font-size:11px;padding:2px 6px;line-height:1.4}
+.gr[data-bs="s"] .gr-kinds{width:100%;gap:3px 2px}
+.gr[data-bs="s"] .gr-k{width:100%;max-width:46px}
+.gr[data-bs="s"] .gr-kinds small{font-size:9.5px;white-space:nowrap}
+.gr[data-bs="s"] .gr-ov > small{font-size:11.5px}
+.gr[data-bs="s"] .gr-ov.dead .hr-card{max-width:100%;padding:8px 8px}
+.gr[data-bs="s"] .gr-ov .hr-sc em{font-size:20px}
+.gr[data-bs="s"] .gr-ov .hr-msg{font-size:11.5px}
+.gr[data-bs="s"] .gr-ov .hr-go{font-size:11.5px}
+.gr[data-bs="xs"] .gr-ov{gap:4px;padding:6px 4px}
+.gr[data-bs="xs"] .gr-ov.hr-ov b{font-size:17px;-webkit-text-stroke-width:1.2px;text-shadow:1.5px 1.5px 0 #2a2846}
+.gr[data-bs="xs"] .gr-ov.hr-ov span{font-size:10px;padding:2px 4px;line-height:1.35}
+.gr[data-bs="xs"] .gr-ov > small,.gr[data-bs="xs"] .gr-ov .hr-msg,.gr[data-bs="xs"] .gr-ov .hr-go{font-size:10.5px}
+.gr[data-bs="xs"] .gr-ov.dead .hr-card{max-width:100%;padding:6px}
+.gr[data-bs="xs"] .gr-ov .hr-sc em{font-size:17px}
+.gr[data-bs="xs"] .gr-ov .hr-sc span{font-size:11px}
+.gr[data-bs="xs"] .gr-kinds,.gr[data-bh="s"] .gr-kinds{display:none}   /* 판이 아주 작으면 장비 그림 목록은 빼고 설명만 */
+.gr[data-bs="xs"] .gr-pop b{font-size:18px}
+.gr-touch .gt{display:contents}   /* 세로 화면: 버튼 7개를 판 아래 한 줄로(기존 그대로) */
+/* 가로로 눕힌 폰(세로 600px 이하 + 터치): 판 아래 버튼 줄이 화면 밖으로 밀려나 조작을 못 하던 것 → 버튼을 판 양옆(왼손: 이동·내리기 / 오른손: 돌리기·놓기·보관)으로 */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:600px){
+  .gr{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"l m r" "b b b" "k k k";align-items:center;column-gap:10px;row-gap:12px}
+  .gr-main{grid-area:m}
+  .gr-touch{display:contents}
+  .gr-touch .gt{display:grid;grid-template-columns:repeat(2,minmax(54px,70px));gap:8px;align-content:center}
+  .gr-touch .gt-l{grid-area:l;justify-self:start}
+  .gr-touch .gt-r{grid-area:r;justify-self:end}
+  .gr-touch .gt-l [data-gk="down"]{grid-column:1 / -1}
+  .gr-touch .btn{min-height:56px}
+  .gr-bar{grid-area:b}.gr #grRk{grid-area:k}
+  .gr-side{padding:6px 5px;gap:5px}
+  .gr-lb{font-size:13px}.gr-lb kbd{display:none}
+  .gr-stat dt{font-size:10.5px}.gr-stat dd{font-size:14px;margin-bottom:2px}
+  .play{padding-top:calc(8px + env(safe-area-inset-top))}
+  .parea.wide{padding-top:4px}
+}
+/* 가로로 눕힌 폰: 아래쪽 '캐릭터 꾸미기'·랭킹은 스크롤로 — 게임 화면과 점프·숙이기 버튼이 먼저 한 화면에 (social.js playHome fit) */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:600px){
+  .hr-touch .btn{min-height:56px}
+  .parea.wide:has(> .hr){padding-top:4px}
+}
