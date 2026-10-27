@@ -27,8 +27,8 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
-  // 반납 5분 전!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
-  gear: { ff: 'gear-game', name: '반납 5분 전!', ic: 'gear', desc: '수업 끝! 촬영 장비를 기자재실 선반에 빈틈없이 정리해 줄을 채워요', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
+  // 기자재 정리!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
+  gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 기자재실 선반에 빈틈없이 정리해 줄을 채워요', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
@@ -1566,11 +1566,11 @@ function playCut() {
 }
 
 /* 4) 집에 가고 싶어!: 공룡 게임 방식 픽셀 러너 (js/runner.js) + 캐릭터 꾸미기 */
-/* 5) 반납 5분 전!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */
+/* 5) 기자재 정리!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */
 let GEAR = null;   // gear.js 모듈 (처음 열 때 불러옴)
 async function playGear() {
   const touchy = matchMedia('(pointer:coarse)').matches;
-  const area = stage(ic('gear') + ' 반납 5분 전!', `<div class="gr" id="gr">
+  const area = stage(ic('gear') + ' 기자재 정리!', `<div class="gr" id="gr">
       <div class="gr-main">
         <aside class="gr-side"><p class="gr-lb">보관 <kbd>C</kbd></p><canvas class="gr-mini" id="grHold" width="104" height="56"></canvas>
           <dl class="gr-stat"><dt>점수</dt><dd id="grSc">0</dd><div class="gr-fxs" id="grFx"></div><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
@@ -1592,7 +1592,7 @@ async function playGear() {
   const cv = $('#grCv'), ov = $('#grOv'), pop = $('#grPop');
   let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), over = false, deadAt = 0, runNo = 0;
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
-  const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>반납 5분 전!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
+  const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
   // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
   let shown = 0;
   const paintHud = () => { const s = R.st, sc = $('#grSc');

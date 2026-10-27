@@ -4702,7 +4702,7 @@ html:has(body.playing){overflow:hidden}
 @media (max-width:720px){.pcols.slim .pside{grid-template-columns:minmax(0,1fr)}.pcols.slim .pside .pstreak{flex-direction:row}}
 @media (max-width:460px){.pcols.slim .pside .pbest{grid-template-columns:minmax(0,1fr)}}
 
-/* ===== 반납 5분 전! (장비 블록 쌓기, social.js playGear · js/gear.js, 2026-10-27 미리보기) ===== */
+/* ===== 기자재 정리! (장비 블록 쌓기, social.js playGear · js/gear.js, 2026-10-27 미리보기) ===== */
 .apps .gapp.g-gear .ai{--c:var(--sky)}
 .beta.new{background:#ff6b6b}
 .gr{display:flex;flex-direction:column;gap:12px;width:100%;max-width:100%;margin:0 auto}
@@ -4786,7 +4786,7 @@ html:has(body.playing){overflow:hidden}
 .n25{max-width:min(440px,max(180px,calc(100dvh - 210px)))}
 .n25top{max-width:min(440px,max(180px,calc(100dvh - 210px)));width:100%;margin-left:auto;margin-right:auto}
 
-/* 반납 5분 전!: 판이 작을 때 시작·끝 안내가 판 밖으로 잘리던 것 (social.js fit()이 판 크기로 data-bs·data-bh를 붙임) */
+/* 기자재 정리!: 판이 작을 때 시작·끝 안내가 판 밖으로 잘리던 것 (social.js fit()이 판 크기로 data-bs·data-bh를 붙임) */
 .gr-ov.hr-ov span{white-space:normal;max-width:100%;word-break:keep-all}
 .gr[data-bs="s"] .gr-ov{gap:5px;padding:8px 6px}
 .gr[data-bs="s"] .gr-ov.hr-ov b{font-size:22px;-webkit-text-stroke-width:1.5px;text-shadow:2px 2px 0 #2a2846}

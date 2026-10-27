@@ -14,7 +14,7 @@ const GOAL = {
   cut: { t: '오차 합 200ms 안으로 자르기', ok: v => v <= 200 },
   gear: { t: '2,000점 넘게 정리하기', ok: v => GEAR_MAX - v >= 2000 },
 };
-export const MS_NAME = { home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '반납 5분 전!' };
+export const MS_NAME = { home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '기자재 정리!' };
 // 미션에 나오는 게임: 모두가 할 수 있는 게임만(games = 미리보기 깃발이 없는 게임 키 목록)
 const seed = ymd => { let h = 2166136261; for (const c of ymd) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
 export function missionsOf(ymd, games) {
