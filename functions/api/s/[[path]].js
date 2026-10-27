@@ -5,7 +5,7 @@ import { balanceOf, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../
 import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
-import { ffOn } from '../../../public/js/flags.js';
+import { ffOn, RELEASED } from '../../../public/js/flags.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -109,7 +109,11 @@ async function nameIssue(db, name, selfId = 0) {
 }
 // 구글 연결·구글 로그인·구글로 비밀번호 재설정을 쓸 수 없는 계정 (개발자 계정은 구글이 털려도 관리자 권한이 넘어가지 않게)
 const noGoogle = u => !u || u.handle === ADMIN_HANDLE || !!u.is_test;
-const SESSION_DAYS = 30;   // 로그인 후 30일이 지나면 다시 로그인 (연장 없음 — 공용 태블릿에 로그인이 무한히 남지 않게)
+const SESSION_DAYS = 30;   // 처음 로그인 유효기간 30일
+// 로그인 유지(2026-10-28 하율: 학교 태블릿·노트북은 한 학생에게 배정되고 졸업 때 반납 = 개인 기기): 들어올 때마다 KEEP_DAYS로 연장 →
+// KEEP_DAYS 동안 한 번도 안 들어와야 로그아웃. 연장은 하루 한 번만 씀(D1 쓰기 아낌). 미리보기 깃발 'login-keep'(개발자 먼저)
+const KEEP_DAYS = 90;
+const RENEW = new WeakMap();   // 이 요청에서 연장한 세션 → 응답에 쿠키도 새로 붙임(라우터)
 const COOKIE = 'sg_s';
 const SECURITY_HEADERS = { 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), {
@@ -259,6 +263,10 @@ async function auth(req, db) {
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
+  if (ffOn('login-keep', isAdm(row)) && row.exp - Date.now() < (KEEP_DAYS - 1) * 86400e3) {
+    await db.prepare('UPDATE sessions SET exp = ?1 WHERE token = ?2').bind(Date.now() + KEEP_DAYS * 86400e3, await sha256(token)).run();
+    RENEW.set(req, token);
+  }
   if (Date.now() - row.seen > 60e3) await db.prepare('UPDATE users SET seen = ?1 WHERE id = ?2').bind(Date.now(), row.id).run();
   return row;
 }
@@ -301,6 +309,16 @@ const bragMuted = async (db, uid, src) => !!(await db.prepare('SELECT 1 AS x FRO
 const dmAllowed = (u, r) => !r.blocked && !r.blockedMe && (isAdm(u) || (u.dm_pref || 0) === 2 || ((u.dm_pref || 0) === 1 && r.followsMe) || (r.following && r.followsMe));
 const pairOf = (x, y) => x < y ? `${x}:${y}` : `${y}:${x}`;
 
+/* ===== 공지로 공개된 미리보기 깃발을 서버에도 반영 =====
+   화면(social.js)은 게시된 패치 공지의 ff로 RELEASED를 채우지만, 서버의 flags.js는 따로 import돼서 그대로였음 →
+   공지가 올라가 화면은 열려도 서버 API(주간 미션·새 게임 기록 저장 등)는 개발자만 되던 문제 (2026-10-28 발견). 1분마다 다시 읽음 */
+let relAt = 0;
+async function syncReleased(db) {
+  if (Date.now() - relAt < 60e3) return;
+  relAt = Date.now();
+  try { const r = await db.prepare("SELECT v FROM settings WHERE k = 'pn_pub'").first(); for (const x of JSON.parse(r?.v || '[]')) for (const f of x.ff || []) RELEASED.add(f); } catch {}
+}
+
 /* ===== 라우터 ===== */
 export async function onRequest({ request: req, env, params }) {
   const path = (params.path || []).join('/');
@@ -324,7 +342,11 @@ export async function onRequest({ request: req, env, params }) {
   try {
     const route = ROUTES[`${method} ${path.split('/')[0]}`];
     if (!route) return err('not found', 404);
-    return await route({ req, env, db, body, arg: decodeURIComponent(path.split('/')[1] || ''), url: new URL(req.url) });
+    await syncReleased(db);
+    const res = await route({ req, env, db, body, arg: decodeURIComponent(path.split('/')[1] || ''), url: new URL(req.url) });
+    const rt = RENEW.get(req);
+    if (rt && res && !(res.headers.get('set-cookie') || '').includes(COOKIE + '=')) try { res.headers.append('set-cookie', setCookie(req, rt, KEEP_DAYS * 86400)); } catch {}
+    return res;
   } catch (e) {
     console.error(e);
     if (isWriteLimit(e)) return json({ error: LIMIT_MSG, limit: true }, 503);
