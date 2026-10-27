@@ -3070,6 +3070,19 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .pside .pbest li{grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:7px 10px;background:var(--card);border-radius:12px;text-align:left}
 .pside .pbest span{font-size:18px}
 .pbody > .swbar{margin:0}
+/* 넓은 화면: 기록 카드를 오른쪽 버튼 바로 아래까지 끌어올림 (머리 오른쪽 빈자리 채우기) */
+@media (min-width:721px){
+  .pbody{grid-template-columns:auto minmax(0,1fr) 240px;grid-template-areas:"av id act" ". id side" "main main side" "sw sw sw";column-gap:18px;row-gap:14px;align-items:start}
+  .pbody > .phead,.pbody > .pcols{display:contents}
+  .phead > .av.big{grid-area:av}
+  .phead > .pid{grid-area:id}
+  .phead > .pact{grid-area:act}
+  .pcols > .pmain{grid-area:main;padding-top:0}
+  .pcols > .pside{grid-area:side;margin-top:12px}
+  .pbody > .swbar{grid-area:sw}
+  .pbody:not(:has(> .phead > .pact)) > .pcols > .pside{grid-row:1/4;grid-column:3;margin-top:14px}
+  .pcols.slim .pside{grid-template-columns:minmax(0,1fr);transform:rotate(1.4deg)}
+}
 @media (max-width:720px){
   .pbody{padding:0 18px 22px;gap:16px}
   .phead{grid-template-columns:auto minmax(0,1fr);gap:10px 14px}
