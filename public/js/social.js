@@ -1573,8 +1573,13 @@ async function playGear() {
     onScore: floatPt,
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
     onClear(n, name, pts, up) {
-      clearTimeout(popT); pop.className = 'gr-pop on n' + n; pop.innerHTML = `<b>${esc(name)}</b><small>+${pts.toLocaleString('ko-KR')}</small>${up ? `<em>레벨 ${R.st.level}!</em>` : ''}`;
-      void pop.offsetWidth; popT = setTimeout(() => { pop.className = 'gr-pop'; }, 1100);
+      // 2026-10-27 하율 "위에 뜨는 효과는 더 크고 화려하게": 글자가 하나씩 튀어 오르고, 뒤에 빛살이 돌며 별가루가 터짐 (4줄은 무지개)
+      clearTimeout(popT); pop.className = 'gr-pop on n' + n;
+      const letters = [...name].map((ch, i) => ch === ' ' ? ' ' : `<span style="--i:${i}">${esc(ch)}</span>`).join('');
+      const stars = Array.from({ length: n === 4 ? 14 : 4 + n * 2 }, (_, i) => { const a = i / (n === 4 ? 14 : 4 + n * 2) * 6.283 + Math.random() * .4, d = 60 + Math.random() * (n === 4 ? 70 : 40);
+        return `<i class="gr-star" style="--x:${Math.round(Math.cos(a) * d)}px;--y:${Math.round(Math.sin(a) * d * .6)}px;--d:${(Math.random() * .15).toFixed(2)}s"></i>`; }).join('');
+      pop.innerHTML = `<div class="gr-burst"></div>${stars}<b>${letters}</b><small>+${pts.toLocaleString('ko-KR')}</small>${up ? `<em>레벨 ${R.st.level}!</em>` : ''}`;
+      void pop.offsetWidth; popT = setTimeout(() => { pop.className = 'gr-pop'; }, n === 4 ? 1500 : 1200);
     },
     onOver(res) {
       over = true; deadAt = performance.now(); const no = ++runNo;
