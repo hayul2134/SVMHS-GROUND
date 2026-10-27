@@ -623,6 +623,8 @@ async function castVote(el) {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || '투표하지 못했어요');
     VOTES[k] = j; toast(next ? `${next}에 한 표! 🗳️` : '투표를 취소했어요');
+    if (next) fetch('/api/s/mealmis', { method: 'POST', headers: { 'content-type': 'application/json', 'x-voter': voterId }, body: '{}' })   // 주간 미션 '급식 투표'(로그인했을 때만)
+      .then(r => r.ok ? r.json() : null).then(m => { if (m?.mis) document.dispatchEvent(new CustomEvent('sg:mis', { detail: m.mis })); }).catch(() => {});
   } catch (e) { toast(e.message || '투표하지 못했어요'); await loadVotes(parseYmd(k)); }
   voting = false; repaintMeals();
 }

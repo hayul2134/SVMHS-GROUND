@@ -8,7 +8,7 @@ import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX } from './gear-score.js';
 import { ffOn, RELEASED } from './flags.js';
-import { KIND, weekLeft } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
+import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
 import { TIERS, TIER_PCT, BEST_N, tierOfK } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
@@ -1174,8 +1174,8 @@ function paintMsBtn() {
   b.setAttribute('aria-label', `주간 미션 열기 — ${n}개 완료`);
 }
 const msLeftTx = () => { const m = Math.max(0, Math.floor(weekLeft() / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60); return d ? `${d}일 ${h}시간` : h ? `${h}시간 ${m % 60}분` : `${m % 60}분`; };
-const MS_GO = { game: ['game', '게임 하러 가기'], bal: ['bal', '밸런스 게임 열기'], att: ['att', '출석 체크 열기'], friends: ['dm', 'DM 열기'], gacha: ['gacha', '뽑기 하러 가기'], edit: ['edit', '꾸미기 열기'] };
-const MS_IC = { play: 'play', bal: 'vote', balc: 'vote', like: 'heart', att: 'fire', dm: 'heart', fol: 'heart', gacha: 'gacha', prof: 'brush' };
+const MS_GO = { game: ['game', '게임 하러 가기'], bal: ['bal', '밸런스 게임 열기'], att: ['att', '출석 체크 열기'], friends: ['dm', 'DM 열기'], gacha: ['gacha', '뽑기 하러 가기'], edit: ['edit', '꾸미기 열기'], meal: ['meal', '급식 투표하러 가기'] };
+const MS_IC = { play: 'play', bal: 'vote', balc: 'vote', meal: 'tray', like: 'heart', att: 'fire', dm: 'heart', fol: 'heart', gacha: 'gacha', prof: 'brush' };
 function msRow(m, i) {
   const g = m.g && GAMES[m.g], go = KIND[m.k]?.go, pct = Math.round(m.c / m.n * 100);
   const dest = g ? `data-play="${m.g}"` : go ? `data-ms-go="${go}"` : '';
@@ -1193,7 +1193,7 @@ async function openMission() {
     <div class="ms-top">${ic('tix', 'ms-big')}<div><h3>주간 미션</h3><small>새 미션까지 ${msLeftTx()} · 월요일 0시에 바뀌어요</small></div></div>
     <div class="ms-sum"><span class="ms-pips">${d.list.map(x => `<i class="${x.done ? 'on' : ''}"></i>`).join('')}</span><b>${n === tot ? `이번 주 미션 끝! 뽑기권 ${tot * d.rw.tix}장 모두 받았어요` : `미션 하나 깰 때마다 뽑기권 ${d.rw.tix}장 · 이번 주 ${n * d.rw.tix} / ${tot * d.rw.tix}장`}</b></div>
     <ol class="ms-list">${d.list.map(msRow).join('')}</ol>
-    <p class="ms-note">게임 기록이 검사에 걸려 보류되면 미션에 세지 않아요</p>
+    <p class="ms-note">${PLAY_RULE} · 검사에 걸려 보류된 기록은 세지 않아요</p>
     <div class="row">${n ? '<button type="button" class="btn" data-go="gacha" data-close>뽑으러 가기</button>' : ''}<button type="button" class="btn ghost" data-close>닫기</button></div>
   </div>`;
 }
@@ -1203,6 +1203,7 @@ document.addEventListener('click', e => {
   const k = MS_GO[b.dataset.msGo]?.[0]; closeSheet();
   setTimeout(() => {
     if (k === 'bal') { ctx.go('home'); setTimeout(() => $('#plMore')?.click(), 250); }
+    else if (k === 'meal') { ctx.go('home'); setTimeout(() => $('#hMeal')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250); }
     else if (k === 'att') $('#btnStreak')?.click();
     else if (k === 'edit') $('#btnEdit')?.click();
     else if (k) ctx.go(k);

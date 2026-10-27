@@ -6,7 +6,7 @@ import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { ffOn } from '../../../public/js/flags.js';
-import { MS, KIND, missionsOf, progOf, applyEv, weekKey } from '../../../public/js/mission.js';
+import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
 import { randHex, sha256, hashPw, sameStr, cookieOf, clean } from '../../../lib/sec.js';
@@ -846,7 +846,7 @@ const ROUTES = {
     if (st.open && !st.mine && !isAdm(me)) return err('먼저 한쪽을 골라야 댓글을 달 수 있어요');
     if (!isAdm(me) && await limited(db, 'bc:' + me.id, 6, 300)) return err('댓글은 5분에 6개까지 달 수 있어요', 429);
     await db.prepare('INSERT INTO balance_comments (ymd, uid, pick, body, at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(st.ymd, me.id, st.mine || '', text, Date.now()).run();
-    const mis = await misEv(db, me, 'balc');
+    const mis = await misEv(db, me, 'balc', { day: st.ymd });
     return json({ ...(await balState(env, db, me)), mis });
   }),
   'POST balcdel': needMe(async ({ env, db, me, body }) => {
@@ -987,7 +987,8 @@ const ROUTES = {
       }
     }
     // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
-    const mis = await misEv(db, me, 'play', { game, v, best: allPrev.b != null && v < allPrev.b, day });
+    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 200m · 기자재 정리! 300점 밑이면 판 수에 안 셈
+    const mis = playCounts(game, v) ? await misEv(db, me, 'play', { game, v, best: allPrev.b != null && v < allPrev.b, day }) : null;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
     return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
@@ -1206,6 +1207,13 @@ const ROUTES = {
       top: top.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
   }),
 
+  // 급식 투표(기기 ID로 /api/vote에 저장됨) → 로그인한 사람의 주간 미션 '급식 투표 n일'. 오늘 그 기기로 실제 투표한 기록이 있어야 셈
+  'POST mealmis': needMe(async ({ db, me, req }) => {
+    const voter = req.headers.get('x-voter') || '', day = kstYmd();
+    if (!/^[a-z0-9]{20,40}$/.test(voter)) return err('bad voter');
+    const v = await db.prepare('SELECT 1 FROM meal_votes WHERE ymd = ?1 AND voter = ?2 LIMIT 1').bind(day, voter).first();
+    return json({ ok: true, mis: v ? await misEv(db, me, 'meal', { day }) : null });
+  }),
   'GET mission': needMe(async ({ db, me }) => {
     if (!ffOn('week-mission', isAdm(me))) return err('not found', 404);
     const wk = weekKey(), { p } = await misGet(db, me, wk);
