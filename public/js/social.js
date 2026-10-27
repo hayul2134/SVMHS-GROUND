@@ -1606,7 +1606,7 @@ async function playGear() {
     if (e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
     if (over) { if ((e.code === 'Space' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); restart(); } return; }
     if (e.code === 'KeyP') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
-    const a = keyOf(e); if (!a) { if (R.st.scene !== 'play' && e.key.length === 1) R.input('cw', true); return; }
+    const a = keyOf(e); if (!a) { if (R.st.scene !== 'play' && !['Meta', 'Alt', 'Control', 'Tab', 'Escape', 'CapsLock', 'HangulMode', 'Process'].includes(e.key)) { e.preventDefault(); R.input('cw', true); } return; }   // 시작 전·멈춤: 아무 키(엔터 포함)나
     e.preventDefault(); if (e.repeat) return;
     R.input(a, true);
   };
