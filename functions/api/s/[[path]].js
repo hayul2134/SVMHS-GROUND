@@ -6,7 +6,7 @@ import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { ffOn } from '../../../public/js/flags.js';
-import { MS, missionsOf, progOf, addPlay } from '../../../public/js/mission.js';
+import { MS, KIND, missionsOf, progOf, applyEv, weekKey } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
 import { randHex, sha256, hashPw, sameStr, cookieOf, clean } from '../../../lib/sec.js';
@@ -170,35 +170,40 @@ const pub = u => u && ({
 // 개발자(관리자) 계정은 제한을 모두 풂(2026-10-23 하율 지시): 출석 보상 전부 해금 · 시계 칸·방패 최대 · 내 행동 횟수 제한 없음 ·
 // 밸런스 투표 없이 댓글·결과 보기 · DM 받기 설정·DM 끄기 무시. 단 상대가 개발자를 차단했으면 존중, 비밀번호 시도 제한은 보안상 유지
 const isAdm = u => u?.handle === ADMIN_HANDLE;
-// 오늘의 미션(2026-10-27, 미리보기 깃발 daily-mission): 미션에 나오는 게임 = 깃발 없는 게임만(모두 같은 미션)
+// 주간 미션(2026-10-27 하율, 미리보기 깃발 week-mission): 모두 같은 미션 5개(public/js/mission.js), 미션에 나오는 게임 = 깃발 없는 게임만
+// missions 표: day = 'w' + 그 주 월요일 · p = 진행 JSON. 미션 하나 끝낼 때마다 뽑기권 MS.tix장
 const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff);
-const misOut = (day, p) => {
-  const list = missionsOf(day, MS_GAMES());
-  return { day, list: list.map((m, i) => ({ t: m.t, k: m.k, g: m.g || '', n: m.n, c: progOf(m, p), done: !!p.d?.[i] })), all: !!p.all, rw: MS };
+const misOut = (wk, p) => {
+  const list = missionsOf(wk, MS_GAMES());
+  return { wk, list: list.map((m, i) => ({ t: m.t, k: m.k, g: m.g || '', n: m.n, c: progOf(m, p), done: !!p.d?.[i] })), rw: MS };
 };
-async function misGet(db, me, day = kstYmd()) {
-  const row = await db.prepare('SELECT p FROM missions WHERE uid = ?1 AND day = ?2').bind(me.id, day).first();
+async function misGet(db, me, wk = weekKey()) {
+  const row = await db.prepare('SELECT p FROM missions WHERE uid = ?1 AND day = ?2').bind(me.id, 'w' + wk).first();
   let p = {}; try { p = JSON.parse(row?.p || '{}') || {}; } catch {}
   return { row, p };
 }
-// 판이 저장될 때 진행 상황을 올리고, 새로 끝난 미션 보상(조각)·전부 끝(뽑기권)을 넣음. 두 탭에서 동시에 와도 이전 값 조건으로 한 번만
-async function misPlay(db, me, game, v, newBest) {
-  const day = kstYmd(), list = missionsOf(day, MS_GAMES());
-  for (let tryN = 0; tryN < 3; tryN++) {
-    const { row, p } = await misGet(db, me, day);
-    const q = addPlay(p, game, v, newBest), got = [];
-    list.forEach((m, i) => { if (!q.d[i] && progOf(m, q) >= m.n) { q.d[i] = 1; got.push(i); } });
-    const allNow = !q.all && q.d.every(Boolean);
-    if (allNow) q.all = 1;
-    const js = JSON.stringify(q);
-    const ok = row
-      ? await db.prepare('UPDATE missions SET p = ?1 WHERE uid = ?2 AND day = ?3 AND p = ?4 RETURNING uid').bind(js, me.id, day, row.p).first()
-      : await db.prepare('INSERT INTO missions (uid, day, p) VALUES (?1, ?2, ?3) ON CONFLICT (uid, day) DO NOTHING RETURNING uid').bind(me.id, day, js).first();
-    if (!ok) continue;
-    if (got.length || allNow) await db.prepare(`UPDATE users SET gc_shard = MIN(9999, gc_shard + ?1), gc_tix = MIN(${GC.max}, gc_tix + ?2) WHERE id = ?3`)
-      .bind(got.length * MS.shard, allNow ? MS.tix : 0, me.id).run();
-    return { ...misOut(day, q), got, allNow };
-  }
+// 행동 하나 → 진행을 올리고 새로 끝난 미션만큼 뽑기권. 이번 주 미션 중 이 행동으로 올라갈 게 없으면 DB를 안 건드림. 두 탭 동시 요청은 이전 값 조건으로 한 번만
+// 응답에 붙일 값: 새로 끝난 미션이 있을 때만 { …misOut, got } (없으면 null)
+async function misEv(db, me, ev, x) {
+  try {
+    if (!ffOn('week-mission', isAdm(me))) return null;
+    const wk = weekKey(), list = missionsOf(wk, MS_GAMES());
+    for (let tryN = 0; tryN < 3; tryN++) {
+      const { row, p } = await misGet(db, me, wk);
+      if (!list.some((m, i) => !p.d?.[i] && KIND[m.k].ev === ev)) return null;
+      const q = applyEv(p, ev, x), got = [];
+      list.forEach((m, i) => { if (!q.d[i] && progOf(m, q) >= m.n) { q.d[i] = 1; got.push(i); } });
+      const js = JSON.stringify(q);
+      if (js === (row?.p || '{}')) return null;
+      const ok = row
+        ? await db.prepare('UPDATE missions SET p = ?1 WHERE uid = ?2 AND day = ?3 AND p = ?4 RETURNING uid').bind(js, me.id, 'w' + wk, row.p).first()
+        : await db.prepare('INSERT INTO missions (uid, day, p) VALUES (?1, ?2, ?3) ON CONFLICT (uid, day) DO NOTHING RETURNING uid').bind(me.id, 'w' + wk, js).first();
+      if (!ok) continue;
+      if (!got.length) return null;
+      await db.prepare(`UPDATE users SET gc_tix = MIN(${GC.max}, gc_tix + ?1) WHERE id = ?2`).bind(got.length * MS.tix, me.id).run();
+      return { ...misOut(wk, q), got };
+    }
+  } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/mission/' + ev, method: 'MISSION' }, e); }
   return null;
 }
 const ALL_OPEN = 1e6;
@@ -447,7 +452,7 @@ const ROUTES = {
     await db.prepare('UPDATE users SET name = ?1, bio = ?2, avatar = ?3, color = ?4, grade = ?5, cls = ?6, club = ?7, mood = ?8, stickers = ?9, insta = ?11, st_title = ?12, st_rep = ?13, st_deco = ?14 WHERE id = ?10')
       .bind(name, clean(body.bio, 80, true), avatar, color, g >= 1 && g <= 3 ? g : 0, c >= 1 && c <= 6 ? c : 0, clean(body.club, 16), clean(body.mood, 24),
         JSON.stringify([...new Set(stickers)]), me.id, insta, title, rep, JSON.stringify(deco)).run();
-    return json({ ok: true });
+    return json({ ok: true, mis: await misEv(db, me, 'prof') });
   }),
 
   'POST password': needMe(async ({ req, db, me, body }) => {
@@ -614,9 +619,10 @@ const ROUTES = {
     if (!isAdm(me) && await limited(db, 'fo:' + me.id, 60, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
     const r = await rel(db, me.id, u.id);
     if (body.on && (r.blocked || r.blockedMe)) return err('팔로우할 수 없어요');
-    if (body.on) await db.prepare('INSERT OR IGNORE INTO follows (a, b, at) VALUES (?1, ?2, ?3)').bind(me.id, u.id, Date.now()).run();
+    let mis = null;
+    if (body.on) { const ins = await db.prepare('INSERT OR IGNORE INTO follows (a, b, at) VALUES (?1, ?2, ?3)').bind(me.id, u.id, Date.now()).run(); if (ins.meta?.changes && !r.following) mis = await misEv(db, me, 'fol', { to: u.id }); }
     else await db.prepare('DELETE FROM follows WHERE a = ?1 AND b = ?2').bind(me.id, u.id).run();
-    return json({ ok: true, rel: await rel(db, me.id, u.id) });
+    return json({ ok: true, rel: await rel(db, me.id, u.id), mis });
   }),
 
   'POST block': needMe(async ({ db, me, body }) => {
@@ -713,7 +719,7 @@ const ROUTES = {
     }
     const m = await db.prepare('INSERT INTO messages (pair, a, b, body, at) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, at')
       .bind(pairOf(me.id, u.id), me.id, u.id, text, Date.now()).first();
-    return json({ ok: true, message: { id: m.id, mine: true, body: text, del: false, at: m.at } });
+    return json({ ok: true, message: { id: m.id, mine: true, body: text, del: false, at: m.at }, mis: await misEv(db, me, 'dm', { to: u.id }) });
   }),
 
   'POST unsend': needMe(async ({ db, me, body }) => {
@@ -827,7 +833,8 @@ const ROUTES = {
     if (!pick) await db.prepare('DELETE FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(st.ymd, 'u' + me.id).run();
     else await db.prepare('INSERT INTO balance_votes (ymd, voter, pick, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (ymd, voter) DO UPDATE SET pick = excluded.pick, at = excluded.at')
       .bind(st.ymd, 'u' + me.id, pick, Date.now()).run();
-    return json(await balState(env, db, me));
+    const mis = pick ? await misEv(db, me, 'bal', { day: st.ymd }) : null;
+    return json({ ...(await balState(env, db, me)), mis });
   }),
   'POST balc': needMe(async ({ env, db, me, body }) => {
     const text = clean(body.body, 100, true);
@@ -839,7 +846,8 @@ const ROUTES = {
     if (st.open && !st.mine && !isAdm(me)) return err('먼저 한쪽을 골라야 댓글을 달 수 있어요');
     if (!isAdm(me) && await limited(db, 'bc:' + me.id, 6, 300)) return err('댓글은 5분에 6개까지 달 수 있어요', 429);
     await db.prepare('INSERT INTO balance_comments (ymd, uid, pick, body, at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(st.ymd, me.id, st.mine || '', text, Date.now()).run();
-    return json(await balState(env, db, me));
+    const mis = await misEv(db, me, 'balc');
+    return json({ ...(await balState(env, db, me)), mis });
   }),
   'POST balcdel': needMe(async ({ env, db, me, body }) => {
     const r = await db.prepare('DELETE FROM balance_comments WHERE id = ?1 AND uid = ?2').bind(+body.id || 0, me.id).run();
@@ -864,7 +872,7 @@ const ROUTES = {
       ? db.prepare('INSERT OR IGNORE INTO balance_comment_likes (cid, uid, at) VALUES (?1, ?2, ?3)').bind(id, me.id, Date.now())
       : db.prepare('DELETE FROM balance_comment_likes WHERE cid = ?1 AND uid = ?2').bind(id, me.id);
     const [, n] = await db.batch([write, db.prepare('SELECT COUNT(*) AS n FROM balance_comment_likes WHERE cid = ?1').bind(id)]);
-    return json({ id, liked: !!body.on, likes: n.results[0].n });
+    return json({ id, liked: !!body.on, likes: n.results[0].n, mis: body.on ? await misEv(db, me, 'like', { id }) : null });
   }),
   'POST balcrep': needMe(async ({ db, me, body }) => {
     const c = await db.prepare('SELECT uid, ymd, body FROM balance_comments WHERE id = ?1').bind(+body.id || 0).first();
@@ -978,9 +986,8 @@ const ROUTES = {
         } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/home_first', method: 'NOTICE' }, e); }
       }
     }
-    // 오늘의 미션 진행(미리보기 깃발 daily-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
-    let mis = null;
-    if (ffOn('daily-mission', isAdm(me))) { try { mis = await misPlay(db, me, game, v, allPrev.b != null && v < allPrev.b); } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/mission', method: 'MISSION' }, e); } }
+    // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
+    const mis = await misEv(db, me, 'play', { game, v, best: allPrev.b != null && v < allPrev.b, day });
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
     return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
@@ -1066,8 +1073,9 @@ const ROUTES = {
     const r = await db.prepare('UPDATE users SET gc_tix = ?1, gc_own = ?2, gc_pity = ?3, gc_leg = ?4, gc_shard = ?5 WHERE id = ?6 AND gc_tix = ?7 AND gc_own = ?8 RETURNING id')
       .bind(tix, JSON.stringify(own), pity, leg, Math.min(shard, 9999), me.id, me.gc_tix ?? 0, me.gc_own || '{}').first();
     if (!r) return err('다른 창에서 먼저 뽑았어요. 한 번 더 눌러 주세요', 409);
-    const after = { ...me, gc_tix: tix, gc_own: JSON.stringify(own), gc_pity: pity, gc_leg: leg, gc_shard: shard };
-    return json({ out, ...gcPub(after) });
+    const mis = await misEv(db, me, 'gacha', { n });   // 미션 뽑기권은 gcPub 뒤에 더함
+    const after = { ...me, gc_tix: tix + (mis ? mis.got.length * MS.tix : 0), gc_own: JSON.stringify(own), gc_pity: pity, gc_leg: leg, gc_shard: shard };
+    return json({ out, ...gcPub(after), mis });
   }),
   // 조각 → 뽑기권 교환은 없앰(2026-10-25 하율: "메리트 없음") — 예전 화면이 부르면 안내만
   'POST gachaex': needMe(async () => err('조각은 이제 스티커 골라 받기·반짝이 강화에 써요. 새로 고침해 주세요')),
@@ -1199,9 +1207,9 @@ const ROUTES = {
   }),
 
   'GET mission': needMe(async ({ db, me }) => {
-    if (!ffOn('daily-mission', isAdm(me))) return err('not found', 404);
-    const day = kstYmd(), { p } = await misGet(db, me, day);
-    return json(misOut(day, p));
+    if (!ffOn('week-mission', isAdm(me))) return err('not found', 404);
+    const wk = weekKey(), { p } = await misGet(db, me, wk);
+    return json(misOut(wk, p));
   }),
   'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
     const out = {};
@@ -1253,7 +1261,8 @@ async function attState(env, db, me, doCheck, quiet = false) {
   u = { st_cur: cur, st_best: best, st_last: today, st_total: r.st_total, st_shield: shield, st_pf: pf };
   // 새로 열린 보상: 연속은 최고 기록이 넘어선 것, 누적은 총 출석일이 넘어선 것
   const unlocked = REWARDS.filter(x => !rwOn(x, old.st_best, old.st_total) && rwOn(x, best, r.st_total));
-  return json(out({ new: true, prev: prevLive, lost, used, gotShield, unlocked, tix, tixNow: r.gc_tix, milestone: unlocked.length > 0 || MILESTONES.includes(cur), weekDays: await weekRows() }));
+  const mis = await misEv(db, me, 'att');
+  return json(out({ new: true, mis, prev: prevLive, lost, used, gotShield, unlocked, tix, tixNow: r.gc_tix + (mis ? mis.got.length * MS.tix : 0), milestone: unlocked.length > 0 || MILESTONES.includes(cur), weekDays: await weekRows() }));
 }
 
 // 게임 랭킹 라운드 정산(att-rewards.js RK, 2026-10-25): 끝난 라운드마다 게임별 1~3등에게 뽑기권 RK.tix장.

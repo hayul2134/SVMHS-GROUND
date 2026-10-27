@@ -8,7 +8,7 @@ import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX } from './gear-score.js';
 import { ffOn, RELEASED } from './flags.js';
-import { MS } from './mission.js';   // 오늘의 미션(2026-10-27, 미리보기 깃발 daily-mission)
+import { KIND, weekLeft } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
 import { TIERS, TIER_PCT, BEST_N, tierOfK } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
@@ -51,6 +51,7 @@ async function call(path, body) {
     if (r.status === 401 && S.me) { S.me = null; paintBadges(); }
     const e = new Error(j.error || '잠시 후 다시 시도해 주세요'); e.status = r.status; throw e;
   }
+  if (j.mis) msResult(j.mis);   // 주간 미션을 깬 응답(게임·뽑기·출석·DM·팔로우·프로필)
   return j;
 }
 const fail = e => toast(e.message || '문제가 생겼어요');
@@ -140,6 +141,7 @@ async function refreshMe() {
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
   applyFx();
+  if (!S.meErr) loadMission();
   if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); ctx?.setClub?.(S.me?.club); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
   if (!panelOpen()) loadRecent();
   if (!S.meErr) loadBuddies();
@@ -1152,13 +1154,79 @@ async function renderThread(handle, box, panel) {
   refreshMe();
 }
 
+/* ===== 주간 미션 (2026-10-27 하율: 출석 버튼 옆 · 매주 다른 미션 5개 · 하나마다 뽑기권 1장) ===== */
+// 미리보기 깃발 week-mission. 서버가 행동마다 진행을 올리고 깬 미션만큼 뽑기권을 넣음 → 응답의 mis로 알림
+let msD = null, msAt = 0;
+const msOn = () => !!S.me && ffOn('week-mission', isDev(S.me));
+async function loadMission(force) {
+  if (!msOn()) { paintMsBtn(); return null; }
+  if (!force && msD && Date.now() - msAt < 60000 && msD.wk) { paintMsBtn(); return msD; }
+  try { msD = await call('mission'); msAt = Date.now(); } catch {}
+  paintMsBtn(); return msD;
+}
+function paintMsBtn() {
+  const b = $('#btnMission'); if (!b) return;
+  b.hidden = !msOn() || !msD;
+  if (b.hidden) return;
+  const n = msD.list.filter(x => x.done).length, all = n === msD.list.length;
+  $('#msN').textContent = `${n}/${msD.list.length}`;
+  b.classList.toggle('all', all);
+  b.setAttribute('aria-label', `주간 미션 열기 — ${n}개 완료`);
+}
+const msLeftTx = () => { const m = Math.max(0, Math.floor(weekLeft() / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60); return d ? `${d}일 ${h}시간` : h ? `${h}시간 ${m % 60}분` : `${m % 60}분`; };
+const MS_GO = { game: ['game', '게임 하러 가기'], bal: ['bal', '밸런스 게임 열기'], att: ['att', '출석 체크 열기'], friends: ['dm', 'DM 열기'], gacha: ['gacha', '뽑기 하러 가기'], edit: ['edit', '꾸미기 열기'] };
+const MS_IC = { play: 'play', bal: 'vote', balc: 'vote', like: 'heart', att: 'fire', dm: 'heart', fol: 'heart', gacha: 'gacha', prof: 'brush' };
+function msRow(m, i) {
+  const g = m.g && GAMES[m.g], go = KIND[m.k]?.go, pct = Math.round(m.c / m.n * 100);
+  const dest = g ? `data-play="${m.g}"` : go ? `data-ms-go="${go}"` : '';
+  const icn = g ? g.ic : KIND[m.k]?.ev === 'play' ? 'play' : MS_IC[m.k] || 'flag';
+  const btn = m.done ? '<span class="ms-ok">완료</span>' : dest ? `<button type="button" class="ms-go" ${dest} aria-label="${g ? g.name + ' 하러 가기' : MS_GO[go]?.[1] || '하러 가기'}">${ic(icn)}</button>` : '';
+  return `<li class="${m.done ? 'done' : ''}"><span class="ms-no">${m.done ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg>' : i + 1}</span>
+    <div class="ms-tx"><b>${esc(m.t)}</b><span class="ms-bar"><i class="w${Math.round(pct / 5) * 5}"></i></span><small>${m.c} / ${m.n}<em>${ic('tix', 'ms-tki')}뽑기권 ${msD?.rw?.tix || 1}</em></small></div>${btn}</li>`;
+}
+async function openMission() {
+  sheet('<div class="ms-sheet"><div class="skel"></div></div>');
+  const d = await loadMission(true);
+  if (!d) { $('#socSheet').innerHTML = '<p class="note center">미션을 불러오지 못했어요</p>'; return; }
+  const n = d.list.filter(x => x.done).length, tot = d.list.length;
+  $('#socSheet').innerHTML = `<div class="ms-sheet${n === tot ? ' all' : ''}">
+    <div class="ms-top">${ic('tix', 'ms-big')}<div><h3>주간 미션</h3><small>새 미션까지 ${msLeftTx()} · 월요일 0시에 바뀌어요</small></div></div>
+    <div class="ms-sum"><span class="ms-pips">${d.list.map(x => `<i class="${x.done ? 'on' : ''}"></i>`).join('')}</span><b>${n === tot ? `이번 주 미션 끝! 뽑기권 ${tot * d.rw.tix}장 모두 받았어요` : `미션 하나 깰 때마다 뽑기권 ${d.rw.tix}장 · 이번 주 ${n * d.rw.tix} / ${tot * d.rw.tix}장`}</b></div>
+    <ol class="ms-list">${d.list.map(msRow).join('')}</ol>
+    <p class="ms-note">게임 기록이 검사에 걸려 보류되면 미션에 세지 않아요</p>
+    <div class="row">${n ? '<button type="button" class="btn" data-go="gacha" data-close>뽑으러 가기</button>' : ''}<button type="button" class="btn ghost" data-close>닫기</button></div>
+  </div>`;
+}
+// 미션 '하러 가기' — 게임은 data-play(기존 처리), 나머지는 여기서
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-ms-go]'); if (!b) return;
+  const k = MS_GO[b.dataset.msGo]?.[0]; closeSheet();
+  setTimeout(() => {
+    if (k === 'bal') { ctx.go('home'); setTimeout(() => $('#plMore')?.click(), 250); }
+    else if (k === 'att') $('#btnStreak')?.click();
+    else if (k === 'edit') $('#btnEdit')?.click();
+    else if (k) ctx.go(k);
+  }, 120);
+});
+document.getElementById('btnMission')?.addEventListener('click', () => { if (S.me) openMission(); });
+// 밸런스 게임(app.js) 응답은 이벤트로 받음
+document.addEventListener('sg:mis', e => msResult(e.detail));
+// 미션을 깬 응답 → 알림 + 뽑기권 숫자·버튼 갱신
+function msResult(m) {
+  if (!m?.got?.length) return;
+  msD = m; msAt = Date.now(); paintMsBtn();
+  if (S.me?.gc && S.me.gc.tix < 1e6) { S.me.gc.tix = (S.me.gc.tix || 0) + m.got.length * m.rw.tix; paintTix(); }
+  const all = m.list.every(x => x.done);
+  toast(all ? `주간 미션 모두 완료! 뽑기권 ${m.got.length * m.rw.tix}장 · 이번 주 ${m.list.length * m.rw.tix}장 다 받았어요` : `미션 완료! '${m.list[m.got[0]].t}' · 뽑기권 +${m.got.length * m.rw.tix}`, 5000);
+  const b = $('#btnMission'); if (b) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+}
+
 /* ===== 미니게임 (#game) ===== */
 async function renderGame() {
   const box = $('#gameBox');
   let info = null;
   if (S.me) { try { info = (await call('games')).games; } catch {} }
-  const msOn = S.me && ffOn('daily-mission', isDev(S.me));
-  box.innerHTML = `${msOn ? '<section class="card ms-card" id="msBox" aria-label="오늘의 미션"><div class="skel"></div></section>' : ''}${rkBand()}${S.me ? '<section class="card tier-card" id="tierBox"><div class="skel"></div></section>' : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
+  box.innerHTML = `${rkBand()}${S.me ? '<section class="card tier-card" id="tierBox"><div class="skel"></div></section>' : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
     const x = info?.[k];
     return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? "<b class=\"beta new\">NEW</b>" : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
       <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
@@ -1169,40 +1237,6 @@ async function renderGame() {
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
   if (S.me) loadTier();
-  if (msOn) loadMission();
-}
-/* 오늘의 미션 (2026-10-27 하율: 게임 일일 미션으로 뽑기권) — 미션 하나 = 조각 MS.shard · 3개 모두 = 뽑기권 MS.tix. 자정(KST)에 새 미션 */
-let msLast = null;
-async function loadMission() {
-  const box = $('#msBox'); if (!box) return;
-  let d; try { d = await call('mission'); } catch { box.remove(); return; }
-  msLast = d;
-  if ($('#msBox')) $('#msBox').outerHTML = msHtml(d);
-}
-const msLeft = () => { const k = new Date(Date.now() + 9 * 3600e3), m = 1440 - (k.getUTCHours() * 60 + k.getUTCMinutes()); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
-function msHtml(d) {
-  const nDone = d.list.filter(x => x.done).length;
-  const rows = d.list.map((m, i) => {
-    const g = m.g && GAMES[m.g], pct = Math.round(m.c / m.n * 100);
-    const go = m.done ? `<span class="ms-ok">완료</span>` : g ? `<button type="button" class="ms-go" data-play="${m.g}" aria-label="${g.name} 하러 가기">${ic(g.ic)}</button>` : '';
-    return `<li class="${m.done ? 'done' : ''}"><span class="ms-no">${m.done ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg>' : i + 1}</span>
-      <div class="ms-tx"><b>${esc(m.t)}</b><span class="ms-bar"><i class="w${Math.round(pct / 5) * 5}"></i></span><small>${m.c} / ${m.n} <em><i class="gc-sh" aria-hidden="true"></i>조각 ${d.rw.shard}</em></small></div>${go}</li>`;
-  }).join('');
-  const pips = d.list.map(x => `<i class="${x.done ? 'on' : ''}"></i>`).join('');
-  return `<section class="card ms-card${d.all ? ' all' : ''}" id="msBox" aria-label="오늘의 미션">
-    <div class="ms-head"><h3>오늘의 미션</h3><small>새 미션까지 ${msLeft()}</small></div>
-    <ol class="ms-list">${rows}</ol>
-    <div class="ms-foot"><span class="ms-pips" aria-label="${nDone}/3 완료">${pips}</span>${ic('tix', 'ms-tk')}
-      ${d.all ? `<p><b>오늘 미션 끝! 뽑기권 ${d.rw.tix}장 받았어요</b></p><button type="button" class="btn" data-go="gacha">뽑으러 가기</button>` : `<p><b>3개 모두 끝내면 뽑기권 ${d.rw.tix}장</b><small>보류된 기록은 미션에 안 세요</small></p>`}</div>
-  </section>`;
-}
-// 기록 저장 응답의 미션 결과 → 알림 + 뽑기권·조각 숫자 바로 반영
-function msResult(m) {
-  if (!m) return;
-  msLast = m;
-  if (S.me?.gc) { S.me.gc.shard = (S.me.gc.shard || 0) + m.got.length * m.rw.shard; if (m.allNow && S.me.gc.tix < 1e6) S.me.gc.tix = (S.me.gc.tix || 0) + m.rw.tix; paintTix(); }
-  if (m.allNow) toast(`오늘의 미션 모두 완료! 뽑기권 ${m.rw.tix}장을 받았어요`, 5000);
-  else if (m.got.length) toast(`미션 완료! ${m.got.map(i => `'${m.list[i].t}'`).join(' · ')} · 조각 +${m.got.length * m.rw.shard}`, 4500);
 }
 // 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
 async function loadTier() {
@@ -1462,7 +1496,6 @@ const heldLine = r => `<b>기록 보류</b> ${esc(r.why || '')} 개발자가 확
 async function saveScore(game, value, rounds) {
   const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
   const r = await call('score', { game, value, rounds, ticket: await t });
-  msResult(r.mis);
   if ($('#v-game').classList.contains('on')) renderGame();
   return r;
 }

@@ -667,6 +667,7 @@ async function balCall(path, body) {
   const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {});
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { const e = new Error(j.error || '잠시 후 다시 해 주세요'); e.status = r.status; throw e; }
+  if (j.mis) document.dispatchEvent(new CustomEvent('sg:mis', { detail: j.mis }));   // 주간 미션(social.js msResult)
   return j;
 }
 function setBal(j) {
