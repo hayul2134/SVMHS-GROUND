@@ -353,16 +353,9 @@ export function createGear(canvas, opt = {}) {
     const p = st.cur;
     if (p && st.scene === 'play') {
       const gy = ghostY(p);
-      if (gy !== p.y) {   // 고스트(놓일 자리): 장비 그림을 반투명하게 + 바깥 흰 윤곽 2px (2026-10-27 하율: 회색 칸이 잘 안 보임)
-        drawPiece(p, gy, .38);
-        const cs = cellsOf(p.k, p.r), has = (x, y) => cs.some(c => c[0] === x && c[1] === y);
-        g.fillStyle = 'rgba(255,255,255,.9)';
-        for (const [cx, cy] of cs) {
-          const by = gy + cy - HID; if (by < 0) continue;
-          const x = (p.x + cx) * C, y = by * C;
-          if (!has(cx - 1, cy)) g.fillRect(x, y, 2, C); if (!has(cx + 1, cy)) g.fillRect(x + C - 2, y, 2, C);
-          if (!has(cx, cy - 1)) g.fillRect(x, y, C, 2); if (!has(cx, cy + 1)) g.fillRect(x, y + C - 2, C, 2);
-        }
+      if (gy !== p.y) {   // 고스트(놓일 자리): 예전처럼 칸만 — 테두리 없이 안쪽을 흰색으로 채워 밝게 (2026-10-27 하율)
+        g.fillStyle = 'rgba(255,255,255,.42)';
+        for (const [cx, cy] of cellsOf(p.k, p.r)) { const by = gy + cy - HID; if (by < 0) continue; g.fillRect((p.x + cx) * C + 1, by * C + 1, C - 2, C - 2); }
       }
       drawPiece(p, p.y);
     }
