@@ -1578,7 +1578,8 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns"><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg><span>나가기</span></button><button class="pquit pre" type="button" id="pRe" aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg><span>다시<i class="pre-l"> 시작</i></span><kbd>R</kbd></button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>
+    <div class="pbot${wide ? ' wide' : ''}"><button class="prestart" type="button" id="pRe" aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<kbd>R</kbd></button></div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   $('#pRe').onclick = restartGame;
@@ -1631,7 +1632,7 @@ function play(game) {
 
 async function finish(game, value, detail = '', rounds = []) {   // rounds: 판마다의 기록 (서버가 다시 계산·검사)
   const g = GAMES[game], area = $('#parea'); if (!area) return;
-  area.classList.remove('wide'); $('#gamePlay .ptop')?.classList.remove('wide');
+  area.classList.remove('wide'); $('#gamePlay .ptop')?.classList.remove('wide'); $('#gamePlay .pbot')?.classList.remove('wide');
   area.innerHTML = `<div class="result"><p class="gem">${ic(g.ic)}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 기록이 쌓여요!'}</p>
     <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">${ic('trophy')}랭킹</button></div></div>`;
   $('#again').onclick = () => play(game);
