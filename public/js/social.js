@@ -1970,18 +1970,18 @@ async function playGear() {
   // 화면 크기: 판(120×240)을 정수 배(기기 픽셀 기준)로 — 옆 칸(보관·다음)과 아래 버튼·랭킹이 스크롤 없이 보이게
   // 2026-10-27 기기별 최적화: 가로로 눕힌 폰(세로 600px 이하 + 터치)은 조작 버튼을 판 양옆으로(.gr CSS) → 세로는 판만 들어가면 되고, 가로는 버튼 자리를 뺌.
   //   판이 작아지면 시작·끝 안내를 줄여 보여 줌(data-bs: s 300px 미만 · xs 190px 미만, data-bh: 판 높이 380px 미만)
-  const sideMQ = matchMedia('(pointer:coarse) and (orientation:landscape) and (max-height:600px)');
+  const sideMQ = matchMedia('(pointer:coarse) and (orientation:landscape)');   // 2026-10-28: 가로 태블릿(아이패드)도 버튼을 판 양옆으로
   const fit = () => {
     // 폭은 창 기준(게임 칸 폭이 앱 창에서 좁게 잡히던 경우 대비 — 2026-10-27 2차)
     // 2026-10-27 3차 하율 "전체적으로 크기 키우고 바로 다음 블록은 더 크게": 보관·바로 다음 = 큰 칸, 그 뒤 2개 = 작은 칸. 옆 칸 폭은 큰 칸에 맞춤
     // 기기별 최적화(2026-10-27): 눕힌 폰은 양옆 터치 버튼 자리(extra)를 빼고, 세로는 판만 들어가게(hRes) · 최소 1배
-    let hRes; const sideBtns = sideMQ.matches, extra = sideBtns ? 2 * 150 + 20 : 0, minK = sideBtns ? 1 : 1.5;
+    let hRes; const sideBtns = sideMQ.matches, extra = sideBtns ? 2 * (innerHeight > 600 ? 178 : 150) + 20 : 0, minK = sideBtns ? 1 : 1.5;
     // 2026-10-27 하율 "너무 커, 기기마다 화면에 딱 맞게": 창 높이가 아니라 실제 게임 칸(.parea)의 보이는 아래 끝 기준 + 판 아래 줄(터치 버튼·키 안내) 실제 높이만큼 빼서, 판과 키 안내가 스크롤 없이 한 화면에
     const pa = $('#gr').closest('.parea'), pr = pa ? pa.getBoundingClientRect() : null;
     const top = $('#grScr').getBoundingClientRect().top + (pa ? pa.scrollTop : 0), dpr = devicePixelRatio || 1;
     const vh = Math.min(innerHeight, visualViewport?.height || innerHeight, pr && pr.bottom > 0 ? pr.bottom : innerHeight);
     const tch = $('#gr .gr-touch'), bar = $('#gr .gr-bar'), tH = tch && getComputedStyle(tch).display !== 'none' && !sideBtns ? tch.offsetHeight + 12 : 0;
-    hRes = sideBtns ? 12 : tH + (bar ? bar.offsetHeight + 12 : 0) + 14;
+    hRes = sideBtns ? (innerHeight > 600 && bar ? bar.offsetHeight + 24 : 12) : tH + (bar ? bar.offsetHeight + 12 : 0) + 14;
     const w = Math.min(innerWidth - 24, 1240), avH = vh - top - hRes;
     const bigOf = q => Math.round(Math.min(52 * Math.min(3.4, q * 1.2), innerWidth * (innerWidth < 520 ? .13 : .17)));
     let q = 2.5; for (let i = 0; i < 3; i++) q = Math.max(minK, Math.min((w - 2 * (bigOf(q) + 22) - 40 - extra) / GEAR.BW, avH / GEAR.BH));
