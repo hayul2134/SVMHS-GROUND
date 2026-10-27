@@ -1254,7 +1254,7 @@ function msFly(from) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !document.body.animate) return new Promise(r => setTimeout(r, 200));
   const S0 = a.width / 52;   // .ms-fly 52px 기준, 버튼 속 아이콘 크기에서 시작
   const glow = msFx('ms-glow', x0, y0 - 44);
-  glow.animate([{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.3)', opacity: 0, offset: .25 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: .9, offset: .55 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 0 }], { duration: 1300, easing: 'ease-out' }).finished.then(() => glow.remove());
+  glow.animate([{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.3)', opacity: 0, offset: .15 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: .9, offset: .45 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 0 }], { duration: 950, easing: 'ease-out' }).finished.then(() => glow.remove());
   const tk = msFx('ms-fly', x0, y0); tk.innerHTML = ic('tix') + '<i class="ms-shine"></i>';
   // ① 튀어나옴(2026-10-27 하율 "너무 빨리 등장, 튀어나오는 것처럼"): 움찔(눌림) → 위로 쭉 늘어나며 튀어나옴 → 떨어지며 납작 → 작게 한 번 더 튐 → 자리 잡음
   const Q = (x, y, sx, sy, r) => `translate(-50%,-50%) translate(${x}px,${y}px) rotate(${r}deg) scale(${sx},${sy})`;
@@ -1265,11 +1265,11 @@ function msFly(from) {
     { transform: Q(0, -50, 1.2, 1.3, -2), offset: .5, easing: 'cubic-bezier(.4,0,.6,1)' },
     { transform: Q(0, -42, 1.28, 1.21, 0), offset: .74, easing: 'ease-out' },
     { transform: Q(0, -44, 1.25, 1.25, 0) },
-  ], { duration: 820, fill: 'forwards' });
+  ], { duration: 560, fill: 'forwards' });   // 820 → 560 (2026-10-27 하율 "좀 더 빨리")
   const T = (x, y, sc, r) => Q(x, y, sc, sc, r);
-  tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-130%) skewX(-18deg)' }, { transform: 'translateX(-130%) skewX(-18deg)', offset: .55 }, { transform: 'translateX(260%) skewX(-18deg)' }], { duration: 1250, easing: 'ease-in-out', fill: 'forwards' });
-  setTimeout(() => msStars(x0, y0 - 50, 4, 40, 7), 380);
-  return up.finished.catch(() => {}).then(() => new Promise(r => setTimeout(r, 260))).then(() => {
+  tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-130%) skewX(-18deg)' }, { transform: 'translateX(-130%) skewX(-18deg)', offset: .5 }, { transform: 'translateX(260%) skewX(-18deg)' }], { duration: 900, easing: 'ease-in-out', fill: 'forwards' });
+  setTimeout(() => msStars(x0, y0 - 50, 4, 40, 7), 260);
+  return up.finished.catch(() => {}).then(() => new Promise(r => setTimeout(r, 200))).then(() => {
     if (!t) { tk.remove(); return; }
     // ② 빨려 들어감(620ms): 위로 휘는 곡선, 점점 빨라지며 작아짐 + 별가루 꼬리
     const dx = t.left + t.width / 2 - x0, dy = t.top + t.height / 2 - y0, sx = 0, sy = -44, cx = dx * .3, cy = Math.min(sy, dy) - 70;
