@@ -42,7 +42,7 @@ const isSchoolDay = d => d.getDay() % 6 !== 0 && !offDays.has(ymd(d));
 const fmtLeft = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(s); };
 const pName = p => p === '조회' ? '조회' : p + '교시';
 /* 실제 종소리가 시계보다 늦게 울리는 만큼(ms) 카운트다운을 늦춘다. 종이 타이머보다 빠르면 음수로 */
-const BELL_LAG = 1000;  // 0.5초 → 0.85초(10-22) → 1초 (2026-10-27 하율: 0.15초 더 늦춤)
+const BELL_LAG = 800;   // 0.5초 → 0.85초(10-22) → 1초(10-27) → 0.8초 (2026-10-27 하율: 시계 0.2초 빠르게)
 const bellNow = () => new Date(now() - BELL_LAG);
 
 // 화면 전환 효과가 연달아 눌려 건너뛰어지면 Promise가 거절됨 → 무시 (콘솔 오류 방지)
