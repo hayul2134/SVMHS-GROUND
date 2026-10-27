@@ -1586,14 +1586,16 @@ async function playGear() {
   const fit = () => {
     const w = $('#parea').clientWidth, top = $('#grScr').getBoundingClientRect().top + scrollY;
     const side = w < 560 ? 150 : 250, dpr = devicePixelRatio || 1;
-    const k = Math.max(1.4, Math.min((w - side) / GEAR.BW, (innerHeight - top - (touchy ? 180 : 70)) / GEAR.BH));
-    const per = Math.floor(k * dpr) / dpr;
+    // 2026-10-27 하율 "화면이 이상해": 앱 창(배율이 소수인 기기)에서 내림 때문에 최소 크기보다 작아지고, 창 높이가 바뀌어도 다시 안 맞춰 판이 손바닥만 했음
+    //   → 최소 1.6배는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
+    const k = Math.min((w - side) / GEAR.BW, (innerHeight - top - (touchy ? 170 : 24)) / GEAR.BH);
+    const per = Math.max(Math.ceil(1.6 * dpr), Math.floor(k * dpr)) / dpr;
     cv.style.width = per * GEAR.BW + 'px';
     document.querySelectorAll('#gr .gr-mini').forEach(c => { c.style.width = Math.round(c.width * Math.min(2, per * .75)) + 'px'; });
     $('#gr').style.setProperty('--gw', Math.round(per * GEAR.BW) + 'px');
   };
-  fit();
-  const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
+  fit(); const fitT = [setTimeout(fit, 250), setTimeout(fit, 1000)];   // 창이 열리며 크기가 바뀌는 앱 창 대비
+  const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe($('#parea')); ro.observe(document.documentElement); addEventListener('resize', fit);
   // 키보드
   const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', x: 'cw', X: 'cw', z: 'ccw', Z: 'ccw', ' ': 'drop', c: 'hold', C: 'hold', Shift: 'hold', a: 'left', A: 'left', d: 'right', D: 'right', s: 'down', S: 'down', w: 'cw', W: 'cw' };
   const kd = e => {
@@ -1667,7 +1669,7 @@ async function playGear() {
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound); };
   paintSnd();
   sndBtn.onclick = () => { sound = !sound; store.set('gear_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
-  quitGame = () => { R.destroy(); clearInterval(hudT); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
+  quitGame = () => { R.destroy(); clearInterval(hudT); fitT.forEach(clearTimeout); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
 }
 
 let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
