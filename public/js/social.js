@@ -1232,27 +1232,67 @@ document.addEventListener('click', async e => {
   toast(r.list.every(x => x.done) ? `이번 주 미션 끝! 뽑기권 ${r.list.length * r.rw.tix}장 다 받았어요 🎉` : `뽑기권 +${r.rw.tix}장!`, 2600);
   msClaiming = false;
 });
+// 뽑기권 받기 효과(2026-10-27 하율 "나타나는 효과·들어가는 효과 더 예쁘게")
+// ① 나타남: 빛 고리 + 빛살 + 반짝이 별, 티켓이 통통 튀어나와 반짝(광택 쓸기) ② 날아감: 곡선 + 꼬리 별가루 ③ 들어감: 미션 버튼 흡수 고리 + '+1' + 작은 별
+const msFx = (cls, x, y) => { const d = document.createElement('div'); d.className = cls; d.style.left = x + 'px'; d.style.top = y + 'px'; document.body.append(d); return d; };
+function msStars(x, y, n, dist, size = 10) {
+  for (let k = 0; k < n; k++) {
+    const st = msFx('ms-star', x, y), a = (k / n) * Math.PI * 2 + Math.random() * .5, r = dist * (.7 + Math.random() * .5), z = size * (.6 + Math.random() * .7);
+    st.style.width = st.style.height = z + 'px';
+    st.classList.add('c' + (k % 3));
+    st.animate([{ transform: 'translate(-50%,-50%) scale(0) rotate(0)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(a) * r * .8}px),calc(-50% + ${Math.sin(a) * r * .8}px)) scale(1.1) rotate(90deg)`, opacity: 1, offset: .55 },
+      { transform: `translate(calc(-50% + ${Math.cos(a) * r}px),calc(-50% + ${Math.sin(a) * r}px)) scale(0) rotate(180deg)`, opacity: 0 }],
+      { duration: 650 + Math.random() * 250, easing: 'cubic-bezier(.2,.8,.3,1)' }).finished.catch(() => {}).then(() => st.remove());
+  }
+}
 function msFly(from) {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const a = from.getBoundingClientRect(), tgt = $('#btnMission'), t = tgt && !tgt.hidden ? tgt.getBoundingClientRect() : null;
-  // 터지는 반짝이
-  const burst = document.createElement('div'); burst.className = 'ms-burst';
-  burst.style.setProperty('--x', a.left + a.width / 2 + 'px'); burst.style.setProperty('--y', a.top + a.height / 2 + 'px');
-  for (let k = 0; k < 10; k++) { const i = document.createElement('i'); i.style.setProperty('--a', k * 36 + 'deg'); i.style.setProperty('--d', 34 + (k % 3) * 10 + 'px'); burst.append(i); }   // CSP: style="" 대신 CSSOM
-  const tk = document.createElement('div'); tk.className = 'ms-fly'; tk.innerHTML = ic('tix');
-  tk.style.left = a.left + a.width / 2 - 26 + 'px'; tk.style.top = a.top + a.height / 2 - 26 + 'px';
-  document.body.append(burst, tk);
-  setTimeout(() => burst.remove(), 800);
-  if (reduce || !t || !tk.animate) { setTimeout(() => tk.remove(), 300); return new Promise(r => setTimeout(r, 300)); }
-  const dx = t.left + t.width / 2 - (a.left + a.width / 2), dy = t.top + t.height / 2 - (a.top + a.height / 2);
-  const an = tk.animate([
-    { transform: 'translate(0,0) scale(.4) rotate(-20deg)', opacity: 0 },
-    { transform: 'translate(0,-46px) scale(1.5) rotate(10deg)', opacity: 1, offset: .28 },
-    { transform: 'translate(0,-40px) scale(1.35) rotate(-6deg)', opacity: 1, offset: .42 },
-    { transform: `translate(${dx * .55}px,${dy * .55 - 70}px) scale(1) rotate(-200deg)`, opacity: 1, offset: .72 },
-    { transform: `translate(${dx}px,${dy}px) scale(.45) rotate(-360deg)`, opacity: .9 },
-  ], { duration: 1100, easing: 'cubic-bezier(.45,0,.3,1)' });
-  return an.finished.catch(() => {}).then(() => tk.remove());
+  const x0 = a.left + a.width / 2, y0 = a.top + a.height / 2;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !document.body.animate) return new Promise(r => setTimeout(r, 200));
+  // ① 나타남
+  const ring = msFx('ms-ring', x0, y0);
+  ring.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(2.6)', opacity: 0 }], { duration: 600, easing: 'cubic-bezier(.2,.7,.3,1)' }).finished.then(() => ring.remove());
+  const rays = msFx('ms-rays', x0, y0 - 52);
+  rays.animate([{ transform: 'translate(-50%,-50%) scale(.3) rotate(0)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(40deg)', opacity: .9, offset: .35 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(90deg)', opacity: 0 }], { duration: 900, easing: 'ease-out' }).finished.then(() => rays.remove());
+  msStars(x0, y0, 12, 70, 12);
+  const tk = msFx('ms-fly', x0, y0); tk.innerHTML = ic('tix') + '<i class="ms-shine"></i>';
+  const dx = t ? t.left + t.width / 2 - x0 : 0, dy = t ? t.top + t.height / 2 - y0 : -80;
+  // 곡선(2차 베지어): 출발 위 52px → 조절점(가로 중간, 더 높이) → 목표
+  const sx = 0, sy = -52, cx = dx * .45, cy = Math.min(sy, dy) - 110, P = (u) => [(1 - u) ** 2 * sx + 2 * (1 - u) * u * cx + u * u * dx, (1 - u) ** 2 * sy + 2 * (1 - u) * u * cy + u * u * dy];
+  const kf = [
+    { transform: 'translate(-50%,-50%) translate(0,0) scale(.2) rotate(-30deg)', opacity: 0, offset: 0 },
+    { transform: 'translate(-50%,-50%) translate(0,-62px) scale(1.75) rotate(8deg)', opacity: 1, offset: .2 },
+    { transform: 'translate(-50%,-50%) translate(0,-48px) scale(1.5) rotate(-5deg)', opacity: 1, offset: .29 },
+    { transform: 'translate(-50%,-50%) translate(0,-54px) scale(1.58) rotate(3deg)', opacity: 1, offset: .38 },
+    { transform: 'translate(-50%,-50%) translate(0,-52px) scale(1.55) rotate(0)', opacity: 1, offset: .46 },
+  ];
+  const N = 8;
+  for (let k = 1; k <= N; k++) { const u = k / N, [px, py] = P(u); kf.push({ transform: `translate(-50%,-50%) translate(${px}px,${py}px) scale(${1.55 - 1.15 * u ** 1.4}) rotate(${-u * 25}deg)`, opacity: 1, offset: .46 + .54 * (u === 1 ? 1 : u * .999) }); }
+  kf[kf.length - 1].opacity = .95;
+  const D = 1500, an = tk.animate(kf, { duration: D, easing: 'linear' });
+  tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-120%) skewX(-20deg)' }, { transform: 'translateX(-120%) skewX(-20deg)', offset: .18 }, { transform: 'translateX(220%) skewX(-20deg)', offset: .42 }, { transform: 'translateX(220%) skewX(-20deg)' }], { duration: D });
+  // ② 꼬리 별가루 (날아가는 동안만)
+  let raf = 0; const t0 = performance.now();
+  const trail = () => {
+    const e = (performance.now() - t0) / D; if (e >= 1) return;
+    if (e > .47) { const r = tk.getBoundingClientRect(), d = msFx('ms-dust', r.left + r.width / 2 + (Math.random() - .5) * 14, r.top + r.height / 2 + (Math.random() - .5) * 14); d.classList.add('c' + (Math.random() * 3 | 0));
+      d.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: .95 }, { transform: 'translate(-50%,-50%) translateY(10px) scale(0)', opacity: 0 }], { duration: 520, easing: 'ease-out' }).finished.then(() => d.remove()); }
+    raf = requestAnimationFrame(trail);
+  };
+  raf = requestAnimationFrame(trail);
+  return an.finished.catch(() => {}).then(() => {
+    cancelAnimationFrame(raf); tk.remove();
+    if (!t) return;
+    // ③ 들어감
+    const x1 = t.left + t.width / 2, y1 = t.top + t.height / 2;
+    const hit = msFx('ms-ring in', x1, y1);
+    hit.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.9)', opacity: 0 }], { duration: 520, easing: 'ease-out' }).finished.then(() => hit.remove());
+    msStars(x1, y1, 8, 38, 8);
+    const plus = msFx('ms-plus', x1, y1); plus.textContent = '+' + (msD?.rw?.tix || 1);
+    plus.animate([{ transform: 'translate(-50%,0) scale(.4)', opacity: 0 }, { transform: 'translate(-50%,24px) scale(1.2)', opacity: 1, offset: .3 }, { transform: 'translate(-50%,30px) scale(1)', opacity: 1, offset: .7 }, { transform: 'translate(-50%,40px) scale(.9)', opacity: 0 }], { duration: 1000, easing: 'ease-out' }).finished.then(() => plus.remove());
+    tgt.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18) rotate(-4deg)', offset: .3 }, { transform: 'scale(.94) rotate(2deg)', offset: .6 }, { transform: 'scale(1)' }], { duration: 480, easing: 'ease-out' });
+  });
 }
 // 미션 '하러 가기' — 게임은 data-play(기존 처리), 나머지는 여기서
 document.addEventListener('click', e => {
