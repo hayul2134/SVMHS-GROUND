@@ -37,27 +37,29 @@ function canvasOf(w, h) { const c = document.createElement('canvas'); c.width = 
 const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v * k))); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(v => f(v).toString(16).padStart(2, '0')).join(''); };
 function disc(g, cx, cy, r, col) { g.fillStyle = col; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * .6) g.fillRect(cx + x, cy + y, 1, 1); }
 function box(g, x, y, w, h, col) { g.fillStyle = col; g.fillRect(x, y, w, h); }
-// 장비 몸통: 칸들을 한 덩어리로 — 바깥 테두리 = 흰 선 1px + 남색 선 1px(어두운 선반에 안 묻히게, 2026-10-27 하율), 붙은 칸끼리는 이어짐,
+// 장비 몸통: 칸들을 한 덩어리로 — 바깥 테두리 = 남색 선 1px + 그 안쪽 흰 선 1px(바깥 흰 테두리는 되돌리고 안쪽을 밝게, 2026-10-27 하율), 붙은 칸끼리는 이어짐,
 // 바깥 모서리는 둥글게, 안쪽으로 꺾인 모서리도 선을 이어 줌, 위·왼쪽 밝게·아래·오른쪽 어둡게
 const RIM = '#f7f9ff';
+const mix = (a, b, t) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
 function body(g, cells, col) {
   const has = (x, y) => cells.some(c => c[0] === x && c[1] === y);
-  const hi = shade(col, 1.18), lo = shade(col, .78);
+  col = mix(col, '#ffffff', .14);   // 몸통도 살짝 밝게
+  const hi = mix(col, '#ffffff', .35), lo = shade(col, .8);
   for (const [cx, cy] of cells) {
     const x = cx * C, y = cy * C, L = !has(cx - 1, cy), R = !has(cx + 1, cy), T = !has(cx, cy - 1), B = !has(cx, cy + 1);
     const ins = d => [x + (L ? d : 0), y + (T ? d : 0), x + C - (R ? d : 0), y + C - (B ? d : 0)];
-    box(g, x, y, C, C, RIM);
-    { const [a, b, c2, d2] = ins(1); box(g, a, b, c2 - a, d2 - b, OL); }
+    box(g, x, y, C, C, OL);
+    { const [a, b, c2, d2] = ins(1); box(g, a, b, c2 - a, d2 - b, RIM); }
     const [x0, y0, x1, y1] = ins(2);
     box(g, x0, y0, x1 - x0, y1 - y0, col);
     if (T) box(g, x0, y0, x1 - x0, 1, hi); if (L) box(g, x0, y0, 1, y1 - y0, hi);
     if (B) box(g, x0, y1 - 1, x1 - x0, 1, lo); if (R) box(g, x1 - 1, y0, 1, y1 - y0, lo);
-    // 바깥 모서리 둥글게: 모서리 1px 투명 → 대각선 안쪽 흰 점 → 그 안쪽 남색 점
-    const round = (px, py, sx, sy) => { g.clearRect(px, py, 1, 1); box(g, px + sx, py + sy, 1, 1, RIM); box(g, px + sx * 2, py + sy * 2, 1, 1, OL); box(g, px + sx, py, 1, 1, RIM); box(g, px, py + sy, 1, 1, RIM); };
+    // 바깥 모서리 둥글게: 모서리 1px 투명 → 대각선 안쪽 남색 점 → 그 안쪽 흰 점
+    const round = (px, py, sx, sy) => { g.clearRect(px, py, 1, 1); box(g, px + sx, py + sy, 1, 1, OL); box(g, px + sx * 2, py + sy * 2, 1, 1, RIM); box(g, px + sx, py, 1, 1, OL); box(g, px, py + sy, 1, 1, OL); };
     if (L && T) round(x, y, 1, 1); if (R && T) round(x + C - 1, y, -1, 1);
     if (L && B) round(x, y + C - 1, 1, -1); if (R && B) round(x + C - 1, y + C - 1, -1, -1);
     // 안쪽으로 꺾인 모서리(옆·위는 붙었는데 대각선은 비었음): 선이 끊기지 않게 2×2 채움
-    const notch = (dx, dy, px, py) => { if (!has(cx + dx, cy) || !has(cx, cy + dy) || has(cx + dx, cy + dy)) return; box(g, px - (dx > 0 ? 1 : 0), py - (dy > 0 ? 1 : 0), 2, 2, OL); box(g, dx > 0 ? px : px, dy > 0 ? py : py, 1, 1, RIM); };
+    const notch = (dx, dy, px, py) => { if (!has(cx + dx, cy) || !has(cx, cy + dy) || has(cx + dx, cy + dy)) return; box(g, px - (dx > 0 ? 1 : 0), py - (dy > 0 ? 1 : 0), 2, 2, RIM); box(g, dx > 0 ? px : px, dy > 0 ? py : py, 1, 1, OL); };
     notch(-1, -1, x, y); notch(1, -1, x + C - 1, y); notch(-1, 1, x, y + C - 1); notch(1, 1, x + C - 1, y + C - 1);
   }
 }
@@ -135,7 +137,7 @@ function buildArt() {
     for (const [cx, cy] of cells) mg.fillRect(cx * C, cy * C, C, C);
     mg.globalCompositeOperation = 'destination-out';
     const has = (x, y) => cells.some(q => q[0] === x && q[1] === y);
-    for (const [cx, cy] of cells) {   // 테두리 2px(흰 선·남색 선) 안쪽에만
+    for (const [cx, cy] of cells) {   // 테두리 2px(남색 선·흰 선) 안쪽에만
       if (!has(cx - 1, cy)) mg.fillRect(cx * C, cy * C, 2, C);
       if (!has(cx + 1, cy)) mg.fillRect(cx * C + C - 2, cy * C, 2, C);
       if (!has(cx, cy - 1)) mg.fillRect(cx * C, cy * C, C, 2);
