@@ -1271,7 +1271,7 @@ function msRow(m, i) {
   const btn = m.done ? '<span class="ms-ok">완료</span>'
     : m.ready ? `<button type="button" class="ms-claim" data-ms-claim="${i}" aria-label="뽑기권 ${msD?.rw?.tix || 1}장 받기">${ic('tix')}<span>받기</span></button>` : dest ? `<button type="button" class="ms-go" ${dest} aria-label="${g ? g.name + ' 하러 가기' : MS_GO[go]?.[1] || '하러 가기'}">${ic(icn)}</button>` : '';
   return `<li class="${m.done ? 'done' : m.ready ? 'ready' : ''}"><span class="ms-no">${m.done ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg>' : i + 1}</span>
-    <div class="ms-tx"><b>${esc(m.t)}</b><span class="ms-bar"><i class="w${Math.round(pct / 5) * 5}"></i></span><small>${m.c.toLocaleString('ko-KR')} / ${m.n.toLocaleString('ko-KR')}${m.u ? esc(m.u) : ''}<em>${ic('tix', 'ms-tki')}뽑기권 ${msD?.rw?.tix || 1}</em></small></div>${btn}</li>`;
+    <div class="ms-tx"><b>${esc(document.documentElement.classList.contains('cut2') ? m.t.replace('컷 타이밍', '편집의 신') : m.t)}</b><span class="ms-bar"><i class="w${Math.round(pct / 5) * 5}"></i></span><small>${m.c.toLocaleString('ko-KR')} / ${m.n.toLocaleString('ko-KR')}${m.u ? esc(m.u) : ''}<em>${ic('tix', 'ms-tki')}뽑기권 ${msD?.rw?.tix || 1}</em></small></div>${btn}</li>`;
 }
 async function openMission() {
   sheet('<div class="ms-sheet"><div class="skel"></div></div>');
