@@ -4878,3 +4878,9 @@ html:has(body.playing){overflow:hidden}
 .ms-note{margin:10px 2px 0;color:var(--sub);font-weight:700;font-size:12px}
 @keyframes msTk{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) scale(1.08)}}
 @media (prefers-reduced-motion:reduce){.ms-sheet.all .ms-big,.hb-ms.pop .sic{animation:none}}
+/* 주간 미션 버튼이 들어가 좁은 폰(400px 이하)에서 헤더가 넘치던 것: 숫자는 아이콘 위 작은 배지로, 버튼 사이 간격 줄임 */
+@media (max-width:400px){
+  .iconbtn.hb-ms{width:40px;padding:0;justify-content:center;position:relative}
+  .hb-ms b{position:absolute;right:-7px;bottom:-7px;padding:2px 4px;font-size:10px;line-height:1;background:var(--yellow,#ffe08a);color:#1d2433;border:1.6px solid var(--ink);border-radius:99px}
+  body:has(#btnMission:not([hidden])) #hMenu{gap:5px}
+}
