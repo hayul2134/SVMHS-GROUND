@@ -1578,11 +1578,9 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>
-    <div class="pbot${wide ? ' wide' : ''}"><button class="prestart" type="button" id="pRe" aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<kbd>R</kbd></button></div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
-  $('#pRe').onclick = restartGame;
   homeRO?.disconnect(); homeRO = null; requestAnimationFrame(fitHome);
   return $('#parea');
 }
@@ -1595,7 +1593,10 @@ function fitHome() {
   t.style.paddingLeft = t.style.paddingRight = ''; h.style.translate = '';
   const a = h.getBoundingClientRect(), p = t.getBoundingClientRect(), r = g.getBoundingClientRect();
   if (!a.width || !r.width) return;
-  const L = Math.max(r.left, 8), R = Math.min(r.right, innerWidth - 8);
+  let L = Math.max(r.left, 8), R = Math.min(r.right, innerWidth - 8);
+  // 게임 칸이 좁으면(가로로 눕힌 폰의 1 to 25 등) 제목이 줄바꿈되며 깨짐 → 제목+나가기가 한 줄에 들어갈 폭은 확보 (2026-10-27)
+  const need = (t.querySelector('b')?.scrollWidth || 0) + (t.querySelector('.pquit')?.offsetWidth || 0) + 24;
+  if (R - L < need) { const c = (L + R) / 2; L = Math.max(8, c - need / 2); R = Math.min(innerWidth - 8, L + need); L = Math.max(8, R - need); }
   const vert = a.bottom > p.top && a.top < p.bottom;   // 집 버튼과 제목 줄이 같은 높이일 때만 겹침 검사
   t.style.paddingLeft = Math.max(0, Math.max(L, vert ? a.right + 12 : 0) - p.left) + 'px';
   t.style.paddingRight = Math.max(0, p.right - R) + 'px';
@@ -1609,6 +1610,10 @@ document.addEventListener('click', e => { if (e.target.closest('[data-go]') && d
 function endPlay() { unfitHome(); quitGame?.(); quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden) endPlay(); });
 
+// 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
+const RE_BTN = `<button class="prestart" type="button" data-restart aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<kbd>R</kbd></button>`;
+const RE_ROW = `<div class="prow">${RE_BTN}</div>`;
+document.addEventListener('click', e => { if (e.target.closest('[data-restart]')) restartGame(); });
 // 모든 게임 공통 '다시 시작'(2026-10-27 하율 "모든 게임에 재시작 버튼"): 게임 화면 위 나가기 옆 — 하던 판을 버리고 같은 게임을 처음부터
 // (연타로 시작 티켓 한도(10분 60번)를 쓰지 않게 0.8초 안 연타는 무시, 게임 안에서 연 창은 닫음)
 let curGame = '', reAt = 0;
@@ -1632,7 +1637,7 @@ function play(game) {
 
 async function finish(game, value, detail = '', rounds = []) {   // rounds: 판마다의 기록 (서버가 다시 계산·검사)
   const g = GAMES[game], area = $('#parea'); if (!area) return;
-  area.classList.remove('wide'); $('#gamePlay .ptop')?.classList.remove('wide'); $('#gamePlay .pbot')?.classList.remove('wide');
+  area.classList.remove('wide'); $('#gamePlay .ptop')?.classList.remove('wide');
   area.innerHTML = `<div class="result"><p class="gem">${ic(g.ic)}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 기록이 쌓여요!'}</p>
     <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">${ic('trophy')}랭킹</button></div></div>`;
   $('#again').onclick = () => play(game);
@@ -1686,7 +1691,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5, RX_ANTI = 100, RX_LOCK = 1000;
 const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 function playReaction() {
-  stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol><p class="rxfoul" id="rxfoul">초록색 전에 누르면 부정출발 · 첫 번은 봐주고, 그다음부터 한 번마다 +${RX_PEN}ms · ${RX_OUT}번이면 실격</p>`);
+  stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button>${RE_ROW}<ol class="rxlog" id="rxlog"></ol><p class="rxfoul" id="rxfoul">초록색 전에 누르면 부정출발 · 첫 번은 봐주고, 그다음부터 한 번마다 +${RX_PEN}ms · ${RX_OUT}번이면 실격</p>`);
   const pad = $('#rx'), log = $('#rxlog'), fl = $('#rxfoul');
   const times = []; let state = 'idle', t0 = 0, timer = 0, alive = true, lastD = 0, fouls = 0, lockTo = 0;
   quitGame = () => { alive = false; clearTimeout(timer); };
@@ -1743,7 +1748,7 @@ function playReaction() {
 function playNum25() {
   const nums = Array.from({ length: 25 }, (_, i) => i + 1).sort(() => Math.random() - .5);
   stage(ic('n25') + ' 1 to 25', `<div class="n25top"><span>다음 <b id="nNext">1</b></span><span id="nTime">0.00초</span></div>
-    <div class="n25" id="n25">${nums.map(n => `<button data-n="${n}">${n}</button>`).join('')}</div><p class="note center">틀리게 누르면 +1초</p>`);
+    <div class="n25" id="n25">${nums.map(n => `<button data-n="${n}">${n}</button>`).join('')}</div>${RE_ROW}<p class="note center">틀리게 누르면 +1초</p>`);
   let next = 1, t0 = 0, pen = 0, raf = 0, alive = true; const taps = [];
   quitGame = () => { alive = false; cancelAnimationFrame(raf); };
   const tick = () => { if (!alive) return; $('#nTime').textContent = ((performance.now() - t0 + pen) / 1000).toFixed(2) + '초'; raf = requestAnimationFrame(tick); };
@@ -1767,6 +1772,9 @@ async function playCut2() {
   if (!CUT) { try { CUT = await import('./cut.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected) return;
   area.innerHTML = CUT.html(matchMedia('(pointer:coarse)').matches);
+  const cb = area.querySelector('.ctm-bar');
+  cb?.insertAdjacentHTML('afterend', RE_ROW.replace('class="prow"', 'class="prow re-alt"'));
+  cb?.querySelector('.ctm-snd')?.insertAdjacentHTML('beforebegin', RE_BTN.replace('class="prestart"', 'class="prestart re-in"'));
   const quit = CUT.run(area, {
     sound: store.get('cut_snd', false), onSound: on => store.set('cut_snd', on),
     onDone: (sum, errs, signed) => finish('cut', Math.min(sum, 6000), CUT.resultHtml(sum, errs, signed), errs),
@@ -1778,7 +1786,7 @@ function playCut() {
   stage(ic('clap') + ' 컷 타이밍', `<p class="cutinfo"><span id="cRound">1 / 5</span> · 누적 오차 <b id="cSum">0ms</b></p>
     <div class="tl" id="tl"><div class="tl-ruler"></div><i class="tl-mark" id="cMark"></i><i class="tl-head" id="cHead"></i></div>
     <p class="cutmsg" id="cMsg">빨간 컷 지점에 플레이헤드가 오면 CUT!</p>
-    <button class="btn big cutbtn" id="cBtn">✂ CUT</button>`);
+    <div class="cut-bar"><button class="btn big cutbtn" id="cBtn">✂ CUT</button>${RE_BTN.replace('class="prestart"', 'class="prestart re-in"')}</div>${RE_ROW.replace('class="prow"', 'class="prow re-alt"')}`);
   const DUR = [2400, 2100, 1800, 1550, 1300];   // 끝까지 가는 시간(ms)
   let round = 0, sum = 0, raf = 0, t0 = 0, target = 0, running = false, alive = true;
   const errs = [];
@@ -1832,7 +1840,7 @@ async function playGear() {
         <div class="gt gt-r"><button type="button" class="btn ghost" data-gk="ccw" aria-label="왼쪽으로 돌리기">↺</button><button type="button" class="btn" data-gk="cw" aria-label="오른쪽으로 돌리기">↻</button>
         <button type="button" class="btn" data-gk="drop" aria-label="바로 내리기">⤓</button><button type="button" class="btn ghost" data-gk="hold" aria-label="보관">보관</button></div></div>
       <div class="hr-bar gr-bar"><p class="hr-keys"><kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>↑</kbd> 돌리기 · <kbd>↓</kbd> 내리기 · <kbd>Space</kbd> 바로 놓기 · <kbd>C</kbd> 보관 · <kbd>P</kbd> 멈춤</p>
-        <button type="button" class="btn ghost hr-snd" id="grSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
+        ${RE_BTN}<button type="button" class="btn ghost hr-snd" id="grSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div class="hr-rk" id="grRk"></div>
     </div>`, true);
   if (!GEAR) { try { GEAR = await import('./gear.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
@@ -2026,10 +2034,11 @@ async function playHome() {
   const area = stage(ic('run') + ' 집에 가고 싶어!', `<div class="hr" id="hr">
       <div class="hr-scr" id="hrScr"><canvas id="hrCv" aria-label="게임 화면"></canvas>
         <div class="hr-ov" id="hrOv"><b>집에 가고 싶어!</b><span>종 쳤다! 장애물을 피해 집까지 달려요</span><small>${matchMedia('(pointer:coarse)').matches ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · ↑ · 화면 클릭으로 출발'}</small></div></div>
-      <div class="hr-touch"><button type="button" class="btn big" id="hrJ">점프</button><button type="button" class="btn big ghost" id="hrD">숙이기</button></div>
+      <div class="hr-touch"><button type="button" class="btn big" id="hrJ">점프</button><button type="button" class="btn big ghost" id="hrD">숙이기</button>${RE_BTN.replace('class="prestart"', 'class="prestart re-in"')}</div>
       <div class="hr-bar"><button type="button" class="btn" id="hrDress">${ic('brush')}캐릭터 꾸미기</button>
         <p class="hr-keys"><kbd>Space</kbd><kbd>↑</kbd> 점프 (길게 누르면 더 높이) · <kbd>↓</kbd> 숙이기</p>
         <button type="button" class="btn ghost hr-snd" id="hrSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
+      ${RE_ROW}
       <div class="hr-dress" id="hrDressBox" hidden></div>
       <div class="hr-rk" id="hrRk"></div>
     </div>`, true);
