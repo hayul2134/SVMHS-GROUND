@@ -223,7 +223,7 @@ export function createGear(canvas, opt = {}) {
       scene: 'ready', frames: 0, ms: 0, score: 0, lines: 0, level: 1, pieces: 0, b2b: false,
       board: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
       bag: [], queue: [], cur: null, hold: null, held: false,
-      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
+      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, combo: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
     });
     while (st.queue.length < 5) st.queue.push(nextKind());
   }
@@ -255,6 +255,28 @@ export function createGear(canvas, opt = {}) {
     } catch {}
   }
   const thump = (vol = .09) => beep(120, 40, .16, 'sine', vol);
+  /* 효과음 다양화 (2026-10-27 하율 "효과음 좀 다양하게") — 장비마다 놓는 소리가 다르고, 연속으로 깨면 음이 올라감. 게임 난수(rand)는 안 씀 */
+  function hiss(vol, dur, from, to, type = 'bandpass', q = 1, delay = 0) {   // 걸러 낸 잡음: 셔터·슬레이트·쉭
+    if (!sound) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (!noiseBuf) { noiseBuf = actx.createBuffer(1, actx.sampleRate * .4, actx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+      const src = actx.createBufferSource(), f = actx.createBiquadFilter(), v = actx.createGain(), t = actx.currentTime + delay;
+      src.buffer = noiseBuf; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(from, t); f.frequency.exponentialRampToValueAtTime(to, t + dur);
+      v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      src.connect(f).connect(v).connect(actx.destination); src.start(t, Math.random() * .2); src.stop(t + dur + .02);
+    } catch {}
+  }
+  const clap = (vol = .14, delay = 0) => { hiss(vol, .05, 3800, 2000, 'highpass', .7, delay); beep(1900, 1200, .03, 'square', vol * .25, delay); };   // 슬레이트 '딱!'
+  const PLACE = {   // 장비별로 놓는 소리 (모양 → 장비: KIND 참고)
+    O() { hiss(.07, .025, 5200, 4000, 'highpass', .8); hiss(.06, .03, 4200, 3000, 'highpass', .8, .07); },          // 카메라: 셔터 '찰칵'
+    Z() { clap(.1); },                                                                                              // 슬레이트: '딱'
+    I() { beep(1200, 1180, .12, 'sine', .025); beep(60, 60, .12, 'sawtooth', .015); },                              // LED 조명: '지잉' 켜지는 소리
+    T() { beep(880, 870, .09, 'triangle', .035); beep(1320, 1300, .06, 'triangle', .02, .01); },                  // 삼각대: 금속 '챙'
+    L() { beep(620, 600, .08, 'square', .025); hiss(.05, .05, 2400, 1200, 'bandpass', 3); },                       // C스탠드: 쇠 '철컥'
+    J() { beep(220, 160, .1, 'sine', .06); hiss(.03, .08, 900, 400); },                                            // 붐 마이크: 속 빈 '퐁'
+    S() { hiss(.05, .12, 1400, 500, 'bandpass', .8); },                                                            // 케이블: '스르륵'
+  };
   const fxAt = (cs, p) => { const xs = cs.map(c => (p.x + c[0]) * C + C / 2), ys = cs.map(c => (p.y + c[1] - HID) * C + C / 2); return [xs.reduce((a, b) => a + b) / xs.length, ys.reduce((a, b) => a + b) / ys.length]; };
 
   /* --- 판 --- */
@@ -267,16 +289,16 @@ export function createGear(canvas, opt = {}) {
     if (fits(k, 0, x, y + 1)) st.cur.y++;   // 숨은 줄에서 한 칸 내려와 보이게 시작(가이드라인)
   }
   function newPiece() { const k = st.queue.shift(); st.queue.push(nextKind()); spawn(k); st.held = false; opt.onQueue?.(); }
-  function start() { if (st.scene !== 'ready') return; st.scene = 'play'; newPiece(); opt.onStart?.(); }
+  function start() { if (st.scene !== 'ready') return; st.scene = 'play'; newPiece(); opt.onStart?.(); clap(.12); beep(880, 1320, .08, 'triangle', .03, .06); }   // 시작: '액션!' 슬레이트
   function move(dx) {
     const p = st.cur; if (!p || !fits(p.k, p.r, p.x + dx, p.y)) return false;
-    p.x += dx; resetLock(); beep(330, 300, .03, 'square', .02); return true;
+    p.x += dx; resetLock(); beep(330 + Math.random() * 20, 300, .03, 'square', .02); return true;
   }
   function rotate(dir) {
     const p = st.cur; if (!p) return false;
     if (p.k === 'O') { resetLock(); return true; }
     const to = (p.r + dir + 4) % 4, kicks = (p.k === 'I' ? K4 : K3)[p.r + '>' + to];
-    for (const [dx, dy] of kicks) if (fits(p.k, to, p.x + dx, p.y + dy)) { p.x += dx; p.y += dy; p.r = to; resetLock(); beep(520, 640, .04, 'square', .025); return true; }
+    for (const [dx, dy] of kicks) if (fits(p.k, to, p.x + dx, p.y + dy)) { p.x += dx; p.y += dy; p.r = to; resetLock(); beep(dir > 0 ? 520 : 470, dir > 0 ? 640 : 560, .04, 'square', .025); hiss(.02, .03, 3000, 2000, 'highpass'); return true; }
     return false;
   }
   function resetLock() { const p = st.cur; if (p && !fits(p.k, p.r, p.x, p.y + 1) && st.lockN < LOCK_MAX) { st.lock = 0; st.lockN++; } }
@@ -293,14 +315,15 @@ export function createGear(canvas, opt = {}) {
     // 내리꽂은 자취(위에서 떨어진 빛줄기)
     if (n > 1) for (const [cx, cy] of cs) st.trails.push({ x: (p.x + cx) * C, y0: (p.y + cy - n - HID) * C, y1: (p.y + cy - HID) * C, t: .18 });
     if (n) { const [fx, fy] = fxAt(cs, p); opt.onScore?.(n * HARD_PT, fx, fy, 0); }
-    thump(.07);
+    thump(.07); if (n > 2) hiss(.05, .12, 2600, 400, 'bandpass', .8);   // 내리꽂기 '쉭-쿵'
     lockPiece();
   }
   function hold() {
     if (st.scene !== 'play' || st.held || !st.cur || st.clearT) return;
     const k = st.cur.k;
     if (st.hold) { const h = st.hold; st.hold = k; spawn(h); } else { st.hold = k; newPiece(); }
-    st.held = true; beep(440, 330, .06, 'triangle', .03); opt.onQueue?.();
+    st.held = true; beep(440, 330, .06, 'triangle', .03); hiss(.04, .14, 800, 3000, 'bandpass', 1.5);   // 가방에 넣는 '지익'
+    opt.onQueue?.();
   }
   function lockPiece() {
     const p = st.cur; if (!p) return;
@@ -311,7 +334,7 @@ export function createGear(canvas, opt = {}) {
       if (by >= HID) above = false;
     }
     st.cur = null; st.pieces++;
-    beep(150, 90, .07, 'triangle', .05);
+    beep(150, 90, .07, 'triangle', .05); PLACE[p.k]?.();
     // 보이는 칸에 하나도 못 들어감 / 판 맨 위보다 더 위로 삐져나온 채 놓임(돌리기 킥으로 생길 수 있음 — 2026-10-27 검사에서 칸이 사라지던 버그) = 장비실 꽉 참
     if (above || out) return over();
     const full = []; for (let y = 0; y < ROWS; y++) if (st.board[y].every(Boolean)) full.push(y);
@@ -324,11 +347,17 @@ export function createGear(canvas, opt = {}) {
       for (const y of full) for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; st.pops.push({ k: c.k, r: c.r, sx: c.sx, sy: c.sy, x: x * C, y: (y - HID) * C, d: Math.abs(x - 4.5) * .016, t: 0 }); }
       st.rings.push({ y: ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, t: .45, n });
       crunch(tet ? .2 : .13, tet ? .32 : .2, tet ? 3200 : 2400); thump(tet ? .16 : .11);
-      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f, f, .12, 'square', .045, .06 + i * .07)); crunch(.12, .25, 1800, .12); }
-      else beep(660, 990, .12 + n * .03, 'square', .04, .04);
+      st.combo = (st.combo || 0) + 1; const up = Math.pow(2, Math.min(st.combo - 1, 8) / 12);   // 연속으로 깰수록 반음씩 올라감
+      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f * up, f * up, .12, 'square', .045, .06 + i * .07)); crunch(.12, .25, 1800, .12); clap(.14, .4); }   // 4줄: 팡파레 + 슬레이트 '딱!'
+      else [660, 784, 880].slice(0, n).forEach((f, i) => beep(f * up, f * up * 1.5, .1 + n * .02, 'square', .04, .04 + i * .06));   // 1·2·3줄: 줄 수만큼 음이 이어짐
+      if (st.level > lv) [523, 784, 1047, 1568].forEach((f, i) => beep(f, f, .1, 'triangle', .04, .45 + i * .08));   // 레벨 업
       opt.onScore?.(Math.round(pts), BW / 2, ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, n);
       opt.onClear?.(n, CLEAR_NAME[n] + (tet && pts > LINE_PTS[4] * lv ? ' 연속!' : ''), Math.round(pts), st.level > lv);
-    } else newPiece();
+    } else {
+      st.combo = 0; newPiece();
+      // 선반이 거의 찼으면(보이는 위 4줄 안에 장비) 경고음 — 소리로도 위험을 알림
+      if (st.scene === 'play' && st.board.slice(HID, HID + 4).some(r => r.some(Boolean))) { beep(196, 185, .12, 'square', .03); beep(196, 185, .12, 'square', .03, .16); }
+    }
   }
   function finishClear() {
     const rows = st.clearRows; st.clearRows = [];
@@ -336,7 +365,7 @@ export function createGear(canvas, opt = {}) {
     while (st.board.length < ROWS) st.board.unshift(Array(COLS).fill(null));
     newPiece();
   }
-  function over() { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms) }); }
+  function over() { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); clap(.12, .55); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms) }); }
 
   function update(dt) {
     if (st.stop > 0) { st.stop--; return; }   // 히트스톱: 깨지는 순간 몇 프레임 멈칫
@@ -436,8 +465,8 @@ export function createGear(canvas, opt = {}) {
     while (acc >= STEP) { update(STEP); acc -= STEP; }
     draw();
   }
-  function pause() { if (st.scene !== 'play') return; st.scene = 'pause'; keys.left = keys.right = keys.down = false; opt.onPause?.(true); }
-  function resume() { if (st.scene !== 'pause') return; st.scene = 'play'; last = 0; opt.onPause?.(false); }
+  function pause() { if (st.scene !== 'play') return; st.scene = 'pause'; beep(660, 440, .08, 'triangle', .03); keys.left = keys.right = keys.down = false; opt.onPause?.(true); }
+  function resume() { if (st.scene !== 'pause') return; st.scene = 'play'; last = 0; beep(440, 660, .08, 'triangle', .03); opt.onPause?.(false); }
   reset(opt.seed);
   raf = requestAnimationFrame(frame);
 
