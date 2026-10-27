@@ -155,7 +155,7 @@ function buildArt() {
 function rng(seed) { const f = () => { f.s = (f.s + 0x6D2B79F5) | 0; let t = f.s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; f.s = seed | 0; return f; }
 // 떨어지는 속도: 한 칸 내려오는 데 걸리는 프레임(가이드라인 공식, 교실용으로 빠른 쪽은 1칸/2프레임에서 멈춤)
 export const gravF = lv => Math.max(2, Math.round(60 * Math.pow(.8 - (lv - 1) * .007, lv - 1)));
-export const CLEAR_NAME = ['', '정리!', '깔끔하게 정리!', '칼각 정리!', '기자재!']   // 4줄 = 원작의 '테트리스' 자리 (2026-10-27 하율: 어이없어서 재밌게);
+export const CLEAR_NAME = ['', '정리!', '깔끔하게 정리!', '칼각 정리!', '기자재!'];   // 4줄 = 원작의 '테트리스' 자리 (2026-10-27 하율: 어이없어서 재밌게)
 
 export function createGear(canvas, opt = {}) {
   const g = canvas.getContext('2d');
