@@ -1597,7 +1597,7 @@ async function myRecInto(el, game, local = null) {
   const g = GAMES[game], md = d => `${+d.slice(4, 6)}/${+d.slice(6, 8)}`;
   if (!S.me) { el.innerHTML = `<div class="myrec"><p class="mr-best">${ic('trophy')}<span>내 최고</span><b>${local != null ? esc(g.fmt(local)) : '-'}</b></p><p class="mr-pe">로그인하면 날마다 내 기록이 쌓여요</p></div>`; return; }
   let r; try { r = await call('myrec?game=' + game); } catch { return null; }
-  if (!el.isConnected) return r;
+  if (!el.isConnected || !Array.isArray(r?.days)) return r;
   const vs = r.days.map(x => x.v), lo = Math.min(...vs), hi = Math.max(...vs), today = kstNow();
   const w = v => hi === lo ? 100 : Math.round(25 + 75 * (hi - v) / (hi - lo));
   el.innerHTML = `<div class="myrec"><p class="mr-best">${ic('trophy')}<span>내 최고</span><b>${r.best ? esc(g.fmt(r.best.v)) : '-'}</b>${r.best ? `<small>${md(r.best.day)}</small>` : ''}</p>
@@ -1762,7 +1762,7 @@ async function playGear() {
   let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), bestN = store.get('gear_best_n', 0), over = false, deadAt = 0, runNo = 0;
   let mode = store.get('gear_mode', 'normal') === 'rank' ? 'rank' : 'normal';
   const setMode = m => { mode = m === 'rank' ? 'rank' : 'normal'; store.set('gear_mode', mode); $('#gr').dataset.mode = mode; R.setLimit(mode === 'rank' ? GEAR_TIME : 0);
-    ov.querySelectorAll('[data-gm]').forEach(b => b.setAttribute('aria-pressed', b.dataset.gm === mode)); paintHud(); };
+    ov.querySelectorAll('[data-gm]').forEach(b => { const on = b.dataset.gm === mode; if (on && b.getAttribute('aria-pressed') === 'false') { b.classList.remove('pick'); void b.offsetWidth; b.classList.add('pick'); } b.setAttribute('aria-pressed', on); }); paintHud(); };
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
   const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul>
     <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>자유롭게 · 랭킹 제외</small></button><button type="button" data-gm="rank"><b>${ic('trophy')}랭킹전</b><small>2분 점수 대결</small></button></div>
@@ -1889,7 +1889,10 @@ async function playGear() {
   scr.addEventListener('pointerdown', e => {
     e.preventDefault();
     if (over) { restart(); return; }
-    if (R.st.scene === 'ready') { const mb = e.target.closest?.('[data-gm]'); if (mb) setMode(mb.dataset.gm); }   // 방식 버튼을 누르면 그 방식으로 바로 시작
+    if (R.st.scene === 'ready') {   // 방식 버튼: 마우스·터치로 누르면 눌리는 모양을 잠깐 보여 주고 그 방식으로 시작 (2026-10-27 하율)
+      const mb = e.target.closest?.('[data-gm]');
+      if (mb) { if (mb.classList.contains('go')) return; setMode(mb.dataset.gm); mb.classList.add('go'); setTimeout(() => { mb.classList.remove('go'); if (R.st.scene === 'ready') { R.input('cw', true); R.input('cw', false); } }, 180); return; }
+    }
     if (R.st.scene !== 'play') { R.input('cw', true); R.input('cw', false); return; }
     tp = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), moved: false, soft: false };
     try { scr.setPointerCapture(e.pointerId); } catch {}
