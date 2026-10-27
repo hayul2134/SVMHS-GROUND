@@ -5260,3 +5260,20 @@ img.ptimg:not(.ok){border-radius:10px;min-height:120px}
 }
 @keyframes ctdIn{0%{opacity:0;transform:translateY(14px) scale(.97)}100%{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.ctd{animation:none}}
+
+/* 컷 타이밍 시작 화면 글자 크게·또렷하게 (2026-10-27 하율 "글자 잘 안보여" · 제목 '편집의 신' · 부제 '완벽한 타이밍을 찾아라!') */
+.ctm-ov{background:rgba(14,18,28,.97)}
+.ctm-in{gap:10px;max-width:520px}
+.ctm-in>b{font-size:clamp(30px,5vw,40px);color:#fff;letter-spacing:.5px}
+.ctm-in>b .ctm-rz{width:36px;height:36px}
+.ctm-sub{margin:-4px 0 4px;font:900 clamp(15px,2.4vw,19px)/1.2 var(--num,inherit);color:#ffd23f;letter-spacing:.02em}
+.ctm-in span{font-size:clamp(15px,2.3vw,18px);line-height:1.55;color:#f2f6fc}
+.ctm-in em{color:#ff8a8a}
+.ctm-in ul{gap:8px;flex-wrap:wrap;justify-content:center;font-size:clamp(13px,1.9vw,15px);color:#dfe6f2}
+.ctm-in li{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.ctm-in small{font-size:clamp(13px,1.9vw,15px);color:#cfd8e6;font-weight:700}
+.ctm-in .btn{font-size:20px;padding:12px 40px}
+@media (orientation:landscape) and (max-height:500px){
+  .ctm-in{gap:4px}.ctm-in>b{font-size:24px}.ctm-sub{font-size:14px;margin:0}.ctm-in span{font-size:13px;line-height:1.35}
+  .ctm-in ul,.ctm-in small{font-size:12px}.ctm-in li{padding:2px 7px}.ctm-in .btn{font-size:17px;padding:7px 26px}
+}

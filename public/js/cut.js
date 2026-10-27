@@ -145,7 +145,7 @@ export function run(root, o) {
     else if (!document.hidden && state === 'paused') { msg.className = 'ctm-msg'; msg.innerHTML = '<span>화면을 벗어나서 이번 판은 다시 해요</span>'; later(start, 600); } };
   document.addEventListener('visibilitychange', vis);
   const intro = () => {
-    ov.hidden = false; ov.innerHTML = `<div class="ctm-in"><b>${RAZOR}컷 타이밍</b><span>음악 비트(파형이 튀는 <em>빨간 컷 지점</em>)에<br>플레이헤드가 닿는 순간 CUT!</span>
+    ov.hidden = false; ov.innerHTML = `<div class="ctm-in"><b>${RAZOR}편집의 신</b><p class="ctm-sub">완벽한 타이밍을 찾아라!</p><span>음악 비트(파형이 튀는 <em>빨간 컷 지점</em>)에<br>플레이헤드가 닿는 순간 CUT!</span>
       <ul><li><i class="j-perfect">PERFECT</i>15ms</li><li><i class="j-great">GREAT</i>50ms</li><li><i class="j-good">GOOD</i>120ms</li></ul>
       <small>5번 · 점점 빨라져요 · 오차 합이 작을수록 1등</small><button type="button" class="btn big" id="ctGo">시작</button></div>`;
     $('#ctGo').onclick = go; };
