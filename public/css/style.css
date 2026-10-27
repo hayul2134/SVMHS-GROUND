@@ -5397,3 +5397,8 @@ html.svrv .apps .catgrid.in > .app:nth-child(3){animation-delay:.12s}
 html.svrv .apps .catgrid.in > .app:nth-child(4){animation-delay:.18s}
 html.svrv .apps .catgrid.in > .app:nth-child(5){animation-delay:.24s}
 html.svrv .apps .catgrid.in > .app:nth-child(n+6){animation-delay:.3s}
+
+/* 게임 카테고리 한 줄에 5개 (2026-10-28 하율) — 순서: 기자재 정리! · 집에 가고 싶어! · 편집의 신 · 반응속도 · 1 to 25 */
+.appgrid.catgrid.gm5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:560px){.appgrid.catgrid.gm5{gap:12px 6px}.catgrid.gm5 .app{padding-left:0;padding-right:0;font-size:11.5px}.apps .catgrid.gm5 .gapp .ai{width:46px;height:46px;border-radius:13px}.apps .catgrid.gm5 .gapp .ai .sic{width:28px;height:28px}}
+@media (max-width:380px){.appgrid.catgrid.gm5{gap:10px 4px}.catgrid.gm5 .app{font-size:10.5px}.apps .catgrid.gm5 .gapp .ai{width:40px;height:40px;border-radius:12px}.apps .catgrid.gm5 .gapp .ai .sic{width:25px;height:25px}}
