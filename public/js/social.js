@@ -1547,7 +1547,20 @@ async function playGear() {
   let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), over = false, deadAt = 0, runNo = 0;
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
   const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>반납 5분 전!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="52" height="28"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
-  const paintHud = () => { const s = R.st; $('#grSc').textContent = s.score.toLocaleString('ko-KR'); $('#grLn').textContent = s.lines; $('#grLv').textContent = s.level; };
+  // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
+  let shown = 0;
+  const paintHud = () => { const s = R.st, sc = $('#grSc');
+    if (s.score < shown) shown = s.score; else if (s.score > shown) shown += Math.max(1, Math.ceil((s.score - shown) * .35));
+    sc.textContent = shown.toLocaleString('ko-KR'); $('#grLn').textContent = s.lines; $('#grLv').textContent = s.level; };
+  const bump = big => { const sc = $('#grSc'); sc.classList.remove('bump', 'bump2'); void sc.offsetWidth; sc.classList.add(big ? 'bump2' : 'bump'); };
+  const scr0 = $('#grScr');
+  const floatPt = (pts, x, y, n) => {   // 판 위에 '+점수'가 튀어 오름 (줄 정리는 크게)
+    const el = document.createElement('i'); el.className = 'gr-fx' + (n ? ' n' + n : ''); el.textContent = '+' + pts.toLocaleString('ko-KR');
+    el.style.left = Math.max(12, Math.min(88, x / GEAR.BW * 100)) + '%'; el.style.top = Math.max(8, y / GEAR.BH * 100) + '%';
+    scr0.appendChild(el); setTimeout(() => el.remove(), 1000);
+    if (n) { scr0.classList.remove('hit', 'hit4'); void scr0.offsetWidth; scr0.classList.add(n === 4 ? 'hit4' : 'hit'); }
+    bump(n);
+  };
   const paintQ = () => { R.drawMini($('#grHold'), R.st.hold);   // 보관 블록은 다음 블록처럼 그대로 (2026-10-27 하율: 흐리게 그리던 것 제거)
      [0, 1, 2].forEach(i => R.drawMini($('#grN' + i), R.st.queue[i])); };
   let popT = 0;
@@ -1555,6 +1568,7 @@ async function playGear() {
     sound,
     onStart() { ov.hidden = true; over = false; paintQ(); },
     onQueue: paintQ,
+    onScore: floatPt,
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
     onClear(n, name, pts, up) {
       clearTimeout(popT); pop.className = 'gr-pop on n' + n; pop.innerHTML = `<b>${esc(name)}</b><small>+${pts.toLocaleString('ko-KR')}</small>${up ? `<em>레벨 ${R.st.level}!</em>` : ''}`;
@@ -1577,24 +1591,27 @@ async function playGear() {
   });
   window.__gear = R;   // 테스트용
   ready(); paintHud(); paintQ();
-  const hudT = setInterval(paintHud, 100);
+  const hudT = setInterval(paintHud, 50);
   const restart = () => {
     if (!over || performance.now() - deadAt < 400) return false;
     over = false; ticket = S.me ? call('start', { game: 'gear' }).then(r => r.ticket).catch(() => '') : null;
-    R.reset(); ready(); paintHud(); paintQ(); return true;
+    R.reset(); shown = 0; ready(); paintHud(); paintQ(); return true;
   };
   // 화면 크기: 판(120×240)을 정수 배(기기 픽셀 기준)로 — 옆 칸(보관·다음)과 아래 버튼·랭킹이 스크롤 없이 보이게
   const fit = () => {
-    // 폭은 창 기준(게임 칸 폭이 앱 창에서 좁게 잡히던 경우 대비 — 2026-10-27 2차), 옆 칸은 실제로 잰 폭
-    const sides = [...document.querySelectorAll('#gr .gr-side')].reduce((a, el) => a + el.getBoundingClientRect().width, 0) + 40;
-    const w = Math.min(innerWidth - 24, 1240), top = $('#grScr').getBoundingClientRect().top;
-    const side = sides > 40 ? sides : 250, dpr = devicePixelRatio || 1;
+    // 폭은 창 기준(게임 칸 폭이 앱 창에서 좁게 잡히던 경우 대비 — 2026-10-27 2차)
+    // 2026-10-27 3차 하율 "전체적으로 크기 키우고 바로 다음 블록은 더 크게": 보관·바로 다음 = 큰 칸, 그 뒤 2개 = 작은 칸. 옆 칸 폭은 큰 칸에 맞춤
+    const w = Math.min(innerWidth - 24, 1240), top = $('#grScr').getBoundingClientRect().top, dpr = devicePixelRatio || 1;
+    const bigOf = q => Math.round(Math.min(52 * Math.min(3.4, q * 1.2), innerWidth * (innerWidth < 520 ? .13 : .17)));
+    let q = 2.5; for (let i = 0; i < 3; i++) q = Math.max(1.5, Math.min((w - 2 * (bigOf(q) + 22) - 40) / GEAR.BW, (innerHeight - top - (touchy ? 170 : 24)) / GEAR.BH));
+    const big = bigOf(q), side = 2 * (big + 22) + 40;
+    document.querySelectorAll('#gr .gr-side').forEach(el => { el.style.width = big + 22 + 'px'; });
     // 2026-10-27 하율 "화면이 이상해": 앱 창(배율이 소수인 기기)에서 내림 때문에 최소 크기보다 작아지고, 창 높이가 바뀌어도 다시 안 맞춰 판이 손바닥만 했음
     //   → 최소 1.5배는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
     const k = Math.min((w - side) / GEAR.BW, (innerHeight - top - (touchy ? 170 : 24)) / GEAR.BH);
     const per = Math.max(Math.ceil(1.5 * dpr), Math.floor(k * dpr)) / dpr;
     cv.style.width = per * GEAR.BW + 'px';
-    document.querySelectorAll('#gr .gr-mini').forEach(c => { c.style.width = Math.round(c.width * Math.min(2, per * .75)) + 'px'; });
+    document.querySelectorAll('#gr .gr-mini').forEach(c => { c.style.width = (c.classList.contains('sm') ? Math.round(big * .62) : big) + 'px'; });
     $('#gr').style.setProperty('--gw', Math.round(per * GEAR.BW) + 'px');
   };
   fit(); const fitT = [setTimeout(fit, 250), setTimeout(fit, 1000)];   // 창이 열리며 크기가 바뀌는 앱 창 대비

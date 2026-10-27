@@ -174,7 +174,7 @@ export function createGear(canvas, opt = {}) {
       scene: 'ready', frames: 0, ms: 0, score: 0, lines: 0, level: 1, pieces: 0, b2b: false,
       board: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
       bag: [], queue: [], cur: null, hold: null, held: false,
-      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, flash: 0, shake: 0, parts: [], seed,
+      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, flash: 0, shake: 0, parts: [], frags: [], trails: [], rings: [], stop: 0, bump: 0, seed,
     });
     while (st.queue.length < 5) st.queue.push(nextKind());
   }
@@ -191,6 +191,22 @@ export function createGear(canvas, opt = {}) {
       o.connect(v).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
     } catch {}
   }
+
+  // 깨지는 소리: 짧은 잡음(부서짐) + 낮은 '쿵' — 타격감 (2026-10-27 하율)
+  let noiseBuf = null;
+  function crunch(vol = .12, dur = .18, cut = 2400, delay = 0) {
+    if (!sound) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (!noiseBuf) { noiseBuf = actx.createBuffer(1, actx.sampleRate * .4, actx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+      const src = actx.createBufferSource(), f = actx.createBiquadFilter(), v = actx.createGain(), t = actx.currentTime + delay;
+      src.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.setValueAtTime(cut, t); f.frequency.exponentialRampToValueAtTime(200, t + dur);
+      v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      src.connect(f).connect(v).connect(actx.destination); src.start(t); src.stop(t + dur + .02);
+    } catch {}
+  }
+  const thump = (vol = .09) => beep(120, 40, .16, 'sine', vol);
+  const fxAt = (cs, p) => { const xs = cs.map(c => (p.x + c[0]) * C + C / 2), ys = cs.map(c => (p.y + c[1] - HID) * C + C / 2); return [xs.reduce((a, b) => a + b) / xs.length, ys.reduce((a, b) => a + b) / ys.length]; };
 
   /* --- 판 --- */
   const fits = (k, r, x, y) => cellsOf(k, r).every(([cx, cy]) => { const bx = x + cx, by = y + cy; return bx >= 0 && bx < COLS && by < ROWS && (by < 0 || !st.board[by][bx]); });
@@ -220,8 +236,13 @@ export function createGear(canvas, opt = {}) {
   function hardDrop() {
     const p = st.cur; if (!p || st.scene !== 'play' || st.clearT) return;
     let n = 0; while (fits(p.k, p.r, p.x, p.y + 1)) { p.y++; n++; }
-    st.score += n * HARD_PT; st.shake = Math.max(st.shake, 3);
-    for (const [cx, cy] of cellsOf(p.k, p.r)) if (n) for (let i = 0; i < 2; i++) st.parts.push({ x: (p.x + cx) * C + rand() * C, y: (p.y + cy - HID) * C + C, vx: (rand() - .5) * 40, vy: -20 - rand() * 30, t: .35, c: '#e6ebf7' });
+    st.score += n * HARD_PT; st.shake = Math.max(st.shake, 4); st.bump = 1;
+    const cs = cellsOf(p.k, p.r);
+    for (const [cx, cy] of cs) if (n) for (let i = 0; i < 3; i++) st.parts.push({ x: (p.x + cx) * C + rand() * C, y: (p.y + cy - HID) * C + C, vx: (rand() - .5) * 70, vy: -30 - rand() * 50, t: .4, c: '#e6ebf7' });
+    // 내리꽂은 자취(위에서 떨어진 빛줄기)
+    if (n > 1) for (const [cx, cy] of cs) st.trails.push({ x: (p.x + cx) * C, y0: (p.y + cy - n - HID) * C, y1: (p.y + cy - HID) * C, t: .18 });
+    if (n) { const [fx, fy] = fxAt(cs, p); opt.onScore?.(n * HARD_PT, fx, fy, 0); }
+    thump(.07);
     lockPiece();
   }
   function hold() {
@@ -246,10 +267,21 @@ export function createGear(canvas, opt = {}) {
       const n = full.length, tet = n === 4, lv = st.level;
       const pts = LINE_PTS[n] * lv * (tet && st.b2b ? 1.5 : 1);
       st.score += Math.round(pts); st.b2b = tet; st.lines += n; st.level = levelOf(st.lines);
-      st.clearRows = full; st.clearT = CLEAR_T; st.flash = tet ? 1 : .5; st.shake = tet ? 8 : 3 + n;
-      for (const y of full) for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; for (let i = 0; i < 2; i++) st.parts.push({ x: x * C + C / 2, y: (y - HID) * C + C / 2, vx: (rand() - .5) * 160, vy: -40 - rand() * 120, t: .6 + rand() * .3, c: KIND[c.k].body }); }
-      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f, f, .12, 'square', .045, i * .07)); }
-      else beep(660, 990, .12 + n * .03, 'square', .04);
+      st.clearRows = full; st.clearT = CLEAR_T; st.flash = tet ? 1 : .6; st.shake = tet ? 14 : 5 + n * 2; st.stop = tet ? 7 : 4;   // stop = 잠깐 멈칫(히트스톱)
+      // 깨지기: 지워지는 칸마다 장비 그림 조각 4개(6×6)가 튕겨 나감 + 불꽃 — 줄 가운데에서 바깥으로
+      for (const y of full) for (let x = 0; x < COLS; x++) {
+        const c = st.board[y][x], cx = x * C, cy = (y - HID) * C, out = (x - 4.5) / 4.5;
+        for (let q = 0; q < 4; q++) {
+          const qx = q % 2, qy = q >> 1;
+          st.frags.push({ k: c.k, r: c.r, sx: c.sx * C + qx * 6, sy: c.sy * C + qy * 6, x: cx + qx * 6, y: cy + qy * 6, vx: out * (60 + rand() * 90) + (qx - .5) * 60 + (rand() - .5) * 40, vy: -70 - rand() * (tet ? 170 : 110) + qy * 30, rot: 0, vr: (rand() - .5) * 16, t: .9 + rand() * .4 });
+        }
+        for (let i = 0; i < (tet ? 3 : 2); i++) st.parts.push({ x: cx + C / 2, y: cy + C / 2, vx: (rand() - .5) * 200, vy: -60 - rand() * 160, t: .5 + rand() * .3, c: rand() < .5 ? '#fff6c8' : KIND[c.k].body });
+      }
+      st.rings.push({ y: ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, t: .45, n });
+      crunch(tet ? .2 : .13, tet ? .32 : .2, tet ? 3200 : 2400); thump(tet ? .16 : .11);
+      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f, f, .12, 'square', .045, .06 + i * .07)); crunch(.12, .25, 1800, .12); }
+      else beep(660, 990, .12 + n * .03, 'square', .04, .04);
+      opt.onScore?.(Math.round(pts), BW / 2, ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, n);
       opt.onClear?.(n, CLEAR_NAME[n] + (tet && pts > LINE_PTS[4] * lv ? ' 연속!' : ''), Math.round(pts), st.level > lv);
     } else newPiece();
   }
@@ -262,9 +294,14 @@ export function createGear(canvas, opt = {}) {
   function over() { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms) }); }
 
   function update(dt) {
+    if (st.stop > 0) { st.stop--; return; }   // 히트스톱: 깨지는 순간 몇 프레임 멈칫
     for (const q of st.parts) { q.t -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 300 * dt; }
     st.parts = st.parts.filter(q => q.t > 0);
-    st.shake = Math.max(0, st.shake - dt * 30); st.flash = Math.max(0, st.flash - dt * 3);
+    for (const q of st.frags) { q.t -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 520 * dt; q.rot += q.vr * dt; }
+    st.frags = st.frags.filter(q => q.t > 0 && q.y < BH + 20);
+    for (const q of st.trails) q.t -= dt; st.trails = st.trails.filter(q => q.t > 0);
+    for (const q of st.rings) q.t -= dt; st.rings = st.rings.filter(q => q.t > 0);
+    st.shake = Math.max(0, st.shake - dt * 30); st.flash = Math.max(0, st.flash - dt * 3); st.bump = Math.max(0, st.bump - dt * 8);
     if (st.scene !== 'play') return;
     st.frames++; st.ms += dt * 1000;
     if (st.clearT) { if (--st.clearT === 0) finishClear(); return; }
@@ -290,18 +327,27 @@ export function createGear(canvas, opt = {}) {
   }
   function draw() {
     g.save();
-    const sh = st.shake > 0 ? Math.round((rand() - .5) * st.shake) : 0;
+    const sh = st.shake > 0 ? Math.round((rand() - .5) * st.shake) : 0, shx = st.shake > 3 ? Math.round((rand() - .5) * st.shake * .6) : 0;
     g.clearRect(0, 0, BW, BH);
     // 기자재실 선반 안쪽
     g.fillStyle = '#1d2238'; g.fillRect(0, 0, BW, BH);
     g.fillStyle = '#232945'; for (let x = 0; x < COLS; x++) for (let y = 0; y < VIS; y++) if ((x + y) % 2) g.fillRect(x * C, y * C, C, C);
     g.fillStyle = '#2c3354'; for (let y = 4; y < VIS; y += 5) g.fillRect(0, y * C - 1, BW, 1);   // 선반 줄
-    g.translate(0, sh);
-    for (let y = HID; y < ROWS; y++) for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; if (c) drawCellAt(c, x * C, (y - HID) * C); }
-    if (st.clearT) {   // 지워지는 줄: 하얗게 번쩍 → 옆으로 사라짐
+    g.translate(shx, sh + Math.round(st.bump * 2));
+    const gone = st.clearT && st.clearT < CLEAR_T - 2;   // 번쩍한 뒤엔 그 줄 칸은 이미 깨져 날아감
+    for (let y = HID; y < ROWS; y++) { if (gone && st.clearRows.includes(y)) continue; for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; if (c) drawCellAt(c, x * C, (y - HID) * C); } }
+    if (st.clearT) {   // 지워지는 줄: 처음 2프레임 새하얗게 번쩍 → 빈 줄에 남은 빛이 가운데로 사라짐
       const k = st.clearT / CLEAR_T;
-      for (const y of st.clearRows) { const w = Math.round(BW * (1 - k)); g.fillStyle = `rgba(255,255,255,${.5 + k * .5})`; g.fillRect(0, (y - HID) * C, BW, C); g.fillStyle = '#1d2238'; g.fillRect(BW / 2 - w / 2, (y - HID) * C, w, C); }
+      for (const y of st.clearRows) {
+        if (!gone) { g.fillStyle = '#ffffff'; g.fillRect(0, (y - HID) * C, BW, C); continue; }
+        const w = Math.round(BW * k * k); g.fillStyle = `rgba(255,246,200,${k * .8})`; g.fillRect(BW / 2 - w / 2, (y - HID) * C + 3, w, C - 6);
+      }
     }
+    for (const r of st.rings) {   // 줄이 깨질 때 위아래로 퍼지는 충격파
+      const k = 1 - r.t / .45, h = 4 + k * (24 + r.n * 10);
+      g.fillStyle = `rgba(255,255,255,${(1 - k) * .55})`; g.fillRect(0, Math.round(r.y - h), BW, 2); g.fillRect(0, Math.round(r.y + h), BW, 2);
+    }
+    for (const q of st.trails) { g.fillStyle = `rgba(255,255,255,${q.t / .18 * .22})`; g.fillRect(q.x + 2, q.y0, C - 4, q.y1 - q.y0); }
     const p = st.cur;
     if (p && st.scene === 'play') {
       const gy = ghostY(p);
@@ -317,6 +363,10 @@ export function createGear(canvas, opt = {}) {
         }
       }
       drawPiece(p, p.y);
+    }
+    for (const q of st.frags) {   // 깨진 장비 조각(그림 그대로 6×6, 돌면서 떨어짐)
+      g.save(); g.globalAlpha = Math.min(1, q.t * 2.5); g.translate(Math.round(q.x + 3), Math.round(q.y + 3)); g.rotate(Math.round(q.rot * 4) / 4);
+      g.drawImage(ART_IMG[q.k][q.r], q.sx, q.sy, 6, 6, -3, -3, 6, 6); g.restore();
     }
     for (const q of st.parts) { g.globalAlpha = Math.min(1, q.t * 2); g.fillStyle = q.c; g.fillRect(Math.round(q.x), Math.round(q.y), 2, 2); }
     g.globalAlpha = 1;
