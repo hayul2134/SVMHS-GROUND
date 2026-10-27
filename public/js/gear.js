@@ -267,10 +267,11 @@ export function createGear(canvas, opt = {}) {
       src.connect(f).connect(v).connect(actx.destination); src.start(t, Math.random() * .2); src.stop(t + dur + .02);
     } catch {}
   }
+  // 슬레이트 '딱!' 소리는 2026-10-27 하율 요청으로 전부 뺌(시작·4줄·게임 오버·슬레이트 놓기)
   const clap = (vol = .14, delay = 0) => { hiss(vol, .05, 3800, 2000, 'highpass', .7, delay); beep(1900, 1200, .03, 'square', vol * .25, delay); };   // 슬레이트 '딱!'
   const PLACE = {   // 장비별로 놓는 소리 (모양 → 장비: KIND 참고)
     O() { hiss(.07, .025, 5200, 4000, 'highpass', .8); hiss(.06, .03, 4200, 3000, 'highpass', .8, .07); },          // 카메라: 셔터 '찰칵'
-    Z() { clap(.1); },                                                                                              // 슬레이트: '딱'
+    Z() { beep(260, 180, .07, 'triangle', .04); },                                                                  // 슬레이트: 나무판 '툭' (2026-10-27 하율: '탁' 소리 제거)
     I() { beep(1200, 1180, .12, 'sine', .025); beep(60, 60, .12, 'sawtooth', .015); },                              // LED 조명: '지잉' 켜지는 소리
     T() { beep(880, 870, .09, 'triangle', .035); beep(1320, 1300, .06, 'triangle', .02, .01); },                  // 삼각대: 금속 '챙'
     L() { beep(620, 600, .08, 'square', .025); hiss(.05, .05, 2400, 1200, 'bandpass', 3); },                       // C스탠드: 쇠 '철컥'
@@ -289,7 +290,7 @@ export function createGear(canvas, opt = {}) {
     if (fits(k, 0, x, y + 1)) st.cur.y++;   // 숨은 줄에서 한 칸 내려와 보이게 시작(가이드라인)
   }
   function newPiece() { const k = st.queue.shift(); st.queue.push(nextKind()); spawn(k); st.held = false; opt.onQueue?.(); }
-  function start() { if (st.scene !== 'ready') return; st.scene = 'play'; newPiece(); opt.onStart?.(); clap(.12); beep(880, 1320, .08, 'triangle', .03, .06); }   // 시작: '액션!' 슬레이트
+  function start() { if (st.scene !== 'ready') return; st.scene = 'play'; newPiece(); opt.onStart?.(); beep(880, 1320, .08, 'triangle', .03, .06); }   // 시작: '액션!' 슬레이트
   function move(dx) {
     const p = st.cur; if (!p || !fits(p.k, p.r, p.x + dx, p.y)) return false;
     p.x += dx; resetLock(); beep(330 + Math.random() * 20, 300, .03, 'square', .02); return true;
@@ -348,7 +349,7 @@ export function createGear(canvas, opt = {}) {
       st.rings.push({ y: ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, t: .45, n });
       crunch(tet ? .2 : .13, tet ? .32 : .2, tet ? 3200 : 2400); thump(tet ? .16 : .11);
       st.combo = (st.combo || 0) + 1; const up = Math.pow(2, Math.min(st.combo - 1, 8) / 12);   // 연속으로 깰수록 반음씩 올라감
-      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f * up, f * up, .12, 'square', .045, .06 + i * .07)); crunch(.12, .25, 1800, .12); clap(.14, .4); }   // 4줄: 팡파레 + 슬레이트 '딱!'
+      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f * up, f * up, .12, 'square', .045, .06 + i * .07)); crunch(.12, .25, 1800, .12); }   // 4줄: 팡파레 + 슬레이트 '딱!'
       else [660, 784, 880].slice(0, n).forEach((f, i) => beep(f * up, f * up * 1.5, .1 + n * .02, 'square', .04, .04 + i * .06));   // 1·2·3줄: 줄 수만큼 음이 이어짐
       if (st.level > lv) [523, 784, 1047, 1568].forEach((f, i) => beep(f, f, .1, 'triangle', .04, .45 + i * .08));   // 레벨 업
       opt.onScore?.(Math.round(pts), BW / 2, ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, n);
@@ -365,7 +366,7 @@ export function createGear(canvas, opt = {}) {
     while (st.board.length < ROWS) st.board.unshift(Array(COLS).fill(null));
     newPiece();
   }
-  function over() { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); clap(.12, .55); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms) }); }
+  function over() { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms) }); }
 
   function update(dt) {
     if (st.stop > 0) { st.stop--; return; }   // 히트스톱: 깨지는 순간 몇 프레임 멈칫
