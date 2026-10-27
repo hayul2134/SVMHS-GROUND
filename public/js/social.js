@@ -1258,18 +1258,17 @@ function msFly(from) {
   const tk = msFx('ms-fly', x0, y0); tk.innerHTML = ic('tix') + '<i class="ms-shine"></i>';
   // ① 튀어나옴(2026-10-27 하율 "너무 빨리 등장, 튀어나오는 것처럼"): 움찔(눌림) → 위로 쭉 늘어나며 튀어나옴 → 떨어지며 납작 → 작게 한 번 더 튐 → 자리 잡음
   const Q = (x, y, sx, sy, r) => `translate(-50%,-50%) translate(${x}px,${y}px) rotate(${r}deg) scale(${sx},${sy})`;
+  // 2026-10-27 하율 "너무 과해" → 늘어남·납작 폭을 줄이고 두 번째 반동 없앰: 살짝 움찔 → 톡 튀어나와 → 한 번 가볍게 자리 잡음
   const up = tk.animate([
     { transform: Q(0, 0, S0, S0, 0), easing: 'ease-in-out' },
-    { transform: Q(0, 3, S0 * 1.25, S0 * .7, 0), offset: .14, easing: 'cubic-bezier(.2,.7,.3,1)' },
-    { transform: Q(0, -74, 1.1, 1.5, -8), offset: .42, easing: 'cubic-bezier(.5,0,.7,.4)' },
-    { transform: Q(0, -38, 1.42, 1.08, 4), offset: .6, easing: 'cubic-bezier(.2,.7,.3,1)' },
-    { transform: Q(0, -52, 1.2, 1.32, -2), offset: .74, easing: 'cubic-bezier(.5,0,.7,.4)' },
-    { transform: Q(0, -42, 1.3, 1.2, 1), offset: .87, easing: 'ease-out' },
+    { transform: Q(0, 2, S0 * 1.1, S0 * .88, 0), offset: .14, easing: 'cubic-bezier(.2,.8,.3,1)' },
+    { transform: Q(0, -50, 1.2, 1.3, -2), offset: .5, easing: 'cubic-bezier(.4,0,.6,1)' },
+    { transform: Q(0, -42, 1.28, 1.21, 0), offset: .74, easing: 'ease-out' },
     { transform: Q(0, -44, 1.25, 1.25, 0) },
-  ], { duration: 950, fill: 'forwards' });
+  ], { duration: 820, fill: 'forwards' });
   const T = (x, y, sc, r) => Q(x, y, sc, sc, r);
   tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-130%) skewX(-18deg)' }, { transform: 'translateX(-130%) skewX(-18deg)', offset: .55 }, { transform: 'translateX(260%) skewX(-18deg)' }], { duration: 1250, easing: 'ease-in-out', fill: 'forwards' });
-  setTimeout(() => msStars(x0, y0 - 60, 7, 50, 9), 400);
+  setTimeout(() => msStars(x0, y0 - 50, 4, 40, 7), 380);
   return up.finished.catch(() => {}).then(() => new Promise(r => setTimeout(r, 260))).then(() => {
     if (!t) { tk.remove(); return; }
     // ② 빨려 들어감(620ms): 위로 휘는 곡선, 점점 빨라지며 작아짐 + 별가루 꼬리
