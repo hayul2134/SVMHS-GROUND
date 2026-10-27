@@ -175,15 +175,16 @@ const isAdm = u => u?.handle === ADMIN_HANDLE;
 const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff);
 const misOut = (wk, p) => {
   const list = missionsOf(wk, MS_GAMES());
-  return { wk, list: list.map((m, i) => ({ t: m.t, k: m.k, g: m.g || '', n: m.n, c: progOf(m, p), done: !!p.d?.[i] })), rw: MS };
+  return { wk, list: list.map((m, i) => { const c = progOf(m, p), done = !!p.d?.[i]; return { t: m.t, k: m.k, g: m.g || '', n: m.n, c, done, ready: !done && c >= m.n }; }), rw: MS };
 };
 async function misGet(db, me, wk = weekKey()) {
   const row = await db.prepare('SELECT p FROM missions WHERE uid = ?1 AND day = ?2').bind(me.id, 'w' + wk).first();
   let p = {}; try { p = JSON.parse(row?.p || '{}') || {}; } catch {}
   return { row, p };
 }
-// 행동 하나 → 진행을 올리고 새로 끝난 미션만큼 뽑기권. 이번 주 미션 중 이 행동으로 올라갈 게 없으면 DB를 안 건드림. 두 탭 동시 요청은 이전 값 조건으로 한 번만
-// 응답에 붙일 값: 새로 끝난 미션이 있을 때만 { …misOut, got } (없으면 null)
+// 행동 하나 → 진행만 올림. 뽑기권은 미션 창 '받기'(POST misclaim)로 직접 받음(2026-10-27 하율) — p.d[i] = 받음
+// 이번 주 미션 중 이 행동으로 올라갈 게 없으면 DB를 안 건드림. 두 탭 동시 요청은 이전 값 조건으로 한 번만
+// 응답에 붙일 값: 새로 받을 수 있게 된 미션이 있을 때만 { …misOut, got } (없으면 null)
 async function misEv(db, me, ev, x) {
   try {
     if (!ffOn('week-mission', isAdm(me))) return null;
@@ -192,7 +193,7 @@ async function misEv(db, me, ev, x) {
       const { row, p } = await misGet(db, me, wk);
       if (!list.some((m, i) => !p.d?.[i] && KIND[m.k].ev === ev)) return null;
       const q = applyEv(p, ev, x), got = [];
-      list.forEach((m, i) => { if (!q.d[i] && progOf(m, q) >= m.n) { q.d[i] = 1; got.push(i); } });
+      list.forEach((m, i) => { if (!q.d[i] && progOf(m, q) >= m.n && progOf(m, p) < m.n) got.push(i); });
       const js = JSON.stringify(q);
       if (js === (row?.p || '{}')) return null;
       const ok = row
@@ -200,7 +201,6 @@ async function misEv(db, me, ev, x) {
         : await db.prepare('INSERT INTO missions (uid, day, p) VALUES (?1, ?2, ?3) ON CONFLICT (uid, day) DO NOTHING RETURNING uid').bind(me.id, 'w' + wk, js).first();
       if (!ok) continue;
       if (!got.length) return null;
-      await db.prepare(`UPDATE users SET gc_tix = MIN(${GC.max}, gc_tix + ?1) WHERE id = ?2`).bind(got.length * MS.tix, me.id).run();
       return { ...misOut(wk, q), got };
     }
   } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/mission/' + ev, method: 'MISSION' }, e); }
@@ -1213,6 +1213,24 @@ const ROUTES = {
     if (!/^[a-z0-9]{20,40}$/.test(voter)) return err('bad voter');
     const v = await db.prepare('SELECT 1 FROM meal_votes WHERE ymd = ?1 AND voter = ?2 LIMIT 1').bind(day, voter).first();
     return json({ ok: true, mis: v ? await misEv(db, me, 'meal', { day }) : null });
+  }),
+  // 다 한 미션의 뽑기권 받기(2026-10-27 하율: 완료 전에 '받기' 버튼 → 누르면 받는 애니메이션). 이번 주 것만, 한 번만(이전 값 조건)
+  'POST misclaim': needMe(async ({ db, me, body }) => {
+    if (!ffOn('week-mission', isAdm(me))) return err('not found', 404);
+    const i = +body.i, wk = weekKey(), list = missionsOf(wk, MS_GAMES());
+    if (body.wk && body.wk !== wk) return err('미션이 새 주로 바뀌었어요. 다시 열어 주세요', 409);
+    if (!Number.isInteger(i) || !list[i]) return err('bad mission');
+    for (let tryN = 0; tryN < 3; tryN++) {
+      const { row, p } = await misGet(db, me, wk);
+      if (p.d?.[i]) return err('이미 받은 뽑기권이에요', 409);
+      if (!row || progOf(list[i], p) < list[i].n) return err('아직 미션을 다 하지 않았어요');
+      const q = { ...p, d: [...(p.d || [])] }; q.d[i] = 1;
+      const ok = await db.prepare('UPDATE missions SET p = ?1 WHERE uid = ?2 AND day = ?3 AND p = ?4 RETURNING uid').bind(JSON.stringify(q), me.id, 'w' + wk, row.p).first();
+      if (!ok) continue;
+      const u = await db.prepare(`UPDATE users SET gc_tix = MIN(${GC.max}, gc_tix + ?1) WHERE id = ?2 RETURNING gc_tix`).bind(MS.tix, me.id).first();
+      return json({ ...misOut(wk, q), claimed: i, tix: u?.gc_tix ?? null });
+    }
+    return err('잠시 후 다시 해 주세요', 409);
   }),
   'GET mission': needMe(async ({ db, me }) => {
     if (!ffOn('week-mission', isAdm(me))) return err('not found', 404);
