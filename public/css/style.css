@@ -5085,3 +5085,34 @@ html:has(body.playing){overflow:hidden}
 @keyframes ctBlink{0%{opacity:0}100%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.ctm *{animation:none!important;transition:none!important}}
 @media (max-width:520px){.ctm-top{grid-template-columns:1fr auto}.ctm-rd{grid-column:1/-1;order:3}.ctm-ar{grid-template-rows:24px 54px 50px}}
+
+/* ===== DM: 안 읽음 '1' · 기록 자랑 (2026-10-27 하율) ===== */
+.msg .mrow{display:flex;align-items:flex-end;gap:5px;max-width:100%;min-width:0}
+.msg .mrow .bb{min-width:0}
+.msg .ur{flex:none;font:900 12px/1 var(--num);font-style:normal;color:#d48a00;padding-bottom:3px}
+:root[data-theme="dark"] .msg .ur{color:#ffc93c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .msg .ur{color:#ffc93c}}
+.msg.isbrag .bb{padding:10px 14px 10px 10px}
+.brag{display:flex;align-items:center;gap:10px;min-width:190px;white-space:normal}
+.brag .bg-ic,.brag-tray .bg-ic{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--card);border:2px solid var(--ink);color:var(--ink)}
+.brag .bg-ic svg,.brag-tray .bg-ic svg{width:30px;height:30px;vertical-align:0}
+.brag .bg-ic .tri,.brag-tray .bg-ic .tri{width:36px;height:33px}
+.bg-tx{display:flex;flex-direction:column;gap:1px;line-height:1.2;text-align:left}
+.bg-tx small{display:flex;align-items:center;gap:3px;font-size:11.5px;font-weight:800;opacity:.92}
+.bg-tx small .sic{width:14px;height:14px;color:currentColor}
+.bg-tx b{font:400 25px/1.15 var(--disp);letter-spacing:.2px}
+.bg-tx em{font-style:normal;font-size:12px;font-weight:800;opacity:.92}
+.bg-tx em i{font-style:normal;font-family:var(--num);font-weight:900}
+.msg.bghid .bb{background:none;color:var(--sub);font-style:italic;border-style:dashed}
+.brag-btn .ic{color:var(--ink)}
+.brag-btn.off{opacity:.45}
+.brag-tray .bt-h{margin:0 2px 8px;opacity:1}
+.brag-tray .bt-list{display:flex;flex-direction:column;gap:6px}
+.brag-tray .bt-list button{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;border-radius:14px;background:var(--chip);border:2px solid transparent;text-align:left;transition:transform .1s,border-color .1s}
+.brag-tray .bt-list button:hover{border-color:var(--ink);transform:translateY(-1px)}
+.brag-tray .bg-ic{width:38px;height:38px;border-radius:11px}
+.brag-tray .bg-ic svg{width:24px;height:24px}
+.brag-tray .bg-ic .tri{width:30px;height:28px}
+.brag-tray .bt-n{flex:1;min-width:0;font-weight:800;font-size:14px}
+.brag-tray .bt-list b{font:900 15px/1 var(--num);white-space:nowrap}
+.compose .brag-btn{margin-left:-2px}

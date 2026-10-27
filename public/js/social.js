@@ -873,11 +873,18 @@ function openSettings() {
     <p class="lbl">💬 DM 받는 범위</p>
     <div class="segs fbk" id="dmPref">${[['0', '서로 팔로우한 친구만'], ['1', '나를 팔로우한 사람'], ['2', '누구나']].map(([v, t]) => `<label><input type="radio" name="dmp" value="${v}" ${String(S.me?.dmPref || 0) === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
     ${S.google && !S.me?.sw ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><form class="sform" id="gUnlinkForm"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"><button class="btn ghost" type="submit">연결 해제</button></form>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요. 지금 비밀번호를 적고 구글 버튼을 눌러 주세요.</p><div class="sform"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"></div><div class="gbtn" data-gintent="link"></div>'}` : ''}
+    <p class="lbl">🏆 자랑 메시지</p>
+    <label class="pdok"><input type="checkbox" id="bragAll"><span>DM으로 오는 기록 자랑 받기</span></label>
+    <ul class="plist" id="bragList"></ul>
     <p class="lbl">차단한 사람</p><ul class="plist" id="blkList"><li class="skel"></li></ul>
     <div class="col">${S.me?.handle === ADMIN_HANDLE ? '<a class="btn" href="/admin/">🛠 관리자 페이지</a>' : ''}<button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost" id="btnLogoutAll" title="학교 태블릿 등에 로그인을 두고 왔을 때">모든 기기에서 로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   call('blocked').then(r => {
     $('#blkList').innerHTML = r.users.length ? r.users.map(u => personRow(u, `<button class="fbtn" data-block="${esc(u.handle)}" data-on="0">풀기</button>`)).join('') : '<li class="empty">없어요</li>';
+    $('#bragAll').checked = !r.bragAll;
+    $('#bragList').innerHTML = (r.bragMuted || []).map(u => personRow(u, `<button class="fbtn" data-bragoff="${esc(u.handle)}">자랑 다시 받기</button>`)).join('');
   }).catch(() => { $('#blkList').innerHTML = ''; });
+  $('#bragAll').onchange = async e => { const on = !e.target.checked; try { await call('bragmute', { all: true, on }); toast(on ? '이제 자랑 메시지를 받지 않아요' : '자랑 메시지를 다시 받아요'); } catch (x) { e.target.checked = on; fail(x); } };
+  $('#bragList').onclick = async e => { const b = e.target.closest('[data-bragoff]'); if (!b) return; try { await call('bragmute', { handle: b.dataset.bragoff, on: false }); b.closest('li').remove(); toast('자랑 메시지를 다시 받아요'); } catch (x) { fail(x); } };
   $('#pwForm').onsubmit = async e => {
     e.preventDefault();
     try { await call('password', Object.fromEntries(new FormData(e.target))); toast('비밀번호를 바꿨어요'); e.target.reset(); } catch (err) { fail(err); }
@@ -1067,12 +1074,48 @@ function setupDock() {
   matchMedia('(min-width:900px)').addEventListener?.('change', m => { if (!m.matches) closePanel(); });
 }
 
-function bubbleHtml(m, next, readUpTo) {
+// 기록 자랑 메시지(2026-10-27 하율) — 서버가 만든 '::b:종류:값:순위:인원'만 카드로
+const BRAG = /^::b:([a-z0-9]+):([a-z0-9]+):(\d+):(\d+)$/;
+function bragHtml(body) {
+  const x = BRAG.exec(body || ''); if (!x) return '';
+  const [, k, v, r, n] = x;
+  let icon, name, val;
+  if (k === 'st') { icon = ATT.flame('fsm', { tier: ATT.tierOf(Math.min(+v, 999)) }); name = '연속 출석'; val = +v >= 1e6 ? '무한 ∞' : `${(+v).toLocaleString('ko-KR')}일째`; }
+  else if (k === 'tier') { const t = TIERS.find(y => y.k === v); if (!t) return ''; icon = tierIc(v); name = '이번 라운드 티어'; val = t.n; }
+  else { const g = GAMES[k]; if (!g) return ''; icon = ic(g.ic); name = g.name; val = g.fmt(+v); }
+  return `<span class="brag${k === 'tier' ? ' t-' + v : ''}"><span class="bg-ic">${icon}</span><span class="bg-tx"><small>${ic('trophy')}기록 자랑 · ${esc(name)}</small><b>${esc(val)}</b>${+n ? `<em>${+n}명 중 <i>${+r}위</i></em>` : ''}</span></span>`;
+}
+// 상대가 아직 안 읽은 내 메시지엔 카톡처럼 옆에 '1' (2026-10-27 하율)
+function bubbleHtml(m, next, readUpTo, hideBrag) {
   const gap = !next || next.mine !== m.mine || next.at - m.at > 300e3;
-  const sk = !m.del && stkMsg(m.body);
-  return `<li class="msg ${m.mine ? 'me' : 'you'} ${m.del ? 'del' : ''}${sk ? ' stk' : ''}" data-id="${m.id}">
-    <span class="bb">${m.del ? '삭제된 메시지' : sk || esc(m.body)}</span>
-    ${gap ? `<small class="mt">${m.mine && m.id <= readUpTo ? '읽음 · ' : ''}${hm(m.at)}</small>` : ''}</li>`;
+  const bg = !m.del && bragHtml(m.body), hid = bg && !m.mine && hideBrag;
+  const sk = !m.del && !bg && stkMsg(m.body);
+  const ur = m.mine && !m.del && m.id > readUpTo;
+  return `<li class="msg ${m.mine ? 'me' : 'you'} ${m.del ? 'del' : ''}${sk ? ' stk' : ''}${bg ? (hid ? ' bghid' : ' isbrag') : ''}" data-id="${m.id}">
+    <span class="mrow">${ur ? '<i class="ur" aria-label="안 읽음">1</i>' : ''}<span class="bb">${m.del ? '삭제된 메시지' : hid ? '가린 자랑 메시지' : bg || sk || esc(m.body)}</span></span>
+    ${gap ? `<small class="mt">${hm(m.at)}</small>` : ''}</li>`;
+}
+// 내 기록 고르기 (메시지 입력칸 트로피 버튼)
+async function bragTray(btn, onPick) {
+  const old = $('.stk-tray'); if (old) { const same = old._btn === btn; old.remove(); if (same) return; }
+  const t = document.createElement('div');
+  t.className = 'stk-tray brag-tray'; t._btn = btn; t.setAttribute('role', 'dialog'); t.setAttribute('aria-label', '자랑할 기록 고르기');
+  t.innerHTML = '<p>내 기록을 불러오는 중…</p>';
+  btn.parentElement.append(t);
+  const close = ev => { if (!t.isConnected) return off(); if (ev.type === 'keydown' ? ev.key === 'Escape' : !t.contains(ev.target) && ev.target !== btn && !btn.contains(ev.target)) { t.remove(); off(); } };
+  const off = () => { document.removeEventListener('pointerdown', close, true); document.removeEventListener('keydown', close, true); };
+  setTimeout(() => { document.addEventListener('pointerdown', close, true); document.addEventListener('keydown', close, true); });
+  let d; try { d = await call('user/' + encodeURIComponent(S.me.handle)); } catch (e) { t.innerHTML = `<p>${esc(e.message)}</p>`; return; }
+  if (!t.isConnected) return;
+  const row = (k, icon, name, val) => `<button type="button" data-brag="${k}"><span class="bg-ic">${icon}</span><span class="bt-n">${esc(name)}</span><b>${esc(val)}</b></button>`;
+  const rows = [];
+  if (d.streak?.cur > 0) rows.push(row('st', ATT.flame('fsm', { tier: ATT.tierOf(Math.min(d.streak.cur, 999)) }), '연속 출석', d.streak.cur >= 1e6 ? '∞' : d.streak.cur + '일'));
+  const tc = d.tier?.cur; if (tc) rows.push(row('tier', tierIc(tc.k), '이번 라운드 티어', TIERS.find(y => y.k === tc.k)?.n || ''));
+  for (const [k, g] of Object.entries(GAMES)) if ((!g.ff || ffOn(g.ff, isDev(S.me))) && d.bests?.[k] != null) rows.push(row(k, ic(g.ic), g.name, g.fmt(d.bests[k])));
+  t.innerHTML = rows.length ? `<small class="bt-h">어떤 기록을 자랑할까요?</small><div class="bt-list">${rows.join('')}</div>` : '<p>아직 자랑할 기록이 없어요.<br>출석하거나 게임을 한 판 해 보세요!</p>';
+  const box = btn.closest('.sheet,.modal'), tr = t.getBoundingClientRect(), top = box ? Math.max(0, box.getBoundingClientRect().top) : 0;
+  if (tr.top < top + 6) t.classList.add('dn');
+  t.onclick = e => { const b = e.target.closest('[data-brag]'); if (!b) return; t.remove(); off(); onPick(b.dataset.brag); };
 }
 async function renderThread(handle, box, panel) {
   const q = sel => box.querySelector(sel);
@@ -1083,17 +1126,18 @@ async function renderThread(handle, box, panel) {
   catch (e) { box.innerHTML = `<div class="card soc-gate"><p class="gate-em">🤔</p><p><b>${esc(e.message)}</b></p><a class="btn ghost" ${toList(panel)}>DM 목록</a></div>`; openThread = ''; threadIn = ''; return; }
   if (openThread !== handle) return;
   msgs = d.messages; readUpTo = d.readUpTo;
+  const bgS = d.brag || {}, hideBrag = () => !!(bgS.iMute || bgS.iMuteAll);
   box.innerHTML = `<div class="card chat">
     <div class="chead"><a ${toList(panel)} class="back" aria-label="DM 목록">‹</a><a href="#u/${esc(d.user.handle)}" class="who">${av(d.user)}<span class="pi"><b>${esc(nameOf(d.user))}${devTag(d.user)}</b><small>${d.user.online ? '접속 중' : esc(atOf(d.user))}</small></span></a></div>
     <ol class="msgs" id="msgs" aria-live="polite">${msgs.length >= 40 ? '<li class="older"><button id="olderBtn">이전 메시지 보기</button></li>' : ''}</ol>
-    ${d.canSend ? `<form class="compose" id="dmForm" autocomplete="off"><button class="stk-btn" type="button" id="dmStk" aria-label="스티커 보내기" data-tip="스티커">${ui('sparkle', 'ic')}</button><textarea id="dmIn" rows="1" maxlength="500" placeholder="메시지 보내기…" aria-label="메시지"></textarea><button class="btn" aria-label="보내기">➤</button></form>`
+    ${d.canSend ? `<form class="compose" id="dmForm" autocomplete="off"><button class="stk-btn" type="button" id="dmStk" aria-label="스티커 보내기" data-tip="스티커">${ui('sparkle', 'ic')}</button><button class="stk-btn brag-btn${bgS.theyMute ? ' off' : ''}" type="button" id="dmBrag" aria-label="내 기록 자랑하기" data-tip="${bgS.theyMute ? '자랑 메시지를 받지 않는 친구예요' : '기록 자랑'}">${ic('trophy', 'ic')}</button><textarea id="dmIn" rows="1" maxlength="500" placeholder="메시지 보내기…" aria-label="메시지"></textarea><button class="btn" aria-label="보내기">➤</button></form>`
       : `<p class="note locked">${d.rel.blocked ? '차단한 사람이에요' : '이 친구의 DM 설정 때문에 지금은 보낼 수 없어요'}</p>`}
   </div>`;
   const list = q('#msgs');
   const paint = (keepScroll) => {
     const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     const older = list.querySelector('.older')?.outerHTML || '';
-    list.innerHTML = older + (msgs.length ? msgs.map((m, i) => bubbleHtml(m, msgs[i + 1], readUpTo)).join('') : `<li class="empty hello">👋 ${esc(d.user.name)}에게 첫 메시지를 보내 보세요</li>`);
+    list.innerHTML = older + (msgs.length ? msgs.map((m, i) => bubbleHtml(m, msgs[i + 1], readUpTo, hideBrag())).join('') : `<li class="empty hello">👋 ${esc(d.user.name)}에게 첫 메시지를 보내 보세요</li>`);
     if (!keepScroll || atBottom) list.scrollTop = list.scrollHeight;
   };
   paint();
@@ -1113,6 +1157,13 @@ async function renderThread(handle, box, panel) {
       if (!confirm('이 메시지를 보내기 취소할까요?')) return;
       try { await call('unsend', { id }); const m = msgs.find(x => x.id === id); if (m) { m.del = true; m.body = ''; } paint(true); } catch (err) { fail(err); }
     } else {
+      const isB = li.classList.contains('isbrag') || li.classList.contains('bghid');
+      if (isB) {   // 자랑 메시지: 이 친구 자랑만 그만 받기 / 다시 받기 (2026-10-27 하율)
+        sheet(`<h3>자랑 메시지</h3><p class="note">${bgS.iMuteAll ? '지금은 모든 자랑 메시지를 받지 않고 있어요. 계정 설정에서 바꿀 수 있어요.' : bgS.iMute ? '이 친구의 자랑 메시지를 가리고 있어요.' : '이 친구가 보내는 기록 자랑을 그만 받을 수 있어요. 일반 메시지는 그대로 와요.'}</p><div class="col">${bgS.iMuteAll ? '' : `<button class="btn" id="bgMute">${bgS.iMute ? '다시 받기' : '이 친구 자랑 그만 받기'}</button>`}<button class="btn ghost" data-report="${esc(handle)}" data-msg="${id}">🚨 이 메시지 신고</button><button class="btn ghost" data-close>닫기</button></div>`);
+        const mb = $('#bgMute');
+        if (mb) mb.onclick = async () => { try { const r = await call('bragmute', { handle, on: !bgS.iMute }); bgS.iMute = r.on; closeSheet(); paint(true); toast(r.on ? '이 친구의 자랑 메시지를 가렸어요' : '자랑 메시지를 다시 받아요'); } catch (x) { fail(x); } };
+        return;
+      }
       sheet(`<h3>메시지</h3><p class="quote">${esc(li.textContent.trim())}</p><div class="col"><button class="btn ghost" data-report="${esc(handle)}" data-msg="${id}">🚨 이 메시지 신고</button><button class="btn ghost" data-close>닫기</button></div>`);
     }
   };
@@ -1122,8 +1173,8 @@ async function renderThread(handle, box, panel) {
     const grow = () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight + inp.offsetHeight - inp.clientHeight, 120) + 'px'; };   // border-box라 테두리 두께를 더해야 글자가 가운데 (빼먹으면 아래로 쏠림)
     inp.addEventListener('input', grow);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
-    const send = async (text, keep) => {
-      try { const r = await call('dm/' + encodeURIComponent(handle), { body: text }); if (!msgs.some(m => m.id === r.message.id)) msgs.push(r.message); paint(); dmDelay = 3000; }
+    const send = async (text, keep, brag) => {
+      try { const r = await call('dm/' + encodeURIComponent(handle), brag ? { brag } : { body: text }); if (!msgs.some(m => m.id === r.message.id)) msgs.push(r.message); paint(); dmDelay = 3000; }
       catch (err) { fail(err); if (keep) inp.value = text; }
     };
     form.onsubmit = async e => {
@@ -1134,6 +1185,7 @@ async function renderThread(handle, box, panel) {
       inp.focus();
     };
     q('#dmStk').onclick = e => stkTray(e.currentTarget, v => send('::' + v));
+    q('#dmBrag').onclick = e => bgS.theyMute ? toast('이 친구는 자랑 메시지를 받지 않아요') : bragTray(e.currentTarget, k => send('', false, k));
   }
   // 새 메시지 확인 (화면을 보고 있을 때만). 대화가 오가면 3초, 조용하면 점점 늘려 최대 15초 (서버 요청 줄이기)
   const tick = async () => {

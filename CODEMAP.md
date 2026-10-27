@@ -91,6 +91,7 @@ npx wrangler@4 pages dev --port 8788
 
 ## 소셜 (프로필 · DM · 게임)
 - 헤더 오른쪽은 테마 버튼 `#btnTheme` + 목록 버튼 `#btnMenu`(☰↔✕). 누르면 `#hMenu.open` → `#hList`가 서랍(카드)처럼 펼쳐지고 각 줄은 아이콘+이름+설명: 위에서부터 프로필(`#btnMe`, 로그인하면 `.mi` 안이 아바타) · 테마(`#btnSkin`) · 설정(`#btnClass`, 반 설정) · QR(`#btnShare`) · 신고(`#btnReport` → `social.js openReport()`: 아이디·이유 입력, 로그인 필요). 항목 누르면 닫힘, 바깥 클릭·Esc로도 닫힘. 로직은 `app.js` `menu()`.
+- **DM 안 읽음 '1'·기록 자랑(2026-10-27 하율)**: 내 메시지 중 `id > readUpTo`(상대가 아직 안 읽음)엔 말풍선 옆 노란 `.ur` '1'(예전 '읽음 ·' 글자는 뺌). 기록 자랑은 입력칸 트로피 버튼(`bragTray`, `user/내아이디`로 기록 불러옴) → `POST dm {brag: 게임키|st|tier}` → 서버 `bragBody`가 실제 기록으로 본문 `::b:종류:값:순위:인원`을 만듦(손으로 친 `::b:`는 `: :`로 바꿔 글자로). 화면은 `bragHtml` 카드. 가리기: 표 `brag_mute(uid, src)` — src 0 = 모두(계정 설정 '자랑 메시지' 체크), 사람별은 받은 자랑 카드 눌러서. 가린 사람에겐 보낼 수 없음(403), 예전 자랑은 '가린 자랑 메시지'. `GET dm`의 `brag {iMute, iMuteAll, theyMute}`, `GET blocked`의 `bragMuted·bragAll`.
 - DM은 헤더에 없음 → 오른쪽 아래 `#dmDock`. 900px 이상은 '메시지' 버튼(안 읽은 수 + 최근 대화 3명) → 떠 있는 창 `#dmPanel` 안에서 목록·대화(`renderDm(handle, box, panel)` 공용, 창 안 링크는 `data-pdm`). 900px 미만은 둥근 버튼 → `#dm` 화면. `#dm` 화면·게임 중엔 숨김(`body[data-view]`, `body.playing`).
 - 화면: `#me`(내 프로필/로그인) · `#u/아이디`(남의 프로필) · `#dm`, `#dm/아이디` · `#game`. `go()`가 `/` 뒤를 인자로 넘김.
 - 프로필 카드 레이아웃(2026-10-23): 가운데 정렬 대신 비대칭 — `.phead`(사진·말풍선 기분·이름·칭호·아이디 | 오른쪽 버튼 `.pact`) → `.pcols`(왼쪽 `.pmain`: 개발자 쪽지·소개·칩·왕관·인스타 / 오른쪽 핀 꽂힌 카드 `.pside`: 연속 출석·팔로워/팔로잉·게임 기록) → 개발자면 `swbar`. 720px 이하 한 단. `<header>` 태그는 전역 `header{position:fixed}` 때문에 쓰지 말 것. 프로필 화면 폭 820px.

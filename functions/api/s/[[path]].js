@@ -267,6 +267,26 @@ async function rel(db, me, other) {
 const friendIds = async (db, me) => (await db.prepare('SELECT f.b AS id FROM follows f JOIN follows g ON g.a = f.b AND g.b = f.a WHERE f.a = ?1').bind(me).all()).results.map(r => r.id);
 // DM 보내도 되는지: 받는 사람(u)의 설정 — 0 서로 팔로우 · 1 받는 사람이 나를 팔로우 · 2 누구나. 차단은 항상 막음
 // 개발자에게는 누구나 팔로우 없이 DM 가능(학생 피드백 창구, 2026-10-23) — 차단은 그대로 존중
+// 자랑 메시지(2026-10-27 하율: "메시지로 자기 기록을 자랑하듯이"): 서버가 실제 기록으로 본문을 만듦(위조 방지) → '::b:종류:값:순위:인원'
+//   종류 = 게임 키 · st(연속 출석) · tier(이번 라운드 티어). 순위·인원 0 = 표시 안 함(개발자는 랭킹 밖)
+const BRAG_RE = /^::b:/;
+async function bragBody(env, db, me, k) {
+  if (k === 'st') { const v = isAdm(me) ? ALL_OPEN : (await liveMany(env, db, [me]))[0] || 0; return v > 0 ? { body: `::b:st:${v}:0:0` } : { e: '연속 출석 기록이 아직 없어요' }; }
+  if (k === 'tier') {
+    if (isAdm(me)) return { e: '개발자는 티어가 없어요' };
+    const b = await tierBoard(db, undefined, tierV2(me)), x = b.list.find(y => y.uid === me.id);
+    return x ? { body: `::b:tier:${x.tier}:${x.rank}:${b.list.length}` } : { e: '이번 라운드 티어가 아직 없어요' };
+  }
+  const g = GAMES[k];
+  if (!g || (g.ff && !ffOn(g.ff, isAdm(me)))) return { e: '자랑할 수 없는 기록이에요' };
+  const m = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, k).first();
+  if (m?.b == null) return { e: '이 게임 기록이 아직 없어요' };
+  if (isAdm(me)) return { body: `::b:${k}:${m.b}:0:0` };
+  const r = await db.prepare(`SELECT SUM(b < ?2) + 1 AS r, COUNT(*) AS n FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid)`).bind(k, m.b).first();
+  return { body: `::b:${k}:${m.b}:${r?.r || 0}:${r?.n || 0}` };
+}
+// 받는 사람(uid)이 보낸 사람(src)의 자랑을 가렸는지 (src 0 = 모두 가림)
+const bragMuted = async (db, uid, src) => !!(await db.prepare('SELECT 1 AS x FROM brag_mute WHERE uid = ?1 AND src IN (0, ?2) LIMIT 1').bind(uid, src).first());
 const dmAllowed = (u, r) => !r.blocked && !r.blockedMe && (isAdm(u) || (u.dm_pref || 0) === 2 || ((u.dm_pref || 0) === 1 && r.followsMe) || (r.following && r.followsMe));
 const pairOf = (x, y) => x < y ? `${x}:${y}` : `${y}:${x}`;
 
@@ -516,7 +536,7 @@ const ROUTES = {
     }
     await db.batch([
       'DELETE FROM sessions WHERE uid = ?1', 'DELETE FROM follows WHERE a = ?1 OR b = ?1', 'DELETE FROM blocks WHERE a = ?1 OR b = ?1',
-      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM held_scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
+      'DELETE FROM messages WHERE a = ?1 OR b = ?1', 'DELETE FROM brag_mute WHERE uid = ?1 OR src = ?1', 'DELETE FROM scores WHERE uid = ?1', 'DELETE FROM held_scores WHERE uid = ?1', 'DELETE FROM bans WHERE uid = ?1', 'DELETE FROM reports WHERE reporter = ?1', 'DELETE FROM feedback_img WHERE fid IN (SELECT id FROM feedback WHERE uid = ?1)', 'DELETE FROM feedback WHERE uid = ?1', 'DELETE FROM attendance WHERE uid = ?1',
       'DELETE FROM users WHERE id = ?1',
     ].map(s => db.prepare(s).bind(me.id)));
     return endAdmin(db, req, me, json({ ok: true }, 200, { 'set-cookie': setCookie(req, '', 0) }));
@@ -641,7 +661,18 @@ const ROUTES = {
 
   'GET blocked': needMe(async ({ db, me }) => {
     const rows = (await db.prepare(`SELECT ${PUB.replace(/(\w+)/g, 'u.$1')} FROM blocks b JOIN users u ON u.id = b.b WHERE b.a = ?1`).bind(me.id).all()).results;
-    return json({ users: rows.map(card) });
+    const bm = (await db.prepare(`SELECT ${PUB.replace(/(\w+)/g, 'u.$1')} FROM brag_mute m JOIN users u ON u.id = m.src WHERE m.uid = ?1`).bind(me.id).all()).results;
+    const all = !!(await db.prepare('SELECT 1 AS x FROM brag_mute WHERE uid = ?1 AND src = 0').bind(me.id).first());
+    return json({ users: rows.map(card), bragMuted: bm.map(card), bragAll: all });
+  }),
+
+  // 자랑 메시지 가리기: { handle, on } 그 사람만 · { all: true, on } 모두
+  'POST bragmute': needMe(async ({ db, me, body }) => {
+    let src = 0;
+    if (!body.all) { const u = await byHandle(db, body.handle); if (!u || u.id === me.id) return err('없는 사용자예요', 404); src = u.id; }
+    if (!isAdm(me) && await limited(db, 'bm:' + me.id, 60, 600)) return err('너무 빨라요. 잠시 후에 해 주세요', 429);
+    await db.prepare(body.on ? 'INSERT OR IGNORE INTO brag_mute (uid, src) VALUES (?1, ?2)' : 'DELETE FROM brag_mute WHERE uid = ?1 AND src = ?2').bind(me.id, src).run();
+    return json({ ok: true, on: !!body.on });
   }),
 
   'POST report': needMe(async ({ db, me, body }) => {
@@ -675,7 +706,7 @@ const ROUTES = {
     const byId = new Map(users.map(u => [u.id, u]));
     const threads = last.filter(m => byId.has(m.a === me.id ? m.b : m.a)).map(m => {
       const other = m.a === me.id ? m.b : m.a;
-      return { user: card(byId.get(other)), last: m.del ? '삭제된 메시지' : m.body, at: m.at, mine: m.a === me.id, unread: unread[other] || 0 };
+      return { user: card(byId.get(other)), last: m.del ? '삭제된 메시지' : BRAG_RE.test(m.body) ? '🏆 기록을 자랑했어요' : m.body, at: m.at, mine: m.a === me.id, unread: unread[other] || 0 };
     });
     const talked = new Set(last.map(m => m.a === me.id ? m.b : m.a));
     const friends = users.filter(u => !talked.has(u.id)).map(card);   // 아직 대화 안 한 친구
@@ -695,14 +726,19 @@ const ROUTES = {
       .bind(...(before ? [pair, before] : [pair])).all()).results;
     await db.prepare('UPDATE messages SET seen = 1 WHERE pair = ?1 AND b = ?2 AND seen = 0').bind(pair, me.id).run();
     // 상대가 읽은 내 마지막 메시지 (읽음 표시용)
-    const read = await db.prepare('SELECT MAX(id) AS id FROM messages WHERE pair = ?1 AND a = ?2 AND seen = 1').bind(pair, me.id).first();
+    const [read, mu] = await Promise.all([
+      db.prepare('SELECT MAX(id) AS id FROM messages WHERE pair = ?1 AND a = ?2 AND seen = 1').bind(pair, me.id).first(),
+      db.prepare('SELECT uid, src FROM brag_mute WHERE (uid = ?1 AND src IN (0, ?2)) OR (uid = ?2 AND src IN (0, ?1))').bind(me.id, u.id).all(),
+    ]);
+    const mine = mu.results.filter(x => x.uid === me.id);
     return json({
       user: card(u), rel: r, canSend: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), readUpTo: read?.id || 0,
+      brag: { iMute: mine.some(x => x.src === u.id), iMuteAll: mine.some(x => x.src === 0), theyMute: mu.results.some(x => x.uid === u.id) },
       messages: rows.map(m => ({ id: m.id, mine: m.a === me.id, body: m.del ? '' : m.body, del: !!m.del, at: m.at })),
     });
   }),
 
-  'POST dm': needMe(async ({ db, me, arg, body }) => {
+  'POST dm': needMe(async ({ env, db, me, arg, body }) => {
     const u = await byHandle(db, arg);
     if (!u || u.id === me.id) return err('없는 사용자예요', 404);
     const r = await rel(db, me.id, u.id);
@@ -710,7 +746,15 @@ const ROUTES = {
     if (!dmAllowed(u, r) && !isAdm(me)) return err(['서로 팔로우한 친구에게만', '나를 팔로우하는 사람에게만', ''][u.dm_pref || 0] + ' 보낼 수 있어요', 403);
     if (!isAdm(me) && !isAdm(u) && !dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);   // DM을 꺼도 개발자와의 대화는 열림
     // 욕설은 막지 않고 ＊로 가림(친구끼리 대화라 거절하면 거부감 큼) · 1분 15개 · 같은 말 3번 연속 금지 (2026-10-24: 1분 40개 도배 확인)
-    const text = clean(body.body, 500, true).replace(BAD_G, m => '＊'.repeat(m.length));
+    let text;
+    if (body.brag != null) {   // 기록 자랑 — 서버가 본문을 만듦
+      if (await bragMuted(db, u.id, me.id)) return err('이 친구는 자랑 메시지를 받지 않아요', 403);
+      const b = await bragBody(env, db, me, String(body.brag)); if (b.e) return err(b.e);
+      text = b.body;
+    } else {
+      text = clean(body.body, 500, true).replace(BAD_G, m => '＊'.repeat(m.length));
+      if (BRAG_RE.test(text)) text = text.replace(/^::/, ': :');   // 손으로 친 가짜 자랑은 그냥 글자로
+    }
     if (!text) return err('내용을 적어 주세요');
     const se = stkErr(me, text); if (se) return err(se);
     if (!isAdm(me) && await limited(db, 'dm:' + me.id, 15, 60)) return err('너무 빨리 보내고 있어요. 잠깐만요!', 429);
