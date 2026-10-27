@@ -232,15 +232,15 @@ const ROUTES = {
         a.handle AS rh, a.name AS rn, a.avatar AS ra, t.handle AS th, t.name AS tn, t.avatar AS ta, t.id AS tid
       FROM reports r LEFT JOIN users a ON a.id = r.reporter LEFT JOIN users t ON t.id = r.target
       WHERE ${open ? 'r.done = 0' : 'r.done > 0'} ORDER BY r.id DESC LIMIT 100`).all()).results;
-    // 대상별 누적 신고 수
+    // 대상별 누적 신고 수 — 관리자가 받아들여 조치한(done = 1) 신고만 센다 (2026-10-27 하율: 무고한 신고는 기록에 안 남게)
     const tids = [...new Set(rows.map(x => x.tid).filter(Boolean))];
-    const counts = tids.length ? Object.fromEntries((await db.prepare(`SELECT target, COUNT(*) AS n FROM reports WHERE target IN (${tids.map(() => '?').join(',')}) GROUP BY target`).bind(...tids).all()).results.map(x => [x.target, x.n])) : {};
+    const counts = tids.length ? Object.fromEntries((await db.prepare(`SELECT target, COUNT(*) AS n FROM reports WHERE done = 1 AND target IN (${tids.map(() => '?').join(',')}) GROUP BY target`).bind(...tids).all()).results.map(x => [x.target, x.n])) : {};
     const bans = tids.length ? new Set((await db.prepare(`SELECT uid FROM bans WHERE (until = 0 OR until > ?1) AND uid IN (${tids.map(() => '?').join(',')})`).bind(Date.now(), ...tids).all()).results.map(x => x.uid)) : new Set();
     return json({
       reports: rows.map(x => ({
         id: x.id, msg: x.msg, reason: x.reason, at: x.at, done: x.done, note: x.note,
         reporter: x.rh ? { handle: x.rh, name: x.rn, avatar: x.ra } : null,
-        target: x.th ? { handle: x.th, name: x.tn, avatar: x.ta, total: counts[x.tid] || 1, banned: bans.has(x.tid) } : null,
+        target: x.th ? { handle: x.th, name: x.tn, avatar: x.ta, total: counts[x.tid] || 0, banned: bans.has(x.tid) } : null,
       })),
     });
   },
@@ -277,10 +277,10 @@ const ROUTES = {
   /* ----- 사용자 ----- */
   'GET users': async ({ db, url }) => {
     const q = clean(url.searchParams.get('q'), 20).toLowerCase().replace(/[%_\\]/g, '');
-    const sort = { recent: 'u.seen DESC', new: 'u.created DESC', reports: 'reps DESC, u.seen DESC', name: 'u.handle' }[url.searchParams.get('sort')] || 'u.seen DESC';
+    const sort = { recent: 'u.seen DESC', new: 'u.created DESC', reports: 'reps DESC, openReps DESC, u.seen DESC', name: 'u.handle' }[url.searchParams.get('sort')] || 'u.seen DESC';
     const filter = url.searchParams.get('filter');
-    const where = ['(u.handle LIKE ?1 OR u.name LIKE ?1)', filter === 'banned' ? 'b.uid IS NOT NULL' : filter === 'reported' ? 'reps > 0' : '1'].join(' AND ');
-    const rows = (await db.prepare(`SELECT ${U.replace(/(\w+)/g, 'u.$1')}, (SELECT COUNT(*) FROM reports r WHERE r.target = u.id) AS reps,
+    const where = ['(u.handle LIKE ?1 OR u.name LIKE ?1)', filter === 'banned' ? 'b.uid IS NOT NULL' : filter === 'reported' ? '(reps > 0 OR openReps > 0)' : '1'].join(' AND ');
+    const rows = (await db.prepare(`SELECT ${U.replace(/(\w+)/g, 'u.$1')}, (SELECT COUNT(*) FROM reports r WHERE r.target = u.id AND r.done = 1) AS reps,
         (SELECT COUNT(*) FROM reports r WHERE r.target = u.id AND r.done = 0) AS openReps, b.until AS banUntil
       FROM users u LEFT JOIN bans b ON b.uid = u.id AND (b.until = 0 OR b.until > ?2)
       WHERE ${NA} AND ${where} ORDER BY ${sort} LIMIT 300`).bind(`%${q}%`, Date.now()).all()).results;

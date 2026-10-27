@@ -269,7 +269,7 @@ VIEWS.reports = async () => {
     <p class="sub sp-b">DM 내용은 신고된 메시지와 그 앞뒤 대화만 볼 수 있어요. 처리한 내용은 관리 기록에 남아요.</p>
     ${d.reports.length ? d.reports.map(r => `
       <article class="card rep" data-id="${r.id}">
-        <div class="rh">${who(r.target, r.target ? `누적 신고 ${r.target.total}회` : '')}${r.target?.banned ? '<span class="tag ban">정지 중</span>' : ''}
+        <div class="rh">${who(r.target, r.target ? (r.target.total ? `조치된 신고 ${r.target.total}회` : '조치된 신고 없음') : '')}${r.target?.banned ? '<span class="tag ban">정지 중</span>' : ''}
           <span class="arrow">←</span><span class="sub">신고: ${r.reporter ? '@' + esc(r.reporter.handle) : '(탈퇴)'} · ${when(r.at)}</span></div>
         <p class="why">${esc(r.reason)}</p>
         ${r.msg ? `<div class="ctx" id="ctx${r.id}"><button class="btn sm" type="button" data-act="ctx" data-id="${r.id}">💬 신고된 메시지 보기</button></div>` : '<p class="sub">프로필 신고 (메시지 없음)</p>'}
@@ -318,9 +318,9 @@ async function loadUsers() {
   const d = await call('users?' + p);
   if (cur !== 'users') return;
   $('#uCount').textContent = `${d.users.length}명${d.users.length >= 300 ? '+' : ''}`;
-  $('#uList').innerHTML = d.users.length ? `<table class="tbl"><thead><tr><th>사용자</th><th>반</th><th>최근 접속</th><th>가입</th><th class="r">신고</th></tr></thead><tbody>
+  $('#uList').innerHTML = d.users.length ? `<table class="tbl"><thead><tr><th>사용자</th><th>반</th><th>최근 접속</th><th>가입</th><th class="r" title="조치한 신고만 셉니다">신고(조치)</th></tr></thead><tbody>
     ${d.users.map(u => `<tr class="click" data-act="user" data-h="${esc(u.handle)}"><td>${who(u)}${u.banned ? '<span class="tag ban">정지</span>' : ''}</td><td>${cls(u) || '-'}</td><td>${when(u.seen)}</td><td>${when(u.created)}</td>
-      <td class="r">${u.reps ? `<span class="tag rep">${u.reps}${u.openReps ? ` (대기 ${u.openReps})` : ''}</span>` : '-'}</td></tr>`).join('')}
+      <td class="r">${u.reps || u.openReps ? `${u.reps ? `<span class="tag rep">${u.reps}</span>` : ''}${u.openReps ? `<span class="sub"> 대기 ${u.openReps}</span>` : ''}` : '-'}</td></tr>`).join('')}
     </tbody></table>` : '<p class="empty">해당하는 사용자가 없어요</p>';
 }
 
@@ -342,7 +342,7 @@ async function openUser(handle) {
     </div>
     <div class="mgrid">
     <div class="sec"><h4>🎮 게임 최고 기록</h4><div class="pills">${d.bests.length ? d.bests.map(b => `<span class="pill">${GAMES[b.game]?.em || ''} ${esc(GAMES[b.game]?.name || b.game)}<b>${esc(GAMES[b.game]?.fmt(b.best) ?? b.best)}</b> · ${b.days}일</span>`).join('') : '<span class="sub">기록 없음</span>'}</div></div>
-    <div class="sec"><h4>🚨 받은 신고 ${d.reportsAgainst.length}건</h4>${d.reportsAgainst.length ? d.reportsAgainst.map(r => `<p class="sub">${when(r.at)} · @${esc(r.rh || '탈퇴')} · ${esc(r.reason)} ${r.done ? '' : '<span class="tag rep">대기</span>'}</p>`).join('') : '<p class="sub">없음</p>'}
+    <div class="sec"><h4>🚨 받은 신고 · 조치 ${d.reportsAgainst.filter(r => r.done === 1).length}회</h4>${d.reportsAgainst.length ? d.reportsAgainst.map(r => `<p class="sub">${when(r.at)} · @${esc(r.rh || '탈퇴')} · ${esc(r.reason)} ${r.done === 1 ? '<span class="tag rep">조치</span>' : r.done === 2 ? '<span class="sub">· 문제 없음</span>' : '<span class="tag">대기</span>'}</p>`).join('') : '<p class="sub">없음</p>'}
       ${d.reportsBy.length ? `<h4>📝 이 사람이 한 신고 ${d.reportsBy.length}건</h4>${d.reportsBy.map(r => `<p class="sub">${when(r.at)} → @${esc(r.th || '탈퇴')} · ${esc(r.reason)}</p>`).join('')}` : ''}</div>
     <div class="sec"><h4>⛔ 이용 정지</h4>
       ${d.ban ? `<div class="row"><button class="btn sm ok" type="button" data-act="unban" data-h="${h}">정지 풀기</button></div>` : `
