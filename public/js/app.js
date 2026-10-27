@@ -1,5 +1,5 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
-import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast, idle, onWake, ghost, ghostOr } from './util.js';
+import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast, idle, onWake, ghost, ghostOr, riseIn } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish, splitOf } from './neis.js';
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
@@ -1248,9 +1248,13 @@ new IntersectionObserver(([e]) => {
 function setLbl(el, text, off, wk) {
   // 끝 낱말(' 시간표'·' 급식')은 따로 감싸서, 서랍이 좁으면 CSS가 숨김 → 라벨이 넘쳐 '다음 ›' 버튼을 덮던 문제(2026-10-24) 방지
   const m = /^(.*?)( (?:시간표|급식))$/.exec(text);
-  el.textContent = '';
-  const a = document.createElement('span'); a.className = 'lt'; a.textContent = m ? m[1] : text; el.append(a);
-  if (m) { const b = document.createElement('span'); b.className = 'lw'; b.textContent = m[2]; el.append(b); }
+  if (el._t !== text) {   // 글자가 바뀔 때만 다시 만듦 + 살짝 떠오르게 (오늘 → 내일 등, 2026-10-27 툭 바뀌던 것)
+    const first = el._t == null; el._t = text;
+    el.textContent = '';
+    const a = document.createElement('span'); a.className = 'lt'; a.textContent = m ? m[1] : text; el.append(a);
+    if (m) { const b = document.createElement('span'); b.className = 'lw'; b.textContent = m[2]; el.append(b); }
+    if (!first) riseIn([...el.children]);
+  }
   el.classList.toggle('off', off); el.classList.toggle('wkon', wk);
   const tip = off ? (wk ? '이번 주로 돌아가기' : '오늘로 돌아가기') : (wk ? '하루씩 보기' : '한 주씩 보기');
   el.dataset.tip = tip; el.setAttribute('aria-label', `${text} · 눌러서 ${tip}`);

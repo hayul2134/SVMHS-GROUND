@@ -287,7 +287,7 @@ function sheetHtml(r, quiet = false) {
     <section class="att-sec"><h4>출석 보상 <small>한 번 받으면 기록이 끊겨도 계속 쓸 수 있어요 · 프로필 꾸미기에서 골라요</small></h4>${rewardsHtml(r, 'best')}${rewardsHtml(r, 'total')}</section>
     <section class="att-sec"><h4>연속 출석 순위</h4>
       <div class="segs"><button type="button" data-att-rank="friends" class="on">친구</button><button type="button" data-att-rank="all">전체</button></div>
-      <ol class="rank" id="attRank"><li class="skel"></li></ol></section>
+      <ol class="rank" id="attRank" data-swap><li class="skel"></li></ol></section>
     <details class="att-rule"><summary>출석 규칙</summary>
       <ul><li>로그인한 채로 사이트를 열면 하루 한 번 자동으로 출석돼요.</li>
       <li><b>등교하는 날(월~금)</b>을 빠지면 연속 기록이 끊겨요. 주말·공휴일·방학은 쉬어도 괜찮아요.</li>

@@ -416,7 +416,7 @@ async function renderMe() {
         <div class="ct"><h2>👋 친구 찾기</h2></div>
         <form class="form" id="findForm" autocomplete="off" role="search"><input id="findQ" placeholder="아이디나 이름으로 검색" maxlength="16" aria-label="친구 검색"><button class="btn">검색</button></form>
         <p class="note" id="findNote">최근에 들어온 친구들</p>
-        <ul class="plist" id="findList">${ghPeople(4)}</ul>
+        <ul class="plist" id="findList" data-swap>${ghPeople(4)}</ul>
       </section>`;
     findPeople('');
     if (wantFind) {   // 프로필 등장 효과·사진이 늦게 자리 잡아 높이가 바뀜 → 1.2초 동안 자리가 바뀌면 다시 맞춤
@@ -484,7 +484,7 @@ document.addEventListener('click', async e => {
   const p = e.target.closest('[data-people]');
   if (p) {
     const kind = p.dataset.people, title = { followers: '팔로워', following: '팔로잉', friends: '친구' }[kind];
-    sheet(`<h3>${title}</h3><ul class="plist" id="pplList">${ghPeople(4)}</ul><div class="row"><button class="btn ghost" data-close>닫기</button></div>`);
+    sheet(`<h3>${title}</h3><ul class="plist" id="pplList" data-swap>${ghPeople(4)}</ul><div class="row"><button class="btn ghost" data-close>닫기</button></div>`);
     try {
       const r = await call(`people?kind=${kind}&who=${encodeURIComponent(p.dataset.h)}`);
       $('#pplList').innerHTML = r.users.length ? r.users.map(u => personRow(u, followBtn(u))).join('') : '<li class="empty">아직 없어요</li>';
@@ -1052,7 +1052,8 @@ const panelOpen = () => !!$('#dmPanel') && !$('#dmPanel').hidden;
 const wide = () => matchMedia('(min-width:900px)').matches;
 function paintRecent(threads = []) {
   const el = $('#dmAvs'); if (!el) return;
-  el.innerHTML = S.me ? threads.slice(0, 3).map(t => av(t.user)).join('') : '';
+  const h = S.me ? threads.slice(0, 3).map(t => av(t.user)).join('') : '';
+  if (el._h !== h) { el._h = h; el.innerHTML = h; }   // 같은 얼굴이면 다시 안 그림 → 등장 애니메이션이 새로 고칠 때마다 반복되지 않게
 }
 async function loadRecent() {
   if (!S.me) { paintRecent(); return; }

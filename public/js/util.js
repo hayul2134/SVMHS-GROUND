@@ -88,17 +88,29 @@ export const ghostIn = el => { if (el) ghostMark(el); return el; };
 // 가짜 데이터로 그리다 실패하면(데이터 모양이 바뀌는 등) 예전 막대 뼈대로
 export const ghostOr = (fn, n = 3) => { try { return ghost(fn()); } catch { return skel(n); } };
 
+// 직접 부를 때: 새로 그린 요소들을 차례로 떠오르게 (움직임 줄이기면 아무것도 안 함)
+export let riseIn = () => {};
 /* ----- 등장 애니메이션 (2026-10-27) -----
    ① 로딩 뼈대(.skz/.skel)나 '불러오는 중' 자리를 진짜 내용이 바꿔 넣을 때 · 빈 칸이 처음 채워질 때 → 새 요소가 차례로 살짝 떠오름
    ② hidden 이던 요소가 나타날 때 → 살짝 커지며 나타남
    이미 자기 애니메이션이 도는 요소(뷰 전환·시트·쇼케이스 등)는 건드리지 않음. 움직임 줄이기면 없음 */
 if (typeof document !== 'undefined' && typeof MutationObserver === 'function' && Element.prototype.animate) {
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
-  const isLoad = n => n.nodeType === 1 && (n.classList.contains('skz') || n.classList.contains('skel') || n.classList.contains('ldt'));
+  const LOAD = '.skz,.skel,.ldt';
+  const isLoad = n => n.nodeType === 1 && n.matches(LOAD);
+  const hasLoad = n => n.nodeType === 1 && (n.matches(LOAD) || !!n.querySelector(LOAD));   // 뼈대를 품은 덩어리째 바뀌어도(공지 창 등)
+  const blank = n => n.nodeType === 8 || (n.nodeType === 3 && !n.data.trim());
+  const sig = ns => [...ns].map(n => n.textContent || '').join('').replace(/\s+/g, '');   // 글자로 비교(그림이 나중에 그려진 건 무시)
   const SKIP = '#intro,.gfx,.sh-stage,.gstage,.gplay,#hr,canvas,.ctm,.nsvg,#bigTime,#tip,.tip,.ptzoom,[data-noreveal]';
   const busy = el => {   // 자기·조상이 이미 움직이는 중이면 겹치지 않게
     for (let e = el, k = 0; e && e !== document.body && k < 8; e = e.parentElement, k++) {
-      if (e.getAnimations().some(a => a.playState === 'running' && a.effect?.getComputedTiming().activeDuration < 4000)) return true;
+      for (const a of e.getAnimations()) {   // 0.2초 넘게 더 움직일 등장류(투명도·위치) 애니메이션만 — 거의 끝난 것·배경색·무한 반복은 무시
+        if (a.playState !== 'running' && a.playState !== 'pending') continue;
+        const t = a.effect?.getComputedTiming?.(); if (!t || !isFinite(t.endTime)) continue;
+        if (t.endTime - (a.currentTime || 0) < 200) continue;
+        const kf = a.effect.getKeyframes?.() || [];
+        if (a.transitionProperty ? /opacity|transform|translate|scale/.test(a.transitionProperty) : kf.some(k => 'opacity' in k || 'transform' in k || 'translate' in k || 'scale' in k)) return true;
+      }
     }
     return false;
   };
@@ -122,13 +134,17 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
       }
       const add = [...m.addedNodes].filter(n => n.nodeType === 1 && !isLoad(n));
       if (!add.length) continue;
-      const fromLoad = [...m.removedNodes].some(isLoad);
-      const fromEmpty = !m.removedNodes.length && tg.childNodes.length === m.addedNodes.length && !m.previousSibling && !m.nextSibling;
-      if (!fromLoad && !fromEmpty) continue;
+      const rm = [...m.removedNodes];
+      const fromLoad = rm.some(hasLoad);
+      const fromEmpty = rm.every(blank) && tg.childNodes.length === m.addedNodes.length && !m.previousSibling && !m.nextSibling;
+      // data-swap 칸(급식 끼니·검색 결과·랭킹 탭 등): 내용이 실제로 바뀌었을 때만 (같은 내용 다시 그리기는 그대로)
+      const swapped = !fromLoad && !fromEmpty && tg.hasAttribute('data-swap') && rm.some(n => n.nodeType === 1) && sig(rm) !== sig(m.addedNodes);
+      if (!fromLoad && !fromEmpty && !swapped) continue;
       if (!shown(tg) || busy(tg)) continue;
       rise(add);
     }
   });
+  riseIn = els => { if (!RM.matches) rise(els); };
   const go = () => mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go, { once: true });
   // 사진이 늦게 오면 그 자리에 같은 모양 덩어리가 먼저 보이고, 다 오면 페이드 인 (CSS img:not(.ok))

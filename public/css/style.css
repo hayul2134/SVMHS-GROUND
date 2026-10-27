@@ -5199,3 +5199,28 @@ img.ptimg:not(.ok){border-radius:10px;min-height:120px}
 .skz .gc-skm{height:210px;display:grid;place-items:center}
 .skz .gc-skm svg.skm{width:150px;height:190px;border-radius:46% 46% 16px 16px}
 .skz .lbl,.skz .vnote,.skz .kcal{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+
+/* ===== 툭 튀어나오던 것들 (2026-10-27 2차, 하율: "새 게임 아이콘이 툭 튀어나옴 · 이런 거 싹다") =====
+   display가 꺼졌다 켜지는 순간 CSS 애니메이션은 처음부터 다시 돎 → 클래스로 켜지는 요소에 한 번짜리 등장을 걸어 둠 (backwards라 끝나면 원래 스타일 그대로) */
+@keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.95)}}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes bdIn{from{background-color:transparent}}
+@media (prefers-reduced-motion:no-preference){
+  [data-ff]{animation:popIn .45s cubic-bezier(.2,1.3,.4,1) backwards}   /* 미리보기 깃발 새 기능(새 게임 아이콘 등): 개발자 확인되는 순간 나타남 */
+  .modal.open:not(.out){animation:bdIn .22s ease-out}                     /* 창 뒤 어두운 배경: 창은 튀어 오르는데 배경만 툭 깔리던 것 */
+  .mealtabs{animation:popIn .3s ease-out backwards}                       /* 조식·중식·석식 탭: 급식이 오면 생김 */
+  .dmpill{animation:popIn .3s cubic-bezier(.2,1.3,.4,1) backwards}        /* 메시지 창을 닫으면 다시 나오는 메시지 버튼 */
+  .dmdock{animation:fadeIn .25s ease-out backwards}                       /* DM 화면·게임에서 돌아올 때 */
+  .dp-avs .av{animation:popIn .32s cubic-bezier(.2,1.4,.4,1) backwards}
+  .dp-avs .av:nth-child(2){animation-delay:.05s}.dp-avs .av:nth-child(3){animation-delay:.1s}
+  header.away #btnHome,header:not(.away) .logo{animation:popIn .28s ease-out backwards}   /* 스크롤하면 로고 ↔ 홈 버튼 바뀜 */
+  .svcfab{animation:popIn .3s cubic-bezier(.2,1.3,.4,1) backwards}        /* 다른 화면에서 홈으로 돌아올 때 */
+  .cal .dy .e{animation:fadeIn .3s ease-out backwards}                    /* 달력 칸 일정: 일정이 오면 */
+  .cdl:empty{display:none}.cdl{animation:fadeIn .3s ease-out backwards}   /* 카운트다운 초 단위 줄 */
+}
+@media (prefers-reduced-motion:no-preference){
+  .dp-avs{animation:fadeIn .25s ease-out backwards}
+  .cal .dy .n{animation:fadeIn .25s ease-out backwards}
+}
+@media (prefers-reduced-motion:no-preference){.s-slots{animation:popIn .3s ease-out backwards}}   /* 서랍 급식 끼니 칩: 급식이 오면 생김 */
+@media (prefers-reduced-motion:no-preference){.hr-ov{animation:fadeIn .2s ease-out backwards}}   /* 게임 시작·멈춤·넘어짐 안내판 */
