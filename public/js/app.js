@@ -404,13 +404,12 @@ const voteOf = (k, meal) => {
   const v = VOTES[k];
   if (!v || !v.enabled) return null;
   const m = (v.meals && v.meals[meal]) || { counts: {}, total: 0, mine: '' };
-  const ns = Object.values(m.counts), max = Math.max(0, ...ns);
-  const top = max && ns.filter(n => n === max).length === 1 ? max : 0;   // 트로피는 단독 1등에게만 (공동 1등이면 없음)
+  const top = Math.max(0, ...Object.values(m.counts));   // 1등 표 수 — 공동 1등이면 모두 트로피
   return { ...m, top, open: v.today === k };
 };
 const voteMark = (name, v) => {
   if (!v) return '';
-  const n = v.counts[name] || 0, best = n && n === v.top;   // 표를 받은 메뉴는 모두 표 수 표시(0표는 숨김), 단독 1등만 트로피
+  const n = v.counts[name] || 0, best = n && n === v.top;   // 표를 받은 메뉴는 모두 표 수 표시(0표는 숨김), 1등(공동 포함)은 트로피
   if (!n) return '';
   return `<i class="vc${best ? ' best' : ''}">${best ? sji('trophy') : '♥ '}${n}</i>`;
 };
