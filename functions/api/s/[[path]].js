@@ -4,6 +4,8 @@
 import { balanceOf, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
 import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
+import { GEAR_MAX, maxScore as gearMax } from '../../../public/js/gear-score.js';
+import { ffOn } from '../../../public/js/flags.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
 import { randHex, sha256, hashPw, sameStr, cookieOf, clean } from '../../../lib/sec.js';
@@ -20,6 +22,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   num25: { min: 5000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
   home: { min: 1, max: HOME_MAX - 1, play: 1000 },     // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음)
+  gear: { min: 1, max: GEAR_MAX - 1, play: 3000, ff: 'gear-game' },   // 반납 5분 전!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 // 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
@@ -52,6 +55,15 @@ function checkRounds(game, v, r, elapsed) {
     if (HOME_MAX - m !== v || scoreAt(ms) !== m) return H(`거리(${m}m)가 달린 시간(${(ms / 1000).toFixed(1)}초)과 안 맞음`,
       `${(ms / 1000).toFixed(1)}초 동안 달리면 ${scoreAt(ms).toLocaleString('ko-KR')}m인데 ${m.toLocaleString('ko-KR')}m로 기록됐어요. 이 게임은 달린 시간으로 거리가 정해져서 둘이 맞아야 해요.`);
     if (ms > elapsed + 1000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
+  } else if (game === 'gear') {   // [점수, 지운 줄, 놓은 블록 수, 플레이 ms] — gear-score.js 규칙으로 가능한 범위인지
+    if (n.length !== 4) return H('판 기록 형식이 다름', '점수·줄·블록 수·시간이 제대로 오지 않았어요.');
+    const [sc, ln, pc, ms] = n;
+    if (GEAR_MAX - sc !== v) return H(`점수(${sc})와 기록(${v})이 다름`, '점수와 최종 기록이 서로 달라요.');
+    if (sc < 1 || ln < 0 || pc < 1 || ms < 1000) return H('판 기록 값이 범위 밖', '점수·줄·블록 수 중에 있을 수 없는 값이 있어요.');
+    if (ln * 10 > pc * 4) return H(`줄(${ln})이 블록 수(${pc})보다 많음`, `블록 ${pc}개로는 많아야 ${Math.floor(pc * 4 / 10)}줄까지 지울 수 있는데 ${ln}줄로 기록됐어요.`);
+    if (pc > ms / 125 + 5) return H(`블록을 너무 빨리 놓음(${pc}개 · ${sec(ms)})`, `${sec(ms)} 동안 블록 ${pc}개를 놓았어요. 1초에 8개보다 빠르게 놓을 수는 없어서 자동 입력으로 보일 수 있어요.`);
+    if (sc > gearMax(ln, pc)) return H(`점수(${sc})가 줄·블록 수로 낼 수 있는 최대(${gearMax(ln, pc)})보다 큼`, `${ln}줄 · 블록 ${pc}개로 낼 수 있는 점수는 많아야 ${gearMax(ln, pc).toLocaleString('ko-KR')}점인데 ${sc.toLocaleString('ko-KR')}점으로 기록됐어요.`);
+    if (ms > elapsed + 1000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
     const off = idx(x => x < 0 || x > 1000);
@@ -831,7 +843,7 @@ const ROUTES = {
   // → 게임을 안 하고 기록만 바로 보내거나, 같은 기록을 여러 번 보내는 것을 막음 (완전한 조작 방지는 아님)
   'POST start': needMe(async ({ db, me, body }) => {
     const game = String(body.game || '');
-    if (!GAMES[game]) return err('bad game');
+    if (!GAMES[game] || (GAMES[game].ff && !ffOn(GAMES[game].ff, isAdm(me)))) return err('bad game');   // 미리보기 게임은 개발자만
     if (!isAdm(me) && await limited(db, 'gs:' + me.id, 60, 600)) return err('잠깐 쉬었다가 해요', 429);
     const ticket = randHex(16);
     await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + TICKET_TTL).run();
@@ -841,16 +853,16 @@ const ROUTES = {
   'POST score': needMe(async ({ db, me, body }) => {
     const game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
-    if (!g || !Number.isFinite(v) || v < 0 || v > 1e7) return err('기록이 이상해요');
+    if (!g || (g.ff && !ffOn(g.ff, isAdm(me))) || !Number.isFinite(v) || v < 0 || v > 1e7) return err('기록이 이상해요');
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
     const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
     const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
-    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm' }[game];
-    const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
-      : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
+    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점' }[game];
+    const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : game === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
+      : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : game === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
       : checkRounds(game, v, body.rounds, elapsed);
     if (why) {

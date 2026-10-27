@@ -6,6 +6,7 @@ import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
+import { GEAR_MAX } from './gear-score.js';
 import { ffOn, RELEASED } from './flags.js';
 import { TIERS, TIER_PCT, BEST_N, tierOfK } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
@@ -25,6 +26,8 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
+  // 반납 5분 전!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
+  gear: { ff: 'gear-game', name: '반납 5분 전!', ic: 'gear', desc: '수업 끝! 촬영 장비를 기자재실 선반에 빈틈없이 정리해 줄을 채워요', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
   num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
@@ -57,6 +60,8 @@ const av = (u, cls = '', x = '') => u?.handle === ADMIN_HANDLE ? `<span class="a
 // 착용 소품(왕관 등)을 프로필 사진 위에 — 큰 사진(프로필 카드·꾸미기 미리보기)에만
 const avWear = v => wearOf(v) ? `<i class="avwear">${wearSvg(v)}</i>` : '';
 const isDev = u => u?.handle === ADMIN_HANDLE;
+// 지금 보이는 게임만(미리보기 깃발 게임은 개발자에게만)
+const gamesOn = () => Object.entries(GAMES).filter(([, g]) => !g.ff || ffOn(g.ff, isDev(S.me)));
 // 뽑기 전설 '별똥별 등장': 프로필을 열 때 한 번 쏟아지는 별(위치·크기·시간을 조금씩 다르게)
 const pfxStars = () => `<div class="pfx-star" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`;   // 위치·크기·시간은 style.css nth-child (CSP: style 속성 금지)
 // 개발자 프로필 전용 등장 (2026-10-25 하율: 별똥별 말고 특별하게) — 카드 위를 무지개 빛이 한 번 쓸고, 사진 뒤에서 무지개 빛줄기·충격파·반짝이가 터짐
@@ -357,7 +362,7 @@ function profileHtml(d) {
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
-  const bests = Object.entries(GAMES).map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
+  const bests = gamesOn().map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${u.gcm ? ' gcm' : ''}${!isDev(u) && sk.cur >= FLAME_AT[1] ? ' hot' : ''}">${isDev(u) ? pfxDev() : u.pfx === 'r:fxstar' ? pfxStars() : ''}
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
@@ -973,7 +978,7 @@ function paintHeroFr(fr) {
 /* ===== 홈 전체 랭킹 (2026-10-25, 친구 → 전체로 변경) — 전체 학생. 탭: 연속 출석 · 게임 4종. 꾸민 이름(홀로그램·황금)·대표 스티커·왕관이 보이게
    탭마다 5분 동안은 다시 안 불러옴(무료 요청량), 고른 탭은 이 기기에 기억 */
 // 2026-10-26 하율: 홈 랭킹은 연속 출석 + 티어(2주 라운드)만, 게임별 탭은 뺌 — 미리보기 깃발 'rank-tier'(월요일 패치에 공개)
-const RK_OLD = [['att', '연속 출석', 'fire'], ...Object.entries(GAMES).map(([k, g]) => [k, g.name, g.ic])];
+const RK_OLD = [['att', '연속 출석', 'fire'], ...Object.entries(GAMES).filter(([, g]) => !g.ff).map(([k, g]) => [k, g.name, g.ic])];
 const RK_NEW = [['att', '연속 출석', 'fire'], ['tier', '티어', '']];
 const rkTabs = () => ffOn('rank-tier', isDev(S.me)) ? RK_NEW : RK_OLD;
 const rkCache = {};
@@ -1151,9 +1156,9 @@ async function renderGame() {
   const box = $('#gameBox');
   let info = null;
   if (S.me) { try { info = (await call('games')).games; } catch {} }
-  box.innerHTML = `${rkBand()}${S.me ? '<section class="card tier-card" id="tierBox"><div class="skel"></div></section>' : ''}<div class="ggrid">${Object.entries(GAMES).map(([k, g], i) => {
+  box.innerHTML = `${rkBand()}${S.me ? '<section class="card tier-card" id="tierBox"><div class="skel"></div></section>' : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
     const x = info?.[k];
-    return `<article class="card gcard g-${k}">${g.beta ? '<b class="beta">Beta</b>' : ''}
+    return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? "<b class=\"beta new\">NEW</b>" : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
       <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
       ${x ? `<div class="gstat"><span>내 최고 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
         <p class="gtop">${ic('trophy')}${x.top ? `1등 <a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '1등 자리가 비어 있어요!'}</p>` : ''}
@@ -1173,7 +1178,7 @@ async function loadTier() {
   const byPts = d.mode === 'pts', lbOf = x => byPts ? x.pl : x.lb;
   const lbSt = x => lbOf(x).split(' · ').map((t, i, a) => `<i class="${a.length > 1 && !i ? 'tl-rk' : 'tl-pt'}">${t}</i>`).join('<i class="tl-dot"> · </i>');   // 계단 라벨: '1등 · 340점+' → 두 줄로 나눌 수 있게   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
   const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
-  const per = m ? Object.entries(GAMES).map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
+  const per = m ? gamesOn().map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
   const top = d.top.length ? d.top.map(trRow).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
   // TOP 10은 펼친 채로, 그 아래 '전체 순위 보기'(2026-10-26 하율 요청)
   const allOn = ffOn('tier-all', isDev(S.me)), opn = allOn ? ' open' : '';   // 미리보기 깃발 tier-all
@@ -1387,7 +1392,8 @@ let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, �
 function play(game) {
   quitGame?.(); quitGame = null;
   ticket = S.me ? call('start', { game }).then(r => r.ticket).catch(() => '') : null;
-  ({ reaction: playReaction, num25: playNum25, cut: playCut, home: playHome })[game]?.();
+  if (GAMES[game]?.ff && !ffOn(GAMES[game].ff, isDev(S.me))) return;
+  ({ reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear })[game]?.();
 }
 
 async function finish(game, value, detail = '', rounds = []) {   // rounds: 판마다의 기록 (서버가 다시 계산·검사)
@@ -1514,6 +1520,156 @@ function playCut() {
 }
 
 /* 4) 집에 가고 싶어!: 공룡 게임 방식 픽셀 러너 (js/runner.js) + 캐릭터 꾸미기 */
+/* 5) 반납 5분 전!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */
+let GEAR = null;   // gear.js 모듈 (처음 열 때 불러옴)
+async function playGear() {
+  const touchy = matchMedia('(pointer:coarse)').matches;
+  const area = stage(ic('gear') + ' 반납 5분 전!', `<div class="gr" id="gr">
+      <div class="gr-main">
+        <aside class="gr-side"><p class="gr-lb">보관 <kbd>C</kbd></p><canvas class="gr-mini" id="grHold" width="52" height="28"></canvas>
+          <dl class="gr-stat"><dt>점수</dt><dd id="grSc">0</dd><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
+        <div class="gr-scr" id="grScr"><canvas id="grCv" aria-label="게임 화면"></canvas>
+          <div class="gr-ov" id="grOv"></div><div class="gr-pop" id="grPop" aria-live="polite"></div></div>
+        <aside class="gr-side"><p class="gr-lb">다음</p><div class="gr-next"><canvas class="gr-mini" id="grN0" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN1" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN2" width="52" height="28"></canvas></div></aside>
+      </div>
+      <div class="gr-touch">
+        <button type="button" class="btn ghost" data-gk="left" aria-label="왼쪽">◀</button><button type="button" class="btn ghost" data-gk="right" aria-label="오른쪽">▶</button>
+        <button type="button" class="btn ghost" data-gk="ccw" aria-label="왼쪽으로 돌리기">↺</button><button type="button" class="btn" data-gk="cw" aria-label="오른쪽으로 돌리기">↻</button>
+        <button type="button" class="btn ghost" data-gk="down" aria-label="천천히 내리기">▼</button><button type="button" class="btn" data-gk="drop" aria-label="바로 내리기">⤓</button>
+        <button type="button" class="btn ghost" data-gk="hold" aria-label="보관">보관</button></div>
+      <div class="hr-bar gr-bar"><p class="hr-keys"><kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>↑</kbd> 돌리기 · <kbd>↓</kbd> 내리기 · <kbd>Space</kbd> 바로 놓기 · <kbd>C</kbd> 보관 · <kbd>P</kbd> 멈춤</p>
+        <button type="button" class="btn ghost hr-snd" id="grSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
+      <div class="hr-rk" id="grRk"></div>
+    </div>`, true);
+  if (!GEAR) { try { GEAR = await import('./gear.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!$('#grCv')) return;
+  const cv = $('#grCv'), ov = $('#grOv'), pop = $('#grPop');
+  let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), over = false, deadAt = 0, runNo = 0;
+  const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
+  const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>반납 5분 전!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="52" height="28"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
+  const paintHud = () => { const s = R.st; $('#grSc').textContent = s.score.toLocaleString('ko-KR'); $('#grLn').textContent = s.lines; $('#grLv').textContent = s.level; };
+  const paintQ = () => { R.drawMini($('#grHold'), R.st.hold, R.st.held); [0, 1, 2].forEach(i => R.drawMini($('#grN' + i), R.st.queue[i])); };
+  let popT = 0;
+  const R = GEAR.createGear(cv, {
+    sound,
+    onStart() { ov.hidden = true; over = false; paintQ(); },
+    onQueue: paintQ,
+    onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
+    onClear(n, name, pts, up) {
+      clearTimeout(popT); pop.className = 'gr-pop on n' + n; pop.innerHTML = `<b>${esc(name)}</b><small>+${pts.toLocaleString('ko-KR')}</small>${up ? `<em>레벨 ${R.st.level}!</em>` : ''}`;
+      void pop.offsetWidth; popT = setTimeout(() => { pop.className = 'gr-pop'; }, 1100);
+    },
+    onOver(res) {
+      over = true; deadAt = performance.now(); const no = ++runNo;
+      const nb = res.score > best; if (nb) { best = res.score; store.set('gear_best', best); }
+      ov.hidden = false; ov.className = 'gr-ov hr-ov dead';
+      ov.innerHTML = `<b>장비실이 꽉 찼어요!</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
+        <small class="hr-msg" id="grMsg">${!S.me ? '로그인하면 랭킹에 올라가요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…'}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
+      if (!S.me || res.score < 1) return;
+      saveScore('gear', GEAR_MAX - res.score, [res.score, res.lines, res.pieces, res.ms]).then(r => {
+        if (no !== runNo || !$('#grMsg')) return;
+        if (r.held) { $('#grMsg').innerHTML = heldLine(r); return; }
+        $('#grMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.gear.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
+        syncBest(r.best); if (r.cheer) cheer('gear', r.rank, r.best); paintRk();
+      }).catch(e => { if (no === runNo && $('#grMsg')) $('#grMsg').textContent = e.message; });
+    },
+  });
+  window.__gear = R;   // 테스트용
+  ready(); paintHud(); paintQ();
+  const hudT = setInterval(paintHud, 100);
+  const restart = () => {
+    if (!over || performance.now() - deadAt < 400) return false;
+    over = false; ticket = S.me ? call('start', { game: 'gear' }).then(r => r.ticket).catch(() => '') : null;
+    R.reset(); ready(); paintHud(); paintQ(); return true;
+  };
+  // 화면 크기: 판(120×240)을 정수 배(기기 픽셀 기준)로 — 옆 칸(보관·다음)과 아래 버튼·랭킹이 스크롤 없이 보이게
+  const fit = () => {
+    const w = $('#parea').clientWidth, top = $('#grScr').getBoundingClientRect().top + scrollY;
+    const side = w < 560 ? 150 : 250, dpr = devicePixelRatio || 1;
+    const k = Math.max(1.4, Math.min((w - side) / GEAR.BW, (innerHeight - top - (touchy ? 180 : 70)) / GEAR.BH));
+    const per = Math.floor(k * dpr) / dpr;
+    cv.style.width = per * GEAR.BW + 'px';
+    document.querySelectorAll('#gr .gr-mini').forEach(c => { c.style.width = Math.round(c.width * Math.min(2, per * .75)) + 'px'; });
+    $('#gr').style.setProperty('--gw', Math.round(per * GEAR.BW) + 'px');
+  };
+  fit();
+  const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
+  // 키보드
+  const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', x: 'cw', X: 'cw', z: 'ccw', Z: 'ccw', ' ': 'drop', c: 'hold', C: 'hold', Shift: 'hold', a: 'left', A: 'left', d: 'right', D: 'right', s: 'down', S: 'down', w: 'cw', W: 'cw' };
+  const kd = e => {
+    if (e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
+    if (over) { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); restart(); } return; }
+    if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
+    const a = KEY[e.key]; if (!a) { if (R.st.scene !== 'play' && e.key.length === 1) R.input('cw', true); return; }
+    e.preventDefault(); if (e.repeat) return;
+    R.input(a, true);
+  };
+  const ku = e => { const a = KEY[e.key]; if (a) R.input(a, false); };
+  document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
+  // 터치 버튼: 누르고 있으면 좌우·아래는 계속
+  $('#gr .gr-touch').addEventListener('pointerdown', e => {
+    const b = e.target.closest('[data-gk]'); if (!b) return; e.preventDefault();
+    if (over) { restart(); return; }
+    const a = b.dataset.gk; R.input(a, true);
+    const up = () => { R.input(a, false); b.removeEventListener('pointerup', up); b.removeEventListener('pointercancel', up); b.removeEventListener('lostpointercapture', up); };
+    try { b.setPointerCapture(e.pointerId); } catch {}
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+  });
+  // 게임 화면 손가락 조작: 톡 = 돌리기 · 옆으로 밀기 = 한 칸씩 이동 · 아래로 휙 = 바로 놓기 · 아래로 천천히 = 내리기
+  let tp = null;
+  const scr = $('#grScr');
+  scr.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (over) { restart(); return; }
+    if (R.st.scene !== 'play') { R.input('cw', true); R.input('cw', false); return; }
+    tp = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), moved: false, soft: false };
+    try { scr.setPointerCapture(e.pointerId); } catch {}
+  });
+  scr.addEventListener('pointermove', e => {
+    if (!tp) return;
+    const cell = cv.getBoundingClientRect().width / GEAR.COLS;
+    while (e.clientX - tp.x > cell) { R.input('right', true); R.input('right', false); tp.x += cell; tp.moved = true; }
+    while (tp.x - e.clientX > cell) { R.input('left', true); R.input('left', false); tp.x -= cell; tp.moved = true; }
+    if (e.clientY - tp.y0 > cell * 1.5 && Math.abs(e.clientX - tp.x0) < cell * 1.5 && !tp.soft) { tp.soft = true; R.input('down', true); }
+  });
+  const tup = e => {
+    if (!tp) return;
+    const dy = e.clientY - tp.y0, dt = performance.now() - tp.t, cell = cv.getBoundingClientRect().width / GEAR.COLS;
+    if (tp.soft) R.input('down', false);
+    if (dy > cell * 2 && dt < 260) { R.input('drop', true); R.input('drop', false); }
+    else if (!tp.moved && !tp.soft && Math.abs(dy) < cell && dt < 300) { R.input('cw', true); R.input('cw', false); }
+    tp = null;
+  };
+  scr.addEventListener('pointerup', tup); scr.addEventListener('pointercancel', tup);
+  ov.addEventListener('pointerdown', e => { if (over) { e.stopPropagation(); restart(); } });
+  const blur = () => { ['left', 'right', 'down'].forEach(a => R.input(a, false)); if (R.st.scene === 'play') R.pause(); };
+  window.addEventListener('blur', blur);
+  // 아래 랭킹(친구·전체 1~5등) — 집에 가고 싶어!와 같은 모양
+  function syncBest(v) { if (v == null || !isFinite(v)) return; const b = GEAR_MAX - v; if (b > 0 && b !== best) { best = b; store.set('gear_best', b); } }
+  const rows = (r, empty) => {
+    const top = r.list.slice(0, 5); if (!top.length) return `<p class="hr-pe">${empty}</p>`;
+    const row = (u, n) => `<li class="${u.isMe ? 'me' : ''}"><span class="hr-n">${n <= 3 ? `<i class="mdl m${n}">${n}</i>` : n}</span>${av(u, 'xs', avWear(u.mfx))}<span class="hr-nm">${esc(nameOf(u))}</span><b>${esc(GAMES.gear.fmt(u.value))}</b></li>`;
+    const mine = r.mine && !isDev(S.me) && !top.some(u => u.isMe) ? `<li class="me hr-mine"><span class="hr-n">${r.mine}</span>${av(S.me, 'xs')}<span class="hr-nm">나</span><b>${esc(GAMES.gear.fmt(r.myValue))}</b></li>` : '';
+    return `<ol>${top.map((u, i) => row(u, i + 1)).join('')}${mine}</ol>`;
+  };
+  const pane = (k, t, b) => `<section class="hr-pane"><div class="hr-ph"><b>${t}</b><button type="button" class="hr-all" data-rank="gear" data-scope="${k}">더 보기</button></div>${b}</section>`;
+  async function paintRk() {
+    const el = $('#grRk'); if (!el) return;
+    const mine = () => `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + '점' : '-'}</b></p>`;
+    if (!S.me) { el.innerHTML = mine() + '<p class="hr-pe">로그인하면 친구·전체 랭킹에 기록을 올릴 수 있어요</p>'; return; }
+    const [f, a] = await Promise.all([call('rank?game=gear&scope=friends').catch(() => null), call('rank?game=gear&scope=all').catch(() => null)]);
+    if (!$('#grRk')) return;
+    syncBest(a?.myValue);
+    el.innerHTML = mine() + `<div class="hr-cols">${pane('friends', '친구 랭킹', f ? rows(f, '아직 친구 기록이 없어요') : '<p class="hr-pe">불러오지 못했어요</p>')}${pane('all', '전체 랭킹', a ? rows(a, '아직 기록이 없어요. 첫 1등을 노려 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}</div>`;
+  }
+  paintRk();
+  const sndBtn = $('#grSnd');
+  const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound); };
+  paintSnd();
+  sndBtn.onclick = () => { sound = !sound; store.set('gear_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
+  quitGame = () => { R.destroy(); clearInterval(hudT); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
+}
+
 let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
 async function playHome() {
   const area = stage(ic('run') + ' 집에 가고 싶어!', `<div class="hr" id="hr">
