@@ -1822,26 +1822,28 @@ function playCut() {
     mark.style.left = (target / dur * 100) + '%';
     head.style.left = '0%'; $('#cRound').textContent = `${round + 1} / 5`;
     await wait(500); if (!alive) return;
-    running = true; t0 = performance.now();
-    const step = now => {
-      if (!running || !alive) return;
-      const t = now - t0;
-      head.style.left = Math.min(100, t / dur * 100) + '%';
-      if (t >= dur) return stop(dur);   // 끝까지 가면 놓친 것
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
+    // 2026-10-27 판정 패치: 0초 = 첫 프레임, 끝은 실제 시각, 놓치면 1000ms(새 컷 타이밍과 같은 규칙)
+    raf = requestAnimationFrame(now0 => {
+      if (!alive) return; running = true; t0 = now0;
+      const step = now => {
+        if (!running || !alive) return;
+        head.style.left = Math.max(0, Math.min(100, (now - t0) / dur * 100)) + '%';
+        if (performance.now() - t0 >= dur) return stop(dur, true);   // 끝까지 가면 놓친 것
+        raf = requestAnimationFrame(step);
+      };
+      step(now0);
+    });
   };
-  const stop = (tAt, early) => {
+  const stop = (tAt, miss) => {
     if (!running) return; running = false; cancelAnimationFrame(raf);
-    const e = Math.min(1000, Math.round(Math.abs(tAt - target)));
+    const e = miss ? 1000 : Math.min(1000, Math.round(Math.abs(Math.max(0, tAt) - target)));
     errs.push(e); sum += e; $('#cSum').textContent = sum + 'ms';
     $('#cMsg').innerHTML = e <= 15 ? `<b class="perfect">PERFECT! ${e}ms</b>` : e <= 50 ? `<b class="great">GREAT ${e}ms</b>` : e <= 120 ? `<b>GOOD ${e}ms</b>` : `<b class="miss">${e >= 1000 ? 'MISS' : e + 'ms'}</b>`;
     round++;
     if (round >= 5) { btn.disabled = true; setTimeout(() => alive && finish('cut', Math.min(sum, 6000), `<p class="rdet">${errs.map(x => `<span>${x}ms</span>`).join(' · ')}</p>`, errs), 700); }
     else setTimeout(() => alive && start(), 650);
   };
-  btn.addEventListener('pointerdown', e => { e.preventDefault(); if (running) stop(performance.now() - t0); });
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); if (!running) return; const now = performance.now(), ts = e.timeStamp; stop((ts > 0 && ts <= now + 1 && now - ts < 250 ? ts : now) - t0); });
   start();
 }
 

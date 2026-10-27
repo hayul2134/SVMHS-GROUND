@@ -6,6 +6,7 @@
 
 export const DUR = [2400, 2100, 1800, 1550, 1300];   // social.js 1판과 같게 (바꾸면 랭킹이 달라짐)
 const WAIT = 500, NEXT = 950;
+export const MISS_MS = 1000;   // 끝까지 안 누르면 1000ms(최대 오차) — 2026-10-27 판정 패치: 예전엔 '컷 지점~끝' 거리만 더해져서 안 누르는 게 늦게 누르는 것보다 점수가 좋을 수 있었음
 const CLIPS = [['인터뷰_A캠.mp4', 'BGM_비트.wav'], ['B롤_운동장.mp4', 'BGM_비트.wav'], ['드론_교정.mp4', 'BGM_후렴.wav'], ['슬로모_점프.mov', 'BGM_후렴.wav'], ['엔딩_단체샷.mp4', 'BGM_엔딩.wav']];
 export const judge = (e, end) => end || e >= 1000 ? ['miss', 'MISS'] : e <= 15 ? ['perfect', 'PERFECT'] : e <= 50 ? ['great', 'GREAT'] : e <= 120 ? ['good', 'GOOD'] : ['bad', 'BAD'];
 export const grade = s => s <= 75 ? 'S' : s <= 200 ? 'A' : s <= 400 ? 'B' : s <= 800 ? 'C' : 'D';
@@ -44,6 +45,10 @@ export function run(root, o) {
   const $ = s => root.querySelector(s);
   const ar = $('#ctAr'), hs = $('#ctHs'), mk = $('#ctMk'), clA = $('#ctClA'), clB = $('#ctClB'), wv = $('#ctWv'), ov = $('#ctOv'), msg = $('#ctMsg'), btn = $('#ctBtn'), gp = $('#ctGp'), fl = $('#ctFl');
   let round = 0, sum = 0, raf = 0, t0 = 0, target = 0, dur = 0, state = 'intro', alive = true, sound = !!o.sound, actx = null, frac = 0;
+  // 판정 시각 맞추기(2026-10-27 판정 패치): requestAnimationFrame의 시각은 '그리기 시작한 때'이고 실제로 화면에 보이는 건 한 프레임 뒤.
+  // 그래서 플레이헤드를 '화면에 보일 때의 시각'(지금 + 1프레임) 위치에 그림 → 눈에 보이는 위치 = 판정에 쓰는 시각. 프레임 간격은 기기마다 달라(60·120Hz) 직접 잼.
+  let fi = 1000 / 60, lastF = 0;
+  const frame = now => { if (lastF) { const d = now - lastF; if (d > 4 && d < 50) fi += (d - fi) * .2; } lastF = now; return Math.min(34, Math.max(6, fi)); };
   const errs = [], signed = [], timers = [];
   const later = (f, ms) => timers.push(setTimeout(() => alive && f(), ms));
 
@@ -88,21 +93,28 @@ export function run(root, o) {
     wave(f); setHead(0); $('#ctTc').textContent = tc(0); paintTop();
     msg.className = 'ctm-msg rdy'; msg.innerHTML = '<b>준비…</b>';
     later(() => {
-      state = 'run'; t0 = performance.now(); msg.className = 'ctm-msg'; msg.innerHTML = '<span>파형이 튀는 <b class="ctm-red">빨간 컷 지점</b>에서 CUT!</span>';
-      const step = now => {
-        if (state !== 'run' || !alive) return;
-        const t = now - t0; setHead(Math.min(1, t / dur)); $('#ctTc').textContent = tc(Math.min(t, dur));
-        if (t >= dur) return stop(dur, true);
-        raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
+      msg.className = 'ctm-msg'; msg.innerHTML = '<span>파형이 튀는 <b class="ctm-red">빨간 컷 지점</b>에서 CUT!</span>';
+      lastF = 0;
+      // 0초는 '첫 화면이 실제로 보이는 순간'으로 잡음(타이머가 프레임 중간에 불려도 시작이 밀리거나 플레이헤드가 뒤로 튀지 않게)
+      raf = requestAnimationFrame(now0 => {
+        if (!alive) return;
+        t0 = now0 + frame(now0); state = 'run';
+        const step = now => {
+          if (state !== 'run' || !alive) return;
+          const f = frame(now), tv = now + f - t0;   // 이 프레임이 화면에 보일 때의 게임 시각
+          setHead(Math.max(0, Math.min(1, tv / dur))); $('#ctTc').textContent = tc(Math.max(0, Math.min(tv, dur)));
+          if (performance.now() - t0 >= dur) return stop(dur, true);   // 끝은 실제 시각으로 (화면 예측으로 일찍 끝내지 않음)
+          raf = requestAnimationFrame(step);
+        };
+        step(now0);
+      });
     }, WAIT);
   };
 
   const stop = (tAt, end) => {
     if (state !== 'run') return; state = 'judge'; cancelAnimationFrame(raf);
     tAt = Math.max(0, Math.min(dur, tAt));
-    const e = Math.min(1000, Math.round(Math.abs(tAt - target))), d = Math.round(tAt - target), [k, name] = judge(e, end);
+    const e = end ? MISS_MS : Math.min(1000, Math.round(Math.abs(tAt - target))), d = Math.round(tAt - target), [k, name] = judge(e, end);
     errs.push(e); signed.push(end ? null : d); sum += e;
     const cf = tAt / dur;
     setHead(cf); $('#ctTc').textContent = tc(tAt); paintTop();
@@ -126,7 +138,12 @@ export function run(root, o) {
     else later(start, NEXT);
   };
 
-  const at = e => { const now = performance.now(), ts = e?.timeStamp; return (ts > 0 && Math.abs(now - ts) < 250 ? ts : now) - t0; };
+  // 누른 시각 = 이벤트가 생긴 순간(timeStamp, performance.now와 같은 시계). 옛 Safari처럼 다른 시계를 주거나 이상하면 지금 시각으로
+  const at = e => { const now = performance.now(), ts = e?.timeStamp; return (ts > 0 && ts <= now + 1 && now - ts < 250 ? ts : now) - t0; };
+  // 화면을 벗어나면(탭 전환·창 최소화) 그 판은 공정하게 판정할 수 없음 → 그 판만 처음부터 다시
+  const vis = () => { if (document.hidden && (state === 'run' || state === 'wait')) { cancelAnimationFrame(raf); timers.forEach(clearTimeout); timers.length = 0; state = 'paused'; }
+    else if (!document.hidden && state === 'paused') { msg.className = 'ctm-msg'; msg.innerHTML = '<span>화면을 벗어나서 이번 판은 다시 해요</span>'; later(start, 600); } };
+  document.addEventListener('visibilitychange', vis);
   const intro = () => {
     ov.hidden = false; ov.innerHTML = `<div class="ctm-in"><b>${RAZOR}컷 타이밍</b><span>음악 비트(파형이 튀는 <em>빨간 컷 지점</em>)에<br>플레이헤드가 닿는 순간 CUT!</span>
       <ul><li><i class="j-perfect">PERFECT</i>15ms</li><li><i class="j-great">GREAT</i>50ms</li><li><i class="j-good">GOOD</i>120ms</li></ul>
@@ -142,12 +159,12 @@ export function run(root, o) {
     if (e.code === 'KeyC' || e.code === 'Space' || (e.code === 'Enter' && state === 'intro')) { if (e.target.closest?.('input,textarea,select')) return; e.preventDefault(); press(e); }
   };
   document.addEventListener('keydown', key);
-  const off = () => document.removeEventListener('keydown', key);
+  const off = () => { document.removeEventListener('keydown', key); document.removeEventListener('visibilitychange', vis); };
   const rs = () => { if (state !== 'done') wave(target && dur ? target / dur : .5); };
   addEventListener('resize', rs);
 
   intro(); paintTop(); wave(.6); setHead(0);
-  window.__cut = { get state() { return state; }, get target() { return target; }, get t0() { return t0; }, get dur() { return dur; }, errs, signed };   // 테스트 훅
+  window.__cut = { get state() { return state; }, get target() { return target; }, get t0() { return t0; }, get dur() { return dur; }, get fi() { return fi; }, errs, signed };   // 테스트 훅
   return () => { alive = false; cancelAnimationFrame(raf); timers.forEach(clearTimeout); off(); removeEventListener('resize', rs); try { actx?.close(); } catch {} };
 }
 
