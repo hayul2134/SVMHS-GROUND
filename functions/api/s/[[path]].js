@@ -877,14 +877,14 @@ const ROUTES = {
     return endAdmin(db, req, me, res);
   }),
 
-  /* ----- 오늘의 밸런스 게임: 월~금 하루 한 문제, 6시 공개 · 마지막 교시 끝 +10분 마감. 한 사람 한 표(로그인 계정 기준), 댓글은 고른 쪽이 같이 보임 ----- */
+  /* ----- 오늘의 밸런스 게임: 토요일 빼고 하루 한 문제, 0시 공개 · 밤 11시 50분 마감(lib/balance.js). 한 사람 한 표(로그인 계정 기준), 댓글은 고른 쪽이 같이 보임 ----- */
   'GET bal': needMe(async ({ env, db, me }) => json(await balState(env, db, me))),
   'POST bal': needMe(async ({ env, db, me, body }) => {
     const pick = String(body.pick ?? '');
     if (!['a', 'b', ''].includes(pick)) return err('bad pick');
     const st = await balState(env, db, me);
     if (body.ymd && body.ymd !== st.ymd) return err('질문이 바뀌었어요. 새로 고침해 주세요', 409);
-    if (!st.open) return err(Date.now() < st.opens ? '아직 투표 시작 전이에요 (6시 시작)' : '투표가 마감됐어요');
+    if (!st.open) return err(Date.now() < st.opens ? '아직 투표 시작 전이에요' : '투표가 마감됐어요');
     if (!isAdm(me) && await limited(db, 'bv:' + me.id, 40, 600)) return err('너무 많이 눌렀어요. 잠시 후에 해 주세요', 429);
     if (!pick) await db.prepare('DELETE FROM balance_votes WHERE ymd = ?1 AND voter = ?2').bind(st.ymd, 'u' + me.id).run();
     else await db.prepare('INSERT INTO balance_votes (ymd, voter, pick, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (ymd, voter) DO UPDATE SET pick = excluded.pick, at = excluded.at')

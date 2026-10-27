@@ -86,6 +86,9 @@ export async function onRequest({ request, env, params }) {
 /* ===== 급식 인기투표 (D1 바인딩 DB 필요) =====
    한 기기(브라우저에 저장된 무작위 ID)당 끼니마다 한 표. 다시 누르면 바꾸거나 취소. 투표는 '오늘(한국 시간)' 급식만. */
 const MEAL_CODES = ['1', '2', '3'];
+// 급식 투표 마감: 그날 밤 11시 50분(KST) — 하교 후 집에서도 그날 급식에 투표 (2026-10-27 하율)
+const MEAL_CLOSE_MIN = 23 * 60 + 50;
+const mealCloses = (t = Date.now()) => { const y = kstYmd(t); return Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8)) - 9 * 3600e3 + MEAL_CLOSE_MIN * 60e3; };
 const VOTER_RE = /^[a-z0-9]{20,40}$/;
 const cleanDish = s => String(s || '').split(/<br\s*\/?>/i).map(x => x.replace(/\([\d.\s]*\)/g, '').replace(/[*#]/g, '').trim()).filter(Boolean);
 
@@ -117,7 +120,7 @@ async function vote(request, env) {
   if (request.method === 'GET') {
     const ymd = url.searchParams.get('ymd') || '';
     if (!/^\d{8}$/.test(ymd)) return json({ error: 'bad ymd' }, 400);
-    return json({ enabled: true, today: kstYmd(), meals: await tally(db, ymd, okVoter ? voter : '') });
+    return json({ enabled: true, today: kstYmd(), closes: mealCloses(), meals: await tally(db, ymd, okVoter ? voter : '') });
   }
   if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'GET, POST', ...SECURITY_HEADERS } });
 
@@ -131,6 +134,7 @@ async function vote(request, env) {
   try { body = await request.json(); } catch { return json({ error: 'bad body' }, 400); }
   const ymd = String(body?.ymd || ''), meal = String(body?.meal || ''), dish = String(body?.dish ?? '').slice(0, 60);
   if (ymd !== kstYmd()) return json({ error: '오늘 급식만 투표할 수 있어요' }, 400);
+  if (Date.now() >= mealCloses()) return json({ error: '오늘 급식 투표는 밤 11시 50분에 마감됐어요' }, 400);
   if (!MEAL_CODES.includes(meal)) return json({ error: 'bad meal' }, 400);
 
   if (!dish) {
@@ -142,7 +146,7 @@ async function vote(request, env) {
     await db.prepare('INSERT INTO meal_votes (ymd, meal, voter, dish, at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (ymd, meal, voter) DO UPDATE SET dish = excluded.dish, at = excluded.at')
       .bind(ymd, meal, voter, dish, Date.now()).run();
   }
-  return json({ enabled: true, today: ymd, meals: await tally(db, ymd, voter) });
+  return json({ enabled: true, today: ymd, closes: mealCloses(), meals: await tally(db, ymd, voter) });
 }
 
 /* ===== 공지 기록: 헤더 📢 버튼에서 지난 공지까지 최근 20개 ===== */

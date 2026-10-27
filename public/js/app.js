@@ -405,7 +405,7 @@ const voteOf = (k, meal) => {
   if (!v || !v.enabled) return null;
   const m = (v.meals && v.meals[meal]) || { counts: {}, total: 0, mine: '' };
   const top = Math.max(0, ...Object.values(m.counts));   // 1등 표 수 — 공동 1등이면 모두 트로피
-  return { ...m, top, open: v.today === k };
+  return { ...m, top, open: v.today === k && !(v.closes && Date.now() >= v.closes) };   // 그날 밤 11:50 마감 (2026-10-27)
 };
 const voteMark = (name, v) => {
   if (!v) return '';
@@ -667,12 +667,12 @@ $('#mPrev').onclick = () => { S.mealDate = addDays(S.mealDate, -1); renderMealVi
 $('#mNext').onclick = () => { S.mealDate = addDays(S.mealDate, 1); renderMealView(); };
 
 /* ===== 오늘의 밸런스 게임 (시계 아래 티켓 + 크게 보기 #mBal) =====
-   일~금(토요일만 쉼) 하루 한 문제 · 6시 공개 · 밤 11시 마감, 한 번 나온 질문은 다시 안 나옴 (2026-10-27부터, 서버 lib/balance.js가 시각을 정함, 로그인 계정당 한 표)
+   일~금(토요일만 쉼) 하루 한 문제 · 0시 공개 · 밤 11시 50분 마감(2026-10-28 문제부터, 그 전엔 6시·11시), 한 번 나온 질문은 다시 안 나옴 (2026-10-27부터, 서버 lib/balance.js가 시각을 정함, 로그인 계정당 한 표)
    진행 중엔 골라야 결과·댓글이 보이고, 마감 뒤엔 모두에게 결과 공개 + 이긴 쪽 강조 */
 let BAL = null, balBusy = false, balTimer = 0, balSkew = 0, balAuto = 0;
 const balNow = () => Date.now() + balSkew;
 const BAL_API = '/api/s/bal';
-const balDayOn = () => { const d = new Date(now()); return isSchoolDay(d) || d.getDay() === 0; };   // 등교일 + 일요일(2026-10-26 하율: 일요일도 평일처럼)에 밸런스 게임 표시
+const balDayOn = () => now().getDay() !== 6;   // 서버 isBalDay와 같게 토요일만 숨김 (2026-10-27: 예전엔 등교일+일요일이라 공휴일·휴업일·방학 평일에 열린 문제가 숨겨지던 버그)
 async function balCall(path, body) {
   const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {});
   const j = await r.json().catch(() => ({}));
@@ -715,7 +715,7 @@ function balOpt(k, big) {
 const fillBars = root => root.querySelectorAll('.bo-fill').forEach(el => { el.style.transform = `scaleX(${(+el.dataset.pct / 100).toFixed(3)})`; });
 function paintBalance() {
   const box = $('#play');
-  box.hidden = !BAL || !balDayOn();   // 학교 안 가는 날(주말·휴업일·공휴일)엔 밸런스 티켓을 아예 안 보임 (2026-10-23)
+  box.hidden = !BAL || !balDayOn();   // 문제가 안 나오는 토요일엔 밸런스 티켓을 안 보임
   if (!BAL) { clearInterval(balAuto); return; }
   const st = balStatus();
   box.className = 'bal-t st-' + st.cls;
