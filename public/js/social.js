@@ -1578,7 +1578,7 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns"><button class="pquit pre" type="button" id="pRe" aria-label="처음부터 다시 시작"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg><span>다시 시작</span></button><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns"><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg><span>나가기</span></button><button class="pquit pre" type="button" id="pRe" aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg><span>다시<i class="pre-l"> 시작</i></span><kbd>R</kbd></button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   $('#pRe').onclick = restartGame;
@@ -1615,6 +1615,12 @@ function restartGame() {
   if (!curGame || performance.now() - reAt < 800) return;
   reAt = performance.now(); closeSheet(); play(curGame);
 }
+// R 키로 다시 시작(2026-10-27 하율) — 게임 키보다 먼저 받아서(capture) 기자재 정리!의 '아무 키나 누르면 시작'과 겹치지 않게. 한글 입력 상태(ㄱ)도 e.code로 잡힘
+addEventListener('keydown', e => {
+  if (e.code !== 'KeyR' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || $('#gamePlay').hidden) return;
+  if (e.target.closest?.('input,textarea,select,[contenteditable]') || document.querySelector('.modal.open')) return;
+  e.preventDefault(); e.stopImmediatePropagation(); restartGame();
+}, true);
 let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, 한 판에 한 번)
 function play(game) {
   quitGame?.(); quitGame = null; curGame = game;

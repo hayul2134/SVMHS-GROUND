@@ -3878,7 +3878,14 @@ html.rk2 .rk-empty button{margin-left:4px;padding:2px 9px;border-radius:99px;bor
 .pquit:active{transform:translate(2px,2px);box-shadow:none}
 .pquit svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .pbtns{display:inline-flex;align-items:stretch;gap:8px;flex:none}
-@media (max-width:520px){.pquit.pre span{display:none}.pquit.pre{padding:8px 10px}}
+/* 다시 시작: 빨간 버튼, 줄 맨 오른쪽 끝(엄지·마우스가 닿기 쉬운 모서리) · 나가기보다 크게 (2026-10-27 하율) */
+.pquit.pre{background:#e5484d;color:#fff;padding:10px 14px 10px 12px;gap:7px}
+.pquit.pre:hover{background:#d93d42}
+.pquit.pre kbd{font-family:inherit;font-weight:800;font-size:11px;line-height:1;padding:3px 5px;border-radius:5px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55)}
+@media (hover:none),(pointer:coarse){.pquit.pre kbd{display:none}}
+@media (max-width:520px){.pbtns .pquit:not(.pre) span{display:none}.pbtns .pquit:not(.pre){padding:8px 10px}.pquit.pre{padding:9px 12px 9px 10px}}
+.pquit.pre .pre-l{font-style:normal}
+@media (max-width:420px){#gamePlay .ptop b{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:16px}.pbtns{gap:6px}.pquit.pre .pre-l{display:none}}
 
 /* ===== 집에 가고 싶어!: 그 자리 게임 오버 + 아래 친구 랭킹 줄 (2026-10-25) ===== */
 .hr-ov.dead{background:rgba(42,40,70,.3);gap:12px;padding:clamp(14px,4%,28px)}
