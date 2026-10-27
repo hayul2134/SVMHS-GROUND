@@ -1254,18 +1254,23 @@ function msFly(from) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !document.body.animate) return new Promise(r => setTimeout(r, 200));
   const S0 = a.width / 52;   // .ms-fly 52px 기준, 버튼 속 아이콘 크기에서 시작
   const glow = msFx('ms-glow', x0, y0 - 44);
-  glow.animate([{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: .9, offset: .4 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 0 }], { duration: 900, easing: 'ease-out' }).finished.then(() => glow.remove());
+  glow.animate([{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.3)', opacity: 0, offset: .25 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: .9, offset: .55 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 0 }], { duration: 1300, easing: 'ease-out' }).finished.then(() => glow.remove());
   const tk = msFx('ms-fly', x0, y0); tk.innerHTML = ic('tix') + '<i class="ms-shine"></i>';
-  const T = (x, y, sc, r) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`;
-  // ① 떠오름(520ms): 아이콘 자리 → 위로 44px, 1.25배, 살짝 기울었다 바로 섬
+  // ① 튀어나옴(2026-10-27 하율 "너무 빨리 등장, 튀어나오는 것처럼"): 움찔(눌림) → 위로 쭉 늘어나며 튀어나옴 → 떨어지며 납작 → 작게 한 번 더 튐 → 자리 잡음
+  const Q = (x, y, sx, sy, r) => `translate(-50%,-50%) translate(${x}px,${y}px) rotate(${r}deg) scale(${sx},${sy})`;
   const up = tk.animate([
-    { transform: T(0, 0, S0, -6), opacity: 1 },
-    { transform: T(0, -48, 1.28, 2), opacity: 1, offset: .62 },
-    { transform: T(0, -44, 1.25, 0), opacity: 1 },
-  ], { duration: 520, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
-  tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-130%) skewX(-18deg)' }, { transform: 'translateX(-130%) skewX(-18deg)', offset: .35 }, { transform: 'translateX(260%) skewX(-18deg)' }], { duration: 760, easing: 'ease-in-out', fill: 'forwards' });
-  setTimeout(() => msStars(x0, y0 - 44, 6, 46, 9), 300);
-  return up.finished.catch(() => {}).then(() => new Promise(r => setTimeout(r, 160))).then(() => {
+    { transform: Q(0, 0, S0, S0, 0), easing: 'ease-in-out' },
+    { transform: Q(0, 3, S0 * 1.25, S0 * .7, 0), offset: .14, easing: 'cubic-bezier(.2,.7,.3,1)' },
+    { transform: Q(0, -74, 1.1, 1.5, -8), offset: .42, easing: 'cubic-bezier(.5,0,.7,.4)' },
+    { transform: Q(0, -38, 1.42, 1.08, 4), offset: .6, easing: 'cubic-bezier(.2,.7,.3,1)' },
+    { transform: Q(0, -52, 1.2, 1.32, -2), offset: .74, easing: 'cubic-bezier(.5,0,.7,.4)' },
+    { transform: Q(0, -42, 1.3, 1.2, 1), offset: .87, easing: 'ease-out' },
+    { transform: Q(0, -44, 1.25, 1.25, 0) },
+  ], { duration: 950, fill: 'forwards' });
+  const T = (x, y, sc, r) => Q(x, y, sc, sc, r);
+  tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-130%) skewX(-18deg)' }, { transform: 'translateX(-130%) skewX(-18deg)', offset: .55 }, { transform: 'translateX(260%) skewX(-18deg)' }], { duration: 1250, easing: 'ease-in-out', fill: 'forwards' });
+  setTimeout(() => msStars(x0, y0 - 60, 7, 50, 9), 400);
+  return up.finished.catch(() => {}).then(() => new Promise(r => setTimeout(r, 260))).then(() => {
     if (!t) { tk.remove(); return; }
     // ② 빨려 들어감(620ms): 위로 휘는 곡선, 점점 빨라지며 작아짐 + 별가루 꼬리
     const dx = t.left + t.width / 2 - x0, dy = t.top + t.height / 2 - y0, sx = 0, sy = -44, cx = dx * .3, cy = Math.min(sy, dy) - 70;
