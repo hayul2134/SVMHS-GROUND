@@ -123,7 +123,11 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
         { duration: 340, delay: Math.min(i++, 8) * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' });
     }
   };
+  // 사진 다 왔으면 .ok (CSS img:not(.ok)의 깜빡이는 자리 표시를 끔) — 캐시에서 바로 뜬 사진은 load 이벤트를 window에서 못 받는 경우가 있어서 직접 확인 (2026-10-28 공지 사진 계속 깜빡이던 버그)
+  const imgOk = im => { if (im.classList.contains('ok')) return; if (im.complete) im.classList.add('ok'); else { const f = () => im.classList.add('ok'); im.addEventListener('load', f, { once: true }); im.addEventListener('error', f, { once: true }); } };
+  const imgScan = n => { if (n.nodeType !== 1) return; if (n.tagName === 'IMG') imgOk(n); else n.querySelectorAll?.('img:not(.ok)').forEach(imgOk); };
   const mo = new MutationObserver(ms => {
+    for (const m of ms) if (m.type === 'childList') m.addedNodes.forEach(imgScan);
     if (RM.matches || document.documentElement.classList.contains('prelogin')) return;
     for (const m of ms) {
       const tg = m.target;
@@ -145,7 +149,7 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
     }
   });
   riseIn = els => { if (!RM.matches) rise(els); };
-  const go = () => mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
+  const go = () => { imgScan(document.body); mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true }); };
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go, { once: true });
   // 사진이 늦게 오면 그 자리에 같은 모양 덩어리가 먼저 보이고, 다 오면 페이드 인 (CSS img:not(.ok))
   const ok = e => { if (e.target.tagName === 'IMG') e.target.classList.add('ok'); };
