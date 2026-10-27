@@ -142,7 +142,8 @@ async function refreshMe() {
   try {
     const [r] = await Promise.all([call('me'), loadReleased()]);
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
-    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me))); document.documentElement.classList.toggle('tpad', ffOn('tier-pad', isDev(S.me)));   // 미리보기 기능([data-ff]) 개발자에게만 보이게
+    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me))); document.documentElement.classList.toggle('tpad', ffOn('tier-pad', isDev(S.me)));
+    { const c2 = ffOn('cut-v2', isDev(S.me)); document.documentElement.classList.toggle('cut2', c2); GAMES.cut.name = c2 ? '편집의 신' : '컷 타이밍'; GAMES.cut.beta = !c2; }   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
@@ -1788,13 +1789,13 @@ async function playCut2() {
   // 2026-10-27 하율 "노트북이면 노트북 화면처럼, 데스크탑이면 데스크탑 화면에서 띄운 것처럼": 마우스 쓰는 기기면 게임을 기기 화면(바탕화면 + 편집 프로그램 창) 안에 크게 띄움.
   //   모니터 가로(CSS px) 1920 이상 = 데스크탑(모니터+받침대), 그 밑 = 노트북(얇은 테두리+키보드 바닥). 창 제목줄은 맥(신호등 점)·윈도우(─ □ ✕) 따라감. 터치 기기·좁은 창은 그대로(CSS가 틀을 풂)
   const dev = matchMedia('(hover:hover) and (pointer:fine)').matches ? (screen.width >= 1920 ? 'desk' : 'lap') : '';
-  const area = stage(ic('clap') + ' 컷 타이밍', '<p class="empty">불러오는 중…</p>', !!dev);
+  const area = stage(ic('clap') + ' 편집의 신', '<p class="empty">불러오는 중…</p>', !!dev);
   if (!CUT) { try { CUT = await import('./cut.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected) return;
   const game = CUT.html(matchMedia('(pointer:coarse)').matches);
   const mac = /mac/i.test(navigator.userAgentData?.platform || navigator.platform || '');
-  const bar = mac ? '<i class="ctd-dots"><i></i><i></i><i></i></i><b>컷 타이밍 — 시퀀스 01</b><i></i>'
-    : '<b>컷 타이밍 — 시퀀스 01</b><i class="ctd-wc"><i>─</i><i>□</i><i>✕</i></i>';
+  const bar = mac ? '<i class="ctd-dots"><i></i><i></i><i></i></i><b>편집의 신 — 시퀀스 01</b><i></i>'
+    : '<b>편집의 신 — 시퀀스 01</b><i class="ctd-wc"><i>─</i><i>□</i><i>✕</i></i>';
   area.innerHTML = dev ? `<div class="ctd ${dev}"><div class="ctd-scr"><div class="ctd-win"><div class="ctd-tb${mac ? ' mac' : ''}" aria-hidden="true">${bar}</div><div class="ctd-body">${game}</div></div></div><i class="ctd-base" aria-hidden="true"></i></div>` : game;
   const cb = area.querySelector('.ctm-bar');
   cb?.insertAdjacentHTML('afterend', RE_ROW.replace('class="prow"', 'class="prow re-alt"'));

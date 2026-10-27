@@ -5294,22 +5294,28 @@ img.ptimg:not(.ok){border-radius:10px;min-height:120px}
 .ctm-msg.combo.c4 b{background:linear-gradient(90deg,#ffd23f,#ff8a3d,#ff5fa2,#7ab4ff,#ffd23f);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;animation:ctPop .4s cubic-bezier(.3,1.8,.5,1),ctRb 1.2s linear infinite}
 .ctm-msg.combo.c4 b em{-webkit-text-fill-color:#2a1d00}
 @keyframes ctRb{to{background-position:200% 0}}
-/* 시작 화면 데모: 플레이헤드가 지나가다 컷 지점에서 '착' (2.6초 반복) */
-.ctm-demo{position:relative;width:min(300px,80%);height:34px;margin:2px 0;border-radius:8px;background:#232a3c;border:1px solid #3a4560;overflow:hidden}
+/* 시작 화면 데모 (2026-10-28 하율 "자른 뒤 갑자기 다시 시작해서 어색 → 이어지게"): 플레이헤드는 가운데 고정, 클립이 오른쪽에서 끝없이 흘러옴(편집 프로그램 재생 화면처럼).
+   같은 칸 2개를 이어 붙여 -50%까지 밀면 처음과 똑같아져 끊김 없이 반복. 플레이헤드 오른쪽 = 아직 안 자른 층(d-a), 왼쪽 = 잘린 층(d-b)
+   컷 지점은 칸의 80% → 주기의 30%에 플레이헤드(50%)를 지나감 → 그때 섬광·PERFECT */
+.ctm-demo{position:relative;width:min(320px,80%);height:34px;margin:2px 0;border-radius:8px;background:#232a3c;border:1px solid #3a4560;overflow:hidden}
 .ctm-demo i{position:absolute;display:block}
-.ctm-demo .d-cl,.ctm-demo .d-cr{top:7px;bottom:7px;border-radius:4px;background:repeating-linear-gradient(90deg,#6a5fd6 0 18px,#5a50c2 18px 20px);border:1.5px solid #b9b2ff}
-.ctm-demo .d-cl{left:4px;right:4px;animation:dCl 2.6s infinite}
-.ctm-demo .d-cr{left:60%;right:4px;opacity:0;background:repeating-linear-gradient(90deg,#8a63d8 0 18px,#7a54c6 18px 20px);border-color:#d4b8ff;animation:dCr 2.6s infinite}
-.ctm-demo .d-mk{top:0;bottom:0;left:60%;width:2px;margin-left:-1px;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d;animation:dMk 2.6s infinite}
-.ctm-demo .d-hd{top:0;bottom:0;left:0;width:2px;margin-left:-1px;background:#2f8cff;box-shadow:0 0 6px #2f8cff;animation:dHd 2.6s infinite}
-.ctm-demo .d-fl{top:0;bottom:0;left:60%;width:3px;margin-left:-1.5px;background:#fff;opacity:0;animation:dFl 2.6s infinite}
-.ctm-demo .d-pf{position:absolute;right:6px;top:50%;transform:translateY(-50%);font:900 11px/1 var(--num,inherit);color:#ffd23f;opacity:0;animation:dPf 2.6s infinite}
-@keyframes dHd{0%{left:3%}10%{left:3%}48%{left:60%}100%{left:60%}}
-@keyframes dCl{0%,47.9%{right:4px}48%,100%{right:41%}}
-@keyframes dCr{0%,47.9%{opacity:0;transform:none}48%{opacity:1}56%{transform:translateX(5px)}100%{opacity:1;transform:translateX(3px)}}
-@keyframes dMk{0%,47.9%{background:#ff4d4d}48%,100%{background:#ffd23f;box-shadow:0 0 10px #ffd23f}}
-@keyframes dFl{0%,47.9%{opacity:0}48%{opacity:1;box-shadow:0 0 12px 4px #fff}62%,100%{opacity:0;box-shadow:none}}
-@keyframes dPf{0%,49%{opacity:0;transform:translateY(-50%) scale(.5)}55%{opacity:1;transform:translateY(-50%) scale(1.15)}60%,90%{opacity:1;transform:translateY(-50%) scale(1)}100%{opacity:0}}
+.ctm-demo .d-ly{inset:0}
+.ctm-demo .d-a{clip-path:inset(0 0 0 50%)}
+.ctm-demo .d-b{clip-path:inset(0 50% 0 0)}
+.ctm-demo .d-st{top:0;bottom:0;left:0;width:200%;animation:dSt 2.6s linear infinite}
+.ctm-demo .d-t{position:absolute;top:0;bottom:0;width:50%}
+.ctm-demo .d-t+.d-t{left:50%}
+.ctm-demo .d-c{top:7px;bottom:7px;left:3px;right:3px;border-radius:4px;background:repeating-linear-gradient(90deg,#6a5fd6 0 18px,#5a50c2 18px 20px);border:1.5px solid #b9b2ff}
+.ctm-demo .d-c.l{right:20%;border-top-right-radius:1px;border-bottom-right-radius:1px}
+.ctm-demo .d-c.r{left:calc(80% + 3px);background:repeating-linear-gradient(90deg,#8a63d8 0 18px,#7a54c6 18px 20px);border-color:#d4b8ff;border-top-left-radius:1px;border-bottom-left-radius:1px}
+.ctm-demo .d-m{top:0;bottom:0;left:80%;width:2px;margin-left:-1px;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d}
+.ctm-demo .d-b .d-m{background:#ffd23f;box-shadow:0 0 8px #ffd23f}
+.ctm-demo .d-hd{top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#2f8cff;box-shadow:0 0 6px #2f8cff;z-index:2}
+.ctm-demo .d-fl{top:0;bottom:0;left:50%;width:3px;margin-left:-1.5px;background:#fff;opacity:0;z-index:3;animation:dFl 2.6s linear infinite}
+.ctm-demo .d-pf{position:absolute;left:calc(50% + 8px);top:50%;z-index:3;font:900 11px/1 var(--num,inherit);color:#ffd23f;text-shadow:0 1px 2px rgba(0,0,0,.6);opacity:0;animation:dPf 2.6s linear infinite}
+@keyframes dSt{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes dFl{0%,29%{opacity:0;box-shadow:none}30%{opacity:1;box-shadow:0 0 12px 4px #fff}42%,100%{opacity:0;box-shadow:none}}
+@keyframes dPf{0%,29%{opacity:0;transform:translateY(-50%) scale(.5)}34%{opacity:1;transform:translateY(-50%) scale(1.15)}38%,62%{opacity:1;transform:translateY(-50%) scale(1)}70%,100%{opacity:0;transform:translateY(-50%) scale(1)}}
 @media (prefers-reduced-motion:reduce){.ctm-demo *{animation:none!important}}
 /* 결과: 칭호 · 내 컷 다시 보기 */
 .ctm-ttl{margin:0 0 2px;font:400 26px/1.1 Jua,var(--disp),sans-serif;color:var(--text)}
@@ -5335,3 +5341,40 @@ img.ptimg:not(.ok){border-radius:10px;min-height:120px}
 .rp-v{font:800 11.5px/1.2 var(--num,inherit);color:#dfe6f2;text-align:right;white-space:nowrap}
 .j-perfect .rp-v{color:#ffd23f}.j-great .rp-v{color:#5be39a}.j-good .rp-v{color:#7ab4ff}.j-miss .rp-v,.j-bad .rp-v{color:#aab4c8}
 @media (prefers-reduced-motion:reduce){.rp-row{animation:none;opacity:1}}
+
+/* 2026-10-28 하율 "게임 이름도 편집의 신으로": 새 컷 타이밍(깃발 cut-v2)이 켜진 화면에서만 이름·Beta 표시 바꿈 */
+.nm-b{display:none}
+html.cut2 .nm-a{display:none!important}
+html.cut2 .nm-b{display:inline}
+/* 2026-10-28 하율 "한눈에 안 들어옴, 타임라인 패널에 더 집중": 노트북·데스크탑 틀 안에서 편집 프로그램처럼 어둡게,
+   타임코드·라운드·오차 합(위) + 타임라인 + 판정 메시지(아래)를 한 덩어리 패널로 묶고 타임라인을 크게. 조작(CUT·소리·다시 시작)은 아래 한 줄 */
+@media (min-width:860px) and (min-height:600px){
+  .ctd .ctd-win{background:#0f131c}
+  .ctd .ctd-tb{background:#1a1f2b;color:#aab4c8;border-bottom-color:#000}
+  .ctd .ctd-body{background:#0f131c}
+  .ctd .ctm{gap:0}
+  .ctd .ctm-top{padding:12px 16px 12px;background:#161b27;border:var(--bd);border-color:#000;border-bottom:none;border-radius:16px 16px 0 0}
+  .ctd .ctm-tc small,.ctd .ctm-sum small{color:#8d97ad}
+  .ctd .ctm-tc b{background:#0b0e15;border-color:#2c3346}
+  .ctd .ctm-sum b{color:#fff}.ctd .ctm-sum b i{color:#8d97ad}
+  .ctd .ctm-rd li{background:#1b2030;border-color:#39425a;color:#8d97ad}
+  .ctd .ctm-rd li.now{border-color:#e8eef7;color:#fff;box-shadow:0 3px 0 #000}
+  .ctd .ctm-rd li[class^="j-"]{border-color:#000}
+  .ctd .ctm-rd li.j-perfect{background:#f2b705;color:#2a1d00}.ctd .ctm-rd li.j-great{background:#1fa95e;color:#fff}.ctd .ctm-rd li.j-good{background:#3f86e0;color:#fff}.ctd .ctm-rd li.j-bad{background:#8a94a6;color:#fff}.ctd .ctm-rd li.j-miss{background:#e2483d;color:#fff}
+  .ctd .ctm-msg.j-great b{color:#5be39a}.ctd .ctm-msg.j-good b{color:#7ab4ff}.ctd .ctm-msg.j-bad b{color:#c3ccdb}.ctd .ctm-msg.j-miss b{color:#ff7070}
+  .ctd .ctm-tl{border:var(--bd);border-color:#000;border-top:1px solid #2c3346;border-bottom:1px solid #2c3346;border-radius:0;box-shadow:none}
+  .ctd .ctm-ar{grid-template-rows:30px 100px 84px}
+  .ctd .ctm-nm{grid-template-rows:30px 1fr 1fr}.ctd .ctm-gp{top:30px}
+  .ctd .ctm-cl b{font-size:12.5px;top:6px}.ctd .ctm-an{font-size:11.5px}
+  .ctd .ctm-msg{min-height:64px;padding:6px 12px;background:#161b27;border:var(--bd);border-color:#000;border-top:none;border-radius:0 0 16px 16px;color:#e8eef7}
+  .ctd .ctm-msg.rdy b,.ctd .ctm-msg.pop small{color:#aab4c8}
+  .ctd .ctm-msg .ctm-red{color:#ff6b6b}
+  .ctd .ctm-bar{margin-top:14px}
+  .ctd .ctm-btn{padding:14px;font-size:22px;border-color:#000}
+  .ctd .ctm-snd{background:#1b2030;border-color:#000;color:#e8eef7}
+  .ctd .ctm-bar .re-in{display:inline-flex!important;align-self:stretch;min-height:0;border-color:#000}
+  .ctd .re-alt{display:none!important}
+  .ctd .ctm-keys{margin-top:10px;color:#8d97ad}
+  .ctd .ctm-keys kbd{background:#1b2030;color:#e8eef7;border-color:#39425a}
+  .ctd .ctm-ov{inset:-2px;border-radius:16px}
+}
