@@ -223,7 +223,7 @@ export function createGear(canvas, opt = {}) {
       scene: 'ready', frames: 0, ms: 0, score: 0, lines: 0, level: 1, pieces: 0, b2b: false,
       board: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
       bag: [], queue: [], cur: null, hold: null, held: false,
-      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, combo: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
+      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, combo: 0, tetN: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
     });
     while (st.queue.length < 5) st.queue.push(nextKind());
   }
@@ -342,7 +342,7 @@ export function createGear(canvas, opt = {}) {
     if (full.length) {
       const n = full.length, tet = n === 4, lv = st.level;
       const pts = LINE_PTS[n] * lv * (tet && st.b2b ? 1.5 : 1);
-      st.score += Math.round(pts); st.b2b = tet; st.lines += n; st.level = levelOf(st.lines);
+      st.score += Math.round(pts); st.b2b = tet; st.tetN = tet ? (st.tetN || 0) + 1 : 0; st.lines += n; st.level = levelOf(st.lines);
       st.clearRows = full; st.clearT = CLEAR_T; st.flash = tet ? 1 : .6; st.shake = tet ? 10 : 4 + n; st.stop = tet ? 7 : 4;   // stop = 잠깐 멈칫(히트스톱)
       // 깨지기(2026-10-27 2차 하율 "깔끔한 느낌이 안 남"): 칸이 통째로 하얗게 번쩍 → 작아지며 사라짐, 가운데 → 바깥 순서로 차례차례. 흩날리는 조각은 없앰
       for (const y of full) for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; st.pops.push({ k: c.k, r: c.r, sx: c.sx, sy: c.sy, x: x * C, y: (y - HID) * C, d: Math.abs(x - 4.5) * .016, t: 0 }); }
@@ -353,7 +353,9 @@ export function createGear(canvas, opt = {}) {
       else [660, 784, 880].slice(0, n).forEach((f, i) => beep(f * up, f * up * 1.5, .1 + n * .02, 'square', .04, .04 + i * .06));   // 1·2·3줄: 줄 수만큼 음이 이어짐
       if (st.level > lv) [523, 784, 1047, 1568].forEach((f, i) => beep(f, f, .1, 'triangle', .04, .45 + i * .08));   // 레벨 업
       opt.onScore?.(Math.round(pts), BW / 2, ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, n);
-      opt.onClear?.(n, CLEAR_NAME[n] + (tet && pts > LINE_PTS[4] * lv ? ' 연속!' : ''), Math.round(pts), st.level > lv);
+      // 4줄 연달아: 2번째 '기자재! 연속!' → 3번째 '울트라 기자재!' → 4번째부터 '울트라 기자재! X2·X3…' (2026-10-27 하율)
+      const tn = st.tetN, nm = !tet ? CLEAR_NAME[n] : tn <= 1 ? '기자재!' : tn === 2 ? '기자재! 연속!' : tn === 3 ? '울트라 기자재!' : '울트라 기자재! X' + (tn - 2);
+      opt.onClear?.(n, nm, Math.round(pts), st.level > lv);
     } else {
       st.combo = 0; newPiece();
       // 선반이 거의 찼으면(보이는 위 4줄 안에 장비) 경고음 — 소리로도 위험을 알림
