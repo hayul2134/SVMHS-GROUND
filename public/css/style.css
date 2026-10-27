@@ -4838,3 +4838,32 @@ html:has(body.playing){overflow:hidden}
 .hr-ov.dead:not(.win){gap:clamp(4px,1cqw,12px)}
 .hr-ov.dead > b{font-size:clamp(18px,3.6cqw,36px)}
 .hr-sc em{font-size:clamp(16px,3cqw,30px)}
+
+/* 오늘의 미션 (2026-10-27, 미리보기 깃발 daily-mission) */
+.ms-card{margin:0 0 14px;padding:16px 18px;background:linear-gradient(160deg,color-mix(in srgb,var(--sky,#9fd8ff) 30%,var(--card)),var(--card) 60%)}
+.ms-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ms-head h3{margin:0;font:400 22px/1.2 var(--disp)}.ms-head small{color:var(--sub);font-weight:800;font-size:12.5px;white-space:nowrap}
+.ms-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ms-list li{display:flex;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:var(--card)}
+.ms-list li.done{background:color-mix(in srgb,var(--mint,#8fe8cf) 28%,var(--card))}
+.ms-no{flex:none;display:grid;place-items:center;width:30px;height:30px;border:2px solid var(--ink);border-radius:50%;background:var(--yellow,#ffe08a);font:900 15px/1 var(--disp)}
+.ms-list li.done .ms-no{background:#5fd3a0}.ms-no svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.ms-tx{flex:1;min-width:0;display:grid;gap:5px}.ms-tx b{font-size:14.5px;line-height:1.35;word-break:keep-all}
+.ms-list li.done .ms-tx b{color:var(--sub);text-decoration:line-through;text-decoration-thickness:2px}
+.ms-bar{display:block;height:8px;border:1.6px solid var(--ink);border-radius:99px;background:color-mix(in srgb,var(--ink) 8%,var(--card));overflow:hidden}
+.ms-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6fc6f4,#5fd3a0);border-radius:99px;transition:width .5s cubic-bezier(.3,1.4,.5,1)}
+.ms-bar i.w5{width:5%}.ms-bar i.w10{width:10%}.ms-bar i.w15{width:15%}.ms-bar i.w20{width:20%}.ms-bar i.w25{width:25%}.ms-bar i.w30{width:30%}.ms-bar i.w35{width:35%}.ms-bar i.w40{width:40%}.ms-bar i.w45{width:45%}.ms-bar i.w50{width:50%}.ms-bar i.w55{width:55%}.ms-bar i.w60{width:60%}.ms-bar i.w65{width:65%}.ms-bar i.w70{width:70%}.ms-bar i.w75{width:75%}.ms-bar i.w80{width:80%}.ms-bar i.w85{width:85%}.ms-bar i.w90{width:90%}.ms-bar i.w95{width:95%}.ms-bar i.w100{width:100%}
+.ms-tx small{display:flex;justify-content:space-between;color:var(--sub);font-weight:800;font-size:12px}
+.ms-tx small em{font-style:normal;display:inline-flex;align-items:center}.ms-tx .gc-sh{width:10px;height:10px;margin-right:6px;border-width:1.6px}
+.ms-go{flex:none;display:grid;place-items:center;width:40px;height:40px;padding:0;border:2px solid var(--ink);border-radius:12px;background:var(--card);box-shadow:2px 2px 0 var(--ink);cursor:pointer}
+.ms-go .sic{width:24px;height:24px}.ms-go:active{transform:translate(2px,2px);box-shadow:none}
+.ms-ok{flex:none;font:400 14px/1 var(--disp);color:#1f9c6b}
+.ms-foot{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border:2px dashed color-mix(in srgb,var(--ink) 40%,transparent);border-radius:14px}
+.ms-foot p{flex:1;margin:0;display:grid;gap:2px}.ms-foot p b{font-size:14px}.ms-foot p small{color:var(--sub);font-weight:700;font-size:11.5px}
+.ms-pips{display:flex;gap:4px}.ms-pips i{width:12px;height:12px;border:2px solid var(--ink);border-radius:50%;background:var(--card)}.ms-pips i.on{background:#5fd3a0}
+.ms-tk{width:34px;height:34px;flex:none;filter:grayscale(.85);opacity:.55;transition:.3s}
+.ms-card.all .ms-tk{filter:none;opacity:1;animation:msTk 1.6s ease-in-out infinite}
+.ms-card.all .ms-foot{border-style:solid;background:color-mix(in srgb,#ffd166 30%,var(--card))}
+@keyframes msTk{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) scale(1.08)}}
+@media (prefers-reduced-motion:reduce){.ms-card.all .ms-tk{animation:none}}
+@media (max-width:460px){.ms-foot{flex-wrap:wrap}.ms-foot .btn{width:100%}}

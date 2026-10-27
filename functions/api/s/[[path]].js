@@ -6,6 +6,7 @@ import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { ffOn } from '../../../public/js/flags.js';
+import { MS, missionsOf, progOf, addPlay } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
 import { randHex, sha256, hashPw, sameStr, cookieOf, clean } from '../../../lib/sec.js';
@@ -162,6 +163,37 @@ const pub = u => u && ({
 // 개발자(관리자) 계정은 제한을 모두 풂(2026-10-23 하율 지시): 출석 보상 전부 해금 · 시계 칸·방패 최대 · 내 행동 횟수 제한 없음 ·
 // 밸런스 투표 없이 댓글·결과 보기 · DM 받기 설정·DM 끄기 무시. 단 상대가 개발자를 차단했으면 존중, 비밀번호 시도 제한은 보안상 유지
 const isAdm = u => u?.handle === ADMIN_HANDLE;
+// 오늘의 미션(2026-10-27, 미리보기 깃발 daily-mission): 미션에 나오는 게임 = 깃발 없는 게임만(모두 같은 미션)
+const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff);
+const misOut = (day, p) => {
+  const list = missionsOf(day, MS_GAMES());
+  return { day, list: list.map((m, i) => ({ t: m.t, k: m.k, g: m.g || '', n: m.n, c: progOf(m, p), done: !!p.d?.[i] })), all: !!p.all, rw: MS };
+};
+async function misGet(db, me, day = kstYmd()) {
+  const row = await db.prepare('SELECT p FROM missions WHERE uid = ?1 AND day = ?2').bind(me.id, day).first();
+  let p = {}; try { p = JSON.parse(row?.p || '{}') || {}; } catch {}
+  return { row, p };
+}
+// 판이 저장될 때 진행 상황을 올리고, 새로 끝난 미션 보상(조각)·전부 끝(뽑기권)을 넣음. 두 탭에서 동시에 와도 이전 값 조건으로 한 번만
+async function misPlay(db, me, game, v, newBest) {
+  const day = kstYmd(), list = missionsOf(day, MS_GAMES());
+  for (let tryN = 0; tryN < 3; tryN++) {
+    const { row, p } = await misGet(db, me, day);
+    const q = addPlay(p, game, v, newBest), got = [];
+    list.forEach((m, i) => { if (!q.d[i] && progOf(m, q) >= m.n) { q.d[i] = 1; got.push(i); } });
+    const allNow = !q.all && q.d.every(Boolean);
+    if (allNow) q.all = 1;
+    const js = JSON.stringify(q);
+    const ok = row
+      ? await db.prepare('UPDATE missions SET p = ?1 WHERE uid = ?2 AND day = ?3 AND p = ?4 RETURNING uid').bind(js, me.id, day, row.p).first()
+      : await db.prepare('INSERT INTO missions (uid, day, p) VALUES (?1, ?2, ?3) ON CONFLICT (uid, day) DO NOTHING RETURNING uid').bind(me.id, day, js).first();
+    if (!ok) continue;
+    if (got.length || allNow) await db.prepare(`UPDATE users SET gc_shard = MIN(9999, gc_shard + ?1), gc_tix = MIN(${GC.max}, gc_tix + ?2) WHERE id = ?3`)
+      .bind(got.length * MS.shard, allNow ? MS.tix : 0, me.id).run();
+    return { ...misOut(day, q), got, allNow };
+  }
+  return null;
+}
 const ALL_OPEN = 1e6;
 // 개발자는 어떤 랭킹·1등 표시에도 안 나옴 (scores 쿼리에 붙이는 조건)
 const OWNER_HANDLE = 'hayul2094';   // 하율 본인(학생용) 계정
@@ -939,8 +971,11 @@ const ROUTES = {
         } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/home_first', method: 'NOTICE' }, e); }
       }
     }
+    // 오늘의 미션 진행(미리보기 깃발 daily-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
+    let mis = null;
+    if (ffOn('daily-mission', isAdm(me))) { try { mis = await misPlay(db, me, game, v, allPrev.b != null && v < allPrev.b); } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/mission', method: 'MISSION' }, e); } }
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, arrived, next, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {
@@ -1156,6 +1191,11 @@ const ROUTES = {
       top: top.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
   }),
 
+  'GET mission': needMe(async ({ db, me }) => {
+    if (!ffOn('daily-mission', isAdm(me))) return err('not found', 404);
+    const day = kstYmd(), { p } = await misGet(db, me, day);
+    return json(misOut(day, p));
+  }),
   'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
     const out = {};
     await Promise.all(Object.keys(GAMES).map(async game => {
