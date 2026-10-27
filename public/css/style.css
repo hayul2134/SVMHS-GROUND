@@ -5381,3 +5381,8 @@ html.cut2 .nm-b{display:inline}
   .ctd .ctm-keys kbd{background:#1b2030;color:#e8eef7;border-color:#39425a}
   .ctd .ctm-ov{inset:-2px;border-radius:16px}
 }
+/* 편집의 신 결과(2026-10-28 하율 "재시작을 스크롤 안 하고도 볼 수 있게"): 결과가 길어도 '다시 하기·랭킹' 줄이 화면 아래에 붙어 있게 + 위쪽을 조금 압축 */
+.result:has(.ctm-res){padding-top:20px;gap:6px}
+.result:has(.ctm-res) .gem{display:none}
+.result:has(.ctm-res) .rval{font-size:clamp(40px,7vw,64px);line-height:1.05}
+.result:has(.ctm-res) > .row{position:sticky;bottom:12px;z-index:5;margin-top:6px;padding:10px;border-radius:20px;background:var(--card);border:var(--bd);box-shadow:var(--sh-s)}
