@@ -53,6 +53,19 @@ const av = u => `<span class="av">${avIn(u?.avatar)}</span>`;
 const who = (u, sub) => u ? `<span class="who">${av(u)}<span><b>${esc(u.name)}${u.online ? '<i class="on-dot" title="접속 중"></i>' : ''}</b><small>@${esc(u.handle)}${sub ? ' · ' + sub : ''}</small></span></span>` : '<span class="sub">(탈퇴한 사용자)</span>';
 const cls = u => u.grade && u.cls ? `${u.grade}-${u.cls}` : '';
 
+/* 한글 입력 상태로 친 비밀번호를 영문 자판 글자로 되돌림 (2026-10-27 하율: 관리자 비밀번호는 무조건 영어로)
+   두벌식: 'ㅗ741…' → 'h741…', '가' → 'rk'. 완성형 글자는 초·중·종성으로 풀어서 바꿈 */
+const KEY = { 'ㄱ':'r','ㄲ':'R','ㄴ':'s','ㄷ':'e','ㄸ':'E','ㄹ':'f','ㅁ':'a','ㅂ':'q','ㅃ':'Q','ㅅ':'t','ㅆ':'T','ㅇ':'d','ㅈ':'w','ㅉ':'W','ㅊ':'c','ㅋ':'z','ㅌ':'x','ㅍ':'v','ㅎ':'g',
+  'ㅏ':'k','ㅐ':'o','ㅑ':'i','ㅒ':'O','ㅓ':'j','ㅔ':'p','ㅕ':'u','ㅖ':'P','ㅗ':'h','ㅛ':'y','ㅜ':'n','ㅠ':'b','ㅡ':'m','ㅣ':'l',
+  'ㅘ':'hk','ㅙ':'ho','ㅚ':'hl','ㅝ':'nj','ㅞ':'np','ㅟ':'nl','ㅢ':'ml','ㄳ':'rt','ㄵ':'sw','ㄶ':'sg','ㄺ':'fr','ㄻ':'fa','ㄼ':'fq','ㄽ':'ft','ㄾ':'fx','ㄿ':'fv','ㅀ':'fg','ㅄ':'qt' };
+const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ', JONG = ['', ...'ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ'];
+const hasKo = s => /[ㄱ-ㅣ가-힣]/.test(s);
+const toEng = s => [...s].map(ch => {
+  const c = ch.charCodeAt(0) - 0xAC00;
+  if (c >= 0 && c < 11172) return KEY[CHO[Math.floor(c / 588)]] + KEY[JUNG[Math.floor(c % 588 / 28)]] + (JONG[c % 28] ? KEY[JONG[c % 28]] : '');
+  return KEY[ch] ?? ch;
+}).join('');
+
 /* ===== 로그인 화면 ===== */
 async function showGate() {
   $('#app').hidden = true; $('#gate').hidden = false;
@@ -68,15 +81,21 @@ async function showGate() {
   box.innerHTML = `<form id="loginF" autocomplete="on">
       <p class="sub">사이트에서 <b>developer</b> 계정으로 로그인한 상태에서만 들어올 수 있어요.</p>
       <input type="text" name="username" value="${esc(st.admin)}" autocomplete="username" hidden>
-      <label class="f">developer 비밀번호<input class="inp" type="password" name="pw" autocomplete="current-password" required autofocus></label>
+      <label class="f">developer 비밀번호<input class="inp" type="password" name="pw" lang="en" inputmode="latin" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="current-password" required autofocus></label>
+      <p class="sub" id="koNote" hidden>한글로 입력되고 있어요 — 영문 자판 글자로 바꿔서 보내요</p>
       <p class="err" id="loginErr"></p>
       <button class="btn pri" type="submit">들어가기</button>
     </form>`;
+  const pwIn = $('#loginF').pw;
+  // 한글이 들어오면 바로 영문 자판 글자로 바꿈(조합이 끝난 뒤) + 안내
+  const fix = () => { if (hasKo(pwIn.value)) { pwIn.value = toEng(pwIn.value); $('#koNote').hidden = false; } };
+  pwIn.addEventListener('compositionend', fix);
+  pwIn.addEventListener('input', e => { if (!e.isComposing) fix(); });
   $('#loginF').addEventListener('submit', async e => {
     e.preventDefault();
     const b = e.target.querySelector('button'); b.disabled = true; $('#loginErr').textContent = '';
     try {
-      const res = await fetch('/api/s/admin-pass', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pw: e.target.pw.value }) });
+      const res = await fetch('/api/s/admin-pass', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pw: toEng(e.target.pw.value) }) });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(res.status === 401 && !/비밀번호/.test(d.error || '') ? '먼저 사이트에서 관리자 계정으로 로그인해 주세요' : d.error || '오류 ' + res.status);
       start();
