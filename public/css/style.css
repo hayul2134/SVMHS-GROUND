@@ -4594,9 +4594,11 @@ html:not(.tf) .tr-top summary > .sic,html:not(.tf) .trt-go{display:none}
 html.tf .rk-tabs button{width:auto;height:27px;padding:0 9px 0 6px;gap:4px;display:inline-flex;align-items:center;border-radius:999px;font-weight:900;font-size:12px;white-space:nowrap}
 html.tf .rk-tabs button .rkt-l{line-height:1}
 html.tf .rk-tabs button .tri{width:21px;height:20px;margin:-3px -1px -3px -2px;overflow:visible}
-html.tf .rk-tabs button.rkt-tier{position:relative;overflow:hidden;color:#5a3a00;background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%);border:1.5px solid #fff6c9;box-shadow:0 0 10px rgba(255,214,102,.65);animation:tfGlow 2.2s ease-in-out infinite}
-html.tf .rk-tabs button.rkt-tier::after{content:"";position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);animation:tfShine 2.6s ease-in-out infinite;pointer-events:none}
-html.tf .rk-tabs.sw > button.rkt-tier[aria-selected],html.tf .rk-tabs button.rkt-tier[aria-selected="true"]{background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%);color:#5a3a00;border-color:var(--ink);box-shadow:1.5px 1.5px 0 var(--ink),0 0 12px rgba(255,214,102,.7)}
+/* 2026-10-27 하율: 티어 탭은 '골랐을 때만' 금빛 — 안 고르면 연속 출석 탭처럼 투명(이전엔 늘 금빛이라 연속 출석을 골라도 티어가 선택된 것처럼 보였음) */
+html.tf .rk-tabs button.rkt-tier{position:relative;overflow:hidden}
+html.tf .rk-tabs.sw > button.rkt-tier[aria-selected="true"],html.tf .rk-tabs button.rkt-tier[aria-selected="true"]{color:#5a3a00!important;background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%)!important;border-color:var(--ink)!important;box-shadow:1.5px 1.5px 0 var(--ink),0 0 12px rgba(255,214,102,.7)!important}
+html.tf .rk-tabs button.rkt-tier[aria-selected="true"]::after{content:"";position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);animation:tfShine 2.6s ease-in-out infinite;pointer-events:none}
+html.tf .rk-tabs.sw:has(> button.rkt-tier[aria-selected="true"]) > .sw-pill{opacity:0!important}   /* 금빛 버튼 뒤로 노란 알약 모서리가 비치지 않게 */
 html.tf .rk-tabs button.rkt-tier .rkt-l{position:relative;z-index:1}
 /* 랭킹 줄 티어 표시: 글자 → 티어 색 배지 */
 html.tf .rk-tr{position:relative;overflow:hidden;gap:4px;padding:2px 9px 2px 3px;border-radius:999px;border:2px solid var(--ink);font-size:12.5px;font-weight:900;color:#1d2a3a;
