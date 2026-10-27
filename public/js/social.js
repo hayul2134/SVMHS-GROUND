@@ -1682,6 +1682,7 @@ async function playGear() {
       const stars = Array.from({ length: n === 4 ? 14 : 4 + n * 2 }, (_, i) => { const a = i / (n === 4 ? 14 : 4 + n * 2) * 6.283 + Math.random() * .4, d = 60 + Math.random() * (n === 4 ? 70 : 40);
         return `<i class="gr-star" style="--x:${Math.round(Math.cos(a) * d)}px;--y:${Math.round(Math.sin(a) * d * .6)}px;--d:${(Math.random() * .15).toFixed(2)}s"></i>`; }).join('');
       pop.innerHTML = `<div class="gr-burst"></div>${stars}<b>${letters}</b><small>+${pts.toLocaleString('ko-KR')}</small>${up ? `<em>레벨 ${R.st.level}!</em>` : ''}`;
+      { const b = pop.querySelector('b'), fs = parseFloat(getComputedStyle(b).fontSize), w = $('#grScr').clientWidth * .92; if (b.scrollWidth > w) b.style.fontSize = Math.floor(fs * w / b.scrollWidth) + 'px'; }   // 긴 문구('울트라 기자재! X2' 등)가 판 밖으로 안 넘치게 줄임
       void pop.offsetWidth; popT = setTimeout(() => { pop.className = 'gr-pop'; }, n === 4 ? 1500 : 1200);
     },
     onOver(res) {
