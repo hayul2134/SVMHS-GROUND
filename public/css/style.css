@@ -4752,23 +4752,24 @@ html:has(body.playing){overflow:hidden}
 .gr-stat dd.gr-tm{font-variant-numeric:tabular-nums}
 .gr-stat dd.gr-tm.warn{color:#ff5a6e;animation:grTm .5s ease-in-out infinite alternate}
 @keyframes grTm{to{transform:scale(1.15)}}
-.gr-modes{display:flex;gap:8px;justify-content:center;margin:6px 0 2px;flex-wrap:wrap;pointer-events:auto}   /* 겉 안내판은 클릭을 통과시키지만 방식 버튼은 누를 수 있게 */
+.gr-modes{display:flex;gap:12px;justify-content:center;margin:6px 0 2px;flex-wrap:wrap;pointer-events:auto}   /* 겉 안내판은 클릭을 통과시키지만 방식 버튼은 누를 수 있게 */
 .gr-modes button *{animation:none!important}   /* 안내판 글자 깜빡임·흔들림이 버튼 안까지 오지 않게 (2026-10-27 하율) */
-.gr-modes button{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:104px;padding:8px 12px;border:2px solid var(--ink);border-radius:12px;background:var(--card);color:var(--ink);box-shadow:2px 3px 0 var(--ink);cursor:pointer;font:inherit}
-.gr-modes button b{display:flex;align-items:center;gap:4px;font:400 17px/1 var(--disp);color:inherit;-webkit-text-stroke:0;text-shadow:none;letter-spacing:0}
-.gr-modes button b svg{width:16px;height:16px}
-.gr-modes button small{font-size:11px;font-weight:800;color:var(--sub);-webkit-text-stroke:0}
+.gr-modes button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:132px;padding:12px 18px;border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);box-shadow:3px 4px 0 var(--ink);cursor:pointer;font:inherit}
+.gr-modes button b{display:flex;align-items:center;gap:5px;font:400 22px/1 var(--disp);color:inherit;-webkit-text-stroke:0;text-shadow:none;letter-spacing:0}
+.gr-modes button b svg{width:20px;height:20px}
+.gr-modes button small{font-size:12.5px;font-weight:800;color:#5b6585;-webkit-text-stroke:0;text-shadow:none}
 .gr-modes button{transition:transform .14s cubic-bezier(.3,1.6,.5,1),box-shadow .14s,background .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
 .gr-modes button:hover{transform:translateY(-3px) rotate(-1deg);box-shadow:2px 6px 0 var(--ink)}
 .gr-modes button:active,.gr-modes button.go{transform:translateY(2px) scale(.95);box-shadow:1px 1px 0 var(--ink);transition-duration:.06s}
 .gr-modes button:focus-visible{outline:3px solid #5ab8ff;outline-offset:2px}
-.gr-modes button[aria-pressed="true"]{background:#ffe27a;transform:translateY(-2px);box-shadow:2px 5px 0 var(--ink)}
+.gr-modes button[aria-pressed="true"]{background:#ffe27a;transform:translateY(-2px);box-shadow:3px 6px 0 var(--ink),0 0 0 4px rgba(255,226,122,.45),0 0 18px rgba(255,226,122,.7)}
+.gr-modes button[aria-pressed="true"] b::after{content:"✓";font:900 15px/1 var(--num,inherit);margin-left:2px}
 .gr-modes button[aria-pressed="true"]:hover{transform:translateY(-4px) rotate(-1deg)}
 .gr-modes button[aria-pressed="true"].go{transform:translateY(2px) scale(.95);box-shadow:1px 1px 0 var(--ink)}
 .gr-modes button.pick{animation:grPick .38s cubic-bezier(.3,1.7,.5,1)}
 @keyframes grPick{0%{transform:scale(.9)}55%{transform:translateY(-4px) scale(1.08)}100%{transform:translateY(-2px)}}
 @media (prefers-reduced-motion:reduce){.gr-modes button,.gr-modes button.pick{transition:none;animation:none}}
-.gr-modes button[data-gm="rank"][aria-pressed="true"]{background:#ff8f5a;color:#fff}
+.gr-modes button[data-gm="rank"][aria-pressed="true"]{background:#ff8f5a;color:#fff;box-shadow:3px 6px 0 var(--ink),0 0 0 4px rgba(255,143,90,.45),0 0 18px rgba(255,143,90,.75)}
 .gr-modes button[data-gm="rank"][aria-pressed="true"] small{color:#fff}
 .gr-stat dd.bump{animation:grBump .28s ease-out}
 .gr-stat dd.bump2{animation:grBump2 .55s ease-out}
@@ -4988,3 +4989,6 @@ html:has(body.playing){overflow:hidden}
 .week td.past.chg .chg-t{opacity:.6}
 .s-tt .week td .chg-t{font-size:9px;left:2px;top:2px;padding:0 3px}
 @media (max-width:560px){.week td .chg-t{position:static;display:inline-block;margin-top:3px}}
+
+.gr[data-bs="s"] .gr-modes button{min-width:108px;padding:9px 12px}.gr[data-bs="s"] .gr-modes button b{font-size:18px}.gr[data-bs="s"] .gr-modes button small{font-size:11px}
+.gr[data-bs="xs"] .gr-modes{gap:6px}.gr[data-bs="xs"] .gr-modes button{min-width:0;padding:6px 8px;border-width:2px}.gr[data-bs="xs"] .gr-modes button b{font-size:15px}.gr[data-bs="xs"] .gr-modes button small{font-size:9.5px}
