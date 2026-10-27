@@ -20,6 +20,11 @@
       if (pt && pt.indexOf('data:image/') === 0) { rs.setProperty('--pat', 'url("' + pt + '")'); rs.setProperty('--pat-size', '90px 90px'); }
     }
   } catch (e) {}
+  // 미리보기 깃발(dev-pv 등)을 첫 화면 전에 붙임 — 로그인 확인(/api/me)을 기다렸다 붙이면 새 게임 아이콘이 뒤늦게 끼어들어 다른 아이콘이 밀림(2026-10-28)
+  try {
+    var fc = localStorage.getItem('sg_in') && JSON.parse(localStorage.getItem('sg_ffc') || 'null');
+    if (fc) { (fc.c || []).forEach(function (c) { if (/^[a-z0-9-]{2,12}$/.test(c)) document.documentElement.classList.add(c); }); if (typeof fc.r === 'string') document.documentElement.dataset.ffr = fc.r; }
+  } catch (e) {}
   // 로그인 전이면 소개 화면만 보임 — 로그인 없이는 사이트를 볼 수 없음 (sg_in: 로그인돼 있던 기기 표시 → 깜빡임 방지)
   try { sessionStorage.removeItem('sg_peek'); if (!localStorage.getItem('sg_in')) document.documentElement.classList.add('prelogin'); } catch (e) { document.documentElement.classList.add('prelogin'); }
 })();

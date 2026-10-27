@@ -143,7 +143,8 @@ async function refreshMe() {
     const [r] = await Promise.all([call('me'), loadReleased()]);
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
     document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me))); document.documentElement.classList.toggle('tpad', ffOn('tier-pad', isDev(S.me)));
-    { const c2 = ffOn('cut-v2', isDev(S.me)); document.documentElement.classList.toggle('cut2', c2); GAMES.cut.name = c2 ? '편집의 신' : '컷 타이밍'; GAMES.cut.beta = !c2; }   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
+    { const c2 = ffOn('cut-v2', isDev(S.me)); document.documentElement.classList.toggle('cut2', c2); GAMES.cut.name = c2 ? '편집의 신' : '컷 타이밍'; GAMES.cut.beta = !c2; }
+    try { const h = document.documentElement; localStorage.setItem('sg_ffc', JSON.stringify({ c: ['dev-pv', 'rk2', 'tl2', 'tf', 'tpad', 'cut2'].filter(x => h.classList.contains(x)), r: h.dataset.ffr || '' })); } catch {}   // 2026-10-28 하율 "게임 4개 먼저 나오고 기자재 정리가 툭 튀어나온다": 깃발 상태를 저장 → 다음 접속 땐 theme.js가 첫 화면 그리기 전에 붙임   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
