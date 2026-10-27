@@ -5224,3 +5224,39 @@ img.ptimg:not(.ok){border-radius:10px;min-height:120px}
 }
 @media (prefers-reduced-motion:no-preference){.s-slots{animation:popIn .3s ease-out backwards}}   /* 서랍 급식 끼니 칩: 급식이 오면 생김 */
 @media (prefers-reduced-motion:no-preference){.hr-ov{animation:fadeIn .2s ease-out backwards}}   /* 게임 시작·멈춤·넘어짐 안내판 */
+
+/* 컷 타이밍: 노트북·데스크탑 화면 틀 (2026-10-27 하율 "노트북이면 노트북 화면처럼, 데스크탑이면 데스크탑 화면에서 띄운 것처럼")
+   .ctd.lap = 노트북(얇은 검은 테두리·카메라 점·아래 바닥판) · .ctd.desk = 모니터(두꺼운 아래 턱·목·받침대). 안은 파란 바탕화면 + 편집 프로그램 창.
+   창이 좁거나 낮으면 틀을 풀어 원래 모양 그대로(display:contents) */
+.ctd,.ctd-scr,.ctd-win,.ctd-body{display:contents}
+.ctd-tb,.ctd-base{display:none}
+@media (min-width:860px) and (min-height:600px){
+  .ctd{--W:min(100%,980px,calc((100dvh - 260px) * 1.6));display:flex;flex-direction:column;align-items:center;align-self:center;width:var(--W);margin:clamp(4px,2vh,24px) auto 0;animation:ctdIn .45s cubic-bezier(.2,1.2,.4,1) both}
+  .ctd.desk{--W:min(100%,1120px,calc((100dvh - 300px) * 1.78))}
+  .ctd-scr{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16/10;padding:clamp(18px,3%,34px);position:relative;
+    background:radial-gradient(120% 90% at 15% 0%,#cfe6ff 0,transparent 55%),radial-gradient(90% 80% at 100% 100%,#a9cfff 0,transparent 60%),linear-gradient(160deg,#e3f0ff,#9cc5ff);
+    border:12px solid #1c2130;border-radius:22px 22px 8px 8px;box-shadow:0 0 0 2px var(--ink),4px 6px 0 var(--ink)}
+  .ctd-scr::before{content:"";position:absolute;top:-8px;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:#3a4258}
+  .ctd.desk .ctd-win{max-width:1000px}
+  .ctd.desk .ctd-scr{aspect-ratio:16/9;border-width:14px 14px 34px;border-radius:18px}
+  .ctd.desk .ctd-scr::before{top:auto;bottom:-22px;width:28px;height:4px;margin-left:-14px;border-radius:4px;background:#4a5370}
+  .ctd-win{display:flex;flex-direction:column;width:100%;max-width:880px;border-radius:12px;border:var(--bd);background:var(--bg);box-shadow:0 18px 40px rgba(20,40,90,.28),3px 3px 0 var(--ink);overflow:hidden}
+  .ctd-tb{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:30px;padding:0 10px;background:var(--card);border-bottom:2px solid var(--ink);font:800 12px/1 var(--num,inherit);color:var(--sub)}
+  .ctd-tb b{grid-column:2;font-weight:800;white-space:nowrap}
+  .ctd-tb:not(.mac) b{grid-column:1;justify-self:start}
+  .ctd-dots{display:flex;gap:7px}.ctd-dots i{width:12px;height:12px;border-radius:50%;background:#ff5f57;border:1px solid rgba(0,0,0,.2)}
+  .ctd-dots i:nth-child(2){background:#febc2e}.ctd-dots i:nth-child(3){background:#28c840}
+  .ctd-wc{grid-column:3;justify-self:end;display:flex;font-style:normal}.ctd-wc i{width:34px;text-align:center;font-style:normal;font-size:12px}
+  .ctd-body{display:block;padding:clamp(12px,2.2%,22px)}
+  .ctd .ctm{min-height:0}
+  .ctd .ctm-ov{inset:-6px;border-radius:12px}
+  .ctd .ctm-ar{grid-template-rows:28px 74px 66px}
+  .ctd .ctm-nm{grid-template-rows:28px 1fr 1fr}.ctd .ctm-gp{top:28px}
+  .ctd-base{display:block;position:relative;width:116%;max-width:calc(100vw - 32px);height:16px;margin-top:-1px;border-radius:2px 2px 14px 14px;border:2px solid var(--ink);background:linear-gradient(180deg,#c9d0dc,#9aa3b4);box-shadow:3px 4px 0 var(--ink)}
+  .ctd-base::before{content:"";position:absolute;top:-2px;left:50%;width:16%;height:7px;transform:translateX(-50%);border-radius:0 0 9px 9px;background:#7d879a}
+  .ctd.desk .ctd-base{width:180px;height:62px;border:none;background:none;box-shadow:none;border-radius:0}
+  .ctd.desk .ctd-base::before{top:0;width:56px;height:46px;border-radius:0;background:linear-gradient(90deg,#8d97aa,#b9c1cf 50%,#8d97aa);border:2px solid var(--ink);border-top:none}
+  .ctd.desk .ctd-base::after{content:"";position:absolute;left:0;right:0;bottom:0;height:16px;border-radius:10px 10px 6px 6px;border:2px solid var(--ink);background:linear-gradient(180deg,#c9d0dc,#9aa3b4);box-shadow:3px 3px 0 var(--ink)}
+}
+@keyframes ctdIn{0%{opacity:0;transform:translateY(14px) scale(.97)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ctd{animation:none}}

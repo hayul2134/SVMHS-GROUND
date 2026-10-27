@@ -1785,10 +1785,17 @@ function playNum25() {
 /* 3) 컷 타이밍: 움직이는 플레이헤드를 컷 지점에서 멈추기 (5번, 점점 빨라짐) */
 let CUT = null;   // cut.js 모듈 (컷 타이밍 2 — 미리보기 깃발 cut-v2, 처음 열 때 불러옴)
 async function playCut2() {
-  const area = stage(ic('clap') + ' 컷 타이밍', '<p class="empty">불러오는 중…</p>');
+  // 2026-10-27 하율 "노트북이면 노트북 화면처럼, 데스크탑이면 데스크탑 화면에서 띄운 것처럼": 마우스 쓰는 기기면 게임을 기기 화면(바탕화면 + 편집 프로그램 창) 안에 크게 띄움.
+  //   모니터 가로(CSS px) 1920 이상 = 데스크탑(모니터+받침대), 그 밑 = 노트북(얇은 테두리+키보드 바닥). 창 제목줄은 맥(신호등 점)·윈도우(─ □ ✕) 따라감. 터치 기기·좁은 창은 그대로(CSS가 틀을 풂)
+  const dev = matchMedia('(hover:hover) and (pointer:fine)').matches ? (screen.width >= 1920 ? 'desk' : 'lap') : '';
+  const area = stage(ic('clap') + ' 컷 타이밍', '<p class="empty">불러오는 중…</p>', !!dev);
   if (!CUT) { try { CUT = await import('./cut.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected) return;
-  area.innerHTML = CUT.html(matchMedia('(pointer:coarse)').matches);
+  const game = CUT.html(matchMedia('(pointer:coarse)').matches);
+  const mac = /mac/i.test(navigator.userAgentData?.platform || navigator.platform || '');
+  const bar = mac ? '<i class="ctd-dots"><i></i><i></i><i></i></i><b>컷 타이밍 — 시퀀스 01</b><i></i>'
+    : '<b>컷 타이밍 — 시퀀스 01</b><i class="ctd-wc"><i>─</i><i>□</i><i>✕</i></i>';
+  area.innerHTML = dev ? `<div class="ctd ${dev}"><div class="ctd-scr"><div class="ctd-win"><div class="ctd-tb${mac ? ' mac' : ''}" aria-hidden="true">${bar}</div><div class="ctd-body">${game}</div></div></div><i class="ctd-base" aria-hidden="true"></i></div>` : game;
   const cb = area.querySelector('.ctm-bar');
   cb?.insertAdjacentHTML('afterend', RE_ROW.replace('class="prow"', 'class="prow re-alt"'));
   cb?.querySelector('.ctm-snd')?.insertAdjacentHTML('beforebegin', RE_BTN.replace('class="prestart"', 'class="prestart re-in"'));
