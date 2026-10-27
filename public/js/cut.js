@@ -61,10 +61,11 @@ export function run(root, o) {
   const ac = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch { actx = null; } return actx; };
   const tone = (f, t, d, type = 'sine', v = .16, f2) => { const a = ac(); if (!a) return; const s = a.currentTime + t, os = a.createOscillator(), g = a.createGain();
     os.type = type; os.frequency.setValueAtTime(f, s); if (f2) os.frequency.exponentialRampToValueAtTime(f2, s + d); g.gain.setValueAtTime(v, s); g.gain.exponentialRampToValueAtTime(.001, s + d); os.connect(g).connect(a.destination); os.start(s); os.stop(s + d + .02); };
-  const snip = () => { const a = ac(); if (!a) return; const n = a.sampleRate * .06, b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
+  const snip = () => { const a = ac(); if (!a) return; const n = a.sampleRate * .045, b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 3; const s = a.createBufferSource(), hp = a.createBiquadFilter(), g = a.createGain();
-    hp.type = 'highpass'; hp.frequency.value = 2400; g.gain.value = .5; s.buffer = b; s.connect(hp).connect(g).connect(a.destination); s.start(); tone(1800, 0, .03, 'square', .05); };
-  const sfx = k => { if (!sound) return; snip(); if (k === 'perfect') { tone(1046, .04, .12, 'triangle', .14); tone(1568, .11, .22, 'triangle', .14); } else if (k === 'great') tone(880, .04, .16, 'triangle', .13); else if (k === 'good') tone(660, .04, .12, 'triangle', .1); else tone(190, .03, .22, 'square', .07, 120); };
+    // 2026-10-28 하율 "탁 소리가 크고 너무 높아 날카로움": 고음 통과(2400Hz)+네모파 1800Hz 클릭 → 중음대(약 1.1kHz) 잡음 작게 + 낮은 '툭'
+    hp.type = 'bandpass'; hp.frequency.value = 1100; hp.Q.value = .8; g.gain.value = .16; s.buffer = b; s.connect(hp).connect(g).connect(a.destination); s.start(); tone(240, 0, .07, 'triangle', .1, 130); };
+  const sfx = k => { if (!sound) return; snip(); if (k === 'perfect') { tone(784, .05, .14, 'sine', .08); tone(1046, .12, .22, 'sine', .07); } else if (k === 'great') tone(659, .05, .16, 'sine', .07); else if (k === 'good') tone(523, .05, .12, 'sine', .06); else tone(180, .03, .2, 'triangle', .07, 120); };   // 판정음도 한 단계 낮고 부드럽게(사인파·작게)
   const sndBtn = $('#ctSnd');
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound); };
   sndBtn.onclick = () => { sound = !sound; o.onSound?.(sound); if (sound) ac(); paintSnd(); sndBtn.blur(); };
