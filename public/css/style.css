@@ -4027,7 +4027,8 @@ html.rk2 .rk-empty button{margin-left:4px;padding:2px 9px;border-radius:99px;bor
 .hr-snd:not(.on){color:var(--sub)}
 .hr-snd.on{background:var(--yellow);color:var(--onc,#1d2a3a)}
 /* 새 기능 미리보기 (flags.js): 개발자 계정이 아니면 data-ff 요소 숨김 — 월요일 공개 때 data-ff를 지움 */
-html:not(.dev-pv) [data-ff]{display:none!important}
+/* 2026-10-28 고침: 예전엔 공지로 열린 깃발도 계속 숨겨졌음(기자재 정리!·주간 미션 버튼이 학생 화면에 안 뜸) → social.js가 열린 깃발 요소에 data-ffon을 붙임(CSP 때문에 style 태그 대신 속성 방식) */
+html:not(.dev-pv) [data-ff]:not([data-ffon]){display:none!important}
 /* 공지 게시로 열린 깃발(data-ffr)은 보이게 — 클래스 방식 */
 html:not(.dev-pv):not([data-ffr~="shark"]) .ff-shark{display:none!important}
 
