@@ -1232,6 +1232,15 @@ const ROUTES = {
     }
     return err('잠시 후 다시 해 주세요', 409);
   }),
+  // 개발자 테스트용(2026-10-27 하율 "내 미션 다 완료, 티켓 받기 전으로"): 이번 주 미션 진행을 전부 채우고 받음 표시는 비움 → 5개 모두 '받기'
+  'POST misfill': needMe(async ({ db, me }) => {
+    if (!isAdm(me)) return err('개발자만 쓸 수 있어요', 403);
+    const wk = weekKey(), many = Array.from({ length: 20 }, (_, k) => 'x' + k), all = Object.fromEntries(Object.keys(GAMES).map(g => [g, 99]));
+    const p = { c: { play: 99, best: 99, att: 99, gacha: 99, prof: 99, balc: 99 }, g: all, ok: Object.fromEntries(Object.keys(GAMES).map(g => [g, 1])),
+      s: Object.fromEntries(['days', 'bal', 'balc', 'meal', 'like', 'dm', 'fol'].map(k => [k, many])), d: [] };
+    await db.prepare('INSERT INTO missions (uid, day, p) VALUES (?1, ?2, ?3) ON CONFLICT (uid, day) DO UPDATE SET p = excluded.p').bind(me.id, 'w' + wk, JSON.stringify(p)).run();
+    return json(misOut(wk, p));
+  }),
   'GET mission': needMe(async ({ db, me }) => {
     if (!ffOn('week-mission', isAdm(me))) return err('not found', 404);
     const wk = weekKey(), { p } = await misGet(db, me, wk);
