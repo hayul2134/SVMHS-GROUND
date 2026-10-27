@@ -894,7 +894,7 @@ const trNeed = nm => { const sp = splitOf(cls); return !!(sp && !cls.tk && sp.tr
 const trAttr = nm => trNeed(nm) ? ' data-open-class data-tip="내 분반 고르기"' : '';
 // 바뀐 시간표 (2026-10-27): neis.js가 평소와 다른 칸에 r.chg(평소 과목)를 붙임 → '변경' 칩, 누르거나 올리면 평소 과목
 const chgOf = r => { if (!r || !r.chg) return ''; const u = subjName(r.chg); return u && u !== subjName(r.ITRT_CNTNT) ? u : ''; };
-const chgTag = u => u ? `<i class="chg-t" title="평소엔 ${esc(u)}" aria-label="평소엔 ${esc(u)}">변경</i>` : '';
+const chgTag = u => u ? `<i class="chg-t" title="평소엔 ${esc(u)}" aria-label="평소엔 ${esc(u)}">변경됨</i>` : '';
 const trDot = nm => trNeed(nm) ? '<i class="nw-d" aria-hidden="true"></i>' : '';
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
