@@ -73,7 +73,7 @@ npx wrangler@4 pages dev --port 8788
 ## 오늘의 밸런스 게임 (D1)
 - 일정(`lib/balance.js`): 2026-10-27 문제부터(`NEW_FROM`) **일~금 하루 한 문제(토요일만 쉼, `isBalDay`)** · 한국 시간 **6시 공개 → 밤 11시 마감**(`CLOSE_HOUR`). 그 전 날짜는 예전 규칙(월~금, 마지막 교시 끝 +10분 — `lastPeriod`가 나이스 최대 교시를 `balance_days`에 저장, `NEW_FROM`부터는 나이스 안 부름). 6시 전·토요일엔 직전 밸런스 날 결과를 보여 줌. **화면에서는 등교일+일요일에만 티켓 `#play` 표시**(`app.js balDayOn`, 휴업일·공휴일·토요일은 숨김).
 - 질문: `BALANCE` 배열(213개, 2026-10-26). **겹침 금지**: `balanceOf`가 그날 처음 요청될 때 아직 안 나온 질문(`balance_auto` + `balance_custom`의 선택지 'A|B'를 뺀 것) 중 목록 순서대로 골라 `balance_auto`(ymd·k 둘 다 UNIQUE)에 저장 → 다시 안 나옴. 다 떨어지면 게임 숨김(같은 질문 반복 안 함). 10/23·10/26(예전 번호 방식)은 setup v37에서 고정. 관리자 페이지에서 날짜별 덮어쓰기(`balance_custom`). 질문 40자·선택지 20자 이내. 소재는 학생·선생님 누구나 공감할 일상만(학과 전용·학생 전용 소재 금지), 기존 질문과 소재가 겹치지 않게 끝에 추가.
-- API(`functions/api/s/[[path]].js`, 로그인 필요): `GET bal` 상태 · `POST bal` {pick,ymd} 투표/취소(마감 전만) · `POST balc` 댓글(100자, 욕설 필터, 진행 중엔 투표해야 가능, 5분 6개) · `POST balcdel` 내 댓글 삭제 · `POST balcrep` 신고(→ `reports`). 표는 `balance_votes`(voter = `u<uid>`, 계정당 한 표), 댓글은 `balance_comments`(배지는 현재 투표 기준).
+- API(`functions/api/s/[[path]].js`, 로그인 필요): `GET bal` 상태 · `POST bal` {pick,ymd} 투표/취소(마감 전만) · `POST balc` 댓글(100자, 욕설은 거절 대신 '아잉'으로 바꿈, 진행 중엔 투표해야 가능, 5분 6개) · `POST balcdel` 내 댓글 삭제 · `POST balcrep` 신고(→ `reports`). 표는 `balance_votes`(voter = `u<uid>`, 계정당 한 표), 댓글은 `balance_comments`(배지는 현재 투표 기준).
 - 공개 규칙: 진행 중엔 투표해야 결과·댓글이 보임, 마감 뒤엔 모두에게 결과 + 이긴 쪽 👑·WIN, 진 쪽 흐리게, 무승부 표시.
 
 ## 소개 화면 (로그인 전)
@@ -147,7 +147,7 @@ npx wrangler@4 pages dev --port 8788
 - **프로필 사진**: 이모지 대신 테마 캐릭터 16종 얼굴 `k:이름`(`att-art.js emo`, CSS `.kav` = `.sk-*`의 `--art`를 잘라 씀). `SCHEMA_V` 20에서 예전 이모지 값을 옮김. 관리자 화면은 이름 글자로.
 - **직접 그린 아이콘 추가**(index.html 스프라이트): `sj-bolt·n25·crown·trophy·play·pencil·fire·clock` — 게임·랭킹(1~3등 `.mdl` 배지)·급식 투표·칼로리·밸런스 상태. 앞으로 화면 장식에 이모지 대신 이 스프라이트를 쓸 것(말풍선·알림 문구의 이모지는 그대로).
 - **식판**: 메뉴 수에 따라 칸 채우는 순서(`splitTray`), 빈 칸은 숨기고 옆 칸이 넓어짐(`.tray.nomid/.one/.onebig`), 맛있는 반찬부터 넓은 칸. `isSeaweed`는 '구이김·조미김'만('고기튀김' 오판 고침).
-- **DM**: 1분 15개, 같은 말 3번 연속 금지, 욕설은 ＊로 가림(`BAD_G`).
+- **DM**: 1분 15개, 같은 말 3번 연속 금지, 욕설은 '아잉'으로 바꿈(`aing`/`AING_RE`, 카트라이더 방식 2026-10-27 — 글자 사이 띄어쓰기·숫자·특수문자도 잡고, 시발점·새끼손가락 같은 일상어는 제외).
 - **로그인 만료 예고**: `GET me`의 `sessExp` → 3일 안이면 하루 한 번 알림(`social.js expWarn`).
 - **기타**: 스크롤하면 헤더 바탕(`html.hbg`), 휴대폰은 내리는 동안 아래 고정 버튼 숨김(`html.fabhide`), 가입 반 칩 아래 학과, 작은 버튼 누르는 영역 확대, 다크 모드 아이콘 선 밝게, 프로필이 비면 한 단(`.pcols.slim`), 테마 창 ✕, 짧은 화면 '맨 위로' 숨김.
 - **스티커 한 번에 떼기(2026-10-24)**: 프로필 꾸미기 창 — 카드·대표·시계 스티커 칸 머리에 `.pk-clr` '모두 떼기', 미리보기 머리에 `.pv-clr` '스티커 전부 떼기'(셋 다). social.js `openEdit`의 `clearStk(k)`·`clrSync`(뗄 게 없으면 비활성). 저장해야 반영, 취소하면 그대로. 아이콘 `ui('peel')`.

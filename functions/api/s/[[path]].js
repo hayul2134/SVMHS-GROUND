@@ -123,6 +123,17 @@ const BAD = /씨발|시발|씨빨|씌발|ㅅㅂ|ㅆㅂ|병신|븅신|ㅂㅅ|좆|
 const BAD_G = new RegExp(BAD.source, 'gi');
 const isBad = (...xs) => xs.some(x => BAD.test(String(x || '').replace(/[\s\d_.\-~!@#$%^&*()+=|\\/?,'"`:;<>[\]{}·ㆍ]/g, '')));
 
+/* ===== 채팅 욕설 → '아잉' (카트라이더 방식, 2026-10-27 하율) — DM·밸런스 댓글
+   거절하지 않고 바꿔서 보여 줌. 글자 사이 띄어쓰기·숫자·특수문자 3개까지 끼워도 잡음('시 발', '씨1발').
+   일상어와 겹치는 말(꺼져·걸레·새끼손가락·새끼 고양이 등)은 채팅에선 바꾸지 않음 */
+const AING_W = ['씨발','씨빨','씌발','ㅅㅂ','ㅆㅂ','병신','븅신','ㅂㅅ','좆','좃','존나','졸라','개새끼','개색기','개세끼','쌔끼','썅','니애미','느금','엠창','지랄','ㅈㄹ','미친놈','미친년','창녀','섹스','fuck','shit','bitch'];
+const AING_SEP = "[\\s\\d_.~!@#$%^&*()+=|\\\\/?,'\"`:;<>\\[\\]{}·ㆍ-]{0,3}";
+const AING_RE = new RegExp(
+  AING_W.map(w => [...w].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(AING_SEP)).join('|')
+  + '|시[1!]?발(?!점|역|택시)|개새|개색'   // 띄어 쓰면 '2시 발표'·'개 새로'처럼 일상어라 붙여 쓴 것만
+  + '|새' + AING_SEP + '끼(?!' + AING_SEP + '(?:손|발|줄|고양|강아|돼지|오리|치|를 ?낳|를 ?쳤|를 ?친))', 'gi');
+const aing = t => String(t || '').replace(AING_RE, '아잉');
+
 /* ===== 구글 ID 토큰 확인: 구글 tokeninfo로 서명·만료를 확인하고 우리 사이트용(aud)인지 검사 ===== */
 async function verifyGoogle(env, cred) {
   if (!env.GOOGLE_CLIENT_ID || typeof cred !== 'string' || cred.length > 4096) return null;
@@ -745,14 +756,14 @@ const ROUTES = {
     if (r.blocked || r.blockedMe) return err('메시지를 보낼 수 없어요', 403);
     if (!dmAllowed(u, r) && !isAdm(me)) return err(['서로 팔로우한 친구에게만', '나를 팔로우하는 사람에게만', ''][u.dm_pref || 0] + ' 보낼 수 있어요', 403);
     if (!isAdm(me) && !isAdm(u) && !dmOpen(await getSettings(db))) return err('지금은 DM이 잠시 꺼져 있어요', 403);   // DM을 꺼도 개발자와의 대화는 열림
-    // 욕설은 막지 않고 ＊로 가림(친구끼리 대화라 거절하면 거부감 큼) · 1분 15개 · 같은 말 3번 연속 금지 (2026-10-24: 1분 40개 도배 확인)
+    // 욕설은 막지 않고 '아잉'으로 바꿈(친구끼리 대화라 거절하면 거부감 큼) · 1분 15개 · 같은 말 3번 연속 금지 (2026-10-24: 1분 40개 도배 확인)
     let text;
     if (body.brag != null) {   // 기록 자랑 — 서버가 본문을 만듦
       if (await bragMuted(db, u.id, me.id)) return err('이 친구는 자랑 메시지를 받지 않아요', 403);
       const b = await bragBody(env, db, me, String(body.brag)); if (b.e) return err(b.e);
       text = b.body;
     } else {
-      text = clean(body.body, 500, true).replace(BAD_G, m => '＊'.repeat(m.length));
+      text = aing(clean(body.body, 500, true));
       if (BRAG_RE.test(text)) text = text.replace(/^::/, ': :');   // 손으로 친 가짜 자랑은 그냥 글자로
     }
     if (!text) return err('내용을 적어 주세요');
@@ -882,10 +893,9 @@ const ROUTES = {
     return json({ ...(await balState(env, db, me)), mis });
   }),
   'POST balc': needMe(async ({ env, db, me, body }) => {
-    const text = clean(body.body, 100, true);
+    const text = aing(clean(body.body, 100, true));
     if (!text) return err('내용을 적어 주세요');
     const se = stkErr(me, text); if (se) return err(se);
-    if (isBad(text)) return err('욕설·비속어는 쓸 수 없어요');
     const st = await balState(env, db, me);
     if (body.ymd && body.ymd !== st.ymd) return err('질문이 바뀌었어요. 새로 고침해 주세요', 409);
     if (st.open && !st.mine && !isAdm(me)) return err('먼저 한쪽을 골라야 댓글을 달 수 있어요');
