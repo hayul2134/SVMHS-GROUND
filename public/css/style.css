@@ -4594,11 +4594,15 @@ html:not(.tf) .tr-top summary > .sic,html:not(.tf) .trt-go{display:none}
 html.tf .rk-tabs button{width:auto;height:27px;padding:0 9px 0 6px;gap:4px;display:inline-flex;align-items:center;border-radius:999px;font-weight:900;font-size:12px;white-space:nowrap}
 html.tf .rk-tabs button .rkt-l{line-height:1}
 html.tf .rk-tabs button .tri{width:21px;height:20px;margin:-3px -1px -3px -2px;overflow:visible}
-/* 2026-10-27 하율: 티어 탭은 '골랐을 때만' 금빛 — 안 고르면 연속 출석 탭처럼 투명(이전엔 늘 금빛이라 연속 출석을 골라도 티어가 선택된 것처럼 보였음) */
-html.tf .rk-tabs button.rkt-tier{position:relative;overflow:hidden}
-html.tf .rk-tabs.sw > button.rkt-tier[aria-selected="true"],html.tf .rk-tabs button.rkt-tier[aria-selected="true"]{color:#5a3a00!important;background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%)!important;border-color:var(--ink)!important;box-shadow:1.5px 1.5px 0 var(--ink),0 0 12px rgba(255,214,102,.7)!important}
-html.tf .rk-tabs button.rkt-tier[aria-selected="true"]::after{content:"";position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);animation:tfShine 2.6s ease-in-out infinite;pointer-events:none}
-html.tf .rk-tabs.sw:has(> button.rkt-tier[aria-selected="true"]) > .sw-pill{opacity:0!important}   /* 금빛 버튼 뒤로 노란 알약 모서리가 비치지 않게 */
+/* 2026-10-27 하율: 티어 탭은 '골랐을 때만' 금빛 — 안 고르면 연속 출석 탭처럼 투명(이전엔 늘 금빛이라 연속 출석을 골라도 티어가 선택된 것처럼 보였음)
+   금빛은 버튼이 아니라 미끄러지는 알약(.sw-pill)에 입힘 → 연속 출석 ↔ 티어 전환 때 알약이 미끄러지며 노랑 → 금빛으로 서서히 바뀜(확 바뀌던 것 수정) */
+html.tf .rk-tabs.sw{--pl-r:999px}
+html.tf .rk-tabs.sw > .sw-pill{overflow:hidden;transition:transform .34s cubic-bezier(.3,1.3,.5,1),width .34s cubic-bezier(.3,1.3,.5,1),height .2s ease,opacity .15s,box-shadow .3s ease}
+html.tf .rk-tabs.sw > .sw-pill::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,#fff3b0 0%,#ffd45a 50%,#ffb53d 100%);opacity:0;transition:opacity .3s ease}
+html.tf .rk-tabs.sw > .sw-pill::after{content:"";position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);opacity:0;transition:opacity .3s ease;animation:tfShine 2.6s ease-in-out infinite}
+html.tf .rk-tabs.sw:has(> button.rkt-tier[aria-selected="true"]) > .sw-pill{box-shadow:1.5px 1.5px 0 var(--ink),0 0 12px rgba(255,214,102,.7)}
+html.tf .rk-tabs.sw:has(> button.rkt-tier[aria-selected="true"]) > .sw-pill::before,html.tf .rk-tabs.sw:has(> button.rkt-tier[aria-selected="true"]) > .sw-pill::after{opacity:1}
+html.tf .rk-tabs.sw > button.rkt-tier[aria-selected="true"]{color:#5a3a00}
 html.tf .rk-tabs button.rkt-tier .rkt-l{position:relative;z-index:1}
 /* 랭킹 줄 티어 표시: 글자 → 티어 색 배지 */
 html.tf .rk-tr{position:relative;overflow:hidden;gap:4px;padding:2px 9px 2px 3px;border-radius:999px;border:2px solid var(--ink);font-size:12.5px;font-weight:900;color:#1d2a3a;
@@ -4634,7 +4638,7 @@ html.tf .tr-top summary > .sic{width:24px;height:24px}
 html.tf .trt-go{width:9px;height:9px;border-right:3px solid currentColor;border-bottom:3px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s}
 html.tf .tr-top[open] .trt-go{transform:rotate(225deg) translate(-2px,-2px)}
 html.tf .tr-top[open] summary{box-shadow:1.5px 1.5px 0 var(--ink);transform:translateY(1px)}
-@media (prefers-reduced-motion:reduce){html.tf .rk-tabs button.rkt-tier,html.tf .rk-tabs button.rkt-tier::after,html.tf .rk-tr::after,html.tf .tr-top summary::after{animation:none}}
+@media (prefers-reduced-motion:reduce){html.tf .rk-tabs .sw-pill::after,html.tf .rk-tr::after,html.tf .tr-top summary::after{animation:none}}
 /* 홈 랭킹 티어 탭: 칩 뒤 알약 배경 없앰 + 칩 폭을 똑같이 맞추고 아이콘은 왼쪽 고정,티어 글씨는 가운데 (2026-10-26 하율) */
 .rk-v:has(.rk-tr),html.rk2 .rk-v:has(.rk-tr),html.rk2 .rk.p1 .rk-v:has(.rk-tr){width:112px;justify-content:center;padding:0;background:none;border:0;overflow:visible}
 html .rk-v .rk-tr,html.tf .rk-v .rk-tr{position:relative;width:100%;justify-content:center;padding-left:26px;padding-right:6px;box-sizing:border-box}
