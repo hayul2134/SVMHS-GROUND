@@ -10,10 +10,10 @@ import { GEAR_MAX } from './gear-score.js';
 export const MS = { tix: 1, n: 5 };
 // '1판'으로 쳐 주는 기준(2026-10-27 하율): 끝까지 해서 기록이 저장된 판(검사에 걸려 보류된 판은 제외) +
 // 바로 죽어도 기록이 나는 게임은 최소 기록을 넘어야 함 — 2026-10-27 하율: '3분쯤 해야 나오는 점수'로
-//   집에 가고 싶어! 6,000m(쉬지 않고 약 2분 55초 생존) · 기자재 정리! 1,500점(랭킹전이 2분 제한이라 3분은 불가 → 2분 판을 거의 끝까지 버텨야 나오는 점수)
+//   집에 가고 싶어! 6,000m(쉬지 않고 약 2분 55초 생존) · 기자재 정리! 3,000점(2026-10-27 하율: 1,500 → 3,000, 랭킹전 2분 안에)
 // 반응속도·1 to 25·컷 타이밍은 5번(25칸)을 다 끝내야 기록이 나므로 끝까지 하면 1판
-export const PLAY_MIN = { home: 6000, gear: 1500 };
-export const PLAY_RULE = '게임은 끝까지 해서 기록이 저장된 판만 1판으로 세요 · 집에 가고 싶어!는 6,000m, 기자재 정리!는 1,500점 넘게';
+export const PLAY_MIN = { home: 6000, gear: 3000 };   // 2026-10-27 하율: 기자재 정리! 1판 기준 1,500 → 3,000점("초보인데도 어렵지 않았어")
+export const PLAY_RULE = '게임은 끝까지 해서 기록이 저장된 판만 1판으로 세요 · 집에 가고 싶어!는 6,000m, 기자재 정리!는 3,000점 넘게';
 export function playCounts(game, v) {
   if (game === 'home') return HOME_MAX - v >= PLAY_MIN.home;
   if (game === 'gear') return GEAR_MAX - v >= PLAY_MIN.gear;
@@ -28,10 +28,19 @@ const GOAL = {
   cut: { t: '오차 합 150ms 안으로 자르기', ok: v => v <= 150 },
   gear: { t: '3,000점 넘게 정리하기', ok: v => GEAR_MAX - v >= 3000 },
 };
+// 누적 미션(2026-10-27 하율: "주간 미션에 누적 점수 추가, 다른 게임들도"): 이번 주에 1판으로 친 판들을 더함
+//   점수·거리가 있는 게임 = 점수·거리 합 · 시간 기록 게임(작을수록 좋음) = 기준 안에 든 '좋은 판' 횟수
+const SUM = {
+  gear: { amt: v => GEAR_MAX - v, n: [10000, 15000], u: '점', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}점 정리하기` },
+  home: { amt: v => HOME_MAX - v, n: [20000, 30000], u: 'm', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}m 달리기` },
+  reaction: { amt: v => v <= 300 ? 1 : 0, n: [5], u: '번', t: n => `평균 300ms 안에 든 판 ${n}번 모으기` },
+  num25: { amt: v => v <= 20000 ? 1 : 0, n: [5], u: '번', t: n => `20초 안에 끝낸 판 ${n}번 모으기` },
+  cut: { amt: v => v <= 200 ? 1 : 0, n: [5], u: '번', t: n => `오차 합 200ms 안에 든 판 ${n}번 모으기` },
+};
 // 미션 종류 → 진행을 올리는 행동(ev) · 화면 '하러 가기' 목적지(go, 없으면 그 게임)
 export const KIND = {
   any: { ev: 'play', go: 'game' }, kinds: { ev: 'play', go: 'game' }, play: { ev: 'play' }, days: { ev: 'play', go: 'game' },
-  goal: { ev: 'play' }, best: { ev: 'play', go: 'game' },
+  goal: { ev: 'play' }, sum: { ev: 'play' }, best: { ev: 'play', go: 'game' },
   bal: { ev: 'bal', go: 'bal' }, balc: { ev: 'balc', go: 'bal' }, like: { ev: 'like', go: 'bal' }, meal: { ev: 'meal', go: 'meal' },
   att: { ev: 'att', go: 'att' }, dm: { ev: 'dm', go: 'friends' }, fol: { ev: 'fol', go: 'friends' }, gacha: { ev: 'gacha', go: 'gacha' }, prof: { ev: 'prof', go: 'edit' },
 };
@@ -62,6 +71,7 @@ export function missionsOf(wk, games) {
     { k: 'goal', g: g3, n: 1, t: `${MS_NAME[g3]} · ${GOAL[g3].t}` },
     { k: 'goal', g: g3, n: 1, t: `${MS_NAME[g3]} · ${GOAL[g3].t}` },
     { k: 'play', g: g3, n: 3, t: `${MS_NAME[g3]} 3판 하기` },   // 2026-10-27 하율: '최고 기록 2번 깨기'는 기록이 높으면 너무 어려워 뺌
+    (() => { const sn = one(SUM[g3].n); return { k: 'sum', g: g3, n: sn, u: SUM[g3].u, t: `${MS_NAME[g3]} · ${SUM[g3].t(sn)}` }; })(),
   ]);
   const slot4 = one([
     { k: 'bal', n: 3, t: '밸런스 게임 3번 참여하기 (하루 한 번)' },
@@ -79,19 +89,20 @@ export function missionsOf(wk, games) {
 const len = (p, k) => (p.s?.[k] || []).length;
 export function progOf(m, p) {
   const c = p.c || {}, v = {
-    any: c.play, kinds: Object.keys(p.g || {}).length, play: p.g?.[m.g], days: len(p, 'days'), goal: p.ok?.[m.g] ? 1 : 0, best: c.best,
+    any: c.play, kinds: Object.keys(p.g || {}).length, play: p.g?.[m.g], days: len(p, 'days'), goal: p.ok?.[m.g] ? 1 : 0, best: c.best, sum: p.sm?.[m.g] || 0,
     bal: len(p, 'bal'), balc: len(p, 'balc'), meal: len(p, 'meal'), like: len(p, 'like'), att: c.att, dm: len(p, 'dm'), fol: len(p, 'fol'), gacha: c.gacha, prof: c.prof,
   }[m.k] || 0;
   return Math.min(m.n, v);
 }
 // 행동 하나 반영 → 새 p(원본은 안 바꿈). ev: play {game, v, best, day} · bal·balc·meal {day} · like {id} · att · dm {to} · fol {to} · gacha {n} · prof
 export function applyEv(p, ev, x = {}) {
-  const q = { c: { ...(p.c || {}) }, g: { ...(p.g || {}) }, ok: { ...(p.ok || {}) }, s: { ...(p.s || {}) }, d: [...(p.d || [])] };
+  const q = { c: { ...(p.c || {}) }, g: { ...(p.g || {}) }, ok: { ...(p.ok || {}) }, sm: { ...(p.sm || {}) }, s: { ...(p.s || {}) }, d: [...(p.d || [])] };
   const inc = (k, n = 1) => { q.c[k] = (q.c[k] || 0) + n; };
   const add = (k, v) => { const a = q.s[k] || []; if (!a.includes(v) && a.length < 20) q.s[k] = [...a, v]; };
   if (ev === 'play') {
     inc('play'); q.g[x.game] = (q.g[x.game] || 0) + 1; add('days', x.day);
     if (GOAL[x.game]?.ok(x.v)) q.ok[x.game] = 1;
+    if (SUM[x.game]) q.sm[x.game] = (q.sm[x.game] || 0) + Math.max(0, SUM[x.game].amt(x.v));   // 누적
     if (x.best) inc('best');
   } else if (ev === 'bal' || ev === 'balc' || ev === 'meal') add(ev, x.day);   // 날짜 수로 셈(하루 여러 번 해도 1)
   else if (ev === 'like') add('like', x.id);

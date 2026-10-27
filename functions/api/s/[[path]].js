@@ -176,7 +176,7 @@ const isAdm = u => u?.handle === ADMIN_HANDLE;
 const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff);
 const misOut = (wk, p) => {
   const list = missionsOf(wk, MS_GAMES());
-  return { wk, list: list.map((m, i) => { const c = progOf(m, p), done = !!p.d?.[i]; return { t: m.t, k: m.k, g: m.g || '', n: m.n, c, done, ready: !done && c >= m.n }; }), rw: MS };
+  return { wk, list: list.map((m, i) => { const c = progOf(m, p), done = !!p.d?.[i]; return { t: m.t, k: m.k, g: m.g || '', n: m.n, u: m.u || '', c, done, ready: !done && c >= m.n }; }), rw: MS };
 };
 async function misGet(db, me, wk = weekKey()) {
   const row = await db.prepare('SELECT p FROM missions WHERE uid = ?1 AND day = ?2').bind(me.id, 'w' + wk).first();
@@ -988,7 +988,7 @@ const ROUTES = {
       }
     }
     // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
-    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 1,500점 밑이면 판 수에 안 셈
+    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 3,000점 밑이면 판 수에 안 셈(누적 미션에도 안 더함)
     const mis = playCounts(game, v) ? await misEv(db, me, 'play', { game, v, best: allPrev.b != null && v < allPrev.b, day }) : null;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
     return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
