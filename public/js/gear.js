@@ -24,7 +24,7 @@ export const KIND = {
 };
 export const ORDER = ['I', 'O', 'T', 'L', 'J', 'S', 'Z'];
 const rotCell = ([x, y], N, r) => { for (let i = 0; i < r; i++) [x, y] = [N - 1 - y, x]; return [x, y]; };
-const cellsOf = (k, r) => KIND[k].cells.map(c => rotCell(c, KIND[k].N, k === 'O' ? 0 : r));
+export const cellsOf = (k, r) => KIND[k].cells.map(c => rotCell(c, KIND[k].N, k === 'O' ? 0 : r));
 
 // SRS 벽 차기 (y는 아래가 +). 키: '시작>끝'
 const K3 = { '0>1': [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]], '1>0': [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]], '1>2': [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]], '2>1': [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
@@ -33,10 +33,22 @@ const K4 = { '0>1': [[0, 0], [-2, 0], [1, 0], [-2, 1], [1, -2]], '1>0': [[0, 0],
   '2>3': [[0, 0], [2, 0], [-1, 0], [2, -1], [-1, 2]], '3>2': [[0, 0], [-2, 0], [1, 0], [-2, 1], [1, -2]], '3>0': [[0, 0], [1, 0], [-2, 0], [1, 2], [-2, -1]], '0>3': [[0, 0], [-1, 0], [2, 0], [-1, -2], [2, 1]] };
 
 /* ===== 그림 (픽셀) ===== */
+// 장비 그림은 2배 해상도로 만들어 둠(가운데로 모으며 줄여도 세부가 안 뭉개지게, 2026-10-27) — 판도 2배로 그림
+export const RES = 2;
+function canvasR(S) { const [c, g] = canvasOf(S * RES, S * RES); g.scale(RES, RES); return [c, g]; }
 function canvasOf(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; return [c, g]; }
 const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v * k))); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(v => f(v).toString(16).padStart(2, '0')).join(''); };
-function disc(g, cx, cy, r, col) { g.fillStyle = col; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * .6) g.fillRect(cx + x, cy + y, 1, 1); }
-function box(g, x, y, w, h, col) { g.fillStyle = col; g.fillRect(x, y, w, h); }
+// 장비 그림을 블록 가운데로 모으고 여백을 두는 변환(2026-10-27 하율 "블록 중앙에, 여백 있게"): 그림 좌표를 k배로 줄여 중심을 옮김. 점 단위로 다시 찍어 흐려지지 않음
+let XF = null;
+const rq = v => Math.round(v * RES) / RES;
+const xf = (x, y) => XF ? [XF.tx + (x - XF.ax) * XF.k, XF.ty + (y - XF.ay) * XF.k] : [x, y];
+function disc(g, cx, cy, r, col) { if (XF) { const [a, b] = xf(cx, cy), k = XF.k; g.fillStyle = col; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * .6) g.fillRect(rq(a + x * k), rq(b + y * k), Math.max(1 / RES, rq(k)), Math.max(1 / RES, rq(k))); return; } g.fillStyle = col; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * .6) g.fillRect(cx + x, cy + y, 1, 1); }
+function box(g, x, y, w, h, col) {
+  g.fillStyle = col;
+  if (!XF) return g.fillRect(x, y, w, h);
+  const [a, b] = xf(x, y), [c, d] = xf(x + w, y + h), X = rq(a), Y = rq(b);
+  g.fillRect(X, Y, Math.max(1 / RES, rq(c) - X), Math.max(1 / RES, rq(d) - Y));
+}
 // 장비 몸통: 칸들을 한 덩어리로 — 테두리 선 없이 꽉 채움(아래 body 설명), 붙은 칸끼리는 이어짐,
 // 바깥 모서리는 둥글게, 안쪽으로 꺾인 모서리도 선을 이어 줌, 위·왼쪽 밝게·아래·오른쪽 어둡게
 const RIM = '#f7f9ff';
@@ -143,28 +155,41 @@ const ART = {
 function buildArt() {
   const out = {};
   for (const k of ORDER) {
-    const { N, cells, body: col } = KIND[k], S = N * C;
-    const [c, g] = canvasOf(S, S);
+    const { N, cells, body: col } = KIND[k], S = N * C, P = S * RES;
+    const [c, g] = canvasR(S);
     body(g, cells, col);
-    const [d, dg] = canvasOf(S, S);
+    let [d, dg] = canvasR(S);
     ART[k](dg);
-    // 세부 그림은 몸통 안쪽(테두리 2px 안)에만
-    const [m, mg] = canvasOf(S, S);
+    // 그림이 실제로 차지한 범위를 재서 → 블록(칸들) 범위 가운데로 옮기고, 가장자리에서 여백 3px 이상 두게 줄임
+    try {
+      const px = dg.getImageData(0, 0, P, P).data; let x0 = P, y0 = P, x1 = -1, y1 = -1;
+      for (let y = 0; y < P; y++) for (let x = 0; x < P; x++) if (px[(y * P + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (x1 >= 0) {
+        x0 /= RES; y0 /= RES; x1 = (x1 + 1) / RES; y1 = (y1 + 1) / RES;
+        const xs = cells.map(q => q[0]), ys = cells.map(q => q[1]);
+        const bx0 = Math.min(...xs) * C, bx1 = (Math.max(...xs) + 1) * C, by0 = Math.min(...ys) * C, by1 = (Math.max(...ys) + 1) * C, M = 3;
+        const sc = Math.min(.86, (bx1 - bx0 - 2 * M) / (x1 - x0), (by1 - by0 - M) / (y1 - y0));
+        XF = { k: sc, ax: (x0 + x1) / 2, ay: (y0 + y1) / 2, tx: (bx0 + bx1) / 2, ty: (by0 + by1) / 2 };
+        [d, dg] = canvasR(S); ART[k](dg);
+      }
+    } catch {} finally { XF = null; }
+    // 세부 그림은 몸통 안쪽(가장자리 1px 안)에만
+    const [m, mg] = canvasR(S);
     for (const [cx, cy] of cells) mg.fillRect(cx * C, cy * C, C, C);
     mg.globalCompositeOperation = 'destination-out';
     const has = (x, y) => cells.some(q => q[0] === x && q[1] === y);
-    for (const [cx, cy] of cells) {   // 테두리 2px(남색 선·흰 선) 안쪽에만
+    for (const [cx, cy] of cells) {
       if (!has(cx - 1, cy)) mg.fillRect(cx * C, cy * C, 1, C);
       if (!has(cx + 1, cy)) mg.fillRect(cx * C + C - 1, cy * C, 1, C);
       if (!has(cx, cy - 1)) mg.fillRect(cx * C, cy * C, C, 1);
       if (!has(cx, cy + 1)) mg.fillRect(cx * C, cy * C + C - 1, C, 1);
     }
-    dg.globalCompositeOperation = 'destination-in'; dg.drawImage(m, 0, 0);
-    g.drawImage(d, 0, 0);
+    dg.globalCompositeOperation = 'destination-in'; dg.drawImage(m, 0, 0, S, S);
+    g.drawImage(d, 0, 0, S, S);
     const rots = [c];
     for (let r = 1; r < 4; r++) {
-      const [rc, rg] = canvasOf(S, S);
-      rg.translate(S, 0); rg.rotate(Math.PI / 2); rg.drawImage(rots[r - 1], 0, 0);
+      const [rc, rg] = canvasR(S);
+      rg.translate(S, 0); rg.rotate(Math.PI / 2); rg.drawImage(rots[r - 1], 0, 0, S, S);
       rots.push(rc);
     }
     out[k] = rots;
@@ -180,7 +205,8 @@ export const CLEAR_NAME = ['', '정리!', '깔끔하게 정리!', '칼각 정리
 
 export function createGear(canvas, opt = {}) {
   const g = canvas.getContext('2d');
-  canvas.width = BW; canvas.height = BH; g.imageSmoothingEnabled = false;
+  let PX = RES;   // 판 한 칸(1단위)당 실제 픽셀 수 — 화면 크기에 맞춰 setScale로 바꿈(기기 픽셀과 1:1이라 흐리지 않음)
+  canvas.width = BW * PX; canvas.height = BH * PX; g.imageSmoothingEnabled = false;
   const ART_IMG = buildArt();
   const st = {};
   let rand, raf = 0, last = 0, acc = 0, alive = true, sound = !!opt.sound, actx = null;
@@ -231,7 +257,7 @@ export function createGear(canvas, opt = {}) {
   function spawn(k) {
     const x = k === 'O' ? 4 : 3, y = 0;
     st.cur = { k, r: 0, x, y };
-    st.grav = 0; st.lock = 0; st.lockN = 0;
+    st.grav = 0; st.lock = 0; st.lockN = 0; st.lowY = y;
     if (!fits(k, 0, x, y)) return over();
     if (fits(k, 0, x, y + 1)) st.cur.y++;   // 숨은 줄에서 한 칸 내려와 보이게 시작(가이드라인)
   }
@@ -249,6 +275,8 @@ export function createGear(canvas, opt = {}) {
     return false;
   }
   function resetLock() { const p = st.cur; if (p && !fits(p.k, p.r, p.x, p.y + 1) && st.lockN < LOCK_MAX) { st.lock = 0; st.lockN++; } }
+  // 더 낮은 줄에 처음 닿으면 고정 미루기 횟수를 다시 채움(가이드라인 — 높은 데서 돌리다 횟수를 다 쓰면 바닥에서 바로 굳던 문제)
+  const lowCheck = () => { const p = st.cur; if (p && p.y > st.lowY) { st.lowY = p.y; st.lockN = 0; } };
   const grounded = () => { const p = st.cur; return p && !fits(p.k, p.r, p.x, p.y + 1); };
   function softStep() { const p = st.cur; if (p && fits(p.k, p.r, p.x, p.y + 1)) { p.y++; st.score += SOFT_PT; return true; } return false; }
   function hardDrop() {
@@ -271,15 +299,16 @@ export function createGear(canvas, opt = {}) {
   }
   function lockPiece() {
     const p = st.cur; if (!p) return;
-    let above = true;
-    for (const [i, [cx, cy]] of cellsOf(p.k, p.r).entries()) {
+    let above = true, out = false;
+    for (const [cx, cy] of cellsOf(p.k, p.r)) {
       const bx = p.x + cx, by = p.y + cy;
-      if (by >= 0) st.board[by][bx] = { k: p.k, r: p.k === 'O' ? 0 : p.r, sx: cx, sy: cy };
-      if (by >= HID) above = false; void i;
+      if (by >= 0) st.board[by][bx] = { k: p.k, r: p.k === 'O' ? 0 : p.r, sx: cx, sy: cy }; else out = true;
+      if (by >= HID) above = false;
     }
     st.cur = null; st.pieces++;
     beep(150, 90, .07, 'triangle', .05);
-    if (above) return over();   // 보이는 칸에 하나도 못 들어감 = 장비실 꽉 참
+    // 보이는 칸에 하나도 못 들어감 / 판 맨 위보다 더 위로 삐져나온 채 놓임(돌리기 킥으로 생길 수 있음 — 2026-10-27 검사에서 칸이 사라지던 버그) = 장비실 꽉 참
+    if (above || out) return over();
     const full = []; for (let y = 0; y < ROWS; y++) if (st.board[y].every(Boolean)) full.push(y);
     if (full.length) {
       const n = full.length, tet = n === 4, lv = st.level;
@@ -323,19 +352,21 @@ export function createGear(canvas, opt = {}) {
     // 떨어짐
     const gf = keys.down ? Math.max(1, Math.floor(gravF(st.level) / 20)) : gravF(st.level);
     if (++st.grav >= gf) { st.grav = 0; if (keys.down ? softStep() : (fits(p.k, p.r, p.x, p.y + 1) && (p.y++, true))) st.lock = 0; }
+    lowCheck();
     if (grounded()) { if (++st.lock >= LOCK) lockPiece(); }
   }
 
   /* --- 그리기 --- */
   const ghostY = p => { let y = p.y; while (fits(p.k, p.r, p.x, y + 1)) y++; return y; };
-  function drawCellAt(c, px, py) { g.drawImage(ART_IMG[c.k][c.r], c.sx * C, c.sy * C, C, C, px, py, C, C); }
+  function drawCellAt(c, px, py) { g.drawImage(ART_IMG[c.k][c.r], c.sx * C * RES, c.sy * C * RES, C * RES, C * RES, px, py, C, C); }
   function drawPiece(p, y, alpha = 1) {
     g.globalAlpha = alpha;
     const N = KIND[p.k].N, img = ART_IMG[p.k][p.k === 'O' ? 0 : p.r];
-    for (const [cx, cy] of cellsOf(p.k, p.r)) { const by = y + cy - HID; if (by < 0) continue; g.drawImage(img, cx * C, cy * C, C, C, (p.x + cx) * C, by * C, C, C); }
+    for (const [cx, cy] of cellsOf(p.k, p.r)) { const by = y + cy - HID; if (by < 0) continue; g.drawImage(img, cx * C * RES, cy * C * RES, C * RES, C * RES, (p.x + cx) * C, by * C, C, C); }
     g.globalAlpha = 1; void N;
   }
   function draw() {
+    g.setTransform(PX, 0, 0, PX, 0, 0); g.imageSmoothingEnabled = false;
     g.save();
     const sh = st.shake > 0 ? Math.round((rand() - .5) * st.shake) : 0, shx = st.shake > 3 ? Math.round((rand() - .5) * st.shake * .6) : 0;
     g.clearRect(0, 0, BW, BH);
@@ -381,11 +412,12 @@ export function createGear(canvas, opt = {}) {
   // 작은 칸(보관·다음)에 장비 한 개 그리기: 기본 방향, 가운데 정렬
   function drawMini(cv, k, dim = false) {
     const mg = cv.getContext('2d'); mg.imageSmoothingEnabled = false;
-    mg.clearRect(0, 0, cv.width, cv.height); if (!k) return;
+    mg.setTransform(1, 0, 0, 1, 0, 0); mg.clearRect(0, 0, cv.width, cv.height); if (!k) return;
+    const f = cv.width / 52; mg.setTransform(f, 0, 0, f, 0, 0);   // 캔버스를 52×28 기준 좌표로(2배 캔버스면 2배로 선명하게)
     const cs = KIND[k].cells, xs = cs.map(c => c[0]), ys = cs.map(c => c[1]);
     const w = (Math.max(...xs) - Math.min(...xs) + 1) * C, h = (Math.max(...ys) - Math.min(...ys) + 1) * C;
     mg.globalAlpha = dim ? .35 : 1;
-    mg.drawImage(ART_IMG[k][0], Math.min(...xs) * C, Math.min(...ys) * C, w, h, Math.round((cv.width - w) / 2), Math.round((cv.height - h) / 2), w, h);
+    mg.drawImage(ART_IMG[k][0], Math.min(...xs) * C * RES, Math.min(...ys) * C * RES, w * RES, h * RES, Math.round((52 - w) / 2), Math.round((28 - h) / 2), w, h);
     mg.globalAlpha = 1;
   }
 
@@ -419,6 +451,7 @@ export function createGear(canvas, opt = {}) {
       else if (name === 'hold') hold();
     },
     setSound(v) { sound = v; },
+    setScale(n) { n = Math.max(1, Math.round(n)); if (n === PX) return; PX = n; canvas.width = BW * PX; canvas.height = BH * PX; draw(); },
     destroy() { alive = false; cancelAnimationFrame(raf); try { actx?.close(); } catch {} },
     step(n = 1, quiet = false) { for (let i = 0; i < n; i++) update(STEP); if (!quiet) draw(); },   // 테스트용
     draw, art: ART_IMG,

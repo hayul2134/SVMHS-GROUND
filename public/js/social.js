@@ -1535,11 +1535,11 @@ async function playGear() {
   const touchy = matchMedia('(pointer:coarse)').matches;
   const area = stage(ic('gear') + ' 반납 5분 전!', `<div class="gr" id="gr">
       <div class="gr-main">
-        <aside class="gr-side"><p class="gr-lb">보관 <kbd>C</kbd></p><canvas class="gr-mini" id="grHold" width="52" height="28"></canvas>
+        <aside class="gr-side"><p class="gr-lb">보관 <kbd>C</kbd></p><canvas class="gr-mini" id="grHold" width="104" height="56"></canvas>
           <dl class="gr-stat"><dt>점수</dt><dd id="grSc">0</dd><div class="gr-fxs" id="grFx"></div><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
         <div class="gr-scr" id="grScr"><canvas id="grCv" aria-label="게임 화면"></canvas>
           <div class="gr-ov" id="grOv"></div><div class="gr-pop" id="grPop" aria-live="polite"></div></div>
-        <aside class="gr-side"><p class="gr-lb">다음</p><div class="gr-next"><canvas class="gr-mini" id="grN0" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN1" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN2" width="52" height="28"></canvas></div></aside>
+        <aside class="gr-side"><p class="gr-lb">다음</p><div class="gr-next"><canvas class="gr-mini" id="grN0" width="104" height="56"></canvas><canvas class="gr-mini sm" id="grN1" width="104" height="56"></canvas><canvas class="gr-mini sm" id="grN2" width="104" height="56"></canvas></div></aside>
       </div>
       <div class="gr-touch">
         <div class="gt gt-l"><button type="button" class="btn ghost" data-gk="left" aria-label="왼쪽">◀</button><button type="button" class="btn ghost" data-gk="right" aria-label="오른쪽">▶</button>
@@ -1555,7 +1555,7 @@ async function playGear() {
   const cv = $('#grCv'), ov = $('#grOv'), pop = $('#grPop');
   let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), over = false, deadAt = 0, runNo = 0;
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
-  const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>반납 5분 전!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="52" height="28"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
+  const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>반납 5분 전!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
   // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
   let shown = 0;
   const paintHud = () => { const s = R.st, sc = $('#grSc');
@@ -1636,7 +1636,9 @@ async function playGear() {
     const gr = $('#gr'), bw = per * GEAR.BW, bh = per * GEAR.BH;
     gr.dataset.bs = bw < 190 ? 'xs' : bw < 300 ? 's' : ''; gr.dataset.bh = bh < 380 ? 's' : '';
     cv.style.width = per * GEAR.BW + 'px';
-    document.querySelectorAll('#gr .gr-mini').forEach(c => { c.style.width = (c.classList.contains('sm') ? Math.round(big * .62) : big) + 'px'; });
+    // 보관·다음 칸 캔버스도 보이는 크기(기기 픽셀)만큼 만들어 선명하게
+    document.querySelectorAll('#gr .gr-mini').forEach(c => { const w = c.classList.contains('sm') ? Math.round(big * .62) : big, pw = Math.round(w * dpr); c.style.width = w + 'px'; if (c.width !== pw) { c.width = pw; c.height = Math.round(pw * 28 / 52); } });
+    R.setScale(per * dpr); paintQ();
     $('#gr').style.setProperty('--gw', Math.round(per * GEAR.BW) + 'px');
   };
   fit(); const fitT = [setTimeout(fit, 250), setTimeout(fit, 1000)];   // 창이 열리며 크기가 바뀌는 앱 창 대비
