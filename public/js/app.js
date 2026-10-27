@@ -1160,10 +1160,11 @@ function centerHero(force) {
 // centerHero와 따로, 크기가 바뀔 때마다·애니메이션이 끝난 뒤 다시 잼
 let rkT = 0;
 // 화면에 그려진 위치(애니메이션 중이면 틀림) 대신 배치값(offset)으로 계산 → 등장 애니메이션 중에도 처음부터 맞는 자리에 나옴 (2026-10-25: 나왔다가 '툭' 올라가던 문제)
+// 닫혀 있어도 같은 값으로 계산 — 넣을 때 --rkup이 0으로 바뀌면 top 전환이 같이 돌아 사선으로 들어가던 문제 (2026-10-27 하율: 바로 옆으로)
 function fitRk() {
   clearTimeout(rkT);
   const st = HERO.style, rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0, hcy = parseFloat(st.getPropertyValue('--hcy'));
-  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !tt.classList.contains('open') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); return; }
+  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); return; }
   if (document.documentElement.classList.contains('tuck')) return;
   // 메시지 버튼 자리: 보이면 재서 기억, 아직 안 떴으면(로그인 확인 전) 기억해 둔 값
   const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null;
