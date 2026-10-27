@@ -1772,7 +1772,7 @@ function syncBarColor() { $('meta[name=theme-color]').content = getComputedStyle
 const SKINS = {
   color: [['', '기본 파랑'], ['pink', '핑크'], ['mint', '민트'], ['purple', '라벤더'], ['peach', '피치'], ['lemon', '레몬'], ['mono', '모노']],
   char: [['cat', '고양이'], ['dog', '강아지'], ['bear', '곰돌이'], ['bunny', '토끼'], ['frog', '개구리'], ['chick', '병아리'],
-    ['hamster', '햄찌'], ['penguin', '펭귄'], ['fox', '여우'], ['panda', '판다'], ['dino', '공룡'], ['ghost', '유령'], ['slime', '슬라임'], ['sheep', '양'], ['whale', '고래'], ['axolotl', '우파루파']],
+    ['hamster', '햄찌'], ['penguin', '펭귄'], ['fox', '여우'], ['panda', '판다'], ['dino', '공룡'], ['ghost', '유령'], ['slime', '슬라임'], ['sheep', '양'], ['whale', '고래'], ['axolotl', '우파루파'], ['shark', '상어']],
 };
 function applySkin(k) {
   const h = document.documentElement;
@@ -1853,8 +1853,10 @@ document.addEventListener('animationend', e => {
 // 다른 탭·앱을 보고 있을 땐 캐릭터 애니메이션 멈춤(배터리·CPU 절약)
 const syncAway = () => document.documentElement.classList.toggle('away', document.hidden);
 document.addEventListener('visibilitychange', syncAway); syncAway();
+// 미리보기 깃발이 붙은 테마(공지 게시 전엔 개발자만 보임 — CSS html:not(.dev-pv):not([data-ffr~=이름]) .ff-이름)
+const FF_SKIN = { shark: 'shark' };
 function skinBtns(list, face) {
-  return list.map(([k, n]) => `<button class="sk sk-${k || 'base'}" type="button" data-skin="${k}" aria-pressed="false">`
+  return list.map(([k, n]) => `<button class="sk sk-${k || 'base'}${FF_SKIN[k] ? ' ff-' + FF_SKIN[k] : ''}" type="button" data-skin="${k}" aria-pressed="false">`
     + (face ? '<i class="sk-face" aria-hidden="true"></i>' : '<i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i>')
     + `<span>${n}</span></button>`).join('');
 }

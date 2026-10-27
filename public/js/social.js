@@ -13,7 +13,7 @@ import { TIERS, TIER_PCT, BEST_N, tierOfK, PTS_MIN_N } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
-const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
+const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl','k:shark'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
 const COLORS = ['sky','blue','mint','lime','yellow','peach','pink','violet','ink'];
 const ALL_COLORS = [...COLORS, ...ATT_COLORS];   // 출석 보상 전용 배경 색 포함
 const STICKERS = ['⭐','✨','💖','💙','🔥','🎬','🎥','📸','🎧','🎮','🍀','🌈','☁️','🌙','🍓','🧋','🐾','👑','💯','🎀','💧','🪐','🦋','🌷','🍒','🎵','⚡','🌊'];
@@ -612,7 +612,7 @@ function openEdit(o = {}) {
       </div>
       <div class="ed-pane" data-pane="face">
       ${pkSec('프로필 사진', '내 프로필 · 친구 목록 · DM · 랭킹에 보이는 내 얼굴', viewSeg)}
-      <div class="pick" id="pAv">${pkDiv('기본')}${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === (isDev(u) ? '' : u.avatar) ? 'on' : ''}" data-tip="${kavName(a)}" aria-label="${kavName(a)}">${emo(a)}</button>`).join('')}${attDiv('avatar')}${attPicks('avatar', x => !isDev(u) && x === u.avatar)}</div></section>
+      <div class="pick" id="pAv">${pkDiv('기본')}${AVATARS.map(a => `<button type="button" data-v="${a}" class="${a === (isDev(u) ? '' : u.avatar) ? 'on' : ''}${a === 'k:shark' ? ' ff-shark' : ''}" data-tip="${kavName(a)}" aria-label="${kavName(a)}">${emo(a)}</button>`).join('')}${attDiv('avatar')}${attPicks('avatar', x => !isDev(u) && x === u.avatar)}</div></section>
       ${pkSec('배경 색', '프로필 사진 뒤 동그라미 · 프로필 카드 윗부분 색', '')}
       <div class="pick csw" id="pCo">${pkDiv('기본')}${COLORS.map(c => `<button type="button" data-v="${c}" class="c-${c} ${c === u.color ? 'on' : ''}" data-tip="${COLOR_KO[c] || c}" aria-label="${COLOR_KO[c] || c}"></button>`).join('')}${attDiv('color')}${attPicks('color', x => x === u.color)}</div></section>
       <section class="pk-sec">${isDev(u) ? `<label>칭호 <small class="att-sm">개발자 전용 · 직접 쓰기</small><input name="title" maxlength="12" value="${esc(u.title || '')}" placeholder="예: 그라운드 주인"><small class="hint">마음대로 적을 수 있어요(12자). 무지개 칭호로 보여요.</small></label>` : `<label>칭호 <small class="att-sm">${ATT.flame('fsm', { tier: 1 })}출석 보상</small><select name="title">${titleOpts(u.title)}</select><small class="hint">프로필 이름 아래와 출석 순위에 보여요. 출석할수록 더 열려요.</small></label>`}</section>

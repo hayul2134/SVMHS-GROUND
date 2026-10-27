@@ -40,6 +40,7 @@ SKINS = [
   ('sheep',   95, 40, 'sheep'),
   ('whale',  212, 70, 'whale'),
   ('axolotl',340, 65, 'axolotl'),
+  ('shark',  205, 30, 'shark'),   # 2026-10-27 추가(미리보기 깃발 shark)
 ]
 
 def hsl(h, s, l, a=None):
@@ -51,7 +52,7 @@ def tokens(h, s, dark):
         return {
           'bg': hsl(h, s * .75, 95), 'dot': hsl(h, s * .7, 40, .16),
           'card': '#ffffff', 'chip': hsl(h, s * .8, 92), 'line': hsl(h, s * .55, 83),
-          'ink': hsl(h, min(s, 50), 17), 'text': hsl(h, min(s, 50), 17), 'sub': hsl(h, s * .25, 42), 'on-bg': hsl(h, min(s, 50), 17), 'onc': hsl(h, min(s, 50), 17),
+          'ink': hsl(h, min(s, 50), 17), 'text': hsl(h, min(s, 50), 17), 'sub': hsl(h, s * .25, 35), 'on-bg': hsl(h, min(s, 50), 17), 'onc': hsl(h, min(s, 50), 17),
           'accent': hsl(h, s, 55 if s > 20 else 35), 'sky': hsl(h, s, 74 if s > 20 else 80), 'hero': hsl(h, s, 62 if s > 20 else 45),
           'next': hsl(h, s, 80 if s > 20 else 86), 'pink': hsl((h + 35) % 360, s, 82), 'violet': hsl((h + 330) % 360, s, 80),
         }
