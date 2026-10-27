@@ -22,7 +22,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   reaction: { min: 100, max: 1500, play: 5000 },      // 반응속도 5번 평균 (매번 1초 이상 기다림) · 하한 140 → 120 (2026-10-26) → 100 (2026-10-27 하율)
   num25: { min: 4000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기 · 하한 5000 → 4000 (2026-10-27 하율: 모바일은 훨씬 쉬움)
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
-  home: { min: 1, max: HOME_MAX - 1, play: 1000 },     // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음)
+  home: { min: 1, max: HOME_MAX - 1, play: 0 },        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
   gear: { min: 1, max: GEAR_MAX - 1, play: 3000, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
@@ -65,13 +65,13 @@ function checkRounds(game, v, r, elapsed) {
     if (sd / mean < 0.1) return H(`탭 간격이 너무 일정함(평균 ${Math.round(mean)}ms · 편차 ${Math.round(sd)}ms) — 매크로 의심`, `숫자 사이 간격이 매번 거의 똑같아요(평균 ${Math.round(mean)}ms, 차이 ${Math.round(sd)}ms). 사람은 숫자를 찾는 시간이 매번 달라서 이렇게 일정하기 어려워요.`);
     if (Math.abs(n[24] + pen - v) > 5) return H(`판 기록 합(${n[24] + pen})과 기록(${v})이 다름`, `누른 시각과 벌점을 더한 값(${sec(n[24] + pen)})이 최종 기록(${sec(v)})과 달라요.`);
     if (elapsed < n[24]) return H('플레이 시간보다 기록이 김', `실제로 게임한 시간(${sec(elapsed)})보다 기록(${sec(n[24])})이 더 길어요.`);
-  } else if (game === 'home') {   // [거리 m, 달린 시간 ms]: 거리는 시간으로만 정해짐(home-score.js) + 실제로 흐른 시간보다 오래 달릴 수 없음
+  } else if (game === 'home') {   // [거리 m, 달린 시간 ms]: 거리는 시간으로만 정해짐(home-score.js) + 실제로 흐른 시간보다 오래 달릴 수 없음(시작 티켓 요청 지연만큼 3초 여유, 2026-10-27)
     if (n.length !== 2) return H('판 기록 형식이 다름', '달린 거리와 시간이 제대로 오지 않았어요.');
     const [m, ms] = n;
     if (m < 1 || ms < 300 || ms > 6 * 3600e3) return H(`달린 시간 이상(${ms}ms)`, `달린 시간(${sec(ms)})이 가능한 범위를 벗어났어요.`);
     if (HOME_MAX - m !== v || scoreAt(ms) !== m) return H(`거리(${m}m)가 달린 시간(${(ms / 1000).toFixed(1)}초)과 안 맞음`,
       `${(ms / 1000).toFixed(1)}초 동안 달리면 ${scoreAt(ms).toLocaleString('ko-KR')}m인데 ${m.toLocaleString('ko-KR')}m로 기록됐어요. 이 게임은 달린 시간으로 거리가 정해져서 둘이 맞아야 해요.`);
-    if (ms > elapsed + 1000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
+    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
   } else if (game === 'gear') {   // [점수, 지운 줄, 놓은 블록 수, 플레이 ms] — gear-score.js 규칙으로 가능한 범위인지
     if (n.length !== 4) return H('판 기록 형식이 다름', '점수·줄·블록 수·시간이 제대로 오지 않았어요.');
     const [sc, ln, pc, ms] = n;
@@ -81,7 +81,7 @@ function checkRounds(game, v, r, elapsed) {
     if (pc > ms / 125 + 5) return H(`블록을 너무 빨리 놓음(${pc}개 · ${sec(ms)})`, `${sec(ms)} 동안 블록 ${pc}개를 놓았어요. 1초에 8개보다 빠르게 놓을 수는 없어서 자동 입력으로 보일 수 있어요.`);
     if (sc > gearMax(ln, pc)) return H(`점수(${sc})가 줄·블록 수로 낼 수 있는 최대(${gearMax(ln, pc)})보다 큼`, `${ln}줄 · 블록 ${pc}개로 낼 수 있는 점수는 많아야 ${gearMax(ln, pc).toLocaleString('ko-KR')}점인데 ${sc.toLocaleString('ko-KR')}점으로 기록됐어요.`);
     if (ms > GEAR_TIME + 1000) return H(`랭킹전 2분보다 오래 함(${sec(ms)})`, `랭킹전은 2분 동안만 할 수 있는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);   // 2026-10-27: 랭킹 기록은 랭킹전(2분)만
-    if (ms > elapsed + 1000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
+    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
     const off = idx(x => x < 0 || x > 1000);
