@@ -892,6 +892,9 @@ const trHint = () => splitOf(cls) && !cls.tk ? '<p class="note tr-note">시디·
 // 분반을 아직 안 골랐으면 분반 수업 칸 아이콘에 빨간 점 + 누르면 반 설정 창 (2026-10-26 하율)
 const trNeed = nm => { const sp = splitOf(cls); return !!(sp && !cls.tk && sp.tracks.some(t => t.re.test(nm || ''))); };
 const trAttr = nm => trNeed(nm) ? ' data-open-class data-tip="내 분반 고르기"' : '';
+// 바뀐 시간표 (2026-10-27): neis.js가 평소와 다른 칸에 r.chg(평소 과목)를 붙임 → '변경' 칩, 누르거나 올리면 평소 과목
+const chgOf = r => { if (!r || !r.chg) return ''; const u = subjName(r.chg); return u && u !== subjName(r.ITRT_CNTNT) ? u : ''; };
+const chgTag = u => u ? `<i class="chg-t" title="평소엔 ${esc(u)}" aria-label="평소엔 ${esc(u)}">변경</i>` : '';
 const trDot = nm => trNeed(nm) ? '<i class="nw-d" aria-hidden="true"></i>' : '';
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
@@ -936,7 +939,7 @@ async function renderHomeTT() {
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     if (S.ttWk) { nextKey = ''; await fillWeek(box, S.ttWk, () => seq !== ttSeq || !S.ttWk); wkResize(); return; }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm]) => `<li data-p="${a}" data-p2="${z}"${z > a ? ' class="multi"' : ''}${trAttr(nm)}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}${trDot(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
+      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm, cu]) => `<li data-p="${a}" data-p2="${z}"${z > a || cu ? ` class="${[z > a ? 'multi' : '', cu ? 'chg' : ''].filter(Boolean).join(' ')}"` : ''}${trAttr(nm)}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}${trDot(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}${chgTag(cu)}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
@@ -945,11 +948,11 @@ async function renderHomeTT() {
 function ttBlocks(rows) {
   const out = [];
   for (const r of rows) {
-    const p = +r.PERIO, nm = subjName(r.ITRT_CNTNT), last = out[out.length - 1];
-    if (last && last[2] === nm && last[1] === p - 1 && p !== 5) last[1] = p; else out.push([p, p, nm]);
+    const p = +r.PERIO, nm = subjName(r.ITRT_CNTNT), last = out[out.length - 1], cu = chgOf(r);
+    if (last && last[2] === nm && last[1] === p - 1 && p !== 5) { last[1] = p; if (cu && !last[3]) last[3] = cu; } else out.push([p, p, nm, cu]);
   }
   // 2시간 연속은 묶지 않고 두 줄로 따로 표시 (2026-10-26 하율: "2시간이면 그냥 2개로") — 3시간 이상만 묶음
-  return out.flatMap(b => b[1] - b[0] === 1 ? [[b[0], b[0], b[2]], [b[1], b[1], b[2]]] : [b]);
+  return out.flatMap(b => b[1] - b[0] === 1 ? [[b[0], b[0], b[2], b[3]], [b[1], b[1], b[2], b[3]]] : [b]);
 }
 // 월~금 시간표 표 (홈 아래쪽 카드와 시간표 화면이 같이 씀)
 const weekLbl = mon => { const fri = addDays(mon, 4); return `${mon.getMonth() + 1}/${mon.getDate()} ~ ${fri.getMonth() + 1}/${fri.getDate()}`; };
@@ -962,15 +965,15 @@ async function fillWeek(box, mon, stale) {
     if (!rows.length) { box.innerHTML = empty('이 주의 시간표 정보가 없어요'); return; }
     const days = [0, 1, 2, 3, 4].map(i => addDays(mon, i)), t = ymd(today());
     const maxP = Math.min(10, Math.max(6, ...rows.map(r => +r.PERIO || 0)));
-    const map = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = subjName(r.ITRT_CNTNT); });
+    const map = {}, cm = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = subjName(r.ITRT_CNTNT); cm[r.ALL_TI_YMD + '_' + r.PERIO] = chgOf(r); });
     // 같은 과목이 이어지면 한 칸으로 합침(점심시간은 넘지 않음). skip[날짜_교시] = 위 칸에 합쳐져서 안 그림
     const skip = {}, cell = (d, p) => {
       const k = ymd(d), v = map[k + '_' + p] || '';
       if (skip[k + '_' + p]) return '';
-      let n = 1;
-      while (v && p + n <= maxP && map[k + '_' + (p + n)] === v && !(p + n === 5 && p + n - 1 === 4)) { skip[k + '_' + (p + n)] = 1; n++; }
-      const c = [k === t ? 'today' : k < t ? 'past' : '', v ? '' : 'e', n > 1 ? 'dbl' : ''].filter(Boolean).join(' ');
-      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}${v ? trAttr(v) : ''}>${v ? `<i class="si" aria-hidden="true">${subjIcon(v)}${trDot(v)}</i><span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
+      let n = 1, cu = cm[k + '_' + p];
+      while (v && p + n <= maxP && map[k + '_' + (p + n)] === v && !(p + n === 5 && p + n - 1 === 4)) { skip[k + '_' + (p + n)] = 1; cu = cu || cm[k + '_' + (p + n)]; n++; }
+      const c = [k === t ? 'today' : k < t ? 'past' : '', v ? '' : 'e', n > 1 ? 'dbl' : '', cu ? 'chg' : ''].filter(Boolean).join(' ');
+      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}${v ? trAttr(v) : ''}>${v ? `<i class="si" aria-hidden="true">${subjIcon(v)}${trDot(v)}</i><span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}${chgTag(cu)}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
     };
     const pn = p => { const b = BELL.find(x => x.p === p); return `<td class="pn"><b>${p}</b>${b ? `<small>${String(b.start / 3600 | 0).padStart(2, '0')}:${String(b.start % 3600 / 60).padStart(2, '0')}</small>` : ''}</td>`; };
     let h = '<table class="week"><thead><tr><th></th>' + days.map(d => { const k = ymd(d); return `<th class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`; }).join('') + '</tr></thead><tbody>';

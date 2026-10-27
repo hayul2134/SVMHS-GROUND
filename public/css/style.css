@@ -4950,3 +4950,15 @@ html:has(body.playing){overflow:hidden}
 .mr-pe,.mr-n{margin:0;font-size:12px;color:var(--sub);font-weight:700}
 .mr-n b{color:var(--ink)}
 .mr-n small{margin-left:4px}
+
+/* 바뀐 시간표 (2026-10-27): 평소와 다른 과목 칸에 '변경' 칩(app.js chgTag, 올리면 평소 과목) */
+.chg-t{--cg:#c2560c;--cgb:#fff1e3;flex:none;font-style:normal;font-size:11px;font-weight:900;line-height:1.5;padding:0 5px;border-radius:6px;border:1.5px solid var(--cg);background:var(--cgb);color:var(--cg);white-space:nowrap;cursor:help}
+:root[data-theme="dark"] .chg-t{--cg:#ffb27a;--cgb:rgba(255,150,70,.14)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chg-t{--cg:#ffb27a;--cgb:rgba(255,150,70,.14)}}
+.tt li .s .chg-t{margin-left:6px}
+.tt li.chg .p{box-shadow:0 0 0 2px #f08a3c}
+.week td .chg-t{position:absolute;left:4px;top:4px;font-size:10px;padding:0 4px;line-height:1.4}
+.week td.chg{border-color:#f08a3c;border-style:solid}
+.week td.past.chg .chg-t{opacity:.6}
+.s-tt .week td .chg-t{font-size:9px;left:2px;top:2px;padding:0 3px}
+@media (max-width:560px){.week td .chg-t{position:static;display:inline-block;margin-top:3px}}

@@ -80,7 +80,7 @@ export const SPLITS = [
 ];
 export const splitOf = cls => (cls && SPLITS.find(s => s.g === cls.g && s.cs.includes(cls.c))) || null;
 
-export async function getTimetable(cls, from, to) {
+async function ttSplit(cls, from, to) {
   const rows = await rawTT(cls, from, to), sp = splitOf(cls);
   const mine = sp && sp.tracks.find(t => t.id === cls.tk), home = sp && sp.tracks.find(t => t.c === cls.c);
   if (!mine || !home || mine === home) return rows;
@@ -91,6 +91,32 @@ export async function getTimetable(cls, from, to) {
     const o = om.get(r.ALL_TI_YMD + '_' + +r.PERIO);
     return o && mine.re.test(o.ITRT_CNTNT || '') ? { ...r, ITRT_CNTNT: o.ITRT_CNTNT } : r;
   });
+}
+
+/** 바뀐 시간표 표시 (2026-10-27 하율: "변경된 시간표는 표시해줘")
+ *  나이스엔 '변경' 표시가 따로 없음 → 앞뒤 5주 같은 요일·같은 교시에 가장 많이 나온 과목(평소 과목)과 다르면 r.chg = 평소 과목.
+ *  평소 과목은 3번 이상·60% 이상 나와야 인정. 하루 절반 넘게 바뀐 날(시험·요일 교체·행사)은 날 전체가 특별한 날이라 표시 안 함.
+ *  인증키가 없으면(5건씩 받음) 요청이 너무 많아져서 안 함 */
+const dowOf = k => new Date(+k.slice(0, 4), +k.slice(4, 6) - 1, +k.slice(6, 8)).getDay();
+export async function getTimetable(cls, from, to) {
+  const rows = await ttSplit(cls, from, to);
+  if (!api.hasKey || !rows.length) return rows;
+  const base = await ttSplit(cls, addDays(from, -35), addDays(to, 35)).catch(() => []);
+  const cnt = new Map();
+  for (const r of base) {
+    const k = dowOf(r.ALL_TI_YMD) + '_' + +r.PERIO, m = cnt.get(k) || cnt.set(k, new Map()).get(k);
+    m.set(r.ITRT_CNTNT, (m.get(r.ITRT_CNTNT) || 0) + 1);
+  }
+  const usual = r => {
+    const m = cnt.get(dowOf(r.ALL_TI_YMD) + '_' + +r.PERIO); if (!m) return null;
+    let top = null, n = 0, all = 0;
+    for (const [s, c] of m) { all += c; if (c > n) { top = s; n = c; } }
+    return n >= 3 && n / all >= 0.6 ? top : null;
+  };
+  const chg = rows.map(r => { const u = usual(r); return u && u !== r.ITRT_CNTNT ? u : null; });
+  const day = new Map();   // 날짜별 [바뀐 칸, 전체 칸]
+  rows.forEach((r, i) => { const d = day.get(r.ALL_TI_YMD) || day.set(r.ALL_TI_YMD, [0, 0]).get(r.ALL_TI_YMD); d[1]++; if (chg[i]) d[0]++; });
+  return rows.map((r, i) => { const d = day.get(r.ALL_TI_YMD); return chg[i] && d[0] * 2 <= d[1] ? { ...r, chg: chg[i] } : r; });
 }
 
 /** 나이스 '금요일수업'·'수요일 수업' = 그날 다른 요일 시간표로 수업하는 교체일 (2026-10-25)
