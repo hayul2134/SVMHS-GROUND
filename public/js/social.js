@@ -2353,6 +2353,11 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
     ${patches || pnDraft ? `<h3 class="sp">🛠 업데이트 소식</h3>${pnDraft && isDev(S.me) ? (pnDraft.hot || []).map(h => draftCard({ ...h, approved: h.ok }, h.day)).join('') + (pnDraft.items?.length ? draftCard(pnDraft) : '') : ''}${patches ? `<ul class="ntlist">${patches}</ul>` : ''}` : ''}
     <div class="row"><button class="btn ghost" data-close>닫기</button></div>`;
+  $$('#socSheet .ptimg').forEach(im => im.onclick = () => {   // 공지 사진 누르면 크게 보기 (어디든 누르거나 Esc로 닫기)
+    const z = document.createElement('div'); z.className = 'ptzoom'; z.innerHTML = `<img src="${esc(im.getAttribute('src'))}" alt="">`;
+    const off = () => { z.remove(); removeEventListener('keydown', k, true); }, k = e => { if (e.key === 'Escape') { e.stopPropagation(); off(); } };
+    z.onclick = off; addEventListener('keydown', k, true); document.body.append(z);
+  });
   $$('#socSheet .ntb').forEach(b => {   // 2줄 안에 다 들어가는 짧은 내용은 '자세히 보기' 버튼을 숨김
     const t = b.querySelector('.nb-txt');
     if (t.scrollHeight <= t.clientHeight + 2) b.classList.add('short');

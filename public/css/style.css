@@ -2351,7 +2351,10 @@ html.away .mascot *{animation-play-state:paused!important}
 #socSheet h3.sp{margin-top:16px}
 .ptitems{margin:6px 0 4px 1.1em;padding:0;font-size:14px;font-weight:700;line-height:1.45}
 .ptitems li{list-style:disc}
-.ptimg{display:block;max-width:100%;margin:6px 0 10px;border:2px solid var(--line);border-radius:12px}
+/* 공지 줄 아래 사진: 적당한 크기로(가로는 칸 폭, 세로 최대 240px) — 누르면 크게 보기 (2026-10-27) */
+.ptimg{display:block;width:auto;max-width:100%;max-height:240px;object-fit:contain;margin:6px 0 10px;border:2px solid var(--line);border-radius:12px;cursor:zoom-in;background:var(--card,#fff)}
+.ptzoom{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,14,30,.78);cursor:zoom-out}
+.ptzoom img{max-width:min(960px,100%);max-height:100%;object-fit:contain;border-radius:14px;border:2px solid #fff;box-shadow:0 10px 40px rgba(0,0,0,.4)}
 .pdimg{display:block;position:relative;margin:4px 0 2px}
 .pdimg img{display:block;max-width:100%;max-height:220px;border:2px solid var(--line);border-radius:10px}
 .pdix{margin-top:4px;font:inherit;font-size:12px;font-weight:800;padding:2px 10px;border-radius:99px;border:2px solid var(--line);background:var(--card);color:var(--sub);cursor:pointer}
