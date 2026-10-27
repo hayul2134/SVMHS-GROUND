@@ -3877,6 +3877,8 @@ html.rk2 .rk-empty button{margin-left:4px;padding:2px 9px;border-radius:99px;bor
 .pquit:hover{transform:translateY(-2px)}
 .pquit:active{transform:translate(2px,2px);box-shadow:none}
 .pquit svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pbtns{display:inline-flex;align-items:stretch;gap:8px;flex:none}
+@media (max-width:520px){.pquit.pre span{display:none}.pquit.pre{padding:8px 10px}}
 
 /* ===== 집에 가고 싶어!: 그 자리 게임 오버 + 아래 친구 랭킹 줄 (2026-10-25) ===== */
 .hr-ov.dead{background:rgba(42,40,70,.3);gap:12px;padding:clamp(14px,4%,28px)}

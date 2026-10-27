@@ -202,3 +202,4 @@ npx wrangler@4 pages dev --port 8788
 - 화면: 타임코드(30fps)·라운드 칸 5개(판정 색)·오차 합 / 편집 타임라인(눈금자·V1 클립·A1 음악 파형 캔버스 — 컷 지점에 비트가 튐) · 빨간 컷 지점 · 파란 플레이헤드(`.ctm-hs` translateX %) · 자르면 클립이 둘로 갈라지고(`.ctm-cl.r`) 흰 섬광, 컷 지점~자른 곳 구간과 ±ms 표시(`.ctm-gp`) · 판정 PERFECT≤15/GREAT≤50/GOOD≤120/BAD/MISS 팝업 + 일찍·늦게 · 시작 화면(`.ctm-ov`) · 효과음(기본 꺼짐 `sg_cut_snd`).
 - 입력: CUT 버튼·타임라인 누르기·키보드 C/Space(시작은 Enter도). 누른 시각은 이벤트 `timeStamp`(처리 지연 제외).
 - 결과(`resultHtml`): 오차 합 등급 S≤75·A≤200·B≤400·C≤800·D, 평균 일찍/늦게 습관 한 줄, PERFECT 수, `.rdet` 자식 5개(보류 때 문제 판 빨간 표시 그대로 씀). CSS 접두사 `ctm-`(`.ct`는 카드 제목 줄이 이미 씀). 테스트 훅 `window.__cut`.
+- 2026-10-27 하율 "모든 게임에 재시작 버튼 추가": `social.js` `stage()` 게임 위 줄에 '다시 시작'(`#pRe`, 아이콘 `#i-restart`) — `restartGame()`이 `curGame`(play에서 기록)을 처음부터 다시 시작(0.8초 안 연타 무시·게임 안 창 닫음). 520px 이하는 아이콘만(`.pbtns`). 새 게임도 `stage()`만 쓰면 자동으로 붙음.

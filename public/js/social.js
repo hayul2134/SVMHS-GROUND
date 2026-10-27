@@ -1578,9 +1578,10 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns"><button class="pquit pre" type="button" id="pRe" aria-label="처음부터 다시 시작"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg><span>다시 시작</span></button><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
+  $('#pRe').onclick = restartGame;
   homeRO?.disconnect(); homeRO = null; requestAnimationFrame(fitHome);
   return $('#parea');
 }
@@ -1607,9 +1608,16 @@ document.addEventListener('click', e => { if (e.target.closest('[data-go]') && d
 function endPlay() { unfitHome(); quitGame?.(); quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden) endPlay(); });
 
+// 모든 게임 공통 '다시 시작'(2026-10-27 하율 "모든 게임에 재시작 버튼"): 게임 화면 위 나가기 옆 — 하던 판을 버리고 같은 게임을 처음부터
+// (연타로 시작 티켓 한도(10분 60번)를 쓰지 않게 0.8초 안 연타는 무시, 게임 안에서 연 창은 닫음)
+let curGame = '', reAt = 0;
+function restartGame() {
+  if (!curGame || performance.now() - reAt < 800) return;
+  reAt = performance.now(); closeSheet(); play(curGame);
+}
 let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, 한 판에 한 번)
 function play(game) {
-  quitGame?.(); quitGame = null;
+  quitGame?.(); quitGame = null; curGame = game;
   ticket = S.me ? call('start', { game }).then(r => r.ticket).catch(() => '') : null;
   if (GAMES[game]?.ff && !ffOn(GAMES[game].ff, isDev(S.me))) return;
   ({ reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear })[game]?.();
