@@ -1183,7 +1183,7 @@ let rkT = 0;
 function fitRk() {
   clearTimeout(rkT);
   const st = HERO.style, rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0, hcy = parseFloat(st.getPropertyValue('--hcy'));
-  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); return; }
+  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); fitMeal(hcy ? hcy - tt.offsetHeight / 2 : null); return; }
   if (document.documentElement.classList.contains('tuck')) return;
   // 메시지 버튼 자리: 보이면 재서 기억, 아직 안 떴으면(로그인 확인 전) 기억해 둔 값
   const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null;
@@ -1194,6 +1194,20 @@ function fitRk() {
   const over = rkB - (innerHeight - gap - 14), room = ttTop - (hdr + 10);
   const up = over > 0 ? Math.min(over, Math.max(0, room)) : 0;
   if (Math.abs(up - up0) >= 1) st.setProperty('--rkup', Math.round(up) + 'px');
+  fitMeal(hcy - Math.round(up) - th / 2);
+}
+// 급식 카드 위 끝을 시간표 카드 위 끝에 맞춤 (2026-10-28 하율 '급식이 좀 올라간 것 같다' — 급식 카드가 더 길어 가운데 맞춤이면 위 끝이 시간표보다 15px쯤 위로 튀어나옴)
+// 위 끝 높이로 가운데(--mcy)를 계산. 헤더·아래 서비스 버튼에 걸리면 그만큼만 덜 내림/덜 올림. 시간표 기준을 못 구하면 원래대로 시계 가운데(--hcy)
+function fitMeal(ttTop) {
+  const st = HERO.style, el = SIDE.meal.el;
+  if (ttTop == null || !isFinite(ttTop) || !HERO.classList.contains('drawers') || !el.offsetHeight) { st.removeProperty('--mcy'); return; }
+  const mh = el.offsetHeight, hdr = $('header')?.getBoundingClientRect().bottom ?? 0;
+  const fab = $('#svcFab'), fb = fab && !fab.hidden ? fab.getBoundingClientRect() : null;   // fixed라 offsetParent는 늘 null
+  const floor = (fb && fb.height ? fb.top : innerHeight - 92) - 10;
+  let top = ttTop;
+  if (top + mh > floor) top = floor - mh;
+  if (top < hdr + 8) top = hdr + 8;
+  st.setProperty('--mcy', Math.round(top + mh / 2) + 'px');
 }
 let heroRaf = 0, heroForce = false, TK_H = 0;
 heroReady = true;   // var(호이스팅) — 이 줄 전에 setSide가 불려도 오류 없이 건너뜀
@@ -1212,6 +1226,7 @@ new ResizeObserver(() => fitRk()).observe($('#sRk'));
       if (h0 == null || Math.abs(h - h0) < 2) continue;
       moved = true;
       const H = document.documentElement;
+      if (el === SIDE.meal.el) { el.style.transition = 'transform .4s cubic-bezier(.2,.9,.2,1),box-shadow .2s'; fitRk(); requestAnimationFrame(() => requestAnimationFrame(() => el.style.removeProperty('transition'))); continue; }   // 급식은 위 끝 고정(fitMeal) — top을 바로 옮기면 위 끝이 그대로
       if (calm.matches || !el.classList.contains('stow') || !el.classList.contains('open') || H.classList.contains('tuck') || H.classList.contains('boot') || H.classList.contains('pre')) continue;
       // 가운데 고정이면 위 끝은 (h0-h)/2만큼 움직임 → 그만큼 반대로 놓고 시작
       const d = (h - h0) / 2 + (parseFloat(getComputedStyle(el).translate.split(' ')[1]) || 0);
