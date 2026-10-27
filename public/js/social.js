@@ -1527,7 +1527,7 @@ async function playGear() {
   const area = stage(ic('gear') + ' 반납 5분 전!', `<div class="gr" id="gr">
       <div class="gr-main">
         <aside class="gr-side"><p class="gr-lb">보관 <kbd>C</kbd></p><canvas class="gr-mini" id="grHold" width="52" height="28"></canvas>
-          <dl class="gr-stat"><dt>점수</dt><dd id="grSc">0</dd><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
+          <dl class="gr-stat"><dt>점수</dt><dd id="grSc">0</dd><div class="gr-fxs" id="grFx"></div><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
         <div class="gr-scr" id="grScr"><canvas id="grCv" aria-label="게임 화면"></canvas>
           <div class="gr-ov" id="grOv"></div><div class="gr-pop" id="grPop" aria-live="polite"></div></div>
         <aside class="gr-side"><p class="gr-lb">다음</p><div class="gr-next"><canvas class="gr-mini" id="grN0" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN1" width="52" height="28"></canvas><canvas class="gr-mini sm" id="grN2" width="52" height="28"></canvas></div></aside>
@@ -1554,11 +1554,13 @@ async function playGear() {
     sc.textContent = shown.toLocaleString('ko-KR'); $('#grLn').textContent = s.lines; $('#grLv').textContent = s.level; };
   const bump = big => { const sc = $('#grSc'); sc.classList.remove('bump', 'bump2'); void sc.offsetWidth; sc.classList.add(big ? 'bump2' : 'bump'); };
   const scr0 = $('#grScr');
-  const floatPt = (pts, x, y, n) => {   // 판 위에 '+점수'가 튀어 오름 (줄 정리는 크게)
-    const el = document.createElement('i'); el.className = 'gr-fx' + (n ? ' n' + n : ''); el.textContent = '+' + pts.toLocaleString('ko-KR');
-    el.style.left = Math.max(12, Math.min(88, x / GEAR.BW * 100)) + '%'; el.style.top = Math.max(8, y / GEAR.BH * 100) + '%';
-    scr0.appendChild(el); setTimeout(() => el.remove(), 1000);
-    if (n) { scr0.classList.remove('hit', 'hit4'); void scr0.offsetWidth; scr0.classList.add(n === 4 ? 'hit4' : 'hit'); }
+  // 점수 효과는 판 위가 아니라 점수판 옆에서 (2026-10-27 2차 하율: 판 위 '+점수'가 시야를 가림)
+  const floatPt = (pts, x, y, n) => {
+    if (n) {
+      const el = document.createElement('i'); el.className = 'gr-fx n' + n; el.textContent = '+' + pts.toLocaleString('ko-KR');
+      const slot = $('#grFx'); slot.replaceChildren(el); setTimeout(() => el.remove(), 900);
+      scr0.classList.remove('hit', 'hit4'); void scr0.offsetWidth; scr0.classList.add(n === 4 ? 'hit4' : 'hit');
+    }
     bump(n);
   };
   const paintQ = () => { R.drawMini($('#grHold'), R.st.hold);   // 보관 블록은 다음 블록처럼 그대로 (2026-10-27 하율: 흐리게 그리던 것 제거)

@@ -176,7 +176,7 @@ export function createGear(canvas, opt = {}) {
       scene: 'ready', frames: 0, ms: 0, score: 0, lines: 0, level: 1, pieces: 0, b2b: false,
       board: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
       bag: [], queue: [], cur: null, hold: null, held: false,
-      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, flash: 0, shake: 0, parts: [], frags: [], trails: [], rings: [], stop: 0, bump: 0, seed,
+      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
     });
     while (st.queue.length < 5) st.queue.push(nextKind());
   }
@@ -269,16 +269,9 @@ export function createGear(canvas, opt = {}) {
       const n = full.length, tet = n === 4, lv = st.level;
       const pts = LINE_PTS[n] * lv * (tet && st.b2b ? 1.5 : 1);
       st.score += Math.round(pts); st.b2b = tet; st.lines += n; st.level = levelOf(st.lines);
-      st.clearRows = full; st.clearT = CLEAR_T; st.flash = tet ? 1 : .6; st.shake = tet ? 14 : 5 + n * 2; st.stop = tet ? 7 : 4;   // stop = 잠깐 멈칫(히트스톱)
-      // 깨지기: 지워지는 칸마다 장비 그림 조각 4개(6×6)가 튕겨 나감 + 불꽃 — 줄 가운데에서 바깥으로
-      for (const y of full) for (let x = 0; x < COLS; x++) {
-        const c = st.board[y][x], cx = x * C, cy = (y - HID) * C, out = (x - 4.5) / 4.5;
-        for (let q = 0; q < 4; q++) {
-          const qx = q % 2, qy = q >> 1;
-          st.frags.push({ k: c.k, r: c.r, sx: c.sx * C + qx * 6, sy: c.sy * C + qy * 6, x: cx + qx * 6, y: cy + qy * 6, vx: out * (60 + rand() * 90) + (qx - .5) * 60 + (rand() - .5) * 40, vy: -70 - rand() * (tet ? 170 : 110) + qy * 30, rot: 0, vr: (rand() - .5) * 16, t: .9 + rand() * .4 });
-        }
-        for (let i = 0; i < (tet ? 3 : 2); i++) st.parts.push({ x: cx + C / 2, y: cy + C / 2, vx: (rand() - .5) * 200, vy: -60 - rand() * 160, t: .5 + rand() * .3, c: rand() < .5 ? '#fff6c8' : KIND[c.k].body });
-      }
+      st.clearRows = full; st.clearT = CLEAR_T; st.flash = tet ? 1 : .6; st.shake = tet ? 10 : 4 + n; st.stop = tet ? 7 : 4;   // stop = 잠깐 멈칫(히트스톱)
+      // 깨지기(2026-10-27 2차 하율 "깔끔한 느낌이 안 남"): 칸이 통째로 하얗게 번쩍 → 작아지며 사라짐, 가운데 → 바깥 순서로 차례차례. 흩날리는 조각은 없앰
+      for (const y of full) for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; st.pops.push({ k: c.k, r: c.r, sx: c.sx, sy: c.sy, x: x * C, y: (y - HID) * C, d: Math.abs(x - 4.5) * .016, t: 0 }); }
       st.rings.push({ y: ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, t: .45, n });
       crunch(tet ? .2 : .13, tet ? .32 : .2, tet ? 3200 : 2400); thump(tet ? .16 : .11);
       if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f, f, .12, 'square', .045, .06 + i * .07)); crunch(.12, .25, 1800, .12); }
@@ -299,8 +292,7 @@ export function createGear(canvas, opt = {}) {
     if (st.stop > 0) { st.stop--; return; }   // 히트스톱: 깨지는 순간 몇 프레임 멈칫
     for (const q of st.parts) { q.t -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 300 * dt; }
     st.parts = st.parts.filter(q => q.t > 0);
-    for (const q of st.frags) { q.t -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 520 * dt; q.rot += q.vr * dt; }
-    st.frags = st.frags.filter(q => q.t > 0 && q.y < BH + 20);
+    for (const q of st.pops) q.t += dt; st.pops = st.pops.filter(q => q.t < q.d + .2);
     for (const q of st.trails) q.t -= dt; st.trails = st.trails.filter(q => q.t > 0);
     for (const q of st.rings) q.t -= dt; st.rings = st.rings.filter(q => q.t > 0);
     st.shake = Math.max(0, st.shake - dt * 30); st.flash = Math.max(0, st.flash - dt * 3); st.bump = Math.max(0, st.bump - dt * 8);
@@ -336,13 +328,34 @@ export function createGear(canvas, opt = {}) {
     g.fillStyle = '#232945'; for (let x = 0; x < COLS; x++) for (let y = 0; y < VIS; y++) if ((x + y) % 2) g.fillRect(x * C, y * C, C, C);
     g.fillStyle = '#2c3354'; for (let y = 4; y < VIS; y += 5) g.fillRect(0, y * C - 1, BW, 1);   // 선반 줄
     g.translate(shx, sh + Math.round(st.bump * 2));
-    const gone = st.clearT && st.clearT < CLEAR_T - 2;   // 번쩍한 뒤엔 그 줄 칸은 이미 깨져 날아감
+    const gone = st.clearT > 0;   // 지워지는 줄의 칸은 pops가 대신 그림
     for (let y = HID; y < ROWS; y++) { if (gone && st.clearRows.includes(y)) continue; for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; if (c) drawCellAt(c, x * C, (y - HID) * C); } }
+    // 쌓인 장비끼리 맞닿은 면은 테두리(2px)를 몸통 색으로 메워 틈 없이 붙어 보이게 (2026-10-27 하율 "사이사이 틈이 없었으면")
+    const live = (x, y) => x >= 0 && x < COLS && y >= HID && y < ROWS && st.board[y][x] && !(gone && st.clearRows.includes(y));
+    for (let y = HID; y < ROWS; y++) { if (gone && st.clearRows.includes(y)) continue; for (let x = 0; x < COLS; x++) {
+      const c = st.board[y][x]; if (!c) continue;
+      const own = cellsOf(c.k, c.r), mine = (dx, dy) => own.some(q => q[0] === c.sx + dx && q[1] === c.sy + dy);
+      const e = (dx, dy) => !mine(dx, dy) && live(x + dx, y + dy);   // 내 테두리가 있고, 그 너머에 다른 장비가 붙어 있음
+      const L = e(-1, 0), R = e(1, 0), T = e(0, -1), B = e(0, 1);
+      if (!(L || R || T || B)) continue;
+      const px = x * C, py = (y - HID) * C, col = mix(KIND[c.k].body, '#ffffff', .14);
+      const eT = !mine(0, -1), eB = !mine(0, 1), eL = !mine(-1, 0), eR = !mine(1, 0);   // 원래 테두리가 있는 면
+      g.fillStyle = col;
+      if (L) g.fillRect(px, py + (eT && !T ? 2 : 0), 2, C - (eT && !T ? 2 : 0) - (eB && !B ? 2 : 0));
+      if (R) g.fillRect(px + C - 2, py + (eT && !T ? 2 : 0), 2, C - (eT && !T ? 2 : 0) - (eB && !B ? 2 : 0));
+      if (T) g.fillRect(px + (eL && !L ? 2 : 0), py, C - (eL && !L ? 2 : 0) - (eR && !R ? 2 : 0), 2);
+      if (B) g.fillRect(px + (eL && !L ? 2 : 0), py + C - 2, C - (eL && !L ? 2 : 0) - (eR && !R ? 2 : 0), 2);
+      // 메운 면과 남은 테두리가 만나는 모서리: 둥근 모서리 대신 테두리를 곧게 이어 줌
+      const line = (ax, ay, horiz) => { g.fillStyle = OL; horiz ? g.fillRect(ax, ay.o, 2, 1) : g.fillRect(ay.o, ax, 1, 2); g.fillStyle = RIM; horiz ? g.fillRect(ax, ay.i, 2, 1) : g.fillRect(ay.i, ax, 1, 2); };
+      if (L && eT && !T) line(px, { o: py, i: py + 1 }, 1); if (L && eB && !B) line(px, { o: py + C - 1, i: py + C - 2 }, 1);
+      if (R && eT && !T) line(px + C - 2, { o: py, i: py + 1 }, 1); if (R && eB && !B) line(px + C - 2, { o: py + C - 1, i: py + C - 2 }, 1);
+      if (T && eL && !L) line(py, { o: px, i: px + 1 }, 0); if (T && eR && !R) line(py, { o: px + C - 1, i: px + C - 2 }, 0);
+      if (B && eL && !L) line(py + C - 2, { o: px, i: px + 1 }, 0); if (B && eR && !R) line(py + C - 2, { o: px + C - 1, i: px + C - 2 }, 0);
+    } }
     if (st.clearT) {   // 지워지는 줄: 처음 2프레임 새하얗게 번쩍 → 빈 줄에 남은 빛이 가운데로 사라짐
       const k = st.clearT / CLEAR_T;
       for (const y of st.clearRows) {
-        if (!gone) { g.fillStyle = '#ffffff'; g.fillRect(0, (y - HID) * C, BW, C); continue; }
-        const w = Math.round(BW * k * k); g.fillStyle = `rgba(255,246,200,${k * .8})`; g.fillRect(BW / 2 - w / 2, (y - HID) * C + 3, w, C - 6);
+        if (gone) { const w = Math.round(BW * k); g.fillStyle = `rgba(255,255,255,${k * .35})`; g.fillRect(BW / 2 - w / 2, (y - HID) * C + C / 2 - 1, w, 2); }   // 가운데 얇은 빛줄
       }
     }
     for (const r of st.rings) {   // 줄이 깨질 때 위아래로 퍼지는 충격파
@@ -359,9 +372,12 @@ export function createGear(canvas, opt = {}) {
       }
       drawPiece(p, p.y);
     }
-    for (const q of st.frags) {   // 깨진 장비 조각(그림 그대로 6×6, 돌면서 떨어짐)
-      g.save(); g.globalAlpha = Math.min(1, q.t * 2.5); g.translate(Math.round(q.x + 3), Math.round(q.y + 3)); g.rotate(Math.round(q.rot * 4) / 4);
-      g.drawImage(ART_IMG[q.k][q.r], q.sx, q.sy, 6, 6, -3, -3, 6, 6); g.restore();
+    for (const q of st.pops) {   // 깨지는 칸: 차례가 오면 하얗게 → 가운데로 줄어들며 사라짐
+      const k = Math.max(0, (q.t - q.d) / .2), sz = Math.round(C * (1 - k * k));
+      if (sz <= 0) continue;
+      const o = (C - sz) / 2;
+      if (k < .25) { drawCellAt(q, q.x, q.y); g.fillStyle = `rgba(255,255,255,${k === 0 ? .55 : .9})`; g.fillRect(q.x, q.y, C, C); }
+      else { g.fillStyle = `rgba(255,255,255,${1 - k * .6})`; g.fillRect(q.x + o, q.y + o, sz, sz); }
     }
     for (const q of st.parts) { g.globalAlpha = Math.min(1, q.t * 2); g.fillStyle = q.c; g.fillRect(Math.round(q.x), Math.round(q.y), 2, 2); }
     g.globalAlpha = 1;

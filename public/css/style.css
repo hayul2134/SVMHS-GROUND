@@ -4720,11 +4720,10 @@ html:has(body.playing){overflow:hidden}
 .gr-stat dd.bump2{animation:grBump2 .55s ease-out}
 @keyframes grBump{0%{transform:scale(1)}35%{transform:scale(1.25);color:#ff8f5a}100%{transform:scale(1)}}
 @keyframes grBump2{0%{transform:scale(1)}25%{transform:scale(1.6) rotate(-4deg);color:#ff5a6e}55%{transform:scale(.95)}100%{transform:scale(1)}}
-.gr-fx{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;font:900 15px/1 var(--num,inherit);font-style:normal;color:#fff;-webkit-text-stroke:2px #2a2846;paint-order:stroke;white-space:nowrap;animation:grFx .8s ease-out forwards}
-.gr-fx.n1,.gr-fx.n2,.gr-fx.n3,.gr-fx.n4{font:400 clamp(24px,3.6vw,34px)/1 var(--disp);color:#ffe27a;-webkit-text-stroke:3px #2a2846;text-shadow:3px 3px 0 #2a2846;animation:grFxBig 1s cubic-bezier(.2,1.6,.4,1) forwards}
-.gr-fx.n4{font-size:clamp(32px,5vw,46px);color:#ff8fd0}
-@keyframes grFx{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}20%{opacity:1;transform:translate(-50%,-80%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-220%) scale(1)}}
-@keyframes grFxBig{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1;transform:translate(-50%,-60%) scale(1.3)}45%{transform:translate(-50%,-60%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-160%) scale(1)}}
+.gr-fxs{height:16px;margin:-2px 0 2px;position:relative}
+.gr-fx{position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;font:900 14px/16px var(--num,inherit);font-style:normal;color:#ff8f5a;white-space:nowrap;animation:grFx .9s ease-out forwards}
+.gr-fx.n4{color:#ff5a6e;font-size:16px}
+@keyframes grFx{0%{opacity:0;transform:translate(-50%,6px)}20%{opacity:1;transform:translate(-50%,0) scale(1.15)}35%{transform:translate(-50%,0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-4px)}}
 .gr-scr.hit{animation:grHit .25s ease-out}
 .gr-scr.hit4{animation:grHit4 .5s ease-out}
 @keyframes grHit{0%{transform:translateY(0)}25%{transform:translateY(5px) scale(1.01)}60%{transform:translateY(-2px)}100%{transform:none}}
