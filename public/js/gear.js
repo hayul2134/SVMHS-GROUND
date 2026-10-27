@@ -298,7 +298,7 @@ export function createGear(canvas, opt = {}) {
     const p = st.cur; if (!p) return false;
     if (p.k === 'O') { resetLock(); return true; }
     const to = (p.r + dir + 4) % 4, kicks = (p.k === 'I' ? K4 : K3)[p.r + '>' + to];
-    for (const [dx, dy] of kicks) if (fits(p.k, to, p.x + dx, p.y + dy)) { p.x += dx; p.y += dy; p.r = to; resetLock(); beep(dir > 0 ? 520 : 470, dir > 0 ? 640 : 560, .04, 'square', .025); hiss(.02, .03, 3000, 2000, 'highpass'); return true; }
+    for (const [dx, dy] of kicks) if (fits(p.k, to, p.x + dx, p.y + dy)) { p.x += dx; p.y += dy; p.r = to; resetLock(); return true; }   // 돌릴 땐 효과음 없음 (2026-10-27 하율)
     return false;
   }
   function resetLock() { const p = st.cur; if (p && !fits(p.k, p.r, p.x, p.y + 1) && st.lockN < LOCK_MAX) { st.lock = 0; st.lockN++; } }
