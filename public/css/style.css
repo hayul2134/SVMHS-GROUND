@@ -5020,10 +5020,11 @@ html:has(body.playing){overflow:hidden}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chg-t{--cg:#ffb27a;--cgb:rgba(255,150,70,.14)}}
 .tt li .s .chg-t{margin-left:6px}
 .tt li.chg .p{box-shadow:0 0 0 2px #f08a3c}
-.week td .chg-t{position:absolute;left:4px;top:4px;font-size:10px;padding:0 4px;line-height:1.4}
+.week td .chg-t{position:absolute;right:4px;left:auto;top:4px;z-index:1;font-size:10px;padding:0 4px;line-height:1.4}
 .week td.chg{border-color:#f08a3c;border-style:solid}
 .week td.past.chg .chg-t{opacity:.6}
-.s-tt .week td .chg-t{font-size:9px;left:2px;top:2px;padding:0 3px}
+.s-tt .week td .chg-t{font-size:9px;right:2px;left:auto;top:2px;padding:0 3px}
+.week td.today.done .chg-t{right:25px}  /* 오른쪽 위 완료 체크와 안 겹치게 (왼쪽 위는 '지금'·'다음' 꼬리표 자리) */
 @media (max-width:560px){.week td .chg-t{position:static;display:inline-block;margin-top:3px}}
 
 .gr[data-bs="s"] .gr-modes button{min-width:108px;padding:9px 12px}.gr[data-bs="s"] .gr-modes button b{font-size:18px}.gr[data-bs="s"] .gr-modes button small{font-size:11px}
