@@ -419,11 +419,24 @@ const ROUTES = {
   }),
 
   // 관리자 입장: ADMIN_HANDLE 계정만, 비밀번호를 한 번 더 확인 → 12시간 관리자 세션(쿠키 경로 /api/admin, 관리자 API에서 검사)
-  'POST admin-pass': needMe(async ({ req, db, me, body }) => {
+  'POST admin-pass': needMe(async ({ req, env, db, me, body }) => {
     if (me.handle !== ADMIN_HANDLE) return err('관리자 계정이 아니에요', 403);
     if (await limited(db, 'ap:' + me.id, 8, 900)) return err('시도가 너무 많아요. 15분 뒤에 다시 해 주세요', 429);
     const u = await db.prepare('SELECT pw, salt FROM users WHERE id = ?1').bind(me.id).first();
-    if (!sameStr(await hashPw(String(body.pw || ''), u.salt), u.pw)) {
+    const pw = String(body.pw || '');
+    // 비밀번호를 잊었을 때(2026-10-27): Cloudflare 비밀 변수 ADMIN_RESET(8자 이상)과 똑같이 넣으면 developer 비밀번호를 그 값으로 바꾸고 들어감.
+    // 들어간 뒤 Cloudflare에서 ADMIN_RESET을 지울 것(남아 있어도 그 값을 아는 사람만 쓸 수 있음). 시도 제한은 위와 같이 적용
+    const reset = String(env.ADMIN_RESET || '');
+    let ok = sameStr(await hashPw(pw, u.salt), u.pw);
+    if (!ok && reset.length >= 8 && pw.length === reset.length && sameStr(pw, reset)) {
+      const salt = randHex(16);
+      await db.batch([
+        db.prepare('UPDATE users SET pw = ?1, salt = ?2 WHERE id = ?3').bind(await hashPw(pw, salt), salt, me.id),
+        db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), '비밀번호 재설정(ADMIN_RESET)', maskIp(req)),
+      ]);
+      ok = true;
+    }
+    if (!ok) {
       await db.prepare('INSERT INTO admin_log (at, action, detail) VALUES (?1, ?2, ?3)').bind(Date.now(), '로그인 실패', maskIp(req)).run();
       return err('비밀번호가 맞지 않아요', 401);
     }
