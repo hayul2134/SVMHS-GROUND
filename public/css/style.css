@@ -5402,3 +5402,6 @@ html.svrv .apps .catgrid.in > .app:nth-child(n+6){animation-delay:.3s}
 .appgrid.catgrid.gm5{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media (max-width:560px){.appgrid.catgrid.gm5{gap:12px 6px}.catgrid.gm5 .app{padding-left:0;padding-right:0;font-size:11.5px}.apps .catgrid.gm5 .gapp .ai{width:46px;height:46px;border-radius:13px}.apps .catgrid.gm5 .gapp .ai .sic{width:28px;height:28px}}
 @media (max-width:380px){.appgrid.catgrid.gm5{gap:10px 4px}.catgrid.gm5 .app{font-size:10.5px}.apps .catgrid.gm5 .gapp .ai{width:40px;height:40px;border-radius:12px}.apps .catgrid.gm5 .gapp .ai .sic{width:25px;height:25px}}
+
+/* 편집의 신 입력 (2026-10-28 정식 출시 다듬기): 누르는 곳은 스크롤·확대·길게 누르기 메뉴·글자 선택 없이 바로 컷 */
+.ctm-btn,.ctm-tl{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}

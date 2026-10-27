@@ -5,7 +5,7 @@
 // 누른 시각은 이벤트의 timeStamp(손가락·키가 눌린 순간)를 씀 — 처리 지연이 기록에 섞이지 않게.
 
 export const DUR = [2400, 2100, 1800, 1550, 1300];   // social.js 1판과 같게 (바꾸면 랭킹이 달라짐)
-const WAIT = 500, NEXT = 950;
+const WAIT = 500, NEXT = 950, GRACE = 120;
 export const MISS_MS = 1000;   // 끝까지 안 누르면 1000ms(최대 오차) — 2026-10-27 판정 패치: 예전엔 '컷 지점~끝' 거리만 더해져서 안 누르는 게 늦게 누르는 것보다 점수가 좋을 수 있었음
 const CLIPS = [['인터뷰_A캠.mp4', 'BGM_비트.wav'], ['B롤_운동장.mp4', 'BGM_비트.wav'], ['드론_교정.mp4', 'BGM_후렴.wav'], ['슬로모_점프.mov', 'BGM_후렴.wav'], ['엔딩_단체샷.mp4', 'BGM_엔딩.wav']];
 export const judge = (e, end) => end || e >= 1000 ? ['miss', 'MISS'] : e <= 15 ? ['perfect', 'PERFECT'] : e <= 50 ? ['great', 'GREAT'] : e <= 120 ? ['good', 'GOOD'] : ['bad', 'BAD'];
@@ -51,6 +51,7 @@ export function run(root, o) {
   let round = 0, sum = 0, raf = 0, t0 = 0, target = 0, dur = 0, state = 'intro', alive = true, sound = !!o.sound, actx = null, frac = 0;
   // 판정 시각 맞추기(2026-10-27 판정 패치): requestAnimationFrame의 시각은 '그리기 시작한 때'이고 실제로 화면에 보이는 건 한 프레임 뒤.
   // 그래서 플레이헤드를 '화면에 보일 때의 시각'(지금 + 1프레임) 위치에 그림 → 눈에 보이는 위치 = 판정에 쓰는 시각. 프레임 간격은 기기마다 달라(60·120Hz) 직접 잼.
+  // 2026-10-28 판정 다듬기: 화면 주기(fi)는 게임 내내 도는 루프 하나가 계속 잼 → 120Hz 기기도 첫 판부터 정확(예전엔 판마다 처음 몇 프레임을 60Hz로 가정)
   let fi = 1000 / 60, lastF = 0;
   const frame = now => { if (lastF) { const d = now - lastF; if (d > 4 && d < 50) fi += (d - fi) * .2; } lastF = now; return Math.min(34, Math.max(6, fi)); };
   const errs = [], signed = [], timers = [], cuts = [];   // cuts: 판마다 [컷 지점 비율, 자른 곳 비율 또는 null(놓침)] — 결과 화면 '내 컷 다시 보기'
@@ -101,25 +102,27 @@ export function run(root, o) {
     msg.className = 'ctm-msg rdy'; msg.innerHTML = round === 4 ? '<b>마지막 컷!</b><small>엔딩 장면이에요</small>' : '<b>준비…</b>';
     later(() => {
       msg.className = 'ctm-msg'; msg.innerHTML = '<span>파형이 튀는 <b class="ctm-red">빨간 컷 지점</b>에서 CUT!</span>';
-      lastF = 0;
-      // 0초는 '첫 화면이 실제로 보이는 순간'으로 잡음(타이머가 프레임 중간에 불려도 시작이 밀리거나 플레이헤드가 뒤로 튀지 않게)
-      raf = requestAnimationFrame(now0 => {
-        if (!alive) return;
-        t0 = now0 + frame(now0); state = 'run';
-        const step = now => {
-          if (state !== 'run' || !alive) return;
-          const f = frame(now), tv = now + f - t0;   // 이 프레임이 화면에 보일 때의 게임 시각
-          setHead(Math.max(0, Math.min(1, tv / dur))); $('#ctTc').textContent = tc(Math.max(0, Math.min(tv, dur)));
-          if (performance.now() - t0 >= dur) return stop(dur, true);   // 끝은 실제 시각으로 (화면 예측으로 일찍 끝내지 않음)
-          raf = requestAnimationFrame(step);
-        };
-        step(now0);
-      });
+      state = 'armed';   // 다음 프레임에서 0초 시작(loop)
     }, WAIT);
+  };
+  // 게임 내내 도는 화면 루프: 화면 주기 재기 + 판 진행
+  // 0초는 '첫 화면이 실제로 보이는 순간'(이 프레임 + 한 프레임)으로 잡음 — 타이머가 프레임 중간에 불려도 시작이 밀리거나 플레이헤드가 뒤로 튀지 않게
+  const loop = now => {
+    if (!alive) return;
+    const f = frame(now);
+    if (state === 'armed') { t0 = now + f; state = 'run'; }
+    if (state === 'run') {
+      const tv = now + f - t0;   // 이 프레임이 화면에 보일 때의 게임 시각
+      setHead(Math.max(0, Math.min(1, tv / dur))); $('#ctTc').textContent = tc(Math.max(0, Math.min(tv, dur)));
+      // 끝은 실제 시각으로(화면 예측으로 일찍 끝내지 않음). 바로 MISS로 판정하지 않고 GRACE ms 동안 기다림:
+      // 끝나기 직전에 눌렀는데 기기가 바빠 입력 처리가 이 프레임보다 늦게 도착한 경우를 살리기 위해(그 입력의 timeStamp가 끝 전이면 정상 판정)
+      if (performance.now() - t0 >= dur) { state = 'over'; setHead(1); $('#ctTc').textContent = tc(dur); later(() => { if (state === 'over') stop(dur, true); }, GRACE); }
+    }
+    if (state !== 'done') raf = requestAnimationFrame(loop);
   };
 
   const stop = (tAt, end) => {
-    if (state !== 'run') return; state = 'judge'; cancelAnimationFrame(raf);
+    if (state !== 'run' && state !== 'over') return; state = 'judge';
     tAt = Math.max(0, Math.min(dur, tAt));
     const e = end ? MISS_MS : Math.min(1000, Math.round(Math.abs(tAt - target))), d = Math.round(tAt - target), [k, name] = judge(e, end);
     errs.push(e); signed.push(end ? null : d); sum += e;
@@ -147,14 +150,15 @@ export function run(root, o) {
     }
     sfx(k);
     round++;
-    if (round >= 5) { state = 'done'; btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice(), cuts.slice()), 900); }
+    if (round >= 5) { state = 'done'; cancelAnimationFrame(raf); btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice(), cuts.slice()), 900); }
     else later(start, NEXT);
   };
 
   // 누른 시각 = 이벤트가 생긴 순간(timeStamp, performance.now와 같은 시계). 옛 Safari처럼 다른 시계를 주거나 이상하면 지금 시각으로
-  const at = e => { const now = performance.now(), ts = e?.timeStamp; return (ts > 0 && ts <= now + 1 && now - ts < 250 ? ts : now) - t0; };
+  // (2026-10-28: 기기가 잠깐 버벅여도 눌린 순간을 쓰게 허용 범위 250ms → 1초)
+  const at = e => { const now = performance.now(), ts = e?.timeStamp; return (ts > 0 && ts <= now + 1 && now - ts < 1000 ? ts : now) - t0; };
   // 화면을 벗어나면(탭 전환·창 최소화) 그 판은 공정하게 판정할 수 없음 → 그 판만 처음부터 다시
-  const vis = () => { if (document.hidden && (state === 'run' || state === 'wait')) { cancelAnimationFrame(raf); timers.forEach(clearTimeout); timers.length = 0; state = 'paused'; }
+  const vis = () => { if (document.hidden && (state === 'run' || state === 'wait' || state === 'armed' || state === 'over')) { timers.forEach(clearTimeout); timers.length = 0; state = 'paused'; }
     else if (!document.hidden && state === 'paused') { msg.className = 'ctm-msg'; msg.innerHTML = '<span>화면을 벗어나서 이번 판은 다시 해요</span>'; later(start, 600); } };
   document.addEventListener('visibilitychange', vis);
   const intro = () => {
@@ -164,20 +168,33 @@ export function run(root, o) {
       <small>5번 · 점점 빨라져요 · 오차 합이 작을수록 1등</small><button type="button" class="btn big" id="ctGo">시작</button></div>`;
     $('#ctGo').onclick = go; };
   const go = () => { if (state !== 'intro') return; ov.hidden = true; ov.innerHTML = ''; if (sound) ac(); start(); };
-  const press = e => { if (state === 'intro') return go(); if (state === 'run') stop(at(e)); };
-
-  btn.addEventListener('pointerdown', e => { e.preventDefault(); press(e); });
-  $('#ctTl').addEventListener('pointerdown', e => { if (e.target.closest('#ctOv button')) return; e.preventDefault(); if (state === 'run') press(e); });
+  let nudged = 0;
+  const press = e => {
+    if (state === 'intro') return go();
+    if (state === 'run') return stop(at(e));
+    if (state === 'over') { const t = at(e); return stop(t <= dur ? t : dur, t > dur); }   // 끝 직후 도착한 입력: 끝 전에 눌린 것만 인정
+    if (state === 'wait' && Date.now() - nudged > 600) {   // 시작 전에 누름: 판정 없이 안내만
+      nudged = Date.now(); msg.className = 'ctm-msg rdy'; msg.innerHTML = '<b>아직이에요!</b><small>플레이헤드가 움직이면 CUT</small>';
+    }
+  };
+  // 마우스는 왼쪽 버튼만(오른쪽·가운데 클릭으로 잘리던 것), 손가락은 첫 손가락만(두 손가락으로 두 번 눌리지 않게)
+  const okPtr = e => (e.pointerType !== 'mouse' || e.button === 0) && e.isPrimary !== false;
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); if (okPtr(e)) press(e); });
+  $('#ctTl').addEventListener('pointerdown', e => { if (e.target.closest('#ctOv button')) return; e.preventDefault(); if (okPtr(e) && (state === 'run' || state === 'over')) press(e); });
+  // 길게 누르면 뜨는 메뉴(오른쪽 클릭·터치 길게)가 게임을 가리지 않게
+  root.querySelector('#ct').addEventListener('contextmenu', e => e.preventDefault());
   const key = e => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.code === 'KeyC' || e.code === 'Space' || (e.code === 'Enter' && state === 'intro')) { if (e.target.closest?.('input,textarea,select')) return; e.preventDefault(); press(e); }
+    // 한글 입력 상태에서도 C(ㅊ) 키가 먹게 e.key도 봄
+    const cut = e.code === 'KeyC' || e.code === 'Space' || e.key === 'ㅊ' || e.key === 'c' || e.key === 'C' || e.key === ' ';
+    if (cut || (e.code === 'Enter' && state === 'intro')) { if (e.target.closest?.('input,textarea,select,[contenteditable]')) return; if (document.querySelector('.modal.open')) return; e.preventDefault(); press(e); }
   };
   document.addEventListener('keydown', key);
   const off = () => { document.removeEventListener('keydown', key); document.removeEventListener('visibilitychange', vis); };
   const rs = () => { if (state !== 'done') wave(target && dur ? target / dur : .5); };
   addEventListener('resize', rs);
 
-  intro(); paintTop(); wave(.6); setHead(0);
+  intro(); paintTop(); wave(.6); setHead(0); raf = requestAnimationFrame(loop);
   window.__cut = { get state() { return state; }, get target() { return target; }, get t0() { return t0; }, get dur() { return dur; }, get fi() { return fi; }, errs, signed };   // 테스트 훅
   return () => { alive = false; cancelAnimationFrame(raf); timers.forEach(clearTimeout); off(); removeEventListener('resize', rs); try { actx?.close(); } catch {} };
 }
