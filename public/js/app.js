@@ -2018,7 +2018,7 @@ async function loadNotice() {
   $('#noticeX').onclick = () => { store.set(noticeKey(c.key), c.id); box.hidden = true; loadNotice(); };   // 닫으면 남은 다른 공지가 있으면 이어서
   box.hidden = false;
 }
-// 켜 둔 채로 있는 화면에도 새 공지(아침 06:00 패치 등)가 뜨게 10분마다 다시 확인 (안 보이는 탭은 쉼)
+// 켜 둔 채로 있는 화면에도 새 공지(밤 12시 패치 등)가 뜨게 10분마다 다시 확인 (안 보이는 탭은 쉼)
 setInterval(() => { if (homeBooted && !document.hidden) loadNotice(); }, 10 * 60e3);
 
 /* ===== 소개 (로그인 전) ===== */
