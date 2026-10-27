@@ -1584,8 +1584,10 @@ async function playGear() {
   };
   // 화면 크기: 판(120×240)을 정수 배(기기 픽셀 기준)로 — 옆 칸(보관·다음)과 아래 버튼·랭킹이 스크롤 없이 보이게
   const fit = () => {
-    const w = $('#parea').clientWidth, top = $('#grScr').getBoundingClientRect().top + scrollY;
-    const side = w < 560 ? 150 : 250, dpr = devicePixelRatio || 1;
+    // 폭은 창 기준(게임 칸 폭이 앱 창에서 좁게 잡히던 경우 대비 — 2026-10-27 2차), 옆 칸은 실제로 잰 폭
+    const sides = [...document.querySelectorAll('#gr .gr-side')].reduce((a, el) => a + el.getBoundingClientRect().width, 0) + 40;
+    const w = Math.min(innerWidth - 24, 1240), top = $('#grScr').getBoundingClientRect().top;
+    const side = sides > 40 ? sides : 250, dpr = devicePixelRatio || 1;
     // 2026-10-27 하율 "화면이 이상해": 앱 창(배율이 소수인 기기)에서 내림 때문에 최소 크기보다 작아지고, 창 높이가 바뀌어도 다시 안 맞춰 판이 손바닥만 했음
     //   → 최소 1.5배는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
     const k = Math.min((w - side) / GEAR.BW, (innerHeight - top - (touchy ? 170 : 24)) / GEAR.BH);
