@@ -1728,6 +1728,9 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .ntlist .nb-txt{white-space:normal;word-break:keep-all;font-size:14px;line-height:1.6;font-weight:600;color:var(--sub);max-height:3.2em;overflow:hidden}
 .ntlist .nb-txt .ptitems{white-space:normal;margin-top:0}
 /* 접힌 업데이트 소식: 안쪽 줄은 카드 모양(.ntlist li) 없이 글만 — 2줄 미리보기가 칸 테두리에 반쯤 잘리지 않게 (2026-10-25) */
+/* 펼친 업데이트 소식 줄: 카드 모양은 두되 flex 말고 한 덩어리 글로 — flex면 글·이모티콘(.kao)·굵은 글이 따로 칸이 됨 (2026-10-27) */
+.ntlist .ptitems li{display:block}
+.ntlist .ptitems li .kao,.ntlist .ptitems li b{display:inline}
 .ntlist .ntb:not(.open) .ptitems li{display:list-item;padding:0;background:none;border:0;border-radius:0;box-shadow:none}
 .ntlist .ntb:not(.open) .ptimg{display:none}
 .ntlist .ntb:not(.open) .ptitems{line-height:1.6;margin-bottom:0}
