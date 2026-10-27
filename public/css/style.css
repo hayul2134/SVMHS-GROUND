@@ -4999,10 +4999,13 @@ html:has(body.playing){overflow:hidden}
 .mr-days{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .mr-days li{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;font-size:12.5px}
 .mr-days li span{font-weight:800;color:var(--sub)}
-.mr-days li i{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--sky,#5ab8ff) var(--w),transparent var(--w));box-shadow:inset 0 0 0 1.5px var(--ink)}
+.mr-days li i{position:relative;box-sizing:border-box;height:10px;border-radius:99px;border:1.5px solid var(--ink);overflow:hidden;background:var(--card)}
+.mr-days li i::before{content:'';position:absolute;inset:0 auto 0 0;width:var(--w,0%);border-radius:inherit;background:var(--sky,#5ab8ff);box-shadow:inset 0 2px 0 rgb(255 255 255 / .45);transition:width .75s cubic-bezier(.22,1,.36,1) var(--d,0s)}
 .mr-days li b{font:800 12.5px/1 var(--num,inherit);font-variant-numeric:tabular-nums;color:var(--ink);min-width:64px;text-align:right}
-.mr-days li.top i{background:linear-gradient(90deg,#ffd25e var(--w),transparent var(--w))}
-.mr-days li.top b::after{content:' 최고';font-size:10px;color:#e0a100}
+.mr-days li.top i::before{background:#ffd25e}
+.mr-days li.top b::after{content:' 최고';display:inline-block;margin-left:3px;font-size:10px;color:#e0a100;animation:mrTop .35s cubic-bezier(.34,1.56,.64,1) .9s both}
+@keyframes mrTop{from{opacity:0;transform:scale(.6)}}
+@media (prefers-reduced-motion:reduce){.mr-days li i::before{transition:none}.mr-days li.top b::after{animation:none}}
 .mr-days li.now span{color:var(--ink)}
 .mr-pe,.mr-n{margin:0;font-size:12px;color:var(--sub);font-weight:700}
 .mr-n b{color:var(--ink)}

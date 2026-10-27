@@ -1691,7 +1691,11 @@ async function myRecInto(el, game, local = null) {
   const vs = r.days.map(x => x.v), lo = Math.min(...vs), hi = Math.max(...vs), today = kstNow();
   const w = v => hi === lo ? 100 : Math.round(25 + 75 * (hi - v) / (hi - lo));
   el.innerHTML = `<div class="myrec"><p class="mr-best">${ic('trophy')}<span>내 최고</span><b>${r.best ? esc(g.fmt(r.best.v)) : '-'}</b>${r.best ? `<small>${md(r.best.day)}</small>` : ''}</p>
-    ${r.days.length ? `<p class="mr-h">최근 기록 <small>날마다 가장 잘한 판 · ${r.playDays}일 했어요</small></p><ol class="mr-days">${r.days.map(x => `<li class="${x.v === r.best?.v ? 'top' : ''}${x.day === today ? ' now' : ''}"><span>${x.day === today ? '오늘' : md(x.day)}</span><i style="--w:${w(x.v)}%"></i><b>${esc(g.fmt(x.v))}</b></li>`).join('')}</ol>` : '<p class="mr-pe">아직 기록이 없어요. 첫 판을 해 보세요!</p>'}</div>`;
+    ${r.days.length ? `<p class="mr-h">최근 기록 <small>날마다 가장 잘한 판 · ${r.playDays}일 했어요</small></p><ol class="mr-days">${r.days.map(x => `<li class="${x.v === r.best?.v ? 'top' : ''}${x.day === today ? ' now' : ''}"><span>${x.day === today ? '오늘' : md(x.day)}</span><i data-w="${w(x.v)}"></i><b>${esc(g.fmt(x.v))}</b></li>`).join('')}</ol>` : '<p class="mr-pe">아직 기록이 없어요. 첫 판을 해 보세요!</p>'}</div>`;
+  // 막대 차오르기 (2026-10-28 하율) — CSP가 style="" 속성을 막으니 CSSOM으로: 0에서 시작해 다음 프레임에 목표 길이로, 위에서부터 차례로
+  const bars = [...el.querySelectorAll('.mr-days i[data-w]')];
+  bars.forEach((b, i) => b.style.setProperty('--d', (0.15 + i * 0.09).toFixed(2) + 's'));
+  requestAnimationFrame(() => requestAnimationFrame(() => bars.forEach(b => b.style.setProperty('--w', b.dataset.w + '%'))));
   return r;
 }
 async function saveScore(game, value, rounds) {
@@ -1911,10 +1915,12 @@ async function playGear() {
     onClear(n, name, pts, up) {
       // 2026-10-27 하율 "위에 뜨는 효과는 더 크고 화려하게": 글자가 하나씩 튀어 오르고, 뒤에 빛살이 돌며 별가루가 터짐 (4줄은 무지개)
       clearTimeout(popT); pop.className = 'gr-pop on n' + n;
-      const letters = [...name].map((ch, i) => ch === ' ' ? ' ' : `<span style="--i:${i}">${esc(ch)}</span>`).join('');
+      const letters = [...name].map((ch, i) => ch === ' ' ? ' ' : `<span data-i="${i}">${esc(ch)}</span>`).join('');
       const stars = Array.from({ length: n === 4 ? 14 : 4 + n * 2 }, (_, i) => { const a = i / (n === 4 ? 14 : 4 + n * 2) * 6.283 + Math.random() * .4, d = 60 + Math.random() * (n === 4 ? 70 : 40);
-        return `<i class="gr-star" style="--x:${Math.round(Math.cos(a) * d)}px;--y:${Math.round(Math.sin(a) * d * .6)}px;--d:${(Math.random() * .15).toFixed(2)}s"></i>`; }).join('');
+        return `<i class="gr-star" data-x="${Math.round(Math.cos(a) * d)}" data-y="${Math.round(Math.sin(a) * d * .6)}" data-d="${(Math.random() * .15).toFixed(2)}"></i>`; }).join('');
       pop.innerHTML = `<div class="gr-burst"></div>${stars}<b>${letters}</b><small>+${pts.toLocaleString('ko-KR')}</small>${up ? `<em>레벨 ${R.st.level}!</em>` : ''}`;
+      pop.querySelectorAll('[data-i]').forEach(e => e.style.setProperty('--i', e.dataset.i));   // CSP가 style="" 속성을 막아서 CSSOM으로
+      pop.querySelectorAll('.gr-star').forEach(e => { e.style.setProperty('--x', e.dataset.x + 'px'); e.style.setProperty('--y', e.dataset.y + 'px'); e.style.setProperty('--d', e.dataset.d + 's'); });
       { const b = pop.querySelector('b'), fs = parseFloat(getComputedStyle(b).fontSize), w = $('#grScr').clientWidth * .92; if (b.scrollWidth > w) b.style.fontSize = Math.floor(fs * w / b.scrollWidth) + 'px'; }   // 긴 문구('울트라 기자재! X2' 등)가 판 밖으로 안 넘치게 줄임
       void pop.offsetWidth; popT = setTimeout(() => { pop.className = 'gr-pop'; }, n === 4 ? 1500 : 1200);
     },
