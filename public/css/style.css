@@ -290,7 +290,7 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .tray.mini .cell{padding:6px 3px 5px;border-radius:10px;gap:2px}
 .tray.mini .big{border-radius:13px}
 .tray.mini .half{padding:3px 4px;border-radius:8px}
-.tray.mini .half .em,.tray.mini .vc:not(.best){display:none}
+.tray.mini .half .em{display:none}
 .tray.mini .em{font-size:30px}
 .tray.mini .big .em{font-size:34px}
 
@@ -522,7 +522,6 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .tray-set.sm .drk{width:52px;height:80px}
 .tray-set.sm .drink .lbl{font-size:10.5px;font-size:min(10.5px,calc((100cqi - 8px) / var(--n,4)));padding:1px 4px}
 .drink .lbl .ln{display:block;white-space:nowrap}
-.tray-set.sm .drink .vc:not(.best){display:none}
 .s-tt.s-meal:not(.stow):has(.has-drink){width:398px}
 @media (min-width:1280px){.s-tt.s-meal:not(.stow):has(.has-drink){width:348px}}
 .s-meal.stow:has(.has-drink){width:clamp(280px,calc(var(--free) - 20px),400px)}

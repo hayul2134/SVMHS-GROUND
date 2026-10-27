@@ -404,14 +404,15 @@ const voteOf = (k, meal) => {
   const v = VOTES[k];
   if (!v || !v.enabled) return null;
   const m = (v.meals && v.meals[meal]) || { counts: {}, total: 0, mine: '' };
-  const top = Math.max(0, ...Object.values(m.counts));
+  const ns = Object.values(m.counts), max = Math.max(0, ...ns);
+  const top = max && ns.filter(n => n === max).length === 1 ? max : 0;   // 트로피는 단독 1등에게만 (공동 1등이면 없음)
   return { ...m, top, open: v.today === k };
 };
 const voteMark = (name, v) => {
   if (!v) return '';
-  const n = v.counts[name] || 0;
-  if (!n) return '';   // 표 없는 메뉴는 숫자 숨김 (화면이 덜 복잡하게)
-  return `<i class="vc${n && n === v.top ? ' best' : ''}">${n && n === v.top ? sji('trophy') : '♥ '}${n}</i>`;
+  if (!v.total) return '';   // 아무도 투표 안 했으면 숫자 숨김
+  const n = v.counts[name] || 0, best = n && n === v.top;   // 투표가 시작되면 모든 메뉴에 표 수 표시, 단독 1등만 트로피
+  return `<i class="vc${best ? ' best' : ''}">${best ? sji('trophy') : '♥ '}${n}</i>`;
 };
 const dishAttr = (name, v) => v && v.open ? ` data-dish="${esc(name)}" role="button" tabindex="0" aria-label="${esc(name)}에 투표"` : '';
 // 메뉴 이름: 6글자 이상이면 두 줄로. 재료·조리법 단어(고추장|조림…) 경계 중 가운데에 가장 가까운 곳에서 나눔
