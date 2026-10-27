@@ -54,6 +54,10 @@
 - push 전 `git pull --rebase` (다른 세션이 먼저 올렸을 수 있음).
 - 표 구조를 바꾸면 `lib/db.js`의 `SCHEMA_V`를 올리고 기존 DB용 ALTER 마이그레이션을 넣을 것. **setup은 판이 바뀔 때마다 전부 다시 돈다** → 다시 돌면 결과가 달라지는 작업(값 더하기·지우기·비우기·이름 옮기기)은 `if (prevV < NN)`(이 DB의 예전 판 번호)으로 한 번만, 여러 워커가 동시에 돌 수 있는 지급은 settings 표시(`INSERT OR IGNORE ... mig_vNN` 성공 시에만)까지(2026-10-25 v31 뽑기권 중복 지급·rl 비우기·반짝이 스티커 지움 버그). `gc_own`처럼 JSON 통째로 쓰는 칸은 `ownEdit`(이전 값 조건)으로만 고칠 것.
 - `index.html`에 인라인 스크립트·`style=""` 금지(CSP).
+- **DB·공지 상태 확인(2026-10-28 하율 "DB를 볼 수 없는 문제 해결해")**: 클라우드 세션의 셸은 허용 목록 때문에 svmhs-ground.pages.dev·Cloudflare API에 못 닿음(CONNECT 403). 대신 **Claude in Chrome**(하율 크롬, developer 로그인 + 관리자 세션 `sg_a`)에서 사이트 탭을 열고 `javascript_tool`로 `fetch`해서 읽는다. 추측으로 '컨펌 필요'·'게시 안 됨'이라 말하지 말고 먼저 확인할 것.
+  - 공지: `GET /api/s/patch` → `list`(게시본: id·title·ff) · `draft.hot`(날짜별 초안: day·ok=컨펌 여부·items). 코드의 `APPROVE`만으로 컨펌 여부를 판단하지 말 것(사이트 체크는 DB에만 있음).
+  - 관리자 API(`/api/admin/*`, 읽기 전용만 함부로 호출): `status` · `dash`(가입·접속·플레이·신고 수) · `monitor` · `users` · `user` · `scores` · `held`(보류 기록) · `reports` · `feedback` · `balance` · `settings` · `log`·`notices`. POST(정지·삭제·리셋 등)는 하율에게 먼저 물어볼 것.
+  - 관리자 세션이 만료돼 401이면 비밀번호 입력은 Claude가 못 하므로 하율에게 /admin 재로그인을 부탁.
 - 배포 확인: `curl -s "https://svmhs-ground.pages.dev/<파일>?x=$RANDOM"`으로 새 내용이 보일 때까지 폴링. 가능하면 실제 브라우저로 화면 확인.
 - 구조를 바꾸면 `CODEMAP.md`도 같이 갱신.
 
