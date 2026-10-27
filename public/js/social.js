@@ -1548,7 +1548,8 @@ async function playGear() {
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
   const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>반납 5분 전!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="52" height="28"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
   const paintHud = () => { const s = R.st; $('#grSc').textContent = s.score.toLocaleString('ko-KR'); $('#grLn').textContent = s.lines; $('#grLv').textContent = s.level; };
-  const paintQ = () => { R.drawMini($('#grHold'), R.st.hold, R.st.held); [0, 1, 2].forEach(i => R.drawMini($('#grN' + i), R.st.queue[i])); };
+  const paintQ = () => { R.drawMini($('#grHold'), R.st.hold);   // 보관 블록은 다음 블록처럼 그대로 (2026-10-27 하율: 흐리게 그리던 것 제거)
+     [0, 1, 2].forEach(i => R.drawMini($('#grN' + i), R.st.queue[i])); };
   let popT = 0;
   const R = GEAR.createGear(cv, {
     sound,
