@@ -2726,3 +2726,11 @@ fitSoon();
   put('#cdVac', () => cdt('snow', '방학까지'), 1);
   put('#cdAdult', () => cdt('cake', '성인까지'), 1);
 })();
+
+// 서비스 아이콘 등장 (2026-10-28 하율: "게임 4개는 왜 가만히 있어? 기자재 정리만 애니메이션"): 카테고리 칸이 화면에 들어오는 순간
+// 그 칸의 아이콘이 왼쪽부터 차례로 톡톡 나타남. html.svrv일 때만 숨겨 두므로 스크립트가 안 돌아도 아이콘은 보임.
+if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
+  document.documentElement.classList.add('svrv');
+  const sio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); sio.unobserve(e.target); } }), { threshold: .15 });
+  document.querySelectorAll('.apps .catgrid').forEach(g => sio.observe(g));
+}
