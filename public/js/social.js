@@ -147,9 +147,11 @@ async function refreshMe() {
   if (!S.meErr) loadBuddies();
 }
 // 끝난 게임 랭킹 라운드 보상(서버 settleRounds가 이미 뽑기권을 넣음) → 한 번 알리고 봤음 표시
+// 2026-10-27: 'w:all' = 매주 모두에게 주는 뽑기권 · 't:티어' = 라운드 최종 티어 보상 · (예전) 'w:게임' = 게임 1~3등
 function rkGiftToast(list) {
   const n = list.reduce((a, x) => a + x.tix, 0);
-  toast(`게임 랭킹 보상! ${list.map(x => `${GAMES[x.game]?.name || x.game} ${x.place}등`).join(' · ')} — 뽑기권 ${n}장을 받았어요`, 6000);
+  const what = x => x.game === 'w:all' ? '이번 주 뽑기권' : x.game.startsWith('t:') ? `지난 라운드 ${tierOfK(x.game.slice(2))?.n || ''} 티어` : `${GAMES[x.game.slice(2)]?.name || x.game} ${x.place}등`;
+  toast(`🎟️ ${[...new Set(list.map(what))].join(' · ')} — 뽑기권 ${n}장을 받았어요`, 6000);
   call('rkseen', {}).catch(() => {});
 }
 function startPoll() {
@@ -1310,7 +1312,7 @@ async function loadTier() {
       ${rad ? `<div class="tm t-radiant apex"><span class="tm-em"><i class="tm-halo"></i>${radIc()}</span>
         <div class="tm-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><span class="tm-st">순위·티어표에는 나오지 않아요</span></div></div>` : `<div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
         <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>`}
-      <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>잘한 ${BEST_N}개 게임 점수를 합쳐 줄 세우기<small>같으면 전체 합으로 가려요</small></span></li><li><b>3</b><span>${byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li></ol>
+      <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>잘한 ${BEST_N}개 게임 점수를 합쳐 줄 세우기<small>같으면 전체 합으로 가려요</small></span></li><li><b>3</b><span>${byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li><li><b>4</b><span>라운드 끝나면 뽑기권<small>챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장</small></span></li></ol>
     </div>
     <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>
     <ol class="tr-stairs">${stairs}</ol>
@@ -1422,8 +1424,8 @@ function rkInfo(wk = false) {   // wk: 뽑기권 주(1주) · 아니면 점수·
 const ddl = k => k.left ? 'D-' + k.left : '오늘 밤 12시';
 function rkBand() {   // 두 주기 안내: 1주 = 뽑기권 · 2주 = 점수·티어 (2026-10-25)
   const w = rkInfo(true), r = rkInfo();
-  if (!w.open && w.open !== undefined) return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>주간 랭킹·티어는 정식 업데이트 주부터 시작해요</b><small>시작하면 매주 게임마다 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장 · ${RK.days}일마다 점수·티어를 새로 매겨요. 지금 기록은 '역대' 랭킹에 쌓여요</small></p></div>`;
-  return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${w.started ? `이번 주 마감 ${ddl(w)} · 라운드 마감 ${ddl(r)}` : `${+w.from.slice(4, 6)}/${+w.from.slice(6, 8)} 첫 주·첫 라운드 시작`}</b><small>매주 게임마다 1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장 (${w.md} 밤 12시 마감) · ${RK.days}일마다 점수·티어를 새로 매겨요 (${r.md} 밤 12시 마감)</small></p></div>`;
+  if (!w.open && w.open !== undefined) return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>주간 랭킹·티어는 정식 업데이트 주부터 시작해요</b><small>시작하면 ${RK.days}일마다 점수·티어를 새로 매기고, 라운드가 끝나면 챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장. 지금 기록은 '역대' 랭킹에 쌓여요</small></p></div>`;
+  return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${w.started ? `라운드 마감 ${ddl(r)}` : `${+w.from.slice(4, 6)}/${+w.from.slice(6, 8)} 첫 주·첫 라운드 시작`}</b><small>라운드(${RK.days}일)가 끝나면 티어로 뽑기권 — 챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장 (${r.md} 밤 12시 마감, 그 뒤 기록·티어 새로 시작) · 매주 모두에게 뽑기권 ${RK.week}장</small></p></div>`;
 }
 async function openRank(game, scope = 'week') {
   if (S.enabled === false) { toast('랭킹을 준비하고 있어요'); return; }
@@ -1454,10 +1456,10 @@ async function openRank(game, scope = 'week') {
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요 · 주가 끝나면 1~3등 뽑기권' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
       if (scope === 'week' || scope === 'round') {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
         const wk = scope === 'week', k = rkInfo(wk);
-        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? `1등 뽑기권 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장` : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
+        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
         if (!r.list.length) $('#rankList').innerHTML = `<li class="empty">${wk ? '이번 주' : '이번 라운드'} 기록이 아직 없어요. 지금 하면 1등!</li>`;
       }
     }

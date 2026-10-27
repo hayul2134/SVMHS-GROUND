@@ -78,7 +78,7 @@ function paint() {
         <label class="gc-skipck"><input type="checkbox" data-gc-skip ${skipPref() ? 'checked' : ''}><i aria-hidden="true"></i>뽑기 애니메이션 스킵 <small>바로 결과 보기</small></label>
         <p class="gc-pity">${g.pity < 0 ? '희귀 확정 <b>사용함</b>' : `희귀 확정까지 <b>${GC.pityRare - g.pity}</b>번`} · ${g.leg < 0 ? '전설 확정 <b>사용함</b>' : `전설 확정까지 <b>${GC.pityLeg - g.leg}</b>번`}</p>
         <div class="gc-shard"><span><i class="gc-sh" aria-hidden="true"></i>조각 <b>${g.shard}</b></span><button type="button" class="btn ghost" data-gc-shop>조각 상점</button></div>
-        <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장 · 연속 5일마다 1장 더 · <a href="#game" data-go="game">게임 랭킹 1~3등</a>은 매주 ${RK.tix.join('·')}장!</p>
+        <p class="gc-how">${g.tix < 1 ? '<b>뽑기권이 없어요.</b> ' : ''}등교하는 날 출석하면 1장 · 연속 5일마다 1장 더 · 매주 모두에게 ${RK.week}장 · <a href="#game" data-go="game">라운드 티어</a> 챌린저 ${RK.tierTix.challenger}·그마 ${RK.tierTix.grandmaster}·마스터 ${RK.tierTix.master}장!</p>
       </div>
     </section>
     <section class="gc-stage" id="gcStage" aria-live="polite">${keep || ''}</section>
@@ -103,7 +103,7 @@ function paint() {
       <li>이미 가진 게 또 나오면 조각을 받아요(일반 ${GC.shard[1]} · 희귀 ${GC.shard[2]} · 전설 ${GC.shard[3]} · 시크릿 ${GC.shard[4]}개).</li>
       <li>조각 상점: 아직 없는 걸 <b>골라서 받기</b>(일반 ${GC.pick[1]} · 희귀 ${GC.pick[2]}개 — <b>전설·시크릿은 뽑기로만</b>) · 가진 스티커를 <b>반짝이로 바꾸기</b>(일반 ${GC.shine[1]} · 희귀 ${GC.shine[2]}개). 조각을 뽑기권으로 바꿀 수는 없어요.</li>
       <li>시즌 1을 전부 모으면 칭호 <b>‘${GC_TITLE}’</b>과 프로필 사진 <b>홀로그램 테두리</b>를 받아요.</li>
-      <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(연속 ${MILESTONES.slice(0, 4).join('·')}일…)에 1장 더 받아요. 게임 랭킹은 ${RK.wdays}일(매주)마다 마감해서 게임마다 1등 ${RK.tix[0]}장 · 2등 ${RK.tix[1]}장 · 3등 ${RK.tix[2]}장을 줘요. 최대 ${GC.max}장까지 모여요.</li>
+      <li>뽑기권은 등교하는 날 출석하면 1장, 연속 출석 ${GC.bonusEvery}일마다 1장 더, 출석 기념일(연속 ${MILESTONES.slice(0, 4).join('·')}일…)에 1장 더 받아요. 매주 월요일엔 모두에게 ${RK.week}장, 라운드(${RK.days}일)가 끝나면 최종 티어로 챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장을 줘요. 최대 ${GC.max}장까지 모여요.</li>
       <li>돈으로 사는 건 없어요. 결과는 서버에서 정해지고, 창을 닫아도 그대로 남아요.</li></ul>
     </details>`;
   tuneInit();

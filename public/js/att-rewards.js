@@ -144,7 +144,9 @@ export const baseOf = v => isShn(v) ? v.slice(0, -SHN.length) : v;
 // 2026-10-25 2차(하율): 주기를 둘로 — 1주(wdays) = 게임별 1~3등 뽑기권 · 2주(days) = 라운드 점수·티어. 큰 시즌(한 달)은 나중에
 // 2026-10-25 3차(하율): 주기는 하율이 "이제 배포할게"라고 하는 주의 업데이트일(월요일)부터 시작 → 그때 start에 그 월요일 'YYYY-MM-DD'를 넣음.
 //   비어 있으면 아직 시작 전(모든 주기 n = -1, 기록·보상·티어 없음)
-export const RK = { start: '2026-10-26', days: 14, wdays: 7, tix: [3, 2, 1] };
+// 2026-10-27 하율: 보상 바꿈 — 게임 랭킹 1~3등 뽑기권은 없앰. 대신 ① 매주(wdays) 모두에게 뽑기권 week장 ② 라운드(2주)가 끝나면 최종 티어로 tierTix장
+//   (챌린저 3 · 그랜드마스터 2 · 마스터 1). 라운드가 끝나면 라운드 기록·티어는 새로 시작(역대 기록은 그대로)
+export const RK = { start: '2026-10-26', days: 14, wdays: 7, week: 1, tierTix: { challenger: 3, grandmaster: 2, master: 1 } };
 const RK_START = () => (RK.start || '2099-01-05').replace(/-/g, '');   // 시작 전엔 먼 미래 월요일로 계산(항상 '시작 전')
 const dnum = ymd => Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)) / 864e5;
 const ymdOf = n => new Date(n * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
