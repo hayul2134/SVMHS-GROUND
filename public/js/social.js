@@ -380,7 +380,7 @@ function profileHtml(d) {
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
       </div>
-      <div class="pcols${!isDev(u) && !u.bio && !crowns && !u.insta ? ' slim' : ''}">
+      <div class="pcols">
         <div class="pmain">
           ${isDev(u) ? '<button class="pdev" type="button" data-fb><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg><span>궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! <span class="nw">팔로우 안 해도 돼요</span></span></button>' : ''}
           ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
