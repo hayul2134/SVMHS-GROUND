@@ -54,10 +54,7 @@ function body(g, cells, col) {
     box(g, x0, y0, x1 - x0, y1 - y0, col);
     if (T) box(g, x0, y0, x1 - x0, 1, hi); if (L) box(g, x0, y0, 1, y1 - y0, hi);
     if (B) box(g, x0, y1 - 1, x1 - x0, 1, lo); if (R) box(g, x1 - 1, y0, 1, y1 - y0, lo);
-    // 바깥 모서리 둥글게: 모서리 1px 투명 → 대각선 안쪽 남색 점 → 그 안쪽 흰 점
-    const round = (px, py, sx, sy) => { g.clearRect(px, py, 1, 1); box(g, px + sx, py + sy, 1, 1, OL); box(g, px + sx * 2, py + sy * 2, 1, 1, RIM); box(g, px + sx, py, 1, 1, OL); box(g, px, py + sy, 1, 1, OL); };
-    if (L && T) round(x, y, 1, 1); if (R && T) round(x + C - 1, y, -1, 1);
-    if (L && B) round(x, y + C - 1, 1, -1); if (R && B) round(x + C - 1, y + C - 1, -1, -1);
+    // 모서리는 둥글리지 않고 완전히 각지게 (2026-10-27 하율: 쌓을 때 모서리 틈 없게)
     // 안쪽으로 꺾인 모서리(옆·위는 붙었는데 대각선은 비었음): 선이 끊기지 않게 2×2 채움
     const notch = (dx, dy, px, py) => { if (!has(cx + dx, cy) || !has(cx, cy + dy) || has(cx + dx, cy + dy)) return; box(g, px - (dx > 0 ? 1 : 0), py - (dy > 0 ? 1 : 0), 2, 2, RIM); box(g, dx > 0 ? px : px, dy > 0 ? py : py, 1, 1, OL); };
     notch(-1, -1, x, y); notch(1, -1, x + C - 1, y); notch(-1, 1, x, y + C - 1); notch(1, 1, x + C - 1, y + C - 1);
