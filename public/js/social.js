@@ -1599,16 +1599,18 @@ async function playGear() {
   fit(); const fitT = [setTimeout(fit, 250), setTimeout(fit, 1000)];   // 창이 열리며 크기가 바뀌는 앱 창 대비
   const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe($('#parea')); ro.observe(document.documentElement); addEventListener('resize', fit);
   // 키보드
-  const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', x: 'cw', X: 'cw', z: 'ccw', Z: 'ccw', ' ': 'drop', c: 'hold', C: 'hold', Shift: 'hold', a: 'left', A: 'left', d: 'right', D: 'right', s: 'down', S: 'down', w: 'cw', W: 'cw' };
+  // 글자 키는 e.code(자판 위치)로 — 한글 입력 상태면 C가 'ㅊ'으로 와서 보관(C)·돌리기(Z·X)·멈춤(P)이 안 먹던 문제 (2026-10-27 하율 "보관 기능이 제대로 안돼")
+  const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', KeyX: 'cw', KeyZ: 'ccw', Space: 'drop', KeyC: 'hold', ShiftLeft: 'hold', ShiftRight: 'hold', KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'cw' };
+  const keyOf = e => KEY[e.code] || KEY[e.key];
   const kd = e => {
     if (e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
-    if (over) { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); restart(); } return; }
-    if (e.key === 'p' || e.key === 'P') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
-    const a = KEY[e.key]; if (!a) { if (R.st.scene !== 'play' && e.key.length === 1) R.input('cw', true); return; }
+    if (over) { if ((e.code === 'Space' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); restart(); } return; }
+    if (e.code === 'KeyP') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
+    const a = keyOf(e); if (!a) { if (R.st.scene !== 'play' && e.key.length === 1) R.input('cw', true); return; }
     e.preventDefault(); if (e.repeat) return;
     R.input(a, true);
   };
-  const ku = e => { const a = KEY[e.key]; if (a) R.input(a, false); };
+  const ku = e => { const a = keyOf(e); if (a) R.input(a, false); };
   document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
   // 터치 버튼: 누르고 있으면 좌우·아래는 계속
   $('#gr .gr-touch').addEventListener('pointerdown', e => {

@@ -4720,7 +4720,7 @@ html:has(body.playing){overflow:hidden}
 .gr-scr > canvas{display:block;image-rendering:pixelated;width:240px}
 .gr-scr::before{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 3px #8c6a4a,inset 0 0 0 5px #5d4330;border-radius:7px;z-index:1}   /* 나무 선반 테두리 */
 .gr-ov{background:rgba(29,34,56,.55);padding:10px;gap:8px}
-.gr-ov b{font-size:clamp(22px,4vw,34px)}
+.gr-ov > b{font-size:clamp(22px,4vw,34px)}
 .gr-ov span{line-height:1.45}
 .gr-kinds{list-style:none;margin:2px 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px;justify-items:center}
 .gr-kinds li{display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -4728,7 +4728,7 @@ html:has(body.playing){overflow:hidden}
 .gr-ov > small{color:#fff;text-shadow:1px 1px 0 #2a2846,-1px 1px 0 #2a2846,1px -1px 0 #2a2846,-1px -1px 0 #2a2846;font-size:14px}
 .gr-kinds small{animation:none;color:#fff;font-size:11px;margin:0;text-shadow:1px 1px 0 #2a2846}
 .gr-ov.dead .hr-card{max-width:92%;padding:10px 14px}
-.gr-ov.hr-ov.dead b{font-size:clamp(20px,2.6vw,28px)}
+.gr-ov.hr-ov.dead > b{font-size:clamp(20px,2.6vw,28px)}
 .gr-ov.hr-ov span{font-size:13px}
 .gr-pop{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2;white-space:nowrap}
 .gr-pop b{font:400 clamp(20px,3.4vw,30px)/1 var(--disp);color:#fff;-webkit-text-stroke:2px #2a2846;paint-order:stroke;text-shadow:3px 3px 0 #2a2846}

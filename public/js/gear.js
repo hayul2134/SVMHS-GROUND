@@ -17,7 +17,7 @@ export const KIND = {
   I: { n: '붐 마이크', N: 4, cells: [[0, 1], [1, 1], [2, 1], [3, 1]], body: '#c3cbe0' },
   O: { n: '카메라', N: 2, cells: [[0, 0], [1, 0], [0, 1], [1, 1]], body: '#4a5170' },
   T: { n: '삼각대', N: 3, cells: [[1, 0], [0, 1], [1, 1], [2, 1]], body: '#ff8f5a' },
-  L: { n: 'LED 조명', N: 3, cells: [[2, 0], [0, 1], [1, 1], [2, 1]], body: '#ffd25e' },
+  L: { n: '확성기', N: 3, cells: [[2, 0], [0, 1], [1, 1], [2, 1]], body: '#ff5a6e' },   // 2026-10-27 하율: LED 조명 → 다른 장비로 교체
   J: { n: '짐벌', N: 3, cells: [[0, 0], [0, 1], [1, 1], [2, 1]], body: '#5b8cff' },
   S: { n: '케이블', N: 3, cells: [[1, 0], [2, 0], [0, 1], [1, 1]], body: '#ff8a3d' },
   Z: { n: '슬레이트', N: 3, cells: [[0, 0], [1, 0], [1, 1], [2, 1]], body: '#2e2f45' },
@@ -37,21 +37,28 @@ function canvasOf(w, h) { const c = document.createElement('canvas'); c.width = 
 const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v * k))); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(v => f(v).toString(16).padStart(2, '0')).join(''); };
 function disc(g, cx, cy, r, col) { g.fillStyle = col; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * .6) g.fillRect(cx + x, cy + y, 1, 1); }
 function box(g, x, y, w, h, col) { g.fillStyle = col; g.fillRect(x, y, w, h); }
-// 장비 몸통: 칸들을 한 덩어리로 — 바깥 테두리만 남색 선, 붙은 칸끼리는 이어짐, 바깥 모서리는 둥글게, 위·왼쪽 밝게·아래·오른쪽 어둡게
+// 장비 몸통: 칸들을 한 덩어리로 — 바깥 테두리 = 흰 선 1px + 남색 선 1px(어두운 선반에 안 묻히게, 2026-10-27 하율), 붙은 칸끼리는 이어짐,
+// 바깥 모서리는 둥글게, 안쪽으로 꺾인 모서리도 선을 이어 줌, 위·왼쪽 밝게·아래·오른쪽 어둡게
+const RIM = '#f7f9ff';
 function body(g, cells, col) {
   const has = (x, y) => cells.some(c => c[0] === x && c[1] === y);
   const hi = shade(col, 1.18), lo = shade(col, .78);
   for (const [cx, cy] of cells) {
     const x = cx * C, y = cy * C, L = !has(cx - 1, cy), R = !has(cx + 1, cy), T = !has(cx, cy - 1), B = !has(cx, cy + 1);
-    box(g, x, y, C, C, OL);
-    const x0 = x + (L ? 1 : 0), y0 = y + (T ? 1 : 0), x1 = x + C - (R ? 1 : 0), y1 = y + C - (B ? 1 : 0);
+    const ins = d => [x + (L ? d : 0), y + (T ? d : 0), x + C - (R ? d : 0), y + C - (B ? d : 0)];
+    box(g, x, y, C, C, RIM);
+    { const [a, b, c2, d2] = ins(1); box(g, a, b, c2 - a, d2 - b, OL); }
+    const [x0, y0, x1, y1] = ins(2);
     box(g, x0, y0, x1 - x0, y1 - y0, col);
     if (T) box(g, x0, y0, x1 - x0, 1, hi); if (L) box(g, x0, y0, 1, y1 - y0, hi);
     if (B) box(g, x0, y1 - 1, x1 - x0, 1, lo); if (R) box(g, x1 - 1, y0, 1, y1 - y0, lo);
-    // 바깥 모서리 둥글게(모서리 1px 투명 + 안쪽 1px 선)
-    const corner = (px, py, ix, iy) => { g.clearRect(px, py, 1, 1); box(g, ix, iy, 1, 1, OL); };
-    if (L && T) corner(x, y, x + 1, y + 1); if (R && T) corner(x + C - 1, y, x + C - 2, y + 1);
-    if (L && B) corner(x, y + C - 1, x + 1, y + C - 2); if (R && B) corner(x + C - 1, y + C - 1, x + C - 2, y + C - 2);
+    // 바깥 모서리 둥글게: 모서리 1px 투명 → 대각선 안쪽 흰 점 → 그 안쪽 남색 점
+    const round = (px, py, sx, sy) => { g.clearRect(px, py, 1, 1); box(g, px + sx, py + sy, 1, 1, RIM); box(g, px + sx * 2, py + sy * 2, 1, 1, OL); box(g, px + sx, py, 1, 1, RIM); box(g, px, py + sy, 1, 1, RIM); };
+    if (L && T) round(x, y, 1, 1); if (R && T) round(x + C - 1, y, -1, 1);
+    if (L && B) round(x, y + C - 1, 1, -1); if (R && B) round(x + C - 1, y + C - 1, -1, -1);
+    // 안쪽으로 꺾인 모서리(옆·위는 붙었는데 대각선은 비었음): 선이 끊기지 않게 2×2 채움
+    const notch = (dx, dy, px, py) => { if (!has(cx + dx, cy) || !has(cx, cy + dy) || has(cx + dx, cy + dy)) return; box(g, px - (dx > 0 ? 1 : 0), py - (dy > 0 ? 1 : 0), 2, 2, OL); box(g, dx > 0 ? px : px, dy > 0 ? py : py, 1, 1, RIM); };
+    notch(-1, -1, x, y); notch(1, -1, x + C - 1, y); notch(-1, 1, x, y + C - 1); notch(1, 1, x + C - 1, y + C - 1);
   }
 }
 const ART = {
@@ -81,12 +88,15 @@ const ART = {
     box(g, 9, 19, 2, 2, '#ffd25e'); box(g, 25, 19, 2, 2, '#ffd25e');   // 다리 잠금
     box(g, 5, 21, 3, 1, '#2a2846'); box(g, 28, 21, 3, 1, '#2a2846');   // 발
   },
-  L(g) {   // LED 조명: 아래 줄 = 빛나는 패널(점점이 LED), 오른쪽 위 = 손잡이·각도 손잡이
-    box(g, 2, 14, 32, 8, '#fff4cc');
-    for (let y = 15; y < 21; y += 2) for (let x = 3; x < 33; x += 2) box(g, x, y, 1, 1, (x + y) % 4 ? '#ffffff' : '#ffe27a');
-    box(g, 2, 14, 32, 1, '#e8c24a');
-    box(g, 27, 3, 6, 2, '#5b6585'); box(g, 28, 5, 1, 9, '#5b6585'); box(g, 31, 5, 1, 9, '#5b6585');   // 요크(ㄷ자 손잡이)
-    disc(g, 29, 9, 1, '#3a3f55');
+  L(g) {   // 확성기(감독 메가폰): 아래 줄 = 왼쪽 손잡이·마이크 → 오른쪽으로 넓어지는 흰 나팔(빨간 띠), 오른쪽 위 = 위 손잡이
+    box(g, 2, 15, 6, 6, '#3a3f55'); box(g, 3, 16, 2, 4, '#5b6585');   // 뒤쪽 몸통(마이크)
+    for (let x = 8; x < 31; x++) {   // 나팔: 높이 4 → 10
+      const h = 2 + Math.round((x - 8) * 3 / 23), c = x === 14 || x === 15 || x === 23 || x === 24 ? '#ff5a6e' : x < 12 ? '#e6ebf7' : '#f7f9ff';
+      box(g, x, 18 - h, 1, h * 2, c); box(g, x, 18 - h - 1, 1, 1, OL); box(g, x, 18 + h, 1, 1, OL);   // 위·아래 윤곽
+    }
+    box(g, 31, 12, 3, 12, '#3a3f55'); box(g, 32, 13, 1, 10, '#1d2238');   // 나팔 입구(어두운 구멍)
+    box(g, 26, 3, 7, 2, '#3a3f55'); box(g, 26, 5, 2, 7, '#3a3f55'); box(g, 31, 5, 2, 7, '#3a3f55');   // 위 손잡이
+    box(g, 28, 8, 3, 2, '#ffd25e');   // 말하기 버튼
   },
   J(g) {   // 짐벌: 왼쪽 위 = 손잡이(버튼), 아래 줄 = 모터 두 개 + 스마트폰 거치대
     box(g, 3, 1, 6, 11, '#2f3247'); box(g, 4, 2, 1, 9, '#474b66');   // 손잡이
@@ -120,16 +130,16 @@ function buildArt() {
     body(g, cells, col);
     const [d, dg] = canvasOf(S, S);
     ART[k](dg);
-    // 세부 그림은 몸통 안쪽(테두리 1px 안)에만
+    // 세부 그림은 몸통 안쪽(테두리 2px 안)에만
     const [m, mg] = canvasOf(S, S);
     for (const [cx, cy] of cells) mg.fillRect(cx * C, cy * C, C, C);
     mg.globalCompositeOperation = 'destination-out';
     const has = (x, y) => cells.some(q => q[0] === x && q[1] === y);
-    for (const [cx, cy] of cells) {
-      if (!has(cx - 1, cy)) mg.fillRect(cx * C, cy * C, 1, C);
-      if (!has(cx + 1, cy)) mg.fillRect(cx * C + C - 1, cy * C, 1, C);
-      if (!has(cx, cy - 1)) mg.fillRect(cx * C, cy * C, C, 1);
-      if (!has(cx, cy + 1)) mg.fillRect(cx * C, cy * C + C - 1, C, 1);
+    for (const [cx, cy] of cells) {   // 테두리 2px(흰 선·남색 선) 안쪽에만
+      if (!has(cx - 1, cy)) mg.fillRect(cx * C, cy * C, 2, C);
+      if (!has(cx + 1, cy)) mg.fillRect(cx * C + C - 2, cy * C, 2, C);
+      if (!has(cx, cy - 1)) mg.fillRect(cx * C, cy * C, C, 2);
+      if (!has(cx, cy + 1)) mg.fillRect(cx * C, cy * C + C - 2, C, 2);
     }
     dg.globalCompositeOperation = 'destination-in'; dg.drawImage(m, 0, 0);
     g.drawImage(d, 0, 0);
