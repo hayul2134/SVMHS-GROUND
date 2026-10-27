@@ -894,7 +894,9 @@ const trNeed = nm => { const sp = splitOf(cls); return !!(sp && !cls.tk && sp.tr
 const trAttr = nm => trNeed(nm) ? ' data-open-class data-tip="내 분반 고르기"' : '';
 // 바뀐 시간표 (2026-10-27): neis.js가 평소와 다른 칸에 r.chg(평소 과목)를 붙임 → '변경' 칩, 누르거나 올리면 평소 과목
 const chgOf = r => { if (!r || !r.chg) return ''; const u = subjName(r.chg); return u && u !== subjName(r.ITRT_CNTNT) ? u : ''; };
-const chgTag = u => u ? `<i class="chg-t" title="평소엔 ${esc(u)}" aria-label="평소엔 ${esc(u)}">변경됨</i>` : '';
+const chgTag = u => u ? `<i class="chg-t" aria-label="평소엔 ${esc(u)}">변경됨</i>` : '';
+// 칸 이름표(2026-10-27): 바뀐 과목 칸은 마우스를 올리면 바로 '평소엔 OO' (분반 미설정 칸이면 안내도 같이)
+const cellAttr = (nm, cu) => cu ? `${trNeed(nm) ? ' data-open-class' : ''} data-tip="평소엔 ${esc(cu)}${trNeed(nm) ? ' · 내 분반 고르기' : ''}"` : trAttr(nm);
 const trDot = nm => trNeed(nm) ? '<i class="nw-d" aria-hidden="true"></i>' : '';
 const needClass = empty('반을 설정하면 시간표가 보여요 · <button class="link" data-open-class>설정하기</button>');
 // 홈 시간표에 보여 줄 날: 오늘 마지막 교시가 끝나면 다음 등교일, 다음 날 0시부터는 그날(=오늘)
@@ -939,7 +941,7 @@ async function renderHomeTT() {
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     if (S.ttWk) { nextKey = ''; await fillWeek(box, S.ttWk, () => seq !== ttSeq || !S.ttWk); wkResize(); return; }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm, cu]) => `<li data-p="${a}" data-p2="${z}"${z > a || cu ? ` class="${[z > a ? 'multi' : '', cu ? 'chg' : ''].filter(Boolean).join(' ')}"` : ''}${trAttr(nm)}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}${trDot(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}${chgTag(cu)}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
+      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm, cu]) => `<li data-p="${a}" data-p2="${z}"${z > a || cu ? ` class="${[z > a ? 'multi' : '', cu ? 'chg' : ''].filter(Boolean).join(' ')}"` : ''}${cellAttr(nm, cu)}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}${trDot(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}${chgTag(cu)}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
@@ -973,7 +975,7 @@ async function fillWeek(box, mon, stale) {
       let n = 1, cu = cm[k + '_' + p];
       while (v && p + n <= maxP && map[k + '_' + (p + n)] === v && !(p + n === 5 && p + n - 1 === 4)) { skip[k + '_' + (p + n)] = 1; cu = cu || cm[k + '_' + (p + n)]; n++; }
       const c = [k === t ? 'today' : k < t ? 'past' : '', v ? '' : 'e', n > 1 ? 'dbl' : '', cu ? 'chg' : ''].filter(Boolean).join(' ');
-      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}${v ? trAttr(v) : ''}>${v ? `<i class="si" aria-hidden="true">${subjIcon(v)}${trDot(v)}</i><span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}${chgTag(cu)}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
+      return `<td${c ? ` class="${c}"` : ''} data-d="${k}" data-p="${p}" data-p2="${p + n - 1}"${n > 1 ? ` rowspan="${n}"` : ''}${v ? cellAttr(v, cu) : ''}>${v ? `<i class="si" aria-hidden="true">${subjIcon(v)}${trDot(v)}</i><span class="sj">${esc(v)}</span>${n > 1 ? `<i class="x2">${n}시간</i>` : ''}${chgTag(cu)}` : ''}</td>`;   // 수업 없는 칸(e)은 칠하지 않음
     };
     const pn = p => { const b = BELL.find(x => x.p === p); return `<td class="pn"><b>${p}</b>${b ? `<small>${String(b.start / 3600 | 0).padStart(2, '0')}:${String(b.start % 3600 / 60).padStart(2, '0')}</small>` : ''}</td>`; };
     let h = '<table class="week"><thead><tr><th></th>' + days.map(d => { const k = ymd(d); return `<th class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd-d">${d.getDate()}</span><span class="wd-w">${DOW[d.getDay()]}</span></th>`; }).join('') + '</tr></thead><tbody>';
