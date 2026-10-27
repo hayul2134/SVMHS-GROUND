@@ -10,6 +10,10 @@ export const MISS_MS = 1000;   // 끝까지 안 누르면 1000ms(최대 오차) 
 const CLIPS = [['인터뷰_A캠.mp4', 'BGM_비트.wav'], ['B롤_운동장.mp4', 'BGM_비트.wav'], ['드론_교정.mp4', 'BGM_후렴.wav'], ['슬로모_점프.mov', 'BGM_후렴.wav'], ['엔딩_단체샷.mp4', 'BGM_엔딩.wav']];
 export const judge = (e, end) => end || e >= 1000 ? ['miss', 'MISS'] : e <= 15 ? ['perfect', 'PERFECT'] : e <= 50 ? ['great', 'GREAT'] : e <= 120 ? ['good', 'GOOD'] : ['bad', 'BAD'];
 export const grade = s => s <= 75 ? 'S' : s <= 200 ? 'A' : s <= 400 ? 'B' : s <= 800 ? 'C' : 'D';
+// 결과 칭호 (2026-10-28 하율 디벨롭 A): 등급마다 편집자 직급
+const TITLE = { S: ['편집의 신', '프레임 단위로 맞추는 손'], A: ['메인 편집자', '이 정도면 본편 맡겨도 돼요'], B: ['어시스턴트', '감은 잡았어요, 조금만 더!'], C: ['편집 인턴', '비트를 귀로 말고 눈으로!'], D: ['컷 미스 장인', '자를 곳을 지나치는 재능…'] };
+// 판마다 장면 (클립 색 · 파형 모양): [V1 색, V1 줄무늬, 테두리, 파형 기본 높이, 흔들림]
+const SCENE = [['#6a5fd6', '#5a50c2', '#b9b2ff', .14, .22], ['#2f9e8f', '#268678', '#9be8dc', .2, .18], ['#d9813b', '#c06f2e', '#ffd2a6', .1, .32], ['#3f86e0', '#3474c4', '#b4d4ff', .24, .16], ['#d4a017', '#b78910', '#ffe59a', .16, .3]];
 const side = d => d === 0 ? '딱 맞게' : `${Math.abs(d)}ms ${d < 0 ? '일찍' : '늦게'}`;
 const tc = ms => { const f = Math.floor(ms / (1000 / 30)), p = n => String(n).padStart(2, '0'); return `00:00:${p(Math.floor(f / 30))}:${p(f % 30)}`; };   // 30fps 타임코드
 const RAZOR = '<svg class="ctm-rz" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 9.2 20.6 3.4 15 13z" fill="#e8eef7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3.2 17.4 11 9.2l4 3.8-8 8.2z" fill="#ffd23f" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m6.6 16.6 2.2 2.1M9 14.2l2.2 2.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';   // 커터 칼(편집 프로그램 자르기 도구)
@@ -49,7 +53,8 @@ export function run(root, o) {
   // 그래서 플레이헤드를 '화면에 보일 때의 시각'(지금 + 1프레임) 위치에 그림 → 눈에 보이는 위치 = 판정에 쓰는 시각. 프레임 간격은 기기마다 달라(60·120Hz) 직접 잼.
   let fi = 1000 / 60, lastF = 0;
   const frame = now => { if (lastF) { const d = now - lastF; if (d > 4 && d < 50) fi += (d - fi) * .2; } lastF = now; return Math.min(34, Math.max(6, fi)); };
-  const errs = [], signed = [], timers = [];
+  const errs = [], signed = [], timers = [], cuts = [];   // cuts: 판마다 [컷 지점 비율, 자른 곳 비율 또는 null(놓침)] — 결과 화면 '내 컷 다시 보기'
+  let streak = 0;   // 연속 PERFECT
   const later = (f, ms) => timers.push(setTimeout(() => alive && f(), ms));
 
   /* 소리 (기본 꺼짐 — 교실) */
@@ -66,13 +71,13 @@ export function run(root, o) {
   paintSnd();
 
   /* 음악 파형: 잔잔한 막대 + 컷 지점에 큰 비트 */
-  const wave = f => {
+  const wave = (f, sc = SCENE[Math.min(round, 4)]) => {
     const r = wv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), W = Math.max(1, Math.round(r.width * dpr)), Hh = Math.max(1, Math.round(r.height * dpr));
     wv.width = W; wv.height = Hh; const g = wv.getContext('2d'), bw = 3 * dpr, gap = 2 * dpr, mid = Hh / 2, tx = f * W;
     g.fillStyle = '#3ddc97';
     for (let x = gap; x < W - bw; x += bw + gap) {
       const d = Math.abs(x + bw / 2 - tx) / dpr, beat = Math.max(0, 1 - d / 9) ** 1.4, tail = x > tx ? Math.max(0, 1 - (x - tx) / dpr / 40) * .35 : 0;
-      const h = Math.min(.96, .14 + Math.random() * .22 + beat * .82 + tail * Math.random()) * mid;
+      const h = Math.min(.96, sc[3] + Math.random() * sc[4] + beat * .82 + tail * Math.random()) * mid;
       g.globalAlpha = beat > .2 ? 1 : .72; g.fillStyle = beat > .2 ? '#a8ffd2' : '#3ddc97'; g.fillRect(x, mid - h, bw, h * 2);
     }
     g.globalAlpha = 1;
@@ -89,9 +94,10 @@ export function run(root, o) {
     ar.style.setProperty('--tg', (f * 100).toFixed(3) + '%');
     clA.classList.remove('cut', 'gone'); clB.classList.remove('cut'); clB.hidden = true; clA.style.width = ''; gp.hidden = true; mk.className = 'ctm-mk';
     $('#ctClN').textContent = CLIPS[round][0]; $('#ctAn').textContent = CLIPS[round][1];
+    const sc = SCENE[round]; ar.style.setProperty('--c1', sc[0]); ar.style.setProperty('--c2', sc[1]); ar.style.setProperty('--cb', sc[2]); ar.classList.toggle('last', round === 4);
     root.querySelectorAll('#ctRd li').forEach((li, i) => li.classList.toggle('now', i === round));
     wave(f); setHead(0); $('#ctTc').textContent = tc(0); paintTop();
-    msg.className = 'ctm-msg rdy'; msg.innerHTML = '<b>준비…</b>';
+    msg.className = 'ctm-msg rdy'; msg.innerHTML = round === 4 ? '<b>마지막 컷!</b><small>엔딩 장면이에요</small>' : '<b>준비…</b>';
     later(() => {
       msg.className = 'ctm-msg'; msg.innerHTML = '<span>파형이 튀는 <b class="ctm-red">빨간 컷 지점</b>에서 CUT!</span>';
       lastF = 0;
@@ -116,7 +122,8 @@ export function run(root, o) {
     tAt = Math.max(0, Math.min(dur, tAt));
     const e = end ? MISS_MS : Math.min(1000, Math.round(Math.abs(tAt - target))), d = Math.round(tAt - target), [k, name] = judge(e, end);
     errs.push(e); signed.push(end ? null : d); sum += e;
-    const cf = tAt / dur;
+    const cf = tAt / dur; cuts.push([target / dur, end ? null : cf]);
+    streak = k === 'perfect' ? streak + 1 : 0;
     setHead(cf); $('#ctTc').textContent = tc(tAt); paintTop();
     // 클립이 실제로 잘림: 왼쪽 조각 + 오른쪽 조각(살짝 벌어짐)
     if (!end) {
@@ -130,11 +137,16 @@ export function run(root, o) {
     } else clA.classList.add('gone');
     mk.className = 'ctm-mk ' + k;
     const li = root.querySelectorAll('#ctRd li')[round]; li.className = 'j-' + k; li.innerHTML = `<span>${e >= 1000 ? '✕' : e}</span>`;
-    msg.className = 'ctm-msg pop j-' + k; msg.innerHTML = `<b>${name}</b><small>${end ? '컷 지점을 지나쳤어요' : side(d)}</small>`;
-    if (k === 'perfect') { ar.classList.remove('shake'); void ar.offsetWidth; ar.classList.add('shake'); }
+    msg.className = 'ctm-msg pop j-' + k + (streak >= 2 ? ' combo c' + Math.min(streak, 4) : ''); msg.innerHTML = `<b>${name}${streak >= 2 ? ` <em>×${streak}</em>` : ''}</b><small>${end ? '컷 지점을 지나쳤어요' : streak >= 2 ? `${streak}연속 PERFECT! · ${side(d)}` : side(d)}</small>`;
+    if (k === 'perfect') {   // 연속일수록 크게 흔들리고 반짝이가 많아짐
+      ar.classList.remove('shake', 'shake2', 'shake3'); void ar.offsetWidth; ar.classList.add(streak >= 3 ? 'shake3' : streak === 2 ? 'shake2' : 'shake');
+      if (streak >= 2) { const n = Math.min(18, 6 + streak * 3); for (let i = 0; i < n; i++) { const sp = document.createElement('i'); sp.className = 'ctm-sp';
+        sp.style.left = (cf * 100).toFixed(2) + '%'; sp.style.setProperty('--dx', (Math.random() * 2 - 1) * (40 + streak * 14) + 'px'); sp.style.setProperty('--dy', -(20 + Math.random() * (40 + streak * 10)) + 'px');
+        sp.style.animationDelay = (Math.random() * 80) + 'ms'; ar.append(sp); setTimeout(() => sp.remove(), 900); } }
+    }
     sfx(k);
     round++;
-    if (round >= 5) { state = 'done'; btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice()), 900); }
+    if (round >= 5) { state = 'done'; btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice(), cuts.slice()), 900); }
     else later(start, NEXT);
   };
 
@@ -147,6 +159,7 @@ export function run(root, o) {
   const intro = () => {
     ov.hidden = false; ov.innerHTML = `<div class="ctm-in"><b>${RAZOR}편집의 신</b><p class="ctm-sub">완벽한 타이밍을 찾아라!</p><span>음악 비트(파형이 튀는 <em>빨간 컷 지점</em>)에<br>플레이헤드가 닿는 순간 CUT!</span>
       <ul><li><i class="j-perfect">PERFECT</i>15ms</li><li><i class="j-great">GREAT</i>50ms</li><li><i class="j-good">GOOD</i>120ms</li></ul>
+      <div class="ctm-demo" aria-hidden="true"><i class="d-cl"></i><i class="d-cr"></i><i class="d-mk"></i><i class="d-hd"></i><i class="d-fl"></i><b class="d-pf">PERFECT</b></div>
       <small>5번 · 점점 빨라져요 · 오차 합이 작을수록 1등</small><button type="button" class="btn big" id="ctGo">시작</button></div>`;
     $('#ctGo').onclick = go; };
   const go = () => { if (state !== 'intro') return; ov.hidden = true; ov.innerHTML = ''; if (sound) ac(); start(); };
@@ -169,10 +182,21 @@ export function run(root, o) {
 }
 
 // 결과 화면에 넣을 내용: 등급 · 습관 · 판별 기록(.rdet 자식 5개 = 서버가 보류 때 문제 판 빨간 표시에 씀)
-export function resultHtml(sum, errs, signed) {
+export function resultHtml(sum, errs, signed, cuts = []) {
   const g = grade(sum), hit = signed.filter(x => x != null), avg = hit.length ? Math.round(hit.reduce((a, b) => a + b, 0) / hit.length) : 0;
   const pf = errs.filter(e => e <= 15).length;
   const tip = !hit.length ? '전부 지나쳤어요. 비트가 오기 조금 전에 손을 준비해 보세요' : Math.abs(avg) < 8 ? '일찍·늦게 치우치지 않고 고르게 맞아요. 편집자 손이에요' : avg < 0 ? `평균 ${-avg}ms 일찍 누르는 편이에요 — 한 박자 참았다가!` : `평균 ${avg}ms 늦게 누르는 편이에요 — 비트를 보고 조금 미리!`;
-  return `<div class="ctm-res"><p class="ctm-grade g-${g}">${g}</p><div><p class="ctm-tip">${tip}</p>${pf ? `<p class="ctm-pf">PERFECT ${pf}번</p>` : ''}</div></div>
+  const [tt, ts] = TITLE[g];
+  // 내 컷 다시 보기: 5판을 타임라인 5줄로 — 빨간 선 = 컷 지점, 파란 선 = 내가 자른 곳, 사이 구간 = 오차
+  const rp = cuts.length === 5 ? `<div class="ctm-rp" aria-label="내 컷 다시 보기"><p class="ctm-rph">내 컷 다시 보기 <small><i class="k-t"></i>컷 지점 <i class="k-c"></i>내가 자른 곳</small></p>${cuts.map(([t, c], i) => {
+    const [k] = judge(errs[i], c == null), a = c == null ? t : Math.min(t, c), w = c == null ? 0 : Math.abs(c - t);
+    return `<div class="rp-row j-${k}"><span class="rp-n">${i + 1}</span><div class="rp-tr"><i class="rp-cl" data-c="${SCENE[i][0]}"></i>${w ? `<i class="rp-gp" data-l="${a}" data-w="${w}"></i>` : ''}<i class="rp-t" data-l="${t}"></i>${c == null ? '<b class="rp-miss">MISS</b>' : `<i class="rp-c" data-l="${c}"></i>`}</div><span class="rp-v">${c == null ? '지나침' : side(signed[i])}</span></div>`; }).join('')}</div>` : '';
+  return `<div class="ctm-res"><p class="ctm-grade g-${g}">${g}</p><div><p class="ctm-ttl">${tt}</p><p class="ctm-tip">${ts}</p><p class="ctm-tip sub">${tip}</p>${pf ? `<p class="ctm-pf">PERFECT ${pf}번</p>` : ''}</div></div>${rp}
     <p class="rdet ctm-rdet">${errs.map((e, i) => { const [k, n] = judge(e, signed[i] == null); return `<span class="j-${k}"><b>${n}</b>${signed[i] == null ? '지나침' : side(signed[i])}</span>`; }).join('')}</p>`;
+}
+
+// 결과 화면을 넣은 뒤 호출: CSP(style-src)가 style="" 속성을 막아서 위치·색은 여기서 CSSOM으로 넣음
+export function paintReplay(root) {
+  root?.querySelectorAll('.ctm-rp [data-l]').forEach(el => { el.style.left = (+el.dataset.l * 100).toFixed(2) + '%'; if (el.dataset.w) el.style.width = (+el.dataset.w * 100).toFixed(2) + '%'; });
+  root?.querySelectorAll('.ctm-rp [data-c]').forEach(el => el.style.setProperty('--c', el.dataset.c));
 }
