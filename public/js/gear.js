@@ -368,7 +368,7 @@ export function createGear(canvas, opt = {}) {
     while (st.board.length < ROWS) st.board.unshift(Array(COLS).fill(null));
     newPiece();
   }
-  function over() { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms) }); }
+  function over(timeUp = false) { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms), timeUp }); }
 
   function update(dt) {
     if (st.stop > 0) { st.stop--; return; }   // 히트스톱: 깨지는 순간 몇 프레임 멈칫
@@ -380,6 +380,7 @@ export function createGear(canvas, opt = {}) {
     st.shake = Math.max(0, st.shake - dt * 30); st.flash = Math.max(0, st.flash - dt * 3); st.bump = Math.max(0, st.bump - dt * 8);
     if (st.scene !== 'play') return;
     st.frames++; st.ms += dt * 1000;
+    if (st.limit && st.ms >= st.limit) { st.ms = st.limit; return over(true); }   // 랭킹전 2분 끝
     if (st.clearT) { if (--st.clearT === 0) finishClear(); return; }
     const p = st.cur; if (!p) return;
     // 좌우 누르고 있으면: DAS 10프레임 뒤 ARR 2프레임마다
@@ -488,6 +489,7 @@ export function createGear(canvas, opt = {}) {
       else if (name === 'hold') hold();
     },
     setSound(v) { sound = v; },
+    setLimit(ms) { st.limit = ms || 0; },   // 랭킹전 제한 시간(ms), 0 = 없음 — 시작 전에 정함
     setScale(n) { n = Math.max(1, Math.round(n)); if (n === PX) return; PX = n; canvas.width = BW * PX; canvas.height = BH * PX; draw(); },
     destroy() { alive = false; cancelAnimationFrame(raf); try { actx?.close(); } catch {} },
     step(n = 1, quiet = false) { for (let i = 0; i < n; i++) update(STEP); if (!quiet) draw(); },   // 테스트용

@@ -6,7 +6,7 @@ import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
-import { GEAR_MAX } from './gear-score.js';
+import { GEAR_MAX, GEAR_TIME } from './gear-score.js';
 import { ffOn, RELEASED } from './flags.js';
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
 import { TIERS, TIER_PCT, BEST_N, tierOfK } from './att-rewards.js';
@@ -28,7 +28,7 @@ const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 
 const GAMES = {
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
   // 기자재 정리!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
-  gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 기자재실 선반에 빈틈없이 정리해 줄을 채워요', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
+  gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 빈틈없이 정리해 줄을 채워요 · 랭킹전은 2분 점수 대결', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
@@ -1675,7 +1675,7 @@ async function playGear() {
   const area = stage(ic('gear') + ' 기자재 정리!', `<div class="gr" id="gr">
       <div class="gr-main">
         <aside class="gr-side"><p class="gr-lb">보관 <kbd>C</kbd></p><canvas class="gr-mini" id="grHold" width="104" height="56"></canvas>
-          <dl class="gr-stat"><dt>점수</dt><dd id="grSc">0</dd><div class="gr-fxs" id="grFx"></div><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
+          <dl class="gr-stat"><dt class="gr-tmL">남은 시간</dt><dd id="grTm" class="gr-tm">2:00</dd><dt>점수</dt><dd id="grSc">0</dd><div class="gr-fxs" id="grFx"></div><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
         <div class="gr-scr" id="grScr"><canvas id="grCv" aria-label="게임 화면"></canvas>
           <div class="gr-ov" id="grOv"></div><div class="gr-pop" id="grPop" aria-live="polite"></div></div>
         <aside class="gr-side"><p class="gr-lb">다음</p><div class="gr-next"><canvas class="gr-mini" id="grN0" width="104" height="56"></canvas><canvas class="gr-mini sm" id="grN1" width="104" height="56"></canvas><canvas class="gr-mini sm" id="grN2" width="104" height="56"></canvas></div></aside>
@@ -1692,14 +1692,21 @@ async function playGear() {
   if (!GEAR) { try { GEAR = await import('./gear.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!$('#grCv')) return;
   const cv = $('#grCv'), ov = $('#grOv'), pop = $('#grPop');
-  let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), over = false, deadAt = 0, runNo = 0;
+  // 2026-10-27 하율: 일반(연습 — 랭킹 제외) / 랭킹전(2분 점수 대결 — 랭킹·보상) 두 가지로. best = 랭킹전 최고, bestN = 일반 최고(이 기기만)
+  let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), bestN = store.get('gear_best_n', 0), over = false, deadAt = 0, runNo = 0;
+  let mode = store.get('gear_mode', 'normal') === 'rank' ? 'rank' : 'normal';
+  const setMode = m => { mode = m === 'rank' ? 'rank' : 'normal'; store.set('gear_mode', mode); $('#gr').dataset.mode = mode; R.setLimit(mode === 'rank' ? GEAR_TIME : 0);
+    ov.querySelectorAll('[data-gm]').forEach(b => b.setAttribute('aria-pressed', b.dataset.gm === mode)); paintHud(); };
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
-  const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul><small>${hint}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); };
+  const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul>
+    <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>자유롭게 · 랭킹 제외</small></button><button type="button" data-gm="rank"><b>${ic('trophy')}랭킹전</b><small>2분 점수 대결</small></button></div>
+    <small>${touchy ? '방식을 누르면 바로 시작' : '← → 로 방식 고르고, 아무 키나 누르면 시작'}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); setMode(mode); };
   // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
   let shown = 0;
   const paintHud = () => { const s = R.st, sc = $('#grSc');
     if (s.score < shown) shown = s.score; else if (s.score > shown) shown += Math.max(1, Math.ceil((s.score - shown) * .35));
-    sc.textContent = shown.toLocaleString('ko-KR'); $('#grLn').textContent = s.lines; $('#grLv').textContent = s.level; };
+    sc.textContent = shown.toLocaleString('ko-KR'); $('#grLn').textContent = s.lines; $('#grLv').textContent = s.level;
+    if (mode === 'rank') { const left = Math.max(0, GEAR_TIME - s.ms), sec = Math.ceil(left / 1000), tm = $('#grTm'); tm.textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); tm.classList.toggle('warn', s.scene === 'play' && left <= 10000); } };
   const bump = big => { const sc = $('#grSc'); sc.classList.remove('bump', 'bump2'); void sc.offsetWidth; sc.classList.add(big ? 'bump2' : 'bump'); };
   const scr0 = $('#grScr');
   // 점수 효과는 판 위가 아니라 점수판 옆에서 (2026-10-27 2차 하율: 판 위 '+점수'가 시야를 가림)
@@ -1731,12 +1738,14 @@ async function playGear() {
       void pop.offsetWidth; popT = setTimeout(() => { pop.className = 'gr-pop'; }, n === 4 ? 1500 : 1200);
     },
     onOver(res) {
-      over = true; deadAt = performance.now(); const no = ++runNo;
-      const nb = res.score > best; if (nb) { best = res.score; store.set('gear_best', best); }
+      over = true; deadAt = performance.now(); const no = ++runNo, rk = mode === 'rank';
+      const nb = rk ? res.score > best : res.score > bestN;
+      if (nb && rk) { best = res.score; store.set('gear_best', best); } else if (nb) { bestN = res.score; store.set('gear_best_n', bestN); }
       ov.hidden = false; ov.className = 'gr-ov hr-ov dead';
-      ov.innerHTML = `<b>장비실이 꽉 찼어요!</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
-        <small class="hr-msg" id="grMsg">${!S.me ? '로그인하면 랭킹에 올라가요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…'}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
-      if (!S.me || res.score < 1) return;
+      const msg = !rk ? '일반 기록은 랭킹에 안 올라가요 · 랭킹전은 2분 점수 대결' : !S.me ? '로그인하면 랭킹에 올라가요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…';
+      ov.innerHTML = `<b>${res.timeUp ? '시간 끝! 반납 완료' : '장비실이 꽉 찼어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${rk ? '랭킹전 · ' : '일반 · '}${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
+        <small class="hr-msg" id="grMsg">${msg}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
+      if (!rk || !S.me || res.score < 1) return;   // 일반 모드는 서버에 안 보냄(랭킹 제외)
       saveScore('gear', GEAR_MAX - res.score, [res.score, res.lines, res.pieces, res.ms]).then(r => {
         if (no !== runNo || !$('#grMsg')) return;
         if (r.held) { $('#grMsg').innerHTML = heldLine(r); return; }
@@ -1790,6 +1799,8 @@ async function playGear() {
   const kd = e => {
     if (e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
     if (over) { if ((e.code === 'Space' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); restart(); } return; }
+    if (R.st.scene === 'ready' && ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) { e.preventDefault(); setMode(mode === 'rank' ? 'normal' : 'rank'); return; }   // 시작 전: 방식 고르기
+    if (R.st.scene === 'ready' && (e.code === 'Digit1' || e.code === 'Digit2')) { e.preventDefault(); setMode(e.code === 'Digit2' ? 'rank' : 'normal'); R.input('cw', true); R.input('cw', false); return; }
     if (e.code === 'KeyP') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
     const a = keyOf(e); if (!a) { if (R.st.scene !== 'play' && !['Meta', 'Alt', 'Control', 'Tab', 'Escape', 'CapsLock', 'HangulMode', 'Process'].includes(e.key)) { e.preventDefault(); R.input('cw', true); } return; }   // 시작 전·멈춤: 아무 키(엔터 포함)나
     e.preventDefault(); if (e.repeat) return;
@@ -1812,6 +1823,7 @@ async function playGear() {
   scr.addEventListener('pointerdown', e => {
     e.preventDefault();
     if (over) { restart(); return; }
+    if (R.st.scene === 'ready') { const mb = e.target.closest?.('[data-gm]'); if (mb) setMode(mb.dataset.gm); }   // 방식 버튼을 누르면 그 방식으로 바로 시작
     if (R.st.scene !== 'play') { R.input('cw', true); R.input('cw', false); return; }
     tp = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), moved: false, soft: false };
     try { scr.setPointerCapture(e.pointerId); } catch {}
@@ -1846,7 +1858,7 @@ async function playGear() {
   const pane = (k, t, b) => `<section class="hr-pane"><div class="hr-ph"><b>${t}</b><button type="button" class="hr-all" data-rank="gear" data-scope="${k}">더 보기</button></div>${b}</section>`;
   async function paintRk() {
     const el = $('#grRk'); if (!el) return;
-    const mine = () => `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + '점' : '-'}</b></p>`;
+    const mine = () => `<p class="hr-me">${ic('trophy')}랭킹전 내 최고 <b>${best ? best.toLocaleString('ko-KR') + '점' : '-'}</b></p>`;
     if (!S.me) { el.innerHTML = mine() + '<p class="hr-pe">로그인하면 친구·전체 랭킹에 기록을 올릴 수 있어요</p>'; return; }
     const [f, a] = await Promise.all([call('rank?game=gear&scope=friends').catch(() => null), call('rank?game=gear&scope=all').catch(() => null)]);
     if (!$('#grRk')) return;

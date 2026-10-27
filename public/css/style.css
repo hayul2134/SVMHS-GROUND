@@ -4719,6 +4719,18 @@ html:has(body.playing){overflow:hidden}
 .gr-next{gap:8px}
 .gr-next .gr-mini:first-child{border-width:3px;box-shadow:0 0 0 2px #ffe27a,3px 3px 0 var(--ink)}   /* 바로 다음 블록 강조 */
 .gr-stat dd{transition:color .2s}
+#gr:not([data-mode="rank"]) .gr-tmL,#gr:not([data-mode="rank"]) .gr-tm{display:none}   /* 남은 시간은 랭킹전에서만 */
+.gr-stat dd.gr-tm{font-variant-numeric:tabular-nums}
+.gr-stat dd.gr-tm.warn{color:#ff5a6e;animation:grTm .5s ease-in-out infinite alternate}
+@keyframes grTm{to{transform:scale(1.15)}}
+.gr-modes{display:flex;gap:8px;justify-content:center;margin:6px 0 2px;flex-wrap:wrap}
+.gr-modes button{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:104px;padding:8px 12px;border:2px solid var(--ink);border-radius:12px;background:var(--card);color:var(--ink);box-shadow:2px 3px 0 var(--ink);cursor:pointer;font:inherit}
+.gr-modes button b{display:flex;align-items:center;gap:4px;font:400 17px/1 var(--disp);color:inherit;-webkit-text-stroke:0;text-shadow:none;letter-spacing:0}
+.gr-modes button b svg{width:16px;height:16px}
+.gr-modes button small{font-size:11px;font-weight:800;color:var(--sub);-webkit-text-stroke:0}
+.gr-modes button[aria-pressed="true"]{background:#ffe27a;transform:translateY(-2px);box-shadow:2px 5px 0 var(--ink)}
+.gr-modes button[data-gm="rank"][aria-pressed="true"]{background:#ff8f5a;color:#fff}
+.gr-modes button[data-gm="rank"][aria-pressed="true"] small{color:#fff}
 .gr-stat dd.bump{animation:grBump .28s ease-out}
 .gr-stat dd.bump2{animation:grBump2 .55s ease-out}
 @keyframes grBump{0%{transform:scale(1)}35%{transform:scale(1.25);color:#ff8f5a}100%{transform:scale(1)}}
