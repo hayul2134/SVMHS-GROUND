@@ -1587,9 +1587,9 @@ async function playGear() {
     const w = $('#parea').clientWidth, top = $('#grScr').getBoundingClientRect().top + scrollY;
     const side = w < 560 ? 150 : 250, dpr = devicePixelRatio || 1;
     // 2026-10-27 하율 "화면이 이상해": 앱 창(배율이 소수인 기기)에서 내림 때문에 최소 크기보다 작아지고, 창 높이가 바뀌어도 다시 안 맞춰 판이 손바닥만 했음
-    //   → 최소 1.6배는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
+    //   → 최소 1.5배는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
     const k = Math.min((w - side) / GEAR.BW, (innerHeight - top - (touchy ? 170 : 24)) / GEAR.BH);
-    const per = Math.max(Math.ceil(1.6 * dpr), Math.floor(k * dpr)) / dpr;
+    const per = Math.max(Math.ceil(1.5 * dpr), Math.floor(k * dpr)) / dpr;
     cv.style.width = per * GEAR.BW + 'px';
     document.querySelectorAll('#gr .gr-mini').forEach(c => { c.style.width = Math.round(c.width * Math.min(2, per * .75)) + 'px'; });
     $('#gr').style.setProperty('--gw', Math.round(per * GEAR.BW) + 'px');
