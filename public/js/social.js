@@ -1736,6 +1736,30 @@ async function playHome() {
   if (!RUN) { try { RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!$('#hrCv')) return;   // 불러오는 사이 그만둠
   const cv = $('#hrCv'), ov = $('#hrOv'), scr = $('#hrScr');
+  // 안내 글자 맞춤 (2026-10-27 하율: 게임 오버 문구가 위아래로 잘림). 게임 화면은 3:1로 납작해서 세로가 먼저 모자라는데
+  // 글자 크기는 가로 폭(vw·컨테이너 폭) 기준이라, 3배 화면(세로 312px)에서도 제목+결과 카드+'다시' 안내가 세로를 넘쳤음.
+  // → 실제로 잰 높이·폭이 게임 화면보다 크면 안쪽 줄들만 그 비율로 줄임(zoom). 기록 저장 문구가 바뀌어도 다시 맞춤
+  let fitting = false;
+  const fitOv = () => {
+    if (ov.hidden || fitting) return; fitting = true;
+    const kids = [...ov.children]; kids.forEach(c => { c.style.zoom = ''; });
+    for (let i = 0; i < 3 && kids.length; i++) {
+      const cs = getComputedStyle(ov), pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const gap = (parseFloat(cs.rowGap) || 0) * (kids.length - 1);
+      const top = Math.min(...kids.map(c => c.getBoundingClientRect().top)), bot = Math.max(...kids.map(c => c.getBoundingClientRect().bottom));
+      const wid = Math.max(...kids.map(c => c.getBoundingClientRect().width));
+      const needH = bot - top - gap, roomH = ov.clientHeight - pad - gap - 2;
+      const roomW = ov.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2;
+      const k = Math.min(1, roomH / needH, roomW / wid);
+      if (k > .985) break;
+      const z = (parseFloat(kids[0].style.zoom) || 1) * k;
+      kids.forEach(c => { c.style.zoom = Math.max(.45, z).toFixed(3); });
+    }
+    fitting = false;
+  };
+  new MutationObserver(() => requestAnimationFrame(fitOv)).observe(ov, { childList: true, subtree: true, characterData: true });
+  const ovHid = new MutationObserver(() => requestAnimationFrame(fitOv)); ovHid.observe(ov, { attributes: true, attributeFilter: ['hidden', 'class'] });
+  document.fonts?.ready.then(fitOv);
   let char = RUN.loadChar(), sound = store.get('home_snd', false);
   let best = store.get('home_best', 0);
   let last = store.get('home_last', null);   // 직전 판 기록 (2026-10-25 하율: 점수 옆에 전 기록)
@@ -1751,6 +1775,7 @@ async function playHome() {
     const per = k >= 1 ? Math.floor(k * dpr) / dpr : k;
     const cw = Math.min(w, per * RUN.W);
     cv.style.width = cw + 'px'; $('#hr').style.width = cw + 6 + 'px';   // 아래 조작 줄·랭킹 줄도 게임 화면 폭에 맞춤
+    requestAnimationFrame(fitOv);
   };
   // 게임 오버 (2026-10-25 하율: 가벼운 게임이라 결과 화면으로 넘어가지 않게) — 공룡 게임처럼 화면 위에 기록만 띄우고 그 자리에서 바로 다시
   let over = false, deadAt = 0, runNo = 0, choosing = false, goTicket = null;
