@@ -4894,7 +4894,8 @@ html:has(body.playing){overflow:hidden}
 .ms-list li.ready{border-color:#e0a21c;background:color-mix(in srgb,#ffd166 26%,var(--card));box-shadow:0 0 0 3px color-mix(in srgb,#ffd166 45%,transparent)}
 .ms-claim{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:56px;height:52px;padding:4px 8px;border:2px solid var(--ink);border-radius:13px;background:linear-gradient(180deg,#ffe28a,#ffc23d);color:#3a2a10;font:400 13px/1 var(--disp);box-shadow:2px 3px 0 var(--ink);cursor:pointer;animation:msWiggle 1.6s ease-in-out infinite}
 .ms-claim .sic{width:24px;height:24px}
-.ms-claim:active{transform:translate(2px,3px);box-shadow:none}
+.ms-claim:active,.ms-claim.is-pressed{animation:none;transform:translate(2px,3px);box-shadow:none;filter:brightness(.94)}
+.ms-go.is-pressed{transform:translate(2px,2px);box-shadow:none}
 .ms-claim:disabled{animation:none;opacity:.6}
 .ms-list li.got{animation:msGot .4s ease-out}
 @keyframes msWiggle{0%,72%,100%{transform:none}78%{transform:rotate(-7deg) scale(1.06)}86%{transform:rotate(6deg) scale(1.06)}93%{transform:rotate(-3deg)}}

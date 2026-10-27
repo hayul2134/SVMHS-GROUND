@@ -1209,17 +1209,26 @@ function paintMission(d) {
 }
 // 뽑기권 받기: 버튼에서 티켓이 튀어 올라 위쪽 미션 버튼으로 날아감 → 칸은 완료로
 let msClaiming = false;
+// 2026-10-27 하율: 누르는 동안은 눌린 모양(theme.js .is-pressed), 손을 떼는 순간(click) 바로 효과 + 완료 표시 → 서버 응답은 뒤에서 맞춤(실패하면 되돌림)
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-ms-claim]'); if (!b || msClaiming) return;
-  msClaiming = true; b.disabled = true;
+  msClaiming = true;
+  const i = +b.dataset.msClaim, li = b.closest('li'), prev = msD;
+  // 화면 먼저: 티켓 날리기 + 그 칸 완료 + 위쪽 빨간 숫자 줄이기
+  const fly = msFly(b);
+  if (msD) { msD = { ...msD, list: msD.list.map((x, k) => k === i ? { ...x, done: true, ready: false } : x) }; paintMsBtn(); }
+  li?.classList.remove('ready'); li?.classList.add('done', 'got');
+  b.replaceWith(Object.assign(document.createElement('span'), { className: 'ms-ok', textContent: '완료' }));
+  const no = li?.querySelector('.ms-no'); if (no) no.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg>';
   let r;
-  try { r = await call('misclaim', { i: +b.dataset.msClaim, wk: msD?.wk }); }
-  catch (er) { toast(er.message); msClaiming = false; b.disabled = false; if (er.status === 409) openMission(); return; }
+  try { r = await call('misclaim', { i, wk: prev?.wk }); }
+  catch (er) { msD = prev; paintMsBtn(); toast(er.message); msClaiming = false; openMission(); return; }
   msD = r; msAt = Date.now();
   if (S.me?.gc) { S.me.gc.tix = r.tix ?? (S.me.gc.tix || 0) + r.rw.tix; paintTix(); }
-  await msFly(b);
-  const li = b.closest('li'); li?.classList.add('got');
-  setTimeout(() => { if ($('.ms-sheet')) paintMission(r); paintMsBtn(); const h = $('#btnMission'); if (h) { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); } }, 380);
+  await fly;
+  if ($('.ms-sheet')) paintMission(r);
+  paintMsBtn();
+  const h = $('#btnMission'); if (h) { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); }
   toast(r.list.every(x => x.done) ? `이번 주 미션 끝! 뽑기권 ${r.list.length * r.rw.tix}장 다 받았어요 🎉` : `뽑기권 +${r.rw.tix}장!`, 2600);
   msClaiming = false;
 });
