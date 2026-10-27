@@ -1694,7 +1694,20 @@ function playNum25() {
 }
 
 /* 3) 컷 타이밍: 움직이는 플레이헤드를 컷 지점에서 멈추기 (5번, 점점 빨라짐) */
+let CUT = null;   // cut.js 모듈 (컷 타이밍 2 — 미리보기 깃발 cut-v2, 처음 열 때 불러옴)
+async function playCut2() {
+  const area = stage(ic('clap') + ' 컷 타이밍', '<p class="empty">불러오는 중…</p>');
+  if (!CUT) { try { CUT = await import('./cut.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!area.isConnected) return;
+  area.innerHTML = CUT.html(matchMedia('(pointer:coarse)').matches);
+  const quit = CUT.run(area, {
+    sound: store.get('cut_snd', false), onSound: on => store.set('cut_snd', on),
+    onDone: (sum, errs, signed) => finish('cut', Math.min(sum, 6000), CUT.resultHtml(sum, errs, signed), errs),
+  });
+  quitGame = quit;
+}
 function playCut() {
+  if (ffOn('cut-v2', isDev(S.me))) return playCut2();
   stage(ic('clap') + ' 컷 타이밍', `<p class="cutinfo"><span id="cRound">1 / 5</span> · 누적 오차 <b id="cSum">0ms</b></p>
     <div class="tl" id="tl"><div class="tl-ruler"></div><i class="tl-mark" id="cMark"></i><i class="tl-head" id="cHead"></i></div>
     <p class="cutmsg" id="cMsg">빨간 컷 지점에 플레이헤드가 오면 CUT!</p>
