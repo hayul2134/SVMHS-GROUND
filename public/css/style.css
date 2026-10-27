@@ -5154,3 +5154,10 @@ html:has(body.playing){overflow:hidden}
   .ctm-keys{display:none}
   .ctm-in{gap:4px}.ctm-in>b{font-size:22px}.ctm-in span{font-size:12px;line-height:1.35}.ctm-in .btn{padding:7px 26px}
 }
+/* 기자재 정리!: 다시 시작을 소리 버튼 위로(2026-10-27 하율) — 판 오른쪽 빈자리(다음 칸 아래)에 띄워 아래 줄 높이·판 크기는 그대로. 옆 칸 폭(--sw)에 맞춤, 좁으면 R 표시 숨김
+   터치 기기(판 아래 조작 버튼 줄이 있음)와 세로가 짧은 화면(모서리 고정)은 그대로 */
+@media (hover:hover) and (pointer:fine) and (min-height:501px){
+  .gr-bar{position:relative}
+  .gr-bar .prestart{position:absolute;right:0;bottom:calc(100% + 14px);width:var(--sw,auto);justify-content:center;margin:0;padding:0 8px;container-type:inline-size}
+}
+@container (max-width:150px){.gr-bar .prestart kbd{display:none}}
