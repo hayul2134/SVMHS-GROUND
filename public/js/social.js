@@ -1247,51 +1247,48 @@ function msStars(x, y, n, dist, size = 10) {
   }
 }
 function msFly(from) {
-  const a = from.getBoundingClientRect(), tgt = $('#btnMission'), t = tgt && !tgt.hidden ? tgt.getBoundingClientRect() : null;
+  // 2026-10-27 하율 "나타나는 게 짜쳐 → 자연스럽게": 빛 고리·빛살 뺌. 버튼 속 티켓 아이콘이 그대로 떠올라(같은 크기·자리에서 시작) 부드럽게 커지고,
+  // 잠깐 떠 있는 동안 광택이 한 번 지나간 뒤 가속하며 미션 버튼으로 빨려 들어감. 뒤에 은은한 빛 번짐만
+  const a = (from.querySelector('.sic') || from).getBoundingClientRect(), tgt = $('#btnMission'), t = tgt && !tgt.hidden ? tgt.getBoundingClientRect() : null;
   const x0 = a.left + a.width / 2, y0 = a.top + a.height / 2;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !document.body.animate) return new Promise(r => setTimeout(r, 200));
-  // ① 나타남
-  const ring = msFx('ms-ring', x0, y0);
-  ring.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(2.6)', opacity: 0 }], { duration: 600, easing: 'cubic-bezier(.2,.7,.3,1)' }).finished.then(() => ring.remove());
-  const rays = msFx('ms-rays', x0, y0 - 52);
-  rays.animate([{ transform: 'translate(-50%,-50%) scale(.3) rotate(0)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(40deg)', opacity: .9, offset: .35 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(90deg)', opacity: 0 }], { duration: 900, easing: 'ease-out' }).finished.then(() => rays.remove());
-  msStars(x0, y0, 12, 70, 12);
+  const S0 = a.width / 52;   // .ms-fly 52px 기준, 버튼 속 아이콘 크기에서 시작
+  const glow = msFx('ms-glow', x0, y0 - 44);
+  glow.animate([{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: .9, offset: .4 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 0 }], { duration: 900, easing: 'ease-out' }).finished.then(() => glow.remove());
   const tk = msFx('ms-fly', x0, y0); tk.innerHTML = ic('tix') + '<i class="ms-shine"></i>';
-  const dx = t ? t.left + t.width / 2 - x0 : 0, dy = t ? t.top + t.height / 2 - y0 : -80;
-  // 곡선(2차 베지어): 출발 위 52px → 조절점(가로 중간, 더 높이) → 목표
-  const sx = 0, sy = -52, cx = dx * .45, cy = Math.min(sy, dy) - 110, P = (u) => [(1 - u) ** 2 * sx + 2 * (1 - u) * u * cx + u * u * dx, (1 - u) ** 2 * sy + 2 * (1 - u) * u * cy + u * u * dy];
-  const kf = [
-    { transform: 'translate(-50%,-50%) translate(0,0) scale(.2) rotate(-30deg)', opacity: 0, offset: 0 },
-    { transform: 'translate(-50%,-50%) translate(0,-62px) scale(1.75) rotate(8deg)', opacity: 1, offset: .2 },
-    { transform: 'translate(-50%,-50%) translate(0,-48px) scale(1.5) rotate(-5deg)', opacity: 1, offset: .29 },
-    { transform: 'translate(-50%,-50%) translate(0,-54px) scale(1.58) rotate(3deg)', opacity: 1, offset: .38 },
-    { transform: 'translate(-50%,-50%) translate(0,-52px) scale(1.55) rotate(0)', opacity: 1, offset: .46 },
-  ];
-  const N = 8;
-  for (let k = 1; k <= N; k++) { const u = k / N, [px, py] = P(u); kf.push({ transform: `translate(-50%,-50%) translate(${px}px,${py}px) scale(${1.55 - 1.15 * u ** 1.4}) rotate(${-u * 25}deg)`, opacity: 1, offset: .46 + .54 * (u === 1 ? 1 : u * .999) }); }
-  kf[kf.length - 1].opacity = .95;
-  const D = 1500, an = tk.animate(kf, { duration: D, easing: 'linear' });
-  tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-120%) skewX(-20deg)' }, { transform: 'translateX(-120%) skewX(-20deg)', offset: .18 }, { transform: 'translateX(220%) skewX(-20deg)', offset: .42 }, { transform: 'translateX(220%) skewX(-20deg)' }], { duration: D });
-  // ② 꼬리 별가루 (날아가는 동안만)
-  let raf = 0; const t0 = performance.now();
-  const trail = () => {
-    const e = (performance.now() - t0) / D; if (e >= 1) return;
-    if (e > .47) { const r = tk.getBoundingClientRect(), d = msFx('ms-dust', r.left + r.width / 2 + (Math.random() - .5) * 14, r.top + r.height / 2 + (Math.random() - .5) * 14); d.classList.add('c' + (Math.random() * 3 | 0));
-      d.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: .95 }, { transform: 'translate(-50%,-50%) translateY(10px) scale(0)', opacity: 0 }], { duration: 520, easing: 'ease-out' }).finished.then(() => d.remove()); }
+  const T = (x, y, sc, r) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`;
+  // ① 떠오름(520ms): 아이콘 자리 → 위로 44px, 1.25배, 살짝 기울었다 바로 섬
+  const up = tk.animate([
+    { transform: T(0, 0, S0, -6), opacity: 1 },
+    { transform: T(0, -48, 1.28, 2), opacity: 1, offset: .62 },
+    { transform: T(0, -44, 1.25, 0), opacity: 1 },
+  ], { duration: 520, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+  tk.querySelector('.ms-shine').animate([{ transform: 'translateX(-130%) skewX(-18deg)' }, { transform: 'translateX(-130%) skewX(-18deg)', offset: .35 }, { transform: 'translateX(260%) skewX(-18deg)' }], { duration: 760, easing: 'ease-in-out', fill: 'forwards' });
+  setTimeout(() => msStars(x0, y0 - 44, 6, 46, 9), 300);
+  return up.finished.catch(() => {}).then(() => new Promise(r => setTimeout(r, 160))).then(() => {
+    if (!t) { tk.remove(); return; }
+    // ② 빨려 들어감(620ms): 위로 휘는 곡선, 점점 빨라지며 작아짐 + 별가루 꼬리
+    const dx = t.left + t.width / 2 - x0, dy = t.top + t.height / 2 - y0, sx = 0, sy = -44, cx = dx * .3, cy = Math.min(sy, dy) - 70;
+    const kf = [], N = 10;
+    for (let k = 0; k <= N; k++) { const u = k / N, px = (1 - u) ** 2 * sx + 2 * (1 - u) * u * cx + u * u * dx, py = (1 - u) ** 2 * sy + 2 * (1 - u) * u * cy + u * u * dy;
+      kf.push({ transform: T(px, py, 1.25 - .9 * u * u, -u * 18), opacity: k === N ? .9 : 1 }); }
+    const D = 620, fly = tk.animate(kf, { duration: D, easing: 'cubic-bezier(.55,0,.75,.4)', fill: 'forwards' });
+    let raf = 0, last = 0;
+    const trail = ts => { if (ts - last > 28) { last = ts; const r = tk.getBoundingClientRect(), d = msFx('ms-dust', r.left + r.width / 2, r.top + r.height / 2); d.classList.add('c' + (Math.random() * 3 | 0));
+      d.animate([{ transform: 'translate(-50%,-50%) scale(.9)', opacity: .8 }, { transform: `translate(-50%,-50%) translate(${(Math.random() - .5) * 10}px,8px) scale(0)`, opacity: 0 }], { duration: 480, easing: 'ease-out' }).finished.then(() => d.remove()); }
+      raf = requestAnimationFrame(trail); };
     raf = requestAnimationFrame(trail);
-  };
-  raf = requestAnimationFrame(trail);
-  return an.finished.catch(() => {}).then(() => {
-    cancelAnimationFrame(raf); tk.remove();
-    if (!t) return;
-    // ③ 들어감
-    const x1 = t.left + t.width / 2, y1 = t.top + t.height / 2;
-    const hit = msFx('ms-ring in', x1, y1);
-    hit.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.9)', opacity: 0 }], { duration: 520, easing: 'ease-out' }).finished.then(() => hit.remove());
-    msStars(x1, y1, 8, 38, 8);
-    const plus = msFx('ms-plus', x1, y1); plus.textContent = '+' + (msD?.rw?.tix || 1);
-    plus.animate([{ transform: 'translate(-50%,0) scale(.4)', opacity: 0 }, { transform: 'translate(-50%,24px) scale(1.2)', opacity: 1, offset: .3 }, { transform: 'translate(-50%,30px) scale(1)', opacity: 1, offset: .7 }, { transform: 'translate(-50%,40px) scale(.9)', opacity: 0 }], { duration: 1000, easing: 'ease-out' }).finished.then(() => plus.remove());
-    tgt.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18) rotate(-4deg)', offset: .3 }, { transform: 'scale(.94) rotate(2deg)', offset: .6 }, { transform: 'scale(1)' }], { duration: 480, easing: 'ease-out' });
+    return fly.finished.catch(() => {}).then(() => {
+      cancelAnimationFrame(raf); tk.remove();
+      // ③ 도착: 버튼이 받아먹듯 눌렸다 튀고, 은은한 빛 + '+1'
+      const x1 = t.left + t.width / 2, y1 = t.top + t.height / 2;
+      const g2 = msFx('ms-glow sm', x1, y1);
+      g2.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(1.3)', opacity: 0 }], { duration: 560, easing: 'ease-out' }).finished.then(() => g2.remove());
+      msStars(x1, y1, 5, 30, 7);
+      const plus = msFx('ms-plus', x1, y1 + 18); plus.textContent = '+' + (msD?.rw?.tix || 1);
+      plus.animate([{ transform: 'translate(-50%,-6px)', opacity: 0 }, { transform: 'translate(-50%,6px)', opacity: 1, offset: .25 }, { transform: 'translate(-50%,10px)', opacity: 1, offset: .7 }, { transform: 'translate(-50%,16px)', opacity: 0 }], { duration: 1100, easing: 'ease-out' }).finished.then(() => plus.remove());
+      tgt.animate([{ transform: 'scale(1)' }, { transform: 'scale(.9)', offset: .25 }, { transform: 'scale(1.08)', offset: .6 }, { transform: 'scale(1)' }], { duration: 420, easing: 'ease-out' });
+    });
   });
 }
 // 미션 '하러 가기' — 게임은 data-play(기존 처리), 나머지는 여기서

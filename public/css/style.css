@@ -4900,17 +4900,16 @@ html:has(body.playing){overflow:hidden}
 .ms-list li.got{animation:msGot .4s ease-out}
 @keyframes msWiggle{0%,72%,100%{transform:none}78%{transform:rotate(-7deg) scale(1.06)}86%{transform:rotate(6deg) scale(1.06)}93%{transform:rotate(-3deg)}}
 @keyframes msGot{50%{transform:scale(1.03)}}
-.ms-fly,.ms-ring,.ms-rays,.ms-star,.ms-dust,.ms-plus{position:fixed;z-index:10000;pointer-events:none;will-change:transform,opacity}
-.ms-fly{width:52px;height:52px;overflow:hidden;border-radius:8px;filter:drop-shadow(0 0 10px rgba(255,200,60,.85)) drop-shadow(2px 3px 0 rgba(0,0,0,.25))}
+.ms-fly,.ms-glow,.ms-star,.ms-dust,.ms-plus{position:fixed;z-index:10000;pointer-events:none;will-change:transform,opacity}
+.ms-fly{width:52px;height:52px;overflow:hidden;border-radius:8px;filter:drop-shadow(0 6px 8px rgba(60,40,0,.22))}
 .ms-fly .sic{width:100%;height:100%}
 .ms-shine{position:absolute;top:-10%;left:0;width:40%;height:120%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);mix-blend-mode:screen}
-.ms-ring{width:70px;height:70px;border-radius:50%;border:4px solid #ffc23d;box-shadow:0 0 18px 4px rgba(255,200,60,.7),inset 0 0 12px rgba(255,220,120,.8)}
-.ms-ring.in{width:44px;height:44px;border-color:#ff8aa8;box-shadow:0 0 14px 3px rgba(255,138,168,.6)}
-.ms-rays{width:150px;height:150px;border-radius:50%;background:repeating-conic-gradient(rgba(255,214,90,.75) 0 8deg,transparent 8deg 30deg);-webkit-mask:radial-gradient(circle,transparent 22%,#000 30%,#000 55%,transparent 70%);mask:radial-gradient(circle,transparent 22%,#000 30%,#000 55%,transparent 70%)}
+.ms-glow{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,226,140,.85) 0,rgba(255,210,90,.35) 38%,transparent 68%)}
+.ms-glow.sm{width:70px;height:70px}
 .ms-star{width:10px;height:10px;background:#ffc23d;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 3px rgba(255,255,255,.9))}
 .ms-star.c1,.ms-dust.c1{background:#6fc6f4}.ms-star.c2,.ms-dust.c2{background:#ff8aa8}
 .ms-dust{width:7px;height:7px;border-radius:50%;background:#ffd166;box-shadow:0 0 6px 1px rgba(255,214,102,.9)}
-.ms-plus{font:400 22px/1 var(--disp);color:#ffb000;-webkit-text-stroke:1.5px var(--ink);paint-order:stroke fill;text-shadow:0 2px 0 var(--ink)}
+.ms-plus{font:400 18px/1 var(--disp);color:#ffb000;-webkit-text-stroke:1.5px var(--ink);paint-order:stroke fill;text-shadow:0 2px 0 var(--ink)}
 @media (prefers-reduced-motion:reduce){.ms-sheet.all .ms-big,.hb-ms.pop .sic,.hb-ms.ready .sic,.ms-claim{animation:none}}
 /* 주간 미션 버튼이 들어가 좁은 폰(400px 이하)에서 헤더가 넘치던 것: 숫자는 아이콘 위 작은 배지로, 버튼 사이 간격 줄임 */
 @media (max-width:400px){
