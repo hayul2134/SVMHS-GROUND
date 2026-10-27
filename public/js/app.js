@@ -1948,34 +1948,45 @@ $('#btnTheme').onclick = () => {
   if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
 };
 
-/* ===== 관리자 공지 ===== */
+/* ===== 관리자 공지 + 새 패치 공지 (띠) ===== */
 // 띠 공지는 새 공지가 올라오면 한 번 뜨고, ✕를 누르기 전까지 계속 유지. ✕를 누르면 그 공지는 다시 안 뜸.
 // 학교 태블릿을 여럿이 같이 쓰니 '닫음'은 계정마다 따로 기억(sg_notice_x:아이디). 다른 공지가 올라오면 다시 뜸.
+// 2026-10-27 하율 "공지가 처음 올라가면 위에 뜨게": 하루 패치 공지(/api/s/patch 게시본)도 올라온 뒤 3일 안이면 띠로 띄움.
+//   관리자 공지와 닫음 기록을 따로 둠(sg_patch_x:아이디) — 하나를 닫아도 다른 하나가 다시 뜨지 않게. 둘 다 있으면 더 최근 것부터.
 let noticeWho = '';
-const noticeKey = () => 'notice_x' + (noticeWho ? ':' + noticeWho : '');
-const noticeClosed = id => store.get(noticeKey()) === id;
+const noticeKey = (k = 'notice_x') => k + (noticeWho ? ':' + noticeWho : '');
+const PATCH_BAND_MS = 3 * 86400e3;
 async function loadNotice() {
   const box0 = $('#notice');
   if (!noticeWho) { box0.hidden = true; return; }   // 누가 로그인했는지 확인되기 전엔 안 띄움 — 기기 공통 기록으로 먼저 띄웠다가 계정 기록 보고 사라지던 깜빡임 방지
   const who0 = noticeWho;
-  let n = null;
-  try { const r = await fetch('/api/notice'); if (r.ok) n = (await r.json()).notice; } catch {}
+  const [n, p] = await Promise.all([
+    fetch('/api/notice').then(r => r.ok ? r.json() : {}).then(j => j.notice || null).catch(() => null),
+    fetch('/api/s/patch', { credentials: 'same-origin', cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).then(j => (j.list || [])[0] || null).catch(() => null),
+  ]);
   const box = $('#notice');
   if (who0 !== noticeWho) return;   // 받아 오는 사이 계정이 바뀌었으면 새 호출에 맡김
-  if (!n || noticeClosed(n.id)) { box.hidden = true; return; }
-  $('#noticeIc').textContent = { warn: '⚠️', fun: '🎉' }[n.tone] || '📢';
-  box.className = 'notice ' + ({ warn: 'warn', fun: 'fun' }[n.tone] || '');
+  const cands = [];
+  if (n && store.get(noticeKey()) !== n.id) cands.push({ ...n, key: 'notice_x', at: n.at || 0 });
+  if (p && p.at && Date.now() - p.at < PATCH_BAND_MS && store.get(noticeKey('patch_x')) !== p.id)
+    cands.push({ id: p.id, key: 'patch_x', at: p.at, text: `${p.title || '업데이트 소식'} — 뭐가 바뀌었는지 확인해 보세요!`, more: true, focus: 'p:' + p.id, ic: '🛠' });
+  const c = cands.sort((a, b) => b.at - a.at)[0];
+  if (!c) { box.hidden = true; return; }
+  $('#noticeIc').textContent = c.ic || { warn: '⚠️', fun: '🎉' }[c.tone] || '📢';
+  box.className = 'notice ' + ({ warn: 'warn', fun: 'fun' }[c.tone] || '');
   const a = $('#noticeTx');
-  a.textContent = n.text;
-  a.onclick = null; a.classList.toggle('more', !!n.more && !n.link);
-  if (n.link) { a.href = n.link; a.dataset.go = n.link.slice(1); a.removeAttribute('aria-disabled'); }
-  else if (n.more) {   // 자세한 내용이 있으면 띠를 눌러 긴 공지로
+  a.textContent = c.text;
+  a.onclick = null; a.classList.toggle('more', !!c.more && !c.link);
+  if (c.link) { a.href = c.link; a.dataset.go = c.link.slice(1); a.removeAttribute('aria-disabled'); }
+  else if (c.more) {   // 자세한 내용이 있으면 띠를 눌러 긴 공지로
     a.href = '#'; delete a.dataset.go;
-    a.onclick = e => { e.preventDefault(); if (SOC.openNotices) SOC.openNotices(n.id); else toast('잠시 후 다시 눌러 주세요'); };
+    a.onclick = e => { e.preventDefault(); if (SOC.openNotices) SOC.openNotices(c.focus || c.id); else toast('잠시 후 다시 눌러 주세요'); };
   } else { a.removeAttribute('href'); delete a.dataset.go; }
-  $('#noticeX').onclick = () => { store.set(noticeKey(), n.id); box.hidden = true; };
+  $('#noticeX').onclick = () => { store.set(noticeKey(c.key), c.id); box.hidden = true; loadNotice(); };   // 닫으면 남은 다른 공지가 있으면 이어서
   box.hidden = false;
 }
+// 켜 둔 채로 있는 화면에도 새 공지(아침 06:00 패치 등)가 뜨게 10분마다 다시 확인 (안 보이는 탭은 쉼)
+setInterval(() => { if (homeBooted && !document.hidden) loadNotice(); }, 10 * 60e3);
 
 /* ===== 소개 (로그인 전) ===== */
 // theme.js가 첫 화면부터 html.prelogin을 붙여 둠 → 로그인 상태가 확인되면 social.js가 SOC.authed()로 알려 줌

@@ -371,7 +371,7 @@ const ROUTES = {
   /* ----- 업데이트 공지: 게시본은 모두에게, 다음 공지 초안은 개발자에게만 (lib/patch.js) ----- */
   'GET patch': async ({ req, db }) => {
     const s = await patchState(db), me = await auth(req, db);
-    return json({ list: (s.pub || []).map(({ id, date, title, items, ff }) => ({ id, date, title, items, ff: ff || [] })), draft: isAdm(me) ? draftOut(s.d) : undefined });
+    return json({ list: (s.pub || []).map(({ id, date, title, items, ff, at }) => ({ id, date, title, items, ff: ff || [], at: at || 0 })), draft: isAdm(me) ? draftOut(s.d) : undefined });
   },
   'POST patch': needMe(async ({ db, me, body }) => {
     if (!isAdm(me)) return err('개발자만 고칠 수 있어요', 403);

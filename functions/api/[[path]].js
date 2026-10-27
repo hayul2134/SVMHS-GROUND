@@ -161,5 +161,5 @@ async function notice(env) {
   let n = null;
   try { n = JSON.parse((await getSettings(env.DB)).notice || 'null'); } catch {}
   if (n && n.until && n.until < Date.now()) n = null;
-  return json({ notice: n && n.text ? { id: n.id, text: n.text, more: !!n.body, tone: n.tone, link: n.link || '' } : null }, 200, 'public, max-age=30');
+  return json({ notice: n && n.text ? { id: n.id, text: n.text, more: !!n.body, tone: n.tone, link: n.link || '', at: n.at || 0 } : null }, 200, 'public, max-age=30');
 }

@@ -2422,7 +2422,7 @@ async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 
       <p class="nt-t">${title}</p>${inner ? `<div class="ntb"><div class="nb-txt">${inner}</div><button type="button" class="nb-more">📖 자세히 보기</button><button type="button" class="nb-fold">접기 ▴</button></div>` : ''}
       <small>${foot}</small></div></li>`;
   const patches = ptList.slice(0, 12).map((x, i) => card(!i, '🛠', esc(x.title || '업데이트'),
-      (x.items || []).length ? `<ul class="ptitems">${x.items.map(t => typeof t === 'string' ? `<li>${esc(t)}</li>` : `<li>${esc(t.t || '')}${t.img ? `<img class="ptimg" src="${esc(t.img)}" alt="" loading="lazy">` : ''}</li>`).join('')}</ul>` : '', `${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}`)).join('');
+      (x.items || []).length ? `<ul class="ptitems">${x.items.map(t => typeof t === 'string' ? `<li>${esc(t)}</li>` : `<li>${esc(t.t || '')}${t.img ? `<img class="ptimg" src="${esc(t.img)}" alt="" loading="lazy">` : ''}</li>`).join('')}</ul>` : '', `${esc(x.date || '')}${i ? '' : ' · <b>최신</b>'}`, x.id ? 'p:' + x.id : '')).join('');
   $('#socSheet').innerHTML = `<h3>📢 공지</h3>${ntList.length ? `<ul class="ntlist">${ntList.map(n => card(n.live, NT_IC[n.tone] || '',
       n.link ? `<a href="${esc(n.link)}" data-close>${esc(n.text)}</a>` : esc(n.text), n.body ? esc(n.body) : '',
       `${dt(n.at)}${n.live ? ' · <b>지금 공지</b>' : ''}`, n.id)).join('')}</ul>` : '<p class="empty">아직 공지가 없어요</p>'}
