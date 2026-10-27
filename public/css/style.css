@@ -1008,6 +1008,10 @@ body.playing .modal{z-index:75}/* 게임 중 연 랭킹 창이 게임 화면(.pl
 .rx.idle,.rx.shown,.rx.done{background:var(--accent)}.rx.wait{background:#e2483d}.rx.go{background:#1fbf6a}.rx.early{background:#ff9f43}
 .rxlog{list-style:none;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:34px}
 .rxlog li{background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:3px 10px;font:800 14px var(--num)}
+.rxfoul{text-align:center;font-weight:800;font-size:13px;color:var(--sub,var(--on-bg));opacity:.85;min-height:20px}
+.rxfoul.on{color:#e2483d;opacity:1;font-size:15px}.rxfoul.hot{animation:rxshake .3s}.rxfoul b{font-family:var(--num)}
+@keyframes rxshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.rpen{text-align:center;font-weight:800;font-size:14px;color:#e2483d}
 .n25top{display:flex;justify-content:space-between;font-weight:900;font-size:18px;color:var(--on-bg)}
 .n25top b,#nTime{font-family:var(--num);font-size:22px}
 .n25{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%;max-width:440px;margin:0 auto}

@@ -30,7 +30,7 @@ const GAMES = {
   // 기자재 정리!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
   gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 기자재실 선반에 빈틈없이 정리해 줄을 채워요', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
-  reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균', fmt: v => v + 'ms' },
+  reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
 };
@@ -1468,11 +1468,16 @@ async function saveScore(game, value, rounds) {
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-/* 1) 반응속도: 5번 평균 */
+/* 1) 반응속도: 5번 평균
+   부정출발 벌점(2026-10-27 하율 "막 찍어서 너무 많이 틀리면 패널티"): 초록 전에 누르거나 초록 뜨고 0.1초 안에 누르면(미리 찍은 것) 부정출발.
+   첫 번은 봐주고 2번째부터 한 번마다 최종 기록 +RX_PEN ms, RX_OUT번이면 그 게임 실격(기록 없음). 부정출발 뒤 1초는 눌러도 안 넘어감(연타 방지).
+   서버로는 판 기록 5개 뒤에 부정출발 횟수를 붙여 보냄(checkRounds가 벌점까지 다시 계산) */
+const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5, RX_ANTI = 100, RX_LOCK = 1000;
+const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 function playReaction() {
-  stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol>`);
-  const pad = $('#rx'), log = $('#rxlog');
-  const times = []; let state = 'idle', t0 = 0, timer = 0, alive = true, lastD = 0;
+  stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol><p class="rxfoul" id="rxfoul">초록색 전에 누르면 부정출발 · 첫 번은 봐주고, 그다음부터 한 번마다 +${RX_PEN}ms · ${RX_OUT}번이면 실격</p>`);
+  const pad = $('#rx'), log = $('#rxlog'), fl = $('#rxfoul');
+  const times = []; let state = 'idle', t0 = 0, timer = 0, alive = true, lastD = 0, fouls = 0, lockTo = 0;
   quitGame = () => { alive = false; clearTimeout(timer); };
   /* 대기 시간: 고르게 뽑으면(예전 1~3.5초) 기다릴수록 '이제 곧'이 보여 예측됨 →
      지수 분포(언제든 나올 확률이 같음)로 0.7~7초, 가끔 아주 짧게, 직전과 0.7초 이상 차이 */
@@ -1487,17 +1492,36 @@ function playReaction() {
     state = 'wait'; pad.className = 'rx wait'; pad.innerHTML = `<b>기다려…</b><small>${times.length + 1} / 5</small>`;
     timer = setTimeout(() => { if (!alive) return; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>'; t0 = performance.now(); }, rxDelay());
   };
+  const foul = why => {
+    clearTimeout(timer); fouls++;
+    const pen = rxPen(fouls);
+    fl.className = 'rxfoul on' + (fouls >= RX_OUT - 1 ? ' hot' : '');
+    fl.innerHTML = `부정출발 <b>${fouls} / ${RX_OUT}</b>` + (pen ? ` · 벌점 <b>+${pen}ms</b>` : ' · 이번 한 번은 봐줄게요');
+    if (fouls >= RX_OUT) {
+      state = 'done'; pad.className = 'rx early'; pad.innerHTML = `<b>실격!</b><small>부정출발 ${RX_OUT}번 — 이번 게임은 기록이 없어요</small>`;
+      setTimeout(() => { if (!alive) return; state = 'shown'; times.length = 0; fouls = 0; log.innerHTML = '';
+        fl.className = 'rxfoul'; fl.textContent = '처음부터 다시! 초록색이 될 때까지 꾹 참기';
+        pad.className = 'rx shown'; pad.innerHTML = '<b>다시 도전</b><small>탭해서 처음부터 (1 / 5)</small>'; }, 1800);
+      return;
+    }
+    state = 'lock'; lockTo = performance.now() + RX_LOCK; pad.className = 'rx early';
+    pad.innerHTML = `<b>${why}</b><small>${pen ? `벌점 +${RX_PEN}ms · ` : ''}잠깐 쉬었다가 탭해서 이번 판 다시</small>`;
+    setTimeout(() => { if (alive && state === 'lock') state = 'shown'; }, RX_LOCK);
+  };
   pad.addEventListener('pointerdown', e => {
     e.preventDefault();
+    if (state === 'lock' || state === 'done') return;   // 부정출발 뒤 1초는 연타해도 안 넘어감
     if (state === 'idle' || state === 'shown') return arm();
-    if (state === 'wait') { clearTimeout(timer); state = 'shown'; pad.className = 'rx early'; pad.innerHTML = '<b>앗, 너무 빨라요!</b><small>탭해서 이번 판 다시</small>'; return; }
+    if (state === 'wait') return foul('앗, 너무 빨라요!');
     if (state === 'go') {
       const ms = Math.round(performance.now() - t0);
+      if (ms < RX_ANTI) return foul('미리 눌렀죠?');   // 초록 뜨고 0.1초 안 = 사람이 보고 누를 수 없는 속도(찍은 것)
       times.push(ms); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
       if (times.length >= 5) {
         state = 'done';
-        const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-        setTimeout(() => alive && finish('reaction', Math.min(avg, 1500), `<p class="rdet">${times.map(t => `<span>${t}ms</span>`).join(' · ')}</p>`, times.map(t => Math.min(t, 1500))), 500);
+        const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length), pen = rxPen(fouls);
+        const det = `<p class="rdet">${times.map(t => `<span>${t}ms</span>`).join(' · ')}</p>` + (fouls ? `<p class="rpen">평균 ${avg}ms + 부정출발 ${fouls}번 벌점 ${pen}ms</p>` : '');
+        setTimeout(() => alive && finish('reaction', Math.min(avg + pen, 1500), det, [...times.map(t => Math.min(t, 1500)), fouls]), 500);
         pad.className = 'rx done'; pad.innerHTML = `<b>${ms}ms</b>`;
       } else { state = 'shown'; pad.className = 'rx shown'; pad.innerHTML = `<b>${ms}ms</b><small>탭해서 다음 (${times.length + 1} / 5)</small>`; }
     }

@@ -28,6 +28,8 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 // 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
 const H = (a, u, bad) => ({ a, u, bad });
+const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5;   // 반응속도 부정출발 벌점 — public/js/social.js와 같게
+const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 const sec = ms => (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + '초';
 function checkRounds(game, v, r, elapsed) {
   if (!Array.isArray(r)) return H('판 기록 없음(예전 화면)', '판마다의 기록이 같이 오지 않았어요.');
@@ -37,11 +39,16 @@ function checkRounds(game, v, r, elapsed) {
   const idx = f => n.map((x, i) => (f(x) ? i : -1)).filter(i => i >= 0);
   const which = is => is.map(i => `${i + 1}번째 판(${n[i]}ms)`).join(', ');
   if (game === 'reaction') {   // 평균이 v · 5번이 거의 같으면 기계 · 플레이 시간 (판 하나 빠른 건 통과)
+    // 6번째 값 = 부정출발 횟수(2026-10-27 하율 "막 찍어서 너무 많이 틀리면 패널티"): 첫 번은 봐주고 그다음부터 한 번마다 +50ms, 5번이면 실격(화면이 기록을 안 보냄). 예전 화면은 5개(부정출발 0)
+    const fouls = n.length === 6 ? n.pop() : 0;
     if (n.length !== 5) return H(`판 수가 5가 아님(${n.length})`, `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
+    if (fouls < 0 || fouls >= RX_OUT) return H(`부정출발 횟수 이상(${fouls})`, `부정출발이 ${fouls}번으로 기록됐어요. ${RX_OUT}번이면 실격이라 기록이 남을 수 없어요.`);
+    const sum5 = n.reduce((a, b) => a + b, 0), exp = Math.min(Math.round(sum5 / 5) + rxPen(fouls), 1500);
     // 판 하나가 빠르거나 느린 건 보류하지 않음 — 평균(기록)이 120ms 아래면 위의 범위 검사에서 걸림 (2026-10-26 13:37 하율 "평균이 이상하지 않는 이상 보류는 하지 말아")
-    if (Math.abs(Math.round(sum / 5) - v) > 1) return H(`평균(${Math.round(sum / 5)})과 기록(${v})이 다름`, `5판의 평균(${Math.round(sum / 5)}ms)과 최종 기록(${v}ms)이 서로 달라요.`);
-    if (spread < 6) return H(`5판 차이가 ${spread}ms뿐 — 매크로 의심`, `5판 기록이 거의 똑같아요(가장 빠른 판과 느린 판 차이 ${spread}ms). 사람이 누르면 판마다 조금씩 달라지는데, 이렇게 일정하면 자동 클릭으로 보일 수 있어요.`);
-    if (elapsed < 5000 + sum) return H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임한 시간이 ${sec(elapsed)}로 너무 짧아요. 판마다 최소 1초는 기다려야 해서 이렇게 빨리 끝날 수 없어요.`);
+    if (Math.abs(exp - v) > 1) return H(`평균+벌점(${exp})과 기록(${v})이 다름`, `5판의 평균${fouls > 1 ? '과 부정출발 벌점' : ''}을 더한 값(${exp}ms)과 최종 기록(${v}ms)이 서로 달라요.`);
+    const spread5 = Math.max(...n) - Math.min(...n);   // 부정출발 횟수를 뺀 5판으로 다시 계산
+    if (spread5 < 6) return H(`5판 차이가 ${spread5}ms뿐 — 매크로 의심`, `5판 기록이 거의 똑같아요(가장 빠른 판과 느린 판 차이 ${spread5}ms). 사람이 누르면 판마다 조금씩 달라지는데, 이렇게 일정하면 자동 클릭으로 보일 수 있어요.`);
+    if (elapsed < 5000 + sum5) return H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임한 시간이 ${sec(elapsed)}로 너무 짧아요. 판마다 최소 1초는 기다려야 해서 이렇게 빨리 끝날 수 없어요.`);
   } else if (game === 'num25') {   // 25번 누른 시각(첫 탭 = 0, 예전 화면은 느린 기기에서 1~몇 ms가 찍혀 0~5 허용 — 2026-10-26 하율) + 틀린 벌점: 순서대로 늘고, 매크로 패턴(아래) 없음
     const pen = n.length === 26 ? n.pop() : -1;
     if (n.length !== 25 || pen < 0 || pen % 1000 || n[0] < 0 || n[0] > 5) return H('판 기록 형식이 다름', '1부터 25까지 누른 기록이 제대로 오지 않았어요.');
