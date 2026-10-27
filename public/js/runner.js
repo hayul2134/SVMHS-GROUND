@@ -541,7 +541,7 @@ export function createRunner(canvas, char, opt = {}) {
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, speed: V0, scroll: 0,
       y: 0, vy: 0, onGround: true, jumpHeld: 0, ducking: false, anim: 0,
-      obs: [], homeT: 0, homeDone: false, past: false, outT: 0, grace: 0, nextGap: 120, burst: 0, rest: false, nid: 0, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0,
+      obs: [], homeT: 0, homeDone: false, past: false, outT: 0, grace: 0, nextGap: 120, burst: 0, rest: false, nid: 0, flash: 0, lastHundred: 0, shake: 0, dust: [], deadT: 0, bestRung: false, boosted: false, dived: false,
       clouds: [0, 1, 2].map(i => ({ x: 40 + i * 120 + rand() * 60, y: 8 + rand() * 22 })),
       stars: Array.from({ length: 28 }, () => ({ x: rand() * W, y: rand() * 46, p: rand() * 6 })),
       seed,
@@ -560,6 +560,37 @@ export function createRunner(canvas, char, opt = {}) {
       o.connect(v).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
     } catch {}
   }
+  /* 효과음 다양화 (2026-10-27 하율 "효과음 좀 다양하게") — opt.sfx2가 켜졌을 때만(미리보기 깃발 home-sfx). 모두 짧고 작게(교실) */
+  const fx = !!opt.sfx2;
+  function noise(dur, freq, q = 1, vol = .05, f2 = freq, type = 'bandpass') {   // 바람·부딪힘·문 같은 소리
+    if (!sound) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = actx.currentTime, n = Math.max(1, Math.floor(actx.sampleRate * dur));
+      const buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      const src = actx.createBufferSource(), f = actx.createBiquadFilter(), v = actx.createGain();
+      src.buffer = buf; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(freq, t); f.frequency.exponentialRampToValueAtTime(Math.max(30, f2), t + dur);
+      v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      src.connect(f).connect(v).connect(actx.destination); src.start(t); src.stop(t + dur + .02);
+    } catch {}
+  }
+  const seq = (notes, gap = 110, type = 'square', vol = .045) => notes.forEach((n, i) => setTimeout(() => n && beep(n[0], n[1] ?? n[0], n[2] ?? .1, type, vol), i * gap));
+  const SFX = {
+    jump() { const p = 1 + (Math.random() - .5) * .08; beep(500 * p, 860 * p, .09); },                       // 높낮이 살짝씩 달라 덜 질림
+    boost() { beep(880, 1320, .06, 'triangle', .03); },                                               // 길게 눌러 더 높이 뜰 때 '슝'
+    land() { noise(.06, 260, .8, .035, 120, 'lowpass'); },                                            // 착지 '툭'
+    duck() { noise(.12, 1800, .7, .03, 500); },                                                       // 숙이기 '슥'
+    dive() { beep(700, 180, .12, 'triangle', .04); noise(.1, 1400, .6, .02, 400); },                  // 공중에서 ↓ 빨리 내려오기
+    close() { seq([[1320, 1320, .05], [1760, 1760, .07]], 55, 'triangle', .03); },                    // 아슬아슬하게 넘음 '띠링'
+    pigeon() { seq([[620, 520, .07], [560, 470, .09]], 120, 'triangle', .03); },                      // 비둘기 등장 '구구'
+    plane() { beep(140, 110, .5, 'sawtooth', .018); noise(.5, 600, .5, .02, 300); },                  // 종이비행기 '부웅'
+    hundred(m) { m % 1000 === 0 ? seq([[784], [988], [1175, 1568, .18]], 90) : beep(780, 1180, .12, 'square', .04); },
+    best() { seq([[1047, 1047, .07], [1319, 1319, .07], [1568, 1568, .07], [2093, 2093, .16]], 70, 'triangle', .04); },   // 최고 기록 넘는 순간
+    hit() { noise(.16, 900, .6, .07, 150, 'lowpass'); beep(300, 70, .3, 'sawtooth', .05); setTimeout(() => seq([[392, 370, .16], [370, 349, .16], [349, 262, .4]], 190, 'triangle', .04), 280); },   // '퍽' + 빠밤빠~
+    arrive() { seq([[523], [659], [784], [1047, 1047, .14], 0, [784, 784, .08], [1047, 1568, .35]], 110); setTimeout(() => noise(.08, 220, 1, .06, 120, 'lowpass'), 1150); },   // 팡파레 + 문 닫힘 '쿵'
+    door() { noise(.25, 500, 4, .03, 900); beep(784, 523, .1); },                                     // 문 열고 나감 '끼익'
+  };
   /* --- 판 --- */
   const JUMP_V = 270, G_HOLD = 820, G_FALL = 1500, G_FAST = 3200, HOLD_MAX = .2;
   function jump() {
@@ -567,7 +598,7 @@ export function createRunner(canvas, char, opt = {}) {
     if (first) { if (st.scene === 'again') again(); st.scene = 'play'; opt.onStart?.(); }
     if (st.scene !== 'play' || !st.onGround) return false;
     st.vy = -JUMP_V; st.onGround = false; st.jumpHeld = 0; st.ducking = false;
-    if (!first) beep(520, 880, .09); return true;
+    if (!first) fx ? SFX.jump() : beep(520, 880, .09); return true;
   }
   /* 간격 설계 (2026-10-25): 일정한 간격 대신 '리듬' — 보통 · 짧게 · 숨 돌리기 · 연타(2~3개 바짝) 를 섞어 긴장감을 준다.
      못 피하는 배치는 만들지 않는다: 모든 간격은 FAIR 이상.
@@ -660,8 +691,9 @@ export function createRunner(canvas, char, opt = {}) {
     if (Math.floor(s / 100) > st.lastHundred) {
       st.lastHundred = Math.floor(s / 100); st.flash = 1;
       const m = st.lastHundred * 100, step = m >= 5000 ? 1000 : m >= 1000 ? 500 : 100;
-      if (m % step === 0) beep(780, 1180, .12, 'square', .04);
+      if (m % step === 0) fx ? SFX.hundred(m) : beep(780, 1180, .12, 'square', .04);
     }
+    if (fx && !st.bestRung && (opt.best?.() || 0) > 0 && s > opt.best()) { st.bestRung = true; SFX.best(); }
     st.score = s;
     if (s >= GOAL && !st.past) return arrive();
     if (st.grace > 0) st.grace -= dt;
@@ -669,21 +701,29 @@ export function createRunner(canvas, char, opt = {}) {
 
     // 캐릭터
     if (!st.onGround) {
-      if (keys.jump && st.vy < 0 && st.jumpHeld < HOLD_MAX) st.jumpHeld += dt;
+      if (keys.jump && st.vy < 0 && st.jumpHeld < HOLD_MAX) { st.jumpHeld += dt; if (fx && st.jumpHeld >= .12 && !st.boosted) { st.boosted = true; SFX.boost(); } }
+      if (fx && keys.duck && !st.dived && !st.onGround) { st.dived = true; SFX.dive(); }
       const gr = keys.duck ? G_FAST : (keys.jump && st.vy < 0 && st.jumpHeld < HOLD_MAX) ? G_HOLD : G_FALL;
       st.vy += gr * dt; st.y += st.vy * dt;
       if (st.y >= 0) {
-        st.y = 0; st.vy = 0; st.onGround = true;
+        st.y = 0; st.vy = 0; st.onGround = true; st.boosted = st.dived = false; if (fx) SFX.land();
         for (let i = 0; i < 4; i++) st.dust.push({ x: PX + 6 + rand() * 10, y: GROUND - 1, vx: -10 + rand() * 30, vy: -8 - rand() * 10, t: .25 + rand() * .15 });
         if (keys.jump) jump();   // 누르고 있으면 바로 다시
       }
-    } else st.ducking = keys.duck;
+    } else { if (fx && keys.duck && !st.ducking) SFX.duck(); st.ducking = keys.duck; }
     if (st.onGround && !st.ducking && st.frames % 9 === 0 && rand() < .5) st.dust.push({ x: PX + 6, y: GROUND - 1, vx: 4, vy: -4, t: .18 });
 
     // 장애물
     const mv = st.speed * dt;
     st.scroll += mv;
-    for (const o of st.obs) o.x -= mv + (o.dx || 0) * dt;
+    for (const o of st.obs) {
+      o.x -= mv + (o.dx || 0) * dt;
+      if (fx && o.fly && !o.cue && o.x < W - 6) { o.cue = true; SFX[o.fly]?.(); }   // 날아오는 것이 화면에 들어올 때 미리 들리게
+      if (fx && !o.past && o.x + o.w < PX + 6) {   // 다 넘었을 때 아슬아슬했으면 '띠링'
+        o.past = true; const b = box();
+        if (!o.fly && b.y + b.h > o.y - 4) SFX.close();
+      }
+    }
     st.obs = st.obs.filter(o => o.x + o.w > -10);
     const lastO = st.obs[st.obs.length - 1];
     // 집 앞 약 70m부터는 장애물을 더 안 만듦(이미 나온 건 도착 전에 다 지나감) → 마지막은 집이 보이며 달려 들어가기
@@ -693,18 +733,18 @@ export function createRunner(canvas, char, opt = {}) {
   }
   function arrive() {
     st.scene = 'home'; st.score = GOAL; st.flash = 0; st.lastHundred = GOAL / 100; st.homeT = 0; st.homeDone = false; st.obs = []; st.ducking = false;
-    beep(523, 523, .12); setTimeout(() => beep(659, 659, .12), 130); setTimeout(() => beep(784, 1046, .3), 260);
+    if (fx) SFX.arrive(); else { beep(523, 523, .12); setTimeout(() => beep(659, 659, .12), 130); setTimeout(() => beep(784, 1046, .3), 260); }
   }
   function goOut() {   // '밖으로 나가기'
     if (st.scene !== 'home' || !st.homeDone) return false;
-    st.scene = 'out'; st.outT = 0; beep(784, 523, .1); return true;
+    st.scene = 'out'; st.outT = 0; fx ? SFX.door() : beep(784, 523, .1); return true;
   }
   function again() {   // 다시 출발: 끝없이 달리기 (최고 속도 그대로)
     st.past = true; st.grace = 1.2; st.obs = []; st.nextGap = 0; st.y = 0; st.vy = 0; st.onGround = true;
   }
   function die() {
     st.scene = 'dead'; st.deadT = 0; st.shake = .25;
-    beep(300, 70, .35, 'sawtooth', .06);
+    fx ? SFX.hit() : beep(300, 70, .35, 'sawtooth', .06);
     opt.onOver?.(st.score, st.ms);
   }
 

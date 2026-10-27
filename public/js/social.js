@@ -1781,7 +1781,7 @@ async function playHome() {
   let over = false, deadAt = 0, runNo = 0, choosing = false, goTicket = null;
   const touchy = matchMedia('(pointer:coarse)').matches;
   const R = RUN.createRunner(cv, char, {
-    sound, best: () => best,
+    sound, best: () => best, sfx2: ffOn('home-sfx', isDev(S.me)),
     onStart() { ov.hidden = true; ov.classList.remove('dead', 'win', 'again'); $('#hr').classList.add('on'); closeDress(); },
     onReady() {   // 집에서 나와 출발 자리에 섬 → 입력하면 다시 출발
       ov.hidden = false; ov.className = 'hr-ov again';
