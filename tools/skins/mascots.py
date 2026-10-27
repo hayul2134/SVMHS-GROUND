@@ -231,6 +231,20 @@ def M_axolotl():
             + "<circle cx='43' cy='29' r='1.8' fill='#ffb3c9'/><circle cx='55' cy='26' r='1.3' fill='#ffb3c9'/>")
 
 
+def M_shark():
+    # 2026-10-27 추가: 회청색 몸 + 흰 아래턱·배, 머리 위 등지느러미, 초승달 꼬리, 웃는 입에 작은 이빨 두 개(무섭지 않게)
+    c, l, w = '#b4c8dc', '#6e8aa8', '#f4f8fc'
+    tailfin = (f"<g class='mt'><path d='M64 86 Q74 86 80 80 Q82 72 89 66 Q90 77 85 84 Q90 89 92 95 Q82 92 77 89 Q71 91 64 90Z' fill='{c}' {ln(l)}/></g>")
+    dorsal = f"<path d='M38 22 Q46 1 64 3 Q58 10 60 22Z' fill='{c}' {ln(l)}/>"
+    mask = f"<path d='M15.5 62 Q32 57 50 57 Q68 57 84.5 62 Q84 73 50 74 Q16 73 15.5 62z' fill='{w}'/>"
+    gills = (f"<path d='M19 44 q2.4 3.5 0 7 M23.5 43 q2.4 3.5 0 7' fill='none' {ln(l, 1.8)}/>"
+             f"<path d='M81 44 q-2.4 3.5 0 7 M76.5 43 q-2.4 3.5 0 7' fill='none' {ln(l, 1.8)}/>")
+    grin = (f"<path d='M43.5 60.5 q6.5 5.2 13 0' fill='#5b3a44' {ln(F, 1.9)}/>"
+            f"<path d='M46 61.6 l1.5 2.4 l1.5 -1.7z M51 62.2 l1.5 1.7 l1.5 -2.4z' fill='#fff'/>")
+    return (SHADOW + tailfin + body(c, l, w, wave=True) + dorsal + mochi(c, l, top=17)
+            + mask + gills + eyes(52) + blush(58.5, 20) + grin)
+
+
 def _wrap(v):
     # 그림자(.msh) · 몸 전체(.mb) 안에 몸통(.mbo)과 머리(.mh)를 나눠 묶음 → 머리가 몸보다 살짝 늦게 따라 움직이게(겹침 동작)
     # 정적 그림(고르기 버튼·배경 무늬)에선 클래스·주석이 아무 영향 없음
