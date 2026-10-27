@@ -1773,7 +1773,7 @@ async function playGear() {
   const cv = $('#grCv'), ov = $('#grOv'), pop = $('#grPop');
   // 2026-10-27 하율: 일반(연습 — 랭킹 제외) / 랭킹전(2분 점수 대결 — 랭킹·보상) 두 가지로. best = 랭킹전 최고, bestN = 일반 최고(이 기기만)
   let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), bestN = store.get('gear_best_n', 0), over = false, deadAt = 0, runNo = 0;
-  let mode = store.get('gear_mode', 'normal') === 'rank' ? 'rank' : 'normal';
+  let mode = 'normal';   // 2026-10-27 하율: 들어올 때마다 기본은 일반 모드(지난번 고른 방식 기억 안 함)
   const setMode = m => { mode = m === 'rank' ? 'rank' : 'normal'; store.set('gear_mode', mode); $('#gr').dataset.mode = mode; R.setLimit(mode === 'rank' ? GEAR_TIME : 0);
     ov.querySelectorAll('[data-gm]').forEach(b => { const on = b.dataset.gm === mode; if (on && b.getAttribute('aria-pressed') === 'false') { b.classList.remove('pick'); void b.offsetWidth; b.classList.add('pick'); } b.setAttribute('aria-pressed', on); }); paintHud(); };
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
