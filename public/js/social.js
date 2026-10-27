@@ -1435,11 +1435,20 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 function playReaction() {
   stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요</small></button><ol class="rxlog" id="rxlog"></ol>`);
   const pad = $('#rx'), log = $('#rxlog');
-  const times = []; let state = 'idle', t0 = 0, timer = 0, alive = true;
+  const times = []; let state = 'idle', t0 = 0, timer = 0, alive = true, lastD = 0;
   quitGame = () => { alive = false; clearTimeout(timer); };
+  /* 대기 시간: 고르게 뽑으면(예전 1~3.5초) 기다릴수록 '이제 곧'이 보여 예측됨 →
+     지수 분포(언제든 나올 확률이 같음)로 0.7~7초, 가끔 아주 짧게, 직전과 0.7초 이상 차이 */
+  const rxDelay = () => {
+    for (let i = 0; i < 20; i++) {
+      const d = Math.random() < .12 ? 450 + Math.random() * 500 : 700 + -Math.log(1 - Math.random()) * 1700;
+      if (d <= 7000 && Math.abs(d - lastD) >= 700) return (lastD = d);
+    }
+    return (lastD = 700 + Math.random() * 4000);
+  };
   const arm = () => {
     state = 'wait'; pad.className = 'rx wait'; pad.innerHTML = `<b>기다려…</b><small>${times.length + 1} / 5</small>`;
-    timer = setTimeout(() => { if (!alive) return; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>'; t0 = performance.now(); }, 1000 + Math.random() * 2500);
+    timer = setTimeout(() => { if (!alive) return; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>'; t0 = performance.now(); }, rxDelay());
   };
   pad.addEventListener('pointerdown', e => {
     e.preventDefault();
