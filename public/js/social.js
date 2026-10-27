@@ -9,7 +9,7 @@ import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX, GEAR_TIME } from './gear-score.js';
 import { ffOn, RELEASED } from './flags.js';
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
-import { TIERS, TIER_PCT, BEST_N, tierOfK } from './att-rewards.js';
+import { TIERS, TIER_PCT, BEST_N, tierOfK, PTS_MIN_N } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
@@ -1342,7 +1342,7 @@ async function loadTier() {
   let d; try { d = await call('tier'); } catch { box.hidden = true; return; }
   if (!$('#tierBox')) return;
   const m = d.me, t = m && tierOfK(m.tier);
-  const byPts = d.mode === 'pts', lbOf = x => byPts ? x.pl : x.lb;
+  const byPts = d.mode === 'pts', lbOf = x => byPts || !d.v2 ? (byPts ? x.pl : x.lb) : x.pt ? `${x.lb} · ${x.pl}` : x.lb;   // 티어 2차: 20명+ = 상위 %와 점수 중 높은 쪽 → 둘 다 표시
   const lbSt = x => lbOf(x).split(' · ').map((t, i, a) => `<i class="${a.length > 1 && !i ? 'tl-rk' : 'tl-pt'}">${t}</i>`).join('<i class="tl-dot"> · </i>');   // 계단 라벨: '1등 · 340점+' → 두 줄로 나눌 수 있게   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
   const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
   const per = m ? gamesOn().map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
@@ -1362,7 +1362,7 @@ async function loadTier() {
       ${rad ? `<div class="tm t-radiant apex"><span class="tm-em"><i class="tm-halo"></i>${radIc()}</span>
         <div class="tm-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><span class="tm-st">순위·티어표에는 나오지 않아요</span></div></div>` : `<div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
         <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>`}
-      <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>1등 100점 · 참가만 해도 점수</small></span></li><li><b>2</b><span>잘한 ${BEST_N}개 게임 점수를 합쳐 줄 세우기<small>같으면 전체 합으로 가려요</small></span></li><li><b>3</b><span>${byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li><li><b>4</b><span>라운드 끝나면 뽑기권<small>챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장</small></span></li></ol>
+      <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>${d.v2 ? `1등 100점 · 참가 ${PTS_MIN_N}명 미만 게임은 점수가 줄어요` : '1등 100점 · 참가만 해도 점수'}</small></span></li><li><b>2</b><span>잘한 ${BEST_N}개 게임 점수를 합쳐 줄 세우기<small>${d.v2 ? '같으면 전체 합 → 먼저 달성한 사람' : '같으면 전체 합으로 가려요'}</small></span></li><li><b>3</b><span>${d.v2 ? `점수 구간으로 티어 결정<small>${TIER_PCT}명부터는 상위 %와 점수 중 높은 쪽</small>` : byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li><li><b>4</b><span>라운드 끝나면 뽑기권<small>챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장</small></span></li></ol>
     </div>
     <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>
     <ol class="tr-stairs">${stairs}</ol>

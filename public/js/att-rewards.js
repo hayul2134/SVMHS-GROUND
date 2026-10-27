@@ -185,7 +185,7 @@ TIERS.forEach(t => { if (t.pt != null) t.pl = t.pt ? `${t.pt}점+` : '그 외'; 
 export const tierMode = n => n < TIER_PCT ? 'pts' : 'pct';
 export const tierOfK = k => TIERS.find(t => t.k === k) || null;
 export const tierAt = (rank, n, pts = 0) => {
-  if (tierMode(n) === 'pts') {   // 사람이 적을 때: 점수 구간. 챌린저·그랜드마스터는 순위 + 점수 둘 다
+  if (tierMode(n) === 'pts') {   // 사람이 적을 때: 점수 구간. 챌린저·그랜드마스터는 순위만(1등·2~3등)
     if (rank === 1) return TIERS[0];
     if (rank <= 3) return TIERS[1];
     return TIERS.slice(2).find(t => pts >= t.pt) || TIERS[TIERS.length - 1];
@@ -196,6 +196,25 @@ export const tierAt = (rank, n, pts = 0) => {
   return TIERS.slice(2).find(t => p < t.top) || TIERS[TIERS.length - 1];
 };
 export const gamePts = (r, n) => Math.round(100 * (n - r + 1) / n);
+// ── 티어 2차(2026-10-27 하율 '허점 보완' — 미리보기 깃발 tier-v2, 개발자 화면 먼저) ──
+//   ① 게임 점수 분모를 최소 5명으로(혼자·2명 게임 공짜 100점 막기) ② 20명 이상은 '점수 구간'과 '백분위' 중 높은 쪽
+//   ③ 백분위는 챌린저·그마(1~3등)를 뺀 나머지 기준 (순위−4)/(n−3) — 20~37명에서 마스터가 비던 문제
+//   ④ 동점 마지막 판정 = 잘한 3개 합을 먼저 완성한 사람 ⑤ 게임 부정 정지는 제외 ⑥ 정산 뒤 승인된 기록은 승급만(강등 없음)
+//   ⑦ 새 게임은 GAMES[g].tierFrom(그날 시작하는 라운드부터) 합산 — 시뮬레이션 280라운드: 순위·티어·보상 역전 0건
+export const TIER2 = 'tier-v2';
+export const PTS_MIN_N = 5;
+export const gamePts2 = (r, n) => Math.round(100 * (n - r + 1) / Math.max(n, PTS_MIN_N));
+const ptsTier = pts => TIERS.slice(2).find(t => pts >= t.pt) || TIERS[TIERS.length - 1];
+export const tierAt2 = (rank, n, pts = 0) => {
+  if (rank === 1) return TIERS[0];
+  if (rank <= 3) return TIERS[1];
+  const a = ptsTier(pts);
+  if (n < TIER_PCT) return a;
+  const p = (rank - 4) / Math.max(1, n - 3);
+  const b = TIERS.slice(2).find(t => p < t.top) || TIERS[TIERS.length - 1];
+  return TIERS.indexOf(a) < TIERS.indexOf(b) ? a : b;   // 높은 쪽
+};
+export const GAME_FRAUD = /게임|매크로|부정|기록|조작|핵|오토/;   // 이 말이 들어간 정지 사유 = 게임 부정 → 티어·보상 제외
 export const GC_TITLE = '쉬는 시간 마스터';   // 시즌 1 시리즈를 다 모으면 받는 칭호
 // 히든 보상(2026-10-25 하율): '집에 가고 싶어!' 50,000m에 처음 도착한 단 한 사람 — 집 열쇠(착용 소품) + 칭호.
 // 뽑기 목록(GACHA)·도감·개발자 '전부 해금'에 들어가지 않음(세상에 하나). 서버가 첫 도착 때 gc_own에 넣어 줌(settings 'home_first')
