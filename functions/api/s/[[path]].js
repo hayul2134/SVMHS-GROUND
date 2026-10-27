@@ -1247,6 +1247,16 @@ const ROUTES = {
     const wk = weekKey(), { p } = await misGet(db, me, wk);
     return json(misOut(wk, p));
   }),
+  // 내 기록(2026-10-27 하율 "게임 안에선 랭크 대신 전에 남긴 내 기록이 잘 보이게"): 역대 최고 + 최근 날짜별 최고 10개
+  'GET myrec': needMe(async ({ db, me, url }) => {
+    const game = url.searchParams.get('game'); if (!GAMES[game]) return err('없는 게임이에요');
+    const [b, days] = await Promise.all([
+      db.prepare('SELECT best, day FROM scores WHERE uid = ?1 AND game = ?2 ORDER BY best, at LIMIT 1').bind(me.id, game).first(),
+      db.prepare('SELECT day, best FROM scores WHERE uid = ?1 AND game = ?2 ORDER BY day DESC LIMIT 10').bind(me.id, game).all(),
+    ]);
+    const n = await db.prepare('SELECT COUNT(*) AS n FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
+    return json({ best: b ? { v: b.best, day: b.day } : null, days: days.results.map(x => ({ day: x.day, v: x.best })), playDays: n?.n || 0 });
+  }),
   'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
     const out = {};
     await Promise.all(Object.keys(GAMES).map(async game => {

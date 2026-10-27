@@ -4912,3 +4912,23 @@ html:has(body.playing){overflow:hidden}
   .hb-ms b{position:absolute;right:-7px;bottom:-7px;padding:2px 4px;font-size:10px;line-height:1;background:var(--yellow,#ffe08a);color:#1d2433;border:1.6px solid var(--ink);border-radius:99px}
   body:has(#btnMission:not([hidden])) #hMenu{gap:5px}
 }
+/* 게임 안 '내 기록' (2026-10-27 하율: 순위 대신 지난 내 기록) — 결과 화면·기자재 정리!·집에 가고 싶어! 아래 */
+.myrec{display:grid;gap:8px;width:100%;max-width:440px;margin:10px auto 0;padding:12px 14px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);text-align:left}
+.mr-tag{margin:0;font-size:11px;font-weight:900;color:var(--sub)}
+.mr-best{display:flex;align-items:center;gap:6px;margin:0;font-weight:800;color:var(--ink)}
+.mr-best svg{width:18px;height:18px;color:#f5b301}
+.mr-best b{font:900 20px/1 var(--num,inherit);font-variant-numeric:tabular-nums}
+.mr-best small{margin-left:auto;font-size:11px;color:var(--sub)}
+.mr-h{margin:2px 0 0;font-weight:900;font-size:13px;color:var(--ink)}
+.mr-h small{font-weight:700;font-size:11px;color:var(--sub);margin-left:4px}
+.mr-days{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.mr-days li{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;font-size:12.5px}
+.mr-days li span{font-weight:800;color:var(--sub)}
+.mr-days li i{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--sky,#5ab8ff) var(--w),transparent var(--w));box-shadow:inset 0 0 0 1.5px var(--ink)}
+.mr-days li b{font:800 12.5px/1 var(--num,inherit);font-variant-numeric:tabular-nums;color:var(--ink);min-width:64px;text-align:right}
+.mr-days li.top i{background:linear-gradient(90deg,#ffd25e var(--w),transparent var(--w))}
+.mr-days li.top b::after{content:' 최고';font-size:10px;color:#e0a100}
+.mr-days li.now span{color:var(--ink)}
+.mr-pe,.mr-n{margin:0;font-size:12px;color:var(--sub);font-weight:700}
+.mr-n b{color:var(--ink)}
+.mr-n small{margin-left:4px}

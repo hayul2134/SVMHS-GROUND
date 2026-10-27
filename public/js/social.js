@@ -1516,7 +1516,7 @@ function play(game) {
 async function finish(game, value, detail = '', rounds = []) {   // rounds: 판마다의 기록 (서버가 다시 계산·검사)
   const g = GAMES[game], area = $('#parea'); if (!area) return;
   area.classList.remove('wide'); $('#gamePlay .ptop')?.classList.remove('wide');
-  area.innerHTML = `<div class="result"><p class="gem">${ic(g.ic)}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 랭킹에 올라가요!'}</p>
+  area.innerHTML = `<div class="result"><p class="gem">${ic(g.ic)}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 기록이 쌓여요!'}</p>
     <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">${ic('trophy')}랭킹</button></div></div>`;
   $('#again').onclick = () => play(game);
   $('#toRank').addEventListener('click', endPlay);
@@ -1531,8 +1531,8 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
       (r.bad || []).forEach(i => $('#parea .rdet')?.children[i]?.classList.add('bad'));
       $('#rMsg').outerHTML = heldBox(r); return;
     }
-    $('#rMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(g.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>` + (r.rank === 1 ? ' ' + ic('trophy') : '');
-    if (r.cheer) cheer(game, r.rank, r.best);
+    $('#rMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 잘했어요' : `내 최고 ${esc(g.fmt(r.best))}`;   // 게임 안에선 순위 안 보여 줌(2026-10-27 하율)
+    $('#rMsg').insertAdjacentHTML('afterend', '<div id="myRec"></div>'); myRecInto($('#myRec'), game);
   } catch (e) { if ($('#rMsg')) $('#rMsg').textContent = e.message; }
 }
 // 기록 저장(서버가 판 기록·티켓으로 다시 검사) — 결과 화면 없이 그 자리에서 다시 하는 게임(집에 가고 싶어!)도 같이 씀
@@ -1540,6 +1540,20 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
 // 결과 화면용: 왜 보류됐는지(서버 r.why) → 그래서 어떻게 됐는지
 const heldBox = r => `<div class="rheld" id="rMsg"><b>기록 보류</b><p>${esc(r.why || '확인이 필요한 기록이에요.')}</p><small>그래서 이 기록은 바로 랭킹에 올리지 않고 맡아 뒀어요. 개발자가 확인한 뒤 문제없으면 랭킹에 반영돼요. 억울하면 <button type="button" class="rheld-fb" data-fb>의견 보내기</button>로 알려 주세요!</small></div>`;
 const heldLine = r => `<b>기록 보류</b> ${esc(r.why || '')} 개발자가 확인한 뒤 반영돼요`;
+// 게임 안 '내 기록' 칸 (2026-10-27 하율: 게임 화면에선 순위·랭킹 대신 — 못하는 친구도 스트레스 없이 자기 기록만 보게)
+//   역대 최고 + 최근 날짜별 최고(막대는 내 기록끼리 비교, 작을수록 좋음인 저장값 기준) · 로그인 안 했으면 이 기기 최고만
+async function myRecInto(el, game, local = null) {
+  if (!el) return;
+  const g = GAMES[game], md = d => `${+d.slice(4, 6)}/${+d.slice(6, 8)}`;
+  if (!S.me) { el.innerHTML = `<div class="myrec"><p class="mr-best">${ic('trophy')}<span>내 최고</span><b>${local != null ? esc(g.fmt(local)) : '-'}</b></p><p class="mr-pe">로그인하면 날마다 내 기록이 쌓여요</p></div>`; return; }
+  let r; try { r = await call('myrec?game=' + game); } catch { return null; }
+  if (!el.isConnected) return r;
+  const vs = r.days.map(x => x.v), lo = Math.min(...vs), hi = Math.max(...vs), today = kstNow();
+  const w = v => hi === lo ? 100 : Math.round(25 + 75 * (hi - v) / (hi - lo));
+  el.innerHTML = `<div class="myrec"><p class="mr-best">${ic('trophy')}<span>내 최고</span><b>${r.best ? esc(g.fmt(r.best.v)) : '-'}</b>${r.best ? `<small>${md(r.best.day)}</small>` : ''}</p>
+    ${r.days.length ? `<p class="mr-h">최근 기록 <small>날마다 가장 잘한 판 · ${r.playDays}일 했어요</small></p><ol class="mr-days">${r.days.map(x => `<li class="${x.v === r.best?.v ? 'top' : ''}${x.day === today ? ' now' : ''}"><span>${x.day === today ? '오늘' : md(x.day)}</span><i style="--w:${w(x.v)}%"></i><b>${esc(g.fmt(x.v))}</b></li>`).join('')}</ol>` : '<p class="mr-pe">아직 기록이 없어요. 첫 판을 해 보세요!</p>'}</div>`;
+  return r;
+}
 async function saveScore(game, value, rounds) {
   const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
   const r = await call('score', { game, value, rounds, ticket: await t });
@@ -1751,8 +1765,8 @@ async function playGear() {
       saveScore('gear', GEAR_MAX - res.score, [res.score, res.lines, res.pieces, res.ms]).then(r => {
         if (no !== runNo || !$('#grMsg')) return;
         if (r.held) { $('#grMsg').innerHTML = heldLine(r); return; }
-        $('#grMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.gear.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
-        syncBest(r.best); if (r.cheer) cheer('gear', r.rank, r.best); paintRk();
+        $('#grMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 잘했어요' : `랭킹전 내 최고 ${esc(GAMES.gear.fmt(r.best))}`;
+        syncBest(r.best); paintRk();
       }).catch(e => { if (no === runNo && $('#grMsg')) $('#grMsg').textContent = e.message; });
     },
   });
@@ -1851,22 +1865,14 @@ async function playGear() {
   window.addEventListener('blur', blur);
   // 아래 랭킹(친구·전체 1~5등) — 집에 가고 싶어!와 같은 모양
   function syncBest(v) { if (v == null || !isFinite(v)) return; const b = GEAR_MAX - v; if (b > 0 && b !== best) { best = b; store.set('gear_best', b); } }
-  const rows = (r, empty) => {
-    const top = r.list.slice(0, 5); if (!top.length) return `<p class="hr-pe">${empty}</p>`;
-    const row = (u, n) => `<li class="${u.isMe ? 'me' : ''}"><span class="hr-n">${n <= 3 ? `<i class="mdl m${n}">${n}</i>` : n}</span>${av(u, 'xs', avWear(u.mfx))}<span class="hr-nm">${esc(nameOf(u))}</span><b>${esc(GAMES.gear.fmt(u.value))}</b></li>`;
-    const mine = r.mine && !isDev(S.me) && !top.some(u => u.isMe) ? `<li class="me hr-mine"><span class="hr-n">${r.mine}</span>${av(S.me, 'xs')}<span class="hr-nm">나</span><b>${esc(GAMES.gear.fmt(r.myValue))}</b></li>` : '';
-    return `<ol>${top.map((u, i) => row(u, i + 1)).join('')}${mine}</ol>`;
-  };
-  const pane = (k, t, b) => `<section class="hr-pane"><div class="hr-ph"><b>${t}</b><button type="button" class="hr-all" data-rank="gear" data-scope="${k}">더 보기</button></div>${b}</section>`;
-  async function paintRk() {
+  async function paintRk() {   // 게임 화면 아래: 순위 대신 내 기록 (2026-10-27 하율)
     const el = $('#grRk'); if (!el) return;
-    const mine = () => `<p class="hr-me">${ic('trophy')}랭킹전 내 최고 <b>${best ? best.toLocaleString('ko-KR') + '점' : '-'}</b></p>`;
-    if (!S.me) { el.innerHTML = mine() + '<p class="hr-pe">로그인하면 친구·전체 랭킹에 기록을 올릴 수 있어요</p>'; return; }
-    const [f, a] = await Promise.all([call('rank?game=gear&scope=friends').catch(() => null), call('rank?game=gear&scope=all').catch(() => null)]);
-    if (!$('#grRk')) return;
-    syncBest(a?.myValue);
-    el.innerHTML = mine() + `<div class="hr-cols">${pane('friends', '친구 랭킹', f ? rows(f, '아직 친구 기록이 없어요') : '<p class="hr-pe">불러오지 못했어요</p>')}${pane('all', '전체 랭킹', a ? rows(a, '아직 기록이 없어요. 첫 1등을 노려 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}</div>`;
+    const r = await myRecInto(el, 'gear', best ? GEAR_MAX - best : null);
+    if (r?.best) syncBest(r.best.v);
+    el.querySelector('.myrec')?.insertAdjacentHTML('afterbegin', '<p class="mr-tag">랭킹전 기록</p>');
+    if (bestN) el.querySelector('.myrec')?.insertAdjacentHTML('beforeend', `<p class="mr-n">일반 모드 내 최고 <b>${bestN.toLocaleString('ko-KR')}점</b><small>이 기기</small></p>`);
   }
+
   paintRk();
   const sndBtn = $('#grSnd');
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound); };
@@ -1957,10 +1963,9 @@ async function playHome() {
         if (r.held) { $('#hrMsg').innerHTML = heldLine(r); return; }
         $('#hrMsg').innerHTML = r.first ? `<b>히든 보상!</b> 처음으로 집에 온 단 한 사람 — 착용 소품 ‘집 열쇠’ · 칭호 ‘${esc(HOME_TITLE)}’를 받았어요`
           : r.arrived ? `<b>집 도착!</b> 칭호 ‘${esc(HOME_TITLE2)}’를 받았어요 — 프로필 꾸미기에서 달 수 있어요`
-          : (r.newBest ? '<b>최고 기록 경신!</b> ' : `내 최고 ${esc(GAMES.home.fmt(r.best))} · `) + `전체 <b>${r.rank}위</b>`;
+          : (r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 멀리 왔어요' : `내 최고 ${esc(GAMES.home.fmt(r.best))}`);
         syncBest(r.best);
         if (r.first || r.arrived) refreshMe();
-        if (r.cheer) cheer('home', r.rank, r.best);
         paintRk(true);
       }).catch(e => { if (no === runNo && $('#hrMsg')) $('#hrMsg').textContent = e.message; });
     },
@@ -1995,7 +2000,6 @@ async function playHome() {
       if (r.held) { if (no === runNo && choosing) paint(r); return; }
       syncBest(r.best);
       if (r.first || r.arrived) refreshMe();
-      if (r.cheer) cheer('home', r.rank, r.best);
       paintRk(true);
       if (no === runNo && choosing) paint(r);
     }).catch(e => { if (no === runNo && choosing) paint({ err: e.message }); });
@@ -2020,28 +2024,14 @@ async function playHome() {
     R.reset(); R.jump(); return true;
   };
   // 아래 랭킹 (2026-10-25 하율: 버튼 없이 바로 보이게) — 왼쪽 친구 랭킹 · 오른쪽 전체 랭킹, 각 1~5등 + 순위 밖이면 내 순위
-  const RK_N = 5;
-  const rkRows = (r, empty) => {
-    const top = r.list.slice(0, RK_N);
-    if (!top.length) return `<p class="hr-pe">${empty}</p>`;
-    const row = (u, n) => `<li class="${u.isMe ? 'me' : ''}"><span class="hr-n">${n <= 3 ? `<i class="mdl m${n}">${n}</i>` : n}</span>${av(u, 'xs', avWear(u.mfx))}<span class="hr-nm">${esc(nameOf(u))}</span><b>${esc(GAMES.home.fmt(u.value))}</b></li>`;
-    const mineOut = r.mine && !isDev(S.me) && !top.some(u => u.isMe) ? `<li class="me hr-mine"><span class="hr-n">${r.mine}</span>${av(S.me, 'xs')}<span class="hr-nm">나</span><b>${esc(GAMES.home.fmt(r.myValue))}</b></li>` : '';
-    return `<ol>${top.map((u, i) => row(u, i + 1)).join('')}${mineOut}</ol>`;
-  };
-  const rkPane = (k, title, body) => `<section class="hr-pane"><div class="hr-ph"><b>${title}</b><button type="button" class="hr-all" data-rank="home" data-scope="${k}">더 보기</button></div>${body}</section>`;
   // 로그인 중이면 '내 최고'(아래 줄·게임 화면 HI)는 서버 기록으로 맞춤 — 기기마다 따로 쌓인 값과 결과 카드의 '내 최고'가 달랐음 (2026-10-25)
   function syncBest(v) { if (v == null || !isFinite(v)) return; const b = HOME_MAX - v; if (b >= 0 && b !== best) { best = b; store.set('home_best', b); } }
-  async function paintRk() {
+  async function paintRk() {   // 게임 화면 아래: 순위 대신 내 기록 (2026-10-27 하율)
     const el = $('#hrRk'); if (!el) return;
-    const mine = `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></p>`;
-    if (!S.me) { el.innerHTML = mine + '<p class="hr-pe">로그인하면 친구·전체 랭킹에 기록을 올릴 수 있어요</p>'; return; }
-    if (!el.innerHTML) el.innerHTML = mine + `<div class="hr-cols">${rkPane('friends', '친구 랭킹', '<p class="hr-pe">불러오는 중…</p>')}${rkPane('all', '전체 랭킹', '<p class="hr-pe">불러오는 중…</p>')}</div>`;
-    const [f, a] = await Promise.all([call('rank?game=home&scope=friends').catch(() => null), call('rank?game=home&scope=all').catch(() => null)]);
-    if (!$('#hrRk')) return;
-    syncBest(a?.myValue);
-    const mine2 = `<p class="hr-me">${ic('trophy')}내 최고 <b>${best ? best.toLocaleString('ko-KR') + 'm' : '-'}</b></p>`;
-    el.innerHTML = mine2 + `<div class="hr-cols">${rkPane('friends', '친구 랭킹', f ? rkRows(f, '아직 친구 기록이 없어요. 첫 기록을 남겨 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}${rkPane('all', '전체 랭킹', a ? rkRows(a, '아직 기록이 없어요. 첫 1등을 노려 보세요!') : '<p class="hr-pe">불러오지 못했어요</p>')}</div>`;
+    const r = await myRecInto(el, 'home', best ? HOME_MAX - best : null);
+    if (r?.best) syncBest(r.best.v);
   }
+
   paintRk();
   window.__home = R;   // 테스트용 (헤드리스 점검)
   fit();
