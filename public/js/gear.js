@@ -37,27 +37,25 @@ function canvasOf(w, h) { const c = document.createElement('canvas'); c.width = 
 const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v * k))); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(v => f(v).toString(16).padStart(2, '0')).join(''); };
 function disc(g, cx, cy, r, col) { g.fillStyle = col; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * .6) g.fillRect(cx + x, cy + y, 1, 1); }
 function box(g, x, y, w, h, col) { g.fillStyle = col; g.fillRect(x, y, w, h); }
-// 장비 몸통: 칸들을 한 덩어리로 — 바깥 테두리 = 남색 선 1px + 그 안쪽 흰 선 1px(바깥 흰 테두리는 되돌리고 안쪽을 밝게, 2026-10-27 하율), 붙은 칸끼리는 이어짐,
+// 장비 몸통: 칸들을 한 덩어리로 — 테두리 선 없이 꽉 채움(아래 body 설명), 붙은 칸끼리는 이어짐,
 // 바깥 모서리는 둥글게, 안쪽으로 꺾인 모서리도 선을 이어 줌, 위·왼쪽 밝게·아래·오른쪽 어둡게
 const RIM = '#f7f9ff';
 const mix = (a, b, t) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
 function body(g, cells, col) {
+  // 2026-10-27 하율 "닿고 나서 채워지는 게 이상함 → 처음부터 딱 맞게": 테두리 선 없이 칸을 끝까지 꽉 채움.
+  //   장비끼리 구분은 바깥 면 1px 밝은 선(위·왼쪽)·어두운 선(아래·오른쪽)으로만 → 붙여 쌓아도 틈이 안 생김
   const has = (x, y) => cells.some(c => c[0] === x && c[1] === y);
-  col = mix(col, '#ffffff', .14);   // 몸통도 살짝 밝게
-  const hi = mix(col, '#ffffff', .35), lo = shade(col, .8);
+  col = mix(col, '#ffffff', .14);
+  const hi = mix(col, '#ffffff', .55), lo = shade(col, .62);
   for (const [cx, cy] of cells) {
     const x = cx * C, y = cy * C, L = !has(cx - 1, cy), R = !has(cx + 1, cy), T = !has(cx, cy - 1), B = !has(cx, cy + 1);
-    const ins = d => [x + (L ? d : 0), y + (T ? d : 0), x + C - (R ? d : 0), y + C - (B ? d : 0)];
-    box(g, x, y, C, C, OL);
-    { const [a, b, c2, d2] = ins(1); box(g, a, b, c2 - a, d2 - b, RIM); }
-    const [x0, y0, x1, y1] = ins(2);
-    box(g, x0, y0, x1 - x0, y1 - y0, col);
-    if (T) box(g, x0, y0, x1 - x0, 1, hi); if (L) box(g, x0, y0, 1, y1 - y0, hi);
-    if (B) box(g, x0, y1 - 1, x1 - x0, 1, lo); if (R) box(g, x1 - 1, y0, 1, y1 - y0, lo);
-    // 모서리는 둥글리지 않고 완전히 각지게 (2026-10-27 하율: 쌓을 때 모서리 틈 없게)
-    // 안쪽으로 꺾인 모서리(옆·위는 붙었는데 대각선은 비었음): 선이 끊기지 않게 2×2 채움
-    const notch = (dx, dy, px, py) => { if (!has(cx + dx, cy) || !has(cx, cy + dy) || has(cx + dx, cy + dy)) return; box(g, px - (dx > 0 ? 1 : 0), py - (dy > 0 ? 1 : 0), 2, 2, RIM); box(g, dx > 0 ? px : px, dy > 0 ? py : py, 1, 1, OL); };
-    notch(-1, -1, x, y); notch(1, -1, x + C - 1, y); notch(-1, 1, x, y + C - 1); notch(1, 1, x + C - 1, y + C - 1);
+    box(g, x, y, C, C, col);
+    if (T) box(g, x, y, C, 1, hi); if (L) box(g, x, y, 1, C, hi);
+    if (B) box(g, x, y + C - 1, C, 1, lo); if (R) box(g, x + C - 1, y, 1, C, lo);
+    if (T && R) box(g, x + C - 1, y, 1, 1, col); if (B && L) box(g, x, y + C - 1, 1, 1, col);   // 밝은 선·어두운 선이 만나는 모서리는 중간색
+    // 안쪽으로 꺾인 모서리: 대각선 칸이 비었으면 그 점을 밝게/어둡게 이어 줌
+    if (!L && !T && !has(cx - 1, cy - 1)) box(g, x, y, 1, 1, hi);
+    if (!R && !B && !has(cx + 1, cy + 1)) box(g, x + C - 1, y + C - 1, 1, 1, lo);
   }
 }
 const ART = {
@@ -135,10 +133,10 @@ function buildArt() {
     mg.globalCompositeOperation = 'destination-out';
     const has = (x, y) => cells.some(q => q[0] === x && q[1] === y);
     for (const [cx, cy] of cells) {   // 테두리 2px(남색 선·흰 선) 안쪽에만
-      if (!has(cx - 1, cy)) mg.fillRect(cx * C, cy * C, 2, C);
-      if (!has(cx + 1, cy)) mg.fillRect(cx * C + C - 2, cy * C, 2, C);
-      if (!has(cx, cy - 1)) mg.fillRect(cx * C, cy * C, C, 2);
-      if (!has(cx, cy + 1)) mg.fillRect(cx * C, cy * C + C - 2, C, 2);
+      if (!has(cx - 1, cy)) mg.fillRect(cx * C, cy * C, 1, C);
+      if (!has(cx + 1, cy)) mg.fillRect(cx * C + C - 1, cy * C, 1, C);
+      if (!has(cx, cy - 1)) mg.fillRect(cx * C, cy * C, C, 1);
+      if (!has(cx, cy + 1)) mg.fillRect(cx * C, cy * C + C - 1, C, 1);
     }
     dg.globalCompositeOperation = 'destination-in'; dg.drawImage(m, 0, 0);
     g.drawImage(d, 0, 0);
@@ -327,28 +325,6 @@ export function createGear(canvas, opt = {}) {
     g.translate(shx, sh + Math.round(st.bump * 2));
     const gone = st.clearT > 0;   // 지워지는 줄의 칸은 pops가 대신 그림
     for (let y = HID; y < ROWS; y++) { if (gone && st.clearRows.includes(y)) continue; for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; if (c) drawCellAt(c, x * C, (y - HID) * C); } }
-    // 쌓인 장비끼리 맞닿은 면은 테두리(2px)를 몸통 색으로 메워 틈 없이 붙어 보이게 (2026-10-27 하율 "사이사이 틈이 없었으면")
-    const live = (x, y) => x >= 0 && x < COLS && y >= HID && y < ROWS && st.board[y][x] && !(gone && st.clearRows.includes(y));
-    for (let y = HID; y < ROWS; y++) { if (gone && st.clearRows.includes(y)) continue; for (let x = 0; x < COLS; x++) {
-      const c = st.board[y][x]; if (!c) continue;
-      const own = cellsOf(c.k, c.r), mine = (dx, dy) => own.some(q => q[0] === c.sx + dx && q[1] === c.sy + dy);
-      const e = (dx, dy) => !mine(dx, dy) && live(x + dx, y + dy);   // 내 테두리가 있고, 그 너머에 다른 장비가 붙어 있음
-      const L = e(-1, 0), R = e(1, 0), T = e(0, -1), B = e(0, 1);
-      if (!(L || R || T || B)) continue;
-      const px = x * C, py = (y - HID) * C, col = mix(KIND[c.k].body, '#ffffff', .14);
-      const eT = !mine(0, -1), eB = !mine(0, 1), eL = !mine(-1, 0), eR = !mine(1, 0);   // 원래 테두리가 있는 면
-      g.fillStyle = col;
-      if (L) g.fillRect(px, py + (eT && !T ? 2 : 0), 2, C - (eT && !T ? 2 : 0) - (eB && !B ? 2 : 0));
-      if (R) g.fillRect(px + C - 2, py + (eT && !T ? 2 : 0), 2, C - (eT && !T ? 2 : 0) - (eB && !B ? 2 : 0));
-      if (T) g.fillRect(px + (eL && !L ? 2 : 0), py, C - (eL && !L ? 2 : 0) - (eR && !R ? 2 : 0), 2);
-      if (B) g.fillRect(px + (eL && !L ? 2 : 0), py + C - 2, C - (eL && !L ? 2 : 0) - (eR && !R ? 2 : 0), 2);
-      // 메운 면과 남은 테두리가 만나는 모서리: 둥근 모서리 대신 테두리를 곧게 이어 줌
-      const line = (ax, ay, horiz) => { g.fillStyle = OL; horiz ? g.fillRect(ax, ay.o, 2, 1) : g.fillRect(ay.o, ax, 1, 2); g.fillStyle = RIM; horiz ? g.fillRect(ax, ay.i, 2, 1) : g.fillRect(ay.i, ax, 1, 2); };
-      if (L && eT && !T) line(px, { o: py, i: py + 1 }, 1); if (L && eB && !B) line(px, { o: py + C - 1, i: py + C - 2 }, 1);
-      if (R && eT && !T) line(px + C - 2, { o: py, i: py + 1 }, 1); if (R && eB && !B) line(px + C - 2, { o: py + C - 1, i: py + C - 2 }, 1);
-      if (T && eL && !L) line(py, { o: px, i: px + 1 }, 0); if (T && eR && !R) line(py, { o: px + C - 1, i: px + C - 2 }, 0);
-      if (B && eL && !L) line(py + C - 2, { o: px, i: px + 1 }, 0); if (B && eR && !R) line(py + C - 2, { o: px + C - 1, i: px + C - 2 }, 0);
-    } }
     if (st.clearT) {   // 지워지는 줄: 처음 2프레임 새하얗게 번쩍 → 빈 줄에 남은 빛이 가운데로 사라짐
       const k = st.clearT / CLEAR_T;
       for (const y of st.clearRows) {
