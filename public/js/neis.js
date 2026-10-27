@@ -126,6 +126,11 @@ function swapDay(r) {
   const m = SWAP_RE.exec(r.EVENT_NM);
   return m ? { ...r, EVENT_NM: `${m[1]}요일 시간표로 수업`, swap: m[1] } : r;
 }
+/** 나이스에 아직 반영 안 된 학교 일정 변경 — 이름이 같은 일정을 옮김 { 이름, 원래 날짜 → 새 날짜 }
+ *  (나이스가 고쳐지면 원래 날짜 일정이 없어져 저절로 무시됨) */
+const MOVES = [
+  { nm: '추수감사절 행사', from: '20261127', to: '20261030' },   // 2026-10-27 하율: 10/30로 옮겨짐
+];
 export async function getSchedule(from, to) {
   let rows;
   if (api.hasKey) rows = await neis('SchoolSchedule', { AA_FROM_YMD: ymd(from), AA_TO_YMD: ymd(to) });
@@ -133,6 +138,12 @@ export async function getSchedule(from, to) {
     const parts = [];
     for (let d = new Date(from); d <= to; d = addDays(d, 4)) { const e = addDays(d, 3); parts.push([d, e > to ? to : e]); }
     rows = (await Promise.all(parts.map(([a, b]) => settle(neis('SchoolSchedule', { AA_FROM_YMD: ymd(a), AA_TO_YMD: ymd(b) }))))).flat();
+  }
+  // 옮긴 일정: 원래 날짜 줄은 빼고, 새 날짜가 조회 범위 안이면 새 줄을 넣음
+  const F = ymd(from), T = ymd(to);
+  for (const m of MOVES) {
+    rows = rows.filter(r => !(r.AA_YMD === m.from && r.EVENT_NM === m.nm));
+    if (m.to >= F && m.to <= T) rows.push({ AA_YMD: m.to, EVENT_NM: m.nm, SBTR_DD_SC_NM: '해당없음' });
   }
   const seen = new Set();
   return rows
