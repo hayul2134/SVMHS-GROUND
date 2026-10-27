@@ -27,4 +27,7 @@ export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 // 2026-10-26 10:03 하율: "전부 적용시켜" — 미리보기 4개 모두에게 바로 공개(공지는 10/26 패치 공지 컨펌 후 그대로)
 // login-keep: 2026-10-28 00:12 하율 "패치만 하고 내일 공지에 띄우면 되잖아" → 모두에게 바로 적용, 공지는 10/28 패치로
 export const RELEASED = new Set(['login-keep', 'tier-profile', 'tier-fancy', 'rank-tier', 'story-share', 'tier-pad', 'club-tt', 'tier-v2']);   // tier-v2: 2026-10-27 14:02 하율 "지금 패치 진행하자"   // tier-pad: 2026-10-26 10:10 하율 "패치 적용해" · club-tt: 13:30 "바로 패치 진행해"
-export const ffOn = (name, dev) => !PREVIEW.has(name) || RELEASED.has(name) || !!dev;
+// 회수(HOLD): 공지로 잘못 공개된 기능을 다시 개발자 전용으로 — 게시본에 ff가 남아 있어도 RELEASED보다 우선
+// cut-v2: 2026-10-28 00:16 하율 "내꺼에만 적용 시키라고 했잖아 싹 거둬" (대기열에서 주석 처리하기 전 초안에 들어간 줄이 10/27 패치로 게시돼 열렸던 것)
+export const HOLD = new Set(['cut-v2']);
+export const ffOn = (name, dev) => !!dev || (!HOLD.has(name) && (!PREVIEW.has(name) || RELEASED.has(name)));
