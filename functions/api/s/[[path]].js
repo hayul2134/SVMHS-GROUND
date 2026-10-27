@@ -988,7 +988,7 @@ const ROUTES = {
       }
     }
     // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
-    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 200m · 기자재 정리! 300점 밑이면 판 수에 안 셈
+    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 1,500점 밑이면 판 수에 안 셈
     const mis = playCounts(game, v) ? await misEv(db, me, 'play', { game, v, best: allPrev.b != null && v < allPrev.b, day }) : null;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
     return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
