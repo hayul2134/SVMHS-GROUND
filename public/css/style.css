@@ -5161,3 +5161,41 @@ html:has(body.playing){overflow:hidden}
   .gr-bar .prestart{position:absolute;right:0;bottom:calc(100% + 14px);width:var(--sw,auto);justify-content:center;margin:0;padding:0 8px;container-type:inline-size}
 }
 @container (max-width:150px){.gr-bar .prestart kbd{display:none}}
+
+/* ===== 로딩 뼈대 = 실제 오브젝트 모양 (2026-10-27, util.js ghost) =====
+   카드·칸·테두리 모양은 그대로 두고 색만 빼고, 글자는 둥근 막대, 그림·아이콘·사진은 같은 크기 덩어리로 숨 쉬듯 깜빡임 */
+.skz{filter:saturate(.12);pointer-events:none;user-select:none;-webkit-user-select:none}
+.skz,.skz *{color:transparent!important;text-shadow:none!important;caret-color:transparent}
+.skz *,.skz::before,.skz::after,.skz *::before,.skz *::after{animation:none!important;transition:none!important}
+.skz *::before,.skz *::after{opacity:.35}
+.skz .skt,.skz.skt{font-style:normal;border-radius:7px;background:var(--line);-webkit-box-decoration-break:clone;box-decoration-break:clone;animation:skp 1.05s ease-in-out infinite alternate!important}
+.skz .skm,.skz.skm{background:var(--line)!important;border-color:transparent!important;box-shadow:none!important;border-radius:12px;animation:skp 1.05s ease-in-out infinite alternate!important}
+.skz .skm > *,.skz.skm > *,.skz svg.skm *{visibility:hidden}
+.skz .av.skm,.skz .mth.skm,.skz .mdl.skm,.skz .ms-no.skm,.skz .flm.skm{border-radius:50%}
+.skz img.skm{display:inline-block;min-width:1em;min-height:1em}
+.skz input,.skz textarea,.skz select,.skz button{background-color:transparent}
+.skz .btn,.skz .fbtn{background:var(--line)!important;border-color:transparent!important;box-shadow:none!important}
+@keyframes skp{from{opacity:.5}to{opacity:1}}
+/* 식판 칸·급식 목록 썸네일: 음식 자리 */
+.skz .cell,.skz .tray,.skz .drink{background:color-mix(in srgb,var(--line) 45%,var(--card))!important}
+.skz .tray .fx.skm{inset:16% 18% 30%;border-radius:50%;background:var(--line)!important}
+/* 시간표 표: 빈 칸 줄무늬 대신 뼈대 */
+.skz.week td,.skz .week td{background:transparent}
+/* 사진이 늦게 올 때: 같은 자리에 같은 모양 덩어리 → 다 오면 페이드 인 (load/error는 util.js가 .ok) */
+.fx img:not(.ok),img.clogo:not(.ok),img.pi-logo:not(.ok),.cp-i img:not(.ok),img.ptimg:not(.ok),#shpClub img:not(.ok){background:var(--line);animation:skp 1.05s ease-in-out infinite alternate}
+.fx img:not(.ok){border-radius:50%;background:radial-gradient(circle at 50% 46%,var(--line) 0 34%,transparent 35%)!important}
+img.clogo:not(.ok),img.pi-logo:not(.ok),.cp-i img:not(.ok){border-radius:22%}
+img.ptimg:not(.ok){border-radius:10px;min-height:120px}
+.fx img.ok,img.clogo.ok,img.pi-logo.ok,.cp-i img.ok,img.ptimg.ok{animation:imgIn .35s ease-out}
+@keyframes imgIn{from{opacity:0;transform:scale(.96)}}
+/* 크게 보기(사진 확대) — 지금까지 툭 나타나던 것 */
+.ptzoom{animation:zIn .2s ease-out}
+@keyframes zIn{from{opacity:0}}
+.ptzoom img{animation:imgIn .28s cubic-bezier(.2,1.2,.4,1)}
+@media (prefers-reduced-motion:reduce){
+  .skz .skt,.skz.skt,.skz .skm,.skz.skm,.fx img:not(.ok),img.clogo:not(.ok),img.pi-logo:not(.ok),.cp-i img:not(.ok),img.ptimg:not(.ok){animation:none!important}
+  .fx img.ok,img.clogo.ok,img.pi-logo.ok,.cp-i img.ok,img.ptimg.ok,.ptzoom,.ptzoom img{animation:none}
+}
+.skz .gc-skm{height:210px;display:grid;place-items:center}
+.skz .gc-skm svg.skm{width:150px;height:190px;border-radius:46% 46% 16px 16px}
+.skz .lbl,.skz .vnote,.skz .kcal{background:transparent!important;border-color:transparent!important;box-shadow:none!important}

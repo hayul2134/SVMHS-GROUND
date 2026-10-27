@@ -1,5 +1,5 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
-import { $, $$, esc, toast, store, idle, onWake } from './util.js';
+import { $, $$, esc, toast, store, idle, onWake, ghost, ghostIn, ghostOr } from './util.js';
 import * as ATT from './attend.js';
 import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시(2026-10-25)
 import { wearOf, wearSvg } from './wear.js';
@@ -82,6 +82,12 @@ const ago = t => {
 };
 const hm = t => { const d = new Date(t), h = d.getHours(); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`; };
 const personRow = (u, right = '') => `<li class="person"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc([atOf(u), u.mood].filter(Boolean).join(' · '))}</small></span></a>${right}</li>`;
+/* 로딩 뼈대용 가짜 데이터 (2026-10-27) — 진짜 그리는 함수에 넣어 같은 모양을 만든 뒤 util.js ghost()로 뼈대로 (글자는 안 보이고 길이만 씀) */
+const FK_U = (i = 0) => ({ handle: 'loading' + i, name: ['친구 이름', '닉네임자리', '이름이길어요'][i % 3], color: 'sky', avatar: 'k:cat', mood: '상태 메시지가 들어가는 자리', grade: 1, cls: 1, value: 10, pts: 100, tier: 'gold', rank: i + 1, seen: Date.now() });
+const FK_US = n => Array.from({ length: n }, (_, i) => FK_U(i));
+const ghPeople = n => ghostOr(() => FK_US(n).map(u => personRow(u, '<button class="fbtn">팔로우</button>')).join(''), n);
+const FK_PROF = self => ({ user: { ...FK_U(), bio: '자기소개가 들어가는 자리예요. 두 줄 정도 길이로 보여요' }, me: self, counts: { followers: 0, following: 0 }, streak: { cur: 3, best: 3, total: 3 }, bests: {}, rel: {}, crowns: [] });
+const ghProfile = self => ghostOr(() => profileHtml(FK_PROF(self)), 3);
 const followBtn = u => u.isMe ? '' : `<button class="fbtn ${u.following ? 'on' : ''}" data-follow="${esc(u.handle)}" data-on="${u.following ? 0 : 1}">${u.following ? '팔로잉' : '팔로우'}</button>`;
 const needLogin = (msg) => `<div class="card soc-gate"><p class="gate-em">🔐</p><p><b>${msg}</b></p><p class="muted small">아이디만 있으면 1분이면 가입해요</p><button class="btn" data-go="me">로그인 / 가입하기</button></div>`;
 const offCard = () => `<div class="card soc-gate"><p class="gate-em">🛠️</p><p><b>소셜 기능을 준비하고 있어요</b></p><p class="muted small">곧 열려요! 조금만 기다려 주세요</p></div>`;
@@ -402,7 +408,7 @@ async function renderMe() {
   const box = $('#meBox');
   if (S.enabled === false) { box.innerHTML = offCard(); return; }
   if (!S.me) { box.innerHTML = authHtml('login'); return; }
-  box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
+  if (!box.querySelector('.pcard:not(.skz)')) box.innerHTML = ghProfile(true);
   try {
     const d = await call('user/' + encodeURIComponent(S.me.handle)); S.meProf = d;
     box.innerHTML = profileHtml(d) + `
@@ -410,7 +416,7 @@ async function renderMe() {
         <div class="ct"><h2>👋 친구 찾기</h2></div>
         <form class="form" id="findForm" autocomplete="off" role="search"><input id="findQ" placeholder="아이디나 이름으로 검색" maxlength="16" aria-label="친구 검색"><button class="btn">검색</button></form>
         <p class="note" id="findNote">최근에 들어온 친구들</p>
-        <ul class="plist" id="findList"><li class="skel"></li></ul>
+        <ul class="plist" id="findList">${ghPeople(4)}</ul>
       </section>`;
     findPeople('');
     if (wantFind) {   // 프로필 등장 효과·사진이 늦게 자리 잡아 높이가 바뀜 → 1.2초 동안 자리가 바뀌면 다시 맞춤
@@ -440,7 +446,7 @@ async function renderUser(handle) {
   if (S.enabled === false) { box.innerHTML = offCard(); return; }
   if (!S.me) { box.innerHTML = needLogin('친구 프로필을 보려면 로그인해 주세요'); return; }
   if (!handle || handle === S.me.handle) { ctx.go('me'); return; }
-  box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div></div>';
+  box.innerHTML = ghProfile(false);
   try { box.innerHTML = profileHtml(await call('user/' + encodeURIComponent(handle))); }
   catch (e) { box.innerHTML = `<div class="card soc-gate"><p class="gate-em">🤔</p><p><b>${esc(e.message)}</b></p><button class="btn ghost" data-go="me">돌아가기</button></div>`; }
 }
@@ -478,7 +484,7 @@ document.addEventListener('click', async e => {
   const p = e.target.closest('[data-people]');
   if (p) {
     const kind = p.dataset.people, title = { followers: '팔로워', following: '팔로잉', friends: '친구' }[kind];
-    sheet(`<h3>${title}</h3><ul class="plist" id="pplList"><li class="skel"></li></ul><div class="row"><button class="btn ghost" data-close>닫기</button></div>`);
+    sheet(`<h3>${title}</h3><ul class="plist" id="pplList">${ghPeople(4)}</ul><div class="row"><button class="btn ghost" data-close>닫기</button></div>`);
     try {
       const r = await call(`people?kind=${kind}&who=${encodeURIComponent(p.dataset.h)}`);
       $('#pplList').innerHTML = r.users.length ? r.users.map(u => personRow(u, followBtn(u))).join('') : '<li class="empty">아직 없어요</li>';
@@ -876,7 +882,7 @@ function openSettings() {
     <p class="lbl">🏆 자랑 메시지</p>
     <label class="pdok"><input type="checkbox" id="bragAll"><span>DM으로 오는 기록 자랑 받기</span></label>
     <ul class="plist" id="bragList"></ul>
-    <p class="lbl">차단한 사람</p><ul class="plist" id="blkList"><li class="skel"></li></ul>
+    <p class="lbl">차단한 사람</p><ul class="plist" id="blkList">${ghPeople(2)}</ul>
     <div class="col">${S.me?.handle === ADMIN_HANDLE ? '<a class="btn" href="/admin/">🛠 관리자 페이지</a>' : ''}<button class="btn ghost" id="btnLogout">로그아웃</button><button class="btn ghost" id="btnLogoutAll" title="학교 태블릿 등에 로그인을 두고 왔을 때">모든 기기에서 로그아웃</button><button class="btn ghost danger" id="btnWithdraw">탈퇴하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   call('blocked').then(r => {
     $('#blkList').innerHTML = r.users.length ? r.users.map(u => personRow(u, `<button class="fbtn" data-block="${esc(u.handle)}" data-on="0">풀기</button>`)).join('') : '<li class="empty">없어요</li>';
@@ -913,25 +919,29 @@ function stopThread() { clearTimeout(dmTimer); openThread = ''; threadIn = ''; }
 // 링크: #dm 화면은 주소 이동, 메시지 창 안에서는 창 안에서만 바꿈
 const toThread = (h, panel) => panel ? `href="#" data-pdm="${esc(h)}"` : `href="#dm/${esc(h)}"`;
 const toList = panel => panel ? 'href="#" data-pdm=""' : 'href="#dm"';
+// DM 목록 카드 (진짜·뼈대 공용)
+function dmListHtml(threads0, friends0, panel) {
+    const threads = threads0.map(t => `<li class="thread ${t.unread ? 'new' : ''}"><a ${toThread(t.user.handle, panel)}>${av(t.user)}
+      <span class="pi"><b>${esc(nameOf(t.user))}${repTag(t.user)}</b><small>${t.mine ? '나: ' : ''}${stkOf(t.last) ? '스티커를 보냈어요' : esc(t.last)}</small></span>
+      <span class="tm">${ago(t.at)}${t.unread ? `<i class="nb">${t.unread}</i>` : ''}</span></a></li>`).join('');
+    const friends = friends0.map(u => `<a class="fchip" ${toThread(u.handle, panel)}>${av(u)}<small>${esc(u.name)}</small></a>`).join('');
+    return `<div class="card dmcard">
+      ${friends ? `<p class="lbl">친구에게 먼저 말 걸기</p><div class="frow">${friends}</div>` : ''}
+      <ul class="plist">${threads || '<li class="empty">아직 주고받은 메시지가 없어요</li>'}</ul>
+      <p class="note">💡 서로 팔로우한 친구끼리 DM할 수 있어요. 불편한 메시지는 프로필의 ⋯에서 차단·신고해 주세요.</p>
+    </div>`;
+}
 async function renderDm(handle, box = $('#dmBox'), panel = false) {
   stopThread();
   if (S.enabled === false) { box.innerHTML = offCard(); return; }
   if (!S.me) { box.innerHTML = needLogin('DM을 하려면 로그인해 주세요'); return; }
   if (handle) return renderThread(handle, box, panel);
-  if (!box.querySelector('.dmcard')) box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
+  if (!box.querySelector('.dmcard')) box.innerHTML = ghostOr(() => dmListHtml(FK_US(4).map((u, i) => ({ user: u, last: '메시지 미리보기가 들어가는 자리', at: Date.now() - i * 6e5 })), FK_US(4), panel), 3);
   try {
     const r = await call('inbox');
     paintRecent(r.threads);
     if (openThread) return;
-    const threads = r.threads.map(t => `<li class="thread ${t.unread ? 'new' : ''}"><a ${toThread(t.user.handle, panel)}>${av(t.user)}
-      <span class="pi"><b>${esc(nameOf(t.user))}${repTag(t.user)}</b><small>${t.mine ? '나: ' : ''}${stkOf(t.last) ? '스티커를 보냈어요' : esc(t.last)}</small></span>
-      <span class="tm">${ago(t.at)}${t.unread ? `<i class="nb">${t.unread}</i>` : ''}</span></a></li>`).join('');
-    const friends = r.friends.map(u => `<a class="fchip" ${toThread(u.handle, panel)}>${av(u)}<small>${esc(u.name)}</small></a>`).join('');
-    box.innerHTML = `<div class="card dmcard">
-      ${friends ? `<p class="lbl">친구에게 먼저 말 걸기</p><div class="frow">${friends}</div>` : ''}
-      <ul class="plist">${threads || '<li class="empty">아직 주고받은 메시지가 없어요</li>'}</ul>
-      <p class="note">💡 서로 팔로우한 친구끼리 DM할 수 있어요. 불편한 메시지는 프로필의 ⋯에서 차단·신고해 주세요.</p>
-    </div>`;
+    box.innerHTML = dmListHtml(r.threads, r.friends, panel);
   } catch (e) { box.innerHTML = `<div class="card"><p class="empty">${esc(e.message)}</p></div>`; }
 }
 
@@ -1005,7 +1015,7 @@ async function loadHomeRank(force) {
   const tab = rkTab, c = rkCache[tab];
   if (c) paintHomeRank(tab, c.r);
   if (!force && c && Date.now() - c.at < 300e3) return;
-  if (!c) $('#rkList').innerHTML = '<li class="skel"></li>';
+  if (!c) { try { paintHomeRank(tab, { list: FK_US(3) }); ghostIn($('#rkList')); } catch { $('#rkList').innerHTML = '<li class="skel"></li>'; } }
   try {
     const r = tab === 'tier' ? await call('tier').then(d => ({ list: d.top })) : await call(tab === 'att' ? 'attrank?scope=all' : `rank?game=${tab}&scope=all`);
     rkCache[tab] = { r, at: Date.now() };
@@ -1100,7 +1110,7 @@ async function bragTray(btn, onPick) {
   const old = $('.stk-tray'); if (old) { const same = old._btn === btn; old.remove(); if (same) return; }
   const t = document.createElement('div');
   t.className = 'stk-tray brag-tray'; t._btn = btn; t.setAttribute('role', 'dialog'); t.setAttribute('aria-label', '자랑할 기록 고르기');
-  t.innerHTML = '<p>내 기록을 불러오는 중…</p>';
+  t.innerHTML = `<small class="bt-h">어떤 기록을 자랑할까요?</small><div class="bt-list">${ghostOr(() => ['연속 출석', '이번 라운드 티어', '집에 가고 싶어!'].map(n => `<button type="button"><span class="bg-ic">${ic('trophy')}</span><span class="bt-n">${n}</span><b>000</b></button>`).join(''), 2)}</div>`;
   btn.parentElement.append(t);
   const close = ev => { if (!t.isConnected) return off(); if (ev.type === 'keydown' ? ev.key === 'Escape' : !t.contains(ev.target) && ev.target !== btn && !btn.contains(ev.target)) { t.remove(); off(); } };
   const off = () => { document.removeEventListener('pointerdown', close, true); document.removeEventListener('keydown', close, true); };
@@ -1120,7 +1130,7 @@ async function bragTray(btn, onPick) {
 async function renderThread(handle, box, panel) {
   const q = sel => box.querySelector(sel);
   openThread = handle; threadIn = panel ? 'panel' : 'page';
-  box.innerHTML = '<div class="card"><div class="skel"></div><div class="skel"></div></div>';
+  box.innerHTML = ghostOr(() => `<div class="card chat"><div class="chead"><a class="back">‹</a><a class="who">${av(FK_U())}<span class="pi"><b>친구 이름</b><small>@아이디</small></span></a></div><ol class="msgs">${[[0, '안녕 뭐해'], [1, '나 지금 쉬는 시간이야'], [0, '집에 가고 싶어 같이 하자'], [1, 'ㅇㅋ']].map(([me, t], i) => bubbleHtml({ id: i, mine: !!me, at: i, body: t }, null, 1e9, false)).join('')}</ol></div>`, 2);
   let msgs = [], readUpTo = 0, d;
   try { d = await call('dm/' + encodeURIComponent(handle)); }
   catch (e) { box.innerHTML = `<div class="card soc-gate"><p class="gate-em">🤔</p><p><b>${esc(e.message)}</b></p><a class="btn ghost" ${toList(panel)}>DM 목록</a></div>`; openThread = ''; threadIn = ''; return; }
@@ -1245,6 +1255,7 @@ function msRow(m, i) {
 }
 async function openMission() {
   sheet('<div class="ms-sheet"><div class="skel"></div></div>');
+  try { paintMission({ list: ['급식 투표 3일', '밸런스 게임 참여 3번', '게임 1판 하기', '출석 5일', '반응속도 3판'].map(t => ({ t, c: 1, n: 3 })), rw: { tix: 1 } }); ghostIn($('#socSheet')); } catch {}
   const d = await loadMission(true);
   if (!d) { $('#socSheet').innerHTML = '<p class="note center">미션을 불러오지 못했어요</p>'; return; }
   paintMission(d);
@@ -1374,8 +1385,14 @@ function msResult(m) {
 async function renderGame() {
   const box = $('#gameBox');
   let info = null;
+  if (S.me && !box.querySelector('.ggrid:not(.skz)')) box.innerHTML = ghostOr(() => gameHtml(Object.fromEntries(gamesOn().map(([k]) => [k, { best: 0, rank: 1, top: FK_U() }]))), 4);
   if (S.me) { try { info = (await call('games')).games; } catch {} }
-  box.innerHTML = `${rkBand()}${S.me ? '<section class="card tier-card" id="tierBox"><div class="skel"></div></section>' : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
+  box.innerHTML = gameHtml(info);
+  if (S.me) loadTier();
+}
+// 게임 화면 (진짜·뼈대 공용)
+function gameHtml(info) {
+  return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
     const x = info?.[k];
     return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? "<b class=\"beta new\">NEW</b>" : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
       <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
@@ -1385,7 +1402,6 @@ async function renderGame() {
     </article>`;
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
-  if (S.me) loadTier();
 }
 // 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
 async function loadTier() {
@@ -1463,7 +1479,7 @@ function tierWho(box) {
     const t = tierOfK(k);
     const head = n => `<div class="tw-head t-${k}">${tierIc(k)}<b>${t.n}</b><span>${n == null ? '' : `지금 ${n}명`}</span><button type="button" class="tw-x" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>`;
     panel.hidden = false; panel.className = 'tr-who t-' + k;
-    if (!memo.has(k)) panel.innerHTML = head(null) + '<div class="skel"></div>';
+    if (!memo.has(k)) panel.innerHTML = head(null) + ghostOr(() => `<ol>${FK_US(4).map((u, i) => `<li><span class="tr-n">${i + 1}</span><a>${av(u, 'xs')}<b><span>${esc(u.name)}</span></b></a><em>000점</em></li>`).join('')}</ol>`, 1);
     let r = memo.get(k);
     if (!r) { try { r = await call('tier?k=' + k); memo.set(k, r); } catch { panel.innerHTML = head(null) + '<p class="tw-empty">불러오지 못했어요. 잠시 뒤 다시 눌러 주세요</p>'; return; } }
     if (open !== k) return;   // 그 사이 다른 티어를 누름
@@ -1535,7 +1551,7 @@ async function openRank(game, scope = 'week') {
   const g = GAMES[game];
   const tabs = [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   const scopeName = { week: '이번 주', round: '이번 라운드', all: '역대', friends: '친구', class: '반 대항전' }[scope] || '';
-  sheet(`<h3 class="rk-h3">${ic(g.ic)} ${g.name} 랭킹<button type="button" class="rk-story" id="rkStory"${ffOn('story-share', isDev(S.me)) ? '' : ' hidden'} aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3><div class="segs">${tabs}</div><ol class="rank" id="rankList"><li class="skel"></li><li class="skel"></li></ol>
+  sheet(`<h3 class="rk-h3">${ic(g.ic)} ${g.name} 랭킹<button type="button" class="rk-story" id="rkStory"${ffOn('story-share', isDev(S.me)) ? '' : ' hidden'} aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3><div class="segs">${tabs}</div><ol class="rank" id="rankList">${ghostOr(() => FK_US(5).map((u, i) => `<li><span class="rk">${i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1}</span><a>${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>1학년 1반</small></span></a><b class="rv">000</b></li>`).join(''), 2)}</ol>
     <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
     const r = await call(`rank?game=${game}&scope=${scope}`);
@@ -2435,7 +2451,7 @@ function bindDraftBox(box) {
   };
 }
 async function openNotices(focus) {   // focus: 띠 공지를 눌러 열면 그 공지의 자세한 내용을 펼쳐 보임
-  sheet('<h3>📢 공지</h3><ul class="ntlist"><li class="skel"></li><li class="skel"></li></ul>');
+  sheet('<h3>📢 공지</h3><ul class="ntlist">' + ghostOr(() => ['이번 주 업데이트 소식이 들어가는 자리', '공지 제목이 들어가는 자리예요', '10월 27일 화요일 패치'].map(t => `<li><span class="nt-ic">🛠</span><div class="nt-c"><p class="nt-t">${t}</p><div class="ntb"><div class="nb-txt">공지 내용 미리보기가 두 줄 정도 들어가는 자리예요. 내용이 길면 자세히 보기로 펼쳐요</div></div><small>10월 27일</small></div></li>`).join(''), 2) + '</ul>');
   $('#socSheet').classList.add('wide');   // 공지는 넓게: 접힌 공지 제목이 2줄 안에 들어가게
   if (!ntList || !ptList || (isDev(S.me) && !pnDraft)) await checkNotices();
   if (ntList.length) store.set('notice_seen', ntList[0].id);   // 다 봤음 (✕로 닫은 띠 공지는 다시 띄우지 않음)

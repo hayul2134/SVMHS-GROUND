@@ -1,5 +1,5 @@
 // SVMHS GROUND — 화면 로직 (홈 · 급식 · 시간표 · 학사일정 · D-day · 모달)
-import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast, idle, onWake } from './util.js';
+import { $, $$, now, ymd, isYmd, parseYmd, addDays, today, mondayOf, diffDays, DOW, fmtDay, ddayText, pad, esc, store, skel, empty, toast, idle, onWake, ghost, ghostOr } from './util.js';
 import { api, MEALS, loadConfig, getClasses, getMeals, getMealsRange, getTimetable, getSchedule, cleanDish, splitOf } from './neis.js';
 import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
@@ -225,7 +225,7 @@ function renderNext(b, pi) {
   else if (b.state === '쉬는 날' || b.state === '주말') h = card('오늘', 'OFF', '<span class="m-sub">수업 없는 날이에요</span>');
   else if (rows && !rows.length) h = card('다음 수업', '정보가 아직 없어요');
   else if (b.state === '방과 후' || (rows && pi.nxt && !subj(pi.nxt) && !subj(pi.cur))) h = card('오늘 수업', '끝!', '<span class="m-sub">내일 또 봐요</span>');
-  else if (rows === undefined) h = '<div class="skel"></div><div class="skel"></div>';
+  else if (rows === undefined) h = ghost(card('다음 수업', '0교시 · 과목 이름', '<span class="m-sub">곧 시작해요</span>'));
   else {
     const np = subj(pi.nxt) ? pi.nxt : 0;
     const sub = np && pi.cur && subj(pi.cur) ? `지금 · ${esc(subj(pi.cur))}` : np ? (b.state === '등교 전' ? '오늘 첫 수업' : '곧 시작해요') : '';
@@ -467,6 +467,10 @@ const cellHtml = (items, cls = '', v = null) => {
 };
 // 음료: 식판 오른쪽에 따로 세워 둠 (우유팩·컵)
 const drinksHtml = (list, v) => !list.length ? '' : `<div class="drinks" role="list" aria-label="음료">${list.map(x => `<div class="drink${v && v.open ? ' vote' : ''}${v && v.mine === x ? ' picked' : ''}" role="listitem"${dishAttr(x, v)}>${voteMark(x, v)}${drinkSvg(x)}<b class="lbl${nm(x).cls}">${nm(x).html}</b></div>`).join('')}</div>`;
+/* 로딩 뼈대용 가짜 데이터 (2026-10-27) — 진짜 그리는 함수에 넣어 같은 모양을 만들고 util.js ghost()로 뼈대로 바꿈. 글자는 안 보이고 길이만 씀 */
+const FK_MEAL = { MMEAL_SC_CODE: '2', DDISH_NM: '돈까스와소스<br/>잡곡밥<br/>미역국<br/>배추김치<br/>콩나물무침<br/>우유' };
+const ghMeal = (mini = false) => ghostOr(() => mealHtml(FK_MEAL, null, mini), 3);
+const ghMealList = () => ghostOr(() => mealListHtml(FK_MEAL, today()), 3);
 const mealHtml = (r, d, mini = false) => {
   if (!r) return empty('급식 정보가 없어요');
   const t = splitTray(cleanDish(r.DDISH_NM)), v = d ? voteOf(ymd(d), r.MMEAL_SC_CODE) : null;
@@ -535,7 +539,7 @@ function paintHeroMeal() {
     else if (nextMeal.day) { rows = nextMeal.rows; day = nextMeal.day; want = '1'; }
   }
   setLbl(lbl, `${ttLabel(day)} 급식`, !!d, false);   // 하루 보기로 돌아올 때 한 주 카드 폭(.wk)도 같이 풂 (2026-10-23: 식판이 한 주 폭으로 커져 시계를 가리던 문제)
-  if (!rows) { slots.innerHTML = ''; box.innerHTML = skel(2); return; }
+  if (!rows) { slots.innerHTML = ''; box.innerHTML = ghMeal(true); return; }
   if (!rows.length) { slots.innerHTML = ''; box.innerHTML = empty((d ? S.heroFail : S.mealFail) ? '급식 정보를 불러오지 못했어요' : '급식이 없는 날이에요'); return; }
   const r = (S.heroPick && rows.find(x => x.MMEAL_SC_CODE === S.heroPick)) || pickMeal(rows, want);
   slots.innerHTML = rows.map(x => `<button type="button" data-m="${x.MMEAL_SC_CODE}" class="${x === r ? 'on' : ''}" aria-pressed="${x === r}">${MEALS[x.MMEAL_SC_CODE]}</button>`).join('');
@@ -566,19 +570,23 @@ const wkName = (mon, what) => { const w = diffDays(mon, weekOf(today())) / 7; re
 function paintHeroWeek() {
   const box = $('#sMeal'), slots = $('#sMealSlots'), mon = S.mealWk, rows = heroRows;
   setLbl($('#sMealLbl'), wkName(mon, '급식'), ymd(mon) !== ymd(weekOf(today())), true);
-  if (!rows) { slots.innerHTML = ''; box.innerHTML = skel(4); wkResize(); return; }
+  if (!rows) { slots.innerHTML = ''; box.innerHTML = ghostOr(() => wkmHtml(mon, [], '2', FK_MEAL), 4); wkResize(); return; }
   if (!rows.length) { slots.innerHTML = ''; box.innerHTML = empty(S.heroFail ? '급식 정보를 불러오지 못했어요' : '이 주는 급식이 없어요'); wkResize(); return; }
   const codes = [...new Set(rows.map(r => r.MMEAL_SC_CODE))].sort();
   const want = S.heroPick && codes.includes(S.heroPick) ? S.heroPick : codes.includes('2') ? '2' : codes[0];
   slots.innerHTML = codes.map(c => `<button type="button" data-m="${c}" class="${c === want ? 'on' : ''}" aria-pressed="${c === want}">${MEALS[c]}</button>`).join('');
+  box.innerHTML = wkmHtml(mon, rows, want);
+  wkResize();
+}
+// 한 주 급식 다섯 줄 (fake: 뼈대용 — 모든 날을 같은 가짜 메뉴로)
+function wkmHtml(mon, rows, want, fake) {
   const t = ymd(today());
-  box.innerHTML = '<ul class="wkm">' + [0, 1, 2, 3, 4].map(i => {
-    const d = addDays(mon, i), k = ymd(d), r = rows.find(x => x.MLSV_YMD === k && x.MMEAL_SC_CODE === want);
+  return '<ul class="wkm">' + [0, 1, 2, 3, 4].map(i => {
+    const d = addDays(mon, i), k = ymd(d), r = fake || rows.find(x => x.MLSV_YMD === k && x.MMEAL_SC_CODE === want);
     const om = r && orderMenu(cleanDish(r.DDISH_NM));
     return `<li class="${k === t ? 'today' : k < t ? 'past' : ''}"><span class="wd"><b>${d.getDate()}</b>${DOW[d.getDay()]}</span>`
       + (om ? `<span class="ds">${om.list.map((x, j) => `<i${j === 0 && om.hasMain ? ' class="wkhl"' : ''}>${esc(x)}</i>`).join('')}</span>` : '<span class="ds no">급식 없음</span>') + '</li>';
   }).join('') + '</ul>';
-  wkResize();
 }
 $('#sMealSlots').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { e.stopPropagation(); S.heroPick = b.dataset.m; armReset(); paintHeroMeal(); } });
 // '한눈에 보기' 급식 카드: 오늘 급식이 없는 날(주말·휴업일)엔 위 식판처럼 다음 급식 날을 보여 줌 (2026-10-25 — 두 카드가 어긋나지 않게)
@@ -588,7 +596,7 @@ function paintHomeMeal() {
   const today0 = !!homeRows.length, rows = today0 ? homeRows : nextMeal?.rows, day = today0 ? today() : nextMeal?.day;
   const ttl = $('#mealCard h2').lastChild, tabs = $('#hMealTabs'), box = $('#hMeal');
   ttl.nodeValue = !today0 && day ? `${ttLabel(day)} 급식` : '오늘 급식';
-  if (!today0 && !rows) { tabs.innerHTML = ''; box.innerHTML = skel(3); return; }   // 다음 급식 날 찾는 중
+  if (!today0 && !rows) { tabs.innerHTML = ''; box.innerHTML = ghMealList(); return; }   // 다음 급식 날 찾는 중
   if (!today0 && !day) { tabs.innerHTML = ''; box.innerHTML = empty(S.mealFail ? '급식 정보를 불러오지 못했어요' : '다음 급식 정보가 아직 안 올라왔어요'); return; }
   const sel = rows.some(r => r.MMEAL_SC_CODE === S.homeMeal) && (today0 || S.mealManual) ? S.homeMeal : (rows.find(r => r.MMEAL_SC_CODE === '2') || rows[0]).MMEAL_SC_CODE;
   tabs.innerHTML = rows.map(r => `<button data-m="${r.MMEAL_SC_CODE}" class="${r.MMEAL_SC_CODE === sel ? 'on' : ''}">${MEALS[r.MMEAL_SC_CODE]}</button>`).join('');
@@ -644,7 +652,7 @@ async function renderMealView() {
   const d = S.mealDate, cols = $('#mCols');
   $('#mLbl').textContent = fmtDay(d);
   S.mealRows = null;
-  cols.innerHTML = Object.values(MEALS).map(n => `<div class="card k-meal"><h3>${n}</h3>${skel(4)}</div>`).join('');
+  cols.innerHTML = ghost(Object.values(MEALS).map(n => `<div class="card k-meal"><h3>${n}</h3>${mealHtml(FK_MEAL, null)}</div>`).join(''));
   try {
     const [rows] = await Promise.all([getMeals(d), loadVotes(d)]);
     if (d !== S.mealDate) return;   // 그사이 날짜를 넘겼으면 버림
@@ -941,11 +949,14 @@ async function renderHomeTT() {
     if (dep && cls.dep !== dep) { cls.dep = dep; store.set('class', cls); renderClassChip(); }
     if (S.ttWk) { nextKey = ''; await fillWeek(box, S.ttWk, () => seq !== ttSeq || !S.ttWk); wkResize(); return; }
     box.innerHTML = rows.length
-      ? `<ul class="tt">${ttBlocks(rows).map(([a, z, nm, cu]) => `<li data-p="${a}" data-p2="${z}"${z > a || cu ? ` class="${[z > a ? 'multi' : '', cu ? 'chg' : ''].filter(Boolean).join(' ')}"` : ''}${cellAttr(nm, cu)}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}${trDot(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}${chgTag(cu)}</span></li>`).join('')}</ul>` + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
+      ? ttListHtml(rows) + (api.hasKey ? '' : '<p class="note">5교시까지만 표시돼요</p>') + trHint()
       : empty(`${ttLabel(tgt)} 시간표 정보가 아직 없어요`);
   } catch { if (seq === ttSeq) { S.todayTT = []; box.innerHTML = empty('시간표를 불러오지 못했어요'); } }
   nextKey = '';   // 지금/끝난 교시 표시 다시 그리기
 }
+// 홈 서랍 시간표 목록 (진짜·뼈대 공용)
+const ttListHtml = rows => `<ul class="tt">${ttBlocks(rows).map(([a, z, nm, cu]) => `<li data-p="${a}" data-p2="${z}"${z > a || cu ? ` class="${[z > a ? 'multi' : '', cu ? 'chg' : ''].filter(Boolean).join(' ')}"` : ''}${cellAttr(nm, cu)}><span class="p">${a}${z > a ? `<small>~${z}</small>` : ''}</span>${bellAt(a)}<span class="s"><i class="si" aria-hidden="true">${subjIcon(nm)}${trDot(nm)}</i><span class="sn">${esc(nm)}</span>${z > a ? `<i class="x2">${z - a + 1}시간</i>` : ''}${chgTag(cu)}</span></li>`).join('')}</ul>`;
+const FK_TT = ['국어', '수학', '영어', '통합사회', '체육', '영상제작기초', '창의적 체험활동'].map((n, i) => ({ PERIO: i + 1, ITRT_CNTNT: n }));
 // 같은 과목이 이어지면 한 줄로 묶음 (점심 앞뒤 4·5교시는 안 묶음) — 주간 표와 같은 규칙. [시작 교시, 끝 교시, 과목]
 function ttBlocks(rows) {
   const out = [];
@@ -960,11 +971,20 @@ function ttBlocks(rows) {
 const weekLbl = mon => { const fri = addDays(mon, 4); return `${mon.getMonth() + 1}/${mon.getDate()} ~ ${fri.getMonth() + 1}/${fri.getDate()}`; };
 async function fillWeek(box, mon, stale) {
   if (!cls) { box.innerHTML = needClass; return; }
-  box.innerHTML = skel(5);
+  box.innerHTML = ghostOr(() => weekHtml(mon, FK_TT.flatMap(r => [0, 1, 2, 3, 4].map(i => ({ ...r, ALL_TI_YMD: ymd(addDays(mon, i)) })))), 5);
   try {
     const rows = await getTimetable(cls, mon, addDays(mon, 4));
     if (stale()) return;
     if (!rows.length) { box.innerHTML = empty('이 주의 시간표 정보가 없어요'); return; }
+    box.innerHTML = weekHtml(mon, rows);
+    markWeek();
+    const th = box.querySelector('th.today');   // 좁은 화면(가로 스크롤)에선 오늘 칸이 보이게
+    if (th && box.scrollWidth > box.clientWidth + 4) box.scrollLeft = Math.max(0, th.offsetLeft - 56);
+  } catch { if (!stale()) box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+}
+// 월~금 시간표 표 HTML (진짜·뼈대 공용)
+function weekHtml(mon, rows) {
+  {
     const days = [0, 1, 2, 3, 4].map(i => addDays(mon, i)), t = ymd(today());
     const maxP = Math.min(10, Math.max(6, ...rows.map(r => +r.PERIO || 0)));
     const map = {}, cm = {}; rows.forEach(r => { map[r.ALL_TI_YMD + '_' + r.PERIO] = subjName(r.ITRT_CNTNT); cm[r.ALL_TI_YMD + '_' + r.PERIO] = chgOf(r); });
@@ -983,11 +1003,8 @@ async function fillWeek(box, mon, stale) {
       if (p === 5) h += '<tr class="lunch"><td></td><td colspan="5"><span>점심시간 12:10 ~ 13:00</span></td></tr>';
       h += `<tr>${pn(p)}${days.map(d => cell(d, p)).join('')}</tr>`;
     }
-    box.innerHTML = h + '</tbody></table>';
-    markWeek();
-    const th = box.querySelector('th.today');   // 좁은 화면(가로 스크롤)에선 오늘 칸이 보이게
-    if (th && box.scrollWidth > box.clientWidth + 4) box.scrollLeft = Math.max(0, th.offsetLeft - 56);
-  } catch { if (!stale()) box.innerHTML = empty('시간표를 불러오지 못했어요'); }
+    return h + '</tbody></table>';
+  }
 }
 // 주간 시간표 표의 오늘 칸에 지금·다음·끝난 교시 표시 (교시가 바뀔 때 tickClock이 다시 부름)
 let weekPI = null;
@@ -1349,19 +1366,25 @@ function renderAll() {
   else paintAllMeal(p, mon, stale);
 }
 async function paintAllMeal(box, mon, stale) {
-  box.innerHTML = `<div class="mw">${skel(5)}</div>`;
+  box.innerHTML = ghostOr(() => mwHtml(mon, [0, 1, 2, 3, 4].map(i => ({ ...FK_MEAL, MLSV_YMD: ymd(addDays(mon, i)) }))), 5);
   try {
     const rows = await getMealsRange(mon, addDays(mon, 4));
     if (stale()) return;
+    box.innerHTML = mwHtml(mon, rows);
+  } catch { if (!stale()) { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); box.dataset.fail = '1'; } }
+}
+// 한 주 급식 전체 보기 HTML (진짜·뼈대 공용)
+function mwHtml(mon, rows) {
+  {
     const t = ymd(today());
-    box.innerHTML = '<div class="mw">' + [0, 1, 2, 3, 4].map(i => {
+    return '<div class="mw">' + [0, 1, 2, 3, 4].map(i => {
       const d = addDays(mon, i), k = ymd(d);
       const ms = rows.filter(r => r.MLSV_YMD === k && MEALS[r.MMEAL_SC_CODE]).sort((a, b) => a.MMEAL_SC_CODE - b.MMEAL_SC_CODE);
       return `<section class="mw-d${k === t ? ' today' : ''}"><h4><b>${d.getMonth() + 1}/${d.getDate()}</b>${DOW[d.getDay()]}${k === t ? '<em>오늘</em>' : ''}</h4>`
         + (ms.length ? ms.map(r => `<div class="mw-m"><h5>${MEALS[r.MMEAL_SC_CODE]}${r.CAL_INFO ? `<span>${esc(r.CAL_INFO)}</span>` : ''}</h5><ul>${cleanDish(r.DDISH_NM).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('') : '<p class="mw-no">급식 없음</p>')
         + '</section>';
     }).join('') + '</div>';
-  } catch { if (!stale()) { box.innerHTML = empty('급식 정보를 불러오지 못했어요'); box.dataset.fail = '1'; } }
+  }
 }
 $$('#mAll [data-all]').forEach(b => b.onclick = () => { if (ALL.tab === b.dataset.all) return; ALL.tab = b.dataset.all; renderAll(); });
 $('#allPrev').onclick = () => { ALL.mon = addDays(ALL.mon, -7); renderAll(); };
@@ -1381,6 +1404,7 @@ $('#tNext').onclick = () => { S.ttWeek = addDays(S.ttWeek, 7); renderTTView(); }
 weekPick('#tLbl', () => S.ttWeek, m => { S.ttWeek = m; renderTTView(); });
 
 /* ===== 학사일정 ===== */
+const FK_EV = () => ['중간고사', '체육대회 및 축제', '현장체험학습', '수능 모의평가'].map((n, i) => ({ EVENT_NM: n, AA_YMD: ymd(addDays(today(), 3 + i * 6)) }));
 const evHtml = rows => {
   const t = today();
   return `<ul class="ev">${rows.map(r => {
@@ -1452,7 +1476,7 @@ async function renderCalView(dir) {
   const req = getSchedule(m, end).then(r => (rows = r));
   req.catch(() => {});
   const swap = calSwap(grid, () => calHtml(m, rows || []), dir);
-  box.innerHTML = skel(4);
+  box.innerHTML = ghostOr(() => evHtml(FK_EV()), 4);
   try {
     await req;
     await swap;
@@ -1518,12 +1542,17 @@ async function renderHomeDday() {
   const list = mine.concat(school).sort(byDate).slice(0, 10);
   if (!list.length) { box.innerHTML = empty(fail ? '일정을 불러오지 못했어요' : '60일 안에 예정된 일정이 없어요 · <button class="link" data-go="dday">D-day 추가</button>'); return; }
   { const f = list[0]; TK.up = `${f.name} ${ddayText(diffDays(parseYmd(f.date), t))}`; renderTicker(); }
-  box.innerHTML = list.map((x, i) => {
+  box.innerHTML = upItems(list);
+  fitUp();
+}
+// 홈 다가오는 일정 카드들 (진짜·뼈대 공용)
+function upItems(list) {
+  const t = today();
+  return list.map((x, i) => {
     const d = parseYmd(x.date), n = diffDays(d, t);
     const tag = x.mine ? '<em class="tag me">내 D-day</em>' : x.off ? '<em class="tag off">쉬는 날</em>' : '';
     return `<div class="up${i === 0 ? ' first' : ''}${x.mine ? ' mine' : ''}"><b class="num">${ddayText(n)}</b><div class="txt"><p class="nm">${esc(x.name)}</p><span class="dt">${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</span></div>${tag}</div>`;
   }).join('');
-  fitUp();
 }
 // 다가오는 일정: 5개만 보이기 (첫 번째는 큰 카드, 나머지는 작은 줄)
 function fitUp() {
@@ -1532,7 +1561,7 @@ function fitUp() {
 addEventListener('resize', fitUp);
 async function renderDdayView() {
   $('#dMine').innerHTML = ddayListHtml(myDdays().map((x, i) => ({ ...x, i })).sort(byDate));
-  $('#dSchool').innerHTML = skel(3);
+  $('#dSchool').innerHTML = ghostOr(() => ddayListHtml(FK_EV().slice(0, 3).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD }))), 3);
   try {
     $('#dSchool').innerHTML = ddayListHtml((await loadUpcoming()).filter(r => !r.swap).slice(0, 8).map(r => ({ name: r.EVENT_NM, date: r.AA_YMD, off: isOff(r) })));
   } catch { $('#dSchool').innerHTML = empty('일정을 불러오지 못했어요'); }
@@ -2678,3 +2707,18 @@ new MutationObserver(ms => { for (const m of ms) if (m.target.closest?.('.bt-opt
 addEventListener('resize', fitSoon);
 document.fonts?.ready.then(fitSoon);
 fitSoon();
+
+/* ===== 처음 열 때 로딩 뼈대 (2026-10-27) =====
+   index.html에 박혀 있던 막대 뼈대(.skel)를 실제 오브젝트 모양으로 바꿔 둠 — 이미 진짜 내용이 그려졌으면 건드리지 않음 */
+(function paintGhosts() {
+  const put = (sel, fn, n) => { const b = $(sel); if (b && b.firstElementChild?.classList.contains('skel')) b.innerHTML = ghostOr(fn, n); };
+  const mon = mondayOf(today());
+  put('#sMeal', () => mealHtml(FK_MEAL, null, true), 2);
+  put('#sTT', () => ttListHtml(FK_TT.slice(0, 6)), 3);
+  put('#hMeal', () => mealListHtml(FK_MEAL, today()), 3);
+  put('#hWeek', () => weekHtml(mon, FK_TT.flatMap(r => [0, 1, 2, 3, 4].map(i => ({ ...r, ALL_TI_YMD: ymd(addDays(mon, i)) })))), 3);
+  put('#hUp', () => upItems(FK_EV().map(r => ({ name: r.EVENT_NM, date: r.AA_YMD }))), 1);
+  const cdt = (ic, k) => `<svg class="cdic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${ic}"/></svg><div class="cdm"><p class="cdk">${k}</p><b class="cdn">D-000</b><span class="cdl">00일 00:00:00</span></div><div class="cdsub"><p class="cds">방학식 12월 31일 · 학교 갈 날 00일</p><p class="cdx">이번 학기 00% 지남</p></div>`;
+  put('#cdVac', () => cdt('snow', '방학까지'), 1);
+  put('#cdAdult', () => cdt('cake', '성인까지'), 1);
+})();

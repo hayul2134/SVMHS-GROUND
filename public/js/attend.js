@@ -6,7 +6,7 @@
 //  3. 완벽한 연속(방패 안 씀) = 불꽃에 금빛 후광 · 이번 주 월~금 개근 = 요일 도장이 한 줄 띠로 이어짐
 //  4. 이어진 날은 달력·이번 주에서 띠로 연결 → 끊기기 싫은 마음(연속의 시각화)
 //  5. 다음 보상까지 남은 날을 늘 보여 줌 (목표가 분명하게)
-import { $, esc, pad } from './util.js';
+import { $, esc, pad, ghostIn, ghostOr } from './util.js';
 import { REWARDS, KIND, COLOR_NAME, rwOn, rwName, objName, FLAME_AT, rwDay } from './att-rewards.js';
 import { artOf, ui, medal } from './att-art.js';
 export { REWARDS };
@@ -217,7 +217,7 @@ export async function open(month) {
   const today = kstDay(), viewM = month || today.slice(0, 6), fresh = !month || !$('#attBox');
   const have = mCache[viewM] || (viewM === today.slice(0, 6) ? fromSt(viewM) : null);
   if (fresh) {
-    api.sheet(`<div class="att-sheet" id="attBox">${have ? sheetHtml(have) : '<div class="skel"></div><div class="skel"></div><div class="skel"></div>'}</div>`);
+    api.sheet(`<div class="att-sheet" id="attBox">${have ? sheetHtml(have) : ghostOr(() => sheetHtml({ cur: 3, best: 3, total: 3, shield: 0, month: viewM, days: [] }, true), 3)}</div>`);
     if (have) { bars($('#attBox')); loadRank('friends'); }
   } else if (have && $('#attCal')) $('#attCal').innerHTML = calHtml(have);
   try {
@@ -307,7 +307,8 @@ async function loadRank(scope) {
     list.innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${api.av(u)}<span class="pi"><b>${esc(api.nameOf(u))}${api.devTag(u)}</b><small>${u.title ? `${ui('tag', 'ic')}${esc(u.title)}` : esc(api.classTxt(u) || api.atOf(u))}</small></span></a><b class="rv att-rv t${tierOf(u.value)}${u.pf && u.value >= 3 ? ' pf' : ''}">${flame('fsm', { tier: tierOf(u.value) })}${fmtN(u.value)}</b></li>`).join('')
       : `<li class="empty">${scope === 'friends' ? '아직 불꽃을 키우는 친구가 없어요. 맞팔 친구에게 같이 하자고 해 보세요!' : '아직 기록이 없어요'}</li>`;
   };
-  if (rCache[scope]) paint(rCache[scope]); else list.innerHTML = '<li class="skel"></li>';
+  if (rCache[scope]) paint(rCache[scope]);
+  else { try { paint({ list: [0, 1, 2, 3, 4].map(i => ({ handle: 'loading' + i, name: ['친구 이름', '닉네임자리', '이름이길어요'][i % 3], color: 'sky', avatar: 'k:cat', value: 9 - i, grade: 1, cls: 1 })) }); ghostIn(list); } catch { list.innerHTML = '<li class="skel"></li>'; } }   // 로딩 뼈대 = 실제 순위 줄 모양 (2026-10-27)
   try {
     const r = await api.call('attrank?scope=' + scope);
     if (JSON.stringify(r) !== JSON.stringify(rCache[scope])) { rCache[scope] = r; if ($('#attRank') === list) paint(r); }

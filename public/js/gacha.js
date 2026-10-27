@@ -5,7 +5,7 @@
 // 뽑기권: 등교일 출석마다 1장(+연속 5일마다·기념일 1장 더, 처음 3장 선물) + 매주 게임 랭킹 1~3등(3·2·1장, 서버 settleRounds).
 // 연출(2026-10-25 2차): 화면 전체 무대 gacha-fx.js — 은색 캡슐(등급 숨김) → 금 가며 등급 승급. 끝나면 결과를 아래 #gcStage에 열린 채로 남김.
 // 확률·천장은 화면에 그대로 공개(아래 '확률·규칙'). 동작 줄이기 설정이면 연출 없이 바로 결과.
-import { $, esc, toast, store } from './util.js';
+import { $, esc, toast, store, ghostOr } from './util.js';
 import { GACHA, HIDDEN, RAR, GC, FX, GC_TITLE, RK, SHN, MILESTONES, objName, neonPick } from './att-rewards.js';
 import { artOf, ensureSprite, stillHref } from './att-art.js';
 import { play } from './gacha-fx.js';
@@ -60,7 +60,7 @@ export async function render() {
   const me = api.me();
   if (!me) { box.innerHTML = `<div class="gc-empty card"><p>로그인하면 뽑기를 할 수 있어요.</p></div>`; return; }
   ensureSprite();
-  if (!me.gc) await api.refreshMe();
+  if (!me.gc) { if (!box.firstElementChild) box.innerHTML = ghostOr(() => `<section class="gc-top card"><h2>뽑기 시즌 1</h2><p>뽑기권 00장 · 천장까지 00번</p><div class="gc-skm"><svg viewBox="0 0 10 10"></svg></div></section><section class="gc-col card"><h3>내 도감</h3><p>모은 스티커 00 / 29</p></section>`, 4); await api.refreshMe(); }
   paint();
 }
 function paint() {
@@ -215,7 +215,7 @@ async function tuneInit() {
 function giftBox() {
   const fr = gift.list;
   return `<div class="gc-giftf card"><span class="gc-ic">${artOf(gift.v)}</span><p><b>${esc(objName(gift.v))}</b> 스티커를 누구에게 선물할까요? <small>(서로 팔로우한 친구 · DM으로 가요)</small></p>
-    ${fr == null ? '<p>친구 목록을 불러오는 중…</p>' : fr.length ? `<ul>${fr.map(u => `<li><button type="button" data-gc-to="${esc(u.handle)}">${esc(u.name)} <small>@${esc(u.handle)}</small></button></li>`).join('')}</ul>` : '<p>아직 서로 팔로우한 친구가 없어요.</p>'}
+    ${fr == null ? `<ul>${ghostOr(() => ['친구 이름', '닉네임자리', '이름이길어요'].map(n => `<li><button type="button">${n} <small>@아이디자리</small></button></li>`).join(''), 2)}</ul>` : fr.length ? `<ul>${fr.map(u => `<li><button type="button" data-gc-to="${esc(u.handle)}">${esc(u.name)} <small>@${esc(u.handle)}</small></button></li>`).join('')}</ul>` : '<p>아직 서로 팔로우한 친구가 없어요.</p>'}
     <button type="button" class="btn ghost" data-gc-gift-x>취소</button></div>`;
 }
 const tkSvg = () => `<svg viewBox="0 0 40 28"><path d="M5 3H35Q37 3 37 5V10A4 4 0 0 0 37 18V23Q37 25 35 25H5Q3 25 3 23V18A4 4 0 0 0 3 10V5Q3 3 5 3Z" transform="translate(1.4 2)" fill="#173048"/><path d="M5 3H35Q37 3 37 5V10A4 4 0 0 0 37 18V23Q37 25 35 25H5Q3 25 3 23V18A4 4 0 0 0 3 10V5Q3 3 5 3Z" fill="url(#gY)" stroke="#173048" stroke-width="2.2" stroke-linejoin="round"/><path d="M26 5V23" stroke="#173048" stroke-width="1.6" stroke-dasharray="2 2.2"/><path d="M14.5 8.6 16 12.2 19.8 12.4 16.8 14.8 17.8 18.6 14.5 16.4 11.2 18.6 12.2 14.8 9.2 12.4 13 12.2Z" fill="#fff" stroke="#173048" stroke-width="1.3" stroke-linejoin="round"/></svg>`;

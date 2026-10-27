@@ -42,7 +42,7 @@ async function avatarOf(av) {
 }
 
 async function rowsOf(list) {
-  const lis = [...list.querySelectorAll(':scope > li')].filter(li => !li.classList.contains('skel') && !li.classList.contains('empty'));
+  const lis = [...list.querySelectorAll(':scope > li')].filter(li => !li.classList.contains('skel') && !li.classList.contains('skz') && !li.classList.contains('empty'));
   return Promise.all(lis.slice(0, 6).map(async li => {
     const mdl = li.querySelector('.rk .mdl'), pi = li.querySelector('.pi');
     const nameEl = pi?.querySelector('b');
