@@ -1836,18 +1836,25 @@ async function playGear() {
     // 폭은 창 기준(게임 칸 폭이 앱 창에서 좁게 잡히던 경우 대비 — 2026-10-27 2차)
     // 2026-10-27 3차 하율 "전체적으로 크기 키우고 바로 다음 블록은 더 크게": 보관·바로 다음 = 큰 칸, 그 뒤 2개 = 작은 칸. 옆 칸 폭은 큰 칸에 맞춤
     // 기기별 최적화(2026-10-27): 눕힌 폰은 양옆 터치 버튼 자리(extra)를 빼고, 세로는 판만 들어가게(hRes) · 최소 1배
-    const sideBtns = sideMQ.matches, extra = sideBtns ? 2 * 150 + 20 : 0, hRes = sideBtns ? 12 : touchy ? 170 : 62, minK = sideBtns ? 1 : 1.5;
-    const w = Math.min(innerWidth - 24, 1240), top = $('#grScr').getBoundingClientRect().top, dpr = devicePixelRatio || 1;
+    let hRes; const sideBtns = sideMQ.matches, extra = sideBtns ? 2 * 150 + 20 : 0, minK = sideBtns ? 1 : 1.5;
+    // 2026-10-27 하율 "너무 커, 기기마다 화면에 딱 맞게": 창 높이가 아니라 실제 게임 칸(.parea)의 보이는 아래 끝 기준 + 판 아래 줄(터치 버튼·키 안내) 실제 높이만큼 빼서, 판과 키 안내가 스크롤 없이 한 화면에
+    const pa = $('#gr').closest('.parea'), pr = pa ? pa.getBoundingClientRect() : null;
+    const top = $('#grScr').getBoundingClientRect().top + (pa ? pa.scrollTop : 0), dpr = devicePixelRatio || 1;
+    const vh = Math.min(innerHeight, visualViewport?.height || innerHeight, pr && pr.bottom > 0 ? pr.bottom : innerHeight);
+    const tch = $('#gr .gr-touch'), bar = $('#gr .gr-bar'), tH = tch && getComputedStyle(tch).display !== 'none' && !sideBtns ? tch.offsetHeight + 12 : 0;
+    hRes = sideBtns ? 12 : tH + (bar ? bar.offsetHeight + 12 : 0) + 14;
+    const w = Math.min(innerWidth - 24, 1240), avH = vh - top - hRes;
     const bigOf = q => Math.round(Math.min(52 * Math.min(3.4, q * 1.2), innerWidth * (innerWidth < 520 ? .13 : .17)));
-    let q = 2.5; for (let i = 0; i < 3; i++) q = Math.max(minK, Math.min((w - 2 * (bigOf(q) + 22) - 40 - extra) / GEAR.BW, (innerHeight - top - hRes) / GEAR.BH));
+    let q = 2.5; for (let i = 0; i < 3; i++) q = Math.max(minK, Math.min((w - 2 * (bigOf(q) + 22) - 40 - extra) / GEAR.BW, avH / GEAR.BH));
     const big = bigOf(q), side = 2 * (big + 22) + 40 + extra;
     document.querySelectorAll('#gr .gr-side').forEach(el => { el.style.width = big + 22 + 'px'; });
     $('#gr').style.setProperty('--sw', big + 22 + 'px');   // 아래 키 안내·랭킹 줄 폭도 커진 옆 칸에 맞춤(안 맞추면 키 안내가 두 줄로 꺾임)
     // 2026-10-27 하율 "화면이 이상해": 앱 창(배율이 소수인 기기)에서 내림 때문에 최소 크기보다 작아지고, 창 높이가 바뀌어도 다시 안 맞춰 판이 손바닥만 했음
     //   → 최소 크기는 올림으로 지키고, 창 크기·게임 칸 크기가 바뀔 때마다 다시 맞춤
-    const k = Math.min((w - side) / GEAR.BW, (innerHeight - top - hRes) / GEAR.BH);
-    let per = Math.max(Math.ceil(minK * dpr), Math.floor(k * dpr)) / dpr;
-    if (per < k * .88) per = Math.max(minK, Math.floor(k * 20) / 20);   // 정수 배로 내리면 판이 너무 작아질 때(눕힌 폰 1.3배→1배)만 소수 배
+    const k = Math.min((w - side) / GEAR.BW, avH / GEAR.BH);
+    const mk = Math.min(minK, Math.max(1, k));   // 아주 작은 창에선 최소 배율보다 화면 맞춤이 먼저
+    let per = Math.max(Math.ceil(mk * dpr) <= k * dpr ? Math.ceil(mk * dpr) : Math.floor(mk * dpr), Math.floor(k * dpr)) / dpr;
+    if (per < k * .88) per = Math.max(mk, Math.floor(k * 20) / 20);   // 정수 배로 내리면 판이 너무 작아질 때(눕힌 폰 1.3배→1배)만 소수 배
     const gr = $('#gr'), bw = per * GEAR.BW, bh = per * GEAR.BH;
     gr.dataset.bs = bw < 190 ? 'xs' : bw < 300 ? 's' : ''; gr.dataset.bh = bh < 380 ? 's' : '';
     cv.style.width = per * GEAR.BW + 'px';
