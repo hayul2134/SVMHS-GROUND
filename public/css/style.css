@@ -4850,6 +4850,7 @@ html:has(body.playing){overflow:hidden}
 .hb-ms.pop .sic{animation:msPop .7s cubic-bezier(.3,1.6,.5,1)}
 @keyframes msPop{0%{transform:scale(1)}35%{transform:scale(1.45) rotate(-14deg)}70%{transform:scale(.92) rotate(6deg)}100%{transform:none}}
 @media (max-width:520px){.iconbtn.hb-ms{padding:0 8px 0 6px;gap:3px;font-size:14px}.hb-ms .sic{width:19px;height:19px}}
+.ms-sheet{text-align:left}
 .ms-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .ms-top h3{margin:0;font:400 24px/1.2 var(--disp)}.ms-top small{color:var(--sub);font-weight:800;font-size:12.5px}
 .ms-big{width:46px;height:46px;flex:none;transform:rotate(-10deg)}
