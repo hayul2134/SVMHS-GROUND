@@ -60,7 +60,7 @@ export function missionsOf(wk, games) {
   const slot3 = one([
     { k: 'goal', g: g3, n: 1, t: `${MS_NAME[g3]} · ${GOAL[g3].t}` },
     { k: 'goal', g: g3, n: 1, t: `${MS_NAME[g3]} · ${GOAL[g3].t}` },
-    { k: 'best', n: 2, t: '내 최고 기록 2번 깨기' },
+    { k: 'play', g: g3, n: 3, t: `${MS_NAME[g3]} 3판 하기` },   // 2026-10-27 하율: '최고 기록 2번 깨기'는 기록이 높으면 너무 어려워 뺌
   ]);
   const slot4 = one([
     { k: 'bal', n: 3, t: '밸런스 게임 3번 참여하기 (하루 한 번)' },
