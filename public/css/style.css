@@ -4995,3 +4995,7 @@ html:has(body.playing){overflow:hidden}
 
 .gr[data-bs="s"] .gr-modes button{min-width:108px;padding:9px 12px}.gr[data-bs="s"] .gr-modes button b{font-size:18px}.gr[data-bs="s"] .gr-modes button small{font-size:11px}
 .gr[data-bs="xs"] .gr-modes{gap:6px}.gr[data-bs="xs"] .gr-modes button{min-width:0;padding:6px 8px;border-width:2px}.gr[data-bs="xs"] .gr-modes button b{font-size:15px}.gr[data-bs="xs"] .gr-modes button small{font-size:9.5px}
+
+/* ===== 서비스 큰 제목 숨김 (2026-10-27 하율: "이 문구 없애고 아래 오브젝트들 위로") ===== */
+/* 화면에선 없애고(읽기 프로그램·서비스 버튼 이동 위치용으로만 남김) 자리를 차지하지 않게 — 카테고리들이 그만큼 위로 올라옴 */
+.apps #appsT{width:1px;height:1px;margin:0!important;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;text-shadow:none;transform:none;align-self:center}
