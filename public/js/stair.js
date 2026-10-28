@@ -174,7 +174,6 @@ export function createStair(cv, o = {}) {
   let spr = null, sprF = null;
   const loadSpr = () => { spr = buildSprites(o.char || loadChar()); sprF = {}; for (const k of ['run1', 'run2', 'jump', 'dead']) { sprF[k] = flipCv(spr[k]); sprF[k + '_rim'] = flipCv(spr[k + '_rim']); } };
   loadSpr();
-  const ghostOf = (S, fr) => { const src = S[fr], k = src; let c = GH.get(k); if (!c) { c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const q = c.getContext('2d'); q.drawImage(src, 0, 0); q.globalCompositeOperation = 'source-in'; q.fillStyle = '#2f80f0'; q.fillRect(0, 0, c.width, c.height); GH.set(k, c); } return c; };
   let raf = 0, last = 0, alive = true, sound = !!o.sound, ac = null, rnd = rng(o.seed ?? (Date.now() & 0xffff));
   const st = { scene: 'ready', steps: 0, turns: 0, ms: 0, gauge: 1, floor: 0, face: 1, why: '', shown: false, fast: 0, endAt: 0 };
   let lastStepAt = 0, overT = 0, lowT = 0, recent = [], xs = [], run = 0, runDir = 1, px = 0, py = 0, fromX = 0, fromY = 0, moveT = 1, fall = null, shake = 0, parts = [], camX = 0, camY = 0, t = 0, flash = 0, stepN = 0, shoot = null;
