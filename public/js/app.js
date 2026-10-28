@@ -2139,14 +2139,17 @@ let inPk = 'home';
 /* ===== 소개 맛보기 (2026-10-25): 집에 가고 싶어!(기본) · 반응속도 — 기록은 저장 안 함, 가입하면 진짜 게임에서 랭킹에 올라감 ===== */
 // 반응속도
 {
-  const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, best = 0;
+  const pad_ = $('#inRx'); let st = 'idle', t0 = 0, tm = 0, rf = 0, best = 0;
   const show = (cls, html) => { pad_.className = 'rx in-rx ' + cls; pad_.innerHTML = html; };
   const grade = ms => ms < 230 ? '이 정도면 반 대표감!' : ms < 290 ? '꽤 빠른데요?' : ms < 380 ? '평범한 반응속도' : '아직 잠이 덜 깼나 봐요';
   const hit = e => {
     e.preventDefault();
-    if (st === 'wait') { clearTimeout(tm); st = 'shown'; show('early', '<b>앗, 너무 빨라요!</b><small>초록색이 될 때까지 참기 · 탭해서 다시</small>'); return; }
+    if (e.type === 'pointerdown' && (!e.isPrimary || e.button > 0)) return;   // 두 번째 손가락·오른쪽 클릭 무시
+    const n = performance.now(), at = e.timeStamp > 0 && e.timeStamp <= n + 1 && e.timeStamp > n - 1000 ? e.timeStamp : n;   // 입력이 일어난 시각 (게임과 같은 판정, 2026-10-28)
+    if (st === 'go' && (!t0 || at - t0 < 100)) { cancelAnimationFrame(rf); st = 'wait'; }   // 초록이 보이기 전·보이고 0.1초 안 = 미리 찍은 것
+    if (st === 'wait') { clearTimeout(tm); cancelAnimationFrame(rf); st = 'shown'; show('early', '<b>앗, 너무 빨라요!</b><small>초록색이 될 때까지 참기 · 탭해서 다시</small>'); return; }
     if (st === 'go') {
-      const ms = Math.round(performance.now() - t0);
+      const ms = Math.round(at - t0);
       st = 'shown'; show('done', `<b>${ms}ms</b><small>${grade(ms)} · 탭해서 한 번 더</small>`);
       if (!best || ms < best) best = ms;
       const el = $('#inBest'); el.hidden = false;
@@ -2154,7 +2157,8 @@ let inPk = 'home';
       return;
     }
     st = 'wait'; show('wait', '<b>기다려…</b><small>초록색이 되면 바로 탭!</small>');
-    tm = setTimeout(() => { if (st !== 'wait') return; st = 'go'; show('go', '<b>지금!</b>'); t0 = performance.now(); }, 1000 + Math.random() * 2500);
+    t0 = 0;
+    tm = setTimeout(() => { if (st !== 'wait') return; rf = requestAnimationFrame(() => { if (st !== 'wait') return; st = 'go'; show('go', '<b>지금!</b>'); rf = requestAnimationFrame(ts => { if (st === 'go') t0 = ts; }); }); }, 1000 + Math.random() * 2500);
   };
   pad_.addEventListener('pointerdown', hit);
   pad_.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) hit(e); });   // 키보드로도 할 수 있게

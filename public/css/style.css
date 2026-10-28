@@ -1002,7 +1002,7 @@ body.playing .modal{z-index:75}/* 게임 중 연 랭킹 창이 게임 화면(.pl
   padding:calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));animation:fade .2s}
 .ptop{display:flex;align-items:center;justify-content:space-between;max-width:640px;width:100%;margin:0 auto;font-family:var(--disp);font-size:22px;color:var(--on-bg)}
 .parea{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;max-width:640px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none;touch-action:manipulation}
-.rx{flex:1;max-height:440px;border-radius:28px;border:var(--bd);box-shadow:var(--sh);display:grid;place-content:center;gap:8px;color:#fff;text-align:center;transition:background .05s}
+.rx{flex:1;max-height:440px;border-radius:28px;border:var(--bd);box-shadow:var(--sh);display:grid;place-content:center;gap:8px;color:#fff;text-align:center;transition:none;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .rx b{font-family:var(--disp);font-weight:400;font-size:clamp(30px,7vw,48px)}
 .rx small{font-weight:800;font-size:15px;opacity:.9}
 .rx.idle,.rx.shown,.rx.done{background:var(--accent)}.rx.wait{background:#e2483d}.rx.go{background:#1fbf6a}.rx.early{background:#ff9f43}
