@@ -318,7 +318,7 @@ $('#goDown').onclick = () => scrollTo({ top: boardY(), behavior: 'smooth' });
 }
 $('#goTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
 // 짧은 화면(게임 등)엔 '맨 위로'가 필요 없음 → 페이지가 화면 1.5배보다 짧으면 숨김 (2026-10-24)
-{ const f = () => { $('#goTop').hidden = document.documentElement.scrollHeight < innerHeight * 1.5; }; if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(document.body); addEventListener('resize', f); f(); }
+{ let gr = 0; const f = () => { cancelAnimationFrame(gr); gr = requestAnimationFrame(() => { $('#goTop').hidden = document.documentElement.scrollHeight < innerHeight * 1.5; }); }; if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(document.body); addEventListener('resize', f); f(); }
 // 2026-10-25: 섹션 시작(위 여백 170px)이 아니라 '서비스' 제목이 헤더 버튼 바로 아래에 오게 — 게임·학교생활·보상이 한 화면에
 $('#svcFab').onclick = () => $('#appsT').scrollIntoView({ behavior: 'smooth', block: 'start' });
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
@@ -455,7 +455,7 @@ function paintFood(root) {
     if (el.dataset.ar !== String(ar)) { el.dataset.ar = ar; el.innerHTML = foodSvg(el.dataset.food, ar); }
   });
 }
-const foodRO = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => paintFood(e.target))) : null;
+const foodRO = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => { if (e.contentRect.width) paintFood(e.target); })) : null;   // 화면을 떠나 숨겨질 때(폭 0)는 다시 그리지 않음 — 'ResizeObserver loop' 경고(2026-10-28)
 const setTray = (box, html) => { box.innerHTML = html; paintFood(box); if (foodRO) foodRO.observe(box); };
 const cellHtml = (items, cls = '', v = null) => {
   if (!items.length) return `<div class="cell empty ${cls}"></div>`;
@@ -1231,7 +1231,7 @@ const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime
   const ro = new ResizeObserver(es => {
     let moved = false;
     for (const e of es) {
-      const el = e.target, h = el.offsetHeight, h0 = lastH.get(el); lastH.set(el, h);
+      const el = e.target, h = el.offsetHeight, h0 = lastH.get(el); if (!h) continue; lastH.set(el, h);   // 화면을 떠나 숨겨질 때(0)는 무시(2026-10-28 'ResizeObserver loop' 경고)
       if (h0 == null || Math.abs(h - h0) < 2) continue;
       moved = true;
       const H = document.documentElement;
@@ -1277,7 +1277,7 @@ function fitLbl(el) { const t = el.querySelector('.lt'); if (!t) return; const o
 // 최적화(2026-10-28): 그리는 도중 바로 재지 않고 그리기 직전(rAF)에 모아서 — 재는 순간마다 레이아웃을 강제 계산하던 것
 const lblQ = new Set(); let lblRaf = 0;
 const fitLblSoon = el => { lblQ.add(el); if (!lblRaf) lblRaf = requestAnimationFrame(() => { lblRaf = 0; const a = [...lblQ]; lblQ.clear(); a.forEach(e => e.isConnected && fitLbl(e)); }); };
-const lblRO = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => e.target.querySelectorAll('.s-lbl').forEach(fitLbl))) : null;
+const lblRO = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => { if (e.contentRect.width) e.target.querySelectorAll('.s-lbl').forEach(fitLblSoon); })) : null;
 function setLbl(el, text, off, wk, dow = '') {
   // 끝 낱말(' 시간표'·' 급식')은 따로 감싸서, 서랍이 좁으면 CSS가 숨김 → 라벨이 넘쳐 '다음 ›' 버튼을 덮던 문제(2026-10-24) 방지
   const m = /^(.*?)( (?:시간표|급식))$/.exec(text);
