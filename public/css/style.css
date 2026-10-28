@@ -5426,3 +5426,6 @@ button,.btn,[role="button"],.app,.s-tab,.iconbtn{-webkit-user-select:none;user-s
 button img,button svg,.app img,.app svg{-webkit-touch-callout:none;-webkit-user-drag:none}
 /* 가로 아이패드(1000~1199px): 시계 아래 상태 줄이 양쪽 서랍 카드(급식·시간표)에 닿던 것 → 두 카드 사이 빈 폭 안으로 */
 @media (max-width:1199px){.drawers .s-info{width:min(900px,calc(var(--clockw) + 100px),calc(100vw - 2 * clamp(250px,calc(var(--free) - 20px),380px) - 96px))}}
+
+/* 반응속도 정식 출시(깃발 rx-season, 2026-10-28): 홈 게임 아이콘 Beta 떼기 */
+html.rxs .rx-b{display:none!important}

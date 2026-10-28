@@ -226,6 +226,12 @@ const ALL_OPEN = 1e6;
 // 개발자는 어떤 랭킹·1등 표시에도 안 나옴 (scores 쿼리에 붙이는 조건)
 const OWNER_HANDLE = 'hayul2094';   // 하율 본인(학생용) 계정
 const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE}')`;
+// 반응속도 정식 출시 새 시즌(2026-10-28 하율 "기록 관련해서 초기화" + "일단 내 화면에만"): 깃발 rx-season이 켜진 사람에게는
+//   RX_FROM(10/29) 이전 반응속도 기록을 빼고 랭킹·티어·내 최고 기록을 계산. DB 기록은 지우지 않음(되돌릴 수 있게). 공지로 공개되면 모두에게 적용
+const RX_FROM = '20261029';
+const rxOn = me => ffOn('rx-season', me ? isAdm(me) : false);
+const RXQ = (rx, p = '') => rx ? ` AND (${p}game <> 'reaction' OR ${p}day >= '${RX_FROM}')` : '';
+const ND = rx => NOT_DEV + RXQ(rx);
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 뽑기: 가진 스티커 {값: 나온 횟수}. 개발자는 전부 가진 것으로
@@ -293,15 +299,15 @@ async function bragBody(env, db, me, k) {
   if (k === 'st') { const v = isAdm(me) ? ALL_OPEN : (await liveMany(env, db, [me]))[0] || 0; return v > 0 ? { body: `::b:st:${v}:0:0` } : { e: '연속 출석 기록이 아직 없어요' }; }
   if (k === 'tier') {
     if (isAdm(me)) return { e: '개발자는 티어가 없어요' };
-    const b = await tierBoard(db, undefined, tierV2(me)), x = b.list.find(y => y.uid === me.id);
+    const b = await tierBoard(db, undefined, tierV2(me), rxOn(me)), x = b.list.find(y => y.uid === me.id);
     return x ? { body: `::b:tier:${x.tier}:${x.rank}:${b.list.length}` } : { e: '이번 라운드 티어가 아직 없어요' };
   }
   const g = GAMES[k];
   if (!g || (g.ff && !ffOn(g.ff, isAdm(me)))) return { e: '자랑할 수 없는 기록이에요' };
-  const m = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, k).first();
+  const rx = rxOn(me), m = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, k).first();
   if (m?.b == null) return { e: '이 게임 기록이 아직 없어요' };
   if (isAdm(me)) return { body: `::b:${k}:${m.b}:0:0` };
-  const r = await db.prepare(`SELECT SUM(b < ?2) + 1 AS r, COUNT(*) AS n FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid)`).bind(k, m.b).first();
+  const r = await db.prepare(`SELECT SUM(b < ?2) + 1 AS r, COUNT(*) AS n FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid)`).bind(k, m.b).first();
   return { body: `::b:${k}:${m.b}:${r?.r || 0}:${r?.n || 0}` };
 }
 // 받는 사람(uid)이 보낸 사람(src)의 자랑을 가렸는지 (src 0 = 모두 가림)
@@ -612,15 +618,15 @@ const ROUTES = {
     if (!u) return err('없는 사용자예요', 404);
     const r = await rel(db, me.id, u.id);
     if (r.blockedMe) return err('없는 사용자예요', 404);
-    const [fo, fb, bests, crowns] = await Promise.all([
+    const rx = rxOn(me), [fo, fb, bests, crowns] = await Promise.all([
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE a = ?1').bind(u.id).first(),
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE b = ?1').bind(u.id).first(),
-      db.prepare('SELECT game, MIN(best) AS best FROM scores WHERE uid = ?1 GROUP BY game').bind(u.id).all(),
-      topCrowns(db, u.id),
+      db.prepare('SELECT game, MIN(best) AS best FROM scores WHERE uid = ?1' + RXQ(rx) + ' GROUP BY game').bind(u.id).all(),
+      topCrowns(db, u.id, rx),
     ]);
     return json({
       user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), counts: { following: fo.n, followers: fb.n },
-      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, tier: isAdm(u) ? null : await tierOfUser(db, u, tierV2(me)),
+      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, tier: isAdm(u) ? null : await tierOfUser(db, u, tierV2(me), rx),
       streak: isAdm(u) ? { cur: ALL_OPEN, best: ALL_OPEN, total: u.st_total || 0, pf: true } : { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
   }),
@@ -1017,21 +1023,21 @@ const ROUTES = {
       const rounds = JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500);
       await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
         .bind(me.id, game, v, rounds, why.a.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
-      const mine = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
+      const mine = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rxOn(me))).bind(me.id, game).first();
       return json({ ok: true, held: true, why: why.u, bad: why.bad || [], best: mine?.b ?? null });
     }
-    const day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
+    const rx = rxOn(me), day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const [prev, allPrev] = await Promise.all([
       db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
-      db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first(),
+      db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first(),
     ]);
-    const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b) : null;   // 기록 넣기 전 순위(축하 판단용)
+    const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b, rx) : null;   // 기록 넣기 전 순위(축하 판단용)
     if (!prev || v < prev.best) {
       await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
         ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, game, day, v, Date.now()).run();
     }
     const best = allPrev.b == null ? v : Math.min(allPrev.b, v);
-    const rank = await rankOf(db, game, best);
+    const rank = await rankOf(db, game, best, rx);
     const newBest = allPrev.b == null || v < allPrev.b;
     tierMemo.clear();
     // 히든 보상(2026-10-25 하율): 집(50,000m, home-score.js GOAL)에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
@@ -1074,7 +1080,7 @@ const ROUTES = {
     const game = url.searchParams.get('game'), scope = url.searchParams.get('scope') || 'all';
     if (!GAMES[game]) return err('bad game');
     const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.st_rep, u.gc_fx, u.gc_own';
-    const BEST = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid`;
+    const rx = rxOn(me), BEST = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid`;
     if (scope === 'class') {   // 반 대항전: 반마다 최고 기록 상위 3명 평균
       const rows = (await db.prepare(`SELECT t.best, u.grade, u.cls FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE u.grade > 0 AND u.cls > 0 ORDER BY t.best`).bind(game).all()).results;
       const by = new Map();
@@ -1086,12 +1092,12 @@ const ROUTES = {
     let rows;
     if (scope === 'round' || scope === 'week') {   // round = 이번 라운드(2주, 점수·티어) · week = 이번 주(1주, 끝나면 1~3등 뽑기권)
       const wk = scope === 'week', rd = wk ? wkOf(kstYmd()) : rkOf(kstYmd()), cur = rd.n < 0 ? (wk ? wkRange(0) : rkRange(0)) : rd;
-      const BR = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid`;
+      const BR = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid`;
       rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BR}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 50`).bind(game, cur.from, cur.to).all()).results;
       const list = rows.map(r => ({ ...card(r), grade: r.grade, cls: r.cls, value: r.value, isMe: r.uid === me.id }));
       let mine = list.findIndex(x => x.isMe) + 1 || null, myValue = list.find(x => x.isMe)?.value ?? null;
       if (!mine) {
-        const s2 = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2 AND day BETWEEN ?3 AND ?4').bind(me.id, game, cur.from, cur.to).first();
+        const s2 = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2 AND day BETWEEN ?3 AND ?4' + RXQ(rx)).bind(me.id, game, cur.from, cur.to).first();
         if (s2?.b != null) { myValue = s2.b; mine = (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (${BR}) WHERE best < ?4`).bind(game, cur.from, cur.to, s2.b).first()).r; }
       }
       // 지난주 1~3등(뽑기권 받은 사람) — 주 보상은 game 'w:게임'
@@ -1110,8 +1116,8 @@ const ROUTES = {
     let mine = list.findIndex(x => x.isMe) + 1 || null;
     let myValue = list.find(x => x.isMe)?.value ?? null;
     if (!mine && scope === 'all') {
-      const s = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
-      if (s?.b != null) { myValue = s.b; mine = await rankOf(db, game, s.b); }
+      const s = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first();
+      if (s?.b != null) { myValue = s.b; mine = await rankOf(db, game, s.b, rx); }
     }
     return json({ scope, list, mine, myValue });
   }),
@@ -1258,7 +1264,7 @@ const ROUTES = {
   // 이번 라운드 티어판(2026-10-25): 내 티어·점수·게임별 순위 + 상위 10명
   // ?k=티어 → 그 티어에 지금 있는 사람 전부(순위순, 최대 200명) — 2026-10-26 하율 '티어 누르면 누가 있는지'
   'GET tier': needMe(async ({ db, me, url }) => {
-    const b = await tierBoard(db, undefined, tierV2(me)), mine = b.list.find(x => x.uid === me.id) || null;
+    const b = await tierBoard(db, undefined, tierV2(me), rxOn(me)), mine = b.list.find(x => x.uid === me.id) || null;
     const pub1 = x => ({ rank: x.rank, pts: x.pts, tier: x.tier, games: x.games });
     const usersOf = async ids => {   // D1 바인드 한도 때문에 90개씩
       const out = new Map();
@@ -1326,22 +1332,22 @@ const ROUTES = {
   // 내 기록(2026-10-27 하율 "게임 안에선 랭크 대신 전에 남긴 내 기록이 잘 보이게"): 역대 최고 + 최근 날짜별 최고 10개
   'GET myrec': needMe(async ({ db, me, url }) => {
     const game = url.searchParams.get('game'); if (!GAMES[game]) return err('없는 게임이에요');
-    const [b, days] = await Promise.all([
-      db.prepare('SELECT best, day FROM scores WHERE uid = ?1 AND game = ?2 ORDER BY best, at LIMIT 1').bind(me.id, game).first(),
-      db.prepare('SELECT day, best FROM scores WHERE uid = ?1 AND game = ?2 ORDER BY day DESC LIMIT 10').bind(me.id, game).all(),
+    const rq = RXQ(rxOn(me)), [b, days] = await Promise.all([
+      db.prepare('SELECT best, day FROM scores WHERE uid = ?1 AND game = ?2' + rq + ' ORDER BY best, at LIMIT 1').bind(me.id, game).first(),
+      db.prepare('SELECT day, best FROM scores WHERE uid = ?1 AND game = ?2' + rq + ' ORDER BY day DESC LIMIT 10').bind(me.id, game).all(),
     ]);
-    const n = await db.prepare('SELECT COUNT(*) AS n FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first();
+    const n = await db.prepare('SELECT COUNT(*) AS n FROM scores WHERE uid = ?1 AND game = ?2' + rq).bind(me.id, game).first();
     return json({ best: b ? { v: b.best, day: b.day } : null, days: days.results.map(x => ({ day: x.day, v: x.best })), playDays: n?.n || 0 });
   }),
   'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
-    const out = {};
+    const out = {}, rx = rxOn(me);
     await Promise.all(Object.keys(GAMES).map(async game => {
       const [top, ma] = await Promise.all([
-        db.prepare(`SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND u.handle <> '${ADMIN_HANDLE}' ORDER BY s.best, s.at LIMIT 1`).bind(game).first(),
-        db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2').bind(me.id, game).first(),
+        db.prepare(`SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND u.handle <> '${ADMIN_HANDLE}'${RXQ(rx, 's.')} ORDER BY s.best, s.at LIMIT 1`).bind(game).first(),
+        db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first(),
       ]);
       const best = ma?.b ?? null;
-      out[game] = { top: top ? { ...card(top), value: top.best } : null, best, rank: best != null ? await rankOf(db, game, best) : null };
+      out[game] = { top: top ? { ...card(top), value: top.best } : null, best, rank: best != null ? await rankOf(db, game, best, rx) : null };
     }));
     return json({ games: out });
   }),
@@ -1451,13 +1457,13 @@ async function settleRounds(db) {
 const tierMemo = new Map();
 // v2 = 티어 2차(att-rewards.js TIER2): 보는 사람이 개발자(미리보기)이거나 깃발이 공개되면 v2로 계산. 정산은 공개된 뒤에만 v2
 const tierV2 = me => ffOn(TIER2, me ? isAdm(me) : false);
-async function tierBoard(db, n, v2 = false) {
+async function tierBoard(db, n, v2 = false, rx = rxOn(null)) {
   const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to } = rkRange(cur);
-  const mk = cur + (v2 ? ':2' : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
-  if (v2) { const b = await tierBoard2(db, cur, from, to); tierMemo.set(mk, { at: Date.now(), b }); return b; }
+  const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
+  if (v2) { const b = await tierBoard2(db, cur, from, to, rx); tierMemo.set(mk, { at: Date.now(), b }); return b; }
   const acc = new Map();
   await Promise.all(Object.keys(GAMES).map(async game => {
-    const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
+    const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
     let rk = 0;
     rows.forEach((r, i) => { rk = i > 0 && rows[i - 1].b === r.b ? rk : i + 1;   // 같은 기록 = 같은 순위·같은 점수 (2026-10-26 핫픽스)
       const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts(rk, rows.length); a.pts += p; a.games[game] = { r: rk, n: rows.length, p }; acc.set(r.uid, a); });
@@ -1478,14 +1484,14 @@ async function tierBoard(db, n, v2 = false) {
   return b;
 }
 // 티어 2차 계산 — 게임별 '개인 최고 기록 + 그 기록을 처음 낸 시각' → 순위 점수(gamePts2) → 잘한 3개 합
-async function tierBoard2(db, cur, from, to) {
+async function tierBoard2(db, cur, from, to, rx = false) {
   const startMs = Date.UTC(+from.slice(0, 4), +from.slice(4, 6) - 1, +from.slice(6, 8)) - 9 * 36e5;   // 라운드 첫날 0시(KST)
   const bans = (await db.prepare('SELECT uid, reason FROM bans WHERE until = 0 OR until > ?1').bind(startMs).all()).results;
   const out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '')).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 = 제외
   const games = Object.entries(GAMES).filter(([, g]) => !g.ff || (ffOn(g.ff, false) && g.tierFrom && from >= g.tierFrom.replace(/-/g, '')));
   const acc = new Map();
   await Promise.all(games.map(async ([game]) => {
-    const raw = (await db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${NOT_DEV}`).bind(game, from, to).all()).results;
+    const raw = (await db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)}`).bind(game, from, to).all()).results;
     const bu = new Map();
     for (const r of raw) { if (out.has(r.uid)) continue; const o = bu.get(r.uid); if (!o || r.best < o.b || (r.best === o.b && r.at < o.at)) bu.set(r.uid, { uid: r.uid, b: r.best, at: r.at }); }
     const rows = [...bu.values()].sort((a, b) => a.b - b.b || a.at - b.at);
@@ -1508,23 +1514,23 @@ async function tierBoard2(db, cur, from, to) {
   return { n: cur, from, to, list, mode: tierMode(list.length), v2: true };
 }
 const tierLastOf = u => { const [n, k] = String(u.tier_last || '').split(':'); return k && tierOfK(k) ? { n: +n, k } : null; };
-async function tierOfUser(db, u, v2 = false) {
-  const x = (await tierBoard(db, undefined, v2)).list.find(y => y.uid === u.id);
+async function tierOfUser(db, u, v2 = false, rx = rxOn(null)) {
+  const x = (await tierBoard(db, undefined, v2, rx)).list.find(y => y.uid === u.id);
   return { cur: x ? { k: x.tier, rank: x.rank, pts: x.pts } : null, last: tierLastOf(u) };
 }
 
-async function rankOf(db, game, best) {   // 나보다 최고 기록이 좋은 사람 수 + 1
-  return (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${NOT_DEV} GROUP BY uid) WHERE b < ?2`).bind(game, best).first()).r;
+async function rankOf(db, game, best, rx = rxOn(null)) {   // 나보다 최고 기록이 좋은 사람 수 + 1
+  return (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid) WHERE b < ?2`).bind(game, best).first()).r;
 }
 
-async function topCrowns(db, uid) {   // 역대 1등인 게임 + 자세히(기록·언제부터·2등과 차이·참가 인원) — 2026-10-25 하율 요청
+async function topCrowns(db, uid, rx = rxOn(null)) {   // 역대 1등인 게임 + 자세히(기록·언제부터·2등과 차이·참가 인원) — 2026-10-25 하율 요청
   const games = Object.keys(GAMES);
-  const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND ${NOT_DEV} ORDER BY best, at LIMIT 1`).bind(game).first()));
+  const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND ${ND(rx)} ORDER BY best, at LIMIT 1`).bind(game).first()));
   const mine = games.map((g, i) => [g, tops[i]]).filter(([, t]) => t?.uid === uid);
   return Promise.all(mine.map(async ([g, t]) => {
     const [sec, cnt] = await Promise.all([
-      db.prepare(`SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${NOT_DEV} AND uid != ?2`).bind(g, uid).first(),
-      db.prepare(`SELECT COUNT(DISTINCT uid) AS n FROM scores WHERE game = ?1 AND ${NOT_DEV}`).bind(g).first(),
+      db.prepare(`SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} AND uid != ?2`).bind(g, uid).first(),
+      db.prepare(`SELECT COUNT(DISTINCT uid) AS n FROM scores WHERE game = ?1 AND ${ND(rx)}`).bind(g).first(),
     ]);
     return { g, best: t.best, at: t.at, gap: sec?.b != null ? sec.b - t.best : null, n: cnt?.n || 1 };
   }));
