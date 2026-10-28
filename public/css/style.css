@@ -4401,7 +4401,7 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 @media (max-width:900px){.bento .k-cd,.bento .k-bd{grid-column:span 12}}
 /* 캐릭터 꾸미기 '무작위' → 주사위 아이콘 (2026-10-25 하율),누르면 굴러감 */
 .hd-dice{display:inline-flex;align-items:center;justify-content:center;padding-left:0;padding-right:0;min-width:64px}
-#hrDressBox .hd-dice .sic{width:40px;height:40px;margin:0;stroke-width:1.4}
+.hr-dress .hd-dice .sic{width:40px;height:40px;margin:0;stroke-width:1.4}
 .hd-dice.roll .sic{animation:hdRoll .5s cubic-bezier(.3,1.4,.5,1)}
 @keyframes hdRoll{0%{transform:rotate(0) scale(1)}40%{transform:rotate(-200deg) scale(.8)}100%{transform:rotate(-360deg) scale(1)}}
 @media (prefers-reduced-motion:reduce){.hd-dice.roll .sic{animation:none}}
@@ -5700,18 +5700,19 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .sr-scr .hr-ov > b{font-size:clamp(22px,10cqw,36px);white-space:nowrap}
 .sr-scr .hr-ov.sr-ready{place-content:start center;padding-top:20%;background:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,0) 55%)}
 .sr-scr .hr-ov .sr-best{font-style:normal;font-weight:900;font-size:14px;color:#2a2846;background:#ffd25e;border:2px solid #2a2846;border-radius:999px;padding:2px 10px;display:inline-flex;align-items:center;gap:4px}
-.sr-scr .hr-ov .sr-tip{font-style:normal;font-weight:800;font-size:12px;color:#5c574d;margin-top:2px}
 .sr-scr .hr-ov.dead{background:rgba(42,40,70,.38);gap:8px}
 .sr-scr .hr-card{flex-direction:column;align-items:center;gap:4px;padding:10px 16px 9px;max-width:92%}
 .sr-scr .hr-ov .hr-msg{margin:2px 0 0;padding:6px 0 0;border-left:0;border-top:1.5px dashed #d9d3c4;font-size:13px}
 .sr-scr .hr-ov .hr-msg b{font:inherit;font-weight:900;color:#c98a00;-webkit-text-stroke:0;text-shadow:none}
 .sr-scr .hr-sc em{font-size:clamp(20px,9cqw,30px)}
 .sr-scr .hr-ov .hr-sc span{font-size:12.5px}
-.sr-scr .hr-ov.sr-ready small,.sr-scr .hr-ov .sr-tip{background:rgba(255,255,255,.92);border-radius:8px;padding:2px 8px}
+.sr-scr .hr-ov.sr-ready small{background:rgba(255,255,255,.92);border-radius:8px;padding:2px 8px}
 .sr-touch{display:flex;gap:10px;width:min(100%,400px)}
 .sr-touch .btn{flex:1;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;min-height:58px;font-size:17px}
 @media (hover:hover) and (pointer:fine){.sr-touch{display:none}}
 .sr .hr-bar{justify-content:center}
+.sr .hr-bar .hr-keys{flex:0 1 auto}
+.sr .hr-dress{width:min(100%,760px)}
 #srRec{width:min(100%,420px)}
 @media (prefers-reduced-motion:reduce){.sr-pop.on,.sr-scr.low::after,.sr-scr.low .sr-bell,.sr-num b.bump{animation:none}.sr-pop.on{opacity:1}}
 @media (max-width:440px){.ptop b .sr-pre{display:none}}   /* 좁은 폰: 제목을 '계단 오르기'로 줄여 나가기 버튼이 잘리지 않게 */

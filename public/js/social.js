@@ -2100,18 +2100,19 @@ async function playStair() {
         <div class="sr-tap" aria-hidden="true"><span>방향 바꾸기</span><span>오르기</span></div>
         <div class="hr-ov" id="srOv"></div></div>
       <div class="sr-touch"><button type="button" class="btn big ghost" id="srT" aria-label="방향 바꾸기">⇄ 방향 바꾸기</button><button type="button" class="btn big" id="srC" aria-label="오르기">오르기 ▲</button></div>
-      <div class="hr-bar"><p class="hr-keys"><kbd>←</kbd><kbd>F</kbd> 방향 바꾸기 · <kbd>→</kbd><kbd>J</kbd><kbd>Space</kbd> 오르기</p>
+      <div class="hr-bar"><button type="button" class="btn" id="srDress">${ic('brush')}캐릭터 꾸미기</button><p class="hr-keys"><kbd>←</kbd><kbd>F</kbd> 방향 바꾸기 · <kbd>→</kbd><kbd>J</kbd><kbd>Space</kbd> 오르기</p>
         <button type="button" class="btn ghost hr-snd" id="srSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
+      <div class="hr-dress" id="srDressBox" hidden></div>
       <div id="srRec"></div>
     </div>`);
-  if (!STAIR) { try { STAIR = await import('./stair.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!STAIR || !RUN) { try { STAIR = await import('./stair.js'); RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!$('#srCv')) return;
   const cv = $('#srCv'), ov = $('#srOv'), scr = $('#srScr'), gEl = $('#srG'), nEl = $('#srN'), fEl = $('#srF'), pop = $('#srPop');
   let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0, shownG = '', shownLow = false, shownC = null;
   const ready = () => {
     ov.hidden = false; ov.className = 'hr-ov sr-ready'; scr.classList.add('rdy'); scr.classList.remove('low', 'end');
     ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단으로 7층 꼭대기까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
-      <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : '→ 오르기 · ← 방향 바꾸기로 출발'}</small><i class="sr-tip">캐릭터는 '집에 가고 싶어!'에서 꾸밀 수 있어요</i>`;
+      <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : '→ 오르기 · ← 방향 바꾸기로 출발'}</small>`;
   };
   const R = STAIR.createStair(cv, {
     sound,
@@ -2157,12 +2158,18 @@ async function playStair() {
     if (!R.st.shown || performance.now() - R.st.shownAt < 500) return;
     run++; clearTimeout(popT); pop.className = 'sr-pop'; R.reset(); ready();
   };
-  const act = kind => { if (R.st.scene === 'over') again(); else R.input(kind); };
+  const dress = charDress($('#srDressBox'), $('#sr'), $('#srDress'), c => R.setChar(c));
+  $('#srDress').onclick = () => {   // 판 중엔 안 열림(판이 끝났으면 새 판 준비 화면으로 돌린 뒤)
+    if (R.st.scene === 'over') { run++; clearTimeout(popT); pop.className = 'sr-pop'; R.reset(); ready(); }
+    if (R.st.scene !== 'ready') return;
+    dress.toggle();
+  };
+  const act = kind => { if (dress.open) return; if (R.st.scene === 'over') again(); else R.input(kind); };
   const pd = (kind, e) => { e.preventDefault(); if (e.button > 0) return; act(kind); };
   $('#srT').addEventListener('pointerdown', e => pd('turn', e)); $('#srC').addEventListener('pointerdown', e => pd('climb', e));
   scr.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); pd(e.clientX < r.left + r.width / 2 ? 'turn' : 'climb', e); });
   const kd = e => {
-    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('.modal.open') || e.target.closest?.('input,textarea')) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || dress.open || document.querySelector('.modal.open') || e.target.closest?.('input,textarea')) return;
     const c = e.code, turn = c === 'ArrowLeft' || c === 'KeyF', climb = c === 'ArrowRight' || c === 'KeyJ' || c === 'Space';
     if (R.st.scene === 'over') { if (climb || turn || c === 'Enter') { e.preventDefault(); again(); } return; }
     if (R.st.scene === 'pause' && c !== 'Escape' && c !== 'KeyR') { e.preventDefault(); R.input('climb'); return; }
@@ -2415,6 +2422,42 @@ async function playGear() {
   quitGame = () => { R.destroy(); clearInterval(hudT); fitT.forEach(clearTimeout); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); sideMQ.removeEventListener?.('change', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
 }
 
+/* 캐릭터 꾸미기 창 — 캐릭터를 쓰는 게임 공용(집에 가고 싶어!·영상고 계단 오르기)
+   2026-10-28 하율: "캐릭터를 따로 써야되는 게임은 아래에 캐릭터 커스터마이징 버튼 무조건 추가" — 새 캐릭터 게임도 이걸 붙일 것.
+   저장은 runner.js saveChar(한 캐릭터를 모든 게임이 같이 씀). onChar(c): 게임 화면에 바로 반영 */
+function charDress(box, wrap, btn, onChar) {
+  let char = RUN.loadChar(), pvTimer = 0;
+  function closeDress() { box.hidden = true; clearInterval(pvTimer); wrap.classList.remove('dressing'); }
+  function paintDress() {
+    box.innerHTML = `<div class="hd-pv"><canvas id="hdCv" aria-label="내 캐릭터"></canvas><div class="hd-frs">${['run1', 'jump', 'duck1'].map((f, i) => `<button type="button" data-hf="${f}" class="${i ? '' : 'on'}">${['달리기', '점프', '숙이기'][i]}</button>`).join('')}</div>
+        <div class="row"><button type="button" class="btn ghost hd-dice" id="hdRnd" aria-label="무작위로 꾸미기" title="무작위로 꾸미기"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-dice"/></svg></button><button type="button" class="btn" id="hdDone">완료</button></div></div>
+      <div class="hd-opts">${RUN.OPTS.map(o => `<div class="hd-g"><p>${o.name}</p><div class="hd-ch">${o.colors
+        ? o.colors.map((c, i) => `<button type="button" class="hd-sw${char[o.k] === i ? ' on' : ''}${c[0] ? '' : ' none'}" data-hk="${o.k}" data-hv="${i}" data-tip="${c[1]}" aria-label="${o.name} ${c[1]}"${c[0] ? ` data-c="${c[0]}"` : ''}></button>`).join('')
+        : o.list.map(([v, t]) => `<button type="button" class="hd-tx${char[o.k] === v ? ' on' : ''}" data-hk="${o.k}" data-hv="${v}">${t}</button>`).join('')}</div></div>`).join('')}</div>`;
+    box.querySelectorAll('.hd-sw[data-c]').forEach(b => { b.style.background = b.dataset.c; });   // CSP: style 속성 대신 스크립트로
+    let fr = 'run1', tk = 0;
+    const pv = () => { const f = fr === 'run1' ? (tk++ % 2 ? 'run2' : 'run1') : fr === 'duck1' ? (tk++ % 2 ? 'duck2' : 'duck1') : fr; RUN.drawPreview($('#hdCv'), char, f); };
+    pv(); clearInterval(pvTimer); pvTimer = setInterval(() => { if (!$('#hdCv')) return clearInterval(pvTimer); pv(); }, 180);
+    box.onclick = e => {
+      const f = e.target.closest('[data-hf]');
+      if (f) { fr = f.dataset.hf; box.querySelectorAll('[data-hf]').forEach(x => x.classList.toggle('on', x === f)); pv(); return; }
+      const b = e.target.closest('[data-hk]');
+      if (b) {
+        const o = RUN.OPTS.find(x => x.k === b.dataset.hk);
+        char = { ...char, [o.k]: o.colors ? +b.dataset.hv : b.dataset.hv };
+        box.querySelectorAll(`[data-hk="${o.k}"]`).forEach(x => x.classList.toggle('on', x === b));
+        RUN.saveChar(char); onChar(char); pv(); return;
+      }
+      if (e.target.closest('#hdRnd')) { char = RUN.randomChar(); RUN.saveChar(char); onChar(char); const keep = fr; paintDress(); box.querySelector(`[data-hf="${keep}"]`)?.click(); box.querySelector('#hdRnd')?.classList.add('roll'); return; }
+      if (e.target.closest('#hdDone')) { closeDress(); btn.focus(); }
+    };
+  }
+  return {
+    get open() { return !box.hidden; },
+    close: closeDress,
+    toggle() { if (!box.hidden) return closeDress(); char = RUN.loadChar(); paintDress(); box.hidden = false; wrap.classList.add('dressing'); },
+  };
+}
 let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
 async function playHome() {
   const area = stage(ic('run') + ' 집에 가고 싶어!', `<div class="hr" id="hr">
@@ -2609,39 +2652,12 @@ async function playHome() {
   paintSnd();
   sndBtn.onclick = () => { sound = !sound; store.set('home_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
 
-  /* --- 캐릭터 꾸미기 --- */
-  const box = $('#hrDressBox');
-  let pvTimer = 0;
-  function closeDress() { box.hidden = true; clearInterval(pvTimer); $('#hr').classList.remove('dressing'); }
-  function paintDress() {
-    box.innerHTML = `<div class="hd-pv"><canvas id="hdCv" aria-label="내 캐릭터"></canvas><div class="hd-frs">${['run1', 'jump', 'duck1'].map((f, i) => `<button type="button" data-hf="${f}" class="${i ? '' : 'on'}">${['달리기', '점프', '숙이기'][i]}</button>`).join('')}</div>
-        <div class="row"><button type="button" class="btn ghost hd-dice" id="hdRnd" aria-label="무작위로 꾸미기" title="무작위로 꾸미기"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-dice"/></svg></button><button type="button" class="btn" id="hdDone">완료</button></div></div>
-      <div class="hd-opts">${RUN.OPTS.map(o => `<div class="hd-g"><p>${o.name}</p><div class="hd-ch">${o.colors
-        ? o.colors.map((c, i) => `<button type="button" class="hd-sw${char[o.k] === i ? ' on' : ''}${c[0] ? '' : ' none'}" data-hk="${o.k}" data-hv="${i}" data-tip="${c[1]}" aria-label="${o.name} ${c[1]}"${c[0] ? ` data-c="${c[0]}"` : ''}></button>`).join('')
-        : o.list.map(([v, t]) => `<button type="button" class="hd-tx${char[o.k] === v ? ' on' : ''}" data-hk="${o.k}" data-hv="${v}">${t}</button>`).join('')}</div></div>`).join('')}</div>`;
-    box.querySelectorAll('.hd-sw[data-c]').forEach(b => { b.style.background = b.dataset.c; });   // CSP: style 속성 대신 스크립트로
-    let fr = 'run1', tk = 0;
-    const pv = () => { const f = fr === 'run1' ? (tk++ % 2 ? 'run2' : 'run1') : fr === 'duck1' ? (tk++ % 2 ? 'duck2' : 'duck1') : fr; RUN.drawPreview($('#hdCv'), char, f); };
-    pv(); clearInterval(pvTimer); pvTimer = setInterval(() => { if (!$('#hdCv')) return clearInterval(pvTimer); pv(); }, 180);
-    box.onclick = e => {
-      const f = e.target.closest('[data-hf]');
-      if (f) { fr = f.dataset.hf; box.querySelectorAll('[data-hf]').forEach(x => x.classList.toggle('on', x === f)); pv(); return; }
-      const b = e.target.closest('[data-hk]');
-      if (b) {
-        const o = RUN.OPTS.find(x => x.k === b.dataset.hk);
-        char = { ...char, [o.k]: o.colors ? +b.dataset.hv : b.dataset.hv };
-        box.querySelectorAll(`[data-hk="${o.k}"]`).forEach(x => x.classList.toggle('on', x === b));
-        RUN.saveChar(char); R.setChar(char); pv(); return;
-      }
-      if (e.target.closest('#hdRnd')) { char = RUN.randomChar(); RUN.saveChar(char); R.setChar(char); const keep = fr; paintDress(); box.querySelector(`[data-hf="${keep}"]`)?.click(); box.querySelector('#hdRnd')?.classList.add('roll'); return; }
-      if (e.target.closest('#hdDone')) { closeDress(); $('#hrDress').focus(); }
-    };
-  }
+  /* --- 캐릭터 꾸미기 (공용 charDress) --- */
+  const dress = charDress($('#hrDressBox'), $('#hr'), $('#hrDress'), c => { char = c; R.setChar(c); });
   $('#hrDress').onclick = () => {
     if (R.st.scene === 'dead') { over = false; R.reset(); ov.classList.remove('dead'); ov.innerHTML = '<b>집에 가고 싶어!</b>'; }
     if (R.st.scene !== 'ready') return;
-    if (!box.hidden) return closeDress();
-    paintDress(); box.hidden = false; $('#hr').classList.add('dressing');
+    dress.toggle();
   };
 }
 
