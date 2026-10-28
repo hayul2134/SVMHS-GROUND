@@ -6012,3 +6012,7 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 #gcBox{padding-bottom:76px}
 /* 2026-10-28: 폰 폭(560px 이하)에선 겹쳐 뜬 띠가 홈 인사 말풍선을 덮음 → 폰에서만 띠가 자기 자리를 차지(아래가 조금 밀림) */
 @media (max-width:560px){.notice{position:relative;top:auto;margin:70px auto -58px}}
+/* 접속 점이 작은 프로필 사진(얼굴)을 가리던 것(2026-10-28 하율) — 사진 크기에 맞춰 점을 줄이고 원 바깥 모서리로 */
+.av.xs .dot{width:10px;height:10px;border-width:2px;right:-3px;bottom:-3px}
+.tcc-u a .av.xs .dot,.gtop .av.xs .dot,.ggrid .gtop .av .dot{width:8px;height:8px;border-width:1.5px;right:-3px;bottom:-3px}
+.tcc-u a .av,.tch-u a .av{overflow:visible;max-width:none}   /* '.tcc-u a span'(이름 말줄임)의 overflow:hidden이 사진(span.av)에도 걸려 점이 원 안으로 잘려 얼굴을 덮던 원인 */
