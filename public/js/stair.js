@@ -9,7 +9,7 @@ import { GAIN, FLOOR, drain, floorName, zoneOf } from './stair-score.js';
 import { buildSprites, loadChar, SPR_W, SPR_H } from './runner.js';
 
 export const W = 160, H = 240;
-const DX = 16, DY = 12, SW = 26, ST = 8, FOOT = 168;   // 계단 가로·세로 간격 · 계단 폭·두께 · 캐릭터 발 높이(화면 y)
+const DX = 22, DY = 12, SW = 22, ST = 8, FOOT = 168;   // 2026-10-28 하율 "계단 중간을 이어 놓으니 헷갈림 → 끝과 끝을 이어서": 가로 간격 = 계단 폭(한 칸의 끝 = 다음 칸의 시작)   // 계단 가로·세로 간격 · 계단 폭·두께 · 캐릭터 발 높이(화면 y)
 const OL = '#2a2846';
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const toHex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
@@ -34,16 +34,10 @@ function pxText(g, s, x, y, c) { g.fillStyle = c; for (const ch of String(s)) { 
 let ART = null;
 function art() {
   if (ART) return ART;
-  const stair = (top, face, edge, hi) => pix([
-    '.oooooooooooooooooooooooo.',
-    'ohhhhhhhhhhhhhhhhhhhhhhhho',
-    'otttttttttttttttttttttttto',
-    'oeeeeeeeeeeeeeeeeeeeeeeeeo',
-    'offfffffffffffffffffffffffo'.slice(0, 26),
-    'offfffffffffffffffffffffffo'.slice(0, 26),
-    'oFFFFFFFFFFFFFFFFFFFFFFFFo',
-    '.oooooooooooooooooooooooo.',
-  ], { h: hi, t: top, e: edge, f: face, F: mix(face, OL, .25) });
+  const stair = (top, face, edge, hi) => {   // 폭 SW 픽셀: 윗면 하이라이트·윗면·모서리 줄·앞면·앞면 그늘
+    const mid = n => 'o' + n.repeat(SW - 2) + 'o', cap = '.' + 'o'.repeat(SW - 2) + '.';
+    return pix([cap, mid('h'), mid('t'), mid('e'), mid('f'), mid('f'), mid('F'), cap], { h: hi, t: top, e: edge, f: face, F: mix(face, OL, .25) });
+  };
   ART = {
     // 계단(구역마다 재질): 학교 = 회색 돌계단+노란 미끄럼 방지 줄 · 하늘 = 하늘색 블록 · 구름 위 = 분홍 · 우주 = 보라 빛 · 층 계단 = 노랑
     st: {
@@ -208,8 +202,8 @@ export function createStair(cv, o = {}) {
       os.connect(gn).connect(ac.destination); os.start(tt); os.stop(tt + d + .02);
     } catch {}
   }
-  const tune = z => (z ? [523, 659, 784, 1047, 1319] : [659, 784, 1047]).forEach((f, i) => setTimeout(() => beep(f, .09, 'square', .045), i * 65));
-  const SCALE = [392, 440, 494, 523, 587, 659, 698, 784];   // 오를 때마다 음이 한 칸씩(8칸마다 처음으로)
+  // 효과음은 1차 그대로(2026-10-28 하율 "효과음은 수정 전이 나았다 → 효과음만 롤백")
+  const tune = () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, .09, 'triangle', .06), i * 70));
 
   /* ----- 입력: 'climb' 오르기 · 'turn' 방향 바꾸기 ----- */
   function input(kind) {
@@ -221,7 +215,7 @@ export function createStair(cv, o = {}) {
     fromX = fromX + (px - fromX) * moveT; fromY = fromY + (py - fromY) * moveT;
     if (nx - xs[i] !== st.face) {   // 계단이 없는 쪽 → 헛디딤
       fall = { x: xs[i] + st.face * .9, y: i, vx: st.face * .9, vy: -1.6, r: 0 };
-      shake = 4; beep(330, .4, 'square', .05, 60); end('miss'); return;
+      shake = 4; beep(300, .35, 'sawtooth', .05, 70); end('miss'); return;
     }
     st.steps++; px = nx; py = st.steps; moveT = 0; stepN++;
     const now = performance.now(); recent.push(now); if (recent.length > 8) recent.shift();
@@ -234,13 +228,13 @@ export function createStair(cv, o = {}) {
       const z = zoneOf(f) !== zoneOf(st.floor); st.floor = f; flash = 1; tune(z);
       for (let k = 0; k < 10; k++) parts.push({ x: px * DX + (k - 5) * 3, y: -py * DY - 4, vx: (k - 5) * 9, vy: -30 - (k % 3) * 12, t: 0, c: ['#ffd25e', '#ff8fb0', '#7cc4ff', '#ffffff'][k % 4], g: 1 });
       o.onFloor?.(f, f <= 5 ? floorName(f) + ' 도착!' : z ? zoneOf(f) + ' 도착!' : floorName(f, true) + ' 돌파!', z || f <= 5);
-    } else beep(SCALE[st.steps % 8] * (st.fast ? 1.5 : 1), .04, 'square', .03);
+    } else beep(392 + (st.steps % 8) * 28, .045, 'square', .035);
     o.onStep?.(st.steps);
   }
   function end(why) {
     if (st.scene === 'over') return;
     st.scene = 'over'; st.why = why; st.endAt = performance.now();
-    if (why === 'time') { shake = 3; [988, 784, 988, 784, 988].forEach((f, i) => setTimeout(() => beep(f, .14, 'square', .05), i * 150)); }
+    if (why === 'time') { shake = 3; [880, 660, 880, 660].forEach((f, i) => setTimeout(() => beep(f, .16, 'triangle', .06), i * 170)); }
     overT = setTimeout(() => { if (!alive) return; st.shown = true; st.shownAt = performance.now(); o.onOver?.({ steps: st.steps, turns: st.turns, ms: Math.round(st.ms), why, floor: st.floor }); }, why === 'time' ? 900 : 750);
   }
   function pause() { if (st.scene === 'play') { st.scene = 'pause'; o.onPause?.(true); } }
@@ -366,7 +360,6 @@ export function createStair(cv, o = {}) {
     if (st.scene === 'play') {
       st.ms += dt * 1000; st.gauge -= drain(st.steps) * dt;
       if (st.gauge <= 0) { st.gauge = 0; end('time'); }
-      else if (st.gauge < .22 && now - lowT > 360) { lowT = now; beep(1500, .025, 'square', .02); }   // 종 치기 직전 째깍
     }
     moveT = Math.min(1, moveT + dt / .075);
     flash = Math.max(0, flash - dt / .9);
