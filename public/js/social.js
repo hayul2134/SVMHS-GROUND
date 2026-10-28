@@ -1882,10 +1882,27 @@ addEventListener('keydown', e => {
   e.preventDefault(); e.stopImmediatePropagation(); restartGame();
 }, true);
 let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, 한 판에 한 번)
+/* 시작 티켓 받기(2026-10-29 '게임을 다시 시작해 주세요'로 기록이 안 들어가던 버그):
+   예전엔 판을 열 때마다(다시 시작·R 키 포함) 새 티켓을 받아서, 부정출발 뒤 R로 계속 다시 시작하면 서버 시작 횟수 제한(10분 60번)에 걸림
+   → 티켓을 못 받은 걸 조용히 넘기고 판이 끝난 뒤에야 '게임을 다시 시작해 주세요'가 떴음.
+   이제: ① 아직 안 쓴 티켓은 같은 게임 다시 시작 때 그대로 씀(50분 안, 서버 유효 1시간 — 출발 시각이 더 이르니 검사엔 불리할 것 없음)
+   ② 실패하면 2초 뒤 한 번 더 ③ 그래도 못 받으면 바로 알림 + 저장 때 진짜 이유를 보여 줌 */
+let tkKeep = null;   // { game, p, at } — play()가 받은, 아직 저장에 안 쓴 티켓
+const tkGet = game => call('start', { game }).then(r => r.ticket).catch(e => wait(2000).then(() => call('start', { game })).then(r => r.ticket).catch(e2 => {
+  tkErr = e2.message || e.message; if (curGame === game && !$('#gamePlay').hidden) toast('지금 판은 기록이 저장되지 않아요 · ' + tkErr);
+  return '';
+}));
+let tkErr = '';
+function playTicket(game) {
+  if (tkKeep && tkKeep.game === game && ticket === tkKeep.p && Date.now() - tkKeep.at < 50 * 60e3) return ticket;   // 안 쓴 티켓 다시 씀
+  tkErr = ''; const p = tkGet(game); tkKeep = { game, p, at: Date.now() };
+  p.then(t => { if (!t && tkKeep?.p === p) tkKeep = null; });   // 못 받은 티켓은 다음 판에 다시 받기
+  return p;
+}
 function play(game) {
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
   quitGame?.(); quitGame = null; curGame = game;
-  ticket = S.me && game !== 'gear' && game !== 'stair' ? call('start', { game }).then(r => r.ticket).catch(() => '') : null;
+  ticket = S.me && game !== 'gear' && game !== 'stair' ? playTicket(game) : null;
   if (GAMES[game]?.ff && !ffOn(GAMES[game].ff, isDev(S.me))) return;
   ({ reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair })[game]?.();
 }
@@ -1956,7 +1973,10 @@ async function myRecInto(el, game, local = null, fold = null) {
 }
 async function saveScore(game, value, rounds) {
   const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
-  const r = await call('score', { game, value, rounds, ticket: await t });
+  if (tkKeep?.p === t) tkKeep = null;   // 이 티켓은 이제 씀 → 다음 판은 새로 받기
+  const tk = await t;
+  if (t && !tk) throw new Error(`게임을 시작할 때 서버에 등록되지 않아 이번 기록은 저장 못 했어요${tkErr ? ` (${tkErr})` : ''}. 다시 하기를 눌러 주세요`);
+  const r = await call('score', { game, value, rounds, ticket: tk });
   if ($('#v-game').classList.contains('on')) renderGame();
   return r;
 }
