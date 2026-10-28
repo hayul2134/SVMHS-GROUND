@@ -2218,7 +2218,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .hr-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .hr-bar .btn .sic{width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:4px}
 .hr-keys{flex:1;min-width:200px;margin:0;color:var(--on-bg);font-weight:700;font-size:13px;opacity:.85}
-.hr-keys kbd{display:inline-block;font-weight:800;font-size:12px;line-height:1;padding:4px 7px;margin:0 2px;border:2px solid var(--ink);border-bottom-width:3px;border-radius:7px;background:var(--card);color:var(--ink)}
+.hr-keys kbd{display:inline-block;font-weight:800;font-size:12px;line-height:1;padding:4px 7px;margin:0 2px;border:2px solid var(--ink);border-bottom-width:3px;border-radius:7px;background:var(--card);color:var(--text)}
 .hr.on .hr-bar #hrDress{visibility:hidden}
 .hr-touch{display:none;gap:10px}
 .hr-touch .btn{flex:1;min-height:64px;font-size:18px;touch-action:none;-webkit-user-select:none;user-select:none}
@@ -4774,8 +4774,8 @@ html:has(body.playing){overflow:hidden}
 .gr{display:flex;flex-direction:column;gap:12px;width:100%;max-width:100%;margin:0 auto}
 .gr-main{display:flex;align-items:flex-start;justify-content:center;gap:clamp(8px,2vw,18px)}
 .gr-side{display:flex;flex-direction:column;align-items:center;gap:8px;width:clamp(64px,11vw,110px);padding:10px 8px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink)}
-.gr-lb{margin:0;font:400 16px/1 var(--disp);color:var(--ink)}
-.gr-lb kbd{font:800 10px/1 var(--num,inherit);padding:2px 4px;border:1.5px solid var(--ink);border-radius:5px;vertical-align:2px;margin-left:2px}
+.gr-lb{margin:0;font:400 16px/1 var(--disp);color:var(--text)}
+.gr-lb kbd{font:800 10px/1 var(--num,inherit);padding:2px 4px;border:1.5px solid currentColor;border-radius:5px;vertical-align:2px;margin-left:2px}
 .gr-mini{image-rendering:pixelated;width:78px;max-width:100%;background:#1d2238;border-radius:8px;border:2px solid var(--ink)}
 .gr-next{display:flex;flex-direction:column;gap:6px;align-items:center}
 .gr-mini.sm{opacity:.8}
@@ -4819,7 +4819,7 @@ html:has(body.playing){overflow:hidden}
 @keyframes grHit4{0%{transform:none}12%{transform:translate(-5px,7px) scale(1.03) rotate(-.6deg)}30%{transform:translate(5px,-3px) rotate(.6deg)}50%{transform:translate(-3px,2px)}75%{transform:translate(2px,-1px)}100%{transform:none}}
 .gr-stat{display:grid;gap:2px;margin:4px 0 0;text-align:center;width:100%}
 .gr-stat dt{font-weight:800;font-size:11.5px;color:var(--sub)}
-.gr-stat dd{margin:0 0 4px;font:900 clamp(15px,2.2vw,22px)/1.1 var(--num,inherit);color:var(--ink);font-variant-numeric:tabular-nums}
+.gr-stat dd{margin:0 0 4px;font:900 clamp(15px,2.2vw,22px)/1.1 var(--num,inherit);color:var(--text);font-variant-numeric:tabular-nums}
 .gr-scr{position:relative;border:3px solid var(--ink);border-radius:10px;box-shadow:4px 5px 0 var(--ink);background:#1d2238;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
 .gr-scr > canvas{display:block;image-rendering:pixelated;width:240px}
 .gr-scr::before{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 3px #8c6a4a,inset 0 0 0 5px #5d4330;border-radius:7px;z-index:1}   /* 나무 선반 테두리 */
