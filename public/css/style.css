@@ -2456,6 +2456,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .s-lbl::before{flex:none}
 @container (max-width:270px){.s-lbl{padding:0 5px;gap:2px}.s-nb{width:24px}}
 @container (max-width:240px){.s-lbl .ld{margin-left:3px}.s-lbl .lw{display:none}.s-lbl::before{display:none}}   /* 2026-10-28 태블릿: 가로 아이패드(1024px)에서 '급식·시간표' 글자가 빠지던 것 → 정말 좁을 때만 뺌 */
+.s-lbl.tight .lw{display:none}.s-lbl.tight2 .ld{display:none}.s-lbl.tight{padding:0 6px;gap:2px}   /* 2026-10-28 넘치면 ' 시간표'·' 급식'부터 뺌(fitLbl) */
 .s-lbl.wkon{background:var(--chip);color:var(--text)}@media (hover:hover){.s-lbl:hover{background:var(--chip);color:var(--text)}}
 .s-lbl.off{background:var(--yellow);color:#3b3220}
 .s-lbl.off::before{content:"↺";font-size:.85em;color:inherit}

@@ -1270,9 +1270,16 @@ new IntersectionObserver(([e]) => {
 // 홈 카드 라벨: 지금(오늘·이번 주)이면 눌러서 하루↔한 주 전환, 다른 날·다른 주면 눌러서 지금으로
 // 오늘·내일·어제 라벨엔 요일이 안 보여서 요일 칩을 따로 붙임 (2026-10-28 하율 요청) — '수요일'·'10/30(금)'은 이미 요일이 있어 생략
 const dowTag = d => /^(오늘|내일|어제)$/.test(ttLabel(d)) ? DOW[d.getDay()] : '';
+// 라벨이 칸보다 길면 날짜는 남기고 끝 낱말(' 시간표'·' 급식')부터 뺌 → 그래도 넘치면 그때 날짜 말줄임 (2026-10-28 하율: '10/26(... 시간표')
+function fitLbl(el) { const t = el.querySelector('.lt'); if (!t) return; const o = () => t.scrollWidth > t.clientWidth + .5; el.classList.remove('tight', 'tight2'); if (o()) { el.classList.add('tight'); if (o()) el.classList.add('tight2'); } }   // 날짜 글자가 말줄임되면 → 끝 낱말 빼기 → 그래도면 요일 칩도 빼기
+// 라벨 자신이 아니라 카드(폭이 라벨과 무관)를 지켜봄 — 라벨을 보면 빼고·넣기가 폭을 바꿔 계속 깜빡일 수 있음
+const lblRO = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => e.target.querySelectorAll('.s-lbl').forEach(fitLbl))) : null;
 function setLbl(el, text, off, wk, dow = '') {
   // 끝 낱말(' 시간표'·' 급식')은 따로 감싸서, 서랍이 좁으면 CSS가 숨김 → 라벨이 넘쳐 '다음 ›' 버튼을 덮던 문제(2026-10-24) 방지
   const m = /^(.*?)( (?:시간표|급식))$/.exec(text);
+  // '10/26(월)'은 날짜 + 요일 칩으로 나눔 — 괄호째 말줄임돼 '10/26(...'으로 보이던 문제 (2026-10-28 하율)
+  const dm = m && /^(\d+\/\d+)\((.)\)$/.exec(m[1]);
+  if (dm && !dow) { dow = dm[2]; text = dm[1] + m[2]; return setLbl(el, text, off, wk, dow); }
   if (el._t !== text + dow) {   // 글자가 바뀔 때만 다시 만듦 + 살짝 떠오르게 (오늘 → 내일 등, 2026-10-27 툭 바뀌던 것)
     const first = el._t == null; el._t = text + dow;
     el.textContent = '';
@@ -1282,6 +1289,7 @@ function setLbl(el, text, off, wk, dow = '') {
     if (!first) riseIn([...el.children]);
   }
   el.classList.toggle('off', off); el.classList.toggle('wkon', wk);
+  fitLbl(el); lblRO?.observe(el.closest('.s-tt') || el.parentElement);
   const tip = off ? (wk ? '이번 주로 돌아가기' : '오늘로 돌아가기') : (wk ? '하루씩 보기' : '한 주씩 보기');
   el.dataset.tip = tip; el.setAttribute('aria-label', `${text} · 눌러서 ${tip}`);
   const card = el.closest('.s-tt'), what = card?.classList.contains('s-meal') ? '급식' : '시간표';
