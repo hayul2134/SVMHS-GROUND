@@ -2120,8 +2120,8 @@ async function playGear() {
     ov.querySelectorAll('[data-gm]').forEach(b => { const on = b.dataset.gm === mode; if (on && b.getAttribute('aria-pressed') === 'false') { b.classList.remove('pick'); void b.offsetWidth; b.classList.add('pick'); } b.setAttribute('aria-pressed', on); }); paintHud(); };
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
   const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul>
-    <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>자유롭게 · 랭킹 제외</small></button><button type="button" data-gm="rank"><b>${ic('trophy')}랭킹전</b><small>2분 점수 대결</small></button></div>
-    <small>${touchy ? '방식을 누르면 바로 시작' : '← → 로 방식 고르고, 아무 키나 누르면 시작'}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); setMode(mode); };
+    <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>${gtOn() ? '시간 제한 없이 오래 버티기' : '시간 제한 없음 · 티어 제외'}</small></button><button type="button" data-gm="rank"><b>${ic('trophy')}랭킹전</b><small>${gtOn() ? '2분 안에 최고 점수' : '2분 점수 대결 · 티어 반영'}</small></button></div>
+    ${gtOn() ? '<small class="gr-gt">티어엔 두 방식 중 순위가 더 좋은 쪽이 들어가요</small>' : ''}<small>${touchy ? '방식을 누르면 바로 시작' : '← → 로 방식 고르고, 아무 키나 누르면 시작'}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); setMode(mode); };
   // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
   let shown = 0;
   const paintHud = () => { const s = R.st, sc = $('#grSc');
