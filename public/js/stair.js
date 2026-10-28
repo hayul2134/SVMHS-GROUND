@@ -9,7 +9,8 @@ import { GAIN, FLOOR, drain, floorName, zoneOf } from './stair-score.js';
 import { buildSprites, loadChar, SPR_W, SPR_H } from './runner.js';
 
 export const W = 160, H = 240;
-const DX = 22, DY = 12, SW = 22, ST = DY, FOOT = 168;   // 2026-10-28 하율 "계단 중간을 이어 놓으니 헷갈림 → 끝과 끝을 이어서": 가로 간격 = 계단 폭(한 칸의 끝 = 다음 칸의 시작)   // 계단 가로·세로 간격 · 계단 폭·두께 · 캐릭터 발 높이(화면 y)
+const DX = 22, DY = 10, SW = 22, ST = DY, FOOT = 168;   // 2026-10-28 17:52 하율: 계단 높이 12 → 8과 12의 중간(10), 꼭짓점은 계속 붙게 세로 간격도 10
+const PS = 2, CS = 1.5;   // 캔버스 = 논리 화면 × 2(PS) · 캐릭터는 1.5배(CS, 하율 "캐릭터가 계단에 비해 너무 작다") → 캐릭터 그림 한 픽셀 = 캔버스 3픽셀로 고르게   // 2026-10-28 하율 "계단 중간을 이어 놓으니 헷갈림 → 끝과 끝을 이어서": 가로 간격 = 계단 폭(한 칸의 끝 = 다음 칸의 시작)   // 계단 가로·세로 간격 · 계단 폭·두께 · 캐릭터 발 높이(화면 y)
 const OL = '#2a2846';
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const toHex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
@@ -165,7 +166,7 @@ const kindOf = i => i > 0 && i % FLOOR === 0 ? 'land' : i < FLOOR * 5 ? 'school'
 
 export function createStair(cv, o = {}) {
   const g = cv.getContext('2d');
-  cv.width = W; cv.height = H; g.imageSmoothingEnabled = false;
+  cv.width = W * PS; cv.height = H * PS; g.imageSmoothingEnabled = false;
   const A = art();
   let spr = null, sprF = null;
   const loadSpr = () => { spr = buildSprites(o.char || loadChar()); sprF = {}; for (const k of ['run1', 'run2', 'jump', 'dead']) { sprF[k] = flipCv(spr[k]); sprF[k + '_rim'] = flipCv(spr[k + '_rim']); } };
@@ -368,6 +369,7 @@ export function createStair(cv, o = {}) {
     camX += (cx * DX - camX) * Math.min(1, dt * 10); camY += (-cy * DY - camY) * Math.min(1, dt * 14);
     if (st.scene === 'ready') { camX = cx * DX; camY = -cy * DY; }
     shake = Math.max(0, shake - dt * 12); shX = shake ? R((Math.random() - .5) * shake * 2) : 0; shY = shake ? R((Math.random() - .5) * shake * 2) : 0;
+    g.setTransform(PS, 0, 0, PS, 0, 0); g.imageSmoothingEnabled = false;
     const f = -camY / DY / FLOOR;
     bg(f);
     const top = Math.floor(cy) + 24, bot = Math.max(0, Math.floor(cy) - 8);
@@ -381,7 +383,7 @@ export function createStair(cv, o = {}) {
     if (fall) {   // 헛디딤: 놀란 얼굴로 튀어 올랐다가 빙글 떨어짐
       if (st.scene !== 'ready') { fall.vy += dt * 7; fall.x += fall.vx * dt; fall.y -= fall.vy * dt * 1.6; fall.r += dt * 8 * Math.sign(fall.vx); }
       const fx = sx(fall.x * DX), fy = sy(-fall.y * DY);
-      g.save(); g.translate(fx, fy - SPR_H / 2); g.rotate(Math.round(fall.r / (Math.PI / 2)) * Math.PI / 2);
+      g.save(); g.translate(fx, fy - SPR_H * CS / 2); g.rotate(Math.round(fall.r / (Math.PI / 2)) * Math.PI / 2); g.scale(CS, CS);
       g.drawImage(S.dead_rim, -SPR_W / 2 - 1, -SPR_H / 2 - 1); g.drawImage(S.dead, -SPR_W / 2, -SPR_H / 2); g.restore();
     } else {
       const lift = moveT < 1 ? R(Math.sin(moveT * Math.PI) * 4) : 0;
@@ -389,11 +391,11 @@ export function createStair(cv, o = {}) {
       const fr = st.why === 'time' ? 'dead' : moveT < .6 ? 'jump' : st.scene === 'play' || st.scene === 'pause' ? (stepN % 2 ? 'run1' : 'run2') : (Math.floor(t * 2) % 2 ? 'run1' : 'run2');
       if (st.fast && st.scene === 'play') {   // 빠르게 오르는 중: 등 뒤 픽셀 속도선
         g.fillStyle = '#ffffff';
-        for (let k = 0; k < 3; k++) { const l = 4 + ((stepN + k * 3) % 5) * 2, yy = ky - 6 - k * 6; g.fillRect(st.face > 0 ? kx - 13 - l : kx + 13, yy, l, 1); }
+        for (let k = 0; k < 3; k++) { const l = 4 + ((stepN + k * 3) % 5) * 2, yy = ky - 8 - k * 8; g.fillRect(st.face > 0 ? kx - 18 - l : kx + 18, yy, l, 1); }
       }
-      g.drawImage(S[fr + '_rim'], kx - SPR_W / 2 - 1, ky - SPR_H); g.drawImage(S[fr], kx - SPR_W / 2, ky - SPR_H + 1);
+      g.save(); g.translate(kx, ky); g.scale(CS, CS); g.drawImage(S[fr + '_rim'], -SPR_W / 2 - 1, -SPR_H); g.drawImage(S[fr], -SPR_W / 2, -SPR_H + 1); g.restore();
       if (st.why === 'time') {   // 지각: 머리 위 땀·ZZ 대신 '!'
-        g.fillStyle = OL; g.fillRect(kx - 1, ky - SPR_H - 9, 3, 6); g.fillRect(kx - 1, ky - SPR_H - 2, 3, 2); g.fillStyle = '#ff5a5a'; g.fillRect(kx, ky - SPR_H - 8, 1, 4);
+        const hy = R(ky - SPR_H * CS); g.fillStyle = OL; g.fillRect(kx - 1, hy - 9, 3, 6); g.fillRect(kx - 1, hy - 2, 3, 2); g.fillStyle = '#ff5a5a'; g.fillRect(kx, hy - 8, 1, 4);
       }
     }
     o.onFrame?.(st);
