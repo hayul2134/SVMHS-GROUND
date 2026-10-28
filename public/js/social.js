@@ -34,7 +34,7 @@ const GAMES = {
   gearn: { ff: 'gear-game', casual: true, name: '기자재 정리! 일반', ic: 'gear', desc: '시간 제한 없이 자유롭게 · 티어·보상과 상관없는 일반 모드 순위', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
-  home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
+  home: { name: '집에 가고 싶어!', ic: 'ghome', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
@@ -2285,7 +2285,7 @@ async function playGear() {
 
 let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
 async function playHome() {
-  const area = stage(ic('run') + ' 집에 가고 싶어!', `<div class="hr" id="hr">
+  const area = stage(ic('ghome') + ' 집에 가고 싶어!', `<div class="hr" id="hr">
       <div class="hr-scr" id="hrScr"><canvas id="hrCv" aria-label="게임 화면"></canvas>
         <div class="hr-ov" id="hrOv"><b>집에 가고 싶어!</b><span>종 쳤다! 장애물을 피해 집까지 달려요</span><small>${matchMedia('(pointer:coarse)').matches ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · ↑ · 화면 클릭으로 출발'}</small></div></div>
       <div class="hr-touch"><button type="button" class="btn big" id="hrJ">점프</button><button type="button" class="btn big ghost" id="hrD">숙이기</button>${RE_BTN.replace('class="prestart"', 'class="prestart re-in"')}</div>

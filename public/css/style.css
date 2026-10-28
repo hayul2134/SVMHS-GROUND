@@ -5709,3 +5709,11 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .sr .hr-bar{justify-content:center}
 #srRec{width:min(100%,420px)}
 @media (prefers-reduced-motion:reduce){.sr-pop.on,.sr-scr.low::after,.sr-scr.low .sr-bell,.sr-num b.bump{animation:none}.sr-pop.on{opacity:1}}
+
+/* 2026-10-28 하율 "아이콘 느낌 통일": 게임 타일 배경을 모두 테마 색 변수에서 서로 다른 색으로(하드코딩 색 제거) — 아이콘은 같은 규칙(굵은 외곽·흰/하늘/노랑/빨강 채움·한 물체)으로 다시 그림 */
+.apps .gapp.g-stair .ai,.ggrid .g-stair{--c:var(--yellow)}
+.apps .gapp.g-gear .ai,.ggrid .g-gear{--c:var(--sky)}
+.apps .gapp.g-home .ai,.ggrid .g-home{--c:var(--lime)}
+.apps .gapp.g-cut .ai,.ggrid .g-cut{--c:color-mix(in srgb,var(--red) 70%,#fff)}
+.apps .gapp.g-reaction .ai,.ggrid .g-reaction{--c:color-mix(in srgb,var(--yellow) 55%,var(--red))}
+.apps .gapp.g-num25 .ai,.ggrid .g-num25{--c:var(--violet)}
