@@ -5248,7 +5248,7 @@ img.ptimg:not(.ok){border-radius:10px;min-height:120px}
 .ctd,.ctd-scr,.ctd-win,.ctd-body{display:contents}
 .ctd-tb,.ctd-base{display:none}
 @media (min-width:860px) and (min-height:600px){
-  .ctd{--W:min(100%,980px,calc((100dvh - 260px) * 1.6));display:flex;flex-direction:column;align-items:center;align-self:center;width:var(--W);margin:clamp(4px,2vh,24px) auto 0;animation:ctdIn .45s cubic-bezier(.2,1.2,.4,1) both}
+  .ctd{--W:min(100%,980px,calc((100dvh - 260px) * 1.6));display:flex;flex-direction:column;align-items:center;align-self:center;width:var(--W);margin:clamp(12px,7vh,72px) auto 0;animation:ctdIn .45s cubic-bezier(.2,1.2,.4,1) both}
   .ctd.desk{--W:min(100%,1120px,calc((100dvh - 300px) * 1.78))}
   .ctd-scr{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16/10;padding:clamp(18px,3%,34px);position:relative;
     background:radial-gradient(120% 90% at 15% 0%,#cfe6ff 0,transparent 55%),radial-gradient(90% 80% at 100% 100%,#a9cfff 0,transparent 60%),linear-gradient(160deg,#e3f0ff,#9cc5ff);
@@ -5276,6 +5276,7 @@ img.ptimg:not(.ok){border-radius:10px;min-height:120px}
   .ctd.desk .ctd-base::after{content:"";position:absolute;left:0;right:0;bottom:0;height:16px;border-radius:10px 10px 6px 6px;border:2px solid var(--ink);background:linear-gradient(180deg,#c9d0dc,#9aa3b4);box-shadow:3px 3px 0 var(--ink)}
 }
 @keyframes ctdIn{0%{opacity:0;transform:translateY(14px) scale(.97)}100%{opacity:1;transform:none}}
+/* 2026-10-28 하율 "조금 더 아래로": 편집의 신 노트북·모니터 틀 위 여백 2vh→7vh(아래 빈 공간과 균형) */
 @media (prefers-reduced-motion:reduce){.ctd{animation:none}}
 
 /* 컷 타이밍 시작 화면 글자 크게·또렷하게 (2026-10-27 하율 "글자 잘 안보여" · 제목 '편집의 신' · 부제 '완벽한 타이밍을 찾아라!') */
