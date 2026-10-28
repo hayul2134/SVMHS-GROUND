@@ -526,6 +526,23 @@ export function createStair(cv, o = {}) {
       pxText(g, s, tx + 3, ty + 2, OL);
     }
   }
+  function wind(kx, ky, face, k, seed) {
+    const back = -face, x0 = kx + back * 11;   // 가방 바깥(등 쪽)부터
+    const rows = 9;   // 2px 줄 9개 = 18px(몸통 높이만, 하율 "너무 커 → 확 줄여")
+    for (let r = 0; r < rows; r++) {
+      const y = ky - 27 + r * 2;
+      const bulge = Math.sin((r + .5) / rows * Math.PI);                         // 가운데가 가장 길게
+      const n1 = hash(seed * 31 + r), n2 = hash(seed * 17 + r * 7 + 3);
+      const L = R((5 + bulge * 10 + n1 * 4) * k);                               // 줄 길이(예전의 약 1/3)
+      if (L < 2) continue;
+      const inner = R(L * (.35 + n2 * .15)), mid = R(L * .72);
+      const off = R(r * .5);   // 아래 줄일수록 뒤에서 시작 → 비스듬히 아래·뒤로 퍼짐
+      const seg = (from, to, c) => { if (to <= from) return; from += off; to += off; g.fillStyle = c; g.fillRect(back > 0 ? x0 + from : x0 - to, y, to - from, 2); };
+      seg(0, inner, '#ffffff'); seg(inner, mid, '#9fd8ff'); seg(mid, L, '#3d8ff0');
+      if (r % 3 === 1 && L > 6) { g.fillStyle = '#3d8ff0'; const d = L + off + 1 + R(n2 * 3); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y, 2, 2); }   // 끝 알갱이
+      if (r % 4 === 2 && L > 9) { g.fillStyle = '#9fd8ff'; const d = L + off + 3 + R(n1 * 3); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y - 1, 2, 2); }
+    }
+  }
   function frame(now) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
@@ -560,9 +577,11 @@ export function createStair(cv, o = {}) {
       const lift = moveT < 1 ? R(Math.sin(moveT * Math.PI) * 4) : 0;
       const kx = sx(cx * DX), ky = sy(-cy * DY) - lift;
       const fr = st.why === 'time' ? 'dead' : moveT < .6 ? 'jump' : st.scene === 'play' || st.scene === 'pause' ? (stepN % 2 ? 'run1' : 'run2') : (Math.floor(t * 2) % 2 ? 'run1' : 'run2');
-      if (st.fast && st.scene === 'play') {   // 빠르게 오르는 중: 등 뒤 픽셀 속도선(2026-10-28 하율 "이펙트 그냥 롤백" → 처음의 흰 속도선으로)
-        g.fillStyle = '#ffffff';
-        for (let k = 0; k < 3; k++) { const l = 4 + ((stepN + k * 3) % 5) * 2, yy = ky - 8 - k * 8; g.fillRect(st.face > 0 ? kx - 18 - l : kx + 18, yy, l, 1); }
+      // 오를 때 등 뒤 바람 이펙트(2026-10-28 하율: 잔상은 별로 → 보내 준 그림처럼 파란 픽셀 바람): 등 뒤로 뻗는 들쭉날쭉한 바람 줄기
+      //   안쪽 흰색 → 하늘색 → 바깥 파랑 3겹 + 끝에 흩어지는 네모 알갱이. 한 칸 오를 때마다 확 뻗었다가 0.35초에 걸쳐 줄어듦, 빠르면 더 길고 진하게
+      if (st.scene === 'play' || st.scene === 'pause') {
+        const age = (performance.now() - lastStepAt) / 1000, k0 = Math.max(0, 1 - age / .35);
+        if (k0 > 0) wind(kx, ky, st.face, k0 * (st.fast ? 1.25 : .9), stepN);
       }
       g.save(); g.translate(kx, ky); g.scale(CS, CS); g.drawImage(S[fr], -SPR_W / 2, -SPR_H + 1); g.restore();   // 흰 테두리 없이
       if (st.why === 'time') {   // 지각: 머리 위 땀·ZZ 대신 '!'
