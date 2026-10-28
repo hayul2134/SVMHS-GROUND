@@ -538,7 +538,7 @@ function paintHeroMeal() {
     else if (!nextMeal.rows) rows = null;
     else if (nextMeal.day) { rows = nextMeal.rows; day = nextMeal.day; want = '1'; }
   }
-  setLbl(lbl, `${ttLabel(day)} 급식`, !!d, false);   // 하루 보기로 돌아올 때 한 주 카드 폭(.wk)도 같이 풂 (2026-10-23: 식판이 한 주 폭으로 커져 시계를 가리던 문제)
+  setLbl(lbl, `${ttLabel(day)} 급식`, !!d, false, dowTag(day));   // 하루 보기로 돌아올 때 한 주 카드 폭(.wk)도 같이 풂 (2026-10-23: 식판이 한 주 폭으로 커져 시계를 가리던 문제)
   if (!rows) { slots.innerHTML = ''; box.innerHTML = ghMeal(true); return; }
   if (!rows.length) { slots.innerHTML = ''; box.innerHTML = empty((d ? S.heroFail : S.mealFail) ? '급식 정보를 불러오지 못했어요' : '급식이 없는 날이에요'); return; }
   const r = (S.heroPick && rows.find(x => x.MMEAL_SC_CODE === S.heroPick)) || pickMeal(rows, want);
@@ -935,7 +935,7 @@ async function renderHomeTT() {
   S.ttShown = ymd(tgt);
   renderHomeWeek();
   if (S.ttWk) setLbl($('#sTTlbl'), wkName(S.ttWk, '시간표'), ymd(S.ttWk) !== ymd(weekOf(ttTarget())), true);
-  else setLbl($('#sTTlbl'), `${ttLabel(tgt)} 시간표`, !!S.ttPick, false);
+  else setLbl($('#sTTlbl'), `${ttLabel(tgt)} 시간표`, !!S.ttPick, false, dowTag(tgt));
   if (!cls) { S.todayTT = []; box.innerHTML = needClass; nextKey = ''; return; }
   try {
     const wk = d.getDay() % 6 ? await getTimetable(cls, mondayOf(d), addDays(mondayOf(d), 4)) : [];
@@ -1268,13 +1268,16 @@ new IntersectionObserver(([e]) => {
 }, { threshold: .25 }).observe($('#apps'));
 /* ===== 첫 화면 카드에서 다른 날 넘겨 보기 (‹ ›) — 라벨을 누르면 오늘로, 3분 동안 안 만지면 자동으로 오늘로 ===== */
 // 홈 카드 라벨: 지금(오늘·이번 주)이면 눌러서 하루↔한 주 전환, 다른 날·다른 주면 눌러서 지금으로
-function setLbl(el, text, off, wk) {
+// 오늘·내일·어제 라벨엔 요일이 안 보여서 요일 칩을 따로 붙임 (2026-10-28 하율 요청) — '수요일'·'10/30(금)'은 이미 요일이 있어 생략
+const dowTag = d => /^(오늘|내일|어제)$/.test(ttLabel(d)) ? DOW[d.getDay()] : '';
+function setLbl(el, text, off, wk, dow = '') {
   // 끝 낱말(' 시간표'·' 급식')은 따로 감싸서, 서랍이 좁으면 CSS가 숨김 → 라벨이 넘쳐 '다음 ›' 버튼을 덮던 문제(2026-10-24) 방지
   const m = /^(.*?)( (?:시간표|급식))$/.exec(text);
-  if (el._t !== text) {   // 글자가 바뀔 때만 다시 만듦 + 살짝 떠오르게 (오늘 → 내일 등, 2026-10-27 툭 바뀌던 것)
-    const first = el._t == null; el._t = text;
+  if (el._t !== text + dow) {   // 글자가 바뀔 때만 다시 만듦 + 살짝 떠오르게 (오늘 → 내일 등, 2026-10-27 툭 바뀌던 것)
+    const first = el._t == null; el._t = text + dow;
     el.textContent = '';
     const a = document.createElement('span'); a.className = 'lt'; a.textContent = m ? m[1] : text; el.append(a);
+    if (dow) { const c = document.createElement('span'); c.className = 'ld'; c.textContent = dow; el.append(c); }
     if (m) { const b = document.createElement('span'); b.className = 'lw'; b.textContent = m[2]; el.append(b); }
     if (!first) riseIn([...el.children]);
   }
