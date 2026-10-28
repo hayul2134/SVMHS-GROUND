@@ -11,6 +11,7 @@ const GAMES = {
   // 순서는 사이트 게임 목록과 같게 (2026-10-25)
   home: { name: '집에 가고 싶어!', em: '🏠', fmt: v => (1000000 - v).toLocaleString('ko-KR') + 'm', sus: 1000000 - 30000 },   // 저장값 = 1000000 - 거리. 3만m(약 13분 무사고) 넘으면 의심
   gear: { name: '기자재 정리!', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점', sus: 9999999 - 200000 },   // 저장값 = 9999999 - 점수. 20만 점 넘으면 의심
+  gearn: { name: '기자재 정리! 일반', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점', sus: 9999999 - 500000 },   // 일반 모드(시간 제한 없음, 순위만·티어 제외)
   reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 160 },
   num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 7000 },
   cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 20 },   // 2026-10-26 하율: 학생들이 잘해서 40 → 20 (한 판 평균 4ms 이하만 의심)
@@ -370,7 +371,7 @@ const heldRounds = (game, raw) => {
   if (game === 'reaction') return r.map(x => x + 'ms').join(' · ');
   if (game === 'cut') return r.map(x => x + 'ms').join(' · ') + ` (합 ${r.reduce((a, b) => a + b, 0)})`;
   if (game === 'home') return `${(+r[0]).toLocaleString('ko-KR')}m · ${((+r[1] || 0) / 1000).toFixed(1)}초`;
-  if (game === 'gear') return `${(+r[0]).toLocaleString('ko-KR')}점 · ${r[1]}줄 · 블록 ${r[2]}개 · ${((+r[3] || 0) / 1000).toFixed(0)}초`;
+  if (game === 'gear' || game === 'gearn') return `${(+r[0]).toLocaleString('ko-KR')}점 · ${r[1]}줄 · 블록 ${r[2]}개 · ${((+r[3] || 0) / 1000).toFixed(0)}초`;
   if (game === 'num25') return `마지막 탭 ${((+r[24] || 0) / 1000).toFixed(2)}초 · 벌점 ${((+r[25] || 0) / 1000)}초`;
   return esc(raw).slice(0, 80);
 };

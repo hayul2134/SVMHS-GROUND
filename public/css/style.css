@@ -5026,6 +5026,12 @@ html:has(body.playing){overflow:hidden}
 .mr-pe,.mr-n{margin:0;font-size:12px;color:var(--sub);font-weight:700}
 .mr-n b{color:var(--ink)}
 .mr-n small{margin-left:4px}
+/* 기자재 정리! 일반 모드 순위(2026-10-28): 순위 보기 링크 · 랭킹 창 랭킹전/일반 전환 */
+.hr-rklink{display:inline-flex;align-items:center;margin-left:6px;padding:2px 9px;border:1.5px solid var(--ink);border-radius:999px;background:var(--lime);color:var(--ink);font:inherit;font-size:12px;font-weight:900;cursor:pointer;vertical-align:middle}
+.hr-ov .hr-rklink{color:#1d2433;border-color:#1d2433}
+.segs.rk-mode{margin-bottom:8px}
+.segs.rk-mode button{display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.segs.rk-mode .sic{width:16px;height:16px}
 
 /* 바뀐 시간표 (2026-10-27): 평소와 다른 과목 칸에 '변경' 칩(app.js chgTag, 올리면 평소 과목) */
 .chg-t{--cg:#c2560c;--cgb:#fff1e3;flex:none;font-style:normal;font-size:11px;font-weight:900;line-height:1.5;padding:0 5px;border-radius:6px;border:1.5px solid var(--cg);background:var(--cgb);color:var(--cg);white-space:nowrap;cursor:help}

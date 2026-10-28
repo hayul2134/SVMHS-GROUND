@@ -29,6 +29,8 @@ const GAMES = {
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
   // 기자재 정리!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
   gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 빈틈없이 정리해 줄을 채워요 · 랭킹전은 2분 점수 대결', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
+  // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 따로 순위만 — 게임 목록·티어엔 안 나옴(casual), 기자재 정리! 랭킹 창의 '일반' 전환으로 봄
+  gearn: { ff: 'gear-game', casual: true, name: '기자재 정리! 일반', ic: 'gear', desc: '시간 제한 없이 자유롭게 · 티어·보상과 상관없는 일반 모드 순위', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
@@ -63,7 +65,7 @@ const av = (u, cls = '', x = '') => u?.handle === ADMIN_HANDLE ? `<span class="a
 const avWear = v => wearOf(v) ? `<i class="avwear">${wearSvg(v)}</i>` : '';
 const isDev = u => u?.handle === ADMIN_HANDLE;
 // 지금 보이는 게임만(미리보기 깃발 게임은 개발자에게만)
-const gamesOn = () => Object.entries(GAMES).filter(([, g]) => !g.ff || ffOn(g.ff, isDev(S.me)));
+const gamesOn = () => Object.entries(GAMES).filter(([, g]) => !g.casual && (!g.ff || ffOn(g.ff, isDev(S.me))));
 // 뽑기 전설 '별똥별 등장': 프로필을 열 때 한 번 쏟아지는 별(위치·크기·시간을 조금씩 다르게)
 const pfxStars = () => `<div class="pfx-star" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`;   // 위치·크기·시간은 style.css nth-child (CSP: style 속성 금지)
 // 개발자 프로필 전용 등장 (2026-10-25 하율: 별똥별 말고 특별하게) — 카드 위를 무지개 빛이 한 번 쓸고, 사진 뒤에서 무지개 빛줄기·충격파·반짝이가 터짐
@@ -1572,10 +1574,14 @@ async function openRank(game, scope = 'week') {
   if (S.enabled === false) { toast('랭킹을 준비하고 있어요'); return; }
   if (!S.me) { toast('랭킹은 로그인하면 볼 수 있어요'); ctx.go('me'); return; }
   const g = GAMES[game];
-  const tabs = [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']].map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
+  // 기자재 정리!: 랭킹전 / 일반 전환(2026-10-28) — 일반은 티어·보상과 상관없어 이번 주·역대·친구만
+  const gm = game === 'gear' || game === 'gearn';
+  if (g.casual && (scope === 'round' || scope === 'class')) scope = 'all';
+  const modeSeg = gm ? `<div class="segs rk-mode" role="group" aria-label="게임 방식"><button data-rank="gear" data-scope="week" class="${game === 'gear' ? 'on' : ''}">${ic('trophy')}랭킹전</button><button data-rank="gearn" data-scope="all" class="${game === 'gearn' ? 'on' : ''}">일반</button></div>` : '';
+  const tabs = (g.casual ? [['week', '이번 주'], ['all', '역대'], ['friends', '친구']] : [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']]).map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   const scopeName = { week: '이번 주', round: '이번 라운드', all: '역대', friends: '친구', class: '반 대항전' }[scope] || '';
-  sheet(`<h3 class="rk-h3">${ic(g.ic)} ${g.name} 랭킹<button type="button" class="rk-story" id="rkStory"${ffOn('story-share', isDev(S.me)) ? '' : ' hidden'} aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3><div class="segs">${tabs}</div><ol class="rank" id="rankList">${ghostOr(() => FK_US(5).map((u, i) => `<li><span class="rk">${i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1}</span><a>${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>1학년 1반</small></span></a><b class="rv">000</b></li>`).join(''), 2)}</ol>
-    <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
+  sheet(`<h3 class="rk-h3">${ic(g.ic)} ${gm ? '기자재 정리!' : g.name} 랭킹<button type="button" class="rk-story" id="rkStory"${ffOn('story-share', isDev(S.me)) ? '' : ' hidden'} aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3>${modeSeg}<div class="segs">${tabs}</div><ol class="rank" id="rankList">${ghostOr(() => FK_US(5).map((u, i) => `<li><span class="rk">${i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1}</span><a>${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>1학년 1반</small></span></a><b class="rv">000</b></li>`).join(''), 2)}</ol>
+    <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${gm ? 'gear' : game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
   try {
     const r = await call(`rank?game=${game}&scope=${scope}`);
     const medal = i => i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1;   // 1~3등 금·은·동 배지 (이모지 대신)
@@ -1597,8 +1603,8 @@ async function openRank(game, scope = 'week') {
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
-      if (scope === 'week' || scope === 'round') {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.casual ? `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}` : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
+      if (!g.casual && (scope === 'week' || scope === 'round')) {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
         const wk = scope === 'week', k = rkInfo(wk);
         $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
         if (!r.list.length) $('#rankList').innerHTML = `<li class="empty">${wk ? '이번 주' : '이번 라운드'} 기록이 아직 없어요. 지금 하면 1등!</li>`;
@@ -1690,8 +1696,9 @@ addEventListener('keydown', e => {
 }, true);
 let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, 한 판에 한 번)
 function play(game) {
+  if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
   quitGame?.(); quitGame = null; curGame = game;
-  ticket = S.me ? call('start', { game }).then(r => r.ticket).catch(() => '') : null;
+  ticket = S.me && game !== 'gear' ? call('start', { game }).then(r => r.ticket).catch(() => '') : null;
   if (GAMES[game]?.ff && !ffOn(GAMES[game].ff, isDev(S.me))) return;
   ({ reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear })[game]?.();
 }
@@ -1921,7 +1928,7 @@ async function playGear() {
   if (!$('#grCv')) return;
   const cv = $('#grCv'), ov = $('#grOv'), pop = $('#grPop');
   // 2026-10-27 하율: 일반(연습 — 랭킹 제외) / 랭킹전(2분 점수 대결 — 랭킹·보상) 두 가지로. best = 랭킹전 최고, bestN = 일반 최고(이 기기만)
-  let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), bestN = store.get('gear_best_n', 0), over = false, deadAt = 0, runNo = 0;
+  let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), bestN = store.get('gear_best_n', 0), nRec = null, over = false, deadAt = 0, runNo = 0;
   let mode = 'normal';   // 2026-10-27 하율: 들어올 때마다 기본은 일반 모드(지난번 고른 방식 기억 안 함)
   const setMode = m => { mode = m === 'rank' ? 'rank' : 'normal'; store.set('gear_mode', mode); $('#gr').dataset.mode = mode; R.setLimit(mode === 'rank' ? GEAR_TIME : 0);
     ov.querySelectorAll('[data-gm]').forEach(b => { const on = b.dataset.gm === mode; if (on && b.getAttribute('aria-pressed') === 'false') { b.classList.remove('pick'); void b.offsetWidth; b.classList.add('pick'); } b.setAttribute('aria-pressed', on); }); paintHud(); };
@@ -1951,7 +1958,8 @@ async function playGear() {
   let popT = 0;
   const R = GEAR.createGear(cv, {
     sound,
-    onStart() { ov.hidden = true; over = false; paintQ(); },
+    // 시작 티켓은 판을 시작하는 순간 고른 방식으로 받음(2026-10-28: 일반 모드도 서버에 저장 → 'gearn' 순위, 티어 제외)
+    onStart() { ov.hidden = true; over = false; paintQ(); ticket = S.me ? call('start', { game: mode === 'rank' ? 'gear' : 'gearn' }).then(r => r.ticket).catch(() => '') : null; },
     onQueue: paintQ,
     onScore: floatPt,
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
@@ -1972,13 +1980,20 @@ async function playGear() {
       const nb = rk ? res.score > best : res.score > bestN;
       if (nb && rk) { best = res.score; store.set('gear_best', best); } else if (nb) { bestN = res.score; store.set('gear_best_n', bestN); }
       ov.hidden = false; ov.className = 'gr-ov hr-ov dead';
-      const msg = !rk ? '일반 기록은 랭킹에 안 올라가요 · 랭킹전은 2분 점수 대결' : !S.me ? '로그인하면 랭킹에 올라가요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…';
+      const msg = !S.me ? (rk ? '로그인하면 랭킹에 올라가요' : '로그인하면 일반 모드 순위에 올라가요') : !rk && res.score >= 1 ? '일반 순위 확인 중…' : !rk ? '0점은 기록하지 않아요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…';
       ov.innerHTML = `<b>${res.timeUp ? '시간 끝! 반납 완료' : '장비실이 꽉 찼어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${rk ? '랭킹전 · ' : '일반 · '}${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
         <small class="hr-msg" id="grMsg">${msg}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
-      if (!rk || !S.me || res.score < 1) return;   // 일반 모드는 서버에 안 보냄(랭킹 제외)
-      saveScore('gear', GEAR_MAX - res.score, [res.score, res.lines, res.pieces, res.ms]).then(r => {
+      if (!S.me || res.score < 1) return;
+      // 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 'gearn'으로 저장 → 따로 순위만(티어·보상·미션 제외)
+      saveScore(rk ? 'gear' : 'gearn', GEAR_MAX - res.score, [res.score, res.lines, res.pieces, res.ms]).then(r => {
         if (no !== runNo || !$('#grMsg')) return;
         if (r.held) { $('#grMsg').innerHTML = heldLine(r); return; }
+        if (!rk) {
+          nRec = { best: GEAR_MAX - r.best, rank: r.rank };
+          if (nRec.best > bestN) { bestN = nRec.best; store.set('gear_best_n', bestN); }
+          $('#grMsg').innerHTML = `${r.newBest ? '<b>일반 최고 기록 경신!</b> ' : ''}일반 모드 <b>${r.rank}위</b> · 내 최고 ${esc(GAMES.gearn.fmt(r.best))} <button type="button" class="hr-rklink" data-rank="gearn" data-scope="all">순위 보기</button><br><small>티어·보상과는 상관없어요</small>`;
+          paintRk(); return;
+        }
         $('#grMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 잘했어요' : `랭킹전 내 최고 ${esc(GAMES.gear.fmt(r.best))}`;
         syncBest(r.best); paintRk();
       }).catch(e => { if (no === runNo && $('#grMsg')) $('#grMsg').textContent = e.message; });
@@ -1989,7 +2004,7 @@ async function playGear() {
   const hudT = setInterval(paintHud, 50);
   const restart = () => {
     if (!over || performance.now() - deadAt < 400) return false;
-    over = false; ticket = S.me ? call('start', { game: 'gear' }).then(r => r.ticket).catch(() => '') : null;
+    over = false; ticket = null;   // 티켓은 onStart에서(고른 방식으로)
     R.reset(); shown = 0; ready(); paintHud(); paintQ(); return true;
   };
   // 화면 크기: 판(120×240)을 정수 배(기기 픽셀 기준)로 — 옆 칸(보관·다음)과 아래 버튼·랭킹이 스크롤 없이 보이게
@@ -2086,7 +2101,7 @@ async function playGear() {
     tp = null;
   };
   scr.addEventListener('pointerup', tup); scr.addEventListener('pointercancel', tup);
-  ov.addEventListener('pointerdown', e => { if (over) { e.stopPropagation(); restart(); } });
+  ov.addEventListener('pointerdown', e => { if (e.target.closest('[data-rank]')) return; if (over) { e.stopPropagation(); restart(); } });   // '순위 보기'는 다시 시작 대신 순위 창
   const blur = () => { ['left', 'right', 'down'].forEach(a => R.input(a, false)); if (R.st.scene === 'play') R.pause(); };
   window.addEventListener('blur', blur);
   // 아래 랭킹(친구·전체 1~5등) — 집에 가고 싶어!와 같은 모양
@@ -2096,7 +2111,8 @@ async function playGear() {
     const r = await myRecInto(el, 'gear', best ? GEAR_MAX - best : null);
     if (r?.best) syncBest(r.best.v);
     el.querySelector('.myrec')?.insertAdjacentHTML('afterbegin', '<p class="mr-tag">랭킹전 기록</p>');
-    if (bestN) el.querySelector('.myrec')?.insertAdjacentHTML('beforeend', `<p class="mr-n">일반 모드 내 최고 <b>${bestN.toLocaleString('ko-KR')}점</b><small>이 기기</small></p>`);
+    // 일반 모드: 서버 기록 순위(2026-10-28) — 이번에 저장한 결과가 있으면 그 순위, 없으면 이 기기 최고
+    if (bestN || nRec) el.querySelector('.myrec')?.insertAdjacentHTML('beforeend', `<p class="mr-n">일반 모드 내 최고 <b>${(nRec?.best || bestN).toLocaleString('ko-KR')}점</b>${nRec?.rank ? `<small>${nRec.rank}위</small>` : `<small>${S.me ? '' : '이 기기'}</small>`}${S.me ? '<button type="button" class="hr-rklink" data-rank="gearn" data-scope="all">일반 순위</button>' : ''}</p>`);
   }
 
   paintRk();

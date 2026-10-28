@@ -24,6 +24,9 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
   home: { min: 1, max: HOME_MAX - 1, play: 0 },        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
   gear: { min: 1, max: GEAR_MAX - 1, play: 3000, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
+  // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
+  //   casual = 티어·역대 1등 표시(topCrowns)·주간 미션·1~3등 축하에서 빠짐 → 순위표(GET rank)·내 기록에만 나옴
+  gearn: { min: 1, max: GEAR_MAX - 1, play: 3000, ff: 'gear-game', casual: true },
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 // 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
@@ -72,7 +75,7 @@ function checkRounds(game, v, r, elapsed) {
     if (HOME_MAX - m !== v || scoreAt(ms) !== m) return H(`거리(${m}m)가 달린 시간(${(ms / 1000).toFixed(1)}초)과 안 맞음`,
       `${(ms / 1000).toFixed(1)}초 동안 달리면 ${scoreAt(ms).toLocaleString('ko-KR')}m인데 ${m.toLocaleString('ko-KR')}m로 기록됐어요. 이 게임은 달린 시간으로 거리가 정해져서 둘이 맞아야 해요.`);
     if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
-  } else if (game === 'gear') {   // [점수, 지운 줄, 놓은 블록 수, 플레이 ms] — gear-score.js 규칙으로 가능한 범위인지
+  } else if (game === 'gear' || game === 'gearn') {   // [점수, 지운 줄, 놓은 블록 수, 플레이 ms] — gear-score.js 규칙으로 가능한 범위인지
     if (n.length !== 4) return H('판 기록 형식이 다름', '점수·줄·블록 수·시간이 제대로 오지 않았어요.');
     const [sc, ln, pc, ms] = n;
     if (GEAR_MAX - sc !== v) return H(`점수(${sc})와 기록(${v})이 다름`, '점수와 최종 기록이 서로 달라요.');
@@ -80,7 +83,7 @@ function checkRounds(game, v, r, elapsed) {
     if (ln * 10 > pc * 4) return H(`줄(${ln})이 블록 수(${pc})보다 많음`, `블록 ${pc}개로는 많아야 ${Math.floor(pc * 4 / 10)}줄까지 지울 수 있는데 ${ln}줄로 기록됐어요.`);
     if (pc > ms / 125 + 5) return H(`블록을 너무 빨리 놓음(${pc}개 · ${sec(ms)})`, `${sec(ms)} 동안 블록 ${pc}개를 놓았어요. 1초에 8개보다 빠르게 놓을 수는 없어서 자동 입력으로 보일 수 있어요.`);
     if (sc > gearMax(ln, pc)) return H(`점수(${sc})가 줄·블록 수로 낼 수 있는 최대(${gearMax(ln, pc)})보다 큼`, `${ln}줄 · 블록 ${pc}개로 낼 수 있는 점수는 많아야 ${gearMax(ln, pc).toLocaleString('ko-KR')}점인데 ${sc.toLocaleString('ko-KR')}점으로 기록됐어요.`);
-    if (ms > GEAR_TIME + 1000) return H(`랭킹전 2분보다 오래 함(${sec(ms)})`, `랭킹전은 2분 동안만 할 수 있는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);   // 2026-10-27: 랭킹 기록은 랭킹전(2분)만
+    if (game === 'gear' && ms > GEAR_TIME + 1000) return H(`랭킹전 2분보다 오래 함(${sec(ms)})`, `랭킹전은 2분 동안만 할 수 있는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);   // 2026-10-27: 랭킹 기록은 랭킹전(2분)만
     if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
@@ -188,7 +191,8 @@ const pub = u => u && ({
 const isAdm = u => u?.handle === ADMIN_HANDLE;
 // 주간 미션(2026-10-27 하율, 미리보기 깃발 week-mission): 모두 같은 미션 5개(public/js/mission.js), 미션에 나오는 게임 = 깃발 없는 게임만
 // missions 표: day = 'w' + 그 주 월요일 · p = 진행 JSON. 미션 하나 끝낼 때마다 뽑기권 MS.tix장
-const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff);
+const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff && !GAMES[g].casual);
+const RANKED = () => Object.keys(GAMES).filter(g => !GAMES[g].casual);   // 티어·1등 표시에 들어가는 게임(일반 모드 같은 casual 제외)
 const misOut = (wk, p) => {
   const list = missionsOf(wk, MS_GAMES());
   return { wk, list: list.map((m, i) => { const c = progOf(m, p), done = !!p.d?.[i]; return { t: m.t, k: m.k, g: m.g || '', n: m.n, u: m.u || '', c, done, ready: !done && c >= m.n }; }), rw: MS };
@@ -1012,9 +1016,10 @@ const ROUTES = {
     const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
-    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점' }[game];
-    const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : game === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
-      : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : game === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
+    const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
+    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점' }[gk];
+    const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
+      : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
       : checkRounds(game, v, body.rounds, elapsed);
     if (why) {
@@ -1071,9 +1076,9 @@ const ROUTES = {
     }
     // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
     // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 3,000점 밑이면 판 수에 안 셈(누적 미션에도 안 더함)
-    const mis = playCounts(game, v) ? await misEv(db, me, 'play', { game, v, best: allPrev.b != null && v < allPrev.b, day }) : null;
+    const mis = !g.casual && playCounts(game, v) ? await misEv(db, me, 'play', { game, v, best: allPrev.b != null && v < allPrev.b, day }) : null;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: !g.casual && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {
@@ -1341,7 +1346,7 @@ const ROUTES = {
   }),
   'GET games': needMe(async ({ db, me }) => {   // 게임 첫 화면: 게임별 1등 · 내 최고 기록 · 내 순위
     const out = {}, rx = rxOn(me);
-    await Promise.all(Object.keys(GAMES).map(async game => {
+    await Promise.all(RANKED().map(async game => {
       const [top, ma] = await Promise.all([
         db.prepare(`SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND u.handle <> '${ADMIN_HANDLE}'${RXQ(rx, 's.')} ORDER BY s.best, s.at LIMIT 1`).bind(game).first(),
         db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first(),
@@ -1462,7 +1467,7 @@ async function tierBoard(db, n, v2 = false, rx = rxOn(null)) {
   const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
   if (v2) { const b = await tierBoard2(db, cur, from, to, rx); tierMemo.set(mk, { at: Date.now(), b }); return b; }
   const acc = new Map();
-  await Promise.all(Object.keys(GAMES).map(async game => {
+  await Promise.all(RANKED().map(async game => {
     const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
     let rk = 0;
     rows.forEach((r, i) => { rk = i > 0 && rows[i - 1].b === r.b ? rk : i + 1;   // 같은 기록 = 같은 순위·같은 점수 (2026-10-26 핫픽스)
@@ -1488,7 +1493,7 @@ async function tierBoard2(db, cur, from, to, rx = false) {
   const startMs = Date.UTC(+from.slice(0, 4), +from.slice(4, 6) - 1, +from.slice(6, 8)) - 9 * 36e5;   // 라운드 첫날 0시(KST)
   const bans = (await db.prepare('SELECT uid, reason FROM bans WHERE until = 0 OR until > ?1').bind(startMs).all()).results;
   const out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '')).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 = 제외
-  const games = Object.entries(GAMES).filter(([, g]) => !g.ff || (ffOn(g.ff, false) && g.tierFrom && from >= g.tierFrom.replace(/-/g, '')));
+  const games = Object.entries(GAMES).filter(([, g]) => !g.casual).filter(([, g]) => !g.ff || (ffOn(g.ff, false) && g.tierFrom && from >= g.tierFrom.replace(/-/g, '')));
   const acc = new Map();
   await Promise.all(games.map(async ([game]) => {
     const raw = (await db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)}`).bind(game, from, to).all()).results;
@@ -1524,7 +1529,7 @@ async function rankOf(db, game, best, rx = rxOn(null)) {   // 나보다 최고 �
 }
 
 async function topCrowns(db, uid, rx = rxOn(null)) {   // 역대 1등인 게임 + 자세히(기록·언제부터·2등과 차이·참가 인원) — 2026-10-25 하율 요청
-  const games = Object.keys(GAMES);
+  const games = RANKED();
   const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND ${ND(rx)} ORDER BY best, at LIMIT 1`).bind(game).first()));
   const mine = games.map((g, i) => [g, tops[i]]).filter(([, t]) => t?.uid === uid);
   return Promise.all(mine.map(async ([g, t]) => {
