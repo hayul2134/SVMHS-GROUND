@@ -5509,7 +5509,7 @@ html.rk2 .s-rk.pod .rk.p1 > a > b{font-size:13.5px}
 html.rk2 .s-rk.pod .rk-v{max-width:100%;padding:1px 7px;font-size:12px}
 html.rk2 .s-rk.pod .rk.p1 .rk-v{font-size:13px;padding:1px 8px}
 html.rk2 .s-rk.pod .rk-v:has(.rk-tr),html.rk2 .s-rk.pod .rk.p1 .rk-v:has(.rk-tr){width:100%;padding:0}
-html.rk2 .s-rk.pod .rk-v .rk-tr{padding-left:22px;padding-right:3px;font-size:9.5px;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:clip;justify-content:flex-start}
+html.rk2 .s-rk.pod .rk-v .rk-tr{padding-left:22px;padding-right:1px;font-size:9.5px;letter-spacing:-.06em;white-space:nowrap;overflow:hidden;text-overflow:clip;justify-content:flex-start}
 html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 
 /* 랭킹 내 자리(2026-10-28): 창 열면 내 줄로 스크롤, 스크롤해 벗어나도 내 줄은 창 위·아래 끝에 붙어 보임 · 50등 밖이면 ⋯ 뒤에 내 줄 */
