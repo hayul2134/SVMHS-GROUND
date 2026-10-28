@@ -284,32 +284,34 @@ export function createStair(cv, o = {}) {
     g.fillStyle = OL; for (let r = 0; r <= 3; r++) g.fillRect(R(x + 6 + Math.sin(a1) * r), R(y + 6 - Math.cos(a1) * r), 1, 1);
     g.fillStyle = '#ff5a5a'; for (let r = 0; r <= 4; r++) g.fillRect(R(x + 6 + Math.sin(a2) * r), R(y + 6 - Math.cos(a2) * r), 1, 1);
   }
-  function detective(x, by) {   // 옥상 탐정(2026-10-28 하율 "갈색 탐정 옷 + 돋보기로 램프를 쳐다보는 캐릭터") — 오른쪽(램프)을 보며 몸을 숙였다 폈다
-    const y = by, lean = Math.floor(t * 1.2) % 2, CO = '#a0683a', CD = '#7d4e2a', HT = '#8a5a30', HD = '#6a4220', SK = '#ffe0c2';
-    // 다리·신발
-    box(x + 4, y - 7, 3, 6, OL); box(x + 8, y - 7, 3, 6, OL); box(x + 5, y - 7, 1, 5, '#3b3b49'); box(x + 9, y - 7, 1, 5, '#3b3b49');
-    box(x + 3, y - 2, 5, 2, OL); box(x + 8, y - 2, 5, 2, OL);
-    // 트렌치코트(아래로 퍼짐) · 허리띠 · 단추
-    box(x + 1, y - 18, 13, 12, OL); box(x + 2, y - 17, 11, 10, CO); box(x + 1, y - 9, 13, 3, OL); box(x + 2, y - 9, 11, 2, CO);
-    box(x + 2, y - 12, 11, 1, '#5a3518'); box(x + 7, y - 12, 2, 1, '#ffd25e');
-    box(x + 2, y - 17, 2, 10, CD); box(x + 9, y - 16, 1, 1, '#5a3518'); box(x + 9, y - 14, 1, 1, '#5a3518');
-    box(x + 5, y - 17, 4, 2, '#c98a55'); box(x + 6, y - 15, 2, 1, '#c98a55');   // 깃
-    // 머리(숙이면 1px 앞·아래로)
-    const hx = x + 4 + lean, hy = y - 25 + lean;
-    box(hx - 1, hy - 1, 9, 9, OL); box(hx, hy, 7, 7, SK); box(hx, hy + 2, 2, 4, '#3a2b25');   // 얼굴 · 뒷머리
-    box(hx + 5, hy + 3, 1, 2, OL); box(hx + 4, hy + 5, 2, 1, '#ff9db0');            // 눈(오른쪽을 봄) · 볼
-    // 사냥 모자(앞뒤 챙 + 체크 줄 + 위 리본)
-    box(hx - 2, hy - 5, 11, 6, OL); box(hx - 1, hy - 4, 9, 4, HT); box(hx + 1, hy - 4, 1, 4, HD); box(hx + 5, hy - 4, 1, 4, HD); box(hx - 1, hy - 2, 9, 1, HD);
-    box(hx - 4, hy, 4, 2, OL); box(hx + 7, hy, 5, 2, OL); box(hx - 3, hy, 2, 1, HT); box(hx + 8, hy, 3, 1, HT);
+  function detective(x, by) {   // 옥상 탐정(2026-10-28 하율: 갈색 탐정 옷, 서서 살짝 숙여 돋보기로 램프를 들여다봄) — 그림 좌표는 발바닥 0 기준
+    const y = by, bob = Math.floor(t * 1.4) % 2, CO = '#a0683a', CD = '#7d4e2a', CL = '#c98a55', HT = '#8a5a30', HD = '#6a4220', SK = '#ffe0c2';
+    // 신발·다리(곧게 섬)
+    box(x + 2, y - 2, 5, 2, OL); box(x + 7, y - 2, 5, 2, OL);
+    box(x + 3, y - 8, 3, 7, OL); box(x + 8, y - 8, 3, 7, OL); box(x + 4, y - 8, 1, 6, '#3b3b49'); box(x + 9, y - 8, 1, 6, '#3b3b49');
+    // 트렌치코트(무릎까지, 아래 퍼짐) · 허리띠 · 단추 · 깃
+    box(x + 1, y - 19, 12, 13, OL); box(x + 2, y - 18, 10, 11, CO); box(x, y - 10, 14, 4, OL); box(x + 1, y - 10, 12, 3, CO);
+    box(x + 2, y - 18, 2, 11, CD); box(x + 1, y - 9, 2, 2, CD);
+    box(x + 2, y - 13, 10, 1, '#5a3518'); box(x + 7, y - 13, 2, 1, '#ffd25e');
+    box(x + 9, y - 16, 1, 1, '#5a3518'); box(x + 9, y - 11, 1, 1, '#5a3518');
+    box(x + 6, y - 18, 5, 2, CL); box(x + 7, y - 16, 3, 1, CL);
+    // 머리: 앞으로 살짝 숙임(2px 앞·1px 아래) + 들여다볼 때 1px 더 숙였다 폈다
+    const hx = x + 5 + bob, hy = y - 26 + bob;
+    box(hx - 1, hy - 1, 9, 9, OL); box(hx, hy, 7, 7, SK); box(hx, hy + 1, 2, 5, '#3a2b25');
+    box(hx + 5, hy + 4, 2, 1, OL); box(hx + 4, hy + 6, 2, 1, '#ff9db0');   // 아래(램프)를 보는 눈 · 볼
+    // 사냥 모자(체크 줄 · 앞뒤 챙 · 위 리본)
+    box(hx - 2, hy - 5, 11, 6, OL); box(hx - 1, hy - 4, 9, 4, HT); box(hx + 2, hy - 4, 1, 4, HD); box(hx + 5, hy - 4, 1, 4, HD); box(hx - 1, hy - 2, 9, 1, HD);
+    box(hx - 4, hy, 4, 2, OL); box(hx + 7, hy + 1, 5, 2, OL); box(hx - 3, hy, 2, 1, HT); box(hx + 8, hy + 1, 3, 1, HT);
     box(hx + 2, hy - 7, 3, 2, OL); box(hx + 3, hy - 6, 1, 1, HT);
-    // 팔(앞으로 내밈) + 돋보기 — 렌즈가 램프 쪽으로, 숙일 때 렌즈도 같이 내려감
-    const lx = x + 19 + lean, ly = y - 14 + lean;
-    box(x + 9, y - 16, 4, 3, OL); box(x + 12, y - 15 + lean, 3, 3, OL); box(x + 10, y - 15, 3, 1, CO); box(x + 13, y - 14 + lean, 1, 1, SK);
-    box(x + 15, y - 14 + lean, 2, 1, '#5a3518');                                   // 손잡이
-    box(lx - 3, ly - 2, 7, 5, OL); box(lx - 2, ly - 3, 5, 7, OL);                  // 렌즈 테
+    // 팔: 어깨에서 앞·아래로 → 손에 돋보기, 렌즈는 램프 바로 위
+    box(x + 10, y - 17, 3, 4, OL); box(x + 12, y - 15, 3, 4, OL); box(x + 14, y - 13 + bob, 3, 3, OL);
+    box(x + 11, y - 16, 1, 2, CO); box(x + 13, y - 14, 1, 2, CO); box(x + 15, y - 12 + bob, 1, 1, SK);
+    box(x + 17, y - 12 + bob, 2, 1, '#5a3518');   // 손잡이
+    const lx = x + 22, ly = y - 13 + bob;
+    box(lx - 3, ly - 2, 7, 5, OL); box(lx - 2, ly - 3, 5, 7, OL);
     box(lx - 2, ly - 2, 5, 5, '#c9a24a'); box(lx - 1, ly - 1, 3, 3, '#cfefff');
-    if (Math.floor(t * 2) % 2) box(lx - 1, ly - 1, 1, 1, '#ffffff');              // 렌즈 반짝
-    if (Math.floor(t * .5) % 2) { box(hx + 1, hy - 14, 5, 7, OL); box(hx + 2, hy - 13, 3, 5, '#ffffff'); box(hx + 3, hy - 12, 1, 2, OL); box(hx + 3, hy - 9, 1, 1, OL); }   // 가끔 머리 위 '?'
+    if (Math.floor(t * 2) % 2) box(lx - 1, ly - 1, 1, 1, '#ffffff');
+    if (Math.floor(t * .5) % 2) { box(hx + 1, hy - 15, 5, 7, OL); box(hx + 2, hy - 14, 3, 5, '#ffffff'); box(hx + 3, hy - 13, 1, 2, OL); box(hx + 3, hy - 10, 1, 1, OL); }   // 가끔 '?'
   }
   function lamp(x, by) {   // 요술 램프(바닥 by에 놓임, 22×11) + 위로 피어오르는 연기 + 반짝이
     const y = by - 11, Y = '#ffd25e', D = '#e09a2a', Lt = '#fff1b8';
@@ -389,8 +391,6 @@ export function createStair(cv, o = {}) {
       for (let x = 2; x < W; x += 7) g.fillRect(x, roofY - 16, 1, 13);
       g.fillRect(0, roofY - 17, W, 1); g.fillRect(0, roofY - 10, W, 1);
       g.drawImage(A.tank, 10, roofY - 28);
-      detective(W - 70, roofY - 3);
-      lamp(W - 44, roofY - 3);
 
     }
   }
@@ -427,6 +427,8 @@ export function createStair(cv, o = {}) {
     bg(f);
     const top = Math.floor(cy) + 24, bot = Math.max(0, Math.floor(cy) - 8);
     for (let i = Math.min(top, xs.length - 1); i >= bot; i--) drawStair(i);
+    { const roofY = sy(-FLOOR * 5 * DY) + 2;   // 옥상 탐정+램프: 계단보다 앞(가려지지 않게), 주인공보다는 뒤 · 1.5배(하율 "좀 커도 상관없어") — 주인공과 같은 픽셀 크기
+      if (roofY > -10 && roofY < H + 40) { g.save(); g.translate(W - 66, roofY - 2); g.scale(1.5, 1.5); detective(0, 0); lamp(19, 0); g.restore(); } }
     // 발밑 먼지·축하 가루
     parts = parts.filter(p => (p.t += dt) < (p.g ? .9 : .3));
     for (const p of parts) { g.fillStyle = p.c; g.globalAlpha = p.g ? 1 : 1 - p.t / .3; const yy = p.y + p.vy * p.t + (p.g ? 60 * p.t * p.t : 0); g.fillRect(sx(p.x + p.vx * p.t), sy(yy), p.g ? 2 : 2, p.g ? 2 : 1); }
