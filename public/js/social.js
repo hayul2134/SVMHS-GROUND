@@ -2259,7 +2259,7 @@ async function playGear() {
         <button type="button" class="btn ghost" data-gk="down" aria-label="천천히 내리기">▼</button></div>
         <div class="gt gt-r"><button type="button" class="btn ghost" data-gk="ccw" aria-label="왼쪽으로 돌리기">↺</button><button type="button" class="btn" data-gk="cw" aria-label="오른쪽으로 돌리기">↻</button>
         <button type="button" class="btn" data-gk="drop" aria-label="바로 내리기">⤓</button><button type="button" class="btn ghost" data-gk="hold" aria-label="보관">보관</button></div></div>
-      <div class="hr-bar gr-bar"><p class="hr-keys"><span data-ka="left"></span><span data-ka="right"></span> 이동 · <span data-ka="cw"></span> 돌리기 · <span data-ka="down"></span> 내리기 · <span data-ka="drop"></span> 바로 놓기 · <span data-ka="hold"></span> 보관 · <span data-ka="pause"></span> 멈춤</p>
+      <div class="hr-bar gr-bar"><p class="hr-keys"><span data-ka="left" data-one></span><span data-ka="right" data-one></span> 이동 · <span data-ka="cw" data-one></span> 돌리기 · <span data-ka="down" data-one></span> 내리기 · <span data-ka="drop" data-one></span> 바로 놓기 · <span data-ka="hold" data-one></span> 보관 · <span data-ka="pause" data-one></span> 멈춤</p>
         ${RE_BTN}<button type="button" class="btn ghost hr-snd" id="grSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div class="hr-rk" id="grRk"></div>
     </div>`, true);
