@@ -1448,7 +1448,7 @@ function gameHtml(info) {
       <p class="gem">${ic(g.ic)}</p><h3 title="${esc(g.desc)}">${g.name}</h3>
       ${x ? `<div class="gstat"><span>내 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
         <p class="gtop">${x.top ? `<small>${ic('trophy')}1등</small><a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')}<span>${esc(x.top.name)}</span></a><b>${esc(g.fmt(x.top.value))}</b>` : `<small>${ic('trophy')}1등</small><i>비어 있어요!</i>`}</p>` : `<p class="gdesc">${g.desc}</p>`}
-      <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost gbr" data-rank="${k}" aria-label="${esc(g.name)} 랭킹" title="랭킹">${ic('trophy')}</button>${!g.casual && ACH_GAMES.includes(k) ? `<button class="btn ghost gbr gach" data-ach="${k}" data-ff="${ACH_FF}" aria-label="${esc(g.name)} 업적" title="업적">${medal(3, true)}</button>` : ''}</div>
+      <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost gbr" data-rank="${k}" aria-label="${esc(g.name)} 순위" title="순위">${ic('trophy')}<span>순위</span></button>${!g.casual && ACH_GAMES.includes(k) ? `<button class="btn ghost gbr gach" data-ach="${k}" data-ff="${ACH_FF}" aria-label="${esc(g.name)} 업적" title="업적">${medal(3, true)}<span>업적</span></button>` : ''}</div>
     </article>`;
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;

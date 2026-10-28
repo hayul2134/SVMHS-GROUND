@@ -5784,3 +5784,8 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .pach-l i{display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 4px;border-radius:999px;background:var(--card);border:1.5px solid var(--line);font-style:normal;font-weight:800;font-size:12px}
 .pach-l i .amd{width:18px;height:18px}.pach-l i.none{padding-left:8px;color:var(--sub)}
 .ach-pg i.w0{width:0%}.ach-pg i.w5{width:5%}.ach-pg i.w10{width:10%}.ach-pg i.w15{width:15%}.ach-pg i.w20{width:20%}.ach-pg i.w25{width:25%}.ach-pg i.w30{width:30%}.ach-pg i.w35{width:35%}.ach-pg i.w40{width:40%}.ach-pg i.w45{width:45%}.ach-pg i.w50{width:50%}.ach-pg i.w55{width:55%}.ach-pg i.w60{width:60%}.ach-pg i.w65{width:65%}.ach-pg i.w70{width:70%}.ach-pg i.w75{width:75%}.ach-pg i.w80{width:80%}.ach-pg i.w85{width:85%}.ach-pg i.w90{width:90%}.ach-pg i.w95{width:95%}.ach-pg i.w100{width:100%}
+/* 게임 카드 버튼(2026-10-28 하율: 몰려 있음 → 플레이 위 한 줄 · 아래 순위·업적) */
+.ggrid .gbtns{flex-wrap:wrap}
+.ggrid .gbtns [data-play]{flex:1 1 100%}
+.ggrid .gbtns .gbr{flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:13px;padding-top:6px;padding-bottom:6px}
+.ggrid .gbtns .gbr .sic,.ggrid .gbtns .gbr .amd{width:17px;height:17px;margin:0}
