@@ -1640,7 +1640,10 @@ async function tierChamp(db, me, b, mine, usersOf) {
     else if (v.r === 2 && !v.m) sec2[g] = v.b;   // 기자재는 모드가 섞여 차이를 안 셈
   }
   // ② 어제까지 기록으로 만든 판과 비교 (라운드 첫날이면 비교 없음)
-  const y = ymdAdd(kstYmd(), -1), yb = y >= b.from ? await tierBoard(db, b.n, v2, rx, gt, y) : null;
+  //   계산 규칙이 바뀐 날(반응속도 새 시즌 RX_FROM · 기자재 정리! 티어 반영 GEAR_TIER_FROM)의 첫날은 비교 안 함 — 어제 판엔 기자재가 빠지고(gOn이 upTo로 꺼짐)
+  //   옛 반응속도 기록도 빠져서, 기자재 한 학생은 전부 '올랐어요'·반응속도로 떨어진 학생은 '변화 없음'으로 보이던 문제(2026-10-28 22:48 하율 "1번 진행해")
+  const y = ymdAdd(kstYmd(), -1), ruleDay = [rx ? RX_FROM : '', gt === 1 ? GEAR_TIER_FROM : ''].sort().pop();
+  const yb = y >= b.from && y >= ruleDay ? await tierBoard(db, b.n, v2, rx, gt, y) : null;
   const ym = new Map((yb?.list || []).map(x => [x.uid, x]));
   const delta = x => { const o = ym.get(x.uid); return o ? { from: o.tier, d: ix(o.tier) - ix(x.tier), dp: x.pts - o.pts } : null; };
   const risers = yb ? b.list.map(x => ({ x, r: delta(x) })).filter(o => o.r && (o.r.d > 0 || o.r.dp > 0)).sort((a, c) => c.r.d - a.r.d || c.r.dp - a.r.dp).slice(0, 3) : [];
