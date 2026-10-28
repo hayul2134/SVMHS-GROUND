@@ -1,3 +1,4 @@
+import { cached } from '../../../lib/cache.js';
 // SVMHS GROUND — 관리자 API (/api/admin/*). 화면은 public/admin/
 // 로그인: 사이트에서 관리자 계정(lib/db.js ADMIN_HANDLE)으로 로그인 → 비밀번호 재확인(/api/s/admin-pass) → 12시간 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만).
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
@@ -70,6 +71,11 @@ export async function onRequest({ request: req, env, params }) {
     const route = ROUTES[name];
     if (!route) return err('not found', 404);
     if (!(await isAdmin(req, db))) return err('관리자 로그인이 필요해요', 401);
+    // 관리자 집계(dash·monitor)는 화면이 자주 다시 부름 → 결과를 30초 공용 캐시(2026-10-29 읽기 절약: 하루 약 100만 행이 여기서 나갔음). ?fresh=1이면 새로
+    if (method === 'GET' && (name === 'GET dash' || name === 'GET monitor') && !url.searchParams.has('fresh')) {
+      const v = await cached('adm:' + path + url.search, 30, async () => { const r = await route({ req, env, db, body, arg, url }); return { s: r.status, b: await r.text() }; });
+      return new Response(v.b, { status: v.s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+    }
     return await route({ req, env, db, body, arg, url });
   } catch (e) {
     console.error(e);
@@ -81,7 +87,7 @@ export async function onRequest({ request: req, env, params }) {
 
 /* 로그인 없이 되는 것 */
 const OPEN = {
-  'GET status': async ({ req, db }) => json({ db: true, admin: ADMIN_HANDLE, authed: await isAdmin(req, db) }),
+  'GET status': async ({ req, db }) => json({ db: true, admin: ADMIN_HANDLE, authed: await isAdmin(req, db), usage: await db.prepare('SELECT day, r, w FROM usage ORDER BY day DESC LIMIT 3').all().then(x => x.results).catch(() => []) }),
 
   'POST logout': async ({ req, db }) => {
     const t = cookieOf(req);

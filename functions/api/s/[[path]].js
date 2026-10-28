@@ -1,3 +1,4 @@
+import { cached } from '../../../lib/cache.js';
 // SVMHS GROUND — 소셜 API (/api/s/*): 계정 · 프로필 · 팔로우 · DM · 미니게임 랭킹
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
@@ -1214,7 +1215,7 @@ const ROUTES = {
     let myValue = list.find(x => x.isMe)?.value ?? null;
     if (!mine && scope === 'all') {
       const s = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first();
-      if (s?.b != null) { myValue = s.b; mine = await rankOf(db, game, s.b, rx); }
+      if (s?.b != null) { myValue = s.b; mine = await rankOfC(db, game, s.b, rx); }
     }
     return json({ scope, list, mine, myValue });
   }),
@@ -1445,7 +1446,7 @@ const ROUTES = {
         db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first(),
       ]);
       const best = ma?.b ?? null;
-      out[game] = { top: top ? { ...card(top), value: top.best } : null, best, rank: best != null ? await rankOf(db, game, best, rx) : null };
+      out[game] = { top: top ? { ...card(top), value: top.best } : null, best, rank: best != null ? await rankOfC(db, game, best, rx) : null };
     }));
     return json({ games: out });
   }),
@@ -1565,7 +1566,7 @@ async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), u
   const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to: end } = rkRange(cur), to = upTo && upTo < end ? upTo : end;
   const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt + (to !== end ? ':u' + to : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
   if (to < from) return { n: cur, from, to, list: [], mode: tierMode(0), v2 };
-  if (v2) { const b = await tierBoard2(db, cur, from, to, rx, gt); tierMemo.set(mk, { at: Date.now(), b }); return b; }
+  if (v2) { const b = await cached('tb2:' + mk + ':' + from + to, 45, () => tierBoard2(db, cur, from, to, rx, gt)); tierMemo.set(mk, { at: Date.now(), b }); return b; }   // 데이터센터 공용 캐시 45초(2026-10-29 읽기 절약)
   const acc = new Map();
   await Promise.all(RANKED().map(async game => {
     const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
@@ -1664,6 +1665,12 @@ async function tierOfUser(db, u, v2 = false, rx = rxOn(null), gt = gtFor(null)) 
   return { cur: x ? { k: x.tier, rank: x.rank, pts: x.pts, n: b.n, ch: Object.entries(x.games || {}).filter(([, v]) => v.r === 1).map(([g]) => g) } : null, last: tierLastOf(u) };
 }
 
+// 순위 보기용(기록 저장 직후 축하 판단은 rankOf 그대로): 게임별 '사람마다 최고 기록' 정렬 목록을 데이터센터 공용 캐시 30초 → 순위는 이분 탐색(2026-10-29 읽기 절약)
+async function rankOfC(db, game, best, rx = rxOn(null)) {
+  const bs = await cached(`bests:${game}:${rx ? 1 : 0}`, 30, async () => (await db.prepare(`SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid ORDER BY b`).bind(game).all()).results.map(r => r.b));
+  let lo = 0, hi = bs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bs[m] < best) lo = m + 1; else hi = m; }
+  return lo + 1;
+}
 async function rankOf(db, game, best, rx = rxOn(null)) {   // 나보다 최고 기록이 좋은 사람 수 + 1
   return (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid) WHERE b < ?2`).bind(game, best).first()).r;
 }
