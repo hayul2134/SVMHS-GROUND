@@ -5655,19 +5655,56 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 @media (max-width:999.98px) and (orientation:portrait) and (max-height:900px),(max-width:699.98px) and (max-height:900px){.result.n2-out .rlbl,.result.n2-out .n2-mh small,.result.n2-out .n2-r .myrec .mr-h,.result.n2-out .n2-r .myrec .mr-days,.result.n2-out .n2-r .myrec .mr-pe{display:none}.result.n2-out .ctm-tip.sub{display:none}}
 @media (orientation:landscape) and (max-height:560px){.result.n2-out{--cs:clamp(26px,calc((100dvh - 240px) / 5.5),58px)}.result.n2-out .rlbl,.result.n2-out .ctm-tip.sub,.result.n2-out .n2-mh small,.result.n2-out .n2-r .myrec .mr-h,.result.n2-out .n2-r .myrec .mr-days,.result.n2-out .n2-r .myrec .mr-pe{display:none}}
 
-/* ===== 영상고 계단 오르기 (2026-10-28, 미리보기 stair-game) — social.js playStair · js/stair.js ===== */
+/* ===== 영상고 계단 오르기 (2026-10-28, 미리보기 stair-game) — social.js playStair · js/stair.js(160×240 픽셀 캔버스) ===== */
 .apps .gapp.g-stair .ai{--c:#ffd9a8}.ggrid .g-stair{--c:#ffd9a8}
 .sr{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
-.sr-scr{background:#f7f0e2;user-select:none;-webkit-user-select:none;width:min(100%,calc(min(64vh,600px) * 2 / 3));align-self:center}
-.sr-scr canvas{width:100%;height:auto;aspect-ratio:2/3;image-rendering:auto}
-.sr-scr .hr-ov b{font-size:clamp(24px,7.5cqw,36px);white-space:nowrap}
-.sr-scr{container-type:inline-size}
-@media (max-width:440px){.ptop b .sr-pre{display:none}}
-.sr-scr .hr-ov{background:linear-gradient(rgba(255,255,255,0) 35%,rgba(255,255,255,.45))}
-.sr-scr .hr-ov:not(.dead){place-content:start center;padding-top:26%}
-.sr-scr .hr-ov.dead{background:rgba(42,40,70,.32)}
-.sr-touch{display:flex;gap:10px;width:min(100%,360px)}
-.sr-touch .btn{flex:1;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none}
+.sr-scr{background:#f4ecdb;user-select:none;-webkit-user-select:none;width:min(100%,calc(min(64vh,600px) * 2 / 3));align-self:center;container-type:inline-size}
+.sr-scr canvas{width:100%;height:auto;aspect-ratio:2/3;image-rendering:pixelated;image-rendering:crisp-edges}
+/* 위 HUD: 종 + 게이지(--g 0~1) */
+.sr-hud{position:absolute;left:4%;right:4%;top:2.6%;display:flex;align-items:center;gap:6px;pointer-events:none}
+.sr-bell{flex:none;width:clamp(18px,8cqw,30px);aspect-ratio:1;background:#ffd25e;border:2.5px solid #2a2846;border-radius:50% 50% 18% 18%;box-shadow:2px 2px 0 #2a2846;transform-origin:50% 0}
+.sr-scr.low .sr-bell{animation:srRing .16s steps(2) infinite}
+@keyframes srRing{0%{transform:rotate(-16deg)}100%{transform:rotate(16deg)}}
+.sr-gauge{flex:1;height:clamp(10px,4.4cqw,16px);background:#fff;border:2.5px solid #2a2846;border-radius:4px;box-shadow:2px 2px 0 #2a2846;overflow:hidden}
+.sr-gauge b{display:block;height:100%;width:100%;transform-origin:0 50%;transform:scaleX(var(--g,1));background:repeating-linear-gradient(90deg,#5ad17a 0 6px,#49bf69 6px 8px)}
+.sr-gauge b.mid{background:repeating-linear-gradient(90deg,#ffc23d 0 6px,#f2ad1f 6px 8px)}
+.sr-gauge b.bad{background:repeating-linear-gradient(90deg,#ff5a5a 0 6px,#e54444 6px 8px)}
+/* 오른 칸 수 · 지금 층 */
+.sr-num{position:absolute;left:0;right:0;top:9%;display:flex;flex-direction:column;align-items:center;pointer-events:none;line-height:1}
+.sr-num b{font-family:var(--disp);font-weight:400;font-size:clamp(30px,17cqw,64px);color:#fff;-webkit-text-stroke:3px #2a2846;paint-order:stroke;text-shadow:3px 3px 0 #2a2846}
+.sr-num b.bump{animation:srBump .16s ease-out}
+@keyframes srBump{0%{transform:scale(1.18)}100%{transform:none}}
+.sr-num small{margin-top:4px;font-weight:900;font-size:clamp(11px,4.6cqw,16px);color:#2a2846;background:#fff;border:2px solid #2a2846;border-radius:6px;padding:1px 8px;box-shadow:2px 2px 0 #2a2846}
+.sr-scr.rdy .sr-num,.sr-scr.rdy .sr-hud{opacity:0}
+.sr-scr.end .sr-num{opacity:0}
+/* '2층 도착!' 같은 알림 */
+.sr-pop{position:absolute;left:0;right:0;top:30%;display:flex;justify-content:center;pointer-events:none;opacity:0}
+.sr-pop b{font-family:var(--disp);font-weight:400;font-size:clamp(20px,10cqw,38px);color:#ffd25e;-webkit-text-stroke:3px #2a2846;paint-order:stroke;text-shadow:3px 3px 0 #2a2846;white-space:nowrap}
+.sr-pop.big b{font-size:clamp(24px,12.5cqw,46px)}
+.sr-pop.on{animation:srPop 1.3s steps(14) forwards}
+@keyframes srPop{0%{opacity:0;transform:translateY(10px) scale(.7)}12%{opacity:1;transform:scale(1.12)}22%{transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
+/* 종 치기 직전: 빨간 테두리 깜빡 */
+.sr-scr::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 6px #ff5a5a;opacity:0;border-radius:inherit}
+.sr-scr.low::after{animation:srLow .5s steps(2) infinite}
+@keyframes srLow{0%{opacity:.75}100%{opacity:.15}}
+/* 시작 전 터치 자리 안내(터치 기기만) */
+.sr-tap{position:absolute;left:0;right:0;bottom:3%;display:none;justify-content:space-around;pointer-events:none}
+.sr-tap span{font-weight:900;font-size:13px;color:#2a2846;background:#fff;border:2px solid #2a2846;border-radius:999px;padding:3px 10px;box-shadow:2px 2px 0 #2a2846}
+@media (pointer:coarse){.sr-scr.rdy .sr-tap{display:flex}}
+.sr-scr .hr-ov > b{font-size:clamp(22px,10cqw,36px);white-space:nowrap}
+.sr-scr .hr-ov.sr-ready{place-content:start center;padding-top:20%;background:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,0) 55%)}
+.sr-scr .hr-ov .sr-best{font-style:normal;font-weight:900;font-size:14px;color:#2a2846;background:#ffd25e;border:2px solid #2a2846;border-radius:999px;padding:2px 10px;display:inline-flex;align-items:center;gap:4px}
+.sr-scr .hr-ov .sr-tip{font-style:normal;font-weight:800;font-size:12px;color:#5c574d;margin-top:2px}
+.sr-scr .hr-ov.dead{background:rgba(42,40,70,.38);gap:8px}
+.sr-scr .hr-card{flex-direction:column;align-items:center;gap:4px;padding:10px 16px 9px;max-width:92%}
+.sr-scr .hr-ov .hr-msg{margin:2px 0 0;padding:6px 0 0;border-left:0;border-top:1.5px dashed #d9d3c4;font-size:13px}
+.sr-scr .hr-ov .hr-msg b{font:inherit;font-weight:900;color:#c98a00;-webkit-text-stroke:0;text-shadow:none}
+.sr-scr .hr-sc em{font-size:clamp(20px,9cqw,30px)}
+.sr-scr .hr-ov .hr-sc span{font-size:12.5px}
+.sr-scr .hr-ov.sr-ready small,.sr-scr .hr-ov .sr-tip{background:rgba(255,255,255,.92);border-radius:8px;padding:2px 8px}
+.sr-touch{display:flex;gap:10px;width:min(100%,400px)}
+.sr-touch .btn{flex:1;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;min-height:58px;font-size:17px}
 @media (hover:hover) and (pointer:fine){.sr-touch{display:none}}
 .sr .hr-bar{justify-content:center}
 #srRec{width:min(100%,420px)}
+@media (prefers-reduced-motion:reduce){.sr-pop.on,.sr-scr.low::after,.sr-scr.low .sr-bell,.sr-num b.bump{animation:none}.sr-pop.on{opacity:1}}

@@ -1954,53 +1954,83 @@ function playCut() {
 }
 
 /* 4) 집에 가고 싶어!: 공룡 게임 방식 픽셀 러너 (js/runner.js) + 캐릭터 꾸미기 */
-/* 6) 영상고 계단 오르기 (js/stair.js, 무한 계단식) — 2026-10-28 하율, 미리보기(개발자만)
-   왼쪽 = 방향 바꾸기(← · F) / 오른쪽 = 오르기(→ · J · Space). 화면 왼쪽 절반·오른쪽 절반 터치도 같음. 시작 티켓은 첫 칸을 오를 때 받음 */
+/* 6) 영상고 계단 오르기 (js/stair.js, 무한 계단식 픽셀 게임) — 2026-10-28 하율, 미리보기(개발자만)
+   왼쪽 = 방향 바꾸기(← · F) / 오른쪽 = 오르기(→ · J · Space). 화면 왼쪽 절반·오른쪽 절반 터치도 같음.
+   캐릭터는 '집에 가고 싶어!'에서 꾸민 그대로. 점수·층·종 게이지·'도착!'은 캔버스 위 DOM(또렷한 글자).
+   끝 처리(2026-10-28 하율 "헛디뎌 끝났는데 다음 판 도중 게임 오버 창이 뜸 → 끝나면 확실히 끝나고 다시 시작"):
+   판마다 번호(run)를 붙여, 결과·저장 응답이 다른 판에 끼어들지 않게. 끝나면 결과 창이 뜰 때까지(0.75초)와 뜬 뒤 0.5초는 입력 무시 → 그 뒤 아무 키·화면으로 새 판.
+   시작 티켓도 판마다 따로(이전 판 저장이 새 판 티켓을 쓰던 문제) */
 let STAIR = null;
 async function playStair() {
   const touchy = matchMedia('(pointer:coarse)').matches;
   const area = stage(ic('stair') + ' <span class="sr-pre">영상고 </span>계단 오르기', `<div class="sr" id="sr">
-      <div class="hr-scr sr-scr" id="srScr"><canvas id="srCv" aria-label="게임 화면"></canvas><div class="hr-ov" id="srOv"></div></div>
-      <div class="sr-touch"><button type="button" class="btn big ghost" id="srT" aria-label="방향 바꾸기">${ic('stair')}방향 바꾸기</button><button type="button" class="btn big" id="srC" aria-label="오르기">오르기</button></div>
+      <div class="hr-scr sr-scr" id="srScr"><canvas id="srCv" aria-label="게임 화면"></canvas>
+        <div class="sr-hud" aria-hidden="true"><i class="sr-bell" id="srBell"></i><div class="sr-gauge"><b id="srG"></b></div></div>
+        <div class="sr-num" aria-live="off"><b id="srN">0</b><small id="srF">1층</small></div>
+        <div class="sr-pop" id="srPop" aria-live="polite"></div>
+        <div class="sr-tap" aria-hidden="true"><span>방향 바꾸기</span><span>오르기</span></div>
+        <div class="hr-ov" id="srOv"></div></div>
+      <div class="sr-touch"><button type="button" class="btn big ghost" id="srT" aria-label="방향 바꾸기">⇄ 방향 바꾸기</button><button type="button" class="btn big" id="srC" aria-label="오르기">오르기 ▲</button></div>
       <div class="hr-bar"><p class="hr-keys"><kbd>←</kbd><kbd>F</kbd> 방향 바꾸기 · <kbd>→</kbd><kbd>J</kbd><kbd>Space</kbd> 오르기</p>
         ${RE_BTN}<button type="button" class="btn ghost hr-snd" id="srSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div id="srRec"></div>
     </div>`);
   if (!STAIR) { try { STAIR = await import('./stair.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!$('#srCv')) return;
-  const cv = $('#srCv'), ov = $('#srOv');
-  let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), runNo = 0, overAt = 0;
-  const hint = touchy ? '오른쪽 = 오르기 · 왼쪽 = 방향 바꾸기' : '→ 오르기 · ← 방향 바꾸기';
-  const ready = () => { ov.hidden = false; ov.className = 'hr-ov'; ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단을 올라 교실까지!</span><small>${hint}</small>`; };
+  const cv = $('#srCv'), ov = $('#srOv'), scr = $('#srScr'), gEl = $('#srG'), nEl = $('#srN'), fEl = $('#srF'), pop = $('#srPop');
+  let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0;
+  const ready = () => {
+    ov.hidden = false; ov.className = 'hr-ov sr-ready'; scr.classList.add('rdy'); scr.classList.remove('low', 'end');
+    ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단을 올라 교실까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
+      <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : '→ 오르기 · ← 방향 바꾸기로 출발'}</small><i class="sr-tip">캐릭터는 '집에 가고 싶어!'에서 꾸밀 수 있어요</i>`;
+  };
   const R = STAIR.createStair(cv, {
     sound,
-    onStart() { ov.hidden = true; ticket = S.me ? call('start', { game: 'stair' }).then(r => r.ticket).catch(() => '') : null; },
+    onStart() { ov.hidden = true; scr.classList.remove('rdy'); runTk = S.me ? call('start', { game: 'stair' }).then(r => r.ticket).catch(() => '') : null; },
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>종 게이지도 같이 멈췄어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
+    onFrame(st) {
+      gEl.style.setProperty('--g', st.gauge.toFixed(3));   // CSP: style 속성 대신 CSSOM
+      scr.classList.toggle('low', st.scene === 'play' && st.gauge < .22);
+      gEl.className = st.gauge > .45 ? '' : st.gauge > .22 ? 'mid' : 'bad';
+      if (st.steps !== shownN) { shownN = st.steps; nEl.textContent = st.steps.toLocaleString('ko-KR'); if (st.steps) { nEl.classList.remove('bump'); void nEl.offsetWidth; nEl.classList.add('bump'); } }
+      if (st.floor !== shownF) { shownF = st.floor; fEl.textContent = stairFloor(st.floor); }
+    },
+    onFloor(f, label, big) {
+      clearTimeout(popT); pop.className = 'sr-pop'; void pop.offsetWidth;
+      pop.innerHTML = `<b>${esc(label)}</b>`; pop.className = 'sr-pop on' + (big ? ' big' : '');
+      popT = setTimeout(() => { pop.className = 'sr-pop'; }, 1300);
+    },
     onOver(res) {
-      const no = ++runNo, nb = res.steps > best; overAt = performance.now();
+      const no = run, tk = runTk; runTk = null;
+      const nb = res.steps > best;
       if (nb) { best = res.steps; store.set('stair_best', best); }
+      scr.classList.remove('low'); scr.classList.add('end');
       ov.hidden = false; ov.className = 'hr-ov dead';
       const msg = !S.me ? '로그인하면 랭킹에 올라가요' : res.steps < 1 ? '0칸은 기록하지 않아요' : '기록 저장 중…';
-      ov.innerHTML = `<b>${res.why === 'time' ? '종 쳤다… 지각!' : '발을 헛디뎠어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.steps.toLocaleString('ko-KR')}칸</em><span>${esc(stairFloor(res.floor))}까지</span>${nb && res.steps ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
+      ov.innerHTML = `<b>${res.why === 'time' ? '종 쳤다… 지각!' : '발을 헛디뎠어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.steps.toLocaleString('ko-KR')}칸</em><span>${esc(stairFloor(res.floor))}까지 · ${(res.ms / 1000).toFixed(1)}초${res.ms > 1500 ? ` · 1초에 ${(res.steps / (res.ms / 1000)).toFixed(1)}칸` : ''}</span>${nb && res.steps ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
         <small class="hr-msg" id="srMsg">${msg}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
       if (!S.me || res.steps < 1) return;
+      ticket = tk;   // 이 판의 티켓으로만 저장
       saveScore('stair', STAIR_MAX - res.steps, [res.steps, res.ms, res.turns]).then(r => {
-        if (no !== runNo || !$('#srMsg')) return;
+        if (no !== run || !$('#srMsg')) return;
         if (r.held) { $('#srMsg').innerHTML = heldLine(r); return; }
         $('#srMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 높이 올랐어요' : `내 최고 ${esc(GAMES.stair.fmt(r.best))}`;
         const b = STAIR_MAX - r.best; if (b > best) { best = b; store.set('stair_best', b); }
         myRecInto($('#srRec'), 'stair');
-      }).catch(e => { if (no === runNo && $('#srMsg')) $('#srMsg').textContent = e.message; });
+      }).catch(e => { if (no === run && $('#srMsg')) $('#srMsg').textContent = e.message; });
     },
   });
   window.__stair = R;   // 테스트용
   ready();
-  // 끝난 뒤 다시: 0.5초는 무시(마구 누르다 바로 새 판이 시작되지 않게) → 판만 새로(화면은 그대로)
-  const again = () => { if (performance.now() - overAt < 500) return; R.reset(); ready(); };
+  // 끝난 뒤 다시: 결과 창이 뜬 뒤 0.5초부터만 → 판 번호를 올리고 새 판(화면은 그대로)
+  const again = () => {
+    if (!R.st.shown || performance.now() - R.st.shownAt < 500) return;
+    run++; clearTimeout(popT); pop.className = 'sr-pop'; R.reset(); ready();
+  };
   const act = kind => { if (R.st.scene === 'over') again(); else R.input(kind); };
   const pd = (kind, e) => { e.preventDefault(); if (e.button > 0) return; act(kind); };
   $('#srT').addEventListener('pointerdown', e => pd('turn', e)); $('#srC').addEventListener('pointerdown', e => pd('climb', e));
-  $('#srScr').addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); pd(e.clientX < r.left + r.width / 2 ? 'turn' : 'climb', e); });
+  scr.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); pd(e.clientX < r.left + r.width / 2 ? 'turn' : 'climb', e); });
   const kd = e => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('.modal.open') || e.target.closest?.('input,textarea')) return;
     const c = e.code, turn = c === 'ArrowLeft' || c === 'KeyF', climb = c === 'ArrowRight' || c === 'KeyJ' || c === 'Space';
@@ -2014,7 +2044,7 @@ async function playStair() {
   paintSnd();
   sndBtn.onclick = () => { sound = !sound; store.set('stair_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
   myRecInto($('#srRec'), 'stair', best ? STAIR_MAX - best : null);
-  quitGame = () => { R.destroy(); document.removeEventListener('keydown', kd); if (window.__stair === R) window.__stair = null; };
+  quitGame = () => { run++; R.destroy(); clearTimeout(popT); document.removeEventListener('keydown', kd); if (window.__stair === R) window.__stair = null; };
 }
 
 /* 5) 기자재 정리!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */
