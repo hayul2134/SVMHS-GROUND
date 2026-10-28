@@ -1,3 +1,4 @@
+import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 // SVMHS GROUND — 컷 타이밍 2 (2026-10-27 하율: "애들이 많이 좋아해서 제대로 출시 — 디벨롭해서 내 화면에 먼저", 미리보기 깃발 cut-v2)
 // 규칙·점수는 1판과 똑같이 유지(랭킹·티어·미션·서버 검사 그대로): 5번 · 끝까지 가는 시간 DUR · 컷 지점 35~85% · 시작 전 0.5초 · 오차 |누른 시각 − 컷 지점| (0~1000ms) 합.
 // 바뀐 것: 편집 프로그램 타임라인(V1 영상 클립 + A1 음악 파형, 파형이 튀는 비트 = 컷 지점) · 레이저(자르기 도구)로 클립이 실제로 잘림 ·
@@ -40,7 +41,7 @@ export function html(touchy) {
     <p class="ctm-msg" id="ctMsg" aria-live="polite"></p>
     <div class="ctm-bar"><button type="button" class="btn big ctm-btn" id="ctBtn">${RAZOR}<span>CUT</span></button>
       <button type="button" class="btn ghost hr-snd ctm-snd" id="ctSnd" aria-pressed="false"></button></div>
-    <p class="hr-keys ctm-keys">${touchy ? '버튼이나 타임라인 아무 데나 눌러도 컷' : '<kbd>C</kbd> 또는 <kbd>Space</kbd> · 타임라인을 클릭해도 컷'}</p>
+    <p class="hr-keys ctm-keys">${touchy ? '버튼이나 타임라인 아무 데나 눌러도 컷' : '<span data-ka="cut"></span> · 타임라인을 클릭해도 컷'}</p>
   </div>`;
 }
 
@@ -186,7 +187,7 @@ export function run(root, o) {
   const key = e => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     // 한글 입력 상태에서도 C(ㅊ) 키가 먹게 e.key도 봄
-    const cut = e.code === 'KeyC' || e.code === 'Space' || e.key === 'ㅊ' || e.key === 'c' || e.key === 'C' || e.key === ' ';
+    const cut = KM.actOf('cut', e) === 'cut' || (KM.keysOf('cut').cut.includes('KeyC') && (e.key === 'ㅊ' || e.key === 'c' || e.key === 'C'));   // 키 설정대로(2026-10-28, 기본 C·Space)
     if (cut || (e.code === 'Enter' && state === 'intro')) { if (e.target.closest?.('input,textarea,select,[contenteditable]')) return; if (document.querySelector('.modal.open')) return; e.preventDefault(); press(e); }
   };
   document.addEventListener('keydown', key);

@@ -5862,3 +5862,23 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .pch small{font-size:11.5px;font-weight:700;color:var(--sub,#5b6477)}
 @media (max-width:560px){.tch-rise li{flex-wrap:wrap}.tch-mv .tierb{font-size:11.5px}}
 .tch-pv{flex-basis:100%;font-size:11px;font-weight:700;opacity:.75}
+
+/* 게임 키 설정 창(2026-10-28) */
+.pkeys svg{width:1.1em;height:1.1em}
+@media (max-width:560px){.pkeys span{display:none}}
+@media (hover:none) and (pointer:coarse){.pkeys{display:none}}   /* 키보드 없는 터치 기기 */
+.km-sheet{max-width:480px;width:100%}
+.km-list{list-style:none;margin:12px 0;padding:0;display:grid;gap:8px}
+.km-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:2px solid var(--line,rgba(0,0,0,.1));border-radius:14px;background:var(--chip)}
+.km-list li.wait{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.km-list b{font-weight:900;font-size:14px;color:var(--text);white-space:nowrap}
+.km-keys{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center}
+.km-k{display:inline-flex;align-items:center;gap:4px;padding:0;background:none;color:var(--text)}
+.km-k kbd{display:inline-block;font-weight:800;font-size:13px;line-height:1;padding:6px 9px;border:2px solid var(--ink);border-bottom-width:3px;border-radius:8px;background:var(--card);color:var(--text)}
+.km-k i{font-style:normal;font-weight:900;color:var(--sub);font-size:14px}
+@media (hover:hover){.km-k:hover kbd{border-color:#e5484d;color:#e5484d}.km-k:hover i{color:#e5484d}}
+.km-add{padding:6px 10px;border:2px dashed var(--ink);border-radius:8px;background:var(--card);color:var(--text);font-weight:800;font-size:13px}
+.km-wait{font-style:normal;font-weight:800;font-size:12px;color:var(--accent);animation:hrBlink 1s steps(2) infinite}
+.km-none{color:var(--sub);font-weight:700}
+.km-foot{display:flex;justify-content:space-between;gap:8px}
+@media (prefers-reduced-motion:reduce){.km-wait{animation:none}}

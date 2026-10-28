@@ -9,6 +9,7 @@ import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX, GEAR_TIME } from './gear-score.js';
 import { STAIR_MAX, floorName as stairFloor } from './stair-score.js';
 import { ffOn, RELEASED } from './flags.js';
+import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
 import { TIERS, TIER_PCT, BEST_N, tierOfK, PTS_MIN_N } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';
@@ -1772,11 +1773,60 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
+  const kb = $('#pKeys'); if (kb) kb.onclick = () => openKeys(curGame);
   homeRO?.disconnect(); homeRO = null; requestAnimationFrame(fitHome);
   return $('#parea');
+}
+// 게임 키 안내 칸 채우기: <span data-ka="동작" [data-one]> → 지금 설정된 키(keymap.js). 게임이 화면을 그릴 때마다 자동으로(MutationObserver)
+function paintKA(all = false) {
+  const g = curGame; if (!g) return;
+  $$(`#gamePlay [data-ka]${all ? '' : ':empty'}`).forEach(el => {
+    const k = KM.keysOf(g)[el.dataset.ka] || [];
+    el.innerHTML = (el.hasAttribute('data-one') ? k.slice(0, 1) : k).map(c => `<kbd>${esc(KM.keyName(c))}</kbd>`).join('') || (el.hasAttribute('data-one') ? '' : '<kbd>없음</kbd>');
+  });
+}
+{ let kaQ = 0; new MutationObserver(() => { if (!kaQ) kaQ = requestAnimationFrame(() => { kaQ = 0; paintKA(); }); }).observe($('#gamePlay'), { childList: true, subtree: true }); }
+
+// 키 설정 창(2026-10-28 하율 "설정 버튼 만들어서 키 매핑 마음대로" + "키 매핑이 들어가는 게임들은 다 추가") — 게임 위 '키 설정' 버튼
+//   동작마다 키 최대 3개, 키를 눌러 지우기·'+ 키 추가'로 다음에 누른 키 등록, 다른 동작에 있던 키는 거기서 빠짐, 이 기기에만 저장
+//   창이 떠 있는 동안 게임은 키를 안 받음(모든 게임이 .modal.open이면 무시)
+function openKeys(g) {
+  $('#mKeys')?.remove();
+  const name = GAMES[g]?.name || '게임';
+  const m = document.createElement('div');
+  m.className = 'modal open km-modal'; m.id = 'mKeys'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'kmT');
+  let wait = '';   // 키를 기다리는 동작
+  const paint = () => {
+    const k = KM.keysOf(g);
+    m.innerHTML = `<div class="sheet km-sheet"><button class="sheet-x" type="button" data-kmx aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <h3 id="kmT">키 설정 · ${esc(name)}</h3><p class="muted small">키를 누르면 지워지고, '+ 키'를 누른 뒤 원하는 키를 누르면 등록돼요 · 이 기기에만 저장돼요</p>
+      <ul class="km-list">${KM.defsOf(g).map(([a, t]) => `<li${wait === a ? ' class="wait"' : ''}><b>${esc(t)}</b><span class="km-keys">${k[a].map(c => `<button type="button" class="km-k" data-del="${a}" data-c="${esc(c)}" aria-label="${esc(t)} 키 ${esc(KM.keyName(c))} 지우기"><kbd>${esc(KM.keyName(c))}</kbd><i aria-hidden="true">×</i></button>`).join('')}${wait === a ? '<em class="km-wait">원하는 키를 누르세요 · Esc 취소</em>' : k[a].length < KM.MAX_KEYS ? `<button type="button" class="km-add" data-add="${a}">+ 키</button>` : ''}${k[a].length ? '' : '<small class="km-none">키 없음</small>'}</span></li>`).join('')}</ul>
+      <div class="row km-foot"><button type="button" class="btn ghost" data-kmreset${KM.isCustom(g) ? '' : ' disabled'}>기본 키로 되돌리기</button><button type="button" class="btn" data-kmx>완료</button></div></div>`;
+  };
+  const done = () => { document.removeEventListener('keydown', onKey, true); m.remove(); syncLock(); paintKA(true); $('#pKeys')?.focus(); };
+  const syncLock = () => { const r = document.documentElement; r.classList.toggle('modal-lock', !!document.querySelector('.modal.open')); };
+  const onKey = e => {
+    e.stopImmediatePropagation();   // 창이 떠 있는 동안 키는 이 창만
+    if (!wait) { if (e.key === 'Escape') { e.preventDefault(); done(); } return; }
+    e.preventDefault();
+    if (e.key === 'Escape') { wait = ''; paint(); return; }
+    if (e.repeat) return;
+    if (KM.banned(e.code)) { toast('그 키는 쓸 수 없어요'); return; }
+    const a = wait, cur = KM.keysOf(g)[a]; wait = '';
+    if (!cur.includes(e.code)) KM.setKeys(g, a, [...cur, e.code]);
+    paint(); m.querySelector(`[data-add="${a}"]`)?.focus();
+  };
+  m.addEventListener('click', e => {
+    if (e.target === m || e.target.closest('[data-kmx]')) return done();
+    const d = e.target.closest('[data-del]'); if (d) { const a = d.dataset.del; KM.setKeys(g, a, KM.keysOf(g)[a].filter(c => c !== d.dataset.c)); wait = ''; paint(); return; }
+    const ad = e.target.closest('[data-add]'); if (ad) { wait = ad.dataset.add; paint(); return; }
+    if (e.target.closest('[data-kmreset]')) { KM.resetKeys(g); wait = ''; paint(); }
+  });
+  paint(); document.body.append(m); syncLock(); document.addEventListener('keydown', onKey, true);
+  m.querySelector('.km-add, .km-k')?.focus();
 }
 // 게임 중에도 왼쪽 위 집 버튼(#btnHome)을 그대로 보여 줌 (2026-10-26)
 // 집 버튼은 헤더 원래 자리 그대로. 게임 제목 왼쪽 끝·나가기 오른쪽 끝을 게임 화면(집에 가고 싶어!는 화면 틀 .hr-scr, 나머지는 게임 칸) 양 끝에 맞춤 — 제목이 집 버튼과 겹치면 버튼 오른쪽으로
@@ -1807,7 +1857,7 @@ function endPlay() { unfitHome(); quitGame?.(); quitGame = null; closeSheet(); $
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
 
 // 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
-const RE_BTN = `<button class="prestart" type="button" data-restart aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<kbd>R</kbd></button>`;
+const RE_BTN = `<button class="prestart" type="button" data-restart aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<span data-ka="restart" data-one></span></button>`;
 const RE_ROW = `<div class="prow">${RE_BTN}</div>`;
 document.addEventListener('click', e => { const b = e.target.closest('[data-restart]'); if (b) { b.blur(); restartGame(); } });   // 누른 뒤 포커스가 남아 있으면 스페이스·엔터가 이 버튼을 또 눌러 판이 다시 시작되던 문제 (2026-10-28)
 
@@ -1822,7 +1872,7 @@ function restartGame() {
 }
 // R 키로 다시 시작(2026-10-27 하율) — 게임 키보다 먼저 받아서(capture) 기자재 정리!의 '아무 키나 누르면 시작'과 겹치지 않게. 한글 입력 상태(ㄱ)도 e.code로 잡힘
 addEventListener('keydown', e => {
-  if (e.code !== 'KeyR' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || $('#gamePlay').hidden) return;
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || $('#gamePlay').hidden || KM.actOf(curGame, e) !== 'restart') return;   // 다시 시작 키도 키 설정대로(기본 R)
   if (curGame === 'stair') return;   // 영상고 계단 오르기는 다시 시작 버튼·R 키 없음(2026-10-28 하율: 열심히 하다 잘못 눌릴까 봐) — 끝나면 아무 키로 새 판
   if (e.target.closest?.('input,textarea,select,[contenteditable]') || document.querySelector('.modal.open')) return;
   e.preventDefault(); e.stopImmediatePropagation(); restartGame();
@@ -1969,7 +2019,7 @@ function playReaction() {
   });
   pad.addEventListener('contextmenu', e => e.preventDefault());   // 길게 눌러도 메뉴 안 뜨게
   const key = e => {   // 스페이스바 (노트북) — 누르고 있어도 한 번만
-    if (e.code !== 'Space' || !pad.isConnected) return;
+    if (KM.actOf('reaction', e) !== 'tap' || !pad.isConnected) return;   // 키 설정(기본 Space)
     if (e.target.closest?.('input,textarea,select,[contenteditable]') || document.querySelector('.modal.open')) return;
     e.preventDefault(); if (!e.repeat) press(evT(e));
   };
@@ -2100,7 +2150,7 @@ async function playStair() {
         <div class="sr-tap" aria-hidden="true"><span>방향 바꾸기</span><span>오르기</span></div>
         <div class="hr-ov" id="srOv"></div></div>
       <div class="sr-touch"><button type="button" class="btn big ghost" id="srT" aria-label="방향 바꾸기">⇄ 방향 바꾸기</button><button type="button" class="btn big" id="srC" aria-label="오르기">오르기 ▲</button></div>
-      <div class="hr-bar"><button type="button" class="btn" id="srDress">${ic('brush')}캐릭터 꾸미기</button><p class="hr-keys"><kbd>←</kbd><kbd>F</kbd> 방향 바꾸기 · <kbd>→</kbd><kbd>J</kbd><kbd>Space</kbd> 오르기</p>
+      <div class="hr-bar"><button type="button" class="btn" id="srDress">${ic('brush')}캐릭터 꾸미기</button><p class="hr-keys"><span data-ka="turn"></span> 방향 바꾸기 · <span data-ka="climb"></span> 오르기</p>
         <button type="button" class="btn ghost hr-snd" id="srSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div class="hr-dress" id="srDressBox" hidden></div>
       <div id="srRec"></div>
@@ -2112,7 +2162,7 @@ async function playStair() {
   const ready = () => {
     ov.hidden = false; ov.className = 'hr-ov sr-ready'; scr.classList.add('rdy'); scr.classList.remove('low', 'end');
     ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단으로 7층 꼭대기까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
-      <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : '→ 오르기 · ← 방향 바꾸기로 출발'}</small>`;
+      <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : `${esc(KM.keyName(KM.keysOf('stair').climb[0] || ''))} 오르기 · ${esc(KM.keyName(KM.keysOf('stair').turn[0] || ''))} 방향 바꾸기로 출발`}</small>`;
   };
   const R = STAIR.createStair(cv, {
     sound,
@@ -2170,7 +2220,7 @@ async function playStair() {
   scr.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); pd(e.clientX < r.left + r.width / 2 ? 'turn' : 'climb', e); });
   const kd = e => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || dress.open || document.querySelector('.modal.open') || e.target.closest?.('input,textarea')) return;
-    const c = e.code, turn = c === 'ArrowLeft' || c === 'KeyF', climb = c === 'ArrowRight' || c === 'KeyJ' || c === 'Space';
+    const c = e.code, ka = KM.actOf('stair', e), turn = ka === 'turn', climb = ka === 'climb';   // 키 설정대로(2026-10-28)
     if (R.st.scene === 'over') { if (climb || turn || c === 'Enter') { e.preventDefault(); again(); } return; }
     if (R.st.scene === 'pause' && c !== 'Escape' && c !== 'KeyR') { e.preventDefault(); R.input('climb'); return; }
     if (turn || climb) { e.preventDefault(); R.input(turn ? 'turn' : 'climb'); }
@@ -2190,7 +2240,7 @@ async function playGear() {
   const touchy = matchMedia('(pointer:coarse)').matches;
   const area = stage(ic('gear') + ' 기자재 정리!', `<div class="gr" id="gr">
       <div class="gr-main">
-        <aside class="gr-side"><p class="gr-lb">보관 <kbd>C</kbd></p><canvas class="gr-mini" id="grHold" width="104" height="56"></canvas>
+        <aside class="gr-side"><p class="gr-lb">보관 <span data-ka="hold" data-one></span></p><canvas class="gr-mini" id="grHold" width="104" height="56"></canvas>
           <dl class="gr-stat"><dt class="gr-tmL">남은 시간</dt><dd id="grTm" class="gr-tm">2:00</dd><dt>점수</dt><dd id="grSc">0</dd><div class="gr-fxs" id="grFx"></div><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside>
         <div class="gr-scr" id="grScr"><canvas id="grCv" aria-label="게임 화면"></canvas>
           <div class="gr-ov" id="grOv"></div><div class="gr-pop" id="grPop" aria-live="polite"></div></div>
@@ -2201,7 +2251,7 @@ async function playGear() {
         <button type="button" class="btn ghost" data-gk="down" aria-label="천천히 내리기">▼</button></div>
         <div class="gt gt-r"><button type="button" class="btn ghost" data-gk="ccw" aria-label="왼쪽으로 돌리기">↺</button><button type="button" class="btn" data-gk="cw" aria-label="오른쪽으로 돌리기">↻</button>
         <button type="button" class="btn" data-gk="drop" aria-label="바로 내리기">⤓</button><button type="button" class="btn ghost" data-gk="hold" aria-label="보관">보관</button></div></div>
-      <div class="hr-bar gr-bar"><p class="hr-keys"><kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>↑</kbd> 돌리기 · <kbd>↓</kbd> 내리기 · <kbd>Space</kbd> 바로 놓기 · <kbd>C</kbd> 보관 · <kbd>P</kbd> 멈춤</p>
+      <div class="hr-bar gr-bar"><p class="hr-keys"><span data-ka="left"></span><span data-ka="right"></span> 이동 · <span data-ka="cw"></span> 돌리기 · <span data-ka="down"></span> 내리기 · <span data-ka="drop"></span> 바로 놓기 · <span data-ka="hold"></span> 보관 · <span data-ka="pause"></span> 멈춤</p>
         ${RE_BTN}<button type="button" class="btn ghost hr-snd" id="grSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div class="hr-rk" id="grRk"></div>
     </div>`, true);
@@ -2335,8 +2385,7 @@ async function playGear() {
   const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe($('#parea')); ro.observe(document.documentElement); addEventListener('resize', fit); sideMQ.addEventListener?.('change', fit);
   // 키보드
   // 글자 키는 e.code(자판 위치)로 — 한글 입력 상태면 C가 'ㅊ'으로 와서 보관(C)·돌리기(Z·X)·멈춤(P)이 안 먹던 문제 (2026-10-27 하율 "보관 기능이 제대로 안돼")
-  const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', KeyX: 'cw', KeyZ: 'ccw', Space: 'drop', KeyC: 'hold', ShiftLeft: 'hold', ShiftRight: 'hold', KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'cw' };
-  const keyOf = e => KEY[e.code] || KEY[e.key];
+  const keyOf = e => { const a = KM.actOf('gear', e); return a === 'pause' || a === 'restart' ? '' : a; };   // 키 설정대로(2026-10-28, e.code라 한글 입력 상태도 그대로)
   // 같은 동작을 여러 키로 누를 수 있어서(←와 A 등) 실제로 눌린 키를 기억 — 하나만 떼도 멈추던 문제 (2026-10-28)
   const HOLDK = ['left', 'right', 'down'], held = new Map();
   const relAll = () => { held.clear(); HOLDK.forEach(a => R.input(a, false)); };
@@ -2344,9 +2393,9 @@ async function playGear() {
     if (e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
     if (e.metaKey || e.ctrlKey) { relAll(); return; }   // 맥 Cmd+화살표 등: keyup이 안 와서 키가 눌린 채 남던 문제 (2026-10-28)
     if (over) { if ((e.code === 'Space' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); restart(); } return; }
-    if (R.st.scene === 'ready' && ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) { e.preventDefault(); if (e.repeat) return; setMode(mode === 'rank' ? 'normal' : 'rank'); return; }   // 시작 전: 방식 고르기
+    if (R.st.scene === 'ready' && (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code) || ['left', 'right'].includes(KM.actOf('gear', e)))) { e.preventDefault(); if (e.repeat) return; setMode(mode === 'rank' ? 'normal' : 'rank'); return; }   // 시작 전: 방식 고르기
     if (R.st.scene === 'ready' && (e.code === 'Digit1' || e.code === 'Digit2')) { e.preventDefault(); setMode(e.code === 'Digit2' ? 'rank' : 'normal'); R.input('cw', true); R.input('cw', false); return; }
-    if (e.code === 'KeyP') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
+    if (KM.actOf('gear', e) === 'pause') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
     const a = keyOf(e); if (!a) { if (R.st.scene !== 'play' && !['Meta', 'Alt', 'Control', 'Tab', 'Escape', 'CapsLock', 'HangulMode', 'Process'].includes(e.key)) { e.preventDefault(); R.input('cw', true); } return; }   // 시작 전·멈춤: 아무 키(엔터 포함)나
     e.preventDefault();
     const fe = document.activeElement; if (fe?.matches?.('button') && fe.closest('#gamePlay')) fe.blur();   // 버튼에 포커스가 남아 스페이스가 그 버튼(다시 시작·방식 등)을 누르던 문제
@@ -2465,7 +2514,7 @@ async function playHome() {
         <div class="hr-ov" id="hrOv"><b>집에 가고 싶어!</b><span>종 쳤다! 장애물을 피해 집까지 달려요</span><small>${matchMedia('(pointer:coarse)').matches ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · ↑ · 화면 클릭으로 출발'}</small></div></div>
       <div class="hr-touch"><button type="button" class="btn big" id="hrJ">점프</button><button type="button" class="btn big ghost" id="hrD">숙이기</button>${RE_BTN.replace('class="prestart"', 'class="prestart re-in"')}</div>
       <div class="hr-bar"><button type="button" class="btn" id="hrDress">${ic('brush')}캐릭터 꾸미기</button>
-        <p class="hr-keys"><kbd>Space</kbd><kbd>↑</kbd> 점프 (길게 누르면 더 높이) · <kbd>↓</kbd> 숙이기</p>
+        <p class="hr-keys"><span data-ka="jump"></span> 점프 (길게 누르면 더 높이) · <span data-ka="duck"></span> 숙이기</p>
         <button type="button" class="btn ghost hr-snd" id="hrSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       ${RE_ROW}
       <div class="hr-dress" id="hrDressBox" hidden></div>
@@ -2616,8 +2665,7 @@ async function playHome() {
   fit();
   const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
   // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)
-  const KEY = { ' ': 'jump', Space: 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', KeyW: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck', KeyS: 'duck', ArrowLeft: 'go', ArrowRight: 'go' };
-  const hkey = e => KEY[e.code] || KEY[e.key];   // 한글 입력 상태에서도 W·S가 먹게 자판 위치 먼저 (2026-10-28)
+  const hkey = e => KM.actOf('home', e).replace('restart', '') || (e.code === 'ArrowLeft' || e.code === 'ArrowRight' ? 'go' : '');   // 키 설정대로(2026-10-28) · ←→는 집 도착 버튼 고르기
   const relH = () => { R.input('jump', false); R.input('duck', false); };
   const kd = e => {
     if (e.metaKey || e.ctrlKey) { relH(); return; }
