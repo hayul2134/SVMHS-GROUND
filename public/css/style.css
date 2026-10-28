@@ -5725,3 +5725,16 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .rk-tin{margin-left:6px;padding:1px 7px;border-radius:999px;border:1.5px solid currentColor;font-size:11px;font-style:normal;font-weight:900;opacity:.65;white-space:nowrap;vertical-align:middle}
 .rk-tin.on{opacity:1;border-color:#1d2433;background:var(--lime);color:#1d2433}
 .rk-gt{margin-top:2px;font-weight:800}
+/* 티어 점수 내역 정돈(2026-10-28 하율 "예쁘게 정리해"): 2열 고정 · 칸마다 같은 높이의 줄 카드 · 이름은 한 줄 */
+.tr-games{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin-top:4px}
+.tr-games li,.tr-games li.tg-gear{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;column-gap:9px;row-gap:3px;padding:10px 13px;border-radius:14px;border:2px solid var(--line);background:color-mix(in srgb,var(--chip) 55%,var(--card));font-size:13.5px}
+.tr-games li>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-games li b{margin-left:0;display:flex;align-items:center;gap:4px;justify-self:end}
+.tr-games .tg-m{margin-right:4px}
+.tr-games .tg-o{grid-column:2/4;padding-left:0;text-align:right;font-size:11.5px}
+.tr-pv{margin:6px 0 8px}
+@media (max-width:620px){.tr-games{grid-template-columns:1fr}
+  .tr-games li,.tr-games li.tg-gear{display:flex;flex-wrap:wrap;column-gap:8px}
+  .tr-games li>span{flex:1 0 auto;overflow:visible}
+  .tr-games li b{margin-left:auto}
+  .tr-games .tg-o{flex-basis:100%}}
