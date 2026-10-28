@@ -5485,3 +5485,10 @@ html.rxs .rx-b{display:none!important}
 /* 키 낮은 화면에서 서랍을 비율 그대로 줄임(app.js fitMeal·fitRk가 --mk·--tk를 넣음, 2026-10-28) — 위 끝 기준으로 줄여 가운데·옆 자리 유지 */
 .s-meal.stow{scale:var(--mk,1);transform-origin:0 0}
 .s-ttc.stow{scale:var(--tk,1);transform-origin:100% 0}
+/* 랭킹 내 자리(2026-10-28): 창 열면 내 줄로 스크롤, 스크롤해 벗어나도 내 줄은 창 위·아래 끝에 붙어 보임 · 50등 밖이면 ⋯ 뒤에 내 줄 */
+.rank li.me{position:sticky;top:0;bottom:0;z-index:2;box-shadow:0 0 0 2px #f2c94c inset,0 4px 14px rgba(92,65,0,.16)}
+:root[data-theme="dark"] .rank li.me{box-shadow:0 0 0 2px #b8901f inset,0 4px 14px rgba(0,0,0,.4)}
+.rank li.rk-gap{justify-content:center;padding:0;height:18px;color:var(--muted,#8a94a6);font:800 16px var(--num);letter-spacing:2px}
+.rank li.rk-flash{animation:rkFlash 1.4s ease-out}
+@keyframes rkFlash{0%,30%{transform:scale(1.03);filter:brightness(1.08)}100%{transform:none;filter:none}}
+@media (prefers-reduced-motion:reduce){.rank li.rk-flash{animation:none}}

@@ -1488,6 +1488,7 @@ function trAll(box, top10) {
       btn.disabled = false;
     }
     open = true; ol.innerHTML = all; lab.textContent = 'TOP 10만 보기'; btn.setAttribute('aria-expanded', 'true');
+    ol.querySelector('li.me')?.scrollIntoView({ block: 'center', behavior: 'smooth' });   // 전체 순위를 펼치면 내 줄로 (2026-10-28)
   };
 }
 
@@ -1602,8 +1603,28 @@ async function openRank(game, scope = 'week') {
         $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
         if (!r.list.length) $('#rankList').innerHTML = `<li class="empty">${wk ? '이번 주' : '이번 라운드'} 기록이 아직 없어요. 지금 하면 1등!</li>`;
       }
+      // 내 자리(2026-10-28 하율 "랭킹 누르면 자신이 어디 위치에 있는지 바로"): 50등 밖이면 목록 끝에 ⋯ + 내 줄, 기록이 없으면 '기록 없음' 줄
+      if (r.list.length && !r.list.some(x => x.isMe)) {
+        const myRow = r.mine ? `<span class="rk">${r.mine}</span>` : '<span class="rk">-</span>';
+        $('#rankList').insertAdjacentHTML('beforeend', `<li class="rk-gap" aria-hidden="true">⋯</li><li class="me out">${myRow}<a href="#u/${esc(S.me.handle)}" data-u="1">${av(S.me)}<span class="pi"><b>${esc(nameOf(S.me))}${devTag(S.me)}</b><small>${esc(classTxt(S.me) || atOf(S.me))}</small></span></a><b class="rv">${r.mine ? esc(g.fmt(r.myValue)) : '기록 없음'}</b></li>`);
+      }
     }
+    rkToMe();
   } catch (e) { $('#rankList').innerHTML = `<li class="empty">${esc(e.message)}</li>`; }
+}
+// 랭킹 창이 열리면 내 줄로 바로 스크롤(앞뒤 순위가 같이 보이게 가운데) + 한 번 반짝. 스크롤해서 벗어나도 내 줄은 위·아래 끝에 붙어 있음(CSS sticky)
+function rkToMe() {
+  const me = $('#rankList li.me'); if (!me) return;
+  const sc = me.closest('.sheet'), rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(() => {
+    if (sc && sc.scrollHeight > sc.clientHeight) {
+      me.style.position = 'static';   // sticky로 붙어 있는 자리 말고 원래 자리를 재야 함
+      const top = me.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+      me.style.position = '';
+      sc.scrollTo({ top: Math.max(0, top - (sc.clientHeight - me.offsetHeight) / 2), behavior: rm ? 'auto' : 'smooth' });
+    }
+    me.classList.remove('rk-flash'); void me.offsetWidth; me.classList.add('rk-flash');
+  });
 }
 
 document.addEventListener('click', e => {
