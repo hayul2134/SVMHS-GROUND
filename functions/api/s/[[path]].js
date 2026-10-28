@@ -1375,7 +1375,8 @@ const ROUTES = {
     }
     const cnt = {}; b.list.forEach(x => { cnt[x.tier] = (cnt[x.tier] || 0) + 1; });
     const top = b.list.slice(0, 10), byId = await usersOf(top.map(x => x.uid));
-    return json({ cnt, round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, v2: !!b.v2, g: b.g || null, tiers: TIERS,
+    const champ = ffOn(CHAMP_FF, isAdm(me)) ? await tierChamp(db, me, b, mine, usersOf) : undefined;
+    return json({ cnt, champ, round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, v2: !!b.v2, g: b.g || null, tiers: TIERS,
       me: mine ? pub1(mine) : null, last: tierLastOf(me),
       top: top.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
   }),
@@ -1552,9 +1553,11 @@ const tierV2 = me => ffOn(TIER2, me ? isAdm(me) : false);
 //   2026-10-28 21:22 하율 "내일부터 티어에 반영되게" → 10/29부터(11/9 라운드 계획에서 앞당김)
 const GEAR_TIER = 'gear-tier', GEAR_TIER_FROM = '20261029';
 const gtFor = me => (me && isAdm(me)) ? 2 : ffOn(GEAR_TIER, false) ? 1 : 0;
-async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null)) {
-  const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to } = rkRange(cur);
-  const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt, hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
+// upTo(YYYYMMDD) = 그날까지의 기록만으로 계산(티어 변화 '어제보다' 비교용, tier-champ 미리보기 — v2 전용)
+async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), upTo = '') {
+  const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to: end } = rkRange(cur), to = upTo && upTo < end ? upTo : end;
+  const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt + (to !== end ? ':u' + to : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
+  if (to < from) return { n: cur, from, to, list: [], mode: tierMode(0), v2 };
   if (v2) { const b = await tierBoard2(db, cur, from, to, rx, gt); tierMemo.set(mk, { at: Date.now(), b }); return b; }
   const acc = new Map();
   await Promise.all(RANKED().map(async game => {
@@ -1616,10 +1619,35 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   list.forEach((x, i) => { x.rank = i > 0 && !cmp(list[i - 1], x) ? list[i - 1].rank : i + 1; x.tier = tierAt2(x.rank, list.length, x.pts).k; });
   return { n: cur, from, to, list, mode: tierMode(list.length), v2: true, g: gt ? { on: gOn, from: GEAR_TIER_FROM } : null };
 }
+// 티어 박탈감 줄이기(2026-10-28 하율 '1·2번 내 화면에만' — 미리보기 깃발 tier-champ)
+//   ① 게임별 이번 라운드 1등(챌린저 한 자리 말고 게임 수만큼 1등이 보이게) ② 어제보다 오른 티어·점수 + 오늘 많이 오른 학생 + 지난 라운드 대비
+const CHAMP_FF = 'tier-champ';
+const ymdAdd = (ymd, d) => new Date(Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)) + d * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
+async function tierChamp(db, me, b, mine, usersOf) {
+  const v2 = tierV2(me), rx = rxOn(me), gt = gtFor(me), ix = k => TIERS.findIndex(t => t.k === k);
+  // ① 게임별 1등(동점이면 여럿)
+  const ch = {};
+  for (const x of b.list) for (const [g, v] of Object.entries(x.games || {})) if (v.r === 1) (ch[g] = ch[g] || { g, n: v.n, uids: [] }).uids.push(x.uid);
+  // ② 어제까지 기록으로 만든 판과 비교 (라운드 첫날이면 비교 없음)
+  const y = ymdAdd(kstYmd(), -1), yb = y >= b.from ? await tierBoard(db, b.n, v2, rx, gt, y) : null;
+  const ym = new Map((yb?.list || []).map(x => [x.uid, x]));
+  const delta = x => { const o = ym.get(x.uid); return o ? { from: o.tier, d: ix(o.tier) - ix(x.tier), dp: x.pts - o.pts } : null; };
+  const risers = yb ? b.list.map(x => ({ x, r: delta(x) })).filter(o => o.r && (o.r.d > 0 || o.r.dp > 0)).sort((a, c) => c.r.d - a.r.d || c.r.dp - a.r.dp).slice(0, 3) : [];
+  // 지난 라운드(끝난 판) 대비
+  const tgt = mine || (isAdm(me) ? b.list[0] : null);
+  let prev = null;
+  if (tgt && b.n >= 1) { const pb = await tierBoard(db, b.n - 1, v2, rx, gt), p = pb.list.find(x => x.uid === tgt.uid); if (p) prev = { k: p.tier, rank: p.rank, pts: p.pts, players: pb.list.length, d: ix(p.tier) - ix(tgt.tier) }; }
+  const ids = [...new Set([...Object.values(ch).flatMap(c => c.uids.slice(0, 3)), ...risers.map(o => o.x.uid)])], byId = await usersOf(ids);
+  return {
+    games: Object.values(ch).map(c => ({ g: c.g, n: c.n, more: Math.max(0, c.uids.length - 3), me: c.uids.includes(me.id), users: c.uids.slice(0, 3).map(u => card(byId.get(u))).filter(Boolean) })),
+    since: yb ? y : null, me: tgt ? delta(tgt) : null, pv: !mine && !!tgt, prev,
+    rise: risers.map(o => ({ ...card(byId.get(o.x.uid)), to: o.x.tier, ...o.r, isMe: o.x.uid === me.id })).filter(u => u.handle),
+  };
+}
 const tierLastOf = u => { const [n, k] = String(u.tier_last || '').split(':'); return k && tierOfK(k) ? { n: +n, k } : null; };
 async function tierOfUser(db, u, v2 = false, rx = rxOn(null), gt = gtFor(null)) {
-  const x = (await tierBoard(db, undefined, v2, rx, gt)).list.find(y => y.uid === u.id);
-  return { cur: x ? { k: x.tier, rank: x.rank, pts: x.pts } : null, last: tierLastOf(u) };
+  const b = await tierBoard(db, undefined, v2, rx, gt), x = b.list.find(y => y.uid === u.id);
+  return { cur: x ? { k: x.tier, rank: x.rank, pts: x.pts, n: b.n, ch: Object.entries(x.games || {}).filter(([, v]) => v.r === 1).map(([g]) => g) } : null, last: tierLastOf(u) };
 }
 
 async function rankOf(db, game, best, rx = rxOn(null)) {   // 나보다 최고 기록이 좋은 사람 수 + 1

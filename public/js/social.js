@@ -362,7 +362,10 @@ const tierPlate = (tr, u) => {
   if (!tr || (!tr.cur && !tr.last)) return '';
   const c = tr.cur && tierOfK(tr.cur.k);
   const last = tr.last ? `<span class="tierl" data-tip="지난 라운드 티어">${tierBadge(tr.last.k, ' <small>지난 라운드</small>')}</span>` : '';
-  return c ? `<div class="ptier2"><div class="tplate t-${c.k}"><span class="tp-em">${tierIc(c.k)}</span><span class="tp-tx"><small>이번 라운드 티어</small><b>${c.n}</b><em>${tr.cur.rank}위 · ${tr.cur.pts}점</em></span></div>${last}</div>` : `<p class="ptier">${last}</p>`;
+  const chOn = ffOn('tier-champ', isDev(S.me));
+  const up = chOn && c && tr.last && tr.last.n === tr.cur.n - 1 && tIx(tr.last.k) - tIx(c.k) > 0 ? `<span class="tch-up">▲ ${tIx(tr.last.k) - tIx(c.k)}계단 <small>지난 라운드보다</small></span>` : '';
+  const chs = chOn && tr.cur?.ch?.length ? `<div class="pch">${tr.cur.ch.filter(g => GAMES[g]).map(g => `<span class="pch-c">${ic(GAMES[g].ic)}${GAMES[g].name} <b>1등</b></span>`).join('')}<small>이번 라운드</small></div>` : '';
+  return c ? `<div class="ptier2"><div class="tplate t-${c.k}"><span class="tp-em">${tierIc(c.k)}</span><span class="tp-tx"><small>이번 라운드 티어</small><b>${c.n}</b><em>${tr.cur.rank}위 · ${tr.cur.pts}점</em>${up}</span></div>${last}</div>${chs}` : `<p class="ptier">${last}</p>`;
 };
 
 /* ===== 역대 1등 왕관 패 (2026-10-25 하율: 더 자세하고 화려하게) — 기록 · 며칠째 1위 · 2등과 차이 · 참가 인원 ===== */
@@ -1504,6 +1507,33 @@ document.addEventListener('click', e => {
   e.preventDefault(); openAch(b.dataset.h || '', b.dataset.ach || '');
 });
 const achProf = (d, u) => !d.ach || isDev(u) ? '' : `<button type="button" class="pach" data-ach="" data-h="${esc(u.handle)}" data-ff="${ACH_FF}"><span class="pach-h">${medal(3, true)}업적 <b>${d.ach.n}</b>/${d.ach.of}</span>${d.ach.top.length ? `<span class="pach-l">${d.ach.top.map(x => { const a = ACH.find(y => y.k === x.k); return a ? `<i title="학생 ${x.p}% 달성">${medal(a.lv, true)}${esc(a.n)}</i>` : ''; }).join('')}</span>` : '<span class="pach-l"><i class="none">아직 없어요</i></span>'}</button>`;
+// 티어 박탈감 줄이기(2026-10-28 하율 — 미리보기 깃발 tier-champ): 게임별 이번 라운드 1등 · 어제보다 오른 것 · 오늘 많이 오른 학생
+const tIx = k => TIERS.findIndex(t => t.k === k);
+const md = ymd => ymd ? `${+ymd.slice(4, 6)}/${+ymd.slice(6, 8)}` : '';
+function chUpLine(c) {   // 내 티어 칸 아래: 어제보다 · 지난 라운드보다
+  const a = [], r = c.me, p = c.prev;
+  if (r && r.d > 0) a.push(`<span class="tch-up">▲ ${r.d}계단 <small>어제 ${tierOfK(r.from)?.n || ''}</small></span>`);
+  else if (r && r.dp > 0) a.push(`<span class="tch-up">+${r.dp}점 <small>어제보다</small></span>`);
+  else if (r && !r.d && !r.dp) a.push('<span class="tch-eq">어제와 같아요 <small>한 판 더 하면 오를 수 있어요</small></span>');
+  else if (r) a.push('<span class="tch-eq">다른 학생이 올라왔어요 <small>한 판 더 하면 되찾을 수 있어요</small></span>');
+  if (p && p.d > 0) a.push(`<span class="tch-up">▲ ${p.d}계단 <small>지난 라운드 ${tierOfK(p.k)?.n || ''}보다</small></span>`);
+  else if (p) a.push(`<span class="tch-eq">지난 라운드 ${tierOfK(p.k)?.n || ''}</span>`);
+  return a.length ? `<span class="tch-me">${a.join('')}</span>` : '';
+}
+function chBlock(c) {
+  const gs = gamesOn().filter(([k]) => GAMES[k]);
+  const byG = new Map((c.games || []).map(x => [x.g, x]));
+  const champs = gs.map(([k, g]) => { const x = byG.get(k);
+    return `<li class="${x?.me ? 'me' : ''}${x ? '' : ' none'}"><span class="tch-g">${ic(g.ic)}<b>${g.name}</b></span>${x ? `<span class="tch-u">${x.users.map(u => `<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<span>${esc(nameOf(u))}</span></a>`).join('')}${x.more ? `<small>외 ${x.more}명</small>` : ''}</span><small class="tch-n">${x.n}명 중 1등</small>` : '<span class="tch-u"><i>아직 없어요 · 지금 하면 1등!</i></span>'}</li>`; }).join('');
+  const mine = (c.games || []).filter(x => x.me).length;
+  const rise = c.rise?.length ? c.rise.map(u => `<li class="${u.isMe ? 'me' : ''}"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><span class="tch-mv">${u.d > 0 ? `${tierBadge(u.from)}<i>→</i>${tierBadge(u.to)}` : tierBadge(u.to)}</span><em>${u.d > 0 ? `▲${u.d}` : ''}${u.dp > 0 ? ` +${u.dp}점` : ''}</em></li>`).join('') : '';
+  return `<section class="tch">
+    <div class="tch-h">${ic('trophy')}<b>이번 라운드 게임별 1등</b>${mine ? `<span class="tch-mine">나도 ${mine}개 게임 1등!</span>` : '<small>티어와 따로, 게임마다 1등이 있어요</small>'}</div>
+    <ul class="tch-list">${champs}</ul>
+    ${c.since ? `<div class="tch-h">${ic('fire')}<b>어제보다 많이 오른 학생</b><small>${md(c.since)}까지 기록과 비교</small></div>${rise ? `<ol class="tch-rise">${rise}</ol>` : '<p class="tch-none">아직 오른 학생이 없어요 — 첫 주인공이 되어 볼까요?</p>'}` : '<p class="tch-none">라운드 첫날이라 내일부터 \'어제보다 오른 학생\'이 보여요</p>'}
+    ${c.pv ? '<p class="tr-pv">미리보기 · 내 변화는 1위 학생 기준(개발자는 티어 밖)</p>' : ''}
+  </section>`;
+}
 // 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
 async function loadTier() {
   const box = $('#tierBox'); if (!box) return;
@@ -1537,16 +1567,18 @@ async function loadTier() {
     const cnt = d.cnt || {};
     const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}" data-tk="${x.k}" role="button" tabindex="0" aria-expanded="false" aria-label="${x.n} — 지금 ${cnt[x.k] || 0}명, 눌러서 보기">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><span class="tl-lab"><b>${x.n}</b><small>${lbSt(x)}</small><span class="tl-cnt${cnt[x.k] ? '' : ' z'}">${cnt[x.k] || 0}명</span></span></li>`).join('');
     const k = t ? t.k : 'iron', rad = !t && radOn(S.me);   // 개발자는 순위에 안 나와 티어가 없음 → 레디언트
+    const CH = d.champ, chMe = CH ? chUpLine(CH) : '';
     box.classList.add('tr2');
     box.innerHTML = `<div class="tr2-top">
       ${rad ? `<div class="tm t-radiant apex"><span class="tm-em"><i class="tm-halo"></i>${radIc()}</span>
-        <div class="tm-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><span class="tm-st">순위·티어표에는 나오지 않아요</span></div></div>` : `<div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
-        <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>`}
+        <div class="tm-tx"><small>개발자 전용 티어</small><b>${RADIANT.n}</b><span class="tm-st">순위·티어표에는 나오지 않아요</span>${chMe}</div></div>` : `<div class="tm t-${k}${t ? '' : ' none'}${t && APEX.has(t.k) ? ' apex' : ''}"><span class="tm-em"><i class="tm-halo"></i>${tierIc(k)}</span>
+        <div class="tm-tx"><small>이번 라운드 내 티어</small>${t ? `<b>${t.n}</b><span class="tm-st"><em>${m.rank}위</em> / ${d.players}명<i></i><em>${m.pts}점</em></span>${chMe}` : `<b>아직 없음</b><span class="tm-st">게임을 한 판 하면 티어가 생겨요</span>`}</div></div>`}
       <ol class="tm-how"><li><b>1</b><span>게임마다 라운드 순위로 점수<small>${d.v2 ? `1등 100점 · 참가 ${PTS_MIN_N}명 미만 게임은 점수가 줄어요` : '1등 100점 · 참가만 해도 점수'}</small></span></li><li><b>2</b><span>잘한 ${BEST_N}개 게임 점수를 합쳐 줄 세우기<small>${d.v2 ? '같으면 전체 합 → 먼저 달성한 사람' : '같으면 전체 합으로 가려요'}</small></span></li><li><b>3</b><span>${d.v2 ? `점수 구간으로 티어 결정<small>${TIER_PCT}명부터는 상위 %와 점수 중 높은 쪽</small>` : byPts ? `점수 구간으로 티어 결정<small>${TIER_PCT}명이 모이면 상위 %로 바뀌어요</small>` : '상위 몇 %인지로 티어 결정<small>라운드가 끝나면 지난 티어는 프로필 배지로</small>'}</span></li><li><b>4</b><span>라운드 끝나면 뽑기권<small>챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장</small></span></li></ol>
     </div>
     <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>
     <ol class="tr-stairs">${stairs}</ol>
     <div class="tr-who" hidden></div>
+    ${CH ? chBlock(CH) : ''}
     ${per ? `${perPv}<ul class="tr-games">${per}</ul>${perSum}` : ''}
     <details class="tr-top"${opn}><summary>${ic('trophy')}<span>티어 순위 TOP 10</span><i class="trt-go" aria-hidden="true"></i></summary><ol>${top}</ol>${more}</details>`;
     tierWho(box); trAll(box, top);

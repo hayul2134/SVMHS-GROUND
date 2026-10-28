@@ -5818,3 +5818,45 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .pg-none{margin:0;padding:10px;border:1.5px dashed var(--line);border-radius:12px;text-align:center;font-weight:800;font-size:12px;color:var(--sub)}
 .pcols.slim .pside .pgrec .pg-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .pcols.slim .pside .pgrec .pg-grid li:last-child:nth-child(odd){grid-column:auto}
+/* 티어 박탈감 줄이기(2026-10-28 하율, 미리보기 tier-champ): 게임별 1등 · 오른 학생 · 내 변화 */
+.tch-me{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:5px}
+.tch-up,.tch-eq{display:inline-flex;align-items:baseline;gap:4px;padding:2px 8px;border-radius:999px;font-size:12.5px;font-weight:900;white-space:nowrap}
+.tch-up{background:color-mix(in srgb,#1f9a5c 16%,transparent);color:#1a8a52}
+.tch-eq{background:color-mix(in srgb,currentColor 9%,transparent);color:var(--sub,#5b6477)}
+.tch-up small,.tch-eq small{font-size:11px;font-weight:800;opacity:.85}
+.tr2 .tm.apex .tch-up{color:#9ff0c4}
+.tch{margin:12px 0 4px;display:grid;gap:8px}
+.tch-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px}
+.tch-h .sic{width:20px;height:20px}
+.tch-h b{font-size:15px;font-weight:900}
+.tch-h small{font-size:12px;font-weight:700;color:var(--sub,#5b6477)}
+.tch-mine{padding:2px 9px;border-radius:999px;background:var(--lime,#d9f36a);color:#1d2433;font-size:12px;font-weight:900}
+.tch-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.tch-list li{display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 8px;padding:8px 10px;border-radius:14px;background:color-mix(in srgb,currentColor 5%,transparent);border:2px solid transparent}
+.tch-list li.me{border-color:#f2c94c;background:color-mix(in srgb,#f2c94c 14%,transparent)}
+.tch-list li.none{opacity:.75}
+.tch-g{display:flex;align-items:center;gap:6px;min-width:0}
+.tch-g .sic{width:20px;height:20px;flex:none}
+.tch-g b{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tch-n{font-size:11.5px;font-weight:800;color:var(--sub,#5b6477);white-space:nowrap}
+.tch-u{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:13.5px;font-weight:800}
+.tch-u a{display:inline-flex;align-items:center;gap:5px;color:inherit;text-decoration:none;min-width:0}
+.tch-u a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9em}
+.tch-u i{font-style:normal;font-size:12.5px;color:var(--sub,#5b6477)}
+.tch-u small{font-size:12px;color:var(--sub,#5b6477)}
+.tch-rise{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.tch-rise li{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:color-mix(in srgb,currentColor 5%,transparent);font-size:13.5px;font-weight:800}
+.tch-rise li.me{outline:2px solid #1f9a5c}
+.tch-rise a{display:flex;align-items:center;gap:6px;min-width:0;flex:1;color:inherit;text-decoration:none}
+.tch-rise a b{display:flex;align-items:center;gap:4px;min-width:0}
+.tch-rise a b span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tch-mv{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.tch-mv i{font-style:normal;color:var(--sub,#5b6477)}
+.tch-rise em{font-style:normal;color:#1a8a52;font-weight:900;white-space:nowrap}
+.tch-none{margin:0;font-size:12.5px;font-weight:700;color:var(--sub,#5b6477)}
+.pch{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:6px}
+.pch-c{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,#f2c94c 20%,transparent);border:2px solid #f2c94c;font-size:12.5px;font-weight:800;white-space:nowrap}
+.pch-c .sic{width:16px;height:16px}
+.pch-c b{color:#b07d00;font-weight:900}
+.pch small{font-size:11.5px;font-weight:700;color:var(--sub,#5b6477)}
+@media (max-width:560px){.tch-rise li{flex-wrap:wrap}.tch-mv .tierb{font-size:11.5px}}
