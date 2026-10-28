@@ -34,7 +34,7 @@ const GAMES = {
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
-  num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
+  num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
 };
 
 /* ===== 상태 ===== */
