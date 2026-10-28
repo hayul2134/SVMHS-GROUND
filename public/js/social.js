@@ -1972,7 +1972,7 @@ async function playStair() {
   const touchy = matchMedia('(pointer:coarse)').matches;
   const area = stage(ic('stair') + ' <span class="sr-pre">영상고 </span>계단 오르기', `<div class="sr" id="sr">
       <div class="hr-scr sr-scr" id="srScr"><canvas id="srCv" aria-label="게임 화면"></canvas>
-        <div class="sr-hud" aria-hidden="true"><i class="sr-bell" id="srBell"></i><div class="sr-gauge"><b id="srG"></b></div></div>
+        <div class="sr-hud" aria-hidden="true"><svg class="sr-bell" id="srBell" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="7" y="0" width="2" height="3" fill="#2a2846"/><path d="M6 2.5h4v1h1v1h1v3h1v3h1v1.5H2V10.5h1v-3h1v-3h1v-1h1z" fill="#ffd25e" stroke="#2a2846" stroke-width="1"/><path d="M5.5 4.5h1v5h-1zM4.5 8h1v2h-1z" fill="#fff1b8"/><path d="M3 10.5h10v1H3z" fill="#e09a2a"/><rect x="6.5" y="12.5" width="3" height="2.5" fill="#2a2846"/></svg><div class="sr-gauge"><b id="srG"></b></div></div>
         <div class="sr-num" aria-live="off"><b id="srN">0</b><small id="srF">1층</small></div>
         <div class="sr-pop" id="srPop" aria-live="polite"></div>
         <div class="sr-tap" aria-hidden="true"><span>방향 바꾸기</span><span>오르기</span></div>

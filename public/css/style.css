@@ -5663,13 +5663,16 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .sr-scr canvas{width:100%;height:auto;aspect-ratio:2/3;image-rendering:pixelated;image-rendering:crisp-edges}
 /* 위 HUD: 종 + 게이지(--g 0~1) */
 .sr-hud{position:absolute;left:4%;right:4%;top:2.6%;display:flex;align-items:center;gap:6px;pointer-events:none}
-.sr-bell{flex:none;width:clamp(18px,8cqw,30px);aspect-ratio:1;background:#ffd25e;border:2.5px solid #2a2846;border-radius:50% 50% 18% 18%;box-shadow:2px 2px 0 #2a2846;transform-origin:50% 0}
+.sr-bell{flex:none;width:clamp(22px,9.5cqw,36px);height:auto;aspect-ratio:1;overflow:visible;transform-origin:50% 8%;filter:drop-shadow(2px 2px 0 #2a2846)}   /* 픽셀 종(꼭지·종 몸통·추) — 2026-10-28 하율: 종 같지 않다 */
 .sr-scr.low .sr-bell{animation:srRing .16s steps(2) infinite}
 @keyframes srRing{0%{transform:rotate(-16deg)}100%{transform:rotate(16deg)}}
 .sr-gauge{flex:1;height:clamp(10px,4.4cqw,16px);background:#fff;border:2.5px solid #2a2846;border-radius:4px;box-shadow:2px 2px 0 #2a2846;overflow:hidden}
-.sr-gauge b{display:block;height:100%;width:100%;transform-origin:0 50%;transform:scaleX(var(--g,1));background:repeating-linear-gradient(90deg,#5ad17a 0 6px,#49bf69 6px 8px)}
-.sr-gauge b.mid{background:repeating-linear-gradient(90deg,#ffc23d 0 6px,#f2ad1f 6px 8px)}
-.sr-gauge b.bad{background:repeating-linear-gradient(90deg,#ff5a5a 0 6px,#e54444 6px 8px)}
+.sr-gauge{position:relative}
+/* 게이지(--g 0~1): 무늬는 제자리에 두고 오른쪽부터 잘라 내 '진짜로 줄어드는' 느낌 (2026-10-28 하율: 그림을 줄이는 느낌이라 별로) — 폭 대신 clip-path라 매 프레임 레이아웃 없음 */
+.sr-gauge b{position:absolute;inset:0;clip-path:inset(0 calc((1 - var(--g,1)) * 100%) 0 0);background:linear-gradient(#fff 0 2px,transparent 2px),repeating-linear-gradient(90deg,#5ad17a 0 6px,#49bf69 6px 8px)}
+.sr-gauge b::after{content:'';position:absolute;top:0;bottom:0;left:calc(var(--g,1) * 100% - 3px);width:3px;background:#fff;opacity:.85}   /* 줄어드는 끝 빛 */
+.sr-gauge b.mid{background:linear-gradient(#fff 0 2px,transparent 2px),repeating-linear-gradient(90deg,#ffc23d 0 6px,#f2ad1f 6px 8px)}
+.sr-gauge b.bad{background:linear-gradient(#fff 0 2px,transparent 2px),repeating-linear-gradient(90deg,#ff5a5a 0 6px,#e54444 6px 8px)}
 /* 오른 칸 수 · 지금 층 */
 .sr-num{position:absolute;left:0;right:0;top:9%;display:flex;flex-direction:column;align-items:center;pointer-events:none;line-height:1}
 .sr-num b{font-family:var(--disp);font-weight:400;font-size:clamp(30px,17cqw,64px);color:#fff;-webkit-text-stroke:3px #2a2846;paint-order:stroke;text-shadow:3px 3px 0 #2a2846}
