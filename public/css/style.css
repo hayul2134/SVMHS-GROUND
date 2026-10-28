@@ -5799,25 +5799,25 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .ggrid .gbtns .gbr{min-height:44px;font-size:15px;padding-top:9px;padding-bottom:9px;gap:5px}
 .ggrid .gbtns .gbr .sic,.ggrid .gbtns .gbr .amd{width:21px;height:21px}
 
-/* 프로필 게임 기록 2 (2026-10-28, 깃발 pbest-v2): 한 줄씩 쌓던 목록 → 플레이한 게임만 2칸 타일 + 안 한 게임은 아이콘 한 줄 */
-.pgrec{display:grid;gap:8px;width:100%;min-width:0}
-.pg-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 2px 0}
+/* 프로필 게임 기록 2 (2026-10-28, 깃발 pbest-v2): 플레이한 게임만 2칸 타일 + 안 한 게임 아이콘 한 줄
+   2차(같은 날 하율 "안 예쁨" — 좁은 칸에서 기록·이름이 …로 잘리고 테두리·아이콘 상자가 무거움): 위 작은 아이콘+이름(두 줄까지), 아래 큰 기록, 얇은 테두리, 잘림 없음 */
+.pgrec{display:grid;gap:7px;width:100%;min-width:0}
+.pg-h{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin:2px 3px 0}
 .pg-h span{display:inline-flex;align-items:center;gap:5px;font-weight:900;font-size:13.5px}
 .pg-h .sic{width:16px;height:16px}
-.pg-h small{font-weight:800;font-size:11.5px;color:var(--sub)}
+.pg-h small{font-weight:800;font-size:11px;color:var(--sub);white-space:nowrap}
 .pg-grid{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0;padding:0}
-.pg-grid li{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;padding:8px 9px;border:2px solid var(--ink);border-radius:13px;background:var(--card);min-width:0}
-.pg-ic{grid-row:1/3;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:var(--chip);border:1.5px solid var(--line)}
-.pg-ic .sic{width:22px;height:22px}
-.pg-grid b{font:800 15px/1.15 var(--num);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pg-grid small{font-weight:800;font-size:11px;line-height:1.2;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-grid li{display:flex;flex-direction:column;justify-content:space-between;gap:5px;min-width:0;padding:8px 9px 9px;border:2px solid var(--line);border-radius:12px;background:var(--card)}
+.pg-grid li small{display:flex;align-items:flex-start;gap:4px;font-weight:800;font-size:11px;line-height:1.25;color:var(--sub);word-break:keep-all}
+.pg-grid li small .sic{flex:none;width:16px;height:16px;margin-top:-1px}
+.pg-grid li b{font:800 15px/1.1 var(--num);color:var(--text);word-break:keep-all;overflow-wrap:anywhere}
 .pg-grid li:last-child:nth-child(odd){grid-column:1/-1}
-.pg-no{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0;padding:6px 9px;border:1.5px dashed var(--line);border-radius:12px}
+.pg-no{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:0;padding:5px 8px;border:1.5px dashed var(--line);border-radius:11px}
 .pg-no small{font-weight:800;font-size:11px;color:var(--sub);margin-right:2px}
-.pg-no i{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--card);opacity:.55;filter:grayscale(.6)}
+.pg-no i{display:grid;place-items:center;width:22px;height:22px;opacity:.5;filter:grayscale(.7)}
 .pg-no i .sic{width:17px;height:17px}
 .pg-none{margin:0;padding:10px;border:1.5px dashed var(--line);border-radius:12px;text-align:center;font-weight:800;font-size:12px;color:var(--sub)}
-.pcols.slim .pside .pgrec .pg-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.pcols.slim .pside .pgrec .pg-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .pcols.slim .pside .pgrec .pg-grid li:last-child:nth-child(odd){grid-column:auto}
 /* 티어 박탈감 줄이기(2026-10-28 하율, 미리보기 tier-champ): 게임별 1등 · 오른 학생 · 내 변화 */
 .tch-me{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:5px}
