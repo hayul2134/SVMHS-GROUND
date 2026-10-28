@@ -4881,7 +4881,7 @@ html:has(body.playing){overflow:hidden}
 /* 기자재 정리!: 판이 작을 때 시작·끝 안내가 판 밖으로 잘리던 것 (social.js fit()이 판 크기로 data-bs·data-bh를 붙임) */
 .gr-ov.hr-ov span{white-space:normal;max-width:100%;word-break:keep-all}
 .gr[data-bs="s"] .gr-ov{gap:5px;padding:8px 6px}
-.gr[data-bs="s"] .gr-ov.hr-ov b{font-size:22px;-webkit-text-stroke-width:1.5px;text-shadow:2px 2px 0 #2a2846}
+.gr[data-bs="s"] .gr-ov.hr-ov > b{font-size:22px;-webkit-text-stroke-width:1.5px;text-shadow:2px 2px 0 #2a2846}
 .gr[data-bs="s"] .gr-ov.hr-ov span{font-size:11px;padding:2px 6px;line-height:1.4}
 .gr[data-bs="s"] .gr-kinds{width:100%;gap:3px 2px}
 .gr[data-bs="s"] .gr-k{width:100%;max-width:46px}
@@ -4892,7 +4892,7 @@ html:has(body.playing){overflow:hidden}
 .gr[data-bs="s"] .gr-ov .hr-msg{font-size:11.5px}
 .gr[data-bs="s"] .gr-ov .hr-go{font-size:11.5px}
 .gr[data-bs="xs"] .gr-ov{gap:4px;padding:6px 4px}
-.gr[data-bs="xs"] .gr-ov.hr-ov b{font-size:17px;-webkit-text-stroke-width:1.2px;text-shadow:1.5px 1.5px 0 #2a2846}
+.gr[data-bs="xs"] .gr-ov.hr-ov > b{font-size:17px;-webkit-text-stroke-width:1.2px;text-shadow:1.5px 1.5px 0 #2a2846}
 .gr[data-bs="xs"] .gr-ov.hr-ov span{font-size:10px;padding:2px 4px;line-height:1.35}
 .gr[data-bs="xs"] .gr-ov > small,.gr[data-bs="xs"] .gr-ov .hr-msg,.gr[data-bs="xs"] .gr-ov .hr-go{font-size:10.5px}
 .gr[data-bs="xs"] .gr-ov.dead .hr-card{max-width:100%;padding:6px}
@@ -5006,25 +5006,26 @@ html:has(body.playing){overflow:hidden}
 /* 게임 안 '내 기록' (2026-10-27 하율: 순위 대신 지난 내 기록) — 결과 화면·기자재 정리!·집에 가고 싶어! 아래 */
 .myrec{display:grid;gap:8px;width:100%;max-width:440px;margin:10px auto 0;padding:12px 14px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);text-align:left}
 .mr-tag{margin:0;font-size:11px;font-weight:900;color:var(--sub)}
-.mr-best{display:flex;align-items:center;gap:6px;margin:0;font-weight:800;color:var(--ink)}
+/* 내 기록 글자: --ink는 다크 테마에서 검정(테두리용)이라 글자는 --text (2026-10-28 다크 대비) */
+.mr-best{display:flex;align-items:center;gap:6px;margin:0;font-weight:800;color:var(--text)}
 .mr-best svg{width:18px;height:18px;color:#f5b301}
 .mr-best b{font:900 20px/1 var(--num,inherit);font-variant-numeric:tabular-nums}
 .mr-best small{margin-left:auto;font-size:11px;color:var(--sub)}
-.mr-h{margin:2px 0 0;font-weight:900;font-size:13px;color:var(--ink)}
+.mr-h{margin:2px 0 0;font-weight:900;font-size:13px;color:var(--text)}
 .mr-h small{font-weight:700;font-size:11px;color:var(--sub);margin-left:4px}
 .mr-days{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .mr-days li{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;font-size:12.5px}
 .mr-days li span{font-weight:800;color:var(--sub)}
 .mr-days li i{position:relative;box-sizing:border-box;height:10px;border-radius:99px;border:1.5px solid var(--ink);overflow:hidden;background:var(--card)}
 .mr-days li i::before{content:'';position:absolute;inset:0 auto 0 0;width:var(--w,0%);border-radius:inherit;background:var(--sky,#5ab8ff);box-shadow:inset 0 2px 0 rgb(255 255 255 / .45);transition:width .75s cubic-bezier(.22,1,.36,1) var(--d,0s)}
-.mr-days li b{font:800 12.5px/1 var(--num,inherit);font-variant-numeric:tabular-nums;color:var(--ink);min-width:64px;text-align:right}
+.mr-days li b{font:800 12.5px/1 var(--num,inherit);font-variant-numeric:tabular-nums;color:var(--text);min-width:64px;text-align:right}
 .mr-days li.top i::before{background:#ffd25e}
 .mr-days li.top b::after{content:' 최고';display:inline-block;margin-left:3px;font-size:10px;color:#e0a100;animation:mrTop .35s cubic-bezier(.34,1.56,.64,1) .9s both}
 @keyframes mrTop{from{opacity:0;transform:scale(.6)}}
 @media (prefers-reduced-motion:reduce){.mr-days li i::before{transition:none}.mr-days li.top b::after{animation:none}}
-.mr-days li.now span{color:var(--ink)}
+.mr-days li.now span{color:var(--text)}
 .mr-pe,.mr-n{margin:0;font-size:12px;color:var(--sub);font-weight:700}
-.mr-n b{color:var(--ink)}
+.mr-n b{color:var(--text)}
 .mr-n small{margin-left:4px}
 /* 기자재 정리! 일반 모드 순위(2026-10-28): 순위 보기 링크 · 랭킹 창 랭킹전/일반 전환 */
 .hr-rklink{display:inline-flex;align-items:center;margin-left:6px;padding:2px 9px;border:1.5px solid var(--ink);border-radius:999px;background:var(--lime);color:var(--ink);font:inherit;font-size:12px;font-weight:900;cursor:pointer;vertical-align:middle}
