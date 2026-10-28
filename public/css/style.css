@@ -5654,3 +5654,20 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 }
 @media (max-width:999.98px) and (orientation:portrait) and (max-height:900px),(max-width:699.98px) and (max-height:900px){.result.n2-out .rlbl,.result.n2-out .n2-mh small,.result.n2-out .n2-r .myrec .mr-h,.result.n2-out .n2-r .myrec .mr-days,.result.n2-out .n2-r .myrec .mr-pe{display:none}.result.n2-out .ctm-tip.sub{display:none}}
 @media (orientation:landscape) and (max-height:560px){.result.n2-out{--cs:clamp(26px,calc((100dvh - 240px) / 5.5),58px)}.result.n2-out .rlbl,.result.n2-out .ctm-tip.sub,.result.n2-out .n2-mh small,.result.n2-out .n2-r .myrec .mr-h,.result.n2-out .n2-r .myrec .mr-days,.result.n2-out .n2-r .myrec .mr-pe{display:none}}
+
+/* ===== 영상고 계단 오르기 (2026-10-28, 미리보기 stair-game) — social.js playStair · js/stair.js ===== */
+.apps .gapp.g-stair .ai{--c:#ffd9a8}.ggrid .g-stair{--c:#ffd9a8}
+.sr{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.sr-scr{background:#f7f0e2;user-select:none;-webkit-user-select:none;width:min(100%,calc(min(64vh,600px) * 2 / 3));align-self:center}
+.sr-scr canvas{width:100%;height:auto;aspect-ratio:2/3;image-rendering:auto}
+.sr-scr .hr-ov b{font-size:clamp(24px,7.5cqw,36px);white-space:nowrap}
+.sr-scr{container-type:inline-size}
+@media (max-width:440px){.ptop b .sr-pre{display:none}}
+.sr-scr .hr-ov{background:linear-gradient(rgba(255,255,255,0) 35%,rgba(255,255,255,.45))}
+.sr-scr .hr-ov:not(.dead){place-content:start center;padding-top:26%}
+.sr-scr .hr-ov.dead{background:rgba(42,40,70,.32)}
+.sr-touch{display:flex;gap:10px;width:min(100%,360px)}
+.sr-touch .btn{flex:1;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none}
+@media (hover:hover) and (pointer:fine){.sr-touch{display:none}}
+.sr .hr-bar{justify-content:center}
+#srRec{width:min(100%,420px)}
