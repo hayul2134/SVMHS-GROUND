@@ -1652,7 +1652,8 @@ async function openRank(game, scope = 'week') {
       if (!t || !$('#rankList') || !$('.rk-mode')) return;
       const x = t.on ? t.x : null;
       if (x) $(`.rk-mode [data-rank="${x.m === 'n' ? 'gearn' : 'gear'}"]`)?.insertAdjacentHTML('beforeend', '<i class="rk-tier">티어</i>');
-      if (x && scope === 'round' && !t.dev) {   // 개발자 미리보기는 1위 학생 기준이라 내 줄 표시는 안 붙임 const mine = (x.m === 'n') === (game === 'gearn'); $('#rankList li.me .pi b')?.insertAdjacentHTML('beforeend', `<i class="rk-tin${mine ? ' on' : ''}">${mine ? '티어 반영 ✓' : '미반영'}</i>`); }
+      // 개발자 미리보기는 1위 학생 기준이라 내 줄 표시는 안 붙임
+      if (x && scope === 'round' && !t.dev) { const mine = (x.m === 'n') === (game === 'gearn'); $('#rankList li.me .pi b')?.insertAdjacentHTML('beforeend', `<i class="rk-tin${mine ? ' on' : ''}">${mine ? '티어 반영 ✓' : '미반영'}</i>`); }
       $('#rankNote')?.insertAdjacentHTML('afterend', `<p class="note rk-gt">${esc(gtText(t))}</p>`);
     });
     rkToMe();
