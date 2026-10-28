@@ -7,6 +7,7 @@ import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
+import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -243,6 +244,50 @@ async function misEv(db, me, ev, x) {
   return null;
 }
 const ALL_OPEN = 1e6;
+/* ===== 게임 업적 (2026-10-28 하율, 미리보기 깃발 achv — public/js/achv.js) =====
+   users.ach = { 키: 달성 시각 }. 판정은 저장된 기록(scores)과 방금 저장된 한 판으로만. 깃발이 꺼져 있어도 조용히 쌓아 둠(공개 때 소급 필요 없게) — 화면·칭호만 깃발 */
+const achOpen = me => ACH_GAMES.filter(g => !GAMES[g]?.ff || ffOn(GAMES[g].ff, isAdm(me)));
+async function achStats(db, uid, me) {
+  const [b, d, D] = await db.batch([
+    db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game <> 'gearn' GROUP BY game").bind(uid),
+    db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 GROUP BY g").bind(uid),
+    db.prepare('SELECT COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1').bind(uid),
+  ]);
+  return { best: Object.fromEntries(b.results.map(x => [x.game, achNat(x.game, x.b)])), days: Object.fromEntries(d.results.map(x => [x.g, x.n])), D: D.results[0]?.n || 0, open: achOpen(me) };
+}
+// 새로 달성한 키 목록(없으면 []). 두 요청이 겹쳐도 이전 값 조건으로 덮어쓰지 않음
+async function achRun(db, me, live, st) {
+  try {
+    st = st || await achStats(db, me.id, me);
+    for (let t = 0; t < 4; t++) {
+      const cur = t ? (await db.prepare('SELECT ach FROM users WHERE id = ?1').bind(me.id).first())?.ach ?? '' : me.ach ?? '';
+      const own = parseAch(cur), got = achCheck(own, st, live);
+      if (!got.length && cur !== '') return [];
+      const now = Date.now(); for (const k of got) own[k] = now;
+      if (await db.prepare('UPDATE users SET ach = ?1 WHERE id = ?2 AND ach = ?3 RETURNING id').bind(JSON.stringify(own), me.id, cur).first()) { me.ach = JSON.stringify(own); return got; }
+    }
+  } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/ach', method: 'ACH' }, e); }
+  return [];
+}
+// 희귀도: 업적마다 가진 학생 수 / 게임한 학생 수 (1시간 캐시, 개발자·테스트 계정 제외)
+let achRare = { at: 0, n: 0, c: {} };
+async function achRarity(db) {
+  if (Date.now() - achRare.at < 3600e3) return achRare;
+  const [rows, pl] = await db.batch([
+    db.prepare("SELECT ach FROM users WHERE ach <> '' AND ach <> '{}' AND handle <> ?1 AND is_test = 0").bind(ADMIN_HANDLE),
+    db.prepare(`SELECT COUNT(DISTINCT uid) AS n FROM scores WHERE ${NOT_DEV}`),
+  ]);
+  const c = {}; for (const r of rows.results) for (const k of Object.keys(parseAch(r.ach))) c[k] = (c[k] || 0) + 1;
+  achRare = { at: Date.now(), n: pl.results[0]?.n || 0, c };
+  return achRare;
+}
+// 프로필 요약: 개수 + 가장 드문 업적 3개
+async function achSum(db, own) {
+  const ks = Object.keys(own).filter(k => ACH.some(a => a.k === k)); if (!ks.length) return { n: 0, of: ACH.length, top: [] };
+  const R = await achRarity(db);
+  return { n: ks.length, of: ACH.length, top: ks.sort((a, b) => achPct(R, a) - achPct(R, b) || own[a] - own[b]).slice(0, 3).map(k => ({ k, p: achPct(R, k) })) };
+}
+const achPct = (R, k) => R.n ? Math.round((R.c[k] || 0) / R.n * 1000) / 10 : 0;
 // 개발자는 어떤 랭킹·1등 표시에도 안 나옴 (scores 쿼리에 붙이는 조건)
 const OWNER_HANDLE = 'hayul2094';   // 하율 본인(학생용) 계정
 const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE}')`;
@@ -285,7 +330,7 @@ const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = 
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
-  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.st_deco, u.gc_tix, u.gc_own, u.gc_pity, u.gc_leg, u.gc_shard, u.gc_fx, s.exp
+  const row = await db.prepare(`SELECT u.id, u.handle, u.name, u.bio, u.avatar, u.color, u.grade, u.cls, u.club, u.mood, u.stickers, u.seen, u.insta, u.dm_pref, u.google_sub, u.is_test, u.st_cur, u.st_best, u.st_last, u.st_total, u.st_shield, u.st_pf, u.st_title, u.st_rep, u.st_deco, u.gc_tix, u.gc_own, u.gc_pity, u.gc_leg, u.gc_shard, u.gc_fx, u.ach, s.exp
     FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ?1
     AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.uid = u.id AND (b.until = 0 OR b.until > ?2))`).bind(await sha256(token), Date.now()).first();
   if (!row || row.exp < Date.now()) return null;
@@ -492,6 +537,7 @@ const ROUTES = {
     try { await settleRounds(db); } catch (e) { console.log('settleRounds', e?.message); }   // 끝난 게임 랭킹 라운드 보상(한 번만)
     const me = await auth(req, db);
     if (!me) return json({ me: null });
+    if (me.ach === '') await achRun(db, me, null);   // 업적: 예전 기록으로 처음 한 번 소급(그 뒤는 기록 저장 때)
     const [unread, fo, fb, fr] = await Promise.all([
       db.prepare('SELECT COUNT(*) AS n FROM messages WHERE b = ?1 AND seen = 0 AND del = 0').bind(me.id).first(),
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE a = ?1').bind(me.id).first(),
@@ -500,7 +546,7 @@ const ROUTES = {
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
     const rkGift = (await db.prepare("SELECT round, game, place, tix FROM rank_rewards WHERE uid = ?1 AND seen = 0 AND (game LIKE 'w:%' OR game LIKE 't:%') ORDER BY round, game").bind(me.id).all()).results;
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length }, rkGift });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), ach: parseAch(me.ach), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length }, rkGift });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -509,7 +555,7 @@ const ROUTES = {
     if (isBad(name, body.bio, body.mood, body.club, isAdm(me) ? body.title : '')) return err('욕설이나 나쁜 말은 쓸 수 없어요');
     if (nameKey(name) !== nameKey(me.name) && me.handle !== ADMIN_HANDLE) { const ni = await nameIssue(db, name, me.id); if (ni) return err(ni); }
     // 출석 보상으로 해금한 프로필 사진·스티커도 허용 (최고 연속 기록 기준)
-    const ub = k => k === 'sticker' ? rwStk(me) : [...unlockedOf(effBest(me), effTotal(me), k), ...(k === 'title' && gcDone(gcOwn(me)) ? [GC_TITLE] : []), ...(k === 'title' && gcOwn(me)['r:fxkey'] > 0 ? [HOME_TITLE] : []), ...(k === 'title' && (gcOwn(me)[HOME_MARK] > 0 || gcOwn(me)['r:fxkey'] > 0) ? [HOME_TITLE2] : [])];   // 스티커는 뽑기 스티커도
+    const ub = k => k === 'sticker' ? rwStk(me) : [...unlockedOf(effBest(me), effTotal(me), k), ...(k === 'title' && gcDone(gcOwn(me)) ? [GC_TITLE] : []), ...(k === 'title' && ffOn(ACH_FF, isAdm(me)) ? achTitles(parseAch(me.ach)) : []), ...(k === 'title' && gcOwn(me)['r:fxkey'] > 0 ? [HOME_TITLE] : []), ...(k === 'title' && (gcOwn(me)[HOME_MARK] > 0 || gcOwn(me)['r:fxkey'] > 0) ? [HOME_TITLE2] : [])];   // 스티커는 뽑기 스티커도
     // 예전 보상 이름(r:lion 등)은 새 이름으로 바꿔서 검사 (2026-10-24 그림 교체)
     body.avatar = rwNorm(body.avatar);
     if (Array.isArray(body.stickers)) body.stickers = body.stickers.map(rwNorm);
@@ -644,9 +690,10 @@ const ROUTES = {
       db.prepare('SELECT game, MIN(best) AS best FROM scores WHERE uid = ?1' + RXQ(rx) + ' GROUP BY game').bind(u.id).all(),
       topCrowns(db, u.id, rx),
     ]);
+    const achRow = ffOn(ACH_FF, isAdm(me)) ? await db.prepare('SELECT ach FROM users WHERE id = ?1').bind(u.id).first() : null;
     return json({
       user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), counts: { following: fo.n, followers: fb.n },
-      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, tier: isAdm(u) ? null : await tierOfUser(db, u, tierV2(me), rx, gtFor(me)),
+      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, ach: achRow ? await achSum(db, parseAch(achRow.ach)) : undefined, tier: isAdm(u) ? null : await tierOfUser(db, u, tierV2(me), rx, gtFor(me)),
       streak: isAdm(u) ? { cur: ALL_OPEN, best: ALL_OPEN, total: u.st_total || 0, pf: true } : { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
   }),
@@ -1100,8 +1147,23 @@ const ROUTES = {
     // 기자재 정리! 일반 모드도 주간 미션 판 수로 인정(gear-tier, 2026-10-28 하율) — 'gear' 한 판으로 셈, 최고 기록 깨기는 랭킹전만
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
     const mis = (!g.casual || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }) : null;
+    // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
+    const achGot = await achRun(db, me, { game, v, r: body.rounds, rank: g.casual ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() });
+    const ach = achGot.length && ffOn(ACH_FF, isAdm(me)) ? achGot : undefined;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, cheer: !g.casual && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, cheer: !g.casual && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+  }),
+
+  // 게임 업적 목록(깃발 achv): ?u=아이디(없으면 나). 내 것은 열 때마다 소급 판정
+  'GET ach': needMe(async ({ db, me, url }) => {
+    if (!ffOn(ACH_FF, isAdm(me))) return err('not found', 404);
+    const h = url.searchParams.get('u');
+    const u = !h || h === me.handle ? me : await db.prepare('SELECT id, handle, name, ach FROM users WHERE handle = ?1').bind(String(h).toLowerCase()).first();
+    if (!u || (u !== me && (await rel(db, me.id, u.id)).blockedMe)) return err('없는 사용자예요', 404);
+    const st = await achStats(db, u.id, me);
+    if (u === me) await achRun(db, me, null, st);
+    const R = await achRarity(db);
+    return json({ own: parseAch(u.ach), st, rare: Object.fromEntries(ACH.map(a => [a.k, achPct(R, a.k)])), players: R.n, me: u === me });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {

@@ -11,7 +11,8 @@ import { STAIR_MAX, floorName as stairFloor } from './stair-score.js';
 import { ffOn, RELEASED } from './flags.js';
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
 import { TIERS, TIER_PCT, BEST_N, tierOfK, PTS_MIN_N } from './att-rewards.js';
-import { CLUBS, clubOf, clubLogo } from './clubs.js';   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
+import { CLUBS, clubOf, clubLogo } from './clubs.js';
+import { ACH, ACH_FF, ACH_GAMES, ACH_TITLE, ACH_TITLES, achOf, achProg, achTitles } from './achv.js';   // 게임 업적(2026-10-28, 미리보기 깃발 achv)   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl','k:shark'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -56,7 +57,8 @@ async function call(path, body) {
     if (r.status === 401 && S.me) { S.me = null; paintBadges(); }
     const e = new Error(j.error || '잠시 후 다시 시도해 주세요'); e.status = r.status; throw e;
   }
-  if (j.mis) msResult(j.mis);   // 주간 미션을 깬 응답(게임·뽑기·출석·DM·팔로우·프로필)
+  if (j.mis) msResult(j.mis);
+  if (j.ach) achResult(j.ach);   // 게임 업적 달성(기록 저장 응답)   // 주간 미션을 깬 응답(게임·뽑기·출석·DM·팔로우·프로필)
   return j;
 }
 const fail = e => toast(e.message || '문제가 생겼어요');
@@ -427,6 +429,7 @@ function profileHtml(d) {
         <aside class="pside">
           ${streak}
           ${isDev(u) ? '' : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
+          ${achProf(d, u)}
         </aside>
       </div>
       ${self ? swBar() : ''}
@@ -879,7 +882,7 @@ function titleOpts(cur) {
   const have = ATT.lockedOf('title').filter(attHave), gcT = gcDone(S.me?.gc?.own);   // 뽑기 시리즈 완성 칭호
   const own = S.me?.gc?.own || {}, hT = own['r:fxkey'] > 0, h2 = hT || own[HOME_MARK] > 0;   // 히든 칭호: 가진 사람만 이름이 보임, 아직이면 잠긴 칸에 '???'로만 (2026-10-25 하율 — 공지엔 안 씀)
   const opt = t => `<option value="${esc(t)}" ${t === cur ? 'selected' : ''}>${esc(t)}</option>`;
-  return `<option value="">없음</option>${hT ? opt(HOME_TITLE) : ''}${h2 ? opt(HOME_TITLE2) : ''}${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}${h2 ? '' : '<option disabled>🔒 ??? (히든)</option>'}${hT ? '' : '<option disabled>🔒 ??? — 집에 먼저 가는 사람에게 주어지는 칭호입니다</option>'}`;
+  return `<option value="">없음</option>${hT ? opt(HOME_TITLE) : ''}${h2 ? opt(HOME_TITLE2) : ''}${have.map(r => `<option value="${esc(r.v)}" ${r.v === cur ? 'selected' : ''}>${esc(r.v)}</option>`).join('')}${gcT ? `<option value="${esc(GC_TITLE)}" ${GC_TITLE === cur ? 'selected' : ''}>${esc(GC_TITLE)}</option>` : `<option disabled>🔒 ${esc(GC_TITLE)} (뽑기 시리즈 완성)</option>`}${ATT.lockedOf('title').filter(r => !attHave(r)).map(r => `<option disabled>🔒 ${esc(r.v)} (${r.by === 'total' ? '총' : '연속'} ${r.d}일)</option>`).join('')}${achOn() ? (() => { const at = achTitles(S.me?.ach || {}); return ACH_TITLES.map(t => at.includes(t) ? opt(t) : `<option disabled>🔒 ${esc(t)} (게임 업적 모두)</option>`).join(''); })() : ''}${h2 ? '' : '<option disabled>🔒 ??? (히든)</option>'}${hT ? '' : '<option disabled>🔒 ??? — 집에 먼저 가는 사람에게 주어지는 칭호입니다</option>'}`;
 }
 
 /* ===== 계정 설정 ===== */
@@ -1438,18 +1441,66 @@ function gtText(t) {
 }
 // 게임 화면 (진짜·뼈대 공용)
 function gameHtml(info) {
-  return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
+  return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}${S.me ? achBar() : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
     const x = info?.[k];
     // 2026-10-28 하율: 서비스 게임 칸처럼 한 줄 5개로 · 한눈에 — 설명은 이름에 마우스를 올리면(title), 기록·순위·1등을 짧게
     return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? `<b class="beta new" data-nf="${g.ff}">NEW</b>` : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
       <p class="gem">${ic(g.ic)}</p><h3 title="${esc(g.desc)}">${g.name}</h3>
       ${x ? `<div class="gstat"><span>내 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
         <p class="gtop">${x.top ? `<small>${ic('trophy')}1등</small><a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')}<span>${esc(x.top.name)}</span></a><b>${esc(g.fmt(x.top.value))}</b>` : `<small>${ic('trophy')}1등</small><i>비어 있어요!</i>`}</p>` : `<p class="gdesc">${g.desc}</p>`}
-      <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost gbr" data-rank="${k}" aria-label="${esc(g.name)} 랭킹" title="랭킹">${ic('trophy')}</button></div>
+      <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost gbr" data-rank="${k}" aria-label="${esc(g.name)} 랭킹" title="랭킹">${ic('trophy')}</button>${!g.casual && ACH_GAMES.includes(k) ? `<button class="btn ghost gbr gach" data-ach="${k}" data-ff="${ACH_FF}" aria-label="${esc(g.name)} 업적" title="업적">${medal(3, true)}</button>` : ''}</div>
     </article>`;
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
 }
+/* ===== 게임 업적 (2026-10-28 하율: 스팀처럼 — public/js/achv.js, 미리보기 깃발 achv) ===== */
+// 메달 그림(이모지 금지 → 직접 그린 SVG): lv 1 브론즈 · 2 실버 · 3 골드 · 4 무지개, on = 달성
+const medal = (lv, on) => `<svg class="amd am${lv}${on ? '' : ' off'}" viewBox="0 0 24 24" aria-hidden="true"><path class="am-rb" d="M7 2h4l2 6H9zM13 2h4l-2 6h-4z"/><circle class="am-o" cx="12" cy="14.5" r="7.5"/><circle class="am-i" cx="12" cy="14.5" r="5.2"/><path class="am-s" d="M12 10.6l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4z"/></svg>`;
+const achOn = () => ffOn(ACH_FF, isDev(S.me));
+const achCnt = own => ACH.filter(a => own?.[a.k]).length;
+const achBar = () => `<button type="button" class="ach-bar" data-ach="" data-ff="${ACH_FF}">${medal(4, true)}<span><b>게임 업적</b><small>모은 업적 ${achCnt(S.me?.ach)} / ${ACH.length} · 게임마다 업적을 다 모으면 칭호</small></span><i aria-hidden="true">›</i></button>`;
+const gName = g => g === 'all' ? '공통' : GAMES[g]?.name || g;
+function achResult(keys) {
+  if (!achOn() || !keys?.length) return;
+  if (S.me) { S.me.ach = { ...(S.me.ach || {}) }; for (const k of keys) S.me.ach[k] = Date.now(); }
+  const a = ACH.find(x => x.k === keys[0]);
+  toast(`업적 달성! ‘${a?.n || ''}’${keys.length > 1 ? ` 외 ${keys.length - 1}개` : ''} · 게임 화면 업적에서 확인`, 5000);
+  const t = $('.ach-bar small'); if (t) t.textContent = `모은 업적 ${achCnt(S.me?.ach)} / ${ACH.length} · 게임마다 업적을 다 모으면 칭호`;
+}
+let achD = null, achTab = 'all';
+async function openAch(h = '', g = '') {
+  sheet('<div class="ach-sheet"><div class="skel"></div></div>'); $('#socSheet').classList.add('wide');
+  try { achD = await call('ach' + (h ? '?u=' + encodeURIComponent(h) : '')); } catch (e) { $('#socSheet').innerHTML = `<p class="note center">${esc(e.message)}</p>`; return; }
+  achD.h = h; achTab = g && (g === 'all' || ACH_GAMES.includes(g)) ? g : 'all';
+  if (achD.me && S.me) S.me.ach = achD.own;
+  paintAch();
+}
+function achRow(a) {
+  const d = achD, at = d.own[a.k], hide = a.hid && !at, pr = !at && achProg(a, d.st), pct = d.rare[a.k] ?? 0;
+  const fmt = n => n.toLocaleString('ko-KR');
+  return `<li class="${at ? 'got' : ''}${hide ? ' hid' : ''}">${medal(a.lv, !!at)}<div class="ach-tx"><b>${hide ? '???' : esc(a.n)}</b><small>${hide ? '숨겨진 업적 — 직접 찾아보세요' : esc(a.d)}</small>${pr ? `<span class="ach-pg"><i data-w="${Math.round(pr[0] / pr[1] * 20) * 5}"></i><em>${fmt(pr[0])} / ${fmt(pr[1])}</em></span>` : ''}</div>
+    <div class="ach-rt"><span class="ach-pc${pct < 5 ? ' rare' : ''}">${d.players ? `학생 ${pct}%` : '-'}</span>${at ? `<small>${new Date(at).getMonth() + 1}/${new Date(at).getDate()} 달성</small>` : ''}</div></li>`;
+}
+function paintAch() {
+  const d = achD, tabs = ['all', ...ACH_GAMES.filter(g => GAMES[g] && gamesOn().some(([k]) => k === g))];
+  const cnt = g => { const l = achOf(g); return `${l.filter(a => d.own[a.k]).length}/${l.length}`; };
+  const list = achOf(achTab).slice().sort((a, b) => !!d.own[b.k] - !!d.own[a.k]);
+  const ttl = ACH_TITLE[achTab], tDone = ttl && achOf(achTab).filter(a => !a.hid).every(a => d.own[a.k]);
+  $('#socSheet').innerHTML = `<div class="ach-sheet">
+    <div class="ach-top">${medal(4, true)}<div><h3>${d.me ? '내 업적' : '업적'}</h3><small>${achCnt(d.own)} / ${ACH.length}개 달성 · 달성률은 게임해 본 학생 ${d.players}명 기준</small></div></div>
+    <div class="ach-tabs" role="tablist">${tabs.map(g => `<button type="button" role="tab" class="${g === achTab ? 'on' : ''}" data-ach-tab="${g}" aria-selected="${g === achTab}">${g === 'all' ? medal(2, true) : ic(GAMES[g].ic)}<span>${esc(gName(g))}</span><small>${cnt(g)}</small></button>`).join('')}</div>
+    <ol class="ach-list">${list.map(achRow).join('')}</ol>
+    ${ttl ? `<p class="ach-note${tDone ? ' done' : ''}">${ui('tag', 'ic')}${tDone ? `칭호 ‘${esc(ttl)}’ 획득! 프로필 꾸미기에서 달 수 있어요` : `숨겨진 업적을 뺀 ${esc(gName(achTab))} 업적을 모두 모으면 칭호 ‘${esc(ttl)}’`}</p>` : '<p class="ach-note">한 판으로만 깨는 업적은 그 기록을 낸 판에서만 달성돼요 · 보류된 기록은 세지 않아요</p>'}
+    <div class="row"><button type="button" class="btn ghost" data-close>닫기</button></div>
+  </div>`;
+  for (const i of $$('#socSheet .ach-pg i')) i.classList.add('w' + i.dataset.w);   // 진행 막대 폭(CSP: style 속성 금지 → 5% 단위 클래스)
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-ach-tab]'); if (t && achD) { achTab = t.dataset.achTab; paintAch(); return; }
+  const b = e.target.closest('[data-ach]'); if (!b || !S.me || !achOn()) return;
+  e.preventDefault(); openAch(b.dataset.h || '', b.dataset.ach || '');
+});
+const achProf = (d, u) => !d.ach || isDev(u) ? '' : `<button type="button" class="pach" data-ach="" data-h="${esc(u.handle)}" data-ff="${ACH_FF}"><span class="pach-h">${medal(3, true)}업적 <b>${d.ach.n}</b>/${d.ach.of}</span>${d.ach.top.length ? `<span class="pach-l">${d.ach.top.map(x => { const a = ACH.find(y => y.k === x.k); return a ? `<i title="학생 ${x.p}% 달성">${medal(a.lv, true)}${esc(a.n)}</i>` : ''; }).join('')}</span>` : '<span class="pach-l"><i class="none">아직 없어요</i></span>'}</button>`;
 // 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
 async function loadTier() {
   const box = $('#tierBox'); if (!box) return;
