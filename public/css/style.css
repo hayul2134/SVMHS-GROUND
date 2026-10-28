@@ -2452,7 +2452,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .s-lbl::before{content:"▾";order:1;font-size:.75em;color:var(--sub)}
 .s-lbl{overflow:hidden;flex-shrink:1}
 .s-lbl .lt{overflow:hidden;text-overflow:ellipsis;min-width:0}.s-lbl .lw{white-space:pre}
-.s-lbl .ld{flex:none;display:inline-grid;place-items:center;min-width:1.45em;height:1.45em;margin-left:5px;padding:0 3px;border-radius:7px;background:var(--chip);color:var(--text);font-size:.72em;font-weight:900;line-height:1}.s-lbl.off .ld{background:rgba(255,255,255,.55);color:#3b3220}   /* 2026-10-28 오늘·내일 옆 요일 칩 */
+.s-lbl .ld{flex:none;display:inline-grid;place-items:center;min-width:1.3em;height:1.3em;margin-left:5px;padding:0 4px;border-radius:8px;background:var(--chip);color:var(--text);font-size:.92em;font-weight:900;line-height:1}.s-lbl.off .ld{background:rgba(255,255,255,.55);color:#3b3220}   /* 2026-10-28 오늘·내일 옆 요일 칩 */
 .s-lbl::before{flex:none}
 @container (max-width:270px){.s-lbl{padding:0 5px;gap:2px}.s-nb{width:24px}}
 @container (max-width:240px){.s-lbl .ld{margin-left:3px}.s-lbl .lw{display:none}.s-lbl::before{display:none}}   /* 2026-10-28 태블릿: 가로 아이패드(1024px)에서 '급식·시간표' 글자가 빠지던 것 → 정말 좁을 때만 뺌 */
