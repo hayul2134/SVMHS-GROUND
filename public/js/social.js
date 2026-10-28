@@ -1520,6 +1520,9 @@ async function loadTier() {
     }
     return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
   const perPv = !m && pm ? '<p class="tr-pv">미리보기 · 1위 학생 기준 점수 내역(개발자는 티어 밖)</p>' : '';
+  // 총점(2026-10-28 하율 "총 몇점인지 보이게"): 점수 내역 아래 합산 = 잘한 BEST_N개 점수 더하기
+  const sumIn = pm ? Object.values(pm.games || {}).filter(x => !x.x).map(x => x.p).sort((a, b) => b - a) : [];
+  const perSum = pm ? `<p class="tr-sum"><span>총점</span><b>${pm.pts}점</b><small>잘한 ${BEST_N}개 합산${sumIn.length ? ` · ${sumIn.join(' + ')}` : ''}</small></p>` : '';
   const top = d.top.length ? d.top.map(trRow).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
   // TOP 10은 펼친 채로, 그 아래 '전체 순위 보기'(2026-10-26 하율 요청)
   const allOn = ffOn('tier-all', isDev(S.me)), opn = allOn ? ' open' : '';   // 미리보기 깃발 tier-all
@@ -1541,7 +1544,7 @@ async function loadTier() {
     <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>
     <ol class="tr-stairs">${stairs}</ol>
     <div class="tr-who" hidden></div>
-    ${per ? `${perPv}<ul class="tr-games">${per}</ul>` : ''}
+    ${per ? `${perPv}<ul class="tr-games">${per}</ul>${perSum}` : ''}
     <details class="tr-top"${opn}><summary>${ic('trophy')}<span>티어 순위 TOP 10</span><i class="trt-go" aria-hidden="true"></i></summary><ol>${top}</ol>${more}</details>`;
     tierWho(box); trAll(box, top);
     const sl = box.querySelector('.tr-stairs'), on = sl?.querySelector('li.on');   // 폰: 가로로 넘기는 계단을 내 티어 쪽으로
