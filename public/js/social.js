@@ -1944,7 +1944,7 @@ async function myRecInto(el, game, local = null, fold = null) {
     const open = store.get('mr_' + game, fold.open ?? false);
     return `<div class="myrec mr-fold${open ? ' open' : ''}"><button type="button" class="mr-tog" aria-expanded="${open}">${best.replace('<p class="mr-best">', '<span class="mr-best">').replace(/<\/p>$/, '<svg class="mr-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>')}</button><div class="mr-body"${open ? '' : ' hidden'}>${body}</div></div>`;
   };
-  const hook = () => { const b = el.querySelector('.mr-tog'); if (!b) return; b.onclick = () => { const box = b.parentElement, on = !box.classList.contains('open'); box.classList.toggle('open', on); b.setAttribute('aria-expanded', on); box.querySelector('.mr-body').hidden = !on; store.set('mr_' + game, on); }; };
+  const hook = () => { const b = el.querySelector('.mr-tog'); if (!b) return; b.onclick = () => { const box = b.parentElement, on = !box.classList.contains('open'); box.classList.toggle('open', on); b.setAttribute('aria-expanded', on); box.querySelector('.mr-body').hidden = !on; store.set('mr_' + game, on); b.blur(); }; };   // blur: 게임 키(스페이스)가 이 버튼을 다시 누르지 않게
   if (!S.me) { el.innerHTML = wrap(`<p class="mr-best">${ic('trophy')}<span>내 최고</span><b>${local != null ? esc(g.fmt(local)) : '-'}</b></p>`, '<p class="mr-pe">로그인하면 날마다 내 기록이 쌓여요</p>'); hook(); return; }
   let r; try { r = await call('myrec?game=' + game); } catch { return null; }
   if (!el.isConnected || !Array.isArray(r?.days)) return r;
