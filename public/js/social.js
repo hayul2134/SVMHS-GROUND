@@ -1524,13 +1524,21 @@ function chUpLine(c) {   // 내 티어 칸 아래: 어제보다 · 지난 라운
 function chBlock(c) {
   const gs = gamesOn().filter(([k]) => GAMES[k]);
   const byG = new Map((c.games || []).map(x => [x.g, x]));
+  const GAP = { home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
   const champs = gs.map(([k, g]) => { const x = byG.get(k);
-    return `<li class="${x?.me ? 'me' : ''}${x ? '' : ' none'}"><span class="tch-g">${ic(g.ic)}<b>${g.name}</b></span>${x ? `<span class="tch-u">${x.users.map(u => `<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<span>${esc(nameOf(u))}</span></a>`).join('')}${x.more ? `<small>외 ${x.more}명</small>` : ''}</span><small class="tch-n">${x.n}명 중 1등</small>` : '<span class="tch-u"><i>아직 없어요 · 지금 하면 1등!</i></span>'}</li>`; }).join('');
+    if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">?</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
+    const rec = x.b != null && g.fmt ? g.fmt(x.b) : '', gm = k === 'gear' && x.m ? `<i class="tcc-mode">${gtMode(x.m)}</i>` : '';
+    const gap = x.gap === 0 ? '공동 1등' : x.gap > 0 && GAP[k] ? `2등과 ${GAP[k](x.gap)} 차이` : x.n === 1 ? '유일한 도전자' : '';
+    return `<li class="tcc${x.me ? ' me' : ''}"><i class="cr-shine"></i><i class="cr-spk s1"></i><i class="cr-spk s2"></i>
+      <span class="tcc-g">${ic(g.ic)}<b>${g.name}</b>${gm}</span><span class="tcc-md">1</span>
+      <span class="tcc-u">${x.users.map(u => `<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'tiny', avWear(u.mfx))}<span>${esc(nameOf(u))}</span></a>`).join('')}${x.more ? `<small>외 ${x.more}명</small>` : ''}</span>
+      ${rec ? `<b class="tcc-rec">${esc(rec)}</b>` : ''}
+      <span class="tcc-meta"><span>${ic('flag')}${x.n}명 중 1등</span>${gap ? `<span>${ic('ruler')}${gap}</span>` : ''}${x.me ? '<span class="tcc-mine">나!</span>' : ''}</span></li>`; }).join('');
   const mine = (c.games || []).filter(x => x.me).length;
   const rise = c.rise?.length ? c.rise.map(u => `<li class="${u.isMe ? 'me' : ''}"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><span class="tch-mv">${u.d > 0 ? `${tierBadge(u.from)}<i>→</i>${tierBadge(u.to)}` : tierBadge(u.to)}</span><em>${u.d > 0 ? `▲${u.d}` : ''}${u.dp > 0 ? ` +${u.dp}점` : ''}</em></li>`).join('') : '';
   return `<section class="tch">
     <div class="tch-h">${ic('trophy')}<b>이번 라운드 게임별 1등</b>${mine ? `<span class="tch-mine">나도 ${mine}개 게임 1등!</span>` : '<small>티어와 따로, 게임마다 1등이 있어요</small>'}</div>
-    <ul class="tch-list">${champs}</ul>
+    <ul class="tch-list tcc-list">${champs}</ul>
     ${c.since ? `<div class="tch-h">${ic('fire')}<b>어제보다 많이 오른 학생</b><small>${md(c.since)}까지 기록과 비교</small></div>${rise ? `<ol class="tch-rise">${rise}</ol>` : '<p class="tch-none">아직 오른 학생이 없어요 — 첫 주인공이 되어 볼까요?</p>'}` : '<p class="tch-none">라운드 첫날이라 내일부터 \'어제보다 오른 학생\'이 보여요</p>'}
   </section>`;
 }

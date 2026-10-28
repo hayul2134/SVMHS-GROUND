@@ -5882,3 +5882,33 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .km-none{color:var(--sub);font-weight:700}
 .km-foot{display:flex;justify-content:space-between;gap:8px}
 @media (prefers-reduced-motion:reduce){.km-wait{animation:none}}
+/* 게임별 1등 카드 화려하게 + 기록 표시(2026-10-28 하율 "좀 더 화려하게 점수도") — 왕관 없이 금메달 '1'(왕관은 뽑기 효과 전용) */
+.tcc-list{grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:10px}
+.tcc-list li.tcc{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px 14px 12px;border:2.5px solid var(--ink);border-radius:18px;color:#5a3d00;
+  background:radial-gradient(120% 140% at 0% 0%,#fff8d6 0%,#ffe27a 50%,#ffc93c 100%);box-shadow:0 4px 0 var(--ink),inset 0 0 0 3px rgba(255,255,255,.55),inset 0 -6px 14px rgba(196,120,0,.22)}
+.tcc-list li.tcc::before{content:"";position:absolute;inset:-60%;z-index:-1;opacity:.3;background:repeating-conic-gradient(from 0deg,#fff 0 8deg,transparent 8deg 22deg);animation:crSpin 22s linear infinite}
+.tcc-list li.tcc.me{background:radial-gradient(120% 140% at 0% 0%,#fffbe8 0%,#ffd84d 45%,#ffad1f 100%);box-shadow:0 4px 0 var(--ink),0 0 0 4px #fff3b8,0 0 18px rgba(255,190,40,.75),inset 0 0 0 3px rgba(255,255,255,.6)}
+.tcc-g{position:relative;z-index:1;display:flex;align-items:center;gap:6px;max-width:calc(100% - 44px);font-size:13.5px}
+.tcc-g .sic{width:22px;height:22px;flex:none}
+.tcc-g b{font-weight:900;color:#3d2600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcc-mode{flex:none;padding:1px 7px;border-radius:999px;background:#fff;border:1.5px solid rgba(90,61,0,.35);font-style:normal;font-size:11px;font-weight:900}
+.tcc-md{position:absolute;top:9px;right:10px;z-index:1;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:2.5px solid var(--ink);
+  background:radial-gradient(circle at 35% 30%,#fffbe6,#ffd25a 55%,#e8a311);box-shadow:0 3px 0 var(--ink),inset 0 0 0 3px #fff3b8;font:400 19px/1 Jua,sans-serif;color:#7a4b00;padding-top:2px;animation:crBob 2.8s ease-in-out infinite}
+.tcc-u{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.tcc-u a{display:inline-flex;align-items:center;gap:7px;min-width:0;color:#3d2600;text-decoration:none;font-weight:900;font-size:15px}
+.tcc-u a .av{box-shadow:0 0 0 3px #fff3b8,0 0 0 5px #e8a311}
+.tcc-u a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9em}
+.tcc-u small{font-size:12px;font-weight:800}
+.tcc-rec{position:relative;z-index:1;font:400 27px/1.05 Jua,sans-serif;color:#3d2600;letter-spacing:-.3px;text-shadow:0 2px 0 rgba(255,255,255,.75)}
+.tcc-meta{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:4px}
+.tcc-meta span{display:inline-flex;align-items:center;gap:2px;padding:2px 8px 2px 5px;border-radius:999px;background:rgba(255,255,255,.75);border:1.5px solid rgba(90,61,0,.35);font-size:11.5px;font-weight:800;color:#5a3d00;white-space:nowrap}
+.tcc-meta .sic{width:1.15em;height:1.15em}
+.tcc-meta .tcc-mine{background:var(--ink);color:#ffe27a;border-color:var(--ink);padding-left:8px}
+.tcc-list li.tcc .cr-spk.s1{top:10px;right:54px}.tcc-list li.tcc .cr-spk.s2{bottom:12px;right:16px}
+.tcc-list li.tcc.none{background:color-mix(in srgb,currentColor 4%,transparent);border:2.5px dashed color-mix(in srgb,currentColor 30%,transparent);box-shadow:none;color:inherit;opacity:1}
+.tcc-list li.tcc.none::before{display:none}
+.tcc-list li.tcc.none .tcc-g b{color:inherit}
+.tcc-md.e{background:color-mix(in srgb,currentColor 8%,transparent);border-style:dashed;box-shadow:none;color:var(--sub,#5b6477);animation:none}
+.tcc-empty{margin:4px 0 0;font-size:14px;font-weight:900;display:flex;flex-direction:column;gap:2px}
+.tcc-empty small{font-size:12px;font-weight:700;color:var(--sub,#5b6477)}
+@media (prefers-reduced-motion:reduce){.tcc-list li.tcc::before,.tcc-md,.tcc-list .cr-shine,.tcc-list .cr-spk{animation:none}}

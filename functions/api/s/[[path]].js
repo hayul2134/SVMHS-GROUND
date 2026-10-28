@@ -1597,7 +1597,7 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
     const rows = [...bu.values()].sort((a, b) => a.b - b.b || a.at - b.at);
     let rk = 0;
     rows.forEach((r, i) => { rk = i > 0 && rows[i - 1].b === r.b ? rk : i + 1;
-      const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts2(rk, rows.length); a.games[game] = { r: rk, n: rows.length, p, at: r.at }; acc.set(r.uid, a); });
+      const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts2(rk, rows.length); a.games[game] = { r: rk, n: rows.length, p, at: r.at, b: r.b }; acc.set(r.uid, a); });
   }));
   // 기자재 정리!: 두 모드 중 순위 점수가 높은 쪽 한 칸(같으면 랭킹전). m = 반영된 모드(r 랭킹전 · n 일반), o = 다른 모드 순위·점수(표시용)
   if (gOn) for (const a of acc.values()) {
@@ -1627,7 +1627,11 @@ async function tierChamp(db, me, b, mine, usersOf) {
   const v2 = tierV2(me), rx = rxOn(me), gt = gtFor(me), ix = k => TIERS.findIndex(t => t.k === k);
   // ① 게임별 1등(동점이면 여럿)
   const ch = {};
-  for (const x of b.list) for (const [g, v] of Object.entries(x.games || {})) if (v.r === 1) (ch[g] = ch[g] || { g, n: v.n, uids: [] }).uids.push(x.uid);
+  const sec2 = {};   // 2등 기록(1등과 차이 표시)
+  for (const x of b.list) for (const [g, v] of Object.entries(x.games || {})) {
+    if (v.r === 1) (ch[g] = ch[g] || { g, n: v.n, b: v.b, m: v.m, uids: [] }).uids.push(x.uid);
+    else if (v.r === 2 && !v.m) sec2[g] = v.b;   // 기자재는 모드가 섞여 차이를 안 셈
+  }
   // ② 어제까지 기록으로 만든 판과 비교 (라운드 첫날이면 비교 없음)
   const y = ymdAdd(kstYmd(), -1), yb = y >= b.from ? await tierBoard(db, b.n, v2, rx, gt, y) : null;
   const ym = new Map((yb?.list || []).map(x => [x.uid, x]));
@@ -1639,7 +1643,7 @@ async function tierChamp(db, me, b, mine, usersOf) {
   if (tgt && b.n >= 1) { const pb = await tierBoard(db, b.n - 1, v2, rx, gt), p = pb.list.find(x => x.uid === tgt.uid); if (p) prev = { k: p.tier, rank: p.rank, pts: p.pts, players: pb.list.length, d: ix(p.tier) - ix(tgt.tier) }; }
   const ids = [...new Set([...Object.values(ch).flatMap(c => c.uids.slice(0, 3)), ...risers.map(o => o.x.uid)])], byId = await usersOf(ids);
   return {
-    games: Object.values(ch).map(c => ({ g: c.g, n: c.n, more: Math.max(0, c.uids.length - 3), me: c.uids.includes(me.id), users: c.uids.slice(0, 3).map(u => card(byId.get(u))).filter(Boolean) })),
+    games: Object.values(ch).map(c => ({ g: c.g, n: c.n, b: c.b, m: c.m, gap: c.uids.length > 1 ? 0 : sec2[c.g] != null && c.b != null ? sec2[c.g] - c.b : null, more: Math.max(0, c.uids.length - 3), me: c.uids.includes(me.id), users: c.uids.slice(0, 3).map(u => card(byId.get(u))).filter(Boolean) })),
     since: yb ? y : null, me: tgt ? delta(tgt) : null, pv: !mine && !!tgt, prev,
     rise: risers.map(o => ({ ...card(byId.get(o.x.uid)), to: o.x.tier, ...o.r, isMe: o.x.uid === me.id })).filter(u => u.handle),
   };
