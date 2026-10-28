@@ -1701,6 +1701,7 @@ function restartGame() {
 // R 키로 다시 시작(2026-10-27 하율) — 게임 키보다 먼저 받아서(capture) 기자재 정리!의 '아무 키나 누르면 시작'과 겹치지 않게. 한글 입력 상태(ㄱ)도 e.code로 잡힘
 addEventListener('keydown', e => {
   if (e.code !== 'KeyR' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || $('#gamePlay').hidden) return;
+  if (curGame === 'stair') return;   // 영상고 계단 오르기는 다시 시작 버튼·R 키 없음(2026-10-28 하율: 열심히 하다 잘못 눌릴까 봐) — 끝나면 아무 키로 새 판
   if (e.target.closest?.('input,textarea,select,[contenteditable]') || document.querySelector('.modal.open')) return;
   e.preventDefault(); e.stopImmediatePropagation(); restartGame();
 }, true);
@@ -1978,7 +1979,7 @@ async function playStair() {
         <div class="hr-ov" id="srOv"></div></div>
       <div class="sr-touch"><button type="button" class="btn big ghost" id="srT" aria-label="방향 바꾸기">⇄ 방향 바꾸기</button><button type="button" class="btn big" id="srC" aria-label="오르기">오르기 ▲</button></div>
       <div class="hr-bar"><p class="hr-keys"><kbd>←</kbd><kbd>F</kbd> 방향 바꾸기 · <kbd>→</kbd><kbd>J</kbd><kbd>Space</kbd> 오르기</p>
-        ${RE_BTN}<button type="button" class="btn ghost hr-snd" id="srSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
+        <button type="button" class="btn ghost hr-snd" id="srSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div id="srRec"></div>
     </div>`);
   if (!STAIR) { try { STAIR = await import('./stair.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
