@@ -24,10 +24,10 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   num25: { min: 4000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기 · 하한 5000 → 4000 (2026-10-27 하율: 모바일은 훨씬 쉬움)
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
   home: { min: 1, max: HOME_MAX - 1, play: 0 },        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
-  gear: { min: 1, max: GEAR_MAX - 1, play: 3000, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
+  gear: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
   //   casual = 티어·역대 1등 표시(topCrowns)·주간 미션·1~3등 축하에서 빠짐 → 순위표(GET rank)·내 기록에만 나옴
-  gearn: { min: 1, max: GEAR_MAX - 1, play: 3000, ff: 'gear-game', casual: true },
+  gearn: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game', casual: true },
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierFrom: '2026-11-09' },   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
@@ -53,9 +53,11 @@ function checkRounds(game, v, r, elapsed) {
     if (out.length) return H(`판 기록 범위 밖: ${which(out)}`, `${which(out)}은(는) 게임 화면에서 나올 수 없는 값이에요(한 판은 100~1500ms).`, out);
     const sum5 = n.reduce((a, b) => a + b, 0), exp = Math.min(Math.round(sum5 / 5) + rxPen(fouls), 1500);
     // 판 하나가 빠르거나 느린 건 보류하지 않음 — 평균(기록)이 하한(GAMES.reaction.min) 아래면 위의 범위 검사에서 걸림 (2026-10-26 13:37 하율 "평균이 이상하지 않는 이상 보류는 하지 말아")
-    if (Math.abs(exp - v) > 1) return H(`평균+벌점(${exp})과 기록(${v})이 다름`, `5판의 평균${fouls > 1 ? '과 부정출발 벌점' : ''}을 더한 값(${exp}ms)과 최종 기록(${v}ms)이 서로 달라요.`);
-    const spread5 = Math.max(...n) - Math.min(...n);   // 부정출발 횟수를 뺀 5판으로 다시 계산
-    if (spread5 < 6) return H(`5판 차이가 ${spread5}ms뿐 — 매크로 의심`, `5판 기록이 거의 똑같아요(가장 빠른 판과 느린 판 차이 ${spread5}ms). 사람이 누르면 판마다 조금씩 달라지는데, 이렇게 일정하면 자동 클릭으로 보일 수 있어요.`);
+    // 기록이 판 평균보다 나쁜 쪽(v > exp)은 손해일 뿐이라 보류하지 않음 — POST score가 exp로 바로잡아 넣음(2026-10-28: 새로 고침 안 한 예전 화면이 1.5초 넘는 판을 원래 값으로 평균 내 '평균이 다름'으로 보류됐음)
+    if (v < exp - 1) return H(`평균+벌점(${exp})과 기록(${v})이 다름`, `5판의 평균${fouls > 1 ? '과 부정출발 벌점' : ''}을 더한 값(${exp}ms)과 최종 기록(${v}ms)이 서로 달라요.`);
+    // 매크로 검사는 1.5초에 걸린(시간 초과) 판을 빼고 — 5판 모두 안 누른 1500ms 판은 매크로가 아니라 자리 비움(2026-10-28 보류 버그)
+    const live = n.filter(x => x < 1500), spread5 = live.length ? Math.max(...live) - Math.min(...live) : 0;
+    if (live.length >= 4 && spread5 < 6) return H(`5판 차이가 ${spread5}ms뿐 — 매크로 의심`, `5판 기록이 거의 똑같아요(가장 빠른 판과 느린 판 차이 ${spread5}ms). 사람이 누르면 판마다 조금씩 달라지는데, 이렇게 일정하면 자동 클릭으로 보일 수 있어요.`);
     // 대기 0.45~7초(직전과 0.7초 이상 차이) → 5판 대기 합 최소 약 3.65초(2026-10-28: 예전 5초 기준은 짧은 대기가 섞인 정상 판도 보류할 수 있었음)
     if (elapsed < 3500 + sum5) return H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임한 시간이 ${sec(elapsed)}로 너무 짧아요. 5판 동안 기다리는 시간만 3.5초가 넘어서 이렇게 빨리 끝날 수 없어요.`);
   } else if (game === 'num25') {   // 25번 누른 시각(첫 탭 = 0, 예전 화면은 느린 기기에서 1~몇 ms가 찍혀 0~5 허용 — 2026-10-26 하율) + 틀린 벌점: 순서대로 늘고, 매크로 패턴(아래) 없음
@@ -85,7 +87,7 @@ function checkRounds(game, v, r, elapsed) {
     if (n.length !== 4) return H('판 기록 형식이 다름', '점수·줄·블록 수·시간이 제대로 오지 않았어요.');
     const [sc, ln, pc, ms] = n;
     if (GEAR_MAX - sc !== v) return H(`점수(${sc})와 기록(${v})이 다름`, '점수와 최종 기록이 서로 달라요.');
-    if (sc < 1 || ln < 0 || pc < 1 || ms < 1000) return H('판 기록 값이 범위 밖', '점수·줄·블록 수 중에 있을 수 없는 값이 있어요.');
+    if (sc < 1 || ln < 0 || pc < 1 || ms < 200) return H('판 기록 값이 범위 밖', '점수·줄·블록 수 중에 있을 수 없는 값이 있어요.');
     if (ln * 10 > pc * 4) return H(`줄(${ln})이 블록 수(${pc})보다 많음`, `블록 ${pc}개로는 많아야 ${Math.floor(pc * 4 / 10)}줄까지 지울 수 있는데 ${ln}줄로 기록됐어요.`);
     if (pc > ms / 125 + 5) return H(`블록을 너무 빨리 놓음(${pc}개 · ${sec(ms)})`, `${sec(ms)} 동안 블록 ${pc}개를 놓았어요. 1초에 8개보다 빠르게 놓을 수는 없어서 자동 입력으로 보일 수 있어요.`);
     if (sc > gearMax(ln, pc)) return H(`점수(${sc})가 줄·블록 수로 낼 수 있는 최대(${gearMax(ln, pc)})보다 큼`, `${ln}줄 · 블록 ${pc}개로 낼 수 있는 점수는 많아야 ${gearMax(ln, pc).toLocaleString('ko-KR')}점인데 ${sc.toLocaleString('ko-KR')}점으로 기록됐어요.`);
@@ -1021,7 +1023,7 @@ const ROUTES = {
   }),
 
   'POST score': needMe(async ({ db, me, body }) => {
-    const game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
+    let game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
     if (!g || (g.ff && !ffOn(g.ff, isAdm(me))) || !Number.isFinite(v) || v < 0 || v > 1e7) return err('기록이 이상해요');
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
@@ -1044,6 +1046,11 @@ const ROUTES = {
         .bind(me.id, game, v, rounds, why.a.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
       const mine = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rxOn(me))).bind(me.id, game).first();
       return json({ ok: true, held: true, why: why.u, bad: why.bad || [], best: mine?.b ?? null });
+    }
+    if (game === 'reaction') {   // 판 평균보다 나쁘게 온 기록은 판 평균(+벌점)으로 바로잡음 — 예전 화면이 1.5초 넘는 판을 원래 값으로 평균 낸 경우(2026-10-28)
+      const r = body.rounds.map(x => Math.round(+x)), f = r.length === 6 ? r.pop() : 0;
+      const e = Math.min(Math.round(r.reduce((a, b) => a + b, 0) / 5) + rxPen(f), 1500);
+      if (v > e + 1) v = e;
     }
     const rx = rxOn(me), day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const [prev, allPrev] = await Promise.all([
