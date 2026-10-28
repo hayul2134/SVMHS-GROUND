@@ -169,6 +169,8 @@ const FLOOR_MSG = ['', '교무실 앞은 조용히!', '이제 겨우 3층이라�
 
 export function createStair(cv, o = {}) {
   const g = cv.getContext('2d');
+  // 캔버스 배율은 2로 고정 — 4로 올리면 또렷하지만 느린 기기에서 프레임이 반으로 떨어짐(2026-10-28 측정: CPU 6배 느림 기준 60→30fps)
+  const TXT = new Map();   // 글자 판 캐시(이름표·교훈) — 매 프레임 measureText/fillText 하던 것
   cv.width = W * PS; cv.height = H * PS; g.imageSmoothingEnabled = false;
   const A = art();
   let spr = null, sprF = null;
@@ -176,7 +178,7 @@ export function createStair(cv, o = {}) {
   loadSpr();
   let raf = 0, last = 0, alive = true, sound = !!o.sound, ac = null, rnd = rng(o.seed ?? (Date.now() & 0xffff));
   const st = { scene: 'ready', steps: 0, turns: 0, ms: 0, gauge: 1, floor: 0, face: 1, why: '', shown: false, fast: 0, endAt: 0 };
-  let lastStepAt = 0, overT = 0, lowT = 0, recent = [], xs = [], run = 0, runDir = 1, px = 0, py = 0, fromX = 0, fromY = 0, moveT = 1, fall = null, shake = 0, parts = [], camX = 0, camY = 0, t = 0, flash = 0, stepN = 0, shoot = null;
+  let skyQ = null, skyBands = [], skyTop = '#7cc8ff', winSky = '#9fd8ff', winQ = null, lastStepAt = 0, overT = 0, lowT = 0, recent = [], xs = [], run = 0, runDir = 1, px = 0, py = 0, fromX = 0, fromY = 0, moveT = 1, fall = null, shake = 0, parts = [], camX = 0, camY = 0, t = 0, flash = 0, stepN = 0, shoot = null;
   const stars = Array.from({ length: 60 }, (_, i) => [hash(i * 3 + 1) * W, hash(i * 3 + 2) * 400, hash(i * 3 + 3)]);
 
   function more(n) {   // 같은 방향으로 1~6칸 이어지다 꺾임(처음 한 칸은 항상 오른쪽 → 첫 '오르기'가 실패하지 않게)
@@ -214,7 +216,7 @@ export function createStair(cv, o = {}) {
   function input(kind) {
     if (!alive || st.scene === 'over') return;
     if (st.scene === 'pause') { st.scene = 'play'; last = 0; o.onPause?.(false); return; }   // 멈춤을 푸는 입력은 오르지 않음
-    if (st.scene === 'ready') { st.scene = 'play'; o.onStart?.(); }
+    if (st.scene === 'ready') { st.scene = 'play'; o.onStart?.(); kind = 'climb'; }   // 첫 입력은 무조건 오르기(2026-10-28 디버깅: 시작을 '방향 바꾸기'로 누르면 0칸에서 바로 헛디뎌 끝나던 것)
     if (kind === 'turn') { st.face = -st.face; st.turns++; }
     const i = st.steps, nx = xs[i + 1];
     fromX = fromX + (px - fromX) * moveT; fromY = fromY + (py - fromY) * moveT;
@@ -252,7 +254,7 @@ export function createStair(cv, o = {}) {
   const box = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
   const frameBox = (x, y, w, h, c) => { box(x - 1, y - 1, w + 2, h + 2, OL); box(x, y, w, h, c); };
   function win(x, y) {   // 창문 32×34: 흰 창틀 · 하늘(구역 따라 바뀌는 바깥 색) · 반짝 줄 · 창턱
-    const [top] = skyAt(-camY / DY / FLOOR + 3);
+    const top = winSky;
     frameBox(x, y, 32, 30, '#ffffff'); box(x + 2, y + 2, 28, 26, top); box(x + 2, y + 18, 28, 10, mix(top, '#ffffff', .35));
     box(x + 15, y + 2, 2, 26, '#ffffff'); box(x + 2, y + 14, 28, 2, '#ffffff');
     box(x + 4, y + 9, 2, 2, '#ffffff'); box(x + 6, y + 7, 2, 2, '#ffffff'); box(x + 19, y + 24, 2, 2, '#ffffff'); box(x + 21, y + 22, 2, 2, '#ffffff');
@@ -260,9 +262,20 @@ export function createStair(cv, o = {}) {
     frameBox(x - 2, y + 31, 36, 3, '#c9a37a');
   }
   // 한글 이름표(작은 흰 판) — 픽셀 글꼴엔 한글이 없어 캔버스 글자로
+  function textCv(s, size, w, h, bg) {   // 글자를 한 번만 그려 둔 판(PS 배율 해상도) → drawImage
+    const k = s + '|' + size + '|' + PS + '|' + bg; let c = TXT.get(k);
+    if (!c) { c = document.createElement('canvas'); c.width = w * PS; c.height = h * PS; const q = c.getContext('2d'); q.scale(PS, PS);
+      if (bg) { q.fillStyle = OL; q.fillRect(0, 0, w, h); q.fillStyle = bg; q.fillRect(1, 1, w - 2, h - 2); }
+      q.font = `400 ${size}px Jua, sans-serif`; q.fillStyle = OL; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(s, w / 2, h / 2 + .5);
+      TXT.set(k, c); }
+    return c;
+  }
+  const lw = new Map();
+  const fontDone = () => { TXT.clear(); lw.clear(); };   // 글꼴(Jua)이 늦게 오면 그때 한 번 다시 그림 — 매 프레임 새로 만들던 것(글꼴 실패 시 계속) 막음
+  document.fonts?.addEventListener?.('loadingdone', fontDone);
   function label(cx, y, s) {
-    g.font = '400 6px Jua, sans-serif'; const w = Math.ceil(g.measureText(s).width) + 6, x = R(cx - w / 2);
-    frameBox(x, y, w, 9, '#ffffff'); g.fillStyle = OL; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(s, x + w / 2, y + 5);
+    let w = lw.get(s); if (!w) { g.font = '400 6px Jua, sans-serif'; w = Math.ceil(g.measureText(s).width) + 8; lw.set(s, w); }
+    const x = R(cx - w / 2); g.drawImage(textCv(s, 6, w, 11, '#ffffff'), x - 1, y - 1, w, 11);
   }
   function shoes(x, b) {   // 신발장 34×40: 칸마다 실내화
     frameBox(x, b - 40, 34, 40, '#f3f5fa');   // 흰 신발장(2026-10-28 하율)
@@ -315,7 +328,7 @@ export function createStair(cv, o = {}) {
   }
   function motto(x, y) {   // 교훈 액자 '믿음·사랑·감사'
     frameBox(x, y, 52, 14, '#fff8e8'); box(x + 1, y + 1, 50, 1, '#d9b48a'); box(x + 1, y + 12, 50, 1, '#d9b48a');
-    g.font = '400 6.5px Jua, sans-serif'; g.fillStyle = OL; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('믿음 · 사랑 · 감사', x + 26, y + 7.5);
+    g.drawImage(textCv('믿음 · 사랑 · 감사', 6.5, 52, 14, ''), x, y, 52, 14);
   }
   function poster(x, y, c) {   // 영상 포스터(필름·별)
     frameBox(x, y, 18, 24, c); box(x + 2, y + 2, 14, 12, '#2a2846'); box(x + 5, y + 5, 8, 6, '#ffd25e'); for (let i = 0; i < 4; i++) { box(x + 3 + i * 4, y + 3, 2, 1, '#ffffff'); box(x + 3 + i * 4, y + 12, 2, 1, '#ffffff'); }
@@ -455,8 +468,9 @@ export function createStair(cv, o = {}) {
   }
   function bg(f) {
     // 하늘(창밖·옥상 위) — 8줄씩 계단 모양으로 색이 바뀌는 픽셀 그라디언트
-    const [top, bot] = skyAt(f);
-    for (let y = 0; y < H; y += 8) { g.fillStyle = mix(top, bot, y / H); g.fillRect(0, y, W, 8); }
+    const fq = Math.round(f * 40);
+    if (fq !== skyQ) { skyQ = fq; const [top, bot] = skyAt(fq / 40); skyTop = top; skyBands = Array.from({ length: H / 8 }, (_, j) => mix(top, bot, j * 8 / H)); }   // 색 계산은 높이가 바뀔 때만
+    for (let j = 0; j < skyBands.length; j++) { g.fillStyle = skyBands[j]; g.fillRect(0, j * 8, W, 8); }
     if (f > 11.2) {   // 별: 반짝(밝기 2단계)
       const a = Math.min(1, (f - 11.2) / 1.2);
       for (const [x, y0, k] of stars) {
@@ -546,7 +560,7 @@ export function createStair(cv, o = {}) {
   function frame(now) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
-    const dt = last ? Math.min(.05, (now - last) / 1000) : 0; last = now; t += dt;
+    const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now; t += dt;   // 상한 0.05 → 0.1: 느린 기기에서 시간이 덜 흐르던 것 완화
     if (st.scene === 'play') {
       st.ms += dt * 1000; st.gauge -= drain(st.steps) * dt;
       if (st.gauge <= 0) { st.gauge = 0; end('time'); }
@@ -558,6 +572,7 @@ export function createStair(cv, o = {}) {
     if (st.scene === 'ready') { camX = cx * DX; camY = -cy * DY; }
     shake = Math.max(0, shake - dt * 12); shX = shake ? R((Math.random() - .5) * shake * 2) : 0; shY = shake ? R((Math.random() - .5) * shake * 2) : 0;
     g.setTransform(PS, 0, 0, PS, 0, 0); g.imageSmoothingEnabled = false;
+    { const wq = Math.round((-camY / DY / FLOOR + 3) * 20); if (wq !== winQ) { winQ = wq; winSky = skyAt(wq / 20)[0]; } }
     const f = -camY / DY / FLOOR;
     bg(f);
     const top = Math.floor(cy) + 24, bot = Math.max(0, Math.floor(cy) - 8);
@@ -598,7 +613,7 @@ export function createStair(cv, o = {}) {
     st, input, reset, pause,
     setChar(c) { o.char = c; loadSpr(); },
     setSound(v) { sound = !!v; if (v) beep(660, .05); },
-    destroy() { alive = false; clearTimeout(overT); cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', vis); window.removeEventListener('blur', blur); try { ac?.close(); } catch {} },
+    destroy() { alive = false; document.fonts?.removeEventListener?.('loadingdone', fontDone); clearTimeout(overT); cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', vis); window.removeEventListener('blur', blur); try { ac?.close(); } catch {} },
     get xs() { return xs; },   // 테스트용(정답 방향 확인)
   };
 }

@@ -1985,7 +1985,7 @@ async function playStair() {
   if (!STAIR) { try { STAIR = await import('./stair.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!$('#srCv')) return;
   const cv = $('#srCv'), ov = $('#srOv'), scr = $('#srScr'), gEl = $('#srG'), nEl = $('#srN'), fEl = $('#srF'), pop = $('#srPop');
-  let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0;
+  let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0, shownG = '', shownLow = false, shownC = null;
   const ready = () => {
     ov.hidden = false; ov.className = 'hr-ov sr-ready'; scr.classList.add('rdy'); scr.classList.remove('low', 'end');
     ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단으로 7층 꼭대기까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
@@ -1996,9 +1996,10 @@ async function playStair() {
     onStart() { ov.hidden = true; scr.classList.remove('rdy'); runTk = S.me ? call('start', { game: 'stair' }).then(r => r.ticket).catch(() => '') : null; },
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>종 게이지도 같이 멈췄어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
     onFrame(st) {
-      gEl.style.setProperty('--g', st.gauge.toFixed(3));   // CSP: style 속성 대신 CSSOM
-      scr.classList.toggle('low', st.scene === 'play' && st.gauge < .22);
-      gEl.className = st.gauge > .45 ? '' : st.gauge > .22 ? 'mid' : 'bad';
+      // 최적화(2026-10-28): 바뀐 것만 DOM에 씀(매 프레임 class·style을 다시 쓰면 스타일 재계산)
+      const gv = st.gauge.toFixed(3); if (gv !== shownG) { shownG = gv; gEl.style.setProperty('--g', gv); }   // CSP: style 속성 대신 CSSOM
+      const low = st.scene === 'play' && st.gauge < .22; if (low !== shownLow) { shownLow = low; scr.classList.toggle('low', low); }
+      const gc = st.gauge > .45 ? '' : st.gauge > .22 ? 'mid' : 'bad'; if (gc !== shownC) { shownC = gc; gEl.className = gc; }
       if (st.steps !== shownN) { shownN = st.steps; nEl.textContent = st.steps.toLocaleString('ko-KR'); if (st.steps) { nEl.classList.remove('bump'); void nEl.offsetWidth; nEl.classList.add('bump'); } }
       if (st.floor !== shownF) { shownF = st.floor; fEl.textContent = stairFloor(st.floor); }
     },
