@@ -1818,7 +1818,20 @@ function playReaction() {
 }
 
 /* 2) 1 to 25: 틀리면 +1초 */
+let N25 = null;   // n25.js 모듈 (1 to 25 2 — 미리보기 깃발 n25-v2, 처음 열 때 불러옴)
+async function playNum25b() {
+  const area = stage(ic('n25') + ' 1 to 25', '<p class="empty">불러오는 중…</p>');
+  if (!N25) { try { N25 = await import('./n25.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!area.isConnected) return;
+  area.innerHTML = N25.html(matchMedia('(pointer:coarse)').matches);
+  area.querySelector('.n2-wrap')?.insertAdjacentHTML('afterend', RE_ROW);
+  quitGame = N25.run(area, {
+    store, sound: store.get('n25_snd', false), onSound: on => store.set('n25_snd', on),
+    onDone: (v, rounds, det) => finish('num25', v, det, rounds),
+  });
+}
 function playNum25() {
+  if (ffOn('n25-v2', isDev(S.me))) return playNum25b();
   const nums = Array.from({ length: 25 }, (_, i) => i + 1).sort(() => Math.random() - .5);
   stage(ic('n25') + ' 1 to 25', `<div class="n25top"><span>다음 <b id="nNext">1</b></span><span id="nTime">0.00초</span></div>
     <div class="n25" id="n25">${nums.map(n => `<button data-n="${n}">${n}</button>`).join('')}</div>${RE_ROW}<p class="note center">틀리게 누르면 +1초</p>`);
