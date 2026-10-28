@@ -782,10 +782,13 @@ export function createRunner(canvas, char, opt = {}) {
     for (const c of st.clouds) g.drawImage(A.cloud, Math.round(c.x), Math.round(c.y));
     g.globalAlpha = 1;
     // 먼 건물 (아파트·빌딩)
+    drawBirds(sk);
     drawCity(sk, st.scroll * .12);
     drawTrees(sk, st.scroll * .45);
-    // 가로등·학교도 배경 → 안개를 씌우기 전에 그림
+    // 가로등·길가 소품·신정역·학교도 배경 → 안개를 씌우기 전에 그림
     drawLamps(sk);
+    drawProps(sk);
+    drawStation(sk, 0);
     drawSchool(sk);
     // 배경 안개(공기 원근): 배경을 하늘색 쪽으로 밀어 대비를 낮춤 → 진한 외곽선을 가진 장애물·캐릭터만 또렷하게 튀어나옴
     // 건물 높이 띠에만, 위로 갈수록 옅게 계단식(해·달·구름·별은 그대로, 경계선이 안 보이게)
@@ -793,6 +796,7 @@ export function createRunner(canvas, char, opt = {}) {
     g.fillStyle = sk.bot;
     [[52, .3], [40, .62], [28, 1]].forEach(([h, k], i, arr) => { g.globalAlpha = hz * k; g.fillRect(0, GROUND - h, W, h - (arr[i + 1]?.[0] ?? 0)); });
     g.globalAlpha = 1;
+    drawStation(sk, 1);   // 역 간판은 안개 위에 → 또렷하게
     // 땅: 보도블록 + 도로
     g.fillStyle = sk.ground; g.fillRect(0, GROUND, W, H - GROUND);
     g.fillStyle = sk.line; g.fillRect(0, GROUND, W, 1);
@@ -939,11 +943,146 @@ export function createRunner(canvas, char, opt = {}) {
     }
   }
   function drawLamps(sk) {
-    const gap = 110, off = Math.floor(st.scroll * .8) % gap;
-    for (let x = -off + 60; x < W + 10; x += gap) {
+    const gap = 110, L = Math.floor(st.scroll * .8);
+    for (let k = Math.floor((L - 70) / gap); k * gap + 60 - L < W + 10; k++) {
+      const x = k * gap + 60 - L;
+      if (nearStation(k * gap + 60, 10)) continue;   // 신정역 자리엔 가로등 없음
       if (sk.night > .5) { g.fillStyle = 'rgba(255,230,150,.16)'; g.fillRect(x - 9, GROUND - 26, 22, 26); g.fillRect(x - 5, GROUND - 30, 14, 4); }
       g.fillStyle = mix(sk.line, sk.far, .45); g.fillRect(x + 1, GROUND - 30, 2, 30); g.fillRect(x + 1, GROUND - 31, 7, 2);
       g.fillStyle = sk.night > .5 ? '#ffe58a' : '#e6ebf2'; g.fillRect(x + 6, GROUND - 29, 3, 2);
+    }
+  }
+  /* 길가 소품 (2026-10-28 하율: "배경 디벨롭 — 너무 많이 말고 몇몇 오브젝트가 조금씩")
+     가로등과 같은 층(스크롤 ×0.8). 가로등 사이 칸(110px)마다 약 30% 확률로 하나, 칸 번호로 정해지는 난수라 판마다 같은 자리 */
+  const LG = 110, ST_X = 4200, ST_W = 66;   // 신정역: 이 층 좌표 4200 → 거리 약 500m에 화면 가운데쯤
+  function nearStation(lx, w) { return lx + w > ST_X - 14 && lx < ST_X + ST_W + 14; }
+  function drawProps(sk) {
+    const L = Math.floor(st.scroll * .8);
+    for (let k = Math.max(2, Math.floor((L - 110) / LG)); k * LG + 74 - L < W; k++) {
+      const r = rng(k * 7919 + 131);
+      if (r() > .3) continue;
+      const kind = Math.floor(r() * PROPS.length), w = PROP_W[kind];
+      const lx = k * LG + 74 + Math.floor(r() * (94 - w));
+      if (nearStation(lx, w)) continue;
+      PROPS[kind](sk, lx - L, r);
+    }
+  }
+  const PROP_W = [30, 34, 9, 15, 7, 6, 14, 13];
+  const PROPS = [
+    (sk, x) => {   // 버스 정류장
+      const c = h => mix(h, sk.far, .35), nt = sk.night > .5;
+      g.fillStyle = c('#8a93a8'); g.fillRect(x + 1, GROUND - 27, 1, 27);
+      g.fillStyle = c('#3e6fd8'); g.fillRect(x, GROUND - 31, 3, 5);
+      g.fillStyle = c('#ffffff'); g.fillRect(x + 1, GROUND - 29, 1, 1);
+      g.fillStyle = c('#7c8aa6'); g.fillRect(x + 6, GROUND - 22, 24, 2); g.fillRect(x + 7, GROUND - 20, 1, 20); g.fillRect(x + 28, GROUND - 20, 1, 20);
+      g.fillStyle = c('#cfe6f7'); g.fillRect(x + 8, GROUND - 20, 13, 13);
+      g.fillStyle = nt ? '#ffe9a8' : c('#ffd25e'); g.fillRect(x + 21, GROUND - 20, 7, 13);   // 광고판 (밤엔 불)
+      g.fillStyle = c('#9b6b4a'); g.fillRect(x + 9, GROUND - 6, 11, 1); g.fillRect(x + 10, GROUND - 5, 1, 5); g.fillRect(x + 18, GROUND - 5, 1, 5);
+    },
+    (sk, x) => {   // 편의점
+      const c = h => mix(h, sk.far, .35), nt = sk.night > .5;
+      if (nt) { g.fillStyle = 'rgba(255,240,180,.14)'; g.fillRect(x - 4, GROUND - 30, 42, 30); }
+      g.fillStyle = c('#f4f1ea'); g.fillRect(x, GROUND - 28, 34, 28);
+      g.fillStyle = c('#4fbf7a'); g.fillRect(x, GROUND - 28, 34, 6);
+      g.fillStyle = c('#ffffff'); g.fillRect(x + 2, GROUND - 27, 14, 4);
+      pxText(g, '24', x + 24, GROUND - 27, nt ? '#fff6c9' : c('#ffffff'));
+      for (let i = 0; i < 9; i++) { g.fillStyle = c(i % 2 ? '#ffffff' : '#ff8a6b'); g.fillRect(x - 1 + i * 4, GROUND - 22, 4, 2); }   // 차양
+      g.fillStyle = nt ? '#ffe9a8' : c('#bfe3ff'); g.fillRect(x + 3, GROUND - 18, 17, 12); g.fillRect(x + 23, GROUND - 18, 8, 18);
+      g.fillStyle = c('#8a93a8'); g.fillRect(x + 26, GROUND - 18, 1, 18); g.fillRect(x + 3, GROUND - 13, 17, 1);
+    },
+    (sk, x) => {   // 자판기
+      const c = h => mix(h, sk.far, .3), nt = sk.night > .5;
+      if (nt) { g.fillStyle = 'rgba(255,240,180,.16)'; g.fillRect(x - 3, GROUND - 19, 15, 19); }
+      g.fillStyle = c('#e4594d'); g.fillRect(x, GROUND - 17, 9, 17);
+      g.fillStyle = nt ? '#fff6c9' : c('#dff3ff'); g.fillRect(x + 1, GROUND - 16, 7, 7);
+      ['#3e6fd8', '#ffd25e', '#4fbf7a'].forEach((k, i) => { g.fillStyle = c(k); g.fillRect(x + 2 + i * 2, GROUND - 15, 1, 2); g.fillRect(x + 2 + i * 2, GROUND - 12, 1, 2); });
+      g.fillStyle = c('#2a2846'); g.fillRect(x + 2, GROUND - 4, 5, 2);
+    },
+    (sk, x) => {   // 자전거
+      const c = h => mix(h, sk.far, .35), wh = ['.###.', '#...#', '#...#', '#...#', '.###.'];
+      g.fillStyle = c('#5d6086');
+      for (const ox of [0, 10]) wh.forEach((row, y) => { for (let i = 0; i < 5; i++) if (row[i] === '#') g.fillRect(x + ox + i, GROUND - 5 + y, 1, 1); });
+      g.fillStyle = c('#3e6fd8'); g.fillRect(x + 2, GROUND - 3, 6, 1); g.fillRect(x + 5, GROUND - 7, 7, 1);
+      g.fillRect(x + 4, GROUND - 6, 1, 3); g.fillRect(x + 11, GROUND - 6, 1, 3); g.fillRect(x + 6, GROUND - 5, 1, 2);
+      g.fillStyle = c('#2a2846'); g.fillRect(x + 4, GROUND - 8, 3, 1); g.fillRect(x + 11, GROUND - 9, 2, 1); g.fillRect(x + 11, GROUND - 8, 1, 1);
+    },
+    (sk, x) => {   // 우체통
+      const c = h => mix(h, sk.far, .3);
+      g.fillStyle = c('#e4594d'); g.fillRect(x + 1, GROUND - 13, 5, 1); g.fillRect(x, GROUND - 12, 7, 10);
+      g.fillStyle = c('#2a2846'); g.fillRect(x + 2, GROUND - 10, 3, 1);
+      g.fillStyle = c('#ffffff'); g.fillRect(x, GROUND - 7, 7, 1);
+      g.fillStyle = c('#8a93a8'); g.fillRect(x + 2, GROUND - 2, 3, 2);
+    },
+    (sk, x) => {   // 신호등 (빨강 ↔ 초록)
+      const c = h => mix(h, sk.far, .35), on = Math.floor(st.anim / 3) % 2;
+      g.fillStyle = c('#8a93a8'); g.fillRect(x + 2, GROUND - 24, 1, 24);
+      g.fillStyle = c('#4a4c70'); g.fillRect(x, GROUND - 32, 5, 9);
+      g.fillStyle = on ? '#ff6f6f' : c('#6a5560'); g.fillRect(x + 1, GROUND - 31, 3, 3);
+      g.fillStyle = on ? c('#56606a') : '#6fe08f'; g.fillRect(x + 1, GROUND - 27, 3, 3);
+    },
+    (sk, x, r) => {   // 벤치 (가끔 고양이)
+      const c = h => mix(h, sk.far, .35);
+      g.fillStyle = c('#9b6b4a'); g.fillRect(x, GROUND - 6, 14, 2); g.fillRect(x, GROUND - 10, 14, 1);
+      g.fillStyle = c('#5d6086'); g.fillRect(x + 1, GROUND - 9, 1, 9); g.fillRect(x + 12, GROUND - 9, 1, 9);
+      if (r() < .5) {
+        const tail = Math.floor(st.anim * 2) % 2;
+        g.fillStyle = c('#f0a04b'); g.fillRect(x + 5, GROUND - 9, 5, 3); g.fillRect(x + 9, GROUND - 11, 3, 3);
+        g.fillRect(x + 9, GROUND - 12, 1, 1); g.fillRect(x + 11, GROUND - 12, 1, 1); g.fillRect(x + 4, GROUND - 10 - tail, 1, 2 + tail);
+      }
+    },
+    (sk, x) => {   // 화단
+      const c = h => mix(h, sk.far, .35);
+      g.fillStyle = c('#4f9a5d'); g.fillRect(x + 1, GROUND - 8, 11, 4);
+      ['#ff6f9a', '#ffd25e', '#ffffff', '#ff6f9a'].forEach((k, i) => { g.fillStyle = c(k); g.fillRect(x + 2 + i * 3, GROUND - 9 + (i % 2), 2, 2); });
+      g.fillStyle = c('#b9a184'); g.fillRect(x, GROUND - 4, 13, 4);
+    },
+  ];
+  /* 신정역 (5호선, 거리 약 500m — 2026-10-28 하율 "500점 즈음에 신정역 하나만") */
+  const HG = {   // 한글 7×7 픽셀
+    신: ['..#...#', '.#.#..#', '#...#.#', '......#', '.#.....', '.#.....', '.######'],
+    정: ['#####.#', '..#...#', '.#.#.##', '#...#.#', '..###..', '.#...#.', '..###..'],
+    역: ['.##...#', '#..#.##', '#..#..#', '.##..##', '.......', '######.', '.....#.'],
+  };
+  function hText(s, x, y, color) {
+    g.fillStyle = color;
+    for (const ch of s) { HG[ch]?.forEach((row, j) => { for (let i = 0; i < 7; i++) if (row[i] === '#') g.fillRect(x + i, y + j, 1, 1); }); x += 9; }
+  }
+  function drawStation(sk, sign) {
+    const x = ST_X - Math.floor(st.scroll * .8);
+    if (x > W || x < -ST_W - 4) return;
+    const c = h => mix(h, sk.far, .25), nt = sk.night > .5, P = mix('#8e5bb5', sk.far, .12);   // 5호선 보라
+    const ex = x + 14, top = GROUND - 31;
+    if (sign) {   // 보라 동그라미 '5' + 지붕 간판 '신정역'
+      g.fillStyle = P; g.fillRect(x + 1, GROUND - 40, 8, 10); g.fillRect(x, GROUND - 39, 10, 8);
+      pxText(g, '5', x + 4, GROUND - 37, '#ffffff');
+      g.fillStyle = P; g.fillRect(ex, top + 1, 48, 10);
+      hText('신정역', ex + 12, top + 2, nt ? '#fff6c9' : '#ffffff');
+      return;
+    }
+    g.fillStyle = c('#8a93a8'); g.fillRect(x + 4, GROUND - 30, 2, 30);
+    if (nt) { g.fillStyle = 'rgba(255,240,180,.14)'; g.fillRect(ex - 4, top - 2, 56, 33); }
+    g.fillStyle = c('#7c8aa6'); g.fillRect(ex - 1, top - 1, 50, 2);
+    g.fillStyle = c('#ffffff'); g.fillRect(ex, top + 10, 48, 1);
+    // 유리 벽 + 안쪽 계단(오른쪽 위 → 왼쪽 아래로 내려감)
+    g.fillStyle = c('#cfe6f7'); g.fillRect(ex + 1, top + 11, 46, 20);
+    g.fillStyle = nt ? '#e9d9a0' : c('#9fb0c8'); g.fillRect(ex + 6, top + 13, 36, 18);
+    g.fillStyle = c('#7c8aa6');
+    for (let i = 0; i < 6; i++) g.fillRect(ex + 10 + i * 5, top + 31 - (i + 1) * 3, 6, 1);   // 계단 디딤판
+    g.fillStyle = c('#8a93a8'); g.fillRect(ex, top + 11, 1, 20); g.fillRect(ex + 47, top + 11, 1, 20); g.fillRect(ex + 24, top + 11, 1, 2);
+  }
+  /* 하늘의 새 떼 (낮·노을만, 가끔) — 아주 먼 층(스크롤 ×0.2) */
+  function drawBirds(sk) {
+    if (sk.night > .5) return;
+    const gap = 260, L = Math.floor(st.scroll * .2);
+    for (let k = Math.floor((L - 40) / gap); k * gap - L < W; k++) {
+      const r = rng(k * 104729 + 7);
+      if (k < 1 || r() > .35) continue;
+      const bx = k * gap + Math.floor(r() * 200) - L, by = 12 + Math.floor(r() * 18), n = 2 + Math.floor(r() * 3);
+      g.fillStyle = mix(sk.line, sk.top, .45);
+      for (let i = 0; i < n; i++) {
+        const x = bx + i * 7, y = by + (i % 2) * 3 + i, up = Math.floor(st.anim * 5 + i) % 2;
+        g.fillRect(x, y + up, 2, 1); g.fillRect(x + 2, y + 1, 1, 1); g.fillRect(x + 3, y + up, 2, 1);
+      }
     }
   }
   function drawSchool(sk) {
