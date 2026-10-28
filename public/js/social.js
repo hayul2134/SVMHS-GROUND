@@ -2180,7 +2180,7 @@ async function playStair() {
         <button type="button" class="btn ghost hr-snd" id="srSnd" aria-pressed="false" aria-label="소리 켜기" data-tip="소리 켜기" data-tip-end></button></div>
       <div class="hr-dress" id="srDressBox" hidden></div></div>
       <aside class="sr-side" id="srRec"></aside>
-    </div>`);
+    </div>`, true);   // 넓은 칸: 오른쪽에 내 기록
   if (!STAIR || !RUN) { try { STAIR = await import('./stair.js'); RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!$('#srCv')) return;
   const cv = $('#srCv'), ov = $('#srOv'), scr = $('#srScr'), gEl = $('#srG'), nEl = $('#srN'), fEl = $('#srF'), pop = $('#srPop');
