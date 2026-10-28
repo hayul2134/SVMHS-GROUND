@@ -299,11 +299,6 @@ export function createStair(cv, o = {}) {
     if (icon === 'note') { box(x + 13, b - 41, 1, 7, OL); box(x + 13, b - 41, 4, 2, OL); box(x + 10, b - 35, 4, 3, OL); }   // 음표
     label(x + 12, b - 58, nm);
   }
-  function secret(x, b) {   // 1.5층 '비밀의 방' — 작고 낡은 문 + 물음표
-    frameBox(x, b - 30, 18, 30, '#8a6a52'); box(x + 2, b - 28, 14, 1, '#6d5240'); box(x + 2, b - 14, 14, 1, '#6d5240'); box(x + 13, b - 16, 2, 3, '#ffd25e');
-    qmark(x + 6, b - 26, '#ffd25e');
-    label(x + 9, b - 42, '비밀의 방');
-  }
   function gearShelf(x, b) {   // 기자재실: 카메라·삼각대·마이크가 놓인 선반 40×34
     frameBox(x, b - 34, 40, 34, '#9aa3b5'); box(x, b - 18, 40, 1, OL);
     box(x + 3, b - 29, 10, 7, OL); box(x + 4, b - 28, 8, 5, '#3b3b49'); box(x + 12, b - 28, 3, 4, OL); box(x + 6, b - 27, 3, 3, '#7cc4ff');   // 카메라
@@ -333,7 +328,7 @@ export function createStair(cv, o = {}) {
   const cls = (g2, a, b2, k) => (b, at) => { roomDoor(at(1, 24), b, g2 + '-' + a); roomDoor(at(-1, 24), b, g2 + '-' + b2); };
   function floorDeco(fl, k, b, at) {
     const D = {
-      0: [() => { bigDoor(at(1, 34), b, '대강당'); shoes(at(-1, 34), b); }, () => { books(at(1, 36), b); motto(at(-1, 52), b - 112); }, () => { secret(at(1, 18), b); clock(at(-1, 13), b - 108); }, () => { fireX(at(-1, 8), b - 18); board(at(1, 36), b - 112); }, () => { poster(at(1, 18), b - 112, '#7cc4ff'); }],
+      0: [() => { bigDoor(at(1, 34), b, '대강당'); shoes(at(-1, 34), b); }, () => { books(at(1, 36), b); motto(at(-1, 52), b - 112); }, () => { clock(at(-1, 13), b - 108); poster(at(1, 18), b - 112, '#ffd25e'); }, () => { fireX(at(-1, 8), b - 18); board(at(1, 36), b - 112); }, () => { poster(at(1, 18), b - 112, '#7cc4ff'); }],
       1: [() => { roomDoor(at(1, 24), b, '교무실'); board(at(-1, 36), b - 112); }, () => { gearRoom(at(1, 70), b); }, () => { horizon(at(1, 56), b); clock(at(-1, 13), b - 108); }, () => { fireX(at(-1, 8), b - 18); poster(at(1, 18), b - 112, '#ff8f9a'); }, () => { board(at(1, 36), b - 112); }],
       2: [cls(2, 1, 2), cls(2, 3, 4), cls(2, 5, 6), () => { poster(at(1, 18), b - 112, '#ffd25e'); fireX(at(-1, 8), b - 18); }, () => { clock(at(1, 13), b - 108); }],
       3: [cls(3, 1, 2), cls(3, 3, 4), cls(3, 5, 6), () => { board(at(1, 36), b - 112); fireX(at(-1, 8), b - 18); }, () => { poster(at(1, 18), b - 112, '#62d9b8'); }],
@@ -533,6 +528,23 @@ export function createStair(cv, o = {}) {
       pxText(g, s, tx + 3, ty + 2, OL);
     }
   }
+  function wind(kx, ky, face, k, seed) {
+    const back = -face, x0 = kx + back * 7;   // 등 쪽 몸 가장자리
+    const rows = 17;   // 2px 줄 17개 = 34px(캐릭터 키)
+    for (let r = 0; r < rows; r++) {
+      const y = ky - 34 + r * 2 + 2;
+      const bulge = Math.sin((r + .5) / rows * Math.PI);                         // 가운데가 가장 길게
+      const n1 = hash(seed * 31 + r), n2 = hash(seed * 17 + r * 7 + 3);
+      const L = R((16 + bulge * 34 + n1 * 14) * k);                             // 줄 길이
+      if (L < 2) continue;
+      const inner = R(L * (.35 + n2 * .15)), mid = R(L * .72);
+      const off = R(r * .9);   // 아래 줄일수록 뒤에서 시작 → 비스듬히 아래·뒤로 퍼짐
+      const seg = (from, to, c) => { if (to <= from) return; from += off; to += off; g.fillStyle = c; g.fillRect(back > 0 ? x0 + from : x0 - to, y, to - from, 2); };
+      seg(0, inner, '#ffffff'); seg(inner, mid, '#9fd8ff'); seg(mid, L, '#3d8ff0');
+      if (r % 3 === 1 && L > 8) { g.fillStyle = '#3d8ff0'; const d = L + off + 2 + R(n2 * 5); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y, 2, 2); }   // 끝 알갱이
+      if (r % 4 === 2 && L > 12) { g.fillStyle = '#9fd8ff'; const d = L + off + 6 + R(n1 * 6); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y - 1, 2, 2); }
+    }
+  }
   function frame(now) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
@@ -567,16 +579,11 @@ export function createStair(cv, o = {}) {
       const lift = moveT < 1 ? R(Math.sin(moveT * Math.PI) * 4) : 0;
       const kx = sx(cx * DX), ky = sy(-cy * DY) - lift;
       const fr = st.why === 'time' ? 'dead' : moveT < .6 ? 'jump' : st.scene === 'play' || st.scene === 'pause' ? (stepN % 2 ? 'run1' : 'run2') : (Math.floor(t * 2) % 2 ? 'run1' : 'run2');
-      // 오를 때 뒤에 파란 잔상(2026-10-28 하율 "바람 이펙트가 잘 안 보임 → 무한의 계단처럼, 파란색으로"): 지나온 칸마다 캐릭터 모양 파란 그림자 3개 + 빠르면 굵은 파란 속도선
+      // 오를 때 등 뒤 바람 이펙트(2026-10-28 하율: 잔상은 별로 → 보내 준 그림처럼 파란 픽셀 바람): 등 뒤로 뻗는 들쭉날쭉한 바람 줄기
+      //   안쪽 흰색 → 하늘색 → 바깥 파랑 3겹 + 끝에 흩어지는 네모 알갱이. 한 칸 오를 때마다 확 뻗었다가 0.35초에 걸쳐 줄어듦, 빠르면 더 길고 진하게
       if (st.scene === 'play' || st.scene === 'pause') {
-        const n = st.fast ? 3 : 2, ag = Math.max(0, 1 - (performance.now() - lastStepAt) / 520);   // 마지막으로 오른 뒤 0.52초 동안
-        for (let k = n; k >= 1 && ag > 0; k--) {
-          const j = st.steps - k; if (j < 0) continue;
-          const gx = sx(xs[j] * DX), gy = sy(-j * DY);
-          g.globalAlpha = Math.min(1, ag * 1.4) * (0.85 - k * 0.2); g.save(); g.translate(gx, gy); g.scale(CS, CS); g.drawImage(ghostOf(S, fr), -SPR_W / 2, -SPR_H + 1); g.restore();
-        }
-        g.globalAlpha = 1;
-        if (st.fast && ag > 0) { g.fillStyle = '#3d8ff0'; for (let k = 0; k < 3; k++) { const l = 6 + ((stepN + k * 3) % 4) * 3, yy = ky - 10 - k * 9; g.fillRect(st.face > 0 ? kx - 18 - l : kx + 18, yy, l, 2); } }
+        const age = (performance.now() - lastStepAt) / 1000, k0 = Math.max(0, 1 - age / .35);
+        if (k0 > 0) wind(kx, ky, st.face, k0 * (st.fast ? 1.25 : .9), stepN);
       }
       g.save(); g.translate(kx, ky); g.scale(CS, CS); g.drawImage(S[fr], -SPR_W / 2, -SPR_H + 1); g.restore();   // 흰 테두리 없이
       if (st.why === 'time') {   // 지각: 머리 위 땀·ZZ 대신 '!'
