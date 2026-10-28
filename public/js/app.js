@@ -2606,7 +2606,7 @@ async function fillShow() {
   // 소개 화면 맨 위·맨 아래로: 쇼케이스를 그냥 지나가야 하니 이동하는 동안엔 장면 붙이기를 끔 (leaving), 다 가면 다시 켬
   const travel = top => { stopI = -1; leaving = performance.now() + 4000; root.scrollTo({ top, behavior: 'smooth' });
     const done = () => { leaving = performance.now() + 60; root.removeEventListener('scrollend', done); };
-    root.addEventListener('scrollend', done); };
+    root.addEventListener('scrollend', done); setTimeout(done, 1500); };   // scrollend 없는 브라우저(사파리 등) 대비
   $('#inGoBot').addEventListener('click', () => travel(root.scrollHeight));
   $('#inGoTop').addEventListener('click', () => travel(0));
   SOC.showOff = () => { root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand', 'sh-ttx'); flags = {}; (fixedBtns || []).forEach(e => { if (e) { e.style.opacity = ''; e._opacity = undefined; } }); };   // 로그인하면 소개와 함께 정리

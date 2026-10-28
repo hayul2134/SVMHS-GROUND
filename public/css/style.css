@@ -29,6 +29,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%;overflow-x:clip}
+@supports not (overflow-x:clip){html{overflow-x:hidden}}   /* 오래된 사파리·크롬(clip 모름) — 전광판처럼 화면 밖으로 삐져나간 것 때문에 옆으로 흔들리지 않게 (2026-10-28) */
 body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   background-color:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;word-break:keep-all;
   background-image:var(--pat,radial-gradient(var(--dot) 1.6px,transparent 1.7px));background-size:var(--pat-size,22px 22px);
@@ -770,7 +771,7 @@ html.modal-lock{overflow-y:hidden;scrollbar-gutter:stable}
 .info{text-align:left;margin-top:12px;display:flex;flex-direction:column;gap:10px}
 .info .ig{background:var(--chip);border-radius:16px;border:2px solid var(--ink);overflow:hidden}
 :root[data-theme="dark"] .info .ig{border-color:var(--line)}
-.info summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;font-weight:900;font-size:15.5px;color:var(--text);user-select:none}
+.info summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;font-weight:900;font-size:15.5px;color:var(--text);-webkit-user-select:none;user-select:none}
 .info summary::-webkit-details-marker{display:none}
 .info summary>i{font-style:normal;width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--card);border:2px solid var(--ink);font-size:17px}
 :root[data-theme="dark"] .info summary>i{border-color:var(--line)}
@@ -1676,7 +1677,7 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 }
 
 @media (max-width:900px){
-  .in-hero{grid-template-columns:1fr;gap:34px;padding-top:24px;min-height:0}
+  .in-hero{grid-template-columns:minmax(0,1fr);gap:34px;padding-top:24px;min-height:0}
   .in-hl{align-items:center;text-align:center}.in-title{align-items:center;margin-left:0}.in-cta{justify-content:center}
   .in-live{width:min(100%,380px)}
   .in-down{display:none}
@@ -3471,7 +3472,7 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .wear-why{margin:0;font-size:12px;font-weight:700;color:var(--sub);line-height:1.4}
 .wear-why b{color:var(--text)}
 .wear-tune{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center;margin-top:2px}
-.wt-box{position:relative;width:96px;height:96px;outline:2px dashed var(--line);outline-offset:4px;border-radius:6px;background:var(--chip);touch-action:none;cursor:grab;user-select:none}
+.wt-box{position:relative;width:96px;height:96px;outline:2px dashed var(--line);outline-offset:4px;border-radius:6px;background:var(--chip);touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
 .wt-box.drag{cursor:grabbing;outline-color:var(--ink)}
 .wt-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:left bottom;pointer-events:none}
 .wt-cr{position:absolute;left:var(--wx,50%);top:var(--wy,8%);width:28%;transform:translate(-50%,-82%);pointer-events:none}
@@ -4409,7 +4410,7 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 
 /* 꾸미기 미리보기 = 실제 화면 그대로(2026-10-25 하율: "적용했을 때 화면이랑 똑같이") — social.js pvHtml·fitPv
    진짜 프로필 카드와 첫 화면 시계 복제본을 실제 크기로 그린 뒤 transform으로 칸 폭에 맞춰 줄임. 누르기·포커스는 막음 */
-.pv-real{position:relative;width:100%;overflow:hidden;pointer-events:none;user-select:none}
+.pv-real{position:relative;width:100%;overflow:hidden;pointer-events:none;-webkit-user-select:none;user-select:none}
 .pv-real .pv-sc{position:absolute;left:0;top:0;transform-origin:0 0}
 .pv-rp{overflow:visible}
 .pv-rp .pcard{margin:0}
@@ -4792,7 +4793,7 @@ html:has(body.playing){overflow:hidden}
 .gr-modes button b{display:flex;align-items:center;gap:5px;font:400 22px/1 var(--disp);color:inherit;-webkit-text-stroke:0;text-shadow:none;letter-spacing:0}
 .gr-modes button b svg{width:20px;height:20px}
 .gr-modes button small{font-size:12.5px;font-weight:800;color:#5b6585;-webkit-text-stroke:0;text-shadow:none}
-.gr-modes button{transition:transform .14s cubic-bezier(.3,1.6,.5,1),box-shadow .14s,background .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+.gr-modes button{transition:transform .14s cubic-bezier(.3,1.6,.5,1),box-shadow .14s,background .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 @media (hover:hover){.gr-modes button:hover{transform:translateY(-3px) rotate(-1deg);box-shadow:2px 6px 0 var(--ink)}}
 .gr-modes button:active,.gr-modes button.go{transform:translateY(2px) scale(.95);box-shadow:1px 1px 0 var(--ink);transition-duration:.06s}
 .gr-modes button:focus-visible{outline:3px solid #5ab8ff;outline-offset:2px}
@@ -5479,3 +5480,5 @@ html.rxs .rx-b{display:none!important}
 .tr-top li.tx em{color:color-mix(in srgb,var(--rc) 70%,var(--text))}
 .tr-top li.tx.me{box-shadow:inset 3px 0 0 var(--rc),inset 0 0 0 2px color-mix(in srgb,var(--rc) 35%,transparent)}
 .ggrid .gtop .av .dot{width:9px;height:9px;border-width:2px;right:-2px;bottom:-2px}
+/* 아주 좁은 화면(폴드 바깥 화면 등 320px 미만) — 소개 화면 시계 숫자가 칸 밖으로 안 나가게 (2026-10-28) */
+@media (max-width:319px){.in-time b{font-size:54px}.in-time small{font-size:20px}}
