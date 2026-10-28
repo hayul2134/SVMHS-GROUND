@@ -1825,7 +1825,7 @@ async function playNum25b() {
   if (!N25) { try { N25 = await import('./n25.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected) return;
   area.innerHTML = N25.html(matchMedia('(pointer:coarse)').matches);
-  area.querySelector('.n2-wrap')?.insertAdjacentHTML('afterend', RE_ROW);
+  area.querySelector('#n2Snd')?.insertAdjacentHTML('beforebegin', RE_BTN);   // 다시 시작은 안내 줄 오른쪽(소리 버튼 옆) — 줄을 하나 아껴 한 화면에
   quitGame = N25.run(area, {
     store, sound: store.get('n25_snd', false), onSound: on => store.set('n25_snd', on),
     onDone: (v, rounds, det) => finish('num25', v, det, rounds),

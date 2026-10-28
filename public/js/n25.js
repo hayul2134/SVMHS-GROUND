@@ -16,19 +16,19 @@ const sgn = ms => (ms < 0 ? '−' : '+') + sec(Math.abs(ms));
 const SCALE = [0, 2, 4, 7, 9];
 const hz = i => 392 * 2 ** ((SCALE[i % 5] + 12 * Math.floor(i / 5)) / 12 / 2.2);
 
-const readBest = store => { try { const b = store.get(KEY_BEST, null); return b && Array.isArray(b.t) && b.t.length === N ? b : null; } catch { return null; } };
+const readBest = store => { try { const b = store.get(KEY_BEST, null); return b && Array.isArray(b.t) && b.t.length === N && Array.isArray(b.p) && b.p.length === N && b.v > 0 && b.t.concat(b.p).every(Number.isFinite) ? b : null; } catch { return null; } };
 
 export function html(touchy) {
   return `<div class="n2" id="n2">
     <div class="n2-top">
       <p class="n2-next"><small>다음</small><b id="n2Next">1</b></p>
-      <p class="n2-time"><b id="n2Time">0.00</b><small>초</small><i class="n2-split" id="n2Split" hidden></i></p>
+      <p class="n2-time"><b class="n2-combo" id="n2Combo" hidden></b><b id="n2Time">0.00</b><small>초</small><i class="n2-split" id="n2Split" hidden></i></p>
       <p class="n2-miss"><small>틀림</small><b id="n2Miss">0</b></p>
     </div>
     <div class="n2-prog" aria-hidden="true"><i class="n2-bar" id="n2Bar"></i><i class="n2-ghost" id="n2Ghost" hidden><b>최고</b></i>${[5, 10, 15, 20].map(k => `<i class="n2-cp" data-k="${k}"></i>`).join('')}</div>
-    <div class="n2-wrap"><div class="n2-grid" id="n2Grid"></div><b class="n2-combo" id="n2Combo" hidden></b></div>
+    <div class="n2-wrap"><div class="n2-grid" id="n2Grid"></div></div>
     <div class="n2-bar2"><p class="n2-msg" id="n2Msg" aria-live="polite">${touchy ? '<b>1</b>을 누르면 시작! 1부터 25까지 순서대로' : '<b>1</b>을 클릭하면 시작! 1부터 25까지 순서대로'}</p>
-      <button type="button" class="btn ghost hr-snd n2-snd" id="n2Snd" aria-pressed="false"></button></div>
+      <span class="n2-btns"><button type="button" class="btn ghost hr-snd n2-snd" id="n2Snd" aria-pressed="false"></button></span></div>
     <p class="note center n2-note">틀리게 누르면 +1초 · 5칸마다 내 최고 기록과 비교</p>
   </div>`;
 }
@@ -80,6 +80,7 @@ export function run(root, o) {
 
   const onTap = e => {
     const b = e.target.closest('button[data-n]'); if (!b || state === 'done' || state === 'quit') return;
+    if (b.disabled || b.classList.contains('ok')) { e.preventDefault(); return; }   // 이미 찾은 칸은 다시 눌러도 벌점 없음(1판과 같게)
     e.preventDefault();
     const now = e.timeStamp > 0 && Math.abs(performance.now() - e.timeStamp) < 1000 ? e.timeStamp : performance.now();   // 손가락이 닿은 순간(처리 지연 빼고)
     const n = +b.dataset.n;
@@ -144,7 +145,7 @@ export function resultHtml(v, taps, pen, board, prev) {
   const tip = misses >= 4 ? `틀린 게 ${misses}번(+${misses}초) — 확실할 때만 눌러도 더 빨라져요` : gaps[N - 2] > avg * 2.2 ? '마지막 숫자에서 오래 걸렸어요. 끝까지 남은 칸을 미리 봐 두세요' : slowS === 4 ? '뒤로 갈수록 느려졌어요. 남은 칸이 적을 땐 눈을 크게 움직여 보세요' : slowS === 0 ? '처음 5개가 제일 느렸어요. 1을 누르기 전에 2·3·4 위치를 봐 두세요' : `숫자 하나에 평균 ${sec(avg)}초 — 고르게 잘 찾았어요`;
   const lv = x => hi === lo ? 0 : Math.round((x - lo) / (hi - lo) * 4);   // 0(빠름)~4(오래 헤맴)
   const cells = board.map(([n, m]) => `<span class="h${n === 1 ? 's' : lv(gap(n))}${slow.includes(n) ? ' slow' : ''}"><b>${n}</b><small>${n === 1 ? '시작' : sec(gap(n))}</small>${m ? `<i class="x" aria-label="${m}번 틀림">${m > 1 ? m : ''}</i>` : ''}</span>`).join('');
-  const cmp = prev ? `<p class="n2-cmp ${v < prev.v ? 'up' : 'down'}">${v < prev.v ? `이 기기 최고 기록을 ${sec(prev.v - v)}초 앞당겼어요!` : `이 기기 최고(${sec(prev.v)}초)보다 ${sec(v - prev.v)}초 늦어요`}</p>` : '';
+  const cmp = prev ? `<p class="n2-cmp ${v <= prev.v ? 'up' : 'down'}">${v < prev.v ? `이 기기 최고 기록을 ${sec(prev.v - v)}초 앞당겼어요!` : v === prev.v ? '이 기기 최고 기록과 똑같아요!' : `이 기기 최고(${sec(prev.v)}초)보다 ${sec(v - prev.v)}초 늦어요`}</p>` : '';
   return `<div class="ctm-res n2-res"><p class="ctm-grade g-${g}">${g}</p><div><p class="ctm-ttl">${tt}</p><p class="ctm-tip">${ts}</p><p class="ctm-tip sub">${tip}</p>${misses ? `<p class="n2-pen">틀림 ${misses}번 · 벌점 +${pen / 1000}초</p>` : '<p class="n2-pen ok">한 번도 안 틀렸어요</p>'}</div></div>${cmp}
     <div class="n2-map" aria-label="어디서 헤맸나"><p class="n2-mh">어디서 헤맸나 <small>숫자를 찾는 데 걸린 시간 · 진할수록 오래</small></p><div class="n2-mg">${cells}</div>
     <p class="n2-mk"><span><i class="h0"></i>빠름</span><span><i class="h4"></i>오래</span><span><i class="x"></i>틀린 칸</span></p></div>
