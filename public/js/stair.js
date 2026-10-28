@@ -9,7 +9,7 @@ import { GAIN, FLOOR, drain, floorName, zoneOf } from './stair-score.js';
 import { buildSprites, loadChar, SPR_W, SPR_H } from './runner.js';
 
 export const W = 160, H = 240;
-const DX = 22, DY = 12, SW = 22, ST = 8, FOOT = 168;   // 2026-10-28 하율 "계단 중간을 이어 놓으니 헷갈림 → 끝과 끝을 이어서": 가로 간격 = 계단 폭(한 칸의 끝 = 다음 칸의 시작)   // 계단 가로·세로 간격 · 계단 폭·두께 · 캐릭터 발 높이(화면 y)
+const DX = 22, DY = 12, SW = 22, ST = DY, FOOT = 168;   // 2026-10-28 하율 "계단 중간을 이어 놓으니 헷갈림 → 끝과 끝을 이어서": 가로 간격 = 계단 폭(한 칸의 끝 = 다음 칸의 시작)   // 계단 가로·세로 간격 · 계단 폭·두께 · 캐릭터 발 높이(화면 y)
 const OL = '#2a2846';
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const toHex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
@@ -36,7 +36,8 @@ function art() {
   if (ART) return ART;
   const stair = (top, face, edge, hi) => {   // 폭 SW 픽셀: 윗면 하이라이트·윗면·모서리 줄·앞면·앞면 그늘
     const mid = n => 'o' + n.repeat(SW - 2) + 'o', cap = '.' + 'o'.repeat(SW - 2) + '.';
-    return pix([cap, mid('h'), mid('t'), mid('e'), mid('f'), mid('f'), mid('F'), cap], { h: hi, t: top, e: edge, f: face, F: mix(face, OL, .25) });
+    return pix([cap, mid('h'), mid('t'), mid('e'), ...Array(ST - 6).fill(mid('f')), mid('F'), cap],   // 높이 = 세로 간격(DY) → 아래 칸 윗면과 꼭짓점이 딱 붙음(2026-10-28 하율)
+      { h: hi, t: top, e: edge, f: face, F: mix(face, OL, .25) });
   };
   ART = {
     // 계단(구역마다 재질): 학교 = 회색 돌계단+노란 미끄럼 방지 줄 · 하늘 = 하늘색 블록 · 구름 위 = 분홍 · 우주 = 보라 빛 · 층 계단 = 노랑
