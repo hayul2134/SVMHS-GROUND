@@ -5443,7 +5443,7 @@ button img,button svg,.app img,.app svg{-webkit-touch-callout:none;-webkit-user-
 html.rxs .rx-b{display:none!important}
 
 /* ===== 게임 랭킹 화면 2026-10-28 하율: 서비스 게임 칸처럼 한 줄 5개 · 한눈에 ===== */
-.ggrid{grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:14px 12px;margin-top:22px;max-width:none}
+.ggrid{grid-template-columns:repeat(auto-fit,minmax(max(138px,calc((100% - 48px)/5)),1fr));gap:14px 12px;margin-top:22px;max-width:none}
 .ggrid .gcard{transform:none;gap:6px;padding:20px 10px 12px;min-width:0}
 .ggrid .gcard .beta{font-size:11.5px;padding:3px 10px 4px}
 .ggrid .gem{display:grid;place-items:center;width:58px;height:58px;margin:2px auto 0;font-size:0;border-radius:17px;border:2.5px solid var(--ink);box-shadow:2px 3px 0 var(--ink);background:linear-gradient(160deg,color-mix(in srgb,#fff 28%,var(--c)),var(--c) 60%)}
@@ -5473,7 +5473,7 @@ html.rxs .rx-b{display:none!important}
 .ggrid .gbtns .btn{padding-left:6px;padding-right:6px;font-size:14px;min-width:0}
 .ggrid .gbtns .gbr{flex:0 0 42px}
 .ggrid .gbtns .gbr .sic{margin:0}
-@media (max-width:860px){.ggrid{grid-template-columns:repeat(auto-fit,minmax(138px,1fr));max-width:none}}
+@media (max-width:860px){.ggrid{grid-template-columns:repeat(auto-fit,minmax(max(138px,calc((100% - 48px)/5)),1fr));max-width:none}}
 @media (max-width:340px){.ggrid{grid-template-columns:1fr 1fr;gap:10px 8px}}
 
 /* 티어 카드: 설명 4칸을 2×2로 → 막대 그래프를 위로 (2026-10-28 하율) */
