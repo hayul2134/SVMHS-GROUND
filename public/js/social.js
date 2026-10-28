@@ -143,10 +143,13 @@ function setGc(g) { if (S.me && g) { S.me.gc = { ...S.me.gc, tix: g.tix ?? S.me.
 // 게시된 패치 공지의 새 기능 깃발(ff)을 모두에게 엶 — 한 번만 받아 둠
 // 2026-10-28 고침: 예전엔 페이지를 연 뒤 한 번만 받아서, 공지(00시) 전부터 켜 둔 창·앱은 새로고침 전까지 새 기능이 안 열렸음 → 5분 지나면 다시 받음(실패하면 다음에 다시)
 let relP = null, relAt = 0;
+// NEW 배지(2026-10-28 하율 "NEW는 출시되고 2일 지나면 없애줘"): 깃발이 공지로 처음 공개된 시각(at)부터 48시간만 · 공개 전(개발자 미리보기)엔 계속
+const REL_AT = {}, NEW_MS = 2 * 864e5;
+const newOn = (ff, dev) => { if (!ffOn(ff, false)) return !!dev; const t = REL_AT[ff]; return t > 0 && Date.now() - t < NEW_MS; };
 const loadReleased = () => {
   if (relP && Date.now() - relAt < 5 * 60e3) return relP;
   relAt = Date.now();
-  return relP = fetch('/api/s/patch', { credentials: 'same-origin', cache: 'no-cache' }).then(r => r.ok ? r.json() : Promise.reject()).then(j => { for (const x of j.list || []) for (const f of x.ff || []) RELEASED.add(f); }).catch(() => { relAt = 0; });
+  return relP = fetch('/api/s/patch', { credentials: 'same-origin', cache: 'no-cache' }).then(r => r.ok ? r.json() : Promise.reject()).then(j => { for (const x of j.list || []) for (const f of x.ff || []) { RELEASED.add(f); if (x.at > 0 && !(REL_AT[f] <= x.at)) REL_AT[f] = x.at; } }).catch(() => { relAt = 0; });
 };
 // 열린 미리보기 깃발 요소에 data-ffon 표시(나중에 그려지는 data-ff 요소도 지켜봄) — 안 열린 건 CSS가 숨김
 let ffObs = null;
@@ -155,6 +158,9 @@ function markFF(root) {
   if (root.nodeType !== 1) return;
   if (root.hasAttribute('data-ff')) one(root);
   root.querySelectorAll('[data-ff]').forEach(one);
+  const nb = el => el.toggleAttribute('data-nfon', newOn(el.dataset.nf, dev));
+  if (root.hasAttribute('data-nf')) nb(root);
+  root.querySelectorAll('[data-nf]').forEach(nb);
 }
 function paintFF() {
   markFF(document.body);
@@ -1421,7 +1427,7 @@ function gameHtml(info) {
   return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
     const x = info?.[k];
     // 2026-10-28 하율: 서비스 게임 칸처럼 한 줄 5개로 · 한눈에 — 설명은 이름에 마우스를 올리면(title), 기록·순위·1등을 짧게
-    return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? "<b class=\"beta new\">NEW</b>" : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
+    return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? `<b class="beta new" data-nf="${g.ff}">NEW</b>` : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
       <p class="gem">${ic(g.ic)}</p><h3 title="${esc(g.desc)}">${g.name}</h3>
       ${x ? `<div class="gstat"><span>내 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
         <p class="gtop">${x.top ? `<small>${ic('trophy')}1등</small><a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')}<span>${esc(x.top.name)}</span></a><b>${esc(g.fmt(x.top.value))}</b>` : `<small>${ic('trophy')}1등</small><i>비어 있어요!</i>`}</p>` : `<p class="gdesc">${g.desc}</p>`}

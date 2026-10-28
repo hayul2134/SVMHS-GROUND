@@ -4774,6 +4774,7 @@ html:has(body.playing){overflow:hidden}
 /* ===== 기자재 정리! (장비 블록 쌓기, social.js playGear · js/gear.js, 2026-10-27 미리보기) ===== */
 .apps .gapp.g-gear .ai{--c:var(--sky)}
 .beta.new{background:#ff6b6b}
+[data-nf]:not([data-nfon]){display:none!important}   /* NEW 배지: 공개 후 2일 지나면 숨김(social.js newOn) */
 .gr{display:flex;flex-direction:column;gap:12px;width:100%;max-width:100%;margin:0 auto}
 .gr-main{display:flex;align-items:flex-start;justify-content:center;gap:clamp(8px,2vw,18px)}
 .gr-side{display:flex;flex-direction:column;align-items:center;gap:8px;width:clamp(64px,11vw,110px);padding:10px 8px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink)}
