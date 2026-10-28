@@ -2021,8 +2021,8 @@ async function playStair() {
       saveScore('stair', STAIR_MAX - res.steps, [res.steps, res.ms, res.turns]).then(r => {
         if (no !== run || !$('#srMsg')) return;
         if (r.held) { $('#srMsg').innerHTML = heldLine(r); return; }
-        $('#srMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 높이 올랐어요' : `내 최고 ${esc(GAMES.stair.fmt(r.best))}`;
-        const b = STAIR_MAX - r.best; if (b > best) { best = b; store.set('stair_best', b); }
+        const b = r.best != null ? STAIR_MAX - r.best : best; if (b > best) { best = b; store.set('stair_best', b); }
+        $('#srMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 높이 올랐어요' : `내 최고 ${b.toLocaleString('ko-KR')}칸`;   // 응답에 best가 없으면 이 기기 최고(NaN 방지)
         myRecInto($('#srRec'), 'stair');
       }).catch(e => { if (no === run && $('#srMsg')) $('#srMsg').textContent = e.message; });
     },
