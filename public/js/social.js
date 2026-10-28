@@ -1422,6 +1422,20 @@ async function renderGame() {
   box.innerHTML = gameHtml(info);
   if (S.me) loadTier();
 }
+// 기자재 정리! 티어 반영(2026-10-28 하율, 미리보기 깃발 gear-tier): 랭킹전·일반 중 순위 점수가 높은 쪽 한 칸 → 어느 쪽이 들어갔는지 표시
+//   개발자는 티어 밖이라 '내' 내역이 없음 → 1위 학생 내역으로 미리보기
+const GT = 'gear-tier', gtOn = () => ffOn(GT, isDev(S.me)), GT_FROM = '10/29';
+const gtMode = m => m === 'n' ? '일반' : '랭킹전';
+async function gearTier() {
+  try { const d = await call('tier'); if (!d.g) return null; const dev = !d.me && isDev(S.me), u = d.me || (dev ? d.top?.[0] : null);
+    return { on: !!d.g.on, x: u?.games?.gear || null, dev }; } catch { return null; }
+}
+function gtText(t) {
+  if (!t) return '';
+  if (!t.on) return `${GT_FROM}부터 티어엔 랭킹전·일반 중 순위가 더 좋은 쪽이 들어가요`;
+  const x = t.x; if (!x) return '티어엔 랭킹전·일반 중 순위가 더 좋은 쪽이 들어가요';
+  return `${t.dev ? '미리보기(1위 학생 기준) · 티어엔' : '내 티어엔'} 지금 ${gtMode(x.m)} ${x.r}위(${x.p}점)가 들어가 있어요${x.o ? ` · ${gtMode(x.m === 'n' ? 'r' : 'n')}은 ${x.o.r}위(${x.o.p}점)` : ''}`;
+}
 // 게임 화면 (진짜·뼈대 공용)
 function gameHtml(info) {
   return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
@@ -1446,7 +1460,15 @@ async function loadTier() {
   const byPts = d.mode === 'pts', lbOf = x => byPts || !d.v2 ? (byPts ? x.pl : x.lb) : x.pt ? `${x.lb} · ${x.pl}` : x.lb;   // 티어 2차: 20명+ = 상위 %와 점수 중 높은 쪽 → 둘 다 표시
   const lbSt = x => lbOf(x).split(' · ').map((t, i, a) => `<i class="${a.length > 1 && !i ? 'tl-rk' : 'tl-pt'}">${t}</i>`).join('<i class="tl-dot"> · </i>');   // 계단 라벨: '1등 · 340점+' → 두 줄로 나눌 수 있게   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
   const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
-  const per = m ? gamesOn().map(([k, g]) => { const x = m.games[k]; return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
+  // gear-tier 미리보기: 개발자는 티어 밖 → 1위 학생 점수 내역으로 보여 줌
+  const pm = m || (d.g && isDev(S.me) ? d.top?.[0] : null);
+  const per = pm ? gamesOn().map(([k, g]) => { const x = pm.games[k];
+    if (k === 'gear' && d.g) {   // 기자재 정리!: 반영된 모드 + 다른 모드
+      if (!d.g.on) return `<li>${ic(g.ic)}<span>${g.name}</span><b><i>${GT_FROM}부터 티어에 들어가요</i></b></li>`;
+      return `<li class="tg-gear">${ic(g.ic)}<span>${g.name}</span><b>${x ? `<span class="tg-m">${gtMode(x.m)} ✓</span>${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b>${x?.o ? `<small class="tg-o">${gtMode(x.m === 'n' ? 'r' : 'n')} ${x.o.r}위 / ${x.o.n}명 · +${x.o.p} (미반영)</small>` : x ? '' : '<small class="tg-o">랭킹전·일반 중 순위가 더 좋은 쪽이 들어가요</small>'}</li>`;
+    }
+    return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
+  const perPv = !m && pm ? '<p class="tr-pv">미리보기 · 1위 학생 기준 점수 내역(개발자는 티어 밖)</p>' : '';
   const top = d.top.length ? d.top.map(trRow).join('') : '<li class="empty">아직 이번 라운드 기록이 없어요</li>';
   // TOP 10은 펼친 채로, 그 아래 '전체 순위 보기'(2026-10-26 하율 요청)
   const allOn = ffOn('tier-all', isDev(S.me)), opn = allOn ? ' open' : '';   // 미리보기 깃발 tier-all
@@ -1468,7 +1490,7 @@ async function loadTier() {
     <p class="tr-tap">티어를 누르면 지금 그 티어에 있는 사람을 볼 수 있어요</p>
     <ol class="tr-stairs">${stairs}</ol>
     <div class="tr-who" hidden></div>
-    ${per ? `<ul class="tr-games">${per}</ul>` : ''}
+    ${per ? `${perPv}<ul class="tr-games">${per}</ul>` : ''}
     <details class="tr-top"${opn}><summary>${ic('trophy')}<span>티어 순위 TOP 10</span><i class="trt-go" aria-hidden="true"></i></summary><ol>${top}</ol>${more}</details>`;
     tierWho(box); trAll(box, top);
     const sl = box.querySelector('.tr-stairs'), on = sl?.querySelector('li.on');   // 폰: 가로로 넘기는 계단을 내 티어 쪽으로
@@ -1584,10 +1606,11 @@ async function openRank(game, scope = 'week') {
   if (!S.me) { toast('랭킹은 로그인하면 볼 수 있어요'); ctx.go('me'); return; }
   const g = GAMES[game];
   // 기자재 정리!: 랭킹전 / 일반 전환(2026-10-28) — 일반은 티어·보상과 상관없어 이번 주·역대·친구만
-  const gm = game === 'gear' || game === 'gearn';
-  if (g.casual && (scope === 'round' || scope === 'class')) scope = 'all';
+  const gm = game === 'gear' || game === 'gearn', gt = gm && gtOn();   // gear-tier: 일반 모드도 티어에 들어가니 '이번 라운드' 탭
+  if (g.casual && (scope === 'class' || (scope === 'round' && !gt))) scope = 'all';
+  const gtP = gt ? gearTier() : null;
   const modeSeg = gm ? `<div class="segs rk-mode" role="group" aria-label="게임 방식"><button data-rank="gear" data-scope="week" class="${game === 'gear' ? 'on' : ''}">${ic('trophy')}랭킹전</button><button data-rank="gearn" data-scope="all" class="${game === 'gearn' ? 'on' : ''}">일반</button></div>` : '';
-  const tabs = (g.casual ? [['week', '이번 주'], ['all', '역대'], ['friends', '친구']] : [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']]).map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
+  const tabs = (g.casual ? (gt ? [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구']] : [['week', '이번 주'], ['all', '역대'], ['friends', '친구']]) : [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']]).map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   const scopeName = { week: '이번 주', round: '이번 라운드', all: '역대', friends: '친구', class: '반 대항전' }[scope] || '';
   sheet(`<h3 class="rk-h3">${ic(g.ic)} ${gm ? '기자재 정리!' : g.name} 랭킹<button type="button" class="rk-story" id="rkStory"${ffOn('story-share', isDev(S.me)) ? '' : ' hidden'} aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3>${modeSeg}<div class="segs">${tabs}</div><ol class="rank" id="rankList">${ghostOr(() => FK_US(5).map((u, i) => `<li><span class="rk">${i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1}</span><a>${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>1학년 1반</small></span></a><b class="rv">000</b></li>`).join(''), 2)}</ol>
     <p class="note" id="rankNote"></p><div class="row"><button class="btn" data-play="${gm ? 'gear' : game}">${ic('play')}도전하기</button><button class="btn ghost" data-close>닫기</button></div>`);
@@ -1612,7 +1635,7 @@ async function openRank(game, scope = 'week') {
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.casual ? `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}` : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.casual ? (gt ? `일반 모드 점수 순위예요${scope === 'week' ? ' (이번 주 기록)' : scope === 'round' ? ' (이번 라운드 기록)' : ''}` : `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}`) : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
       if (!g.casual && (scope === 'week' || scope === 'round')) {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
         const wk = scope === 'week', k = rkInfo(wk);
         $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
@@ -1624,6 +1647,14 @@ async function openRank(game, scope = 'week') {
         $('#rankList').insertAdjacentHTML('beforeend', `<li class="rk-gap" aria-hidden="true">⋯</li><li class="me out">${myRow}<a href="#u/${esc(S.me.handle)}" data-u="1">${av(S.me)}<span class="pi"><b>${esc(nameOf(S.me))}${devTag(S.me)}</b><small>${esc(classTxt(S.me) || atOf(S.me))}</small></span></a><b class="rv">${r.mine ? esc(g.fmt(r.myValue)) : '기록 없음'}</b></li>`);
       }
     }
+    // gear-tier: 지금 티어에 들어간 모드 표시(전환 버튼 '티어' · 이번 라운드 내 줄 '티어 반영 ✓/미반영' · 아래 안내 한 줄)
+    if (gtP) gtP.then(t => {
+      if (!t || !$('#rankList') || !$('.rk-mode')) return;
+      const x = t.on ? t.x : null;
+      if (x) $(`.rk-mode [data-rank="${x.m === 'n' ? 'gearn' : 'gear'}"]`)?.insertAdjacentHTML('beforeend', '<i class="rk-tier">티어</i>');
+      if (x && scope === 'round') { const mine = (x.m === 'n') === (game === 'gearn'); $('#rankList li.me .pi b')?.insertAdjacentHTML('beforeend', `<i class="rk-tin${mine ? ' on' : ''}">${mine ? '티어 반영 ✓' : '미반영'}</i>`); }
+      $('#rankNote')?.insertAdjacentHTML('afterend', `<p class="note rk-gt">${esc(gtText(t))}</p>`);
+    });
     rkToMe();
   } catch (e) { $('#rankList').innerHTML = `<li class="empty">${esc(e.message)}</li>`; }
 }
@@ -2145,14 +2176,22 @@ async function playGear() {
         if (!rk) {
           nRec = { best: GEAR_MAX - r.best, rank: r.rank };
           if (nRec.best > bestN) { bestN = nRec.best; store.set('gear_best_n', bestN); }
-          $('#grMsg').innerHTML = `${r.newBest ? '<b>일반 최고 기록 경신!</b> ' : ''}일반 모드 <b>${r.rank}위</b> · 내 최고 ${esc(GAMES.gearn.fmt(r.best))} <button type="button" class="hr-rklink" data-rank="gearn" data-scope="all">순위 보기</button><br><small>티어·보상과는 상관없어요</small>`;
-          paintRk(); return;
+          $('#grMsg').innerHTML = `${r.newBest ? '<b>일반 최고 기록 경신!</b> ' : ''}일반 모드 <b>${r.rank}위</b> · 내 최고 ${esc(GAMES.gearn.fmt(r.best))} <button type="button" class="hr-rklink" data-rank="gearn" data-scope="${gtOn() ? 'round' : 'all'}">순위 보기</button><br><small${gtOn() ? ' id="grTi">티어 확인 중…' : '>티어·보상과는 상관없어요'}</small>`;
+          paintRk(); gtEnd(no); return;
         }
-        $('#grMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 잘했어요' : `랭킹전 내 최고 ${esc(GAMES.gear.fmt(r.best))}`;
-        syncBest(r.best); paintRk();
+        $('#grMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 잘했어요' : `랭킹전 내 최고 ${esc(GAMES.gear.fmt(r.best))}`) + (gtOn() ? '<br><small id="grTi">티어 확인 중…</small>' : '');
+        syncBest(r.best); paintRk(); gtEnd(no);
       }).catch(e => { if (no === runNo && $('#grMsg')) $('#grMsg').textContent = e.message; });
     },
   });
+  // gear-tier: 결과 화면에 지금 티어에 들어간 모드(일반이 반영되면 강조)
+  function gtEnd(no) {
+    if (!gtOn()) return;
+    gearTier().then(t => { const el = $('#grTi'); if (!el || no !== runNo) return;
+      if (!t) { el.textContent = ''; return; }
+      const x = t.on ? t.x : null;
+      el.innerHTML = x && x.m === 'n' && !t.dev ? `<b>일반 모드가 티어에 반영돼요!</b> (${x.p}점${x.o ? ` · 랭킹전 ${x.o.p}점` : ''})` : esc(t.dev ? gtText(t) : x ? `티어엔 ${gtMode(x.m)}(${x.p}점)이 들어가 있어요` : gtText(t)); });
+  }
   window.__gear = R;   // 테스트용
   ready(); paintHud(); paintQ();
   const hudT = setInterval(paintHud, 50);
