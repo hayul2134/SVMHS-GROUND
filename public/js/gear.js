@@ -219,11 +219,12 @@ export function createGear(canvas, opt = {}) {
 
   function reset(seed = (Math.random() * 1e9) | 0) {
     rand = rng(seed);
+    keys.left = keys.right = keys.down = false;   // 지난 판에 누르던 키가 남아 새 판에서 저절로 밀리던 문제 (2026-10-28)
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, lines: 0, level: 1, pieces: 0, b2b: false,
       board: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
       bag: [], queue: [], cur: null, hold: null, held: false,
-      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, clearRows: [], clearT: 0, combo: 0, tetN: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
+      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, lastH: 0, clearRows: [], clearT: 0, combo: 0, tetN: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
     });
     while (st.queue.length < 5) st.queue.push(nextKind());
   }
@@ -384,7 +385,8 @@ export function createGear(canvas, opt = {}) {
     if (st.clearT) { if (--st.clearT === 0) finishClear(); return; }
     const p = st.cur; if (!p) return;
     // 좌우 누르고 있으면: DAS 10프레임 뒤 ARR 2프레임마다
-    const dir = keys.left && !keys.right ? -1 : keys.right && !keys.left ? 1 : 0;
+    // 좌우를 같이 누르고 있으면 나중에 누른 쪽(예전엔 0이 돼서, 왼쪽 키가 눌린 채 남아 있으면 오른쪽을 떼는 순간 왼쪽으로 밀림 — 2026-10-28 하율)
+    const dir = keys.left && keys.right ? st.lastH : keys.left ? -1 : keys.right ? 1 : 0;
     if (dir !== st.dasDir) { st.dasDir = dir; st.das = 0; }
     else if (dir) { st.das++; if (st.das >= DAS && (st.das - DAS) % ARR === 0) move(dir); }
     // 떨어짐
@@ -477,10 +479,12 @@ export function createGear(canvas, opt = {}) {
   return {
     st, reset, start, pause, resume, drawMini, hardDrop, hold,
     input(name, down) {
+      // 키를 뗀 건 화면 상태와 상관없이 항상 반영 — 게임 끝·멈춤·준비 화면에서 뗀 키가 무시돼 '눌린 채'로 남던 버그 (2026-10-28 하율 "오른쪽 키를 눌러도 왼쪽으로")
+      if (!down && name in keys) { keys[name] = false; if (st.scene !== 'play') return; }
       if (st.scene === 'ready') { if (down) start(); return; }   // 아무 키나 누르면 시작(그 키로 블록을 움직이진 않음)
       if (st.scene === 'pause') { if (down) resume(); return; }
       if (st.scene !== 'play') return;
-      if (name === 'left' || name === 'right') { keys[name] = down; if (down) { st.dasDir = name === 'left' ? -1 : 1; st.das = 0; if (!st.clearT) move(st.dasDir); } }
+      if (name === 'left' || name === 'right') { keys[name] = down; if (down) { st.lastH = st.dasDir = name === 'left' ? -1 : 1; st.das = 0; if (!st.clearT) move(st.dasDir); } }
       else if (name === 'down') { keys.down = down; if (down && !st.clearT && softStep()) st.lock = 0; }
       else if (!down || st.clearT) return;
       else if (name === 'cw') rotate(1);
