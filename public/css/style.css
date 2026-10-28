@@ -5491,9 +5491,27 @@ html.rxs .rx-b{display:none!important}
 .ggrid .gtop .av .dot{width:9px;height:9px;border-width:2px;right:-2px;bottom:-2px}
 /* 아주 좁은 화면(폴드 바깥 화면 등 320px 미만) — 소개 화면 시계 숫자가 칸 밖으로 안 나가게 (2026-10-28) */
 @media (max-width:319px){.in-time b{font-size:54px}.in-time small{font-size:20px}}
-/* 키 낮은 화면에서 서랍을 비율 그대로 줄임(app.js fitMeal·fitRk가 --mk·--tk를 넣음, 2026-10-28) — 위 끝 기준으로 줄여 가운데·옆 자리 유지 */
-.s-meal.stow{scale:var(--mk,1);transform-origin:0 0}
-.s-ttc.stow{scale:var(--tk,1);transform-origin:100% 0}
+/* 키 낮은 화면(2026-10-28 2차): 비율 축소 대신 랭킹을 1~3등 시상대(2·1·3 가로 3칸)로 바꿔 키를 줄임 — app.js fitRk가 .pod를 붙임 */
+html.rk2 .s-rk.pod .srk-h{margin-bottom:5px}
+html.rk2 .s-rk.pod .rk-list{display:grid;grid-template-columns:1fr 1.1fr 1fr;align-items:end;gap:5px}
+html.rk2 .s-rk.pod .rk-list > .skel,html.rk2 .drawers .s-ttc > .s-rk.pod .rk-list > .skel{grid-column:1/-1;height:96px}
+html.rk2 .s-rk.pod .rk-empty{grid-column:1/-1}
+html.rk2 .s-rk.pod .rk{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:7px 2px 5px;text-align:center}
+html.rk2 .s-rk.pod .rk.p1{order:2;padding:8px 3px 6px}
+html.rk2 .s-rk.pod .rk.p2{order:1}
+html.rk2 .s-rk.pod .rk.p3{order:3}
+html.rk2 .s-rk.pod .rk-n{position:absolute;top:3px;left:3px;z-index:1}
+html.rk2 .s-rk.pod .rk-n .mdl{width:19px;height:19px;font-size:10.5px}
+html.rk2 .s-rk.pod .rk.p1 .rk-n .mdl{width:21px;height:21px;font-size:11.5px}
+html.rk2 .s-rk.pod .rk > a{flex-direction:column;gap:2px;width:100%}
+html.rk2 .s-rk.pod .rk > a > b{max-width:100%;justify-content:center;font-size:12.5px}
+html.rk2 .s-rk.pod .rk.p1 > a > b{font-size:13.5px}
+html.rk2 .s-rk.pod .rk-v{max-width:100%;padding:1px 7px;font-size:12px}
+html.rk2 .s-rk.pod .rk.p1 .rk-v{font-size:13px;padding:1px 8px}
+html.rk2 .s-rk.pod .rk-v:has(.rk-tr){width:100%}
+html.rk2 .s-rk.pod .rk-v .rk-tr{padding-left:19px;padding-right:3px;font-size:9.5px;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:clip;justify-content:flex-start}
+html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
+
 /* 랭킹 내 자리(2026-10-28): 창 열면 내 줄로 스크롤, 스크롤해 벗어나도 내 줄은 창 위·아래 끝에 붙어 보임 · 50등 밖이면 ⋯ 뒤에 내 줄 */
 .rank li.me{position:sticky;top:0;bottom:0;z-index:2;box-shadow:0 0 0 2px #f2c94c inset,0 4px 14px rgba(92,65,0,.16)}
 :root[data-theme="dark"] .rank li.me{box-shadow:0 0 0 2px #b8901f inset,0 4px 14px rgba(0,0,0,.4)}

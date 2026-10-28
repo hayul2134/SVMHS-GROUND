@@ -1183,21 +1183,22 @@ let rkT = 0;
 function fitRk() {
   clearTimeout(rkT);
   const st = HERO.style, rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0, hcy = parseFloat(st.getPropertyValue('--hcy'));
-  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); st.removeProperty('--tk'); fitMeal(hcy ? hcy - tt.offsetHeight / 2 : null); return; }
+  st.removeProperty('--tk');   // 비율 축소는 폐지(2026-10-28 하율: 시간표·랭킹만 작아져 좌우 짝이 안 맞음)
+  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !hcy) { rk?.classList.remove('pod'); if (up0) st.setProperty('--rkup', '0px'); fitMeal(hcy ? hcy - tt.offsetHeight / 2 : null); return; }
   if (document.documentElement.classList.contains('tuck')) return;
   // 메시지 버튼 자리: 보이면 재서 기억, 아직 안 떴으면(로그인 확인 전) 기억해 둔 값
   const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null;
   let gap = +store.get('dock_gap', 0) || 92;
   if (db && db.height) { const g = Math.round(innerHeight - db.top); if (g !== gap) store.set('dock_gap', g); gap = g; }
-  const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, th = tt.offsetHeight, ttTop = hcy - th / 2;   // 올리기 전 시간표 위 끝
-  const rkB = ttTop + rk.offsetTop + rk.offsetHeight + 8;   // +8: 기울기만큼 아래로 나오는 몫
-  const lim = innerHeight - gap - 14, over = rkB - lim, room = ttTop - (hdr + 10);
-  // 키가 낮은 화면(노트북 125% 배율 등): 올려도 랭킹이 메시지 버튼에 걸리면 시간표+랭킹 서랍을 통째로 비율 그대로 줄임 (2026-10-28 모든 기기 최적화)
-  const H = rkB - ttTop, k = over > Math.max(0, room) ? Math.max(.6, Math.min(1, (lim - (hdr + 10)) / H)) : 1;
-  const up = k < 1 ? hcy - (hdr + 10) - k * th / 2 : over > 0 ? Math.min(over, Math.max(0, room)) : 0;
-  if (k < 1) st.setProperty('--tk', k.toFixed(3)); else st.removeProperty('--tk');
+  const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, lim = innerHeight - gap - 8;
+  const measure = () => { const th = tt.offsetHeight, ttTop = hcy - th / 2, rkB = ttTop + rk.offsetTop + rk.offsetHeight + 8; return { th, over: rkB - lim, room: ttTop - (hdr + 10) }; };   // +8: 기울기만큼 아래로 나오는 몫
+  // 키가 낮은 화면: 줄이지 않고 랭킹을 1~3등 시상대(가로 3칸)로 바꿔 키를 줄임 → 그래도 모자라면 시간표째 헤더 아래까지 올림
+  rk.classList.remove('pod');
+  let m = measure();
+  if (m.over > Math.max(0, m.room)) { rk.classList.add('pod'); m = measure(); }
+  const up = m.over > 0 ? Math.min(m.over, Math.max(0, m.room)) : 0;
   if (Math.abs(up - up0) >= 1) st.setProperty('--rkup', Math.round(up) + 'px');
-  fitMeal(hcy - Math.round(up) - k * th / 2);
+  fitMeal(hcy - Math.round(up) - m.th / 2);
 }
 // 급식 카드 위 끝을 시간표 카드 위 끝에 맞춤 (2026-10-28 하율 '급식이 좀 올라간 것 같다' — 급식 카드가 더 길어 가운데 맞춤이면 위 끝이 시간표보다 15px쯤 위로 튀어나옴)
 // 위 끝 높이로 가운데(--mcy)를 계산. 헤더·아래 서비스 버튼에 걸리면 그만큼만 덜 내림/덜 올림. 시간표 기준을 못 구하면 원래대로 시계 가운데(--hcy)
@@ -1209,12 +1210,11 @@ function fitMeal(ttTop) {
   let floor = (fb && fb.height ? fb.top : innerHeight - 92) - 10;
   // 서비스 버튼 위에 올라앉은 캐릭터도 피함 (2026-10-28: 키 낮은 노트북에서 캐릭터가 급식 투표·칼로리를 가리던 문제)
   const ms = $('#mascot'); if (ms && !ms.hidden && ms.offsetHeight && fb && fb.height) floor = Math.min(floor, fb.top - ms.offsetHeight * .9 - 6);
-  // 그래도 자리가 모자라면 급식판 서랍을 비율 그대로 줄임(식판 모양 유지)
-  const km = Math.max(.6, Math.min(1, (floor - hdr - 8) / mh)), vh = km * mh;
+  const vh = mh;   // 비율 축소 폐지(2026-10-28) — 자리가 모자라면 위로만 올림(헤더 아래가 한계)
   let top = ttTop;
   if (top + vh > floor) top = floor - vh;
   if (top < hdr + 8) top = hdr + 8;
-  if (km < 1) st.setProperty('--mk', km.toFixed(3)); else st.removeProperty('--mk');
+  st.removeProperty('--mk');
   st.setProperty('--mcy', Math.round(top + vh / 2) + 'px');
 }
 let heroRaf = 0, heroForce = false, TK_H = 0;
@@ -1223,7 +1223,7 @@ const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(
 const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
 const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr']) heroRO.observe($(s));
-new ResizeObserver(() => fitRk()).observe($('#sRk'));
+{ const ro = new ResizeObserver(() => fitRk()); ro.observe($('#sRk')); ro.observe(SIDE.tt.el); ro.observe(SIDE.meal.el); }   // 시간표·급식 높이가 바뀌어도 다시 잼(2026-10-28: 옛 값이 굳어 서랍이 작게 남던 문제)
 // 서랍 카드(급식판·시간표) 키가 바뀌면(다른 날 넘김·교시 수·연속 과목 합치기 등) 가운데 기준이라 위아래 끝이 '툭' 튀던 문제 (2026-10-26 하율)
 // → 가운데는 그대로 고정하고, 바뀐 만큼을 translate로 되돌렸다가 0으로 미끄러지게(FLIP). 가운데 높이·랭킹 몫(--rkup) 변화는 CSS top 전환이 맡음
 { const lastH = new Map(), calm = matchMedia('(prefers-reduced-motion: reduce)');
