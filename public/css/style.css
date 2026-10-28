@@ -5452,11 +5452,11 @@ html.rxs .rx-b{display:none!important}
 .ggrid .gtop a:hover span{text-decoration:underline}
 .ggrid .gtop a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ggrid .gtop .av.xs{flex:0 0 auto;vertical-align:0}
-.ggrid .gtop i{grid-row:2;grid-column:1/-1;min-height:24px;display:flex;align-items:center;font-style:normal;font-weight:800;color:#8a6400}
+.ggrid .gtop > i{grid-row:2;grid-column:1/-1;min-height:24px;display:flex;align-items:center;font-style:normal;font-weight:800;color:#8a6400}
 :root[data-theme="dark"] .ggrid .gtop{background:#4a3c10;color:#ffe08a}
-:root[data-theme="dark"] .ggrid .gtop small,:root[data-theme="dark"] .ggrid .gtop i{color:#e9c860}
+:root[data-theme="dark"] .ggrid .gtop small,:root[data-theme="dark"] .ggrid .gtop > i{color:#e9c860}
 :root[data-theme="dark"] .ggrid .gtop b,:root[data-theme="dark"] .ggrid .gtop a{color:#ffe9a8}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ggrid .gtop{background:#4a3c10;color:#ffe08a}:root:not([data-theme="light"]) .ggrid .gtop small,:root:not([data-theme="light"]) .ggrid .gtop i{color:#e9c860}:root:not([data-theme="light"]) .ggrid .gtop b,:root:not([data-theme="light"]) .ggrid .gtop a{color:#ffe9a8}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ggrid .gtop{background:#4a3c10;color:#ffe08a}:root:not([data-theme="light"]) .ggrid .gtop small,:root:not([data-theme="light"]) .ggrid .gtop > i{color:#e9c860}:root:not([data-theme="light"]) .ggrid .gtop b,:root:not([data-theme="light"]) .ggrid .gtop a{color:#ffe9a8}}
 .ggrid .gbtns{gap:6px;padding-top:4px}
 .ggrid .gbtns .btn{padding-left:6px;padding-right:6px;font-size:14px;min-width:0}
 .ggrid .gbtns .gbr{flex:0 0 42px}
@@ -5477,3 +5477,4 @@ html.rxs .rx-b{display:none!important}
 .tr-top li.tx .tr-n{color:var(--rc);font-size:15px}
 .tr-top li.tx em{color:color-mix(in srgb,var(--rc) 70%,var(--text))}
 .tr-top li.tx.me{box-shadow:inset 3px 0 0 var(--rc),inset 0 0 0 2px color-mix(in srgb,var(--rc) 35%,transparent)}
+.ggrid .gtop .av .dot{width:9px;height:9px;border-width:2px;right:-2px;bottom:-2px}
