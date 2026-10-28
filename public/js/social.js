@@ -1526,11 +1526,11 @@ function chBlock(c) {
   const byG = new Map((c.games || []).map(x => [x.g, x]));
   const GAP = { home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
   const champs = gs.map(([k, g]) => { const x = byG.get(k);
-    if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">?</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
+    if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">1등 자리 비어 있음</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
     const rec = x.b != null && g.fmt ? g.fmt(x.b) : '', gm = k === 'gear' && x.m ? `<i class="tcc-mode">${gtMode(x.m)}</i>` : '';
     const gap = x.gap === 0 ? '공동 1등' : x.gap > 0 && GAP[k] ? `2등과 ${GAP[k](x.gap)} 차이` : x.n === 1 ? '유일한 도전자' : '';
     return `<li class="tcc${x.me ? ' me' : ''}">
-      <span class="tcc-g">${ic(g.ic)}<b>${g.name}</b>${gm}</span><span class="tcc-md">1</span>
+      <span class="tcc-g">${ic(g.ic)}<b>${g.name}</b>${gm}</span><span class="tcc-md">${ic('trophy')}1등</span>
       <span class="tcc-u">${x.users.map(u => `<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<span>${esc(nameOf(u))}</span></a>`).join('')}${x.more ? `<small>외 ${x.more}명</small>` : ''}</span>
       ${rec ? `<b class="tcc-rec">${esc(rec)}</b>` : ''}
       <span class="tcc-meta"><span>${ic('flag')}${x.n}명 중 1등</span>${gap ? `<span>${ic('ruler')}${gap}</span>` : ''}${x.me ? '<span class="tcc-mine">나!</span>' : ''}</span></li>`; }).join('');
