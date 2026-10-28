@@ -583,7 +583,7 @@ const CK = [
   [/육개장|짬뽕|매콤.*(국|탕|찌개)$|얼큰|짜글이|고추장찌개|닭개장|감자탕/, 'soup_red'], [/어묵(국|탕)|오뎅(국|탕)/, 'soup_fishcake'], [/수프|스프/, 'soup_cream'],
   [/깍두기|석박지|섞박지/, 'kkakdugi'], [/총각/, 'kimchi_chonggak'], [/오이소박이|오이김치/, 'kimchi_cucumber'], [/볶음김치|김치볶음$/, 'kimchi_fried'], [/백김치|물김치|나박/, 'kimchi_white'],
   [/김자반|김가루/, 'gim_jaban'], [/맨김|돌김|^김$/, 'gim'], [/유린기|꿔바로우/, 'tangsuyuk'], [/칠리새우|새우튀김/, 'fried_mixed'], [/단감/, 'fruit_mixed'],
-  [/파인애플/, 'pineapple'], [/사과/, 'apple'], [/바나나/, 'banana'], [/토마토/, 'tomato'], [/귤|오렌지|한라봉|천혜향|레드향/, 'orange'], [/멜론|참외/, 'melon'], [/수박/, 'watermelon'], [/포도|머스캣|머스켓/, 'grape'], [/키위/, 'kiwi'],
+  [/파인애플/, 'pineapple'], [/사과/, 'apple'], [/바나나/, 'banana'], [/토마토(?!.*(스파게티|파스타|푸실리|뇨끼|리조또|라이스|덮밥|볶음밥|스프|수프|소스|스튜))/, 'tomato'], [/귤|오렌지|한라봉|천혜향|레드향/, 'orange'], [/멜론|참외/, 'melon'], [/수박/, 'watermelon'], [/포도|머스캣|머스켓/, 'grape'], [/키위/, 'kiwi'],
   [/마라/, 'mala'], [/떡볶이/, 'tteokbokki'], [/제육/, 'jeyuk'], [/닭갈비/, 'dakgalbi'], [/(오징어|주꾸미|쭈꾸미|낙지).*볶음/, 'squid_stirfry'], [/찜닭/, 'chicken_braised'],
   [/매콤.*(갈비|찜)/, 'braised_spicy'], [/갈비찜|(?:^|[^떡])갈비$/, 'galbijjim'], [/불고기|주물럭|너비아니/, 'bulgogi'], [/오리/, 'duck'], [/소시지|비엔나|후랑크/, 'sausage'], [/햄|스팸/, 'ham'], [/어묵|오뎅/, 'fishcake_stirfry'],
   [/생선까스|생선가스|피쉬/, 'fish_cutlet'], [/까스|가스$|카츠|커틀릿/, 'donkatsu'], [/탕수/, 'tangsuyuk'], [/치킨|강정|닭튀김|윙|봉구이/, 'fried_chicken'], [/너겟|텐더/, 'nugget'], [/크로켓|고로케|치즈볼/, 'croquette'],
