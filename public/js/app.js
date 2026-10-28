@@ -2192,9 +2192,10 @@ let inPk = 'home';
     el.addEventListener('contextmenu', e => e.preventDefault());
   };
   hold(cv, 'jump'); hold(ov, 'jump'); hold($('#inHrJ'), 'jump'); hold($('#inHrD'), 'duck');
-  const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck' };
-  box.addEventListener('keydown', e => { const a = KEY[e.key]; if (!a || e.target !== box) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) act(a, true); });
-  box.addEventListener('keyup', e => { const a = KEY[e.key]; if (a) R?.input(a, false); });
+  const KEY = { ' ': 'jump', Space: 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', KeyW: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck', KeyS: 'duck' };
+  const hkey = e => KEY[e.code] || KEY[e.key];   // 한글 입력 상태에서도 W·S (2026-10-28)
+  box.addEventListener('keydown', e => { if (e.metaKey || e.ctrlKey) { R?.input('jump', false); R?.input('duck', false); return; } const a = hkey(e); if (!a || e.target !== box) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) act(a, true); });
+  box.addEventListener('keyup', e => { if (e.key === 'Meta' || e.key === 'Control') { R?.input('jump', false); R?.input('duck', false); return; } const a = hkey(e); if (a) R?.input(a, false); });
   box.addEventListener('blur', () => { R?.input('jump', false); R?.input('duck', false); });
   $('#inHrRnd').addEventListener('click', () => { if (!RUN) return; char = RUN.randomChar(); R?.setChar(char); if (R && R.st.scene !== 'play') R.draw(); });
   if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(box);

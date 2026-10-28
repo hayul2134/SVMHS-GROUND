@@ -538,6 +538,7 @@ export function createRunner(canvas, char, opt = {}) {
 
   function reset(seed = (Math.random() * 1e9) | 0) {
     rand = rng(seed);
+    keys.jump = keys.duck = false;   // 지난 판에 누르던 키가 새 판에 남지 않게 (2026-10-28, 기자재 정리! 같은 버그)
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, speed: V0, scroll: 0,
       y: 0, vy: 0, onGround: true, jumpHeld: 0, ducking: false, anim: 0,

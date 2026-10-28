@@ -2031,17 +2031,19 @@ async function playGear() {
   // 글자 키는 e.code(자판 위치)로 — 한글 입력 상태면 C가 'ㅊ'으로 와서 보관(C)·돌리기(Z·X)·멈춤(P)이 안 먹던 문제 (2026-10-27 하율 "보관 기능이 제대로 안돼")
   const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', KeyX: 'cw', KeyZ: 'ccw', Space: 'drop', KeyC: 'hold', ShiftLeft: 'hold', ShiftRight: 'hold', KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'cw' };
   const keyOf = e => KEY[e.code] || KEY[e.key];
+  const relAll = () => ['left', 'right', 'down'].forEach(a => R.input(a, false));
   const kd = e => {
     if (e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
+    if (e.metaKey || e.ctrlKey) { relAll(); return; }   // 맥 Cmd+화살표 등: keyup이 안 와서 키가 눌린 채 남던 문제 (2026-10-28)
     if (over) { if ((e.code === 'Space' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); restart(); } return; }
-    if (R.st.scene === 'ready' && ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) { e.preventDefault(); setMode(mode === 'rank' ? 'normal' : 'rank'); return; }   // 시작 전: 방식 고르기
+    if (R.st.scene === 'ready' && ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) { e.preventDefault(); if (e.repeat) return; setMode(mode === 'rank' ? 'normal' : 'rank'); return; }   // 시작 전: 방식 고르기
     if (R.st.scene === 'ready' && (e.code === 'Digit1' || e.code === 'Digit2')) { e.preventDefault(); setMode(e.code === 'Digit2' ? 'rank' : 'normal'); R.input('cw', true); R.input('cw', false); return; }
     if (e.code === 'KeyP') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
     const a = keyOf(e); if (!a) { if (R.st.scene !== 'play' && !['Meta', 'Alt', 'Control', 'Tab', 'Escape', 'CapsLock', 'HangulMode', 'Process'].includes(e.key)) { e.preventDefault(); R.input('cw', true); } return; }   // 시작 전·멈춤: 아무 키(엔터 포함)나
     e.preventDefault(); if (e.repeat) return;
     R.input(a, true);
   };
-  const ku = e => { const a = keyOf(e); if (a) R.input(a, false); };
+  const ku = e => { if (e.key === 'Meta' || e.key === 'Control') return relAll(); const a = keyOf(e); if (a) R.input(a, false); };
   document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
   // 터치 버튼: 누르고 있으면 좌우·아래는 계속
   $('#gr .gr-touch').addEventListener('pointerdown', e => {
@@ -2260,9 +2262,12 @@ async function playHome() {
   fit();
   const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
   // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)
-  const KEY = { ' ': 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck', ArrowLeft: 'go', ArrowRight: 'go' };
+  const KEY = { ' ': 'jump', Space: 'jump', ArrowUp: 'jump', w: 'jump', W: 'jump', KeyW: 'jump', ArrowDown: 'duck', s: 'duck', S: 'duck', KeyS: 'duck', ArrowLeft: 'go', ArrowRight: 'go' };
+  const hkey = e => KEY[e.code] || KEY[e.key];   // 한글 입력 상태에서도 W·S가 먹게 자판 위치 먼저 (2026-10-28)
+  const relH = () => { R.input('jump', false); R.input('duck', false); };
   const kd = e => {
-    const a = KEY[e.key]; if (!a || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
+    if (e.metaKey || e.ctrlKey) { relH(); return; }
+    const a = hkey(e); if (!a || !$('#hrDressBox').hidden || e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
     if (choosing) {   // 집에서 고르는 중: ←·→로 버튼 이동, 스페이스·엔터는 버튼 그대로(실수로 새 판 시작 안 되게)
       if (a === 'go') { e.preventDefault(); const bs = [...ov.querySelectorAll('[data-hr]')]; (bs[e.key === 'ArrowLeft' ? 0 : 1] || bs[0])?.focus(); }
       return;
@@ -2271,7 +2276,7 @@ async function playHome() {
     if (over) { if (a === 'jump') restart(); return; }
     R.input(a, true);
   };
-  const ku = e => { const a = KEY[e.key]; if (a) R.input(a, false); };
+  const ku = e => { if (e.key === 'Meta' || e.key === 'Control') return relH(); const a = hkey(e); if (a) R.input(a, false); };
   document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
   const hold = (el, a) => {
     el.addEventListener('pointerdown', e => { if (e.target.closest?.('[data-hr]')) return; e.preventDefault(); if (!$('#hrDressBox').hidden || choosing) return; if (over) { restart(); return; } R.input(a, true); try { el.setPointerCapture(e.pointerId); } catch {} });
