@@ -195,7 +195,7 @@ VIEWS.feedback = async () => {
           <button class="btn sm bad" type="button" data-act="fbdel" data-id="${x.id}">삭제</button></div></section>`).join('') : `<p class="empty">${fbState === 'open' ? '새 의견이 없어요' : '확인한 의견이 없어요'}</p>`}`;
 };
 /* ===== 모니터링 (20초마다 자동 새로 고침, 이 화면에 있을 때만) ===== */
-let monTimer = 0;
+let monTimer = 0, ccuRange = 'today';
 const FEED = {
   signup: (u, x) => `${who(u)} <span class="sub">가입</span>`,
   score: (u, x) => { const [g, v] = String(x).split(':'); return `${who(u)} <span class="sub">${GAMES[g]?.em || '🎮'} ${esc(GAMES[g]?.name || g)} ${esc(GAMES[g] ? GAMES[g].fmt(+v) : v)}${GAMES[g] && +v <= GAMES[g].sus ? ' <b class="sus">의심</b>' : ''}</span>`; },
@@ -203,9 +203,72 @@ const FEED = {
   report: (u, x) => `${who(u)} <span class="sub">→ @${esc(x || '?')} 신고</span>`,
 };
 const SRC = { s: '소셜', admin: '관리자', api: '투표·공지', neis: '나이스' };
+/* 동접 선그래프 — 서버 ccu: 5분 칸마다 접속한 사람 수(개발자·테스트 제외). 7일은 1시간마다 최고값 */
+const hm = t => { const d = new Date(t + 9 * 3600e3); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+const md = t => { const d = new Date(t + 9 * 3600e3); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
+let ccuSer = null;
+function ccuSeries(c) {
+  const wk = c.range === 'week', step = wk ? 3600e3 : c.step, map = new Map();
+  for (const [t, n] of c.pts) { const k = Math.floor(t / step) * step; map.set(k, Math.max(map.get(k) || 0, n)); }
+  const x0 = c.from, x1 = c.range === 'yday' ? c.to : wk ? c.from + 7 * 86400e3 : c.from + 86400e3;
+  const start = c.first ? Math.max(c.from, Math.floor(c.first / step) * step) : Infinity, end = wk ? Math.min(c.to, Date.now()) : Math.min(c.to, Math.floor(Date.now() / step) * step - step);   // 아직 안 끝난 5분 칸은 덜 세어져서 뺌
+  const pts = []; for (let t = start; t <= end; t += step) pts.push([t, map.get(t) || 0]);
+  return { wk, step, x0, x1, pts };
+}
+function ccuCard(c, live) {
+  const S = ccuSeries(c); ccuSer = S;
+  const W = 1200, H = 210, L = 34, R = 12, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
+  const max = Math.max(0, ...S.pts.map(p => p[1])), top = Math.max(4, Math.ceil(max * 1.15));
+  const X = t => L + (t - S.x0) / (S.x1 - S.x0) * pw, Y = n => T + ph - n / top * ph;
+  const tstep = top <= 8 ? 1 : top <= 20 ? 5 : top <= 50 ? 10 : 20;
+  let g = '';
+  for (let v = 0; v <= top; v += tstep) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="cg"/><text x="${L - 6}" y="${Y(v) + 4}" class="cy">${v}</text>`;
+  const xt = S.wk ? 86400e3 : 3 * 3600e3;
+  for (let t = S.x0; t <= S.x1; t += xt) g += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${T + ph}" class="cg v"/><text x="${X(t)}" y="${H - 6}" class="cx">${S.wk ? md(t) : (t === S.x1 ? '24시' : hm(t).slice(0, 2).replace(/^0/, '') + '시')}</text>`;
+  const pk = S.pts.reduce((a, p) => (p[1] > a[1] ? p : a), [0, 0]);
+  const last = S.pts[S.pts.length - 1];
+  let line = '', area = '';
+  if (S.pts.length) {
+    line = S.pts.map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join('');
+    area = `${line}L${X(last[0]).toFixed(1)},${T + ph}L${X(S.pts[0][0]).toFixed(1)},${T + ph}Z`;
+  }
+  const seg = [['today', '오늘'], ['yday', '어제'], ['week', '7일']].map(([k, l]) => `<button type="button" data-ccu="${k}" class="${k === c.range ? 'on' : ''}">${l}</button>`).join('');
+  const sumTxt = !S.pts.length ? (c.first ? '이 기간엔 기록이 없어요' : '기록을 막 시작했어요 — 학생이 들어오면 5분마다 점이 찍혀요')
+    : `${c.range === 'today' ? `지금 <b class="num">${live}</b>명 · ` : ''}최고 <b class="num">${pk[1]}</b>명 <span class="sub">(${S.wk ? md(pk[0]) + ' ' : ''}${hm(pk[0])}${S.wk ? '시대' : ''})</span>`;
+  return `<section class="card ccu"><h3>📈 동시 접속 <span class="sub">${S.wk ? '1시간마다 가장 많았던 순간' : '5분마다 접속한 사람 수'}</span><div class="seg">${seg}</div></h3>
+    <p class="ccs">${sumTxt}</p>
+    <div class="ccw"><svg id="ccuSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="동시 접속 그래프">${g}
+      ${area ? `<path d="${area}" class="ca"/><path d="${line}" class="cl"/>` : ''}
+      ${pk[1] ? `<circle cx="${X(pk[0])}" cy="${Y(pk[1])}" r="5" class="cp"/>` : ''}
+      ${c.range === 'today' && last ? `<circle cx="${X(last[0])}" cy="${Y(last[1])}" r="5" class="cn"/>` : ''}
+      <line id="ccuV" class="cv" y1="${T}" y2="${T + ph}" x1="-9" x2="-9"/><circle id="ccuD" r="5" class="cd" cx="-9" cy="-9"/>
+      <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent" id="ccuHit"/></svg><div class="ctip" id="ccuTip" hidden></div></div>
+    <p class="sub sp">개발자·테스트 계정은 빼고 셈${c.first ? ` · ${md(c.first)} ${hm(c.first)}부터 기록` : ''} · 그래프 위에 마우스를 올리면 그 시각 숫자가 보여요</p></section>`;
+}
+function ccuHover(c) {
+  const svg = $('#ccuSvg'), hit = $('#ccuHit'), tip = $('#ccuTip'), S = ccuSer;
+  if (!svg || !S || !S.pts.length) return;
+  const W = 1200, H = 210, L = 34, R = 12, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
+  const top = Math.max(4, Math.ceil(Math.max(...S.pts.map(p => p[1])) * 1.15));
+  const move = e => {
+    const r = svg.getBoundingClientRect(), vx = (e.clientX - r.left) / r.width * W;
+    const t = S.x0 + (vx - L) / pw * (S.x1 - S.x0);
+    let i = Math.round((t - S.pts[0][0]) / S.step); i = Math.max(0, Math.min(S.pts.length - 1, i));
+    const [pt, n] = S.pts[i], x = L + (pt - S.x0) / (S.x1 - S.x0) * pw, y = T + ph - n / top * ph;
+    $('#ccuV').setAttribute('x1', x); $('#ccuV').setAttribute('x2', x);
+    $('#ccuD').setAttribute('cx', x); $('#ccuD').setAttribute('cy', y);
+    tip.hidden = false;
+    tip.innerHTML = `<b>${n}명</b> <span>${S.wk ? md(pt) + ' ' + hm(pt) + '~' + hm(pt + 3600e3) : hm(pt) + '~' + hm(pt + S.step)}</span>`;
+    const px = x / W * r.width;
+    tip.style.left = Math.max(0, Math.min(r.width - tip.offsetWidth, px - tip.offsetWidth / 2)) + 'px';
+    tip.style.top = Math.max(0, y / H * r.height - tip.offsetHeight - 12) + 'px';
+  };
+  const out = () => { tip.hidden = true; $('#ccuV').setAttribute('x1', -9); $('#ccuV').setAttribute('x2', -9); $('#ccuD').setAttribute('cx', -9); };
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move); hit.addEventListener('pointerleave', out);
+}
 VIEWS.monitor = async () => {
   clearTimeout(monTimer);
-  const d = await call('monitor');
+  const d = await call('monitor?ccu=' + ccuRange);
   if (cur !== 'monitor') return;
   const tile = (n, label, k = '') => `<div class="stat ${k}"><b>${n}</b><span>${label}</span></div>`;
   const nowH = (new Date(Date.now() + 9 * 3600e3)).getUTCHours();
@@ -223,6 +286,7 @@ VIEWS.monitor = async () => {
       ${tile(d.db.write ? '정상' : '멈춤', 'DB 저장 (계정 무료 한도)', d.db.write ? 'c2' : 'hot')}
       ${tile(d.neis.ok ? d.neis.ms + 'ms' : '오류', '나이스 연결' + (d.neis.key ? '' : ' (인증키 없음)'), d.neis.ok ? 'c4' : 'hot')}
     </div>
+    ${ccuCard(d.ccu, d.online.length)}
     <div class="grid g3">
       <section class="card"><h3>🟢 지금 접속 중 <span class="sub num">${d.online.length}</span></h3>
         ${d.online.length ? `<ul class="mlist">${d.online.map(u => `<li><a href="#users/${encodeURIComponent(u.handle)}">${who(u, cls(u))}</a><span class="sub">${when(u.seen)}</span></li>`).join('')}</ul>` : '<p class="empty">지금은 아무도 없어요</p>'}
@@ -259,6 +323,7 @@ VIEWS.monitor = async () => {
     </section>`;
   // 관리자 페이지 CSP가 style="" 속성을 막음 → 높이·색은 JS로 넣음
   document.querySelectorAll('#hchart .bar').forEach(b => { b.style.height = b.dataset.h; b.style.background = b.dataset.g; });
+  ccuHover(d.ccu);
   const tick = () => { if (cur !== 'monitor') return; if (document.hidden) monTimer = setTimeout(tick, 20e3); else VIEWS.monitor().catch(() => { monTimer = setTimeout(tick, 20e3); }); };
   monTimer = setTimeout(tick, 20e3);
 };
@@ -524,6 +589,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#modal
 
 /* ===== 버튼 처리 (위임) ===== */
 document.addEventListener('click', async e => {
+  const cc = e.target.closest('[data-ccu]');
+  if (cc) { ccuRange = cc.dataset.ccu; return VIEWS.monitor().catch(() => {}); }
   const fs = e.target.closest('[data-fs]');
   if (fs) { fbState = fs.dataset.fs; return route(); }
   const rs = e.target.closest('[data-rs]');

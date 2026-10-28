@@ -327,6 +327,7 @@ const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !rwStk(
 const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', nfx: fxPub(u).nfx, mfx: fxPub(u).mfx, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
+const CCU_MS = 300e3;   // 동접 그래프 칸 = 5분
 async function auth(req, db) {
   const token = cookieOf(req, COOKIE);
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
@@ -338,7 +339,13 @@ async function auth(req, db) {
     await db.prepare('UPDATE sessions SET exp = ?1 WHERE token = ?2').bind(Date.now() + KEEP_DAYS * 86400e3, await sha256(token)).run();
     RENEW.set(req, token);
   }
-  if (Date.now() - row.seen > 60e3) await db.prepare('UPDATE users SET seen = ?1 WHERE id = ?2').bind(Date.now(), row.id).run();
+  if (Date.now() - row.seen > 60e3) {
+    // 동접 그래프(관리자 모니터링): 5분 칸마다 '그 칸에 처음 들어온 사람'이면 칸 수 +1 — 사람당 5분에 한 번만 씀
+    // seen을 조건부로 바꿔서(동시 요청이 둘 다 세는 것 방지) 실제로 바뀐 요청만 셈
+    const now = Date.now(), r = await db.prepare('UPDATE users SET seen = ?1 WHERE id = ?2 AND seen = ?3').bind(now, row.id, row.seen).run();
+    if (r.meta.changes && !isAdm(row) && !row.is_test && Math.floor(row.seen / CCU_MS) !== Math.floor(now / CCU_MS))
+      try { await db.prepare('INSERT INTO ccu (b, n) VALUES (?1, 1) ON CONFLICT (b) DO UPDATE SET n = n + 1').bind(Math.floor(now / CCU_MS)).run(); } catch {}
+  }
   return row;
 }
 async function newSession(req, db, uid) {

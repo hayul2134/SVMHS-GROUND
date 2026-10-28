@@ -287,3 +287,16 @@ code{background:var(--chip);border:1.5px solid var(--line);border-radius:6px;pad
 .fbimgs{display:flex;flex-wrap:wrap;gap:8px;margin:-2px 0 12px}
 .fbimgs img{display:block;width:96px;height:96px;object-fit:cover;border-radius:10px;border:1.5px solid var(--line)}
 @media (max-width:440px){.top{gap:6px}.brand span{font-size:16px}.brand em{font-size:11px;padding:0 6px}.top .tbtn{min-height:32px;padding:0 8px;font-size:12.5px}}
+
+/* 동접 선그래프 */
+.card.ccu h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.card.ccu h3 .seg{margin-left:auto}
+.ccw{position:relative}.ccw svg{display:block;width:100%;height:auto;touch-action:none}
+.ccw .cg{stroke:var(--line);stroke-width:1}.ccw .cg.v{stroke-dasharray:3 4}
+.ccw .cy,.ccw .cx{fill:var(--sub);font-size:12px;font-weight:700}.ccw .cy{text-anchor:end}.ccw .cx{text-anchor:middle}
+.ccw .ca{fill:color-mix(in srgb,var(--sky) 30%,transparent)}
+.ccw .cl{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.ccw .cp{fill:var(--yellow);stroke:var(--ink);stroke-width:2}.ccw .cn{fill:var(--good,#3cc98a);stroke:var(--ink);stroke-width:2}
+.ccw .cv{stroke:var(--ink);stroke-width:1;stroke-dasharray:4 3}.ccw .cd{fill:#fff;stroke:var(--accent);stroke-width:3}
+.ctip{position:absolute;pointer-events:none;background:var(--card);border:var(--bd);border-radius:8px;padding:4px 9px;font-size:13px;white-space:nowrap;box-shadow:2px 2px 0 var(--ink)}
+.ctip span{color:var(--sub);margin-left:4px}
+.ccs{font-size:14px;margin:2px 0 8px}.ccs b{font-size:18px;margin:0 1px}

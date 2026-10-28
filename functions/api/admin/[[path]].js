@@ -137,8 +137,11 @@ const ROUTES = {
   },
 
   /* ----- 모니터링: 지금 접속자 · 최근 활동 · 오늘 시간대별 · 투표 · DB · 나이스 · 서버 오류 (DM 내용은 포함하지 않음) ----- */
-  'GET monitor': async ({ env, db }) => {
+  'GET monitor': async ({ env, db, url }) => {
     const now = Date.now(), t0 = kstStart(), day = kstYmd();
+    // 동접 그래프 범위: today(오늘 0시~) · yday(어제 하루) · week(7일, 1시간마다 최고값) — 20초마다 부르니 필요한 칸만 읽음
+    const ccuR = ['today', 'yday', 'week'].includes(url.searchParams.get('ccu')) ? url.searchParams.get('ccu') : 'today';
+    const C = 300e3, cFrom = Math.floor((ccuR === 'today' ? t0 : ccuR === 'yday' ? t0 - 86400e3 : t0 - 6 * 86400e3) / C), cTo = Math.floor((ccuR === 'yday' ? t0 : now) / C);
     const TABLES = ['users', 'sessions', 'follows', 'blocks', 'messages', 'scores', 'reports', 'bans', 'meal_votes', 'balance_votes', 'admin_log', 'rl', 'errs'];
     const P = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen';
     const r = await db.batch([
@@ -161,7 +164,10 @@ const ROUTES = {
       db.prepare('SELECT at, src, route, msg FROM errs ORDER BY id DESC LIMIT 60'),
       db.prepare('SELECT COUNT(*) AS n FROM errs WHERE at >= ?1').bind(now - 86400e3),
       db.prepare(`SELECT ${TABLES.map(t => `(SELECT COUNT(*) FROM ${t}) AS ${t}`).join(', ')}`),
+      db.prepare('SELECT b, n FROM ccu WHERE b >= ?1 AND b <= ?2 ORDER BY b').bind(cFrom, cTo),
+      db.prepare('SELECT MIN(b) AS b FROM ccu'),
     ]);
+    if (Math.random() < 0.02) await db.prepare('DELETE FROM ccu WHERE b < ?1').bind(Math.floor((now - 31 * 86400e3) / C)).run().catch(() => {});
     const rows = i => r[i].results, one = i => r[i].results[0];
     const card = u => ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, seen: u.seen, online: now - (u.seen || 0) < 150e3 });
     const feed = [3, 4, 5, 6].flatMap(rows).sort((a, b) => b.at - a.at).slice(0, 40).map(x => ({ k: x.k, at: x.at, user: card(x), x: x.x }));
@@ -189,6 +195,7 @@ const ROUTES = {
       errors: rows(12), errors24h: one(13).n,
       db: { write: dbWrite, tables: one(14) },
       neis,
+      ccu: { range: ccuR, from: cFrom * C, to: cTo * C, step: C, first: one(16).b == null ? 0 : one(16).b * C, pts: rows(15).map(x => [x.b * C, x.n]) },
     });
   },
   'POST errclear': async ({ db }) => {
