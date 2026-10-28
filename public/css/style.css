@@ -5443,12 +5443,20 @@ html.rxs .rx-b{display:none!important}
 .ggrid .gstat span{display:flex;align-items:baseline;justify-content:space-between;gap:6px;border:0;border-radius:0;padding:5px 9px;font-size:11.5px;background:none}
 .ggrid .gstat span+span{border-top:1.5px dashed var(--line)}
 .ggrid .gstat b{font-size:14.5px;white-space:nowrap}
-.ggrid .gtop{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:1px 5px;font-size:12px;text-align:left;padding:0 2px;min-height:38px}
-.ggrid .gtop small{font-size:11.5px;font-weight:900;color:var(--sub);white-space:nowrap}
-.ggrid .gtop a{display:flex;align-items:center;gap:4px;min-width:0;padding:1px 5px}
+/* 1등 칸 (2026-10-28 하율 "보기 편하게"): 기록 칸(.gstat)과 같은 상자 모양의 금빛 칸 — 윗줄 '1등 · 기록'(오른쪽 정렬), 아랫줄 프로필 사진+이름 */
+.ggrid .gtop{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 6px;margin:0;padding:6px 9px 7px;border:2px solid var(--ink);border-radius:12px;background:#fff3c4;color:#6b4c00;font-size:12px;text-align:left;min-height:0}
+.ggrid .gtop small{grid-row:1;grid-column:1;display:flex;align-items:center;font-size:11.5px;font-weight:900;color:#8a6400;white-space:nowrap}
+.ggrid .gtop small .sic{width:1.15em;height:1.15em;margin-right:3px;vertical-align:0}
+.ggrid .gtop b{grid-row:1;grid-column:2;justify-self:end;font:800 14.5px var(--num);color:#173048;white-space:nowrap;padding:0}
+.ggrid .gtop a{grid-row:2;grid-column:1/-1;min-height:24px;display:flex;align-items:center;gap:6px;min-width:0;padding:0;background:none;border-radius:0;color:#5a4000;font-size:13px;font-weight:900;text-decoration:none}
+.ggrid .gtop a:hover span{text-decoration:underline}
 .ggrid .gtop a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ggrid .gtop b{grid-column:2;font:800 12px var(--num);justify-self:start;padding-left:5px}
-.ggrid .gtop i{font-style:normal;font-weight:800;color:var(--sub)}
+.ggrid .gtop .av.xs{flex:0 0 auto;vertical-align:0}
+.ggrid .gtop i{grid-row:2;grid-column:1/-1;min-height:24px;display:flex;align-items:center;font-style:normal;font-weight:800;color:#8a6400}
+:root[data-theme="dark"] .ggrid .gtop{background:#4a3c10;color:#ffe08a}
+:root[data-theme="dark"] .ggrid .gtop small,:root[data-theme="dark"] .ggrid .gtop i{color:#e9c860}
+:root[data-theme="dark"] .ggrid .gtop b,:root[data-theme="dark"] .ggrid .gtop a{color:#ffe9a8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ggrid .gtop{background:#4a3c10;color:#ffe08a}:root:not([data-theme="light"]) .ggrid .gtop small,:root:not([data-theme="light"]) .ggrid .gtop i{color:#e9c860}:root:not([data-theme="light"]) .ggrid .gtop b,:root:not([data-theme="light"]) .ggrid .gtop a{color:#ffe9a8}}
 .ggrid .gbtns{gap:6px;padding-top:4px}
 .ggrid .gbtns .btn{padding-left:6px;padding-right:6px;font-size:14px;min-width:0}
 .ggrid .gbtns .gbr{flex:0 0 42px}
