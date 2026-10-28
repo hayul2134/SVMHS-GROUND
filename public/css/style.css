@@ -5860,3 +5860,4 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .pch-c b{color:#b07d00;font-weight:900}
 .pch small{font-size:11.5px;font-weight:700;color:var(--sub,#5b6477)}
 @media (max-width:560px){.tch-rise li{flex-wrap:wrap}.tch-mv .tierb{font-size:11.5px}}
+.tch-pv{flex-basis:100%;font-size:11px;font-weight:700;opacity:.75}

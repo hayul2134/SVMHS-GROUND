@@ -1518,7 +1518,7 @@ function chUpLine(c) {   // 내 티어 칸 아래: 어제보다 · 지난 라운
   else if (r) a.push('<span class="tch-eq">다른 학생이 올라왔어요 <small>한 판 더 하면 되찾을 수 있어요</small></span>');
   if (p && p.d > 0) a.push(`<span class="tch-up">▲ ${p.d}계단 <small>지난 라운드 ${tierOfK(p.k)?.n || ''}보다</small></span>`);
   else if (p) a.push(`<span class="tch-eq">지난 라운드 ${tierOfK(p.k)?.n || ''}</span>`);
-  return a.length ? `<span class="tch-me">${a.join('')}</span>` : '';
+  return a.length ? `<span class="tch-me">${a.join('')}${c.pv ? '<small class="tch-pv">미리보기 · 1위 학생 기준</small>' : ''}</span>` : '';
 }
 function chBlock(c) {
   const gs = gamesOn().filter(([k]) => GAMES[k]);
@@ -1531,7 +1531,6 @@ function chBlock(c) {
     <div class="tch-h">${ic('trophy')}<b>이번 라운드 게임별 1등</b>${mine ? `<span class="tch-mine">나도 ${mine}개 게임 1등!</span>` : '<small>티어와 따로, 게임마다 1등이 있어요</small>'}</div>
     <ul class="tch-list">${champs}</ul>
     ${c.since ? `<div class="tch-h">${ic('fire')}<b>어제보다 많이 오른 학생</b><small>${md(c.since)}까지 기록과 비교</small></div>${rise ? `<ol class="tch-rise">${rise}</ol>` : '<p class="tch-none">아직 오른 학생이 없어요 — 첫 주인공이 되어 볼까요?</p>'}` : '<p class="tch-none">라운드 첫날이라 내일부터 \'어제보다 오른 학생\'이 보여요</p>'}
-    ${c.pv ? '<p class="tr-pv">미리보기 · 내 변화는 1위 학생 기준(개발자는 티어 밖)</p>' : ''}
   </section>`;
 }
 // 라운드 티어 카드 (2026-10-25): 게임마다 라운드 순위 점수(1등 100 ~ 꼴찌 100/참가자 수) 합 → 줄 세워 백분위로 티어
