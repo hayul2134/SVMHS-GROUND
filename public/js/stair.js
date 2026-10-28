@@ -5,7 +5,7 @@
 //   '종 게이지'는 계속 줄고 한 칸마다 조금 참(stair-score.js) — 다 떨어지면 종이 쳐서 지각, 끝.
 // 캐릭터는 '집에 가고 싶어!'에서 꾸민 캐릭터 그대로(runner.js buildSprites). 글자(점수·층·안내)는 social.js playStair가 DOM으로.
 // 배경: 학교 1~5층(복도 벽·창문·게시판·교실 문·소화기·시계) → 옥상(난간·물탱크) → 하늘(구름·새) → 구름 위(노을) → 우주(별·행성·별똥별)
-import { GAIN, FLOOR, drain, floorName, zoneOf } from './stair-score.js';
+import { GAIN, FLOOR, drain, floorName, zoneOf, ROOF } from './stair-score.js';
 import { buildSprites, loadChar, SPR_W, SPR_H } from './runner.js';
 
 export const W = 160, H = 240;
@@ -157,13 +157,15 @@ function art() {
 }
 
 /* ===== 하늘 색: 구역마다 위·아래 색 (층 f 기준, 사이에서 섞음) ===== */
-const SKYK = [[5, '#7cc8ff', '#d6f0ff'], [7, '#5cb2f2', '#bfe6ff'], [8.3, '#ff9aa8', '#ffd9a8'], [9.6, '#4b3f8f', '#c56f9a'], [10.6, '#141a3d', '#2d2f6b'], [99, '#0b0e26', '#1c1f4d']];   // 층(100칸) 기준
+const SKYK = [[7, '#7cc8ff', '#d6f0ff'], [9, '#5cb2f2', '#bfe6ff'], [10.3, '#ff9aa8', '#ffd9a8'], [11.6, '#4b3f8f', '#c56f9a'], [12.6, '#141a3d', '#2d2f6b'], [99, '#0b0e26', '#1c1f4d']];   // 층(100칸) 기준 · 옥상 = 7
 function skyAt(f) {
   if (f <= SKYK[0][0]) return [SKYK[0][1], SKYK[0][2]];
   for (let i = 0; i < SKYK.length - 1; i++) { const [a, t1, b1] = SKYK[i], [b, t2, b2] = SKYK[i + 1]; if (f < b) { const t = (f - a) / (b - a); return [mix(t1, t2, t), mix(b1, b2, t)]; } }
   return [SKYK.at(-1)[1], SKYK.at(-1)[2]];
 }
-const kindOf = i => i === FLOOR * 5 ? 'roof' : i > 0 && i % FLOOR === 0 ? 'land' : i < FLOOR * 5 ? 'school' : i < FLOOR * 8 ? 'sky' : i < FLOOR * 10 ? 'dusk' : 'space';
+const kindOf = i => i === FLOOR * ROOF ? 'roof' : i > 0 && i % FLOOR === 0 ? 'land' : i < FLOOR * ROOF ? 'school' : i < FLOOR * (ROOF + 3) ? 'sky' : i < FLOOR * (ROOF + 5) ? 'dusk' : 'space';
+// 층 도착 한 줄(2026-10-28 하율 "올라갈 때마다 서울영상고 관련 정보로 특색 있게") — 층 구성은 나무위키 '서울영상고등학교'의 학교 시설 설명 참고(3·4층은 교실로 꾸밈)
+const FLOOR_MSG = ['', '교무실 앞은 조용히!', '이제 3층… 아직 멀었다', '다리가 후들후들', '1학년 교실·과학실 층', '기숙사 층이에요, 쉿!', '옥상까지 딱 한 층!', '탐정이 뭔가 찾고 있다…'];
 
 export function createStair(cv, o = {}) {
   const g = cv.getContext('2d');
@@ -230,7 +232,7 @@ export function createStair(cv, o = {}) {
     if (f > st.floor) {
       const z = zoneOf(f) !== zoneOf(st.floor); st.floor = f; flash = 1; tune(z);
       for (let k = 0; k < 10; k++) parts.push({ x: px * DX + (k - 5) * 3, y: -py * DY - 4, vx: (k - 5) * 9, vy: -30 - (k % 3) * 12, t: 0, c: ['#ffd25e', '#ff8fb0', '#7cc4ff', '#ffffff'][k % 4], g: 1 });
-      o.onFloor?.(f, f <= 5 ? floorName(f) + ' 도착!' : z ? zoneOf(f) + ' 도착!' : floorName(f, true) + ' 돌파!', z || f <= 5);
+      o.onFloor?.(f, f <= ROOF ? floorName(f) + ' 도착!' : z ? zoneOf(f) + ' 도착!' : floorName(f, true) + ' 돌파!', z || f <= ROOF, FLOOR_MSG[f] || '');
     } else beep(392 + (st.steps % 8) * 28, .045, 'square', .035);
     o.onStep?.(st.steps);
   }
@@ -257,11 +259,92 @@ export function createStair(cv, o = {}) {
     box(x + 4, y + 20, 8, 3, '#ffffff'); box(x + 6, y + 18, 5, 2, '#ffffff');   // 창밖 구름
     frameBox(x - 2, y + 31, 36, 3, '#c9a37a');
   }
-  function elev(x, y) {   // 엘리베이터 30×52 — 영상고엔 엘리베이터가 없다(하율) → 노랑·검정 테이프로 X, 버튼도 꺼짐
-    frameBox(x, y, 30, 52, '#c3cbd9'); box(x + 2, y + 2, 26, 48, '#9aa3b5'); box(x + 14, y + 2, 2, 48, '#7d869a');
-    for (let i = 0; i < 26; i++) { const c = (i >> 1) % 2 ? '#ffd25e' : '#2a2846';
-      box(x + 2 + i, y + 6 + R(i * 1.6), 2, 2, c); box(x + 26 - i, y + 6 + R(i * 1.6), 2, 2, c); }
-    frameBox(x + 33, y + 20, 5, 9, '#e6edf7'); box(x + 34, y + 22, 3, 2, '#9aa3b5'); box(x + 34, y + 26, 3, 2, '#9aa3b5');
+  // 한글 이름표(작은 흰 판) — 픽셀 글꼴엔 한글이 없어 캔버스 글자로
+  function label(cx, y, s) {
+    g.font = '400 6px Jua, sans-serif'; const w = Math.ceil(g.measureText(s).width) + 6, x = R(cx - w / 2);
+    frameBox(x, y, w, 9, '#ffffff'); g.fillStyle = OL; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(s, x + w / 2, y + 5);
+  }
+  function shoes(x, b) {   // 신발장 34×40: 칸마다 실내화
+    frameBox(x, b - 40, 34, 40, '#d9b48a');
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { const cx = x + 2 + c * 11, cy = b - 38 + r * 10; box(cx, cy, 9, 8, '#a87a4e'); if ((r * 3 + c) % 4) { box(cx + 1, cy + 5, 3, 2, '#ffffff'); box(cx + 5, cy + 5, 3, 2, (r + c) % 2 ? '#7cc4ff' : '#ffffff'); box(cx + 1, cy + 7, 7, 1, OL); } }
+    label(x + 17, b - 52, '신발장');
+  }
+  function books(x, b) {   // 도서관 책장 36×44
+    frameBox(x, b - 44, 36, 44, '#b77f47');
+    const C = ['#ff8f9a', '#7cc4ff', '#ffd25e', '#62d9b8', '#a99cf0', '#ffffff'];
+    for (let r = 0; r < 4; r++) { box(x, b - 44 + r * 11 + 10, 36, 1, OL); for (let i = 0; i < 8; i++) { const h = 6 + (hash(r * 9 + i) * 3 | 0); box(x + 2 + i * 4, b - 44 + r * 11 + 10 - h, 3, h, C[(r + i) % 6]); } }
+    label(x + 18, b - 56, '도서관');
+  }
+  function bigDoor(x, b, nm, c = '#c98f55') {   // 양문(대강당 등) 34×46
+    frameBox(x, b - 46, 34, 46, c); box(x + 16, b - 46, 2, 46, OL); box(x + 12, b - 24, 2, 4, '#ffd25e'); box(x + 20, b - 24, 2, 4, '#ffd25e');
+    frameBox(x + 4, b - 40, 9, 10, '#cfeaff'); frameBox(x + 21, b - 40, 9, 10, '#cfeaff');
+    label(x + 17, b - 58, nm);
+  }
+  function roomDoor(x, b, nm, icon) {   // 교실 문 24×46 + 이름표 + 창에 아이콘
+    frameBox(x, b - 46, 24, 46, '#7fa8e0'); box(x, b - 3, 24, 3, '#5d86c0');
+    frameBox(x + 4, b - 42, 16, 12, '#cfeaff'); box(x + 5, b - 41, 3, 2, '#ffffff');
+    box(x + 18, b - 22, 3, 4, '#ffd25e'); box(x + 18, b - 19, 3, 1, OL);
+    if (icon === 'cross') { box(x + 10, b - 40, 4, 8, '#ff5a5a'); box(x + 8, b - 38, 8, 4, '#ff5a5a'); }
+    if (icon === 'flask') { box(x + 11, b - 41, 2, 3, OL); box(x + 9, b - 38, 6, 6, OL); box(x + 10, b - 36, 4, 3, '#62d9b8'); }
+    if (icon === 'paint') { box(x + 8, b - 40, 4, 4, '#ff8f9a'); box(x + 12, b - 38, 4, 4, '#ffd25e'); box(x + 9, b - 35, 4, 3, '#7cc4ff'); }
+    if (icon === 'moon') { box(x + 10, b - 40, 4, 7, '#ffd25e'); box(x + 12, b - 40, 3, 5, '#cfeaff'); }
+    label(x + 12, b - 58, nm);
+  }
+  function secret(x, b) {   // 1.5층 '비밀의 방' — 작고 낡은 문 + 물음표
+    frameBox(x, b - 30, 18, 30, '#8a6a52'); box(x + 2, b - 28, 14, 1, '#6d5240'); box(x + 2, b - 14, 14, 1, '#6d5240'); box(x + 13, b - 16, 2, 3, '#ffd25e');
+    qmark(x + 6, b - 26, '#ffd25e');
+    label(x + 9, b - 42, '비밀의 방');
+  }
+  function gearShelf(x, b) {   // 기자재실: 카메라·삼각대·마이크가 놓인 선반 40×34
+    frameBox(x, b - 34, 40, 34, '#9aa3b5'); box(x, b - 18, 40, 1, OL);
+    box(x + 3, b - 29, 10, 7, OL); box(x + 4, b - 28, 8, 5, '#3b3b49'); box(x + 12, b - 28, 3, 4, OL); box(x + 6, b - 27, 3, 3, '#7cc4ff');   // 카메라
+    box(x + 19, b - 31, 2, 12, OL); box(x + 17, b - 31, 6, 2, '#3b3b49');                                                                  // 붐 마이크
+    box(x + 27, b - 28, 9, 6, OL); box(x + 28, b - 27, 7, 4, '#5b6278'); box(x + 30, b - 26, 3, 2, '#ffd25e');                              // 조명
+    box(x + 4, b - 15, 2, 12, OL); box(x + 9, b - 15, 2, 12, OL); box(x + 3, b - 16, 9, 2, OL);                                          // 삼각대
+    box(x + 18, b - 13, 18, 9, OL); box(x + 19, b - 12, 16, 7, '#ffffff'); box(x + 19, b - 12, 16, 2, OL); for (let i = 0; i < 4; i++) box(x + 20 + i * 4, b - 12, 2, 2, '#ffffff');   // 슬레이트
+    label(x + 20, b - 46, '기자재실');
+  }
+  function horizon(x, b) {   // 세트장 호리존: 흰 곡면 배경 + 조명 스탠드
+    frameBox(x, b - 44, 46, 44, '#ffffff'); box(x + 1, b - 8, 44, 7, '#eef2f8'); box(x + 1, b - 9, 44, 1, '#dfe6f0');
+    box(x + 18, b - 6, 8, 1, '#ff5a5a'); box(x + 21, b - 8, 1, 4, '#ff5a5a');   // 바닥 테이프 표시
+    box(x + 50, b - 36, 2, 36, OL); box(x + 46, b - 2, 10, 2, OL); box(x + 46, b - 42, 10, 7, OL); box(x + 47, b - 41, 8, 5, '#ffe48a');
+    if (Math.floor(t * 1.5) % 2) { g.globalAlpha = .25; box(x + 30, b - 40, 16, 30, '#fff7c2'); g.globalAlpha = 1; }
+    label(x + 23, b - 56, '세트장 · 호리존');
+  }
+  function motto(x, y) {   // 교훈 액자 '믿음·사랑·감사'
+    frameBox(x, y, 52, 14, '#fff8e8'); box(x + 1, y + 1, 50, 1, '#d9b48a'); box(x + 1, y + 12, 50, 1, '#d9b48a');
+    g.font = '400 6.5px Jua, sans-serif'; g.fillStyle = OL; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('믿음 · 사랑 · 감사', x + 26, y + 7.5);
+  }
+  function poster(x, y, c) {   // 영상 포스터(필름·별)
+    frameBox(x, y, 18, 24, c); box(x + 2, y + 2, 14, 12, '#2a2846'); box(x + 5, y + 5, 8, 6, '#ffd25e'); for (let i = 0; i < 4; i++) { box(x + 3 + i * 4, y + 3, 2, 1, '#ffffff'); box(x + 3 + i * 4, y + 12, 2, 1, '#ffffff'); }
+    box(x + 3, y + 17, 12, 1, '#ffffff'); box(x + 5, y + 20, 8, 1, '#ffffff');
+  }
+  function slippers(x, b) { box(x, b - 3, 6, 3, OL); box(x + 1, b - 2, 4, 1, '#ff8fb0'); box(x + 8, b - 3, 6, 3, OL); box(x + 9, b - 2, 4, 1, '#ff8fb0'); }
+  // 층마다 특색(구간 k = 0 아래 · 1 가운데 · 2 위)
+  function floorDeco(fl, k, b, at) {
+    const D = {
+      0: [() => { bigDoor(at(1, 34), b, '대강당'); shoes(at(-1, 34), b); }, () => { books(at(1, 36), b); motto(at(-1, 52), b - 120); }, () => { secret(at(1, 18), b); clock(at(-1, 13), b - 104); }],
+      1: [() => { roomDoor(at(1, 24), b, '교무실'); board(at(-1, 36), b - 120); }, () => { gearShelf(at(1, 56), b); fireX(at(-1, 8), b - 18); }, () => { horizon(at(1, 56), b); clock(at(-1, 13), b - 104); }],
+      2: [() => { roomDoor(at(1, 24), b, '2-1'); poster(at(-1, 18), b - 120, '#ff8f9a'); }, () => { roomDoor(at(1, 24), b, '2-2'); fireX(at(-1, 8), b - 18); }, () => { roomDoor(at(1, 24), b, '2-3'); board(at(-1, 36), b - 130); }],
+      3: [() => { roomDoor(at(1, 24), b, '3-1'); poster(at(-1, 18), b - 120, '#7cc4ff'); }, () => { roomDoor(at(1, 24), b, '3-2'); clock(at(-1, 13), b - 104); }, () => { roomDoor(at(1, 24), b, '3-3'); poster(at(-1, 18), b - 130, '#ffd25e'); }],
+      4: [() => { roomDoor(at(1, 24), b, '1-1'); fireX(at(-1, 8), b - 18); }, () => { roomDoor(at(1, 24), b, '과학실', 'flask'); roomDoor(at(-1, 24), b, '미술실', 'paint'); }, () => { roomDoor(at(1, 24), b, '보건실', 'cross'); clock(at(-1, 13), b - 104); }],
+      5: [() => { roomDoor(at(1, 24), b, '기숙사 601', 'moon'); slippers(at(1, 24) + 4, b); }, () => { roomDoor(at(1, 24), b, '602', 'moon'); board(at(-1, 36), b - 120); }, () => { roomDoor(at(1, 24), b, '야자실'); clock(at(-1, 13), b - 104); }],
+      6: [() => { roomDoor(at(1, 24), b, '기숙사 701', 'moon'); slippers(at(1, 24) + 4, b); }, () => { roomDoor(at(1, 24), b, '702', 'moon'); fireX(at(-1, 8), b - 18); }, () => { roomDoor(at(1, 24), b, '옥상 ↑'); clock(at(-1, 13), b - 104); }],
+    }[fl];
+    D?.[k]?.();
+  }
+  function ginkgo(x, by) {   // 은행나무(교목) 화분 — 가을이라 노란 잎, 하나씩 떨어짐
+    frameBox(x, by - 8, 12, 8, '#c98f55'); box(x + 5, by - 22, 2, 14, '#7d4e2a');
+    for (const [dx, dy] of [[-2, -30], [4, -34], [9, -28], [1, -24], [7, -22]]) { box(x + dx, by + dy, 6, 5, OL); box(x + dx + 1, by + dy + 1, 4, 3, '#ffd25e'); }
+    const tt = (t * .4) % 1; g.globalAlpha = 1 - tt; box(R(x + 10 + Math.sin(tt * 9) * 4), R(by - 24 + tt * 22), 2, 2, '#ffd25e'); g.globalAlpha = 1;
+  }
+  function lilac(x, by) {   // 라일락(교화) 화분
+    frameBox(x, by - 7, 10, 7, '#9aa3c0'); box(x + 4, by - 16, 2, 9, '#3a9a4a');
+    for (const [dx, dy, c] of [[0, -22, '#c9a7f5'], [5, -24, '#b48ef0'], [2, -18, '#d9c2fa'], [6, -19, '#c9a7f5']]) { box(x + dx, by + dy, 4, 4, OL); box(x + dx + 1, by + dy + 1, 2, 2, c); }
+  }
+  function qmark(x, y, c) {   // 픽셀 물음표 5×7
+    const P = ['.###.', '#...#', '....#', '...#.', '..#..', '.....', '..#..'];
+    g.fillStyle = c; P.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') g.fillRect(x + i, y + j, 1, 1); });
   }
   function door(x, y, fl, k = 0) {   // 교실 문 24×46 + 위 반 표지(2-1 …)
     const nm = (fl + 1) + '-' + ((fl + k) % 6 + 1);
@@ -311,7 +394,7 @@ export function createStair(cv, o = {}) {
     box(lx - 3, ly - 2, 7, 5, OL); box(lx - 2, ly - 3, 5, 7, OL);
     box(lx - 2, ly - 2, 5, 5, '#c9a24a'); box(lx - 1, ly - 1, 3, 3, '#cfefff');
     if (Math.floor(t * 2) % 2) box(lx - 1, ly - 1, 1, 1, '#ffffff');
-    if (Math.floor(t * .5) % 2) { box(hx + 1, hy - 15, 5, 7, OL); box(hx + 2, hy - 14, 3, 5, '#ffffff'); box(hx + 3, hy - 13, 1, 2, OL); box(hx + 3, hy - 10, 1, 1, OL); }   // 가끔 '?'
+    if (Math.floor(t * .5) % 2) { frameBox(hx, hy - 17, 9, 11, '#ffffff'); box(hx + 2, hy - 6, 2, 2, OL); qmark(hx + 2, hy - 15, OL); }   // 가끔 말풍선 '?'
   }
   function lamp(x, by) {   // 요술 램프(바닥 by에 놓임, 22×11) + 위로 피어오르는 연기 + 반짝이
     const y = by - 11, Y = '#ffd25e', D = '#e09a2a', Lt = '#fff1b8';
@@ -334,8 +417,8 @@ export function createStair(cv, o = {}) {
     // 하늘(창밖·옥상 위) — 8줄씩 계단 모양으로 색이 바뀌는 픽셀 그라디언트
     const [top, bot] = skyAt(f);
     for (let y = 0; y < H; y += 8) { g.fillStyle = mix(top, bot, y / H); g.fillRect(0, y, W, 8); }
-    if (f > 9.2) {   // 별: 반짝(밝기 2단계)
-      const a = Math.min(1, (f - 9.2) / 1.2);
+    if (f > 11.2) {   // 별: 반짝(밝기 2단계)
+      const a = Math.min(1, (f - 11.2) / 1.2);
       for (const [x, y0, k] of stars) {
         const y = ((y0 - camY * .08) % 400 + 400) % 400 - 80; if (y < 0 || y > H) continue;
         g.globalAlpha = a * ((t * 2 + k * 9) % 3 < .4 ? .4 : 1); g.fillStyle = k > .8 ? '#ffe9a8' : '#ffffff';
@@ -345,53 +428,48 @@ export function createStair(cv, o = {}) {
       if (!shoot && Math.random() < .004) shoot = { x: Math.random() * W, y: Math.random() * 80, t: 0 };
       if (shoot) { shoot.t += 1 / 60; g.fillStyle = '#ffffff'; for (let k = 0; k < 8; k++) { g.globalAlpha = 1 - k / 8; g.fillRect(R(shoot.x - shoot.t * 160 + k * 2), R(shoot.y + shoot.t * 60 - k), 2, 1); } g.globalAlpha = 1; if (shoot.t > .8) shoot = null; }
     }
-    if (f > 4.5 && f < 10.6) {   // 구름(느리게 따라옴) · 하늘에선 새
-      const a = Math.min(1, (f - 4.5) * 2) * (f > 9.6 ? (10.6 - f) : 1);
+    if (f > 6.5 && f < 12.6) {   // 구름(느리게 따라옴) · 하늘에선 새
+      const a = Math.min(1, (f - 6.5) * 2) * (f > 11.6 ? (12.6 - f) : 1);
       g.globalAlpha = a;
       for (let k = -2; k < 6; k++) {
         const band = Math.floor(-camY * .3 / 70) + k, y = R(band * -70 + camY * .3 + H), x = R(hash(band) * (W + 30) - 25 - camX * .15) % (W + 40);
         if (y > -10 && y < H) g.drawImage(hash(band + 7) > .5 ? A.cloud : A.cloudF, x < -30 ? x + W + 40 : x, y);
       }
-      if (f > 5.2 && f < 8) { const by = R(60 + Math.sin(t * .7) * 10), bx = R(((t * 18) % (W + 20)) - 10); g.drawImage(A.bird[Math.floor(t * 5) % 2], bx, by); g.drawImage(A.bird[Math.floor(t * 5 + 1) % 2], bx - 9, by + 5); }
+      if (f > 7.2 && f < 10) { const by = R(60 + Math.sin(t * .7) * 10), bx = R(((t * 18) % (W + 20)) - 10); g.drawImage(A.bird[Math.floor(t * 5) % 2], bx, by); g.drawImage(A.bird[Math.floor(t * 5 + 1) % 2], bx - 9, by + 5); }
       g.globalAlpha = 1;
     }
-    // 학교 건물 안(1~5층): 벽이 화면을 덮고, 옥상 위로 갈수록 아래로 내려가며 하늘이 드러남
-    const roofY = sy(-FLOOR * 5 * DY) + 2;   // 5층 계단(옥상 바닥) 높이
+    // 학교 건물 안(1~7층): 벽이 화면을 덮고, 옥상 위로 갈수록 아래로 내려가며 하늘이 드러남
+    const roofY = sy(-FLOOR * ROOF * DY) + 2;   // 7층 위 = 옥상 바닥 높이
     if (roofY < H) {
       const top0 = Math.max(0, roofY);
       g.fillStyle = '#f4ecdb'; g.fillRect(0, top0, W, H - top0);
       g.fillStyle = '#efe4cd'; for (let y = top0 + ((R(-camY * .6) % 6) + 6) % 6; y < H; y += 6) g.fillRect(0, y, W, 1);   // 벽 줄무늬
-      // 장식: 층마다 같은 자리(벽에 붙어 있으니 계단과 같이 움직임). 층 높이 = FLOOR*DY
       const FH = FLOOR * DY;
-      for (let fl = 0; fl < 5; fl++) {
+      for (let fl = 0; fl < ROOF; fl++) {
         const base = sy(-fl * FH);   // 그 층 바닥
         if (base < top0 - 10 || base - FH > H + 10) continue;
         g.save(); g.beginPath(); g.rect(0, top0, W, H - top0); g.clip();
         g.fillStyle = '#9cc4ee'; g.fillRect(0, base - 26, W, 3);   // 허리 띠
-        g.fillStyle = '#e3d6bb'; g.fillRect(0, base - 23, W, 23);   // 아래 벽(걸레받이 위)
-        // 벽 장식: 한 층(1000px)을 300px 구간으로 나눠 반복, 구간마다 왼쪽·오른쪽 번갈아(계단 뒤 벽에 붙어 있음)
-        for (let k = 0; k * 300 < FH - 120; k++) {
+        g.fillStyle = '#e3d6bb'; g.fillRect(0, base - 23, W, 23);   // 아래 벽
+        // 한 층(1000px)을 300px 구간 3개로: 구간마다 그 층의 특색 장소(문·소품) + 창문 (왼쪽·오른쪽 번갈아, 계단 뒤 벽)
+        for (let k = 0; k < 3; k++) {
           const b = base - k * 300; if (b < top0 - 300 || b - 300 > H) continue;
           const flip = (fl + k) % 2 ? -1 : 1, at = (sd, w) => (sd * flip < 0 ? 5 : W - w - 5);
-          if (k === 1) elev(at(1, 30), b - 52); else door(at(1, 24), b - 46, fl, k);
-          if (k === 0) fireX(at(-1, 8), b - 18);
-          win(at(-1, 32), b - 110);
-          if (k !== 1) clock(at(1, 13), b - 104);
-          board(at(1, 36), b - 172);
+          floorDeco(fl, k, b, at);
           win(at(-1, 32), b - 214);
           win(at(1, 32), b - 280);
         }
-        // 층 바닥(두꺼운 띠) + 층 번호
-        g.fillStyle = '#c9b9a0'; g.fillRect(0, base, W, 4); g.fillStyle = OL; g.fillRect(0, base, W, 1); g.fillRect(0, base + 4, W, 1);
+        g.fillStyle = '#c9b9a0'; g.fillRect(0, base, W, 4); g.fillStyle = OL; g.fillRect(0, base, W, 1); g.fillRect(0, base + 4, W, 1);   // 층 바닥
         g.restore();
       }
-      // 옥상(2026-10-28 하율 "옥상은 초록색, 요술 램프가 놓여 있게"): 초록 우레탄 바닥 + 난간 + 물탱크 + 요술 램프
-      g.fillStyle = '#4fbf5f'; g.fillRect(0, roofY - 2, W, 10); g.fillStyle = '#8fe08a'; g.fillRect(0, roofY - 2, W, 2); g.fillStyle = '#ffffff'; for (let x = 4; x < W; x += 24) g.fillRect(x, roofY + 2, 12, 1);   // 우레탄 바닥 흰 줄
+      // 옥상(하율 "초록색, 요술 램프, 돋보기 탐정"): 초록 우레탄 바닥 + 난간 + 물탱크 + 은행나무·라일락 화분(교목·교화) + 탐정·램프(계단 뒤, 바닥에 딱 붙게)
+      g.fillStyle = '#4fbf5f'; g.fillRect(0, roofY - 2, W, 10); g.fillStyle = '#8fe08a'; g.fillRect(0, roofY - 2, W, 2); g.fillStyle = '#ffffff'; for (let x = 4; x < W; x += 24) g.fillRect(x, roofY + 2, 12, 1);
       g.fillStyle = '#3a9a4a'; g.fillRect(0, roofY + 6, W, 2); g.fillStyle = OL; g.fillRect(0, roofY - 3, W, 1); g.fillRect(0, roofY + 8, W, 1);
       for (let x = 2; x < W; x += 7) g.fillRect(x, roofY - 16, 1, 13);
       g.fillRect(0, roofY - 17, W, 1); g.fillRect(0, roofY - 10, W, 1);
-      g.drawImage(A.tank, 10, roofY - 28);
-
+      g.drawImage(A.tank, 10, roofY - 13 - A.tank.height + 10);
+      ginkgo(30, roofY - 3); lilac(50, roofY - 3);
+      g.save(); g.translate(W - 66, roofY - 3); g.scale(1.5, 1.5); detective(0, 0); lamp(19, 0); g.restore();
     }
   }
   function drawStair(i) {
@@ -402,7 +480,7 @@ export function createStair(cv, o = {}) {
     if ((k === 'land' || k === 'roof') && flash > 0 && i === st.floor * FLOOR && Math.floor(t * 12) % 2) k = 'hint';
     g.drawImage(A.st[k], x, y);
     if (i > 0 && i % FLOOR === 0) {   // 층 표지판(2F·RF·50m …)
-      const f = i / FLOOR, s = f < 5 ? (f + 1) + 'F' : f === 5 ? 'RF' : (f - 5) * 100 + 'm', w = txtW(s) + 6, tx = x + SW / 2 - (w >> 1), ty = y - 22;
+      const f = i / FLOOR, s = f < ROOF ? (f + 1) + 'F' : f === ROOF ? 'RF' : (f - ROOF) * 100 + 'm', w = txtW(s) + 6, tx = x + SW / 2 - (w >> 1), ty = y - 22;
       g.fillStyle = OL; g.fillRect(x + SW / 2, ty + 9, 1, 13);
       g.fillStyle = OL; g.fillRect(tx - 1, ty - 1, w + 2, 11); g.fillStyle = '#ffffff'; g.fillRect(tx, ty, w, 9); g.fillStyle = '#ffd25e'; g.fillRect(tx, ty + 8, w, 1);
       pxText(g, s, tx + 3, ty + 2, OL);
@@ -427,8 +505,6 @@ export function createStair(cv, o = {}) {
     bg(f);
     const top = Math.floor(cy) + 24, bot = Math.max(0, Math.floor(cy) - 8);
     for (let i = Math.min(top, xs.length - 1); i >= bot; i--) drawStair(i);
-    { const roofY = sy(-FLOOR * 5 * DY) + 2;   // 옥상 탐정+램프: 계단보다 앞(가려지지 않게), 주인공보다는 뒤 · 1.5배(하율 "좀 커도 상관없어") — 주인공과 같은 픽셀 크기
-      if (roofY > -10 && roofY < H + 40) { g.save(); g.translate(W - 66, roofY - 2); g.scale(1.5, 1.5); detective(0, 0); lamp(19, 0); g.restore(); } }
     // 발밑 먼지·축하 가루
     parts = parts.filter(p => (p.t += dt) < (p.g ? .9 : .3));
     for (const p of parts) { g.fillStyle = p.c; g.globalAlpha = p.g ? 1 : 1 - p.t / .3; const yy = p.y + p.vy * p.t + (p.g ? 60 * p.t * p.t : 0); g.fillRect(sx(p.x + p.vx * p.t), sy(yy), p.g ? 2 : 2, p.g ? 2 : 1); }
@@ -439,7 +515,7 @@ export function createStair(cv, o = {}) {
       if (st.scene !== 'ready') { fall.vy += dt * 7; fall.x += fall.vx * dt; fall.y -= fall.vy * dt * 1.6; fall.r += dt * 8 * Math.sign(fall.vx); }
       const fx = sx(fall.x * DX), fy = sy(-fall.y * DY);
       g.save(); g.translate(fx, fy - SPR_H * CS / 2); g.rotate(Math.round(fall.r / (Math.PI / 2)) * Math.PI / 2); g.scale(CS, CS);
-      g.drawImage(S.dead_rim, -SPR_W / 2 - 1, -SPR_H / 2 - 1); g.drawImage(S.dead, -SPR_W / 2, -SPR_H / 2); g.restore();
+      g.drawImage(S.dead, -SPR_W / 2, -SPR_H / 2);   // 흰 테두리 없이(하율: 굳이 흰색일 필요 없음) g.restore();
     } else {
       const lift = moveT < 1 ? R(Math.sin(moveT * Math.PI) * 4) : 0;
       const kx = sx(cx * DX), ky = sy(-cy * DY) - lift;
@@ -448,7 +524,7 @@ export function createStair(cv, o = {}) {
         g.fillStyle = '#ffffff';
         for (let k = 0; k < 3; k++) { const l = 4 + ((stepN + k * 3) % 5) * 2, yy = ky - 8 - k * 8; g.fillRect(st.face > 0 ? kx - 18 - l : kx + 18, yy, l, 1); }
       }
-      g.save(); g.translate(kx, ky); g.scale(CS, CS); g.drawImage(S[fr + '_rim'], -SPR_W / 2 - 1, -SPR_H); g.drawImage(S[fr], -SPR_W / 2, -SPR_H + 1); g.restore();
+      g.save(); g.translate(kx, ky); g.scale(CS, CS); g.drawImage(S[fr], -SPR_W / 2, -SPR_H + 1);   // 흰 테두리 없이 g.restore();
       if (st.why === 'time') {   // 지각: 머리 위 땀·ZZ 대신 '!'
         const hy = R(ky - SPR_H * CS); g.fillStyle = OL; g.fillRect(kx - 1, hy - 9, 3, 6); g.fillRect(kx - 1, hy - 2, 3, 2); g.fillStyle = '#ff5a5a'; g.fillRect(kx, hy - 8, 1, 4);
       }

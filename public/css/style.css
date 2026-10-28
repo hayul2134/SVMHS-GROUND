@@ -5679,10 +5679,12 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .sr-scr.rdy .sr-num,.sr-scr.rdy .sr-hud{opacity:0}
 .sr-scr.end .sr-num{opacity:0}
 /* '2층 도착!' 같은 알림 */
-.sr-pop{position:absolute;left:0;right:0;top:30%;display:flex;justify-content:center;pointer-events:none;opacity:0}
+.sr-pop{position:absolute;left:0;right:0;top:30%;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;opacity:0}
+.sr-pop small{font-weight:900;font-size:clamp(11px,4.6cqw,15px);color:#2a2846;background:#fff;border:2px solid #2a2846;border-radius:8px;padding:2px 10px;box-shadow:2px 2px 0 #2a2846;white-space:nowrap}
 .sr-pop b{font-family:var(--disp);font-weight:400;font-size:clamp(20px,10cqw,38px);color:#ffd25e;-webkit-text-stroke:3px #2a2846;paint-order:stroke;text-shadow:3px 3px 0 #2a2846;white-space:nowrap}
 .sr-pop.big b{font-size:clamp(24px,12.5cqw,46px)}
 .sr-pop.on{animation:srPop 1.3s steps(14) forwards}
+.sr-pop.on:has(small){animation-duration:1.9s}
 @keyframes srPop{0%{opacity:0;transform:translateY(10px) scale(.7)}12%{opacity:1;transform:scale(1.12)}22%{transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
 /* 종 치기 직전: 빨간 테두리 깜빡 */
 .sr-scr::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 6px #ff5a5a;opacity:0;border-radius:inherit}

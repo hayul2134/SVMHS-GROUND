@@ -8,6 +8,7 @@ export const MIN_STEP_MS = 55;      // 사람이 한 칸 오르는 데 걸리는
 export const drain = steps => 0.13 + Math.min(0.42, steps * 0.0012);
 // 서버 검사용: steps칸을 오르며 버틸 수 있는 가장 긴 시간(ms). 게이지는 처음 1 + 칸마다 GAIN만 차고, 아무리 느려도 1초에 0.13씩은 줄어듦
 export const maxMs = steps => Math.ceil((1 + steps * GAIN) / 0.13 * 1000) + 2000;
-// 층 이름: 학교 1~5층 → 옥상(500칸) → 그 위는 높이(m, 100칸마다 100m) — 하늘(100~200m) · 구름 위(300~400m) · 우주(500m~)
-export const zoneOf = f => f < 5 ? '학교' : f === 5 ? '옥상' : f < 8 ? '하늘' : f < 10 ? '구름 위' : '우주';
-export const floorName = (f, short = false) => f <= 0 ? '1층' : f < 5 ? (f + 1) + '층' : f === 5 ? '옥상' : (short ? '' : zoneOf(f) + ' ') + (f - 5) * 100 + 'm';
+// 층 이름: 학교 1~7층 → 옥상(700칸, 2026-10-28 하율 "옥상은 7층까지 높여") → 그 위는 높이(m, 100칸마다 100m) — 하늘(100~200m) · 구름 위(300~400m) · 우주(500m~)
+export const ROOF = 7;
+export const zoneOf = f => f < ROOF ? '학교' : f === ROOF ? '옥상' : f < ROOF + 3 ? '하늘' : f < ROOF + 5 ? '구름 위' : '우주';
+export const floorName = (f, short = false) => f <= 0 ? '1층' : f < ROOF ? (f + 1) + '층' : f === ROOF ? '옥상' : (short ? '' : zoneOf(f) + ' ') + (f - ROOF) * 100 + 'm';

@@ -1988,7 +1988,7 @@ async function playStair() {
   let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0;
   const ready = () => {
     ov.hidden = false; ov.className = 'hr-ov sr-ready'; scr.classList.add('rdy'); scr.classList.remove('low', 'end');
-    ov.innerHTML = `<b>영상고 계단 오르기</b><span>엘리베이터 없는 영상고, 종 치기 전에 계단으로 교실까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
+    ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단으로 7층 꼭대기까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
       <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : '→ 오르기 · ← 방향 바꾸기로 출발'}</small><i class="sr-tip">캐릭터는 '집에 가고 싶어!'에서 꾸밀 수 있어요</i>`;
   };
   const R = STAIR.createStair(cv, {
@@ -2002,10 +2002,10 @@ async function playStair() {
       if (st.steps !== shownN) { shownN = st.steps; nEl.textContent = st.steps.toLocaleString('ko-KR'); if (st.steps) { nEl.classList.remove('bump'); void nEl.offsetWidth; nEl.classList.add('bump'); } }
       if (st.floor !== shownF) { shownF = st.floor; fEl.textContent = stairFloor(st.floor); }
     },
-    onFloor(f, label, big) {
+    onFloor(f, label, big, sub) {
       clearTimeout(popT); pop.className = 'sr-pop'; void pop.offsetWidth;
-      pop.innerHTML = `<b>${esc(label)}</b>`; pop.className = 'sr-pop on' + (big ? ' big' : '');
-      popT = setTimeout(() => { pop.className = 'sr-pop'; }, 1300);
+      pop.innerHTML = `<b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}`; pop.className = 'sr-pop on' + (big ? ' big' : '');
+      popT = setTimeout(() => { pop.className = 'sr-pop'; }, sub ? 1900 : 1300);
     },
     onOver(res) {
       const no = run, tk = runTk; runTk = null;
