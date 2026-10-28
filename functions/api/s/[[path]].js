@@ -29,7 +29,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
   //   casual = 티어·역대 1등 표시(topCrowns)·주간 미션·1~3등 축하에서 빠짐 → 순위표(GET rank)·내 기록에만 나옴
   gearn: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game', casual: true },
-  stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierFrom: '2026-11-09' },   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
+  stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 // 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
@@ -1583,7 +1583,7 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   const startMs = Date.UTC(+from.slice(0, 4), +from.slice(4, 6) - 1, +from.slice(6, 8)) - 9 * 36e5;   // 라운드 첫날 0시(KST)
   const bans = (await db.prepare('SELECT uid, reason FROM bans WHERE until = 0 OR until > ?1').bind(startMs).all()).results;
   const out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '')).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 = 제외
-  const games = Object.entries(GAMES).filter(([, g]) => !g.casual).filter(([, g]) => !g.ff || (ffOn(g.ff, false) && g.tierFrom && from >= g.tierFrom.replace(/-/g, '')));
+  const games = Object.entries(GAMES).filter(([, g]) => !g.casual).filter(([, g]) => !g.ff || (ffOn(g.ff, gt === 2) && (g.tierOn || (g.tierFrom && from >= g.tierFrom.replace(/-/g, '')))));   // gt 2 = 개발자 미리보기: 아직 안 연 게임도 같이 계산
   const gOn = gt === 2 || (gt === 1 && (from >= GEAR_TIER_FROM || to >= GEAR_TIER_FROM && kstYmd() >= GEAR_TIER_FROM));
   if (gOn) for (const k of ['gear', 'gearn']) if (!games.some(([x]) => x === k)) games.push([k, GAMES[k]]);
   const acc = new Map();
