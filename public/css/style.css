@@ -5429,3 +5429,43 @@ button img,button svg,.app img,.app svg{-webkit-touch-callout:none;-webkit-user-
 
 /* 반응속도 정식 출시(깃발 rx-season, 2026-10-28): 홈 게임 아이콘 Beta 떼기 */
 html.rxs .rx-b{display:none!important}
+
+/* ===== 게임 랭킹 화면 2026-10-28 하율: 서비스 게임 칸처럼 한 줄 5개 · 한눈에 ===== */
+.ggrid{grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:14px 12px;margin-top:22px;max-width:none}
+.ggrid .gcard{transform:none;gap:6px;padding:20px 10px 12px;min-width:0}
+.ggrid .gcard .beta{font-size:11.5px;padding:3px 10px 4px}
+.ggrid .gem{display:grid;place-items:center;width:58px;height:58px;margin:2px auto 0;font-size:0;border-radius:17px;border:2.5px solid var(--ink);box-shadow:2px 3px 0 var(--ink);background:linear-gradient(160deg,color-mix(in srgb,#fff 28%,var(--c)),var(--c) 60%)}
+.ggrid .gem .sic{width:36px;height:36px;color:#173048;stroke-width:1.6}
+.ggrid .g-gear{--c:var(--sky)}.ggrid .g-home{--c:var(--lime)}.ggrid .g-cut{--c:#ffc4dd}.ggrid .g-reaction{--c:var(--sky)}.ggrid .g-num25{--c:var(--violet)}
+.ggrid .gcard h3{font-size:18px;line-height:1.2;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.ggrid .gdesc{font-size:12px;line-height:1.4}
+.ggrid .gstat{grid-template-columns:1fr;gap:0;margin-top:2px;border:2px solid var(--ink);border-radius:12px;background:var(--chip);overflow:hidden}
+.ggrid .gstat span{display:flex;align-items:baseline;justify-content:space-between;gap:6px;border:0;border-radius:0;padding:5px 9px;font-size:11.5px;background:none}
+.ggrid .gstat span+span{border-top:1.5px dashed var(--line)}
+.ggrid .gstat b{font-size:14.5px;white-space:nowrap}
+.ggrid .gtop{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:1px 5px;font-size:12px;text-align:left;padding:0 2px;min-height:38px}
+.ggrid .gtop small{font-size:11.5px;font-weight:900;color:var(--sub);white-space:nowrap}
+.ggrid .gtop a{display:flex;align-items:center;gap:4px;min-width:0;padding:1px 5px}
+.ggrid .gtop a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ggrid .gtop b{grid-column:2;font:800 12px var(--num);justify-self:start;padding-left:5px}
+.ggrid .gtop i{font-style:normal;font-weight:800;color:var(--sub)}
+.ggrid .gbtns{gap:6px;padding-top:4px}
+.ggrid .gbtns .btn{padding-left:6px;padding-right:6px;font-size:14px;min-width:0}
+.ggrid .gbtns .gbr{flex:0 0 42px}
+.ggrid .gbtns .gbr .sic{margin:0}
+@media (max-width:860px){.ggrid{grid-template-columns:repeat(auto-fit,minmax(138px,1fr));max-width:none}}
+@media (max-width:340px){.ggrid{grid-template-columns:1fr 1fr;gap:10px 8px}}
+
+/* 티어 카드: 설명 4칸을 2×2로 → 막대 그래프를 위로 (2026-10-28 하율) */
+.tm-how{grid-template-columns:repeat(2,1fr);gap:8px 12px}
+.tm-how li{padding:9px 11px}
+.tm-how li:nth-child(3)::before{display:none}
+.tr-tap{margin:4px 0 -22px}
+.tr-stairs{padding-top:22px}
+
+/* 티어 순위 TOP 10: 챌린저·그랜드마스터 줄 (2026-10-28 하율 — 잘 보이되 튀지 않게) */
+.tr-top li.tx{--rc:#e4493e;padding:6px 10px;background:linear-gradient(90deg,color-mix(in srgb,var(--rc) 15%,var(--card)) 0%,color-mix(in srgb,var(--rc) 5%,var(--card)) 55%,transparent 100%);box-shadow:inset 3px 0 0 var(--rc)}
+.tr-top li.tx.t-challenger{--rc:#d9a21e;background:linear-gradient(90deg,color-mix(in srgb,#f3c24f 26%,var(--card)) 0%,color-mix(in srgb,#6f8dff 10%,var(--card)) 55%,transparent 100%)}
+.tr-top li.tx .tr-n{color:var(--rc);font-size:15px}
+.tr-top li.tx em{color:color-mix(in srgb,var(--rc) 70%,var(--text))}
+.tr-top li.tx.me{box-shadow:inset 3px 0 0 var(--rc),inset 0 0 0 2px color-mix(in srgb,var(--rc) 35%,transparent)}

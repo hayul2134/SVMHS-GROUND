@@ -30,9 +30,9 @@ const GAMES = {
   // 기자재 정리!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
   gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 빈틈없이 정리해 줄을 채워요 · 랭킹전은 2분 점수 대결', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
+  cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   num25: { beta: true, name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
-  cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
 };
 
 /* ===== 상태 ===== */
@@ -1415,11 +1415,12 @@ async function renderGame() {
 function gameHtml(info) {
   return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
     const x = info?.[k];
+    // 2026-10-28 하율: 서비스 게임 칸처럼 한 줄 5개로 · 한눈에 — 설명은 이름에 마우스를 올리면(title), 기록·순위·1등을 짧게
     return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? "<b class=\"beta new\">NEW</b>" : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
-      <p class="gem">${ic(g.ic)}</p><h3>${g.name}</h3><p class="gdesc">${g.desc}</p>
-      ${x ? `<div class="gstat"><span>내 최고 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
-        <p class="gtop">${ic('trophy')}${x.top ? `1등 <a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')} ${esc(x.top.name)}</a> ${esc(g.fmt(x.top.value))}` : '1등 자리가 비어 있어요!'}</p>` : ''}
-      <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost" data-rank="${k}">${ic('trophy')}랭킹</button></div>
+      <p class="gem">${ic(g.ic)}</p><h3 title="${esc(g.desc)}">${g.name}</h3>
+      ${x ? `<div class="gstat"><span>내 기록<b>${x.best != null ? esc(g.fmt(x.best)) : '-'}</b></span><span>내 순위<b>${x.rank != null ? x.rank + '위' : '-'}</b></span></div>
+        <p class="gtop">${x.top ? `<small>${ic('trophy')}1등</small><a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')}<span>${esc(x.top.name)}</span></a><b>${esc(g.fmt(x.top.value))}</b>` : `<small>${ic('trophy')}1등</small><i>비어 있어요!</i>`}</p>` : `<p class="gdesc">${g.desc}</p>`}
+      <div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost gbr" data-rank="${k}" aria-label="${esc(g.name)} 랭킹" title="랭킹">${ic('trophy')}</button></div>
     </article>`;
   }).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
@@ -1472,7 +1473,7 @@ async function loadTier() {
 }
 
 // 티어 순위 한 줄
-function trRow(u) { return `<li class="${u.isMe ? 'me' : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`; }
+function trRow(u) { return `<li class="${u.isMe ? 'me' : ''}${u.tier === 'challenger' || u.tier === 'grandmaster' ? ' tx t-' + u.tier : ''}"><span class="tr-n">${u.rank}</span>${tierBadge(u.tier)}<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><em>${u.pts}점</em></li>`; }
 // TOP 10 아래 '전체 순위 보기' ↔ 'TOP 10만 보기'(2026-10-26 하율 요청) — 한 번 불러온 전체 목록은 기억
 function trAll(box, top10) {
   const btn = box.querySelector('.tr-all'), ol = box.querySelector('.tr-top ol'); if (!btn || !ol) return;
