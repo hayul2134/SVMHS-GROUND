@@ -1531,7 +1531,7 @@ function chBlock(c) {
     const gap = x.gap === 0 ? '공동 1등' : x.gap > 0 && GAP[k] ? `2등과 ${GAP[k](x.gap)} 차이` : x.n === 1 ? '유일한 도전자' : '';
     return `<li class="tcc${x.me ? ' me' : ''}">
       <span class="tcc-g">${ic(g.ic)}<b>${g.name}</b>${gm}</span><span class="tcc-md">1</span>
-      <span class="tcc-u">${x.users.map(u => `<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'tiny', avWear(u.mfx))}<span>${esc(nameOf(u))}</span></a>`).join('')}${x.more ? `<small>외 ${x.more}명</small>` : ''}</span>
+      <span class="tcc-u">${x.users.map(u => `<a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<span>${esc(nameOf(u))}</span></a>`).join('')}${x.more ? `<small>외 ${x.more}명</small>` : ''}</span>
       ${rec ? `<b class="tcc-rec">${esc(rec)}</b>` : ''}
       <span class="tcc-meta"><span>${ic('flag')}${x.n}명 중 1등</span>${gap ? `<span>${ic('ruler')}${gap}</span>` : ''}${x.me ? '<span class="tcc-mine">나!</span>' : ''}</span></li>`; }).join('');
   const mine = (c.games || []).filter(x => x.me).length;
