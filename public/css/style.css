@@ -5593,3 +5593,34 @@ html.rxs .rx-b{display:none!important}
 .n2-seg span.slow{border-color:#ff9f1c}.n2-seg span.slow b{color:#d77a00}
 .n2-seg span.bad{border-color:#e5484d}
 @media (prefers-reduced-motion:reduce){.n2 *,.n2-mg span{animation:none!important;transition:none!important}}
+/* 1 to 25 2 결과 — 한 화면에 (2026-10-28 하율 "한 번에 보일 수 있게"): n25.js layout()이 왼쪽(.n2-l)·판 지도·오른쪽(.n2-r)으로 나눔 */
+.parea:has(.n2-out){max-width:min(1080px,100%)}
+.result.n2-out{--cs:clamp(32px,calc((100dvh - 250px) / 6.3),58px);gap:10px 20px;padding:16px 20px;justify-items:stretch;align-items:center}
+.result.n2-out .n2-l,.result.n2-out .n2-r{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.result.n2-out .rlbl{margin:0;font-size:14px}
+.result.n2-out .rval{margin:0;font-size:clamp(34px,5.4vw,50px);line-height:1}
+.result.n2-out .ctm-res{margin:0}
+.result.n2-out .ctm-grade{width:50px;height:50px;font-size:30px}
+.result.n2-out .ctm-ttl{font-size:22px}
+.result.n2-out .ctm-tip{font-size:13px}.result.n2-out .ctm-tip.sub{font-size:12px}
+.result.n2-out .n2-seg{margin:0;gap:5px;flex-wrap:nowrap}
+.result.n2-out .n2-seg span{min-width:0;padding:4px 6px;font-size:11.5px}
+.result.n2-out .n2-map{margin:0;max-width:none;width:auto}
+.result.n2-out .n2-mh{margin-bottom:5px;font-size:13px}
+.result.n2-out .n2-mg{grid-template-columns:repeat(5,var(--cs));gap:4px;justify-content:center}
+.result.n2-out .n2-mg b{font-size:calc(var(--cs) * .32)}.result.n2-out .n2-mg small{font-size:calc(var(--cs) * .17)}
+.result.n2-out .n2-mk{margin-top:6px}
+.result.n2-out .n2-r .rmsg{margin:0;font-size:13.5px}
+.result.n2-out .n2-r .myrec{margin:0;max-width:300px;max-height:calc(100dvh - 300px);overflow:auto}
+.result.n2-out .rheld{margin:0}
+.result.n2-out > .row{margin-top:0;grid-column:1/-1}
+@media (min-width:780px){
+  .result.n2-out{grid-template-columns:minmax(250px,1fr) auto minmax(200px,1fr)}
+  .result.n2-out .n2-l{align-items:center}
+}
+@media (max-width:779.98px){
+  .result.n2-out{--cs:clamp(30px,min(calc((100vw - 110px) / 5),calc((100dvh - 540px) / 5.3)),52px);padding:14px 12px}
+  .result.n2-out .n2-seg span b{font-size:9.5px}
+  .result.n2-out .n2-r .myrec{max-height:none;padding:8px 12px}
+}
+@media (max-width:779.98px) and (max-height:900px){.result.n2-out .n2-r .myrec .mr-h,.result.n2-out .n2-r .myrec .mr-days,.result.n2-out .n2-r .myrec .mr-pe{display:none}.result.n2-out .ctm-tip.sub{display:none}}

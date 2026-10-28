@@ -150,3 +150,16 @@ export function resultHtml(v, taps, pen, board, prev) {
     <p class="n2-mk"><span><i class="h0"></i>빠름</span><span><i class="h4"></i>오래</span><span><i class="x"></i>틀린 칸</span></p></div>
     <p class="rdet n2-seg">${seg.map((s, i) => `<span class="${i === fastS ? 'fast' : i === slowS ? 'slow' : ''}"><b>${i * 5 + 1}~${i * 5 + 5}</b>${sec(s)}초</span>`).join('')}</p>`;
 }
+
+// 결과 화면을 한 화면에 (2026-10-28 하율 "한 번에 보일 수 있게"): finish()가 그린 .result를 세 묶음으로 나눔
+//   왼쪽 = 기록·등급·구간 / 가운데 = 판 지도 / 오른쪽 = 저장 메시지·내 기록. 넓은 화면은 가로 3칸, 좁은 화면은 위아래(CSS .n2-out)
+export function layout(res) {
+  if (!res || res.classList.contains('n2-out')) return;
+  const q = s => res.querySelector(':scope > ' + s), L = document.createElement('div'), R = document.createElement('div');
+  L.className = 'n2-l'; R.className = 'n2-r';
+  ['.rlbl', '.rval', '.n2-res', '.n2-cmp', '.n2-seg'].forEach(s => { const e = q(s); if (e) L.appendChild(e); });
+  const map = q('.n2-map'), msg = q('#rMsg');
+  res.prepend(L); if (map) L.after(map);
+  (map || L).after(R); if (msg) R.appendChild(msg); const mr = q('#myRec'); if (mr) R.appendChild(mr);
+  res.classList.add('n2-out');
+}

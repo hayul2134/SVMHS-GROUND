@@ -1710,6 +1710,7 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
   area.innerHTML = `<div class="result"><p class="gem">${ic(g.ic)}</p><p class="rlbl">${g.name} 결과</p><p class="rval">${esc(g.fmt(value))}</p>${detail}<p class="rmsg" id="rMsg">${S.me ? '기록 저장 중…' : '로그인하면 기록이 쌓여요!'}</p>
     <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">${ic('trophy')}랭킹</button></div></div>`;
   $('#again').onclick = () => play(game);
+  if (game === 'num25' && N25 && area.querySelector('.n2-res')) N25.layout(area.querySelector('.result'));   // 1 to 25 2: 결과를 한 화면에(3칸)
   $('#toRank').addEventListener('click', endPlay);
   if (game === 'home') {   // 공룡 게임처럼 스페이스·↑로 바로 다시
     const k = e => { if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'Enter') && !e.repeat && $('#again')) { e.preventDefault(); play(game); } };
