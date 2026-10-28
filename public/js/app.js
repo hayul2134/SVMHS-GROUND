@@ -1183,7 +1183,7 @@ let rkT = 0;
 function fitRk() {
   clearTimeout(rkT);
   const st = HERO.style, rk = $('#sRk'), tt = SIDE.tt.el, up0 = parseFloat(st.getPropertyValue('--rkup')) || 0, hcy = parseFloat(st.getPropertyValue('--hcy'));
-  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); fitMeal(hcy ? hcy - tt.offsetHeight / 2 : null); return; }
+  if (!rk || rk.hidden || !document.documentElement.classList.contains('rk2') || !HERO.classList.contains('drawers') || !hcy) { if (up0) st.setProperty('--rkup', '0px'); st.removeProperty('--tk'); fitMeal(hcy ? hcy - tt.offsetHeight / 2 : null); return; }
   if (document.documentElement.classList.contains('tuck')) return;
   // 메시지 버튼 자리: 보이면 재서 기억, 아직 안 떴으면(로그인 확인 전) 기억해 둔 값
   const dock = $('#dmDock'), db = dock && !dock.hidden ? dock.getBoundingClientRect() : null;
@@ -1191,23 +1191,31 @@ function fitRk() {
   if (db && db.height) { const g = Math.round(innerHeight - db.top); if (g !== gap) store.set('dock_gap', g); gap = g; }
   const hdr = $('header')?.getBoundingClientRect().bottom ?? 0, th = tt.offsetHeight, ttTop = hcy - th / 2;   // 올리기 전 시간표 위 끝
   const rkB = ttTop + rk.offsetTop + rk.offsetHeight + 8;   // +8: 기울기만큼 아래로 나오는 몫
-  const over = rkB - (innerHeight - gap - 14), room = ttTop - (hdr + 10);
-  const up = over > 0 ? Math.min(over, Math.max(0, room)) : 0;
+  const lim = innerHeight - gap - 14, over = rkB - lim, room = ttTop - (hdr + 10);
+  // 키가 낮은 화면(노트북 125% 배율 등): 올려도 랭킹이 메시지 버튼에 걸리면 시간표+랭킹 서랍을 통째로 비율 그대로 줄임 (2026-10-28 모든 기기 최적화)
+  const H = rkB - ttTop, k = over > Math.max(0, room) ? Math.max(.6, Math.min(1, (lim - (hdr + 10)) / H)) : 1;
+  const up = k < 1 ? hcy - (hdr + 10) - k * th / 2 : over > 0 ? Math.min(over, Math.max(0, room)) : 0;
+  if (k < 1) st.setProperty('--tk', k.toFixed(3)); else st.removeProperty('--tk');
   if (Math.abs(up - up0) >= 1) st.setProperty('--rkup', Math.round(up) + 'px');
-  fitMeal(hcy - Math.round(up) - th / 2);
+  fitMeal(hcy - Math.round(up) - k * th / 2);
 }
 // 급식 카드 위 끝을 시간표 카드 위 끝에 맞춤 (2026-10-28 하율 '급식이 좀 올라간 것 같다' — 급식 카드가 더 길어 가운데 맞춤이면 위 끝이 시간표보다 15px쯤 위로 튀어나옴)
 // 위 끝 높이로 가운데(--mcy)를 계산. 헤더·아래 서비스 버튼에 걸리면 그만큼만 덜 내림/덜 올림. 시간표 기준을 못 구하면 원래대로 시계 가운데(--hcy)
 function fitMeal(ttTop) {
   const st = HERO.style, el = SIDE.meal.el;
-  if (ttTop == null || !isFinite(ttTop) || !HERO.classList.contains('drawers') || !el.offsetHeight) { st.removeProperty('--mcy'); return; }
+  if (ttTop == null || !isFinite(ttTop) || !HERO.classList.contains('drawers') || !el.offsetHeight) { st.removeProperty('--mcy'); st.removeProperty('--mk'); return; }
   const mh = el.offsetHeight, hdr = $('header')?.getBoundingClientRect().bottom ?? 0;
   const fab = $('#svcFab'), fb = fab && !fab.hidden ? fab.getBoundingClientRect() : null;   // fixed라 offsetParent는 늘 null
-  const floor = (fb && fb.height ? fb.top : innerHeight - 92) - 10;
+  let floor = (fb && fb.height ? fb.top : innerHeight - 92) - 10;
+  // 서비스 버튼 위에 올라앉은 캐릭터도 피함 (2026-10-28: 키 낮은 노트북에서 캐릭터가 급식 투표·칼로리를 가리던 문제)
+  const ms = $('#mascot'); if (ms && !ms.hidden && ms.offsetHeight && fb && fb.height) floor = Math.min(floor, fb.top - ms.offsetHeight * .9 - 6);
+  // 그래도 자리가 모자라면 급식판 서랍을 비율 그대로 줄임(식판 모양 유지)
+  const km = Math.max(.6, Math.min(1, (floor - hdr - 8) / mh)), vh = km * mh;
   let top = ttTop;
-  if (top + mh > floor) top = floor - mh;
+  if (top + vh > floor) top = floor - vh;
   if (top < hdr + 8) top = hdr + 8;
-  st.setProperty('--mcy', Math.round(top + mh / 2) + 'px');
+  if (km < 1) st.setProperty('--mk', km.toFixed(3)); else st.removeProperty('--mk');
+  st.setProperty('--mcy', Math.round(top + vh / 2) + 'px');
 }
 let heroRaf = 0, heroForce = false, TK_H = 0;
 heroReady = true;   // var(호이스팅) — 이 줄 전에 setSide가 불려도 오류 없이 건너뜀
