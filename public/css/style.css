@@ -5968,3 +5968,14 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 /* 게임 제목이 버튼에 밀려 두 줄로 꺾이던 것(편집의 신 결과 화면) */
 .ptop > b{white-space:nowrap;flex:none}
 .ptop{gap:12px}
+/* 게임별 1등 카드 톤다운(2026-10-28 하율 "너무 화려해") — 빛줄기·반짝임·움직임 없이 연한 금빛 카드 */
+.tcc-list li.tcc{background:linear-gradient(160deg,#fffaf0,#fff1c7);border:2px solid #ecc95e;box-shadow:0 2px 0 #e2b84a;color:#5a4410}
+.tcc-list li.tcc::before{display:none}
+.tcc-list li.tcc.me{background:linear-gradient(160deg,#fff7dc,#ffe7a3);border-color:#d9a92a;box-shadow:0 2px 0 #c99a1e}
+.tcc-md{width:30px;height:30px;font-size:16px;border:2px solid #d9a92a;box-shadow:none;background:#ffe27a;color:#7a4b00;animation:none}
+.tcc-u a .av{box-shadow:0 0 0 2px #ecc95e}
+.tcc-rec{font-size:23px;text-shadow:none}
+.tcc-meta span{background:rgba(255,255,255,.8);border-color:rgba(160,120,20,.25)}
+[data-theme="dark"] .tcc-list li.tcc{background:linear-gradient(160deg,#3a3220,#2e2818);color:#f3e2b0;border-color:#8a6d22;box-shadow:none}
+[data-theme="dark"] .tcc-g b,[data-theme="dark"] .tcc-u a,[data-theme="dark"] .tcc-rec{color:#fff1c7}
+[data-theme="dark"] .tcc-meta span{background:rgba(0,0,0,.25);color:#f3e2b0}
