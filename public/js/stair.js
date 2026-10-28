@@ -265,8 +265,8 @@ export function createStair(cv, o = {}) {
     frameBox(x, y, w, 9, '#ffffff'); g.fillStyle = OL; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(s, x + w / 2, y + 5);
   }
   function shoes(x, b) {   // 신발장 34×40: 칸마다 실내화
-    frameBox(x, b - 40, 34, 40, '#d9b48a');
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { const cx = x + 2 + c * 11, cy = b - 38 + r * 10; box(cx, cy, 9, 8, '#a87a4e'); if ((r * 3 + c) % 4) { box(cx + 1, cy + 5, 3, 2, '#ffffff'); box(cx + 5, cy + 5, 3, 2, (r + c) % 2 ? '#7cc4ff' : '#ffffff'); box(cx + 1, cy + 7, 7, 1, OL); } }
+    frameBox(x, b - 40, 34, 40, '#f3f5fa');   // 흰 신발장(2026-10-28 하율)
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { const cx = x + 2 + c * 11, cy = b - 38 + r * 10; box(cx, cy, 9, 8, '#d3d9e6'); box(cx, cy, 9, 1, '#b9c1d3'); if ((r * 3 + c) % 4) { const sc = ['#7cc4ff', '#ff8fb0', '#ffffff', '#9aa3b5'][(r + c * 2) % 4]; box(cx + 1, cy + 5, 3, 2, sc); box(cx + 5, cy + 5, 3, 2, sc); box(cx + 1, cy + 7, 7, 1, OL); } }
     label(x + 17, b - 52, '신발장');
   }
   function books(x, b) {   // 도서관 책장 36×44
@@ -275,9 +275,12 @@ export function createStair(cv, o = {}) {
     for (let r = 0; r < 4; r++) { box(x, b - 44 + r * 11 + 10, 36, 1, OL); for (let i = 0; i < 8; i++) { const h = 6 + (hash(r * 9 + i) * 3 | 0); box(x + 2 + i * 4, b - 44 + r * 11 + 10 - h, 3, h, C[(r + i) % 6]); } }
     label(x + 18, b - 56, '도서관');
   }
-  function bigDoor(x, b, nm, c = '#c98f55') {   // 양문(대강당 등) 34×46
-    frameBox(x, b - 46, 34, 46, c); box(x + 16, b - 46, 2, 46, OL); box(x + 12, b - 24, 2, 4, '#ffd25e'); box(x + 20, b - 24, 2, 4, '#ffd25e');
-    frameBox(x + 4, b - 40, 9, 10, '#cfeaff'); frameBox(x + 21, b - 40, 9, 10, '#cfeaff');
+  function bigDoor(x, b, nm) {   // 대강당 검정 철문 양문 34×46(2026-10-28 하율) — 리벳·가로 손잡이 막대·작은 창
+    frameBox(x, b - 46, 34, 46, '#3b3b49'); box(x + 1, b - 45, 32, 1, '#5b6278'); box(x + 16, b - 46, 2, 46, OL);
+    for (const dx of [2, 13, 20, 31]) for (const dy of [-43, -4]) box(x + dx, b + dy, 1, 1, '#9aa3b5');
+    box(x + 3, b - 25, 11, 2, '#c3cbd9'); box(x + 20, b - 25, 11, 2, '#c3cbd9'); box(x + 3, b - 23, 11, 1, OL); box(x + 20, b - 23, 11, 1, OL);   // 패닉바
+    frameBox(x + 5, b - 40, 6, 8, '#9fb7d6'); frameBox(x + 23, b - 40, 6, 8, '#9fb7d6'); box(x + 6, b - 39, 2, 1, '#ffffff'); box(x + 24, b - 39, 2, 1, '#ffffff');
+    box(x, b - 3, 34, 3, '#2a2a36');
     label(x + 17, b - 58, nm);
   }
   function roomDoor(x, b, nm, icon) {   // 교실 문 24×46 + 이름표 + 창에 아이콘
