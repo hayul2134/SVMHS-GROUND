@@ -277,6 +277,7 @@ function go(v) {
   let [base, ...rest] = String(v || '').split('/');   // 예: 'u/아이디', 'dm/아이디'
   if (!VIEWS.includes(base)) { base = 'home'; rest = []; v = 'home'; }
   const arg = decodeURIComponent(rest.join('/'));
+  document.body.dataset.view = base;   // social.js가 늦게 떠도 화면 이름이 바로 붙게(띠 공지 등 CSS가 씀, 2026-10-28)
   SOC.onLeave?.(base);
   if (base !== 'home') $('#v-home').classList.remove('calm');   // 다른 화면 갔다 오면 홈도 평소처럼 페이드
   $$('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + base));
@@ -1223,7 +1224,7 @@ const heroLater = force => { heroForce ||= force === true; cancelAnimationFrame(
 const heroResize = () => heroLater(true);
 addEventListener('resize', heroResize); wideMQ.addEventListener('change', heroResize);
 const heroRO = new ResizeObserver(() => heroLater()); for (const s of ['#bigTime', '#more', '#greet', '#play', '#hFr']) heroRO.observe($(s));
-{ const ro = new ResizeObserver(() => fitRk()); ro.observe($('#sRk')); ro.observe(SIDE.tt.el); ro.observe(SIDE.meal.el); }   // 시간표·급식 높이가 바뀌어도 다시 잼(2026-10-28: 옛 값이 굳어 서랍이 작게 남던 문제)
+{ let fr = 0; const ro = new ResizeObserver(() => { cancelAnimationFrame(fr); fr = requestAnimationFrame(fitRk); }); ro.observe($('#sRk')); ro.observe(SIDE.tt.el); ro.observe(SIDE.meal.el); }   // 시간표·급식 높이가 바뀌어도 다시 잼(2026-10-28: 옛 값이 굳어 서랍이 작게 남던 문제)
 // 서랍 카드(급식판·시간표) 키가 바뀌면(다른 날 넘김·교시 수·연속 과목 합치기 등) 가운데 기준이라 위아래 끝이 '툭' 튀던 문제 (2026-10-26 하율)
 // → 가운데는 그대로 고정하고, 바뀐 만큼을 translate로 되돌렸다가 0으로 미끄러지게(FLIP). 가운데 높이·랭킹 몫(--rkup) 변화는 CSS top 전환이 맡음
 { const lastH = new Map(), calm = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1273,6 +1274,9 @@ const dowTag = d => /^(오늘|내일|어제)$/.test(ttLabel(d)) ? DOW[d.getDay()
 // 라벨이 칸보다 길면 날짜는 남기고 끝 낱말(' 시간표'·' 급식')부터 뺌 → 그래도 넘치면 그때 날짜 말줄임 (2026-10-28 하율: '10/26(... 시간표')
 function fitLbl(el) { const t = el.querySelector('.lt'); if (!t) return; const o = () => t.scrollWidth > t.clientWidth + .5; el.classList.remove('tight', 'tight2'); if (o()) { el.classList.add('tight'); if (o()) el.classList.add('tight2'); } }   // 날짜 글자가 말줄임되면 → 끝 낱말 빼기 → 그래도면 요일 칩도 빼기
 // 라벨 자신이 아니라 카드(폭이 라벨과 무관)를 지켜봄 — 라벨을 보면 빼고·넣기가 폭을 바꿔 계속 깜빡일 수 있음
+// 최적화(2026-10-28): 그리는 도중 바로 재지 않고 그리기 직전(rAF)에 모아서 — 재는 순간마다 레이아웃을 강제 계산하던 것
+const lblQ = new Set(); let lblRaf = 0;
+const fitLblSoon = el => { lblQ.add(el); if (!lblRaf) lblRaf = requestAnimationFrame(() => { lblRaf = 0; const a = [...lblQ]; lblQ.clear(); a.forEach(e => e.isConnected && fitLbl(e)); }); };
 const lblRO = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => e.target.querySelectorAll('.s-lbl').forEach(fitLbl))) : null;
 function setLbl(el, text, off, wk, dow = '') {
   // 끝 낱말(' 시간표'·' 급식')은 따로 감싸서, 서랍이 좁으면 CSS가 숨김 → 라벨이 넘쳐 '다음 ›' 버튼을 덮던 문제(2026-10-24) 방지
@@ -1289,7 +1293,7 @@ function setLbl(el, text, off, wk, dow = '') {
     if (!first) riseIn([...el.children]);
   }
   el.classList.toggle('off', off); el.classList.toggle('wkon', wk);
-  fitLbl(el); lblRO?.observe(el.closest('.s-tt') || el.parentElement);
+  fitLblSoon(el); lblRO?.observe(el.closest('.s-tt') || el.parentElement);
   const tip = off ? (wk ? '이번 주로 돌아가기' : '오늘로 돌아가기') : (wk ? '하루씩 보기' : '한 주씩 보기');
   el.dataset.tip = tip; el.setAttribute('aria-label', `${text} · 눌러서 ${tip}`);
   const card = el.closest('.s-tt'), what = card?.classList.contains('s-meal') ? '급식' : '시간표';
@@ -2532,6 +2536,7 @@ async function fillShow() {
     on = !matchMedia('(prefers-reduced-motion: reduce)').matches;
     sec.classList.toggle('sh-on', on);
     if (!on) { objs.forEach(o => { o.style.transform = o.style.opacity = ''; o._transform = o._opacity = undefined; }); cap.style.transform = cap.style.opacity = ''; root.classList.remove('sh-see'); de.classList.remove('sh-real', 'sh-hand', 'sh-ttx'); flags = {}; return; }
+    if (!introOn()) return;   // 최적화(2026-10-28): 로그인한 학생은 소개 쇼케이스를 안 보므로 복제·자리 계산을 안 함(느린 기기 4배 기준 약 2.7초). 로그아웃해 소개가 다시 보이면 ResizeObserver(onResize)가 그때 계산
     layout(); cur = target = clamp(rawP()); render(cur, false);
   }
   root.addEventListener('scroll', kick, { passive: true });

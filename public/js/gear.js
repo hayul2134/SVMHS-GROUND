@@ -515,7 +515,7 @@ export function createGear(canvas, opt = {}) {
     isHeld: n => !!keys[n],
     setSound(v) { sound = v; },
     setLimit(ms) { st.limit = ms || 0; },   // 랭킹전 제한 시간(ms), 0 = 없음 — 시작 전에 정함
-    setScale(n) { n = Math.max(1, Math.round(n)); if (n === PX) return; PX = n; canvas.width = BW * PX; canvas.height = BH * PX; draw(); },
+    setScale(n) { n = Math.max(1, Math.floor(n + .01));   /* 내림(2026-10-28): 반올림하면 캔버스가 화면보다 커져 줄어들며 가는 도트가 사라졌음 */ if (n === PX) return; PX = n; canvas.width = BW * PX; canvas.height = BH * PX; draw(); },
     destroy() { alive = false; cancelAnimationFrame(raf); try { actx?.close(); } catch {} },
     step(n = 1, quiet = false) { for (let i = 0; i < n; i++) update(STEP); if (!quiet) draw(); },   // 테스트용
     draw, art: ART_IMG,

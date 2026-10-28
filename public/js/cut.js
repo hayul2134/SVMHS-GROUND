@@ -75,7 +75,7 @@ export function run(root, o) {
 
   /* 음악 파형: 잔잔한 막대 + 컷 지점에 큰 비트 */
   const wave = (f, sc = SCENE[Math.min(round, 4)]) => {
-    const r = wv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), W = Math.max(1, Math.round(r.width * dpr)), Hh = Math.max(1, Math.round(r.height * dpr));
+    const r = { width: wv.offsetWidth, height: wv.offsetHeight }, dpr = Math.min(2, devicePixelRatio || 1), W = Math.max(1, Math.round(r.width * dpr)), Hh = Math.max(1, Math.round(r.height * dpr));   // 화면 크기(변형 전) — 등장 애니메이션(.97배) 중에 재면 3% 작게 그려져 흐릿했음(2026-10-28)
     wv.width = W; wv.height = Hh; const g = wv.getContext('2d'), bw = 3 * dpr, gap = 2 * dpr, mid = Hh / 2, tx = f * W;
     g.fillStyle = '#3ddc97';
     for (let x = gap; x < W - bw; x += bw + gap) {

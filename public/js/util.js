@@ -114,7 +114,7 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
     }
     return false;
   };
-  const shown = el => el.isConnected && el.getClientRects().length && !el.closest(SKIP);
+  const shown = el => el.isConnected && !el.closest(SKIP) && el.getClientRects().length;   // closest 먼저(싸다) — getClientRects는 레이아웃을 강제함
   const rise = (els) => {
     let i = 0;
     for (const el of els) {
@@ -126,9 +126,18 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
   // 사진 다 왔으면 .ok (CSS img:not(.ok)의 깜빡이는 자리 표시를 끔) — 캐시에서 바로 뜬 사진은 load 이벤트를 window에서 못 받는 경우가 있어서 직접 확인 (2026-10-28 공지 사진 계속 깜빡이던 버그)
   const imgOk = im => { if (im.classList.contains('ok')) return; if (im.complete) im.classList.add('ok'); else { const f = () => im.classList.add('ok'); im.addEventListener('load', f, { once: true }); im.addEventListener('error', f, { once: true }); } };
   const imgScan = n => { if (n.nodeType !== 1) return; if (n.tagName === 'IMG') imgOk(n); else n.querySelectorAll?.('img:not(.ok)').forEach(imgOk); };
+  /* 최적화(2026-10-28): 변화를 바로 재지 않고 다음 그리기 직전(rAF)에 한꺼번에 판단.
+     예전엔 DOM을 바꿀 때마다 그 자리에서 getClientRects·getAnimations로 레이아웃·스타일을 강제로 계산해서
+     첫 화면을 그리는 동안 수십 번 다시 계산했음(느린 기기 4배 기준 약 1.2초). rAF는 같은 프레임 그리기 전에 돌아서 깜빡임 없음 */
+  let pend = [], praf = 0;
   const mo = new MutationObserver(ms => {
     for (const m of ms) if (m.type === 'childList') m.addedNodes.forEach(imgScan);
     if (RM.matches || document.documentElement.classList.contains('prelogin')) return;
+    pend.push(...ms); if (!praf) praf = requestAnimationFrame(judge);
+  });
+  const judge = () => {
+    praf = 0; const ms = pend; pend = [];
+    if (document.documentElement.classList.contains('prelogin')) return;
     for (const m of ms) {
       const tg = m.target;
       if (m.type === 'attributes') {
@@ -147,7 +156,7 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
       if (!shown(tg) || busy(tg)) continue;
       rise(add);
     }
-  });
+  };
   riseIn = els => { if (!RM.matches) rise(els); };
   const go = () => { imgScan(document.body); mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true }); };
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go, { once: true });

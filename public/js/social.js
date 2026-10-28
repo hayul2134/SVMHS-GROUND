@@ -2253,7 +2253,20 @@ async function playStair() {
   paintSnd();
   sndBtn.onclick = () => { sound = !sound; store.set('stair_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
   myRecInto($('#srRec'), 'stair', best ? STAIR_MAX - best : null, { open: true });
-  quitGame = () => { run++; R.destroy(); clearTimeout(popT); document.removeEventListener('keydown', kd); if (window.__stair === R) window.__stair = null; };
+  // 선명도(2026-10-28): 판 폭을 '한 도트(160칸 기준) = 기기 픽셀 정수 배'로 맞춤 — CSS가 정한 폭 그대로면 1.08배·2.2배처럼 소수 배라
+  // 도트 굵기가 들쭉날쭉하고, 캔버스(320)보다 작게 줄면 가는 선이 사라졌음. 짝수 배(캔버스 한 칸 = 정수 픽셀)를 우선, 너무 작아지면 홀수 배
+  const snapScr = () => {
+    if (!cv.isConnected) return;
+    scr.style.removeProperty('width');
+    const dpr = devicePixelRatio || 1, av = cv.getBoundingClientRect().width * dpr, bw = scr.offsetWidth - scr.clientWidth;
+    let n = Math.floor(av / STAIR.W + .01);
+    if (n < 2) return;   // 아주 작은 화면은 그대로(정수 배로 맞추면 너무 작아짐)
+    if (n % 2 && n > 2 && (n - 1) / n >= .8) n--;
+    scr.style.width = (n * STAIR.W / dpr + bw) + 'px';
+  };
+  let snapRaf = 0; const snapSoon = () => { cancelAnimationFrame(snapRaf); snapRaf = requestAnimationFrame(snapScr); };
+  const snapRO = new ResizeObserver(snapSoon); snapRO.observe($('#parea')); addEventListener('resize', snapSoon); snapScr();
+  quitGame = () => { run++; R.destroy(); clearTimeout(popT); snapRO.disconnect(); removeEventListener('resize', snapSoon); document.removeEventListener('keydown', kd); if (window.__stair === R) window.__stair = null; };
 }
 
 /* 5) 기자재 정리!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */
@@ -2288,7 +2301,7 @@ async function playGear() {
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
   const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul>
     <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>${gtOn() ? '시간 제한 없이 오래 버티기' : '시간 제한 없음 · 티어 제외'}</small></button><button type="button" data-gm="rank"><b>${ic('trophy')}랭킹전</b><small>${gtOn() ? '2분 안에 최고 점수' : '2분 점수 대결 · 티어 반영'}</small></button></div>
-    ${gtOn() ? '<small class="gr-gt">티어엔 두 방식 중 순위가 더 좋은 쪽이 들어가요</small>' : ''}<small>${touchy ? '방식을 누르면 바로 시작' : '← → 로 방식 고르고, 아무 키나 누르면 시작'}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); setMode(mode); };
+    ${gtOn() ? '<small class="gr-gt">티어엔 두 방식 중 순위가 더 좋은 쪽이 들어가요</small>' : ''}<small>${touchy ? '방식을 누르면 바로 시작' : '← → 로 방식 고르고, 아무 키나 누르면 시작'}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); setMode(mode); requestAnimationFrame(() => ov.querySelectorAll('[data-k]').forEach(c => { const w = c.getBoundingClientRect().width || 78; snapMini(c, w, Math.max(w, (c.closest('ul')?.clientWidth || 4 * w) / 4 - 4)); R.drawMini(c, c.dataset.k); })); };
   // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
   let shown = 0;
   const paintHud = () => { const s = R.st, sc = $('#grSc');
@@ -2306,6 +2319,8 @@ async function playGear() {
     }
     bump(n);
   };
+  // 작은 장비 그림(52×28 도트)은 한 도트 = 기기 픽셀 정수 배가 되게 폭을 맞춤(2026-10-28 — 1.15배·0.67배처럼 소수 배로 늘리면 도트 굵기가 들쭉날쭉·뭉개짐)
+  const snapMini = (c, w = c.getBoundingClientRect().width || 78, max = w * 1.12) => { const dpr = devicePixelRatio || 1; let n = Math.max(1, Math.round(w * dpr / 52)); while (n > 1 && 52 * n / dpr > max) n--; const pw = 52 * n; c.style.width = pw / dpr + 'px'; if (c.width !== pw) { c.width = pw; c.height = 28 * n; } };
   const paintQ = () => { R.drawMini($('#grHold'), R.st.hold);   // 보관 블록은 다음 블록처럼 그대로 (2026-10-27 하율: 흐리게 그리던 것 제거)
      [0, 1, 2].forEach(i => R.drawMini($('#grN' + i), R.st.queue[i])); };
   let popT = 0;
@@ -2399,7 +2414,7 @@ async function playGear() {
     gr.dataset.bs = bw < 190 ? 'xs' : bw < 300 ? 's' : ''; gr.dataset.bh = bh < 380 ? 's' : '';
     cv.style.width = per * GEAR.BW + 'px';
     // 보관·다음 칸 캔버스도 보이는 크기(기기 픽셀)만큼 만들어 선명하게
-    document.querySelectorAll('#gr .gr-mini').forEach(c => { const w = c.classList.contains('sm') ? Math.round(big * .62) : big, pw = Math.round(w * dpr); c.style.width = w + 'px'; if (c.width !== pw) { c.width = pw; c.height = Math.round(pw * 28 / 52); } });
+    document.querySelectorAll('#gr .gr-mini').forEach(c => snapMini(c, c.classList.contains('sm') ? Math.round(big * .62) : big));
     R.setScale(per * dpr); paintQ();
     $('#gr').style.setProperty('--gw', Math.round(per * GEAR.BW) + 'px');
   };

@@ -224,3 +224,14 @@ npx wrangler@4 pages dev --port 8788
 - 기자재 정리! 티어 반영(2026-10-28, 깃발 `gear-tier`, 10/28 패치 게시 때 공개): 서버 `tierBoard2(…, gt)` — gear·gearn 각각 라운드 순위 점수 후 높은 쪽 한 칸을 `games.gear`로(`m` r/n, `o` 다른 모드). `gtFor(me)`: 개발자 2(바로) · 공개 1(`GEAR_TIER_FROM` 20261029부터, 그날이 든 라운드는 첫날 기록부터) · 0. GET tier가 `g:{on,from}`. 화면: social.js `gearTier()`/`gtText()` — 티어 점수 내역(개발자는 1위 학생 기준), 랭킹 창 '티어' 표시·이번 라운드 내 줄 '티어 반영 ✓/미반영'·안내 줄, 결과 화면 `#grTi`. 일반 모드 판도 미션 'gear' 판 수.
 - 티어 박탈감 줄이기(2026-10-28 하율 '게임 하나 압도·챌린저 고정 박탈감 분석' 1·2번, 미리보기 깃발 `tier-champ`): 서버 `tierChamp` → `GET tier`의 `champ`{games(게임별 이번 라운드 1등, 동점 최대 3명), since(어제 날짜), me(어제 대비 d 계단·dp 점수), rise(어제보다 많이 오른 학생 3명), prev(지난 라운드 대비), pv}. 어제 판 = `tierBoard(…, upTo)`(그날까지 기록만, 캐시 키 `:u날짜`). `tierOfUser` cur에 `n`·`ch`(1등 게임). 화면: social.js `chUpLine`(내 티어 칸 아래)·`chBlock`(계단 아래 카드)·`tierPlate`의 `.pch` 1등 칩·지난 라운드 대비 ▲. CSS `.tch*`·`.pch*`.
 - 내 기록 칸 접는 버튼·한 화면 배치(2026-10-28 하율 "스크롤 안 해도 보이게, 버튼처럼 펴고 접어서"): social.js `myRecInto(el, game, local, fold)` — fold면 '내 최고' 줄이 버튼(`.mr-tog`), 최근 기록 `.mr-body` 접힘, 상태는 이 기기 `sg_mr_<게임>`. 계단 오르기 = 넓은 칸(`stage(…, true)`), 900px+에서 `.sr` 3칸 그리드(가운데 `.sr-main` 판 높이 `--srh` = 100dvh−270px(최대 720), 위 제목·버튼 줄은 모든 게임 공통으로 `fitHome`이 제목=집 버튼 오른쪽·버튼=화면 오른쪽 끝(집 버튼과 대칭), 오른쪽 `.sr-side` 내 기록 펼침). 기자재 정리! = 마우스 기기 1000px+·높이 501px+면 `#grRk`를 보관 칸 아래 `#grRkSlot`으로 옮김(`recMQ`·`placeRk`, 펼치면 `.mr-body`가 왼쪽 빈자리에 떠 있음). 편집의 신 결과 = `cutLayout` → `.result.ct-out` 2칸(왼쪽 점수·등급·내 기록 / 오른쪽 다시 보기·판정). 결과 화면 들어갈 때 `fitHome` 다시 맞춤(제목 두 줄 꺾임 수정).
+
+## 2026-10-28 밤 최적화·화면 점검 (하율 "싹다 최적화 + 디버깅, 안 깨지고 안 뭉개지고 안 겹치게")
+- 측정: 로컬 `wrangler pages dev` + Playwright, CPU 4배 느림, 로그인 상태 첫 화면. 긴 프레임 합 8.8초 → 약 3.6초, FCP 1.6 → 약 1.0초.
+- app.js 소개 쇼케이스 `setup()`: `introOn()`(prelogin)일 때만 복제·자리 계산(로그인 학생도 매번 돌던 것, 최대 원인). 소개가 다시 보이면 ResizeObserver가 계산.
+- util.js 등장 애니메이션: MutationObserver에서 바로 재지 않고 rAF(`judge`)에 모아 한 번에 판단(강제 레이아웃 반복 제거).
+- seg.js 스위치 알약: 전부 재기(`measure`) → 전부 쓰기(`apply`), `.no-tr`는 offsetWidth 강제 계산 대신 2프레임 뒤 해제.
+- app.js `fitLbl`은 rAF 묶음(`fitLblSoon`), `fitRk` ResizeObserver는 rAF로(‘ResizeObserver loop’ 콘솔 경고 제거).
+- hoverlock.js 규칙 복제·att-art.js 스프라이트(`ensureSprite`)는 한가할 때(requestIdleCallback). 그림을 쓰는 곳은 그 전에 불리면 즉시 만듦.
+- 도트 선명도: 계단 오르기 판 폭을 160도트 × 기기 픽셀 정수 배로 맞춤(social.js `snapScr`, 짝수 배 우선, 2배 미만이면 그대로) · 기자재 정리! 작은 장비 그림(`snapMini`, 52×28 정수 배) · 기자재 판 `setScale` 반올림→내림(캔버스가 화면보다 커져 도트가 사라지던 것) · 편집의 신 파형은 offsetWidth 기준(등장 애니메이션 중 재서 3% 작게 그려지던 것).
+- 겹침·잘림: `.hr-ov` 칸 폭을 판 폭으로(`grid-template-columns:minmax(0,100%)`, 기자재 시작 안내 양옆 잘림) · `.cal .e` 위아래 여백을 테두리로 + `overflow-wrap:anywhere`(세 번째 줄이 비치고 좁은 칸에서 글자가 반쯤 잘리던 것) · 띠 공지 `.notice`는 홈에서만(`body:not([data-view=home]) .notice{display:none}` — 다른 화면에선 달력 이전/다음 버튼 등을 덮었음), 폰(560px 이하)에선 띠가 자리를 차지(홈 인사 말풍선 덮던 것) · `#gcBox` 아래 여백(메시지 버튼에 안내 글이 가림).
+- body `data-view`는 app.js `go()`가 바로 붙임(index.html 기본 `home`) — social.js가 늦게 떠도 CSS가 씀.

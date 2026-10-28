@@ -638,10 +638,10 @@ html.tt .theme-btn svg{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacit
 .cal .dy.today{border-color:var(--k);box-shadow:0 0 0 3px color-mix(in srgb,var(--k) 35%,transparent)}
 .cal .dy.today .n{display:inline-block;background:var(--k);color:#fff;border-radius:8px;padding:2px 6px}
 .cal .dy.past:not(.today){opacity:.5}
-.cal .e{font-size:11px;font-weight:800;line-height:1.25;padding:2px 5px;border-radius:6px;background:var(--yellow);color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all}
+.cal .e{font-size:11px;font-weight:800;line-height:1.25;padding:0 5px;border-block:2px solid transparent;border-radius:6px;background:var(--yellow);color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all;overflow-wrap:anywhere}
 .cal .e.off{background:var(--red)}
 .cal .e+.e{background:var(--sky)}
-@media (max-width:560px){.cal{gap:3px}.cal .dh{font-size:12.5px;padding:4px 0;border-radius:7px}.cal .dy{min-height:80px;padding:4px 3px 5px;border-radius:9px}.cal .dy .n{font-size:14px}.cal .e{font-size:9.5px;padding:1px 3px;-webkit-line-clamp:1}}
+@media (max-width:560px){.cal{gap:3px}.cal .dh{font-size:12.5px;padding:4px 0;border-radius:7px}.cal .dy{min-height:80px;padding:4px 3px 5px;border-radius:9px}.cal .dy .n{font-size:14px}.cal .e{font-size:9.5px;padding:0 3px;border-block-width:1px;-webkit-line-clamp:1}}
 .ev{list-style:none;display:flex;flex-direction:column;gap:8px}
 .ev li{display:flex;gap:14px;align-items:center;padding:8px;border-radius:16px;border:2px solid transparent;transition:.15s}
 @media (hover:hover){.ev li:hover{border-color:var(--ink);background:var(--chip);transform:rotate(-.5deg)}}
@@ -1054,6 +1054,8 @@ body.playing .modal{z-index:75}/* 게임 중 연 랭킹 창이 게임 화면(.pl
 /* 공지는 어느 화면에서나 위에 겹쳐 뜸 — 아래 오브젝트를 밀어내지 않음(2026-10-25: 홈 말고 다른 화면에서도) */
 .notice{position:absolute;top:84px;left:0;right:0;width:calc(100% - 40px);margin:0 auto}
 @media (max-width:560px){.notice{margin-top:70px;font-size:14px}.notice{top:70px;margin-top:0;width:calc(100% - 32px)}}
+/* 2026-10-28: 다른 화면(달력·시간표·급식 등)에선 겹쳐 뜬 띠가 위쪽 버튼(이전·다음 달 등)을 가려 누를 수 없었음 → 띠는 홈에서만(닫지 않았으면 홈으로 돌아오면 다시 보임) */
+body:not([data-view="home"]) .notice{display:none}
 
 /* ===== 15. 메시지 창 (인스타 PC DM처럼 오른쪽 아래에 떠 있음) ===== */
 .dmdock{position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
@@ -2208,7 +2210,7 @@ html.away .mascot *{animation-play-state:paused!important}
 .hr{display:flex;flex-direction:column;gap:12px;position:relative}
 .hr-scr{position:relative;display:flex;align-self:center;max-width:100%;border:var(--bd);border-radius:18px;box-shadow:var(--sh);background:#8fd3ff;overflow:hidden;cursor:pointer;touch-action:none}
 .hr-scr canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-.hr-ov{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:4px;text-align:center;pointer-events:none;background:linear-gradient(transparent 30%,rgba(255,255,255,.35))}
+.hr-ov{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,100%);place-content:center;justify-items:center;gap:4px;text-align:center;pointer-events:none;background:linear-gradient(transparent 30%,rgba(255,255,255,.35))}
 .hr-ov b{font-family:var(--disp);font-weight:400;font-size:clamp(20px,5vw,44px);color:#fff;-webkit-text-stroke:2px #2a2846;paint-order:stroke;text-shadow:3px 3px 0 #2a2846;animation:hrBob 1.2s steps(2) infinite}
 .hr-ov span{font-weight:900;color:#2a2846;background:#fff;border:2px solid #2a2846;border-radius:10px;padding:3px 10px;font-size:14px}
 .hr-ov small{font-weight:800;color:#2a2846;font-size:13px;margin-top:2px;animation:hrBlink 1s steps(1) infinite}
@@ -4830,6 +4832,7 @@ html:has(body.playing){overflow:hidden}
 .gr-ov{background:rgba(29,34,56,.55);padding:10px;gap:8px}
 .gr-ov > b{font-size:clamp(22px,4vw,34px)}
 .gr-ov span{line-height:1.45}
+.gr-ov small{text-wrap:balance}
 .gr-kinds{list-style:none;margin:2px 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px;justify-items:center}
 .gr-kinds li{display:flex;flex-direction:column;align-items:center;gap:2px}
 .gr-k{width:78px;image-rendering:pixelated}
@@ -6005,3 +6008,7 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .tcc-md .sic{width:13px;height:13px}
 .tcc-md.e{padding:2px 7px;font-size:10.5px;font-weight:800}
 [data-theme="dark"] .tcc-md:not(.e){background:#ffd23f;color:#3d2600}
+/* 2026-10-28: 맨 아래 안내 글이 떠 있는 메시지 버튼에 가리지 않게 */
+#gcBox{padding-bottom:76px}
+/* 2026-10-28: 폰 폭(560px 이하)에선 겹쳐 뜬 띠가 홈 인사 말풍선을 덮음 → 폰에서만 띠가 자기 자리를 차지(아래가 조금 밀림) */
+@media (max-width:560px){.notice{position:relative;top:auto;margin:70px auto -58px}}

@@ -520,7 +520,8 @@ export function ensureSprite() {
   box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => { const vb = SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'; return `<symbol id="art-${k}" overflow="visible" viewBox="${vb}">${v}</symbol>` + olSym(k, v, vb); }).join('')}<symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol><symbol id="art-shnx-st" overflow="visible" viewBox="0 0 48 48">${still(SHNX)}</symbol></svg>`;
   document.body.appendChild(box);
 }
-if (typeof document !== 'undefined') { if (document.body) ensureSprite(); else document.addEventListener('DOMContentLoaded', ensureSprite, { once: true }); }
+// 최적화(2026-10-28): 모든 보상 그림의 테두리 실루엣까지 만드는 무거운 작업 → 첫 화면 뒤 한가할 때. 그림을 쓰는 곳(artOf·ui 등)은 그 전에 불리면 그 자리에서 바로 만듦
+if (typeof document !== 'undefined') (window.requestIdleCallback || (f => setTimeout(f, 200)))(ensureSprite, { timeout: 1500 });
 
 /* ===== 내보내기 ===== */
 // 2026-10-24 보상 그림 교체 전 이름 → 새 그림 (예전에 고른 프로필 사진·스티커·보낸 스티커 메시지가 그대로 새 그림으로 보이게)

@@ -3,7 +3,8 @@
 //       제자리로 돌아오면 다시 hover → 1초에 수십 번 반복.
 // 해결: 스타일시트의 ':hover' 규칙을 '.is-hv' 사본으로 복제하고, 오브젝트가 움직이기 전 원래 자리(사각형)를
 //       기준으로 hover를 유지한다(원래 자리 안이거나 실제 :hover면 유지, 둘 다 아니면 해제). CSS는 그대로 둠.
-(() => {
+// 최적화(2026-10-28): 큰 스타일시트를 훑으며 규칙을 하나씩 끼워 넣는 작업이라 첫 화면 그리기를 막지 않게 한가할 때 실행
+const hlInit = () => {
   if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;   // 터치 기기는 필요 없음
   const targets = new Set();   // hover 때 자기 자신이 움직이는 오브젝트 선택자
 
@@ -62,4 +63,5 @@
   addEventListener('scroll', clearAll, { passive: true, capture: true });
   addEventListener('resize', clearAll);
   document.addEventListener('mouseleave', () => { for (const el of [...locked.keys()]) release(el); });
-})();
+};
+(window.requestIdleCallback || (f => setTimeout(f, 300)))(hlInit, { timeout: 2500 });
