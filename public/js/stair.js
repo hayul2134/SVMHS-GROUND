@@ -165,7 +165,7 @@ function skyAt(f) {
 }
 const kindOf = i => i === FLOOR * ROOF ? 'roof' : i > 0 && i % FLOOR === 0 ? 'land' : i < FLOOR * ROOF ? 'school' : i < FLOOR * (ROOF + 3) ? 'sky' : i < FLOOR * (ROOF + 5) ? 'dusk' : 'space';
 // 층 도착 한 줄(2026-10-28 하율 "올라갈 때마다 서울영상고 관련 정보로 특색 있게") — 층 구성은 나무위키 '서울영상고등학교'의 학교 시설 설명 참고(3·4층은 교실로 꾸밈)
-const FLOOR_MSG = ['', '교무실 앞은 조용히!', '겨우 3층이라고?', '아직도 4층??', '아이고 나죽네', '음악실·체육관 층, 쿵쾅쿵쾅!', '옥상까지 딱 한 층!', '저건... 요술 램프인가..?'];
+const FLOOR_MSG = ['', '교무실 앞은 조용히!', '이제 겨우 3층이라고??', '아직도 4층??', '아이고 나죽네', '음악실·체육관 층, 쿵쾅쿵쾅!', '옥상까지 딱 한 층!', '저건... 요술 램프인가..?'];
 
 export function createStair(cv, o = {}) {
   const g = cv.getContext('2d');
