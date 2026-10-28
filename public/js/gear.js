@@ -224,7 +224,7 @@ export function createGear(canvas, opt = {}) {
       scene: 'ready', frames: 0, ms: 0, score: 0, lines: 0, level: 1, pieces: 0, b2b: false,
       board: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
       bag: [], queue: [], cur: null, hold: null, held: false,
-      grav: 0, lock: 0, lockN: 0, das: 0, dasDir: 0, lastH: 0, clearRows: [], clearT: 0, combo: 0, tetN: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
+      grav: 0, lock: 0, lockN: 0, buf: [], lockedAt: 0, das: 0, dasDir: 0, lastH: 0, clearRows: [], clearT: 0, combo: 0, tetN: 0, flash: 0, shake: 0, parts: [], pops: [], trails: [], rings: [], stop: 0, bump: 0, seed,
     });
     while (st.queue.length < 5) st.queue.push(nextKind());
   }
@@ -335,7 +335,7 @@ export function createGear(canvas, opt = {}) {
       if (by >= 0) st.board[by][bx] = { k: p.k, r: p.k === 'O' ? 0 : p.r, sx: cx, sy: cy }; else out = true;
       if (by >= HID) above = false;
     }
-    st.cur = null; st.pieces++;
+    st.cur = null; st.pieces++; st.lockedAt = performance.now();
     beep(150, 90, .07, 'triangle', .05); PLACE[p.k]?.();
     // 보이는 칸에 하나도 못 들어감 / 판 맨 위보다 더 위로 삐져나온 채 놓임(돌리기 킥으로 생길 수 있음 — 2026-10-27 검사에서 칸이 사라지던 버그) = 장비실 꽉 참
     if (above || out) return over();
@@ -367,7 +367,16 @@ export function createGear(canvas, opt = {}) {
     const rows = st.clearRows; st.clearRows = [];
     st.board = st.board.filter((_, y) => !rows.includes(y));
     while (st.board.length < ROWS) st.board.unshift(Array(COLS).fill(null));
-    newPiece();
+    newPiece(); runBuf();
+  }
+  // 줄이 깨지는 동안(약 0.3초) 누른 키를 버리지 않고 모아 뒀다가 다음 장비가 나오자마자 실행 (2026-10-28 하율 "키 입력 버그" — 깨지는 중 누른 돌리기·이동·보관·바로 놓기가 씹히던 문제)
+  function runBuf() {
+    const b = st.buf; st.buf = [];
+    for (const a of b) {
+      if (st.scene !== 'play' || !st.cur) break;
+      if (a === 'left') move(-1); else if (a === 'right') move(1); else if (a === 'cw') rotate(1); else if (a === 'ccw') rotate(-1); else if (a === 'hold') hold();
+      else if (a === 'drop') { hardDrop(); break; }
+    }
   }
   function over(timeUp = false) { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms), timeUp }); }
 
@@ -382,18 +391,22 @@ export function createGear(canvas, opt = {}) {
     if (st.scene !== 'play') return;
     st.frames++; st.ms += dt * 1000;
     if (st.limit && st.ms >= st.limit) { st.ms = st.limit; return over(true); }   // 랭킹전 2분 끝
-    if (st.clearT) { if (--st.clearT === 0) finishClear(); return; }
+    if (st.clearT) { dasTick(false); if (--st.clearT === 0) finishClear(); return; }   // 깨지는 동안에도 누르고 있는 시간은 쌓음(끝나자마자 이어서 밀림)
     const p = st.cur; if (!p) return;
-    // 좌우 누르고 있으면: DAS 10프레임 뒤 ARR 2프레임마다
-    // 좌우를 같이 누르고 있으면 나중에 누른 쪽(예전엔 0이 돼서, 왼쪽 키가 눌린 채 남아 있으면 오른쪽을 떼는 순간 왼쪽으로 밀림 — 2026-10-28 하율)
-    const dir = keys.left && keys.right ? st.lastH : keys.left ? -1 : keys.right ? 1 : 0;
-    if (dir !== st.dasDir) { st.dasDir = dir; st.das = 0; }
-    else if (dir) { st.das++; if (st.das >= DAS && (st.das - DAS) % ARR === 0) move(dir); }
+    dasTick(true);
     // 떨어짐
     const gf = keys.down ? Math.max(1, Math.floor(gravF(st.level) / 20)) : gravF(st.level);
     if (++st.grav >= gf) { st.grav = 0; if (keys.down ? softStep() : (fits(p.k, p.r, p.x, p.y + 1) && (p.y++, true))) st.lock = 0; }
     lowCheck();
     if (grounded()) { if (++st.lock >= LOCK) lockPiece(); }
+  }
+
+  // 좌우 누르고 있으면: DAS 10프레임 뒤 ARR 2프레임마다
+  // 좌우를 같이 누르고 있으면 나중에 누른 쪽(예전엔 0이 돼서, 왼쪽 키가 눌린 채 남아 있으면 오른쪽을 떼는 순간 왼쪽으로 밀림 — 2026-10-28 하율)
+  function dasTick(canMove) {
+    const dir = keys.left && keys.right ? st.lastH : keys.left ? -1 : keys.right ? 1 : 0;
+    if (dir !== st.dasDir) { st.dasDir = dir; st.das = 0; }
+    else if (dir) { st.das++; if (canMove && st.das >= DAS && (st.das - DAS) % ARR === 0) move(dir); }
   }
 
   /* --- 그리기 --- */
@@ -481,17 +494,25 @@ export function createGear(canvas, opt = {}) {
     input(name, down) {
       // 키를 뗀 건 화면 상태와 상관없이 항상 반영 — 게임 끝·멈춤·준비 화면에서 뗀 키가 무시돼 '눌린 채'로 남던 버그 (2026-10-28 하율 "오른쪽 키를 눌러도 왼쪽으로")
       if (!down && name in keys) { keys[name] = false; if (st.scene !== 'play') return; }
-      if (st.scene === 'ready') { if (down) start(); return; }   // 아무 키나 누르면 시작(그 키로 블록을 움직이진 않음)
-      if (st.scene === 'pause') { if (down) resume(); return; }
+      if (st.scene === 'ready' || st.scene === 'pause') {   // 아무 키나 누르면 시작·계속(그 키로 블록을 움직이진 않음)
+        if (!down) return;
+        if (st.scene === 'ready') start(); else resume();
+        // 시작·계속한 키를 그대로 누르고 있으면 손을 뗐다 다시 누르지 않아도 먹게(예전엔 무시돼서 ↓·◀▶를 누르고 있어도 안 움직였음)
+        if (name in keys && st.scene === 'play') { keys[name] = true; if (name !== 'down') { st.lastH = st.dasDir = name === 'left' ? -1 : 1; st.das = 0; } }
+        return;
+      }
       if (st.scene !== 'play') return;
-      if (name === 'left' || name === 'right') { keys[name] = down; if (down) { st.lastH = st.dasDir = name === 'left' ? -1 : 1; st.das = 0; if (!st.clearT) move(st.dasDir); } }
-      else if (name === 'down') { keys.down = down; if (down && !st.clearT && softStep()) st.lock = 0; }
-      else if (!down || st.clearT) return;
+      const busy = st.clearT > 0 || !st.cur, later = a => { if (st.buf.length < 6) st.buf.push(a); };
+      if (name === 'left' || name === 'right') { keys[name] = down; if (down) { st.lastH = st.dasDir = name === 'left' ? -1 : 1; st.das = 0; if (busy) later(name); else move(st.dasDir); } }
+      else if (name === 'down') { keys.down = down; if (down && !busy && softStep()) st.lock = 0; }
+      else if (!down) return;
+      else if (busy) { if (name !== 'drop' || performance.now() - st.lockedAt > 150) later(name); }   // 바로 놓기 직후 실수로 한 번 더 누른 건(0.15초 안) 다음 장비를 떨어뜨리지 않게 버림
       else if (name === 'cw') rotate(1);
       else if (name === 'ccw') rotate(-1);
       else if (name === 'drop') hardDrop();
       else if (name === 'hold') hold();
     },
+    isHeld: n => !!keys[n],
     setSound(v) { sound = v; },
     setLimit(ms) { st.limit = ms || 0; },   // 랭킹전 제한 시간(ms), 0 = 없음 — 시작 전에 정함
     setScale(n) { n = Math.max(1, Math.round(n)); if (n === PX) return; PX = n; canvas.width = BW * PX; canvas.height = BH * PX; draw(); },

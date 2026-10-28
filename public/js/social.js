@@ -1678,7 +1678,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gameP
 // 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
 const RE_BTN = `<button class="prestart" type="button" data-restart aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<kbd>R</kbd></button>`;
 const RE_ROW = `<div class="prow">${RE_BTN}</div>`;
-document.addEventListener('click', e => { if (e.target.closest('[data-restart]')) restartGame(); });
+document.addEventListener('click', e => { const b = e.target.closest('[data-restart]'); if (b) { b.blur(); restartGame(); } });   // 누른 뒤 포커스가 남아 있으면 스페이스·엔터가 이 버튼을 또 눌러 판이 다시 시작되던 문제 (2026-10-28)
+
 // 게임 중 위 줄 '랭킹'(2026-10-28 하율 "랭킹을 바로 볼 수 있는 버튼 모든 게임에") — 열기 전에 하던 판을 멈춤(기자재 정리!는 멈춤 화면, 집에 가고 싶어!는 창이 닫힐 때까지 정지)
 document.addEventListener('click', e => { if (e.target.closest('.prank')) window.dispatchEvent(new Event('blur')); }, true);
 // 모든 게임 공통 '다시 시작'(2026-10-27 하율 "모든 게임에 재시작 버튼"): 게임 화면 위 나가기 옆 — 하던 판을 버리고 같은 게임을 처음부터
@@ -2048,7 +2049,9 @@ async function playGear() {
   // 글자 키는 e.code(자판 위치)로 — 한글 입력 상태면 C가 'ㅊ'으로 와서 보관(C)·돌리기(Z·X)·멈춤(P)이 안 먹던 문제 (2026-10-27 하율 "보관 기능이 제대로 안돼")
   const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw', KeyX: 'cw', KeyZ: 'ccw', Space: 'drop', KeyC: 'hold', ShiftLeft: 'hold', ShiftRight: 'hold', KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'cw' };
   const keyOf = e => KEY[e.code] || KEY[e.key];
-  const relAll = () => ['left', 'right', 'down'].forEach(a => R.input(a, false));
+  // 같은 동작을 여러 키로 누를 수 있어서(←와 A 등) 실제로 눌린 키를 기억 — 하나만 떼도 멈추던 문제 (2026-10-28)
+  const HOLDK = ['left', 'right', 'down'], held = new Map();
+  const relAll = () => { held.clear(); HOLDK.forEach(a => R.input(a, false)); };
   const kd = e => {
     if (e.target.closest?.('input,textarea') || document.querySelector('.modal.open')) return;
     if (e.metaKey || e.ctrlKey) { relAll(); return; }   // 맥 Cmd+화살표 등: keyup이 안 와서 키가 눌린 채 남던 문제 (2026-10-28)
@@ -2057,10 +2060,18 @@ async function playGear() {
     if (R.st.scene === 'ready' && (e.code === 'Digit1' || e.code === 'Digit2')) { e.preventDefault(); setMode(e.code === 'Digit2' ? 'rank' : 'normal'); R.input('cw', true); R.input('cw', false); return; }
     if (e.code === 'KeyP') { e.preventDefault(); if (R.st.scene === 'play') R.pause(); else R.resume(); return; }
     const a = keyOf(e); if (!a) { if (R.st.scene !== 'play' && !['Meta', 'Alt', 'Control', 'Tab', 'Escape', 'CapsLock', 'HangulMode', 'Process'].includes(e.key)) { e.preventDefault(); R.input('cw', true); } return; }   // 시작 전·멈춤: 아무 키(엔터 포함)나
-    e.preventDefault(); if (e.repeat) return;
+    e.preventDefault();
+    const fe = document.activeElement; if (fe?.matches?.('button') && fe.closest('#gamePlay')) fe.blur();   // 버튼에 포커스가 남아 스페이스가 그 버튼(다시 시작·방식 등)을 누르던 문제
+    if (HOLDK.includes(a)) { held.set(e.code, a); if (e.repeat && (R.st.scene !== 'play' || R.isHeld(a))) return; }   // 누른 걸 놓친 채(창 전환·Cmd 등) 계속 누르고 있으면 반복 신호로 다시 잡음
+    else if (e.repeat) return;
     R.input(a, true);
   };
-  const ku = e => { if (e.key === 'Meta' || e.key === 'Control') return relAll(); const a = keyOf(e); if (a) R.input(a, false); };
+  const ku = e => {
+    if (e.key === 'Meta' || e.key === 'Control') return relAll();
+    const a = keyOf(e); if (!a) return; e.preventDefault();
+    if (HOLDK.includes(a)) { held.delete(e.code); if ([...held.values()].includes(a)) return; }
+    R.input(a, false);
+  };
   document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
   // 터치 버튼: 누르고 있으면 좌우·아래는 계속
   $('#gr .gr-touch').addEventListener('pointerdown', e => {
@@ -2102,7 +2113,7 @@ async function playGear() {
   };
   scr.addEventListener('pointerup', tup); scr.addEventListener('pointercancel', tup);
   ov.addEventListener('pointerdown', e => { if (e.target.closest('[data-rank]')) return; if (over) { e.stopPropagation(); restart(); } });   // '순위 보기'는 다시 시작 대신 순위 창
-  const blur = () => { ['left', 'right', 'down'].forEach(a => R.input(a, false)); if (R.st.scene === 'play') R.pause(); };
+  const blur = () => { relAll(); if (R.st.scene === 'play') R.pause(); };
   window.addEventListener('blur', blur);
   // 아래 랭킹(친구·전체 1~5등) — 집에 가고 싶어!와 같은 모양
   function syncBest(v) { if (v == null || !isFinite(v)) return; const b = GEAR_MAX - v; if (b > 0 && b !== best) { best = b; store.set('gear_best', b); } }
