@@ -1845,17 +1845,10 @@ function fitHome() {
   t.style.paddingLeft = t.style.paddingRight = ''; h.style.translate = '';
   const a = h.getBoundingClientRect(), p = t.getBoundingClientRect(), r = g.getBoundingClientRect();
   if (!a.width || !r.width) return;
-  let L = Math.max(r.left, 8), R = Math.min(r.right, innerWidth - 8);
-  // 계단 오르기 넓은 화면(2026-10-28 하율 "위 버튼들이 너무 가운데에 치우쳐"): 오른쪽 내 기록 칸까지 포함한 폭(가운데 판 기준 좌우 대칭)으로 맞춤
-  const sd = g.classList.contains('sr-scr') && $('#srRec'), sr = sd && sd.offsetWidth ? sd.getBoundingClientRect() : null;
-  if (sr && sr.left > r.right) { R = Math.min(sr.right, innerWidth - 8); L = Math.max(8, r.left - (sr.right - r.right)); }
-  // 게임 칸이 좁으면(가로로 눕힌 폰의 1 to 25 등) 제목이 줄바꿈되며 깨짐 → 제목+나가기가 한 줄에 들어갈 폭은 확보 (2026-10-27)
-  const need = (t.querySelector('b')?.scrollWidth || 0) + (t.querySelector('.pbtns')?.offsetWidth || 0) + 24;
-  // 영상고 계단 오르기는 게임 화면(세로로 긴 캔버스)이 좁아 제목·랭킹·나가기가 다닥다닥 붙음(2026-10-28 하율) → 최소 폭 560px로 넓혀 버튼을 옆으로
-  const wantW = Math.max(need, g.classList.contains('sr-scr') ? 560 : 0);
-  if (R - L < wantW) { const c = (L + R) / 2; L = Math.max(8, c - wantW / 2); R = Math.min(innerWidth - 8, L + wantW); L = Math.max(8, R - wantW); }
-  const vert = a.bottom > p.top && a.top < p.bottom;   // 집 버튼과 제목 줄이 같은 높이일 때만 겹침 검사
-  t.style.paddingLeft = Math.max(0, Math.max(L, vert ? a.right + 12 : 0) - p.left) + 'px';
+  // 2026-10-28 하율 "랭킹·키 설정·나가기 버튼 모든 게임이 다 저 위치에": 게임 칸 폭과 상관없이 제목은 집 버튼 바로 오른쪽, 버튼 묶음은 화면 오른쪽 끝(집 버튼과 좌우 대칭 여백)
+  const vert = a.bottom > p.top && a.top < p.bottom;   // 집 버튼과 제목 줄이 같은 높이일 때만 집 버튼 오른쪽에서 시작
+  const L = vert ? a.right + 12 : Math.max(8, a.left), R = innerWidth - Math.max(8, a.left);
+  t.style.paddingLeft = Math.max(0, L - p.left) + 'px';
   t.style.paddingRight = Math.max(0, p.right - R) + 'px';
   if (!homeRO && window.ResizeObserver) { homeRO = new ResizeObserver(() => requestAnimationFrame(fitHome)); homeRO.observe(g); }
 }
