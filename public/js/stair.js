@@ -529,20 +529,20 @@ export function createStair(cv, o = {}) {
     }
   }
   function wind(kx, ky, face, k, seed) {
-    const back = -face, x0 = kx + back * 7;   // 등 쪽 몸 가장자리
-    const rows = 17;   // 2px 줄 17개 = 34px(캐릭터 키)
+    const back = -face, x0 = kx + back * 11;   // 가방 바깥(등 쪽)부터
+    const rows = 9;   // 2px 줄 9개 = 18px(몸통 높이만, 하율 "너무 커 → 확 줄여")
     for (let r = 0; r < rows; r++) {
-      const y = ky - 34 + r * 2 + 2;
+      const y = ky - 27 + r * 2;
       const bulge = Math.sin((r + .5) / rows * Math.PI);                         // 가운데가 가장 길게
       const n1 = hash(seed * 31 + r), n2 = hash(seed * 17 + r * 7 + 3);
-      const L = R((16 + bulge * 34 + n1 * 14) * k);                             // 줄 길이
+      const L = R((5 + bulge * 10 + n1 * 4) * k);                               // 줄 길이(예전의 약 1/3)
       if (L < 2) continue;
       const inner = R(L * (.35 + n2 * .15)), mid = R(L * .72);
-      const off = R(r * .9);   // 아래 줄일수록 뒤에서 시작 → 비스듬히 아래·뒤로 퍼짐
+      const off = R(r * .5);   // 아래 줄일수록 뒤에서 시작 → 비스듬히 아래·뒤로 퍼짐
       const seg = (from, to, c) => { if (to <= from) return; from += off; to += off; g.fillStyle = c; g.fillRect(back > 0 ? x0 + from : x0 - to, y, to - from, 2); };
       seg(0, inner, '#ffffff'); seg(inner, mid, '#9fd8ff'); seg(mid, L, '#3d8ff0');
-      if (r % 3 === 1 && L > 8) { g.fillStyle = '#3d8ff0'; const d = L + off + 2 + R(n2 * 5); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y, 2, 2); }   // 끝 알갱이
-      if (r % 4 === 2 && L > 12) { g.fillStyle = '#9fd8ff'; const d = L + off + 6 + R(n1 * 6); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y - 1, 2, 2); }
+      if (r % 3 === 1 && L > 6) { g.fillStyle = '#3d8ff0'; const d = L + off + 1 + R(n2 * 3); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y, 2, 2); }   // 끝 알갱이
+      if (r % 4 === 2 && L > 9) { g.fillStyle = '#9fd8ff'; const d = L + off + 3 + R(n1 * 3); g.fillRect(back > 0 ? x0 + d : x0 - d - 2, y - 1, 2, 2); }
     }
   }
   function frame(now) {
