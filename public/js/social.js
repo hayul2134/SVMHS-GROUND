@@ -1846,6 +1846,9 @@ function fitHome() {
   const a = h.getBoundingClientRect(), p = t.getBoundingClientRect(), r = g.getBoundingClientRect();
   if (!a.width || !r.width) return;
   let L = Math.max(r.left, 8), R = Math.min(r.right, innerWidth - 8);
+  // 계단 오르기 넓은 화면(2026-10-28 하율 "위 버튼들이 너무 가운데에 치우쳐"): 오른쪽 내 기록 칸까지 포함한 폭(가운데 판 기준 좌우 대칭)으로 맞춤
+  const sd = g.classList.contains('sr-scr') && $('#srRec'), sr = sd && sd.offsetWidth ? sd.getBoundingClientRect() : null;
+  if (sr && sr.left > r.right) { R = Math.min(sr.right, innerWidth - 8); L = Math.max(8, r.left - (sr.right - r.right)); }
   // 게임 칸이 좁으면(가로로 눕힌 폰의 1 to 25 등) 제목이 줄바꿈되며 깨짐 → 제목+나가기가 한 줄에 들어갈 폭은 확보 (2026-10-27)
   const need = (t.querySelector('b')?.scrollWidth || 0) + (t.querySelector('.pbtns')?.offsetWidth || 0) + 24;
   // 영상고 계단 오르기는 게임 화면(세로로 긴 캔버스)이 좁아 제목·랭킹·나가기가 다닥다닥 붙음(2026-10-28 하율) → 최소 폭 560px로 넓혀 버튼을 옆으로
