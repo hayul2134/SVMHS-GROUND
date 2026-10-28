@@ -92,6 +92,14 @@ const OPEN = {
 
 const ROUTES = {
   /* ----- 대시보드 ----- */
+  // 탭 배지(신고·의견)만 가볍게 — 1분마다 부르는 곳. 예전엔 dash 전체(14일 통계 등)를 매분 불러 하루 D1 읽기 ~55만 행(2026-10-29)
+  'GET badges': async ({ db }) => {
+    const r = await db.batch([
+      db.prepare('SELECT COUNT(*) AS n FROM reports WHERE done = 0'),
+      db.prepare('SELECT COUNT(*) AS n FROM feedback WHERE done = 0 AND rd = 0'),
+    ]);
+    return json({ counts: { openReports: r[0].results[0].n, openFeedback: r[1].results[0].n } });
+  },
   'GET dash': async ({ env, db }) => {
     const t0 = kstStart(), day = kstYmd(), now = Date.now();
     const one = sql => db.prepare(sql);

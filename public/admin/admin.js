@@ -122,9 +122,10 @@ function start() {
   if (!started) { started = true; window.addEventListener('hashchange', route); refreshBadge(); setInterval(refreshBadge, 60e3); }
   route();
 }
-async function refreshBadge() {
+async function refreshBadge(full) {
+  if (!full && document.hidden) return null;   // 안 보는 탭은 쉼 (D1 읽기 절약)
   try {
-    const d = await call('dash');
+    const d = await call(full ? 'dash' : 'badges');
     const b = $('#repBadge'); b.hidden = !d.counts.openReports; b.textContent = d.counts.openReports;
     const f = $('#fbBadge'); f.hidden = !d.counts.openFeedback; f.textContent = d.counts.openFeedback;
     return d;
