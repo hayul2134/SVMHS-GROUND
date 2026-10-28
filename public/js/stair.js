@@ -165,7 +165,7 @@ function skyAt(f) {
 }
 const kindOf = i => i === FLOOR * ROOF ? 'roof' : i > 0 && i % FLOOR === 0 ? 'land' : i < FLOOR * ROOF ? 'school' : i < FLOOR * (ROOF + 3) ? 'sky' : i < FLOOR * (ROOF + 5) ? 'dusk' : 'space';
 // 층 도착 한 줄(2026-10-28 하율 "올라갈 때마다 서울영상고 관련 정보로 특색 있게") — 층 구성은 나무위키 '서울영상고등학교'의 학교 시설 설명 참고(3·4층은 교실로 꾸밈)
-const FLOOR_MSG = ['', '교무실 앞은 조용히!', '이제 3층… 아직 멀었다', '다리가 후들후들', '1학년 교실·과학실 층', '기숙사 층이에요, 쉿!', '옥상까지 딱 한 층!', '탐정이 뭔가 찾고 있다…'];
+const FLOOR_MSG = ['', '교무실 앞은 조용히!', '이제 3층… 아직 멀었다', '다리가 후들후들', '1학년 교실·과학실 층', '음악실·체육관 층, 쿵쾅쿵쾅!', '옥상까지 딱 한 층!', '탐정이 뭔가 찾고 있다…'];
 
 export function createStair(cv, o = {}) {
   const g = cv.getContext('2d');
@@ -174,9 +174,11 @@ export function createStair(cv, o = {}) {
   let spr = null, sprF = null;
   const loadSpr = () => { spr = buildSprites(o.char || loadChar()); sprF = {}; for (const k of ['run1', 'run2', 'jump', 'dead']) { sprF[k] = flipCv(spr[k]); sprF[k + '_rim'] = flipCv(spr[k + '_rim']); } };
   loadSpr();
+  const GH = new Map();   // 캐릭터 그림 → 파란 실루엣(잔상용)
+  const ghostOf = (S, fr) => { const src = S[fr], k = src; let c = GH.get(k); if (!c) { c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const q = c.getContext('2d'); q.drawImage(src, 0, 0); q.globalCompositeOperation = 'source-in'; q.fillStyle = '#2f80f0'; q.fillRect(0, 0, c.width, c.height); GH.set(k, c); } return c; };
   let raf = 0, last = 0, alive = true, sound = !!o.sound, ac = null, rnd = rng(o.seed ?? (Date.now() & 0xffff));
   const st = { scene: 'ready', steps: 0, turns: 0, ms: 0, gauge: 1, floor: 0, face: 1, why: '', shown: false, fast: 0, endAt: 0 };
-  let overT = 0, lowT = 0, recent = [], xs = [], run = 0, runDir = 1, px = 0, py = 0, fromX = 0, fromY = 0, moveT = 1, fall = null, shake = 0, parts = [], camX = 0, camY = 0, t = 0, flash = 0, stepN = 0, shoot = null;
+  let lastStepAt = 0, overT = 0, lowT = 0, recent = [], xs = [], run = 0, runDir = 1, px = 0, py = 0, fromX = 0, fromY = 0, moveT = 1, fall = null, shake = 0, parts = [], camX = 0, camY = 0, t = 0, flash = 0, stepN = 0, shoot = null;
   const stars = Array.from({ length: 60 }, (_, i) => [hash(i * 3 + 1) * W, hash(i * 3 + 2) * 400, hash(i * 3 + 3)]);
 
   function more(n) {   // 같은 방향으로 1~6칸 이어지다 꺾임(처음 한 칸은 항상 오른쪽 → 첫 '오르기'가 실패하지 않게)
@@ -222,7 +224,7 @@ export function createStair(cv, o = {}) {
       fall = { x: xs[i] + st.face * .9, y: i, vx: st.face * .9, vy: -1.6, r: 0 };
       shake = 4; beep(300, .35, 'sawtooth', .05, 70); end('miss'); return;
     }
-    st.steps++; px = nx; py = st.steps; moveT = 0; stepN++;
+    st.steps++; px = nx; py = st.steps; moveT = 0; stepN++; lastStepAt = performance.now();
     const now = performance.now(); recent.push(now); if (recent.length > 8) recent.shift();
     st.fast = recent.length === 8 && now - recent[0] < 1000 ? 1 : 0;   // 1초에 8칸 넘게 = 달리는 중(등 뒤 속도선)
     st.gauge = Math.min(1, st.gauge + GAIN);
@@ -283,14 +285,18 @@ export function createStair(cv, o = {}) {
     box(x, b - 3, 34, 3, '#2a2a36');
     label(x + 17, b - 58, nm);
   }
+  // 반 문 색(2026-10-28 하율): 1·2반 주황 · 3·4반 초록 · 5·6반 파랑 / 특별실은 회색
+  const CLS_C = [['#ffb36b', '#e08a3a'], ['#6fd08a', '#46b06a'], ['#7fa8e0', '#5d86c0']];
   function roomDoor(x, b, nm, icon) {   // 교실 문 24×46 + 이름표 + 창에 아이콘
-    frameBox(x, b - 46, 24, 46, '#7fa8e0'); box(x, b - 3, 24, 3, '#5d86c0');
+    const m = /^\d-(\d)$/.exec(nm), [dc, dd] = m ? CLS_C[Math.min(2, (m[1] - 1) >> 1)] : ['#b9c1d3', '#959eb3'];
+    frameBox(x, b - 46, 24, 46, dc); box(x, b - 3, 24, 3, dd);
     frameBox(x + 4, b - 42, 16, 12, '#cfeaff'); box(x + 5, b - 41, 3, 2, '#ffffff');
     box(x + 18, b - 22, 3, 4, '#ffd25e'); box(x + 18, b - 19, 3, 1, OL);
     if (icon === 'cross') { box(x + 10, b - 40, 4, 8, '#ff5a5a'); box(x + 8, b - 38, 8, 4, '#ff5a5a'); }
     if (icon === 'flask') { box(x + 11, b - 41, 2, 3, OL); box(x + 9, b - 38, 6, 6, OL); box(x + 10, b - 36, 4, 3, '#62d9b8'); }
     if (icon === 'paint') { box(x + 8, b - 40, 4, 4, '#ff8f9a'); box(x + 12, b - 38, 4, 4, '#ffd25e'); box(x + 9, b - 35, 4, 3, '#7cc4ff'); }
     if (icon === 'moon') { box(x + 10, b - 40, 4, 7, '#ffd25e'); box(x + 12, b - 40, 3, 5, '#cfeaff'); }
+    if (icon === 'note') { box(x + 13, b - 41, 1, 7, OL); box(x + 13, b - 41, 4, 2, OL); box(x + 10, b - 35, 4, 3, OL); }   // 음표
     label(x + 12, b - 58, nm);
   }
   function secret(x, b) {   // 1.5층 '비밀의 방' — 작고 낡은 문 + 물음표
@@ -323,18 +329,56 @@ export function createStair(cv, o = {}) {
     box(x + 3, y + 17, 12, 1, '#ffffff'); box(x + 5, y + 20, 8, 1, '#ffffff');
   }
   function slippers(x, b) { box(x, b - 3, 6, 3, OL); box(x + 1, b - 2, 4, 1, '#ff8fb0'); box(x + 8, b - 3, 6, 3, OL); box(x + 9, b - 2, 4, 1, '#ff8fb0'); }
-  // 층마다 특색(구간 k = 0 아래 · 1 가운데 · 2 위)
+  // 층마다 특색(구간 k = 0 맨 아래 ~ 4 맨 위, 구간 높이 200) — 나무위키 '서울영상고등학교' 시설 설명 참고(3·4층 교실, 6층 음악실·체육관은 하율 지정)
+  const cls = (g2, a, b2, k) => (b, at) => { roomDoor(at(1, 24), b, g2 + '-' + a); roomDoor(at(-1, 24), b, g2 + '-' + b2); };
   function floorDeco(fl, k, b, at) {
     const D = {
-      0: [() => { bigDoor(at(1, 34), b, '대강당'); shoes(at(-1, 34), b); }, () => { books(at(1, 36), b); motto(at(-1, 52), b - 120); }, () => { secret(at(1, 18), b); clock(at(-1, 13), b - 104); }],
-      1: [() => { roomDoor(at(1, 24), b, '교무실'); board(at(-1, 36), b - 120); }, () => { gearShelf(at(1, 56), b); fireX(at(-1, 8), b - 18); }, () => { horizon(at(1, 56), b); clock(at(-1, 13), b - 104); }],
-      2: [() => { roomDoor(at(1, 24), b, '2-1'); poster(at(-1, 18), b - 120, '#ff8f9a'); }, () => { roomDoor(at(1, 24), b, '2-2'); fireX(at(-1, 8), b - 18); }, () => { roomDoor(at(1, 24), b, '2-3'); board(at(-1, 36), b - 130); }],
-      3: [() => { roomDoor(at(1, 24), b, '3-1'); poster(at(-1, 18), b - 120, '#7cc4ff'); }, () => { roomDoor(at(1, 24), b, '3-2'); clock(at(-1, 13), b - 104); }, () => { roomDoor(at(1, 24), b, '3-3'); poster(at(-1, 18), b - 130, '#ffd25e'); }],
-      4: [() => { roomDoor(at(1, 24), b, '1-1'); fireX(at(-1, 8), b - 18); }, () => { roomDoor(at(1, 24), b, '과학실', 'flask'); roomDoor(at(-1, 24), b, '미술실', 'paint'); }, () => { roomDoor(at(1, 24), b, '보건실', 'cross'); clock(at(-1, 13), b - 104); }],
-      5: [() => { roomDoor(at(1, 24), b, '기숙사 601', 'moon'); slippers(at(1, 24) + 4, b); }, () => { roomDoor(at(1, 24), b, '602', 'moon'); board(at(-1, 36), b - 120); }, () => { roomDoor(at(1, 24), b, '야자실'); clock(at(-1, 13), b - 104); }],
-      6: [() => { roomDoor(at(1, 24), b, '기숙사 701', 'moon'); slippers(at(1, 24) + 4, b); }, () => { roomDoor(at(1, 24), b, '702', 'moon'); fireX(at(-1, 8), b - 18); }, () => { roomDoor(at(1, 24), b, '옥상 ↑'); clock(at(-1, 13), b - 104); }],
+      0: [() => { bigDoor(at(1, 34), b, '대강당'); shoes(at(-1, 34), b); }, () => { books(at(1, 36), b); motto(at(-1, 52), b - 112); }, () => { secret(at(1, 18), b); clock(at(-1, 13), b - 108); }, () => { fireX(at(-1, 8), b - 18); board(at(1, 36), b - 112); }, () => { poster(at(1, 18), b - 112, '#7cc4ff'); }],
+      1: [() => { roomDoor(at(1, 24), b, '교무실'); board(at(-1, 36), b - 112); }, () => { gearRoom(at(1, 70), b); }, () => { horizon(at(1, 56), b); clock(at(-1, 13), b - 108); }, () => { fireX(at(-1, 8), b - 18); poster(at(1, 18), b - 112, '#ff8f9a'); }, () => { board(at(1, 36), b - 112); }],
+      2: [cls(2, 1, 2), cls(2, 3, 4), cls(2, 5, 6), () => { poster(at(1, 18), b - 112, '#ffd25e'); fireX(at(-1, 8), b - 18); }, () => { clock(at(1, 13), b - 108); }],
+      3: [cls(3, 1, 2), cls(3, 3, 4), cls(3, 5, 6), () => { board(at(1, 36), b - 112); fireX(at(-1, 8), b - 18); }, () => { poster(at(1, 18), b - 112, '#62d9b8'); }],
+      4: [cls(1, 1, 2), cls(1, 3, 4), cls(1, 5, 6), () => { roomDoor(at(1, 24), b, '과학실', 'flask'); roomDoor(at(-1, 24), b, '미술실', 'paint'); }, () => { roomDoor(at(1, 24), b, '보건실', 'cross'); roomDoor(at(-1, 24), b, '생활안전부'); }],
+      5: [() => { roomDoor(at(1, 24), b, '음악실', 'note'); piano(at(-1, 30), b); }, () => { gymDoor(at(1, 40), b); }, () => { hoop(at(1, 26), b - 150); ball(at(-1, 10), b); clock(at(-1, 13), b - 108); }, () => { notes(at(1, 30), b - 112); fireX(at(-1, 8), b - 18); }, () => { board(at(1, 36), b - 112); }],
+      6: [() => { roomDoor(at(1, 24), b, '기숙사 701', 'moon'); slippers(at(1, 24) + 4, b); }, () => { roomDoor(at(1, 24), b, '702', 'moon'); fireX(at(-1, 8), b - 18); }, () => { roomDoor(at(1, 24), b, '야자실'); clock(at(-1, 13), b - 108); }, () => { board(at(1, 36), b - 112); }, () => { roomDoor(at(1, 24), b, '옥상 ↑'); }],
     }[fl];
-    D?.[k]?.();
+    D?.[k]?.(b, at);
+  }
+  function piano(x, b) {   // 업라이트 피아노 30×26
+    frameBox(x, b - 26, 30, 26, '#3b3b49'); box(x + 2, b - 14, 26, 4, '#ffffff'); for (let i = 0; i < 6; i++) box(x + 4 + i * 4, b - 14, 2, 2, OL);
+    box(x + 2, b - 24, 26, 7, '#5b6278'); box(x + 3, b - 23, 6, 1, '#9aa3b5'); box(x + 2, b - 4, 3, 4, OL); box(x + 25, b - 4, 3, 4, OL);
+  }
+  function notes(x, y) { for (const [dx, dy] of [[0, 6], [10, 0], [20, 8]]) { box(x + dx + 3, y + dy, 1, 7, OL); box(x + dx + 3, y + dy, 3, 2, OL); box(x + dx, y + dy + 6, 4, 3, OL); } }
+  function gymDoor(x, b) {   // 체육관 큰 문 40×50 + 농구공 표시
+    frameBox(x, b - 50, 40, 50, '#d9b48a'); box(x + 19, b - 50, 2, 50, OL); for (let y = b - 46; y < b - 4; y += 6) { box(x + 2, y, 16, 1, '#c49a6c'); box(x + 22, y, 16, 1, '#c49a6c'); }
+    box(x + 15, b - 26, 2, 5, OL); box(x + 23, b - 26, 2, 5, OL);
+    label(x + 20, b - 62, '체육관');
+  }
+  function hoop(x, y) {   // 농구 골대(벽) 26×22
+    frameBox(x, y, 26, 16, '#ffffff'); frameBox(x + 8, y + 6, 10, 6, '#ffffff'); box(x + 6, y + 16, 14, 2, '#ff8a5b');
+    for (let i = 0; i < 4; i++) box(x + 7 + i * 4, y + 18, 1, 5, '#ffffff');
+  }
+  function ball(x, b) { box(x + 1, b - 10, 8, 10, OL); box(x, b - 9, 10, 8, OL); box(x + 2, b - 9, 6, 8, '#ff8a5b'); box(x + 1, b - 8, 8, 6, '#ff8a5b'); box(x + 4, b - 10, 2, 10, OL); box(x, b - 6, 10, 1, OL); }
+  function gearRoom(x, b) {   // 기자재실(2026-10-28 하율 "실제 촬영 장비처럼 진열") 70×52: 철제 3단 진열장 + 옆에 삼각대·조명 스탠드
+    // 진열장 50×52
+    frameBox(x, b - 52, 50, 52, '#c3cbd9'); box(x + 1, b - 51, 48, 50, '#e3e8f0');
+    for (const yy of [-36, -19]) { box(x, b + yy, 50, 2, '#9aa3b5'); box(x, b + yy + 2, 50, 1, OL); }
+    // 위 칸: 시네마 카메라(손잡이·렌즈·빨간 링) · 미러리스 · 캠코더
+    box(x + 3, b - 47, 14, 9, OL); box(x + 4, b - 46, 12, 7, '#3b3b49'); box(x + 6, b - 50, 8, 3, OL); box(x + 17, b - 46, 6, 7, OL); box(x + 18, b - 45, 4, 5, '#2a2a36'); box(x + 18, b - 43, 4, 1, '#ff5a5a'); box(x + 5, b - 45, 3, 2, '#5ab8ff');
+    box(x + 26, b - 45, 9, 7, OL); box(x + 27, b - 44, 7, 5, '#5b6278'); box(x + 29, b - 47, 3, 2, OL); box(x + 35, b - 44, 3, 5, OL);
+    box(x + 40, b - 44, 8, 6, OL); box(x + 41, b - 43, 6, 4, '#9aa3b5'); box(x + 39, b - 45, 3, 2, OL); box(x + 42, b - 42, 2, 2, '#5ab8ff');
+    // 가운데 칸: 렌즈 5개(길이·띠 색 다름) + 배터리 3개(초록 불)
+    [[3, 10, '#ff5a5a'], [8, 13, '#ffd25e'], [13, 8, '#ffffff'], [18, 15, '#ff5a5a'], [23, 9, '#62d9b8']].forEach(([dx, h, c]) => { box(x + dx, b - 22 - h, 4, h, OL); box(x + dx + 1, b - 21 - h, 2, h - 2, '#3b3b49'); box(x + dx + 1, b - 22 - h + 2, 2, 1, c); });
+    for (let i = 0; i < 3; i++) { box(x + 31 + i * 6, b - 28, 5, 6, OL); box(x + 32 + i * 6, b - 27, 3, 4, '#5b6278'); box(x + 33 + i * 6, b - 27, 1, 1, '#5ad17a'); }
+    // 아래 칸: 하드 케이스 2개(손잡이·잠금) + 슬레이트
+    box(x + 2, b - 14, 20, 12, OL); box(x + 3, b - 13, 18, 10, '#3b3b49'); box(x + 9, b - 16, 6, 2, OL); box(x + 5, b - 9, 2, 2, '#c3cbd9'); box(x + 17, b - 9, 2, 2, '#c3cbd9');
+    box(x + 24, b - 12, 14, 10, OL); box(x + 25, b - 11, 12, 8, '#9aa3b5'); box(x + 29, b - 14, 4, 2, OL);
+    box(x + 40, b - 11, 9, 8, OL); box(x + 41, b - 10, 7, 6, '#ffffff'); box(x + 41, b - 10, 7, 2, OL); box(x + 42, b - 10, 2, 2, '#ffffff'); box(x + 46, b - 10, 1, 2, '#ffffff');
+    // 바닥: 삼각대(헤드·세 다리)
+    box(x + 55, b - 40, 6, 3, OL); box(x + 57, b - 37, 2, 10, OL); box(x + 52, b - 27, 12, 2, OL);
+    for (let i = 0; i < 26; i++) { box(x + 57 - R(i * .22), b - 25 + i, 1, 1, OL); box(x + 58 + R(i * .22), b - 25 + i, 1, 1, OL); box(x + 58, b - 25 + i, 1, 1, '#5b6278'); }
+    // 조명 스탠드 + LED 판
+    box(x + 66, b - 48, 2, 48, OL); box(x + 62, b - 2, 10, 2, OL); box(x + 62, b - 54, 10, 8, OL); box(x + 63, b - 53, 8, 6, '#fff1b8');
+    label(x + 25, b - 64, '기자재실');
   }
   function ginkgo(x, by) {   // 은행나무(교목) 화분 — 가을이라 노란 잎, 하나씩 떨어짐
     frameBox(x, by - 8, 12, 8, '#c98f55'); box(x + 5, by - 22, 2, 14, '#7d4e2a');
@@ -455,12 +499,12 @@ export function createStair(cv, o = {}) {
         g.fillStyle = '#9cc4ee'; g.fillRect(0, base - 26, W, 3);   // 허리 띠
         g.fillStyle = '#e3d6bb'; g.fillRect(0, base - 23, W, 23);   // 아래 벽
         // 한 층(1000px)을 300px 구간 3개로: 구간마다 그 층의 특색 장소(문·소품) + 창문 (왼쪽·오른쪽 번갈아, 계단 뒤 벽)
-        for (let k = 0; k < 3; k++) {
-          const b = base - k * 300; if (b < top0 - 300 || b - 300 > H) continue;
+        // 한 층(1000px)을 200px 구간 5개로: 구간마다 그 층의 장소(문·소품, 왼쪽·오른쪽) + 창문 하나(번갈아)
+        for (let k = 0; k < 5; k++) {
+          const b = base - k * 200; if (b < top0 - 220 || b - 220 > H) continue;
           const flip = (fl + k) % 2 ? -1 : 1, at = (sd, w) => (sd * flip < 0 ? 5 : W - w - 5);
           floorDeco(fl, k, b, at);
-          win(at(-1, 32), b - 214);
-          win(at(1, 32), b - 280);
+          win(at(-1, 32), b - 186);
         }
         g.fillStyle = '#c9b9a0'; g.fillRect(0, base, W, 4); g.fillStyle = OL; g.fillRect(0, base, W, 1); g.fillRect(0, base + 4, W, 1);   // 층 바닥
         g.restore();
@@ -523,11 +567,18 @@ export function createStair(cv, o = {}) {
       const lift = moveT < 1 ? R(Math.sin(moveT * Math.PI) * 4) : 0;
       const kx = sx(cx * DX), ky = sy(-cy * DY) - lift;
       const fr = st.why === 'time' ? 'dead' : moveT < .6 ? 'jump' : st.scene === 'play' || st.scene === 'pause' ? (stepN % 2 ? 'run1' : 'run2') : (Math.floor(t * 2) % 2 ? 'run1' : 'run2');
-      if (st.fast && st.scene === 'play') {   // 빠르게 오르는 중: 등 뒤 픽셀 속도선
-        g.fillStyle = '#ffffff';
-        for (let k = 0; k < 3; k++) { const l = 4 + ((stepN + k * 3) % 5) * 2, yy = ky - 8 - k * 8; g.fillRect(st.face > 0 ? kx - 18 - l : kx + 18, yy, l, 1); }
+      // 오를 때 뒤에 파란 잔상(2026-10-28 하율 "바람 이펙트가 잘 안 보임 → 무한의 계단처럼, 파란색으로"): 지나온 칸마다 캐릭터 모양 파란 그림자 3개 + 빠르면 굵은 파란 속도선
+      if (st.scene === 'play' || st.scene === 'pause') {
+        const n = st.fast ? 3 : 2, ag = Math.max(0, 1 - (performance.now() - lastStepAt) / 520);   // 마지막으로 오른 뒤 0.52초 동안
+        for (let k = n; k >= 1 && ag > 0; k--) {
+          const j = st.steps - k; if (j < 0) continue;
+          const gx = sx(xs[j] * DX), gy = sy(-j * DY);
+          g.globalAlpha = Math.min(1, ag * 1.4) * (0.85 - k * 0.2); g.save(); g.translate(gx, gy); g.scale(CS, CS); g.drawImage(ghostOf(S, fr), -SPR_W / 2, -SPR_H + 1); g.restore();
+        }
+        g.globalAlpha = 1;
+        if (st.fast && ag > 0) { g.fillStyle = '#3d8ff0'; for (let k = 0; k < 3; k++) { const l = 6 + ((stepN + k * 3) % 4) * 3, yy = ky - 10 - k * 9; g.fillRect(st.face > 0 ? kx - 18 - l : kx + 18, yy, l, 2); } }
       }
-      g.save(); g.translate(kx, ky); g.scale(CS, CS); g.drawImage(S[fr], -SPR_W / 2, -SPR_H + 1);   // 흰 테두리 없이 g.restore();
+      g.save(); g.translate(kx, ky); g.scale(CS, CS); g.drawImage(S[fr], -SPR_W / 2, -SPR_H + 1); g.restore();   // 흰 테두리 없이
       if (st.why === 'time') {   // 지각: 머리 위 땀·ZZ 대신 '!'
         const hy = R(ky - SPR_H * CS); g.fillStyle = OL; g.fillRect(kx - 1, hy - 9, 3, 6); g.fillRect(kx - 1, hy - 2, 3, 2); g.fillStyle = '#ff5a5a'; g.fillRect(kx, hy - 8, 1, 4);
       }
