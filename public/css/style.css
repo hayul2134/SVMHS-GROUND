@@ -5494,3 +5494,8 @@ html.rxs .rx-b{display:none!important}
 .rank li.rk-flash{animation:rkFlash 1.4s ease-out}
 @keyframes rkFlash{0%,30%{transform:scale(1.03);filter:brightness(1.08)}100%{transform:none;filter:none}}
 @media (prefers-reduced-motion:reduce){.rank li.rk-flash{animation:none}}
+
+/* 게임 위 줄 '랭킹' 버튼 (2026-10-28 하율 "랭킹을 바로 볼 수 있는 버튼 모든 게임에") — 나가기 왼쪽, 좁으면 트로피만 */
+.pbtns{display:inline-flex;gap:8px;flex:none}
+.prank .sic{width:20px;height:20px;stroke-width:1.7}
+@media (max-width:420px){.prank span{display:none}.prank{padding:8px 10px}}

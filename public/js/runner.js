@@ -964,7 +964,7 @@ export function createRunner(canvas, char, opt = {}) {
   function frame(t) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
-    if (document.hidden) { last = t; return; }
+    if (document.hidden || opt.frozen?.()) { last = t; return; }
     const dt = Math.min(.1, (t - (last || t)) / 1000); last = t;
     acc += dt;
     while (acc >= STEP) { update(STEP); acc -= STEP; }

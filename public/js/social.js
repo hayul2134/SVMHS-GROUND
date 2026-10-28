@@ -1637,7 +1637,7 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   homeRO?.disconnect(); homeRO = null; requestAnimationFrame(fitHome);
@@ -1654,7 +1654,7 @@ function fitHome() {
   if (!a.width || !r.width) return;
   let L = Math.max(r.left, 8), R = Math.min(r.right, innerWidth - 8);
   // 게임 칸이 좁으면(가로로 눕힌 폰의 1 to 25 등) 제목이 줄바꿈되며 깨짐 → 제목+나가기가 한 줄에 들어갈 폭은 확보 (2026-10-27)
-  const need = (t.querySelector('b')?.scrollWidth || 0) + (t.querySelector('.pquit')?.offsetWidth || 0) + 24;
+  const need = (t.querySelector('b')?.scrollWidth || 0) + (t.querySelector('.pbtns')?.offsetWidth || 0) + 24;
   if (R - L < need) { const c = (L + R) / 2; L = Math.max(8, c - need / 2); R = Math.min(innerWidth - 8, L + need); L = Math.max(8, R - need); }
   const vert = a.bottom > p.top && a.top < p.bottom;   // 집 버튼과 제목 줄이 같은 높이일 때만 겹침 검사
   t.style.paddingLeft = Math.max(0, Math.max(L, vert ? a.right + 12 : 0) - p.left) + 'px';
@@ -1667,12 +1667,14 @@ addEventListener('resize', () => { if (document.body.classList.contains('playing
 document.addEventListener('click', e => { if (e.target.closest('[data-go]') && document.body.classList.contains('playing')) endPlay(); });
 // 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
 function endPlay() { unfitHome(); quitGame?.(); quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden) endPlay(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
 
 // 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
 const RE_BTN = `<button class="prestart" type="button" data-restart aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<kbd>R</kbd></button>`;
 const RE_ROW = `<div class="prow">${RE_BTN}</div>`;
 document.addEventListener('click', e => { if (e.target.closest('[data-restart]')) restartGame(); });
+// 게임 중 위 줄 '랭킹'(2026-10-28 하율 "랭킹을 바로 볼 수 있는 버튼 모든 게임에") — 열기 전에 하던 판을 멈춤(기자재 정리!는 멈춤 화면, 집에 가고 싶어!는 창이 닫힐 때까지 정지)
+document.addEventListener('click', e => { if (e.target.closest('.prank')) window.dispatchEvent(new Event('blur')); }, true);
 // 모든 게임 공통 '다시 시작'(2026-10-27 하율 "모든 게임에 재시작 버튼"): 게임 화면 위 나가기 옆 — 하던 판을 버리고 같은 게임을 처음부터
 // (연타로 시작 티켓 한도(10분 60번)를 쓰지 않게 0.8초 안 연타는 무시, 게임 안에서 연 창은 닫음)
 let curGame = '', reAt = 0;
@@ -2166,6 +2168,7 @@ async function playHome() {
   let over = false, deadAt = 0, runNo = 0, choosing = false, goTicket = null;
   const touchy = matchMedia('(pointer:coarse)').matches;
   const R = RUN.createRunner(cv, char, {
+    frozen: () => !!document.querySelector('.modal.open'),   // 랭킹 등 창이 떠 있는 동안 멈춤 (2026-10-28)
     sound, best: () => best, sfx2: ffOn('home-sfx', isDev(S.me)),
     onStart() { ov.hidden = true; ov.classList.remove('dead', 'win', 'again'); $('#hr').classList.add('on'); closeDress(); },
     onReady() {   // 집에서 나와 출발 자리에 섬 → 입력하면 다시 출발
