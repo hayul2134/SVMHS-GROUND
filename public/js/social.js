@@ -56,6 +56,7 @@ async function call(path, body) {
   try { j = await r.json(); } catch {}
   if (!r.ok) {
     if (r.status === 401 && S.me) { S.me = null; paintBadges(); }
+    if (r.status === 503 && j.limit) ctx?.dbDown?.(j.error);   // DB 하루 한도 — 사이트는 살리고 안내(2026-10-29)
     const e = new Error(j.error || '잠시 후 다시 시도해 주세요'); e.status = r.status; throw e;
   }
   if (j.mis) msResult(j.mis);

@@ -6016,3 +6016,13 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .av.xs .dot{width:10px;height:10px;border-width:2px;right:-3px;bottom:-3px}
 .tcc-u a .av.xs .dot,.gtop .av.xs .dot,.ggrid .gtop .av .dot{width:8px;height:8px;border-width:1.5px;right:-3px;bottom:-3px}
 .tcc-u a .av,.tch-u a .av{overflow:visible;max-width:none}   /* '.tcc-u a span'(이름 말줄임)의 overflow:hidden이 사진(span.av)에도 걸려 점이 원 안으로 잘려 얼굴을 덮던 원인 */
+/* DB 멈춤 안내 띠(2026-10-29) — 급식·시간표는 그대로, 소셜만 쉼. 소개·로그인 화면 위에도 보이게 */
+.dbdown-bar{position:fixed;left:50%;top:max(10px,env(safe-area-inset-top));transform:translateX(-50%);z-index:400;display:flex;align-items:center;gap:10px;width:min(640px,calc(100vw - 20px));padding:10px 10px 10px 14px;border:2.5px solid #2b3550;border-radius:16px;background:#fff7e0;color:#2b3550;box-shadow:3px 4px 0 #2b3550;animation:dbdIn .35s cubic-bezier(.2,.9,.3,1.2)}
+.dbdown-bar p{flex:1;margin:0;display:flex;flex-direction:column;gap:2px;min-width:0}
+.dbdown-bar b{font-size:14.5px}
+.dbdown-bar span{font-size:12.5px;color:#4a5370;word-break:keep-all}
+.dbdown-bar [data-dbd-go]{display:none;white-space:nowrap}
+.dbdown-bar.pre [data-dbd-go]{display:inline-flex}
+.dbd-x{flex:none;width:30px;height:30px;border:0;border-radius:50%;background:transparent;font-size:20px;line-height:1;color:#4a5370;cursor:pointer}
+@keyframes dbdIn{from{opacity:0;transform:translate(-50%,-12px)}}
+@media (prefers-reduced-motion:reduce){.dbdown-bar{animation:none}}

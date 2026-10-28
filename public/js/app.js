@@ -2232,6 +2232,21 @@ let inPk = 'home';
 }
 // '구경하기' 화살표: 소개 화면 안에서 부드럽게 내려감 (주소 해시는 안 바꿈)
 $('#intro').addEventListener('click', e => { const a = e.target.closest('[data-intro-go]'); if (!a) return; e.preventDefault(); $('#' + a.dataset.introGo).scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+/* DB가 멈췄을 때(무료 하루 한도 등, 2026-10-29 하율 "학생들이 쓰는 사이트라 절대 꺼지면 안 돼"):
+   급식·시간표·학사일정·시계는 DB 없이 나이스에서 바로 오니 그대로 보여 줌 → 위에 안내 띠 하나.
+   로그인 전 기기는 로그인을 못 하니, 띠의 버튼으로 소개를 닫고 급식·시간표를 볼 수 있게(이번 방문만) */
+let dbDownShown = false;
+SOC.dbDown = msg => {
+  if (dbDownShown) { if (introOn()) $('#dbDown')?.classList.add('pre'); return; }
+  dbDownShown = true; HTML.classList.add('dbdown');
+  const b = document.createElement('div'); b.id = 'dbDown'; b.className = 'dbdown-bar' + (introOn() ? ' pre' : ''); b.setAttribute('role', 'status');
+  b.innerHTML = `<p><b>친구·게임 기록·DM이 잠깐 쉬는 중이에요</b><span>${esc(String(msg || '').replace(/^.*?\)\.?\s*/, '') || '곧 다시 돼요')} · 급식·시간표·학사일정은 그대로 볼 수 있어요</span></p><button type="button" class="btn sm" data-dbd-go>급식·시간표 보기</button><button type="button" class="dbd-x" aria-label="닫기" data-dbd-x>×</button>`;
+  document.body.appendChild(b);
+  b.addEventListener('click', e => {
+    if (e.target.closest('[data-dbd-x]')) { b.remove(); return; }
+    if (e.target.closest('[data-dbd-go]')) { b.classList.remove('pre'); if (introOn()) intro(false); else location.hash = 'home'; }
+  });
+};
 // me: 로그인한 사람(없으면 null) · on: 소셜 기능이 켜져 있는지 · how: 'login' | 'signup' | undefined(처음 확인)
 SOC.authed = (me, on = true, how) => {
   try { if (me) localStorage.setItem('sg_in', '1'); else localStorage.removeItem('sg_in'); } catch {}
