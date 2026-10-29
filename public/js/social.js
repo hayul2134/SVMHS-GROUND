@@ -1497,6 +1497,15 @@ const grChip = gr => gr ? `<i class="mgr ${grCls(gr)}">${gr}</i>` : '';
 const mstOpenG = () => MST_GAMES.filter(g => GAMES[g] && gamesOn().some(([k]) => k === g));
 // 게임 카드 숙련도 줄
 const mstLine = k => { if (!S.me || !mstOn() || !MST_GAMES.includes(k)) return ''; const m = mInfo(myMst(k)), gr = S.me.mst?.[k]?.[4] || ''; return `<button type="button" class="gmst ${m.b.k}" data-mst="${k}" data-ff="${MST_FF}" title="숙련도 — 판마다 등급에 따라 XP가 쌓여요">${mEmb(m.lv)}<span><b>Lv.${m.lv} <em>${m.b.n}</em>${grChip(gr)}</b><i class="mbar"><i class="w${m.pct}"></i></i></span></button>`; };
+// 게임 화면 위 줄 숙련도 칩(2026-10-30 하율 "게임할 때도 숙련도가 잘 보이게"): 제목 옆 — 판 위를 가리지 않게, 판이 끝나면 바로 차오름(mstChipPaint)
+const mstGOf = g => !g ? '' : g.startsWith('c_') ? g.slice(2) : g === 'gearn' ? 'gear' : g;
+const mstChipIn = g => { const m = mInfo(myMst(g)), gr = S.me.mst?.[g]?.[4] || ''; return `${mEmb(m.lv)}<span><b>Lv.${m.lv}<em>${m.b.n}</em>${grChip(gr)}</b><i class="mbar"><i class="w${m.pct}"></i></i></span>`; };
+const mstChip = game => { const g = mstGOf(game); return S.me && mstOn() && MST_GAMES.includes(g) ? `<span class="pmchip ${mInfo(myMst(g)).b.k}" id="pMst" data-g="${g}" data-ff="${MST_FF}" title="${esc(GAMES[g]?.name || '')} 숙련도">${mstChipIn(g)}</span>` : ''; };
+function mstChipPaint(up) {
+  const el = $('#pMst'); if (!el || !S.me) return;
+  const g = el.dataset.g; el.className = `pmchip ${mInfo(myMst(g)).b.k}${up ? ' up' : ''}`; el.innerHTML = mstChipIn(g);
+  if (up) setTimeout(() => el.classList.remove('up'), 1200);
+}
 const mstBar = () => { const sc = mstScore(S.me?.mst, mstOpenG()); return `<button type="button" class="ach-bar mst-bar" data-mst="" data-ff="${MST_FF}">${mEmb(Math.max(1, ...mstOpenG().map(g => mstLv(myMst(g)).lv)))}<span><b>게임 숙련도</b><small>숙련도 점수 ${sc} · 판마다 등급 S+~D로 XP가 쌓여요</small></span><i aria-hidden="true">›</i></button>`; };
 // 업적·숙련도 축하(2026-10-29 하율: "학교니까 바로바로 자랑할 수 있게") — 크게(화면 전체) / 작게(위 띠). 순서대로 하나씩
 const AQ = []; let aqBusy = false;
@@ -1515,6 +1524,7 @@ function achResult(keys, info, mst) {
     if (B.lv > A.lv) AQ.push({ t: 'mst', g: mst.g, lv: B.lv, r: mst.r, gr: mst.gr, gain, big: mstBand(B.lv).k !== mstBand(A.lv).k });
     else if (gain > 0) AQ.push({ t: 'mgr', g: mst.g, lv: B.lv, gr: mst.gr, gain, left: B.need - B.cur, big: false });   // 롤 게임 끝 화면처럼: 이번 판 등급 + 얻은 XP
   }
+  if (mst && mstOn()) mstChipPaint(mst.b > mst.a);
   const ms = $('.mst-bar small'); if (ms) ms.textContent = `숙련도 점수 ${mstScore(S.me?.mst, mstOpenG())} · 판마다 등급 S+~D로 XP가 쌓여요`;
   const t = $('.ach-bar small'); if (t) t.textContent = `모은 업적 ${achCnt(S.me?.ach)} / ${ACH.length} · 게임마다 업적을 다 모으면 칭호`;
   aqNext();
@@ -1893,7 +1903,7 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b>${mstChip(curGame)}<span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   const kb = $('#pKeys'); if (kb) kb.onclick = () => openKeys(curGame);

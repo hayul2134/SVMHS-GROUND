@@ -6384,11 +6384,26 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .mst-how ul{list-style:none;margin:8px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:5px}
 .mst-how li{display:flex;align-items:center;gap:8px;font-weight:700}.mst-how li .mgr{margin:0}.mst-how li span{flex:1}.mst-how li em{font:800 12px var(--num);font-style:normal;color:var(--accent)}
 .mst-how small{color:var(--sub);font-weight:700;line-height:1.5}
-.pmst{display:grid;gap:6px;width:100%;margin-top:8px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:color-mix(in srgb,#8fc2ff 20%,var(--card));color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.pmst{display:grid;gap:8px;width:100%;margin-top:8px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:color-mix(in srgb,#8fc2ff 20%,var(--card));color:var(--text);font:inherit;font-size:14px;text-align:left;cursor:pointer}
 .pmst .pach-h .mem{width:20px;height:23px}
-.pmst-l{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.pmst-l i{display:flex;align-items:center;gap:6px;min-width:0;padding:5px 6px;border-radius:10px;background:var(--card);border:1.5px solid var(--line);font-style:normal}
-.pmst-l i .mem{width:24px;height:28px}.pmst-l span{display:flex;flex-direction:column;min-width:0}.pmst-l b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmst-l small{font:800 11px var(--num);color:var(--sub)}
+/* 대표 3개: 좁은 프로필 칸에서도 안 깨지게 세로 카드(엠블럼 위·이름·레벨), 이름은 두 줄까지 (2026-10-30 '편/집/영'으로 잘리던 것) */
+.pmst-l{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.pmst-l i{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:7px 4px 6px;border-radius:10px;background:var(--card);border:1.5px solid var(--line);font-style:normal;text-align:center}
+.pmst-l i .mem{width:28px;height:32px}
+.pmst-l span{display:flex;flex-direction:column;align-items:center;min-width:0;width:100%}
+.pmst-l b{font-size:12px;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pmst-l small{font:800 11px var(--num);color:var(--sub);white-space:nowrap}
 .pmst-l i.m4{background:#fff6d4}.pmst-l i.m5{background:linear-gradient(120deg,#e8f6ff,#f1eaff,#ffeaf6)}
-@media (max-width:560px){.pmst-l{grid-template-columns:1fr}}
-:root[data-theme="dark"] .mst-grid li.m4,:root[data-theme="dark"] .mst-grid li.m5,:root[data-theme="dark"] .pmst-l i.m4,:root[data-theme="dark"] .pmst-l i.m5{color:#1f1d33}
+/* 게임 화면 위 줄 숙련도 칩(제목 옆) */
+.ptop .pmchip{display:flex;align-items:center;gap:6px;flex:none;margin-right:auto;padding:3px 10px 3px 5px;border:2px solid var(--ink);border-radius:12px;background:var(--card);color:var(--text);font-family:var(--sans,inherit);font-size:13px;transition:transform .2s}
+.ptop .pmchip .mem{width:24px;height:27px}
+.ptop .pmchip span{display:flex;flex-direction:column;gap:3px;min-width:56px}
+.ptop .pmchip b{display:flex;align-items:center;gap:4px;font:800 13px/1 var(--num);white-space:nowrap}.ptop .pmchip b em{font:900 11px var(--sans,inherit);font-style:normal;color:var(--sub)}
+.ptop .pmchip .mgr{margin-left:2px;height:16px;min-width:22px;font-size:10.5px}
+.ptop .pmchip .mbar{height:5px}
+.ptop .pmchip.m4{background:#fff6d4}.ptop .pmchip.m5{background:linear-gradient(120deg,#e8f6ff,#f1eaff,#ffeaf6,#fff8dc)}
+.ptop .pmchip.up{transform:scale(1.08);box-shadow:0 0 0 3px var(--accent)}
+@media (max-width:560px){.ptop .pmchip b em,.ptop .pmchip .mgr{display:none}.ptop .pmchip span{min-width:40px}}
+@media (prefers-reduced-motion:reduce){.ptop .pmchip{transition:none}}
+:root[data-theme="dark"] .mst-grid li.m4,:root[data-theme="dark"] .mst-grid li.m5,:root[data-theme="dark"] .pmst-l i.m4,:root[data-theme="dark"] .pmst-l i.m5,:root[data-theme="dark"] .ptop .pmchip.m4,:root[data-theme="dark"] .ptop .pmchip.m5{color:#1f1d33}
+@media (max-width:420px){.ptop .pmchip > span{display:none}.ptop .pmchip{padding:3px}}
