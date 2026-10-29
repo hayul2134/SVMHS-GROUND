@@ -6412,3 +6412,4 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .pfind svg{width:20px;height:20px;fill:none;stroke:currentColor}
 .find-sheet{text-align:left}.find-sheet .ct h2{display:flex;align-items:center;gap:8px}.find-sheet .ct .sic{width:22px;height:22px}
 .find-sheet .plist{max-height:min(52vh,440px);overflow-y:auto;overscroll-behavior:contain}
+.iconbtn.hb-fd svg{fill:none;stroke:currentColor}

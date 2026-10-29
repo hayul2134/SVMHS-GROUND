@@ -129,6 +129,7 @@ function paintBadges() {
   const n = S.me ? S.unread : 0;
   $$('[data-badge="dm"]').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
   paintTix();
+  const fd = $('#btnFind'); if (fd) fd.hidden = !S.me || !findOn();   // 홈 위쪽 친구 찾기(2026-10-30 하율 "프로필에 안 들어가도 되게", 깃발 prof-find)
   const dev = S.me?.handle === ADMIN_HANDLE;
   if (!S.me) ATT.sync(null);   // 로그아웃: 🔥 버튼 숨김
   $('#btnOut').hidden = !S.me;   // 로그인돼 있을 때만 메뉴 맨 아래 빨간 로그아웃
@@ -402,9 +403,8 @@ function crownHtml(c) {
 }
 
 /* ===== 프로필 카드 ===== */
-// 친구 찾기 아이콘(2026-10-30 하율 "프로필 아래 친구 추가를 아이콘으로 빼서" — 미리보기 깃발 prof-find): 누르면 검색 창(openFind)
+// 친구 찾기(2026-10-30 하율 "프로필 아래 친구 추가를 아이콘으로" → "홈 화면 위쪽으로" — 미리보기 깃발 prof-find): 위쪽 #btnFind → 검색 창(openFind)
 const findOn = () => ffOn('prof-find', isDev(S.me));
-const findBtn = () => findOn() ? `<button class="btn ghost icb pfind" type="button" data-find-open data-ff="prof-find" aria-label="친구 찾기" data-tip="친구 찾기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-user-plus"/></svg></button>` : '';
 const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
@@ -421,9 +421,9 @@ function profileHtml(d) {
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? isDev(u) ? `<a class="btn dv-adm" href="/admin/#monitor">${ic('tool')}관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button>${findBtn()}<button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
+    ? isDev(u) ? `<a class="btn dv-adm" href="/admin/#monitor">${ic('tool')}관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
       : S.me?.sw ? ''   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만(아래 swBar)
-      : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button>${findBtn()}<button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
+      : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button><button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
