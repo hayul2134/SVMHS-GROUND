@@ -303,8 +303,9 @@ const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE
 //   RX_FROM(10/29) 이전 반응속도 기록을 빼고 랭킹·티어·내 최고 기록을 계산. DB 기록은 지우지 않음(되돌릴 수 있게). 공지로 공개되면 모두에게 적용
 const rxOn = me => ffOn('rx-season', me ? isAdm(me) : false);
 // 개인 최고 기록: 반응속도 새 시즌(rx)이면 bests 표 한 줄(트리거로 맞춰짐), 아니면 예전처럼 scores 묶기 — 2026-10-29 읽기 절약
-const myBest = (db, uid, game, rx) => rx ? db.prepare('SELECT best AS b FROM bests WHERE uid = ?1 AND game = ?2').bind(uid, game).first()
-  : db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(uid, game).first();
+// 항상 {b} 하나를 돌려줌(기록 없으면 b: null) — bests는 첫 기록 전엔 줄이 없어 null이 오고, MIN()은 늘 한 줄이라 예전 코드가 그걸 믿고 .b를 읽었음(2026-10-29 약 150판 유실)
+const myBest = async (db, uid, game, rx) => (await (rx ? db.prepare('SELECT best AS b FROM bests WHERE uid = ?1 AND game = ?2').bind(uid, game).first()
+  : db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(uid, game).first())) || { b: null };
 // 게임별 '사람마다 최고 기록 하나' 묶음 (uid, best, at) — rx면 bests 그대로
 const BESTS = rx => rx ? `SELECT uid, best, at FROM bests WHERE game = ?1 AND ${NOT_DEV}` : `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid`;
 const RXQ = (rx, p = '') => rx ? ` AND (${p}game <> 'reaction' OR ${p}day >= '${RX_FROM}')` : '';
