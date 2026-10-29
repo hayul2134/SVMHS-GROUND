@@ -7,21 +7,23 @@
 import { HOME_MAX } from './home-score.js';
 import { GEAR_MAX } from './gear-score.js';
 import { STAIR_MAX } from './stair-score.js';
+import { FILM_MAX } from './film-score.js';
 
 export const MS = { tix: 1, n: 5 };
 // '1판'으로 쳐 주는 기준(2026-10-27 하율): 끝까지 해서 기록이 저장된 판(검사에 걸려 보류된 판은 제외) +
 // 바로 죽어도 기록이 나는 게임은 최소 기록을 넘어야 함 — 2026-10-27 하율: '3분쯤 해야 나오는 점수'로
 //   집에 가고 싶어! 6,000m(쉬지 않고 약 2분 55초 생존) · 기자재 정리! 3,000점(2026-10-27 하율: 1,500 → 3,000, 랭킹전 2분 안에)
 // 반응속도·1 to 25·컷 타이밍은 5번(25칸)을 다 끝내야 기록이 나므로 끝까지 하면 1판
-export const PLAY_MIN = { home: 6000, gear: 3000, stair: 50 };   // 영상고 계단 오르기: 50칸 넘게 — 2026-10-28, 정식 공개 때 하율 확인   // 2026-10-27 하율: 기자재 정리! 1판 기준 1,500 → 3,000점("초보인데도 어렵지 않았어")
+export const PLAY_MIN = { home: 6000, gear: 3000, stair: 50, film: 30 };   // 필름 10: 30컷 넘게(2026-10-29, 정식 공개 때 하율 확인)   // 영상고 계단 오르기: 50칸 넘게 — 2026-10-28, 정식 공개 때 하율 확인   // 2026-10-27 하율: 기자재 정리! 1판 기준 1,500 → 3,000점("초보인데도 어렵지 않았어")
 export const PLAY_RULE = '게임은 끝까지 해서 기록이 저장된 판만 1판으로 세요 · 집에 가고 싶어!는 6,000m, 기자재 정리!는 3,000점 넘게';
 export function playCounts(game, v) {
   if (game === 'home') return HOME_MAX - v >= PLAY_MIN.home;
   if (game === 'gear') return GEAR_MAX - v >= PLAY_MIN.gear;
   if (game === 'stair') return STAIR_MAX - v >= PLAY_MIN.stair;
+  if (game === 'film') return FILM_MAX - v >= PLAY_MIN.film;
   return true;
 }
-export const MS_NAME = { home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '기자재 정리!', stair: '영상고 계단 오르기' };
+export const MS_NAME = { home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '기자재 정리!', stair: '영상고 계단 오르기', film: '필름 10' };
 // 목표 기록: v = 서버에 저장되는 값(작을수록 좋음)
 const GOAL = {
   home: { t: '8,000m 넘게 달리기', ok: v => HOME_MAX - v >= 8000 },
@@ -30,10 +32,12 @@ const GOAL = {
   cut: { t: '오차 합 150ms 안으로 자르기', ok: v => v <= 150 },
   gear: { t: '3,000점 넘게 정리하기', ok: v => GEAR_MAX - v >= 3000 },
   stair: { t: '150칸 넘게 오르기', ok: v => STAIR_MAX - v >= 150 },
+  film: { t: '한 판에 90컷 넘게 자르기', ok: v => FILM_MAX - v >= 90 },
 };
 // 누적 미션(2026-10-27 하율: "주간 미션에 누적 점수 추가, 다른 게임들도"): 이번 주에 1판으로 친 판들을 더함
 //   점수·거리가 있는 게임 = 점수·거리 합 · 시간 기록 게임(작을수록 좋음) = 기준 안에 든 '좋은 판' 횟수
 const SUM = {
+  film: { amt: v => FILM_MAX - v, n: [400, 600], u: '컷', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}컷 자르기` },
   stair: { amt: v => STAIR_MAX - v, n: [1000, 1500], u: '칸', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}칸 오르기` },
   gear: { amt: v => GEAR_MAX - v, n: [10000, 15000], u: '점', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}점 정리하기` },
   home: { amt: v => HOME_MAX - v, n: [20000, 30000], u: 'm', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}m 달리기` },

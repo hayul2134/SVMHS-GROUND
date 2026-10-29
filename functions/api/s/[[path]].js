@@ -7,6 +7,7 @@ import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
+import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
 import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
@@ -30,6 +31,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
   //   casual = 티어·역대 1등 표시(topCrowns)·주간 미션·1~3등 축하에서 빠짐 → 순위표(GET rank)·내 기록에만 나옴
   gearn: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game', casual: true },
+  film: { min: FILM_MAX - FILM_CELLS, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷(0~170). 티어는 공개되는 순간부터(계단 오르기와 같게)
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
@@ -38,7 +40,7 @@ const H = (a, u, bad) => ({ a, u, bad });
 const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5;   // 반응속도 부정출발 벌점 — public/js/social.js와 같게
 const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 const sec = ms => (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + '초';
-function checkRounds(game, v, r, elapsed) {
+function checkRounds(game, v, r, elapsed, ticket = '') {
   if (!Array.isArray(r)) return H('판 기록 없음(예전 화면)', '판마다의 기록이 같이 오지 않았어요.');
   const n = r.map(x => Math.round(+x));
   if (n.some(x => !Number.isFinite(x))) return H('판 기록에 숫자가 아닌 값', '판마다의 기록 중에 숫자가 아닌 값이 섞여 있어요.');
@@ -103,6 +105,11 @@ function checkRounds(game, v, r, elapsed) {
     if (ms < (st - 1) * MIN_STEP_MS) return H(`너무 빠름: ${st}칸을 ${sec(ms)}`, `${st.toLocaleString('ko-KR')}칸을 ${sec(ms)} 만에 올랐어요. 1초에 18칸 넘게 누르기는 어려워서 자동 입력으로 보일 수 있어요.`);
     if (ms > stairMaxMs(st)) return H(`종 게이지로 버틸 수 없는 시간(${sec(ms)} > ${sec(stairMaxMs(st))})`, `${st.toLocaleString('ko-KR')}칸으로는 종 게이지가 ${sec(stairMaxMs(st))}까지밖에 못 버티는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);
     if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
+  } else if (game === 'film') {   // [가로 칸 수, 끝난 ms, ...묶음] — 판은 이 시작 티켓으로 만들어짐(film-score.js) → 같은 판에 묶음을 처음부터 다시 둬 봄
+    const x = filmReplay(filmSeed(ticket), n);
+    if (x.err) return x.fast ? H(`묶음 간격이 너무 짧음(${x.k + 1}번째) — 매크로 의심`, x.err) : H(`다시 둬 보니 안 맞음: ${x.err}`, `${x.err}. 판과 묶은 기록이 서로 맞지 않아요.`);
+    if (FILM_MAX - x.n !== v) return H(`지운 컷(${x.n})과 기록(${FILM_MAX - v})이 다름`, `묶음을 다시 둬 보면 ${x.n}컷인데 ${FILM_MAX - v}컷으로 기록됐어요.`);
+    if (n[1] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[1])}) 한 걸로 기록됐어요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
     const off = idx(x => x < 0 || x > 1000);
@@ -1093,11 +1100,11 @@ const ROUTES = {
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
-    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸' }[gk];
+    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '컷' }[gk];
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
-      : checkRounds(game, v, body.rounds, elapsed);
+      : checkRounds(game, v, body.rounds, elapsed, ticket);
     if (why) {
       const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();
       if (wait.n >= 30) return err('확인을 기다리는 기록이 많아요. 개발자가 확인할 때까지 조금만 기다려 주세요', 429);

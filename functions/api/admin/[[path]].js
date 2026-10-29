@@ -7,7 +7,7 @@ import { ONLINE_MS, setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOp
 import { previewBalance, balDay, isBalDay } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
-const GAMES = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'stair'];   // gearn = 기자재 정리! 일반 모드(순위만, 티어 제외)
+const GAMES = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'stair', 'film'];   // gearn = 기자재 정리! 일반 모드(순위만, 티어 제외)
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'cross-origin-resource-policy': 'same-origin', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), { status, headers: { ...HEADERS, ...extra } });
 const err = (msg, status = 400) => json({ error: msg }, status);

@@ -6028,23 +6028,37 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 @keyframes dbdIn{from{opacity:0;transform:translate(-50%,-12px)}}
 @media (prefers-reduced-motion:reduce){.dbdown-bar{animation:none}}
 
-/* ===== 멜론 게임 (2026-10-29, 미리보기 melon-game) — social.js playMelon · js/melon.js ===== */
-.apps .gapp.g-melon .ai{--c:#d6f0b4}.ggrid .g-melon{--c:#d6f0b4}
+/* ===== 필름 10 (2026-10-29, 미리보기 film-game) — social.js playFilm · js/film.js(판) · film-score.js(규칙·검사) ===== */
+.apps .gapp.g-film .ai{--c:#ffe3a3}.ggrid .g-film{--c:#ffe3a3}
+.fl{display:flex;gap:14px;align-items:flex-start;width:100%}
+.fl .ml{flex:1;min-width:0}
+.fl-side{flex:none;width:240px}
+@media (max-width:900px){.fl{flex-direction:column;align-items:stretch}.fl-side{width:auto}}
 .ml{display:flex;flex-direction:column;gap:10px;width:100%}
-.ml-top{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.ml-top{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
 .ml-chip{display:inline-flex;align-items:baseline;gap:6px;padding:5px 12px;border:2px solid var(--ink);border-radius:12px;background:var(--card);box-shadow:2px 2px 0 var(--ink);font-size:13px;font-weight:800;color:var(--sub)}
-.ml-chip b{font-size:17px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums}
+.ml-chip b{font-size:17px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums;display:inline-block}
+.ml-chip b.bump{animation:flBump .28s ease-out}
+@keyframes flBump{40%{transform:scale(1.3);color:#2f9a3a}}
 .ml.low .ml-tm b{color:#e0533a}
-.ml-board{position:relative;display:flex;justify-content:center;align-self:center;max-width:100%;gap:10px;padding:10px;border:2.5px solid var(--ink);border-radius:18px;background:#fbfdf6;box-shadow:4px 4px 0 var(--ink)}
-:root[data-theme="dark"] .ml-board{background:#1f2a1d}
-.ml-board canvas{display:block;touch-action:none;cursor:crosshair}
-.ml-bar{width:12px;flex:none;border:2px solid var(--ink);border-radius:8px;background:#e3ecd8;position:relative;overflow:hidden}
-.ml-bar i{position:absolute;left:0;right:0;bottom:0;height:calc(var(--t,1)*100%);background:#6fbf3f}
-.ml.low .ml-bar i{background:#ef6b4a}
-.ml-ov{position:absolute;inset:0;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;background:color-mix(in srgb,var(--card) 90%,transparent);padding:16px}
+.ml-snd{padding:6px 8px}
+/* 판 = 편집실 라이트 테이블(흰 빛 + 옅은 눈금) */
+.ml-board{position:relative;display:flex;justify-content:center;align-self:center;max-width:100%;gap:10px;padding:10px;border:2.5px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);
+  background:linear-gradient(rgba(120,150,200,.09) 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,rgba(120,150,200,.09) 1px,transparent 1px) 0 0/20px 20px,#fbfcff}
+:root[data-theme="dark"] .ml-board{background:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px) 0 0/20px 20px,#232842}
+.ml-board canvas{display:block;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none}
+.ml-bar{width:12px;flex:none;border:2px solid var(--ink);border-radius:8px;background:color-mix(in srgb,var(--ink) 10%,transparent);position:relative;overflow:hidden}
+.ml-bar i{position:absolute;left:0;right:0;bottom:0;height:calc(var(--t,1)*100%);background:#ffc24a}
+.ml.low .ml-bar i{background:#ef6b4a;animation:flBlink .5s steps(2) infinite}
+@keyframes flBlink{50%{opacity:.45}}
+.ml-ov{position:absolute;inset:0;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;background:color-mix(in srgb,var(--card) 88%,transparent);padding:16px}
+.ml-ov.solid{background:var(--card)}
 .ml-ov[hidden]{display:none}
 .ml-ov>b{font-family:var(--disp);font-weight:400;font-size:clamp(26px,5vw,40px);color:var(--text)}
 .ml-ov>span{font-weight:800;color:var(--sub);line-height:1.55;font-size:15px}
-.ml-ov em{font-style:normal;color:#3f8f1f;font-weight:900}
-.ml-sc{font-family:var(--disp);font-size:clamp(48px,9vw,72px);line-height:1;color:#4c9a2a}
+.ml-ov em{font-style:normal;color:#2f9a3a;font-weight:900}
+.ml-sc{font-family:var(--disp);font-size:clamp(48px,9vw,72px);line-height:1;color:var(--text)}
 .ml-sc small{font-size:.35em;margin-left:4px;color:var(--sub)}
+.ml-msg{font-weight:800;font-size:14px;color:var(--sub);min-height:1.4em}
+.ml-msg b{color:#2f9a3a}
+@media (prefers-reduced-motion:reduce){.ml-chip b.bump,.ml.low .ml-bar i{animation:none}}

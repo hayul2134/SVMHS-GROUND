@@ -8,11 +8,12 @@
 import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX } from './gear-score.js';
 import { STAIR_MAX } from './stair-score.js';
+import { FILM_MAX } from './film-score.js';
 
 export const ACH_FF = 'achv';
-export const ACH_GAMES = ['home', 'stair', 'cut', 'reaction', 'num25', 'gear'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
+export const ACH_GAMES = ['film', 'home', 'stair', 'cut', 'reaction', 'num25', 'gear'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
 // 저장값(작을수록 좋음) → 화면 단위
-export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : v;
+export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : g === 'film' ? FILM_MAX - v : v;
 
 const A = (k, g, lv, n, d, x = {}) => ({ k, g, lv, n, d, ...x });
 // lv: 1 브론즈 · 2 실버 · 3 골드 · 4 무지개(최상)
@@ -30,6 +31,14 @@ export const ACH = [
   A('h_5', 'home', 4, '현관문 앞', `${GOAL.toLocaleString('en-US')}m — 집에 도착하기`, { t: 'hi', v: GOAL }),
   A('h_6', 'home', 2, '매일매일 하교', '서로 다른 5일 동안 달리기', { t: 'days', v: 5 }),
   A('h_x', 'home', 1, '신발끈이…', '30m도 못 가고 넘어지기', { t: 'live', hid: 1 }),
+  // 필름 10 (컷, 2026-10-29)
+  A('f_1', 'film', 1, '첫 컷', '첫 판 자르기', { t: 'first' }),
+  A('f_2', 'film', 1, '컷 편집 입문', '한 판에 60컷 자르기', { t: 'hi', v: 60 }),
+  A('f_3', 'film', 2, '러프컷 완성', '한 판에 100컷 자르기', { t: 'hi', v: 100 }),
+  A('f_4', 'film', 3, '파인컷 완성', '한 판에 130컷 자르기', { t: 'hi', v: 130 }),
+  A('f_5', 'film', 4, '파이널 컷', '170컷 전부 잘라내기', { t: 'hi', v: 170 }),
+  A('f_6', 'film', 2, '매일 편집실', '서로 다른 5일 동안 자르기', { t: 'days', v: 5 }),
+  A('f_x', 'film', 1, '가위가 무뎌', '10컷도 못 자르고 끝나기', { t: 'live', hid: 1 }),
   // 영상고 계단 오르기 (칸)
   A('s_1', 'stair', 1, '첫 계단', '첫 판 오르기', { t: 'first' }),
   A('s_2', 'stair', 1, '2층 도착', '100칸 오르기', { t: 'hi', v: 100 }),
@@ -73,7 +82,7 @@ export const ACH = [
 ];
 export const ACH_BY = Object.fromEntries(ACH.map(a => [a.k, a]));
 // 게임 하나의 일반 업적을 다 모으면 받는 칭호(프로필 꾸미기 칭호 목록)
-export const ACH_TITLE = { home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신' };
+export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신' };
 export const achOf = g => ACH.filter(a => a.g === g);
 export const titleDone = (g, own) => achOf(g).filter(a => !a.hid).every(a => own[a.k]);
 export const achTitles = own => Object.keys(ACH_TITLE).filter(g => titleDone(g, own)).map(g => ACH_TITLE[g]);
@@ -86,6 +95,7 @@ function liveOk(k, g, v, r) {
   switch (k) {
     case 'h_x': return g === 'home' && nat(g, v) < 30;
     case 's_x': return g === 'stair' && nat(g, v) < 3;
+    case 'f_x': return g === 'film' && nat(g, v) < 10;
     case 'c_5': return g === 'cut' && n.length === 5 && n.some(x => x === 0);
     case 'c_x': return g === 'cut' && n.length === 5 && n.every(x => x > 300);
     case 'r_5': { if (g !== 'reaction') return false; const f = n.length === 6 ? n[5] : 0, t = n.slice(0, 5); return f === 0 && t.length === 5 && t.every(x => x < 300); }
