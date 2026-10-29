@@ -595,11 +595,9 @@ export function createStair(cv, o = {}) {
     // 카메라 따라가기: 프레임 길이와 상관없이 같은 속도(60fps에서 예전과 똑같음) — 예전 식(dt×14, 최대 1)은 한 프레임이 길어지면 카메라가 한 번에 붙어 화면이 '툭' 튐(2026-10-29)
     // 2026-10-29 하율 "캐릭터가 가운데에 유지되면서 올라가게": 늦게 따라가던 카메라(빨리 오르면 캐릭터가 위·옆으로 밀려남) → 캐릭터에 고정. 한 칸 이동(0.075초)은 이미 부드럽게 이어져서 화면도 매끄럽게 따라감
     if (st.scene === 'ready') { camX = cx * DX; camY = -cy * DY; }
-    else if (CENTER) {   // 2026-10-29 하율 "너무 중앙에 고정" → 딱 붙이지 않고 살짝 늦게 부드럽게 따라가되(예전보다 빠름), 가운데에서 가로 14·세로 16 이상은 안 벗어나게
-      const tx = cx * DX, ty = -cy * DY, k = 1 - Math.pow(.86, dt * 60);
-      camX += (tx - camX) * k; camY += (ty - camY) * k;
-      camX = Math.max(tx - 14, Math.min(tx + 14, camX)); camY = Math.max(ty - 16, Math.min(ty + 16, camY));
-    } else { camX += (cx * DX - camX) * (1 - Math.pow(5 / 6, dt * 60)); camY += (-cy * DY - camY) * (1 - Math.pow(1 - 14 / 60, dt * 60)); }   // 예전 방식: 늦게 따라감(프레임 길이와 상관없이 같은 속도)
+    else {   // 따라오는 방식은 예전 그대로(2026-10-29 하율 "따라오는 것만 전처럼") — 깃발 stair-center는 발 높이(가운데)만 다름
+      camX += (cx * DX - camX) * (1 - Math.pow(5 / 6, dt * 60)); camY += (-cy * DY - camY) * (1 - Math.pow(1 - 14 / 60, dt * 60));
+    }
     shake = Math.max(0, shake - dt * 12); shX = shake ? R((Math.random() - .5) * shake * 2) : 0; shY = shake ? R((Math.random() - .5) * shake * 2) : 0;
     g.setTransform(PS, 0, 0, PS, 0, 0); g.imageSmoothingEnabled = false;
     { const wq = Math.round((-camY / DY / FLOOR + 3) * 20); if (wq !== winQ) { winQ = wq; winSky = skyAt(wq / 20)[0]; } }
