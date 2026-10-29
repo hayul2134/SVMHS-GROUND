@@ -19,8 +19,10 @@ const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, 
 
 export function createBlast(root, opt = {}) {
   let best = opt.best || 0, sound = !!opt.sound;
-  root.innerHTML = `<div class="ml-top"><span class="ml-chip">점수 <b data-m="sc">0</b></span><span class="ml-chip">최고 <b data-m="best">${best.toLocaleString('ko-KR')}</b></span><span class="ml-chip bl-cb" data-m="cbw">연속 <b data-m="cb">0</b></span>
-      <button type="button" class="btn ghost bl-stop" data-m="stop" hidden>그만하기</button><button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></div>
+  // 점수판(2026-10-29 하율 "블록 블라스트처럼 — 올라가는 점수가 잘 안 보여 재미없어"): 왼쪽 위 작게 최고 기록, 가운데 큰 점수(올라갈 때 숫자가 굴러 올라감 + 얻은 점수 팝), 오른쪽 버튼
+  root.innerHTML = `<div class="ml-top bl-top" data-m="top"><span class="bl-best" title="최고 기록"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg><b data-m="best">${best.toLocaleString('ko-KR')}</b></span>
+      <div class="bl-score" aria-live="polite"><b data-m="sc">0</b><em class="bl-gain" data-m="gain"></em><span class="bl-cb" data-m="cbw">연속 <i data-m="cb">0</i></span></div>
+      <span class="bl-tools"><button type="button" class="btn ghost bl-stop" data-m="stop" hidden>그만하기</button><button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></span></div>
     <div class="ml-board bl-board" data-m="board"><canvas data-m="cv" aria-label="기자재 정리! 블록 판"></canvas><div class="ml-ov" data-m="ov"></div></div>`;
   const $ = k => root.querySelector(`[data-m="${k}"]`);
   const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), board = $('board'), sndBtn = $('snd'), stopBtn = $('stop');
@@ -74,6 +76,7 @@ export function createBlast(root, opt = {}) {
     pad = Math.round(Math.max(8, cs * .25));
     W = horiz ? pad * 4 + cs * 14.8 : pad * 2 + cs * 8; H = horiz ? pad * 2 + cs * 8 : pad * 3 + cs * 11.3;
     W = Math.round(W); H = Math.round(H);
+    $('top').style.width = Math.max(300, W + 16) + 'px';   // 점수판 폭 = 판 폭(최고 기록·버튼이 판 양 끝에 맞춰짐)
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     draw();
   }
@@ -256,6 +259,20 @@ export function createBlast(root, opt = {}) {
   };
   cv.addEventListener('pointerdown', down); cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', cancel);
 
+  // 점수 굴러 올라가기: 화면 숫자가 실제 점수를 0.45초 동안 따라잡음(큰 점수일수록 빠르게 돌아감) + 얻은 점수 '+N' 팝
+  let shown = 0, rollRaf = 0, rollFrom = 0, rollAt = 0;
+  function showScore(pts) {
+    const sc = $('sc'), g = $('gain');
+    rollFrom = shown; rollAt = performance.now();
+    if (!rollRaf) rollRaf = requestAnimationFrame(roll);
+    sc.classList.remove('bump', 'big'); void sc.offsetWidth; sc.classList.add(pts >= 100 ? 'big' : 'bump');
+    g.textContent = '+' + pts.toLocaleString('ko-KR'); g.className = 'bl-gain'; void g.offsetWidth; g.className = 'bl-gain on' + (pts >= 100 ? ' hot' : '');
+  }
+  function roll() {
+    const k = Math.min(1, (performance.now() - rollAt) / 450), e = 1 - (1 - k) ** 3;
+    shown = Math.round(rollFrom + (st.score - rollFrom) * e); $('sc').textContent = shown.toLocaleString('ko-KR');
+    rollRaf = k < 1 && !dead ? requestAnimationFrame(roll) : 0;
+  }
   function put(slot, r, c, t) {
     const pi = set[slot], s = PIECES[pi].s, k = kindOf(pi), now = performance.now(), prevB = b.slice();
     moves.push(enc(t, slot, r, c));
@@ -287,7 +304,7 @@ export function createBlast(root, opt = {}) {
       if (navigator.vibrate) try { navigator.vibrate(8); } catch {}
     }
     rings.push({ x: cx, y: cy, w: w * cs, h: h * cs, t: now });
-    $('sc').textContent = st.score.toLocaleString('ko-KR'); $('sc').classList.remove('bump'); void $('sc').offsetWidth; $('sc').classList.add('bump');
+    showScore(res.pts);
     $('cb').textContent = st.combo; $('cbw').classList.toggle('on', st.combo > 1); if (res.n && st.combo > 1) { $('cbw').classList.remove('pop'); void $('cbw').offsetWidth; $('cbw').classList.add('pop'); }
     if (used.every(Boolean)) { set = nextSet(rand, b, moves.length); used = [false, false, false]; setAt = now + 120; tone(660, .05, 'sine', .035, .1); }
     if (moves.length >= MAX_MOVES) end('max');
@@ -313,7 +330,7 @@ export function createBlast(root, opt = {}) {
     rand = rng(seed == null ? Math.floor(Math.random() * 4294967296) : seed);
     b = newBoard(); st = { score: 0, combo: 0, miss: 0 }; moves = []; lines = 0; fx = []; floats = []; born = []; parts = []; beams = []; rings = []; drag = null; held = -1;
     set = nextSet(rand, b, 0); used = [false, false, false]; setAt = performance.now() + 150;
-    $('sc').textContent = 0; $('cb').textContent = 0; $('cbw').classList.remove('on');
+    shown = 0; cancelAnimationFrame(rollRaf); rollRaf = 0; $('sc').textContent = 0; $('gain').className = 'bl-gain'; $('cb').textContent = 0; $('cbw').classList.remove('on');
     state = 'play'; t0 = performance.now(); ov.hidden = true; stopBtn.hidden = false; tone(523, .08, 'triangle', .06); tone(784, .12, 'triangle', .06, .08);
     fit(); kick();
   }
@@ -334,7 +351,7 @@ export function createBlast(root, opt = {}) {
     start,
     msg(html) { const m = $('msg'); if (m) m.innerHTML = html; },
     setBest(v, force) { if (force || v > best) { best = v; $('best').textContent = v.toLocaleString('ko-KR'); } },
-    destroy() { dead = true; clearTimeout(endT); clearTimeout(stopT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
+    destroy() { dead = true; cancelAnimationFrame(rollRaf); clearTimeout(endT); clearTimeout(stopT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
     get st() { return { state, score: st.score, combo: st.combo, board: b, set, used, moves, cs, pad, horiz, held }; },
     slotRect, end,
     _put(slot, r, c) { if (state === 'play' && !used[slot] && fits(b, PIECES[set[slot]].s, r, c)) { put(slot, r, c, Math.round(performance.now() - t0)); return true; } return false; },   // 테스트용

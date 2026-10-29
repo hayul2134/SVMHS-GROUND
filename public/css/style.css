@@ -6100,10 +6100,37 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 :root[data-theme="dark"] .bl-stop.ask{background:#4a2c14;color:#ffc28a}
 .ml-ov small{font-weight:700;opacity:.85}
 .bl-board canvas:active{cursor:grabbing}
-.bl-cb.on{border-color:#e0a21a;background:#fff4d1}
-.bl-cb.on b{color:#c4560f}
-:root[data-theme="dark"] .bl-cb.on{background:#4a3a14}
-:root[data-theme="dark"] .bl-cb.on b{color:#ffd27a}
+/* 점수판(2026-10-29 하율 "블록 블라스트처럼"): 왼쪽 최고 기록 · 가운데 큰 점수 · 오른쪽 버튼 */
+.bl-top{display:grid;margin:0 auto;max-width:100%;grid-template-columns:auto 1fr;grid-template-areas:'best tools' 'score score';align-items:center;gap:2px 8px;width:100%}
+.bl-best{grid-area:best}.bl-tools{grid-area:tools}.bl-score{grid-area:score}
+.bl-best{justify-self:start;display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:17px;color:#c98a0c;font-variant-numeric:tabular-nums}
+.bl-best svg{width:22px;height:22px}
+:root[data-theme="dark"] .bl-best{color:#ffd27a}
+.bl-tools{justify-self:end;display:inline-flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.bl-tools .prestart{min-height:36px;height:36px;font-size:14px;padding:0 10px 0 8px;gap:6px}
+.bl-tools .prestart svg{width:16px;height:16px}
+.bl-tools .bl-stop{min-height:36px;height:36px;padding:0 10px;font-size:13px}
+.bl-tools .ml-snd{min-height:36px;height:36px;padding:0 8px}
+.bl-score{position:relative;justify-self:center;display:flex;flex-direction:column;align-items:center;line-height:1;min-width:120px}
+.bl-score>b{font-family:var(--disp);font-weight:400;font-size:clamp(40px,5.4vw,60px);color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:.5px;-webkit-text-stroke:0;text-shadow:3px 3px 0 color-mix(in srgb,var(--ink) 18%,transparent);display:inline-block}
+.bl-score>b.bump{animation:blScB .3s cubic-bezier(.3,1.7,.5,1)}
+.bl-score>b.big{animation:blScBig .5s cubic-bezier(.3,1.7,.5,1);color:#e08a00}
+:root[data-theme="dark"] .bl-score>b.big{color:#ffd27a}
+@keyframes blScB{40%{transform:scale(1.12)}}
+@keyframes blScBig{30%{transform:scale(1.32) rotate(-2deg)}60%{transform:scale(.96)}}
+.bl-gain{position:absolute;left:100%;top:4px;margin-left:6px;font-style:normal;font-weight:900;font-size:20px;color:#2f9a3a;white-space:nowrap;opacity:0;pointer-events:none}
+.bl-gain.hot{font-size:26px;color:#e0752a}
+:root[data-theme="dark"] .bl-gain{color:#8fe39a}
+:root[data-theme="dark"] .bl-gain.hot{color:#ffb26b}
+.bl-gain.on{animation:blGain .9s ease-out forwards}
+@keyframes blGain{0%{opacity:0;transform:translateY(10px) scale(.7)}15%{opacity:1;transform:translateY(0) scale(1.1)}70%{opacity:1;transform:translateY(-6px)}100%{opacity:0;transform:translateY(-16px)}}
+.bl-cb{margin-top:4px;font-size:13px;font-weight:800;color:var(--sub);visibility:hidden;padding:2px 10px;border-radius:999px;border:2px solid transparent}
+.bl-cb i{font-style:normal;font-weight:900}
+.bl-cb.on{visibility:visible;border-color:#e0a21a;background:#fff4d1;color:#c4560f}
+:root[data-theme="dark"] .bl-cb.on{background:#4a3a14;color:#ffd27a}
+.bl-cb.on i::before{content:'×'}
+@media (max-width:420px){.bl-tools .prestart kbd,.bl-tools .prestart [data-ka]{display:none}}
+@media (prefers-reduced-motion:reduce){.bl-score>b.bump,.bl-score>b.big,.bl-gain.on{animation:none}.bl-gain.on{opacity:1}}
 :root[data-theme="dark"] .cal .dh:nth-child(7),:root[data-theme="dark"] .cal .dy.sat .n{color:#8cc4ff}   /* 달력 토요일 숫자: 진한 파랑이 어두운 칸(특히 쉬는 날 칸)에서 안 보이던 것 */
 html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc) 62%,#1a1f45)}   /* 티어 계단 꼭대기 인원 칩: 챌린저 금색 위 흰 글자 대비 */
 
