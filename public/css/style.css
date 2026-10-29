@@ -5942,11 +5942,11 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .sr-side:empty{display:none}
 .sr-side .myrec{margin:0 auto;max-width:440px}
 @media (min-width:900px) and (min-height:520px){
-  .sr{margin-top:clamp(8px,3vh,28px);--srh:clamp(380px,calc(100dvh / var(--gz,1) - 185px),760px);display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;column-gap:clamp(16px,2.4vw,28px)}
-  .sr-main{grid-column:2;width:auto}
+  .sr{margin-top:clamp(8px,3vh,28px);--srh:clamp(380px,calc(100dvh / var(--gz,1) - 185px),760px);--sgap:clamp(16px,2.4vw,28px);position:relative}
   .sr-scr{width:calc(var(--srh) * 2 / 3)}
-  .sr .hr-dress{width:0;min-width:100%;box-sizing:border-box}   /* 꾸미기 창이 열려도 가운데 칸 폭을 넓히지 않게 */
-  .sr-side{grid-column:3;justify-self:start;width:min(300px,100%);position:sticky;top:12px}
+  /* 2026-10-29: 가운데 칸 = 판·버튼 줄·꾸미기 창이 전체 폭에서 가운데 정렬, 내 기록은 판 오른쪽에 붙여 띄움(--bw = 판 폭, snapScr이 넣음) — 아래 버튼 줄이 넓어도 내 기록 칸이 좁아지지 않게 */
+  .sr .hr-dress{width:min(100%,560px);min-width:0;box-sizing:border-box}
+  .sr-side{position:absolute;top:0;left:calc(50% + var(--bw,320px) / 2 + var(--sgap));width:min(300px,calc(50% - var(--bw,320px) / 2 - var(--sgap)))}
   .sr-side .myrec{max-width:none}
 }
 

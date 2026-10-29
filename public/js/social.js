@@ -2368,9 +2368,10 @@ async function playStair() {
     scr.style.removeProperty('width');
     const dpr = (devicePixelRatio || 1) * z, av = cv.getBoundingClientRect().width * (devicePixelRatio || 1), bw = scr.offsetWidth - scr.clientWidth;   // 확대 중엔 칸 안 1px = 기기 픽셀 dpr×z
     let n = Math.floor(av / STAIR.W + .01);
-    if (n < 2) return;   // 아주 작은 화면은 그대로(정수 배로 맞추면 너무 작아짐)
+    if (n < 2) { $('#sr')?.style.setProperty('--bw', scr.offsetWidth + 'px'); return; }   // 아주 작은 화면은 그대로(정수 배로 맞추면 너무 작아짐)
     if (n % 2 && n > 2 && (n - 1) / n >= .8) n--;
     scr.style.width = (n * STAIR.W / dpr + bw) + 'px';
+    $('#sr')?.style.setProperty('--bw', scr.offsetWidth + 'px');   // 내 기록 칸을 판 오른쪽에 붙이는 기준(CSS .sr-side)
   };
   let snapRaf = 0; const snapSoon = () => { cancelAnimationFrame(snapRaf); snapRaf = requestAnimationFrame(snapScr); };
   const snapRO = new ResizeObserver(snapSoon); snapRO.observe($('#parea')); addEventListener('resize', snapSoon); snapScr();
