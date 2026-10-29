@@ -1122,7 +1122,7 @@ const ROUTES = {
     const rx = rxOn(me), day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const [prev, allPrev] = await Promise.all([
       db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
-      myBest(db, me.id, game, rx),
+      myBest(db, me.id, game, rx).then(x => x || { b: null }),   // bests 표엔 첫 기록 전엔 줄이 없어 null(2026-10-29 '잠시 후 다시 시도해 주세요'로 첫 기록이 저장 안 되던 버그)
     ]);
     const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b, rx) : null;   // 기록 넣기 전 순위(축하 판단용)
     if (!prev || v < prev.best) {
