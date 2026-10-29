@@ -41,7 +41,8 @@ export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 // cut-zoom: 2026-10-29 13:58 하율 "이거 패치 지금 진행하고, 내일 공지해" → 모두에게 바로, 공지는 10/29 패치로
 // login-keep: 2026-10-28 00:12 하율 "패치만 하고 내일 공지에 띄우면 되잖아" → 모두에게 바로 적용, 공지는 10/28 패치로
 // pad-ctl: 2026-10-29 13:00 하율 "패드 인터페이스 개선안 패치 바로 진행해 내일 공지에 추가" → 모두에게 바로, 공지는 10/29 패치로
-export const RELEASED = new Set(['cut-zoom', 'pad-ctl', 'login-keep', 'tier-profile', 'tier-fancy', 'rank-tier', 'story-share', 'tier-pad', 'club-tt', 'tier-v2']);   // tier-v2: 2026-10-27 14:02 하율 "지금 패치 진행하자"   // tier-pad: 2026-10-26 10:10 하율 "패치 적용해" · club-tt: 13:30 "바로 패치 진행해"
+// stair-center: 2026-10-29 17:42 하율 "이대로 전체 패치해" → 모두에게 바로, 공지는 10/29 패치로
+export const RELEASED = new Set(['stair-center', 'cut-zoom', 'pad-ctl', 'login-keep', 'tier-profile', 'tier-fancy', 'rank-tier', 'story-share', 'tier-pad', 'club-tt', 'tier-v2']);   // tier-v2: 2026-10-27 14:02 하율 "지금 패치 진행하자"   // tier-pad: 2026-10-26 10:10 하율 "패치 적용해" · club-tt: 13:30 "바로 패치 진행해"
 // 회수(HOLD): 공지로 잘못 공개된 기능을 다시 개발자 전용으로 — 게시본에 ff가 남아 있어도 RELEASED보다 우선
 // cut-v2: 2026-10-28 00:16 하율 "내꺼에만 적용 시키라고 했잖아 싹 거둬" (대기열에서 주석 처리하기 전 초안에 들어간 줄이 10/27 패치로 게시돼 열렸던 것)
 export const HOLD = new Set([]);   // 2026-10-28 00:23 하율: 편집의 신 '정식 출시'로 10/28 패치(10/29 0시 공지) 첫 줄 → 회수 풀고 공지 게시 때 공개
