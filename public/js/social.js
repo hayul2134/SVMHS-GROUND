@@ -2278,7 +2278,7 @@ async function playStair() {
   const ready = () => {
     ov.hidden = false; ov.className = 'hr-ov sr-ready'; scr.classList.add('rdy'); scr.classList.remove('low', 'end');
     ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단으로 7층 꼭대기까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
-      <small>${touchy ? '오른쪽을 눌러 출발 · 왼쪽은 방향 바꾸기' : `${esc(KM.keyName(KM.keysOf('stair').climb[0] || ''))} 오르기로 출발 · ${esc(KM.keyName(KM.keysOf('stair').turn[0] || ''))} 방향 바꾸기`}</small>`;
+      <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : `${esc(KM.keyName(KM.keysOf('stair').climb[0] || ''))} 오르기 · ${esc(KM.keyName(KM.keysOf('stair').turn[0] || ''))} 방향 바꾸기로 출발`}</small>`;
   };
   const R = STAIR.createStair(cv, {
     sound,

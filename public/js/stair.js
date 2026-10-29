@@ -216,9 +216,7 @@ export function createStair(cv, o = {}) {
   function input(kind) {
     if (!alive || st.scene === 'over') return;
     if (st.scene === 'pause') { st.scene = 'play'; last = 0; o.onPause?.(false); return; }   // 멈춤을 푸는 입력은 오르지 않음
-    // 시작 전 '방향 바꾸기' = 캐릭터만 돌려 세움(판은 시작 안 함, 2026-10-29 하율 "시작하기도 전에 방향 바꾸기 되게").
-    //   계단 길도 같이 좌우 반전 → 첫 칸은 항상 바라보는 쪽(0칸에서 바로 헛디디지 않게, 10-28 디버깅 유지). 방향 전환 횟수(turns)엔 안 셈
-    if (st.scene === 'ready' && kind === 'turn') { st.face = -st.face; for (let k = 0; k < xs.length; k++) xs[k] = -xs[k]; runDir = -runDir; beep(520, .04, 'square', .03); return; }
+    // 시작 입력도 원작(무한의 계단)처럼 그대로 처리 — '방향 바꾸기'로 시작하면 돌아서며 한 칸 → 계단이 없는 쪽이라 바로 떨어짐(2026-10-29 하율 "게임이 시작되면서 그냥 바로 떨어지게")
     if (st.scene === 'ready') { st.scene = 'play'; o.onStart?.(); }
     if (kind === 'turn') { st.face = -st.face; st.turns++; }
     const i = st.steps, nx = xs[i + 1];
