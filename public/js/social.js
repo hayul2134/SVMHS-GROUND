@@ -1791,6 +1791,7 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
+  setGpZoom(false);   // 확대는 계단 오르기만(snapScr이 다시 켬)
   el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
@@ -1857,9 +1858,9 @@ function fitHome() {
   if (!a.width || !r.width) return;
   // 2026-10-28 하율 "랭킹·키 설정·나가기 버튼 모든 게임이 다 저 위치에": 게임 칸 폭과 상관없이 제목은 집 버튼 바로 오른쪽, 버튼 묶음은 화면 오른쪽 끝(집 버튼과 좌우 대칭 여백)
   const vert = a.bottom > p.top && a.top < p.bottom;   // 집 버튼과 제목 줄이 같은 높이일 때만 집 버튼 오른쪽에서 시작
-  const L = vert ? a.right + 12 : Math.max(8, a.left), R = innerWidth - Math.max(8, a.left);
-  t.style.paddingLeft = Math.max(0, L - p.left) + 'px';
-  t.style.paddingRight = Math.max(0, p.right - R) + 'px';
+  const L = vert ? a.right + 12 : Math.max(8, a.left), R = innerWidth - Math.max(8, a.left), z = gpZoom();   // 확대(gpZoom) 중이면 화면 픽셀 → 칸 안 픽셀
+  t.style.paddingLeft = Math.max(0, L - p.left) / z + 'px';
+  t.style.paddingRight = Math.max(0, p.right - R) / z + 'px';
   if (!homeRO && window.ResizeObserver) { homeRO = new ResizeObserver(() => requestAnimationFrame(fitHome)); homeRO.observe(g); }
 }
 function unfitHome() { homeRO?.disconnect(); homeRO = null; const h = $('#btnHome'); if (h) h.style.translate = ''; }
@@ -1867,7 +1868,18 @@ addEventListener('resize', () => { if (document.body.classList.contains('playing
 // 게임 중 집 버튼을 누르면 게임을 닫고 처음 화면으로 (이동 자체는 app.js의 [data-go] 처리)
 document.addEventListener('click', e => { if (e.target.closest('[data-go]') && document.body.classList.contains('playing')) endPlay(); });
 // 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
-function endPlay() { try { unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
+// 게임 화면 통째로 확대(2026-10-29 하율 "브라우저 125% 확대한 정도로 크게 보이게"): 넓은 화면에서 #gamePlay·집 버튼에 CSS zoom.
+// 판 높이(--srh)는 CSS가 --gz로 나눠 화면에 맞춤, 픽셀을 다루는 JS(fitHome·snapScr)는 gpZoom()으로 나눔
+const gpZoom = () => parseFloat($('#gamePlay')?.style.zoom) || 1;
+function setGpZoom(on) {
+  const gp = $('#gamePlay'), hb = $('#btnHome'); if (!gp) return 1;
+  const z = on && matchMedia('(min-width:900px) and (min-height:520px)').matches ? Math.max(1, Math.min(1.25, innerWidth / 1000, innerHeight / 600)) : 1;
+  const v = Math.floor(z * 100) / 100;
+  for (const el of [gp, hb]) if (el) el.style.zoom = v > 1 ? v : '';
+  if (v > 1) gp.style.setProperty('--gz', v); else gp.style.removeProperty('--gz');
+  return v;
+}
+function endPlay() { try { setGpZoom(false); unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
 
 // 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
@@ -2352,8 +2364,9 @@ async function playStair() {
   // 도트 굵기가 들쭉날쭉하고, 캔버스(320)보다 작게 줄면 가는 선이 사라졌음. 짝수 배(캔버스 한 칸 = 정수 픽셀)를 우선, 너무 작아지면 홀수 배
   const snapScr = () => {
     if (!cv.isConnected) return;
+    const z = setGpZoom(true);
     scr.style.removeProperty('width');
-    const dpr = devicePixelRatio || 1, av = cv.getBoundingClientRect().width * dpr, bw = scr.offsetWidth - scr.clientWidth;
+    const dpr = (devicePixelRatio || 1) * z, av = cv.getBoundingClientRect().width * (devicePixelRatio || 1), bw = scr.offsetWidth - scr.clientWidth;   // 확대 중엔 칸 안 1px = 기기 픽셀 dpr×z
     let n = Math.floor(av / STAIR.W + .01);
     if (n < 2) return;   // 아주 작은 화면은 그대로(정수 배로 맞추면 너무 작아짐)
     if (n % 2 && n > 2 && (n - 1) / n >= .8) n--;
