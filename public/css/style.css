@@ -4792,9 +4792,10 @@ html:has(body.playing){overflow:hidden}
 .gr-stat dd.gr-tm{font-variant-numeric:tabular-nums}
 .gr-stat dd.gr-tm.warn{color:#ff5a6e;animation:grTm .5s ease-in-out infinite alternate}
 @keyframes grTm{to{transform:scale(1.15)}}
-.gr-modes{display:flex;gap:12px;justify-content:center;margin:6px 0 2px;flex-wrap:wrap;pointer-events:auto}   /* 겉 안내판은 클릭을 통과시키지만 방식 버튼은 누를 수 있게 */
+.gr-modes{display:flex;gap:10px;justify-content:center;margin:6px 0 2px;flex-wrap:nowrap;pointer-events:auto;max-width:100%}   /* 두 버튼은 항상 한 줄(위아래로 쌓이지 않게, 2026-10-29 하율) */
+.gr-modes button small{white-space:normal;word-break:keep-all;text-align:center;line-height:1.25}   /* 겉 안내판은 클릭을 통과시키지만 방식 버튼은 누를 수 있게 */
 .gr-modes button *{animation:none!important}   /* 안내판 글자 깜빡임·흔들림이 버튼 안까지 오지 않게 (2026-10-27 하율) */
-.gr-modes button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:132px;padding:12px 18px;border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);box-shadow:3px 4px 0 var(--ink);cursor:pointer;font:inherit}
+.gr-modes button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;flex:1 1 0;max-width:180px;padding:10px 14px;border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);box-shadow:3px 4px 0 var(--ink);cursor:pointer;font:inherit}
 .gr-modes button b{display:flex;align-items:center;gap:5px;font:400 22px/1 var(--disp);color:inherit;-webkit-text-stroke:0;text-shadow:none;letter-spacing:0}
 .gr-modes button b svg{width:20px;height:20px}
 .gr-modes button small{font-size:12.5px;font-weight:800;color:#5b6585;-webkit-text-stroke:0;text-shadow:none}
@@ -5051,7 +5052,7 @@ html:has(body.playing){overflow:hidden}
 .week td.today.done .chg-t{right:25px}  /* 오른쪽 위 완료 체크와 안 겹치게 (왼쪽 위는 '지금'·'다음' 꼬리표 자리) */
 @media (max-width:560px){.week td .chg-t{position:static;display:inline-block;margin-top:3px}}
 
-.gr[data-bs="s"] .gr-modes button{min-width:108px;padding:9px 12px}.gr[data-bs="s"] .gr-modes button b{font-size:18px}.gr[data-bs="s"] .gr-modes button small{font-size:11px}
+.gr[data-bs="s"] .gr-modes{gap:8px}.gr[data-bs="s"] .gr-modes button{min-width:0;padding:7px 9px;gap:3px;border-radius:12px}.gr[data-bs="s"] .gr-modes button b{font-size:17px}.gr[data-bs="s"] .gr-modes button b svg{width:16px;height:16px}.gr[data-bs="s"] .gr-modes button small{font-size:10.5px}
 .gr[data-bs="xs"] .gr-modes{gap:6px}.gr[data-bs="xs"] .gr-modes button{min-width:0;padding:6px 8px;border-width:2px}.gr[data-bs="xs"] .gr-modes button b{font-size:15px}.gr[data-bs="xs"] .gr-modes button small{font-size:9.5px}
 
 /* ===== 서비스 큰 제목 숨김 (2026-10-27 하율: "이 문구 없애고 아래 오브젝트들 위로") ===== */
