@@ -425,10 +425,14 @@ function profileHtml(d) {
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
        <button class="btn ghost" data-act-s="more" data-h="${esc(u.handle)}" aria-label="더보기">⋯</button>`;
-  const bests = gamesOn().map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${d.bests?.[k] != null ? esc(g.fmt(d.bests[k])) : '-'}</b></li>`).join('');
   // 프로필 게임 기록 2(2026-10-28 하율: 게임이 늘수록 세로 목록이 지저분) — 한 기록 = 2칸 격자 타일, 안 한 게임은 아래 작은 아이콘 한 줄로 모음 · 미리보기 깃발 pbest-v2
-  const gOn = gamesOn(), gHas = gOn.filter(([k]) => d.bests?.[k] != null), gNo = gOn.filter(([k]) => d.bests?.[k] == null);
-  const bests2 = `<section class="pgrec" aria-label="게임 최고 기록"><p class="pg-h"><span>${ic('trophy')}게임 기록</span><small>${gHas.length}/${gOn.length}개 플레이</small></p>${gHas.length ? `<ul class="pg-grid">${gHas.map(([k, g]) => `<li><small>${ic(g.ic)}<span>${g.name}</span></small><b>${esc(g.fmt(d.bests[k]))}</b></li>`).join('')}</ul>` : '<p class="pg-none">아직 플레이한 게임이 없어요</p>'}${gNo.length && gHas.length ? `<p class="pg-no"><small>안 한 게임</small>${gNo.map(([, g]) => `<i data-tip="${esc(g.name)}" aria-label="${esc(g.name)}">${ic(g.ic)}</i>`).join('')}</p>` : ''}</section>`;
+  // 2026-10-29 하율 "기자재 정리 오래 버티기 기록이 안 보임": 일반(gearn) 기록도 기자재 정리! 칸에 — 타임어택 아래 '일반 N점' 한 줄, 일반만 했으면 일반 기록으로 칸 표시
+  const hasB = k => d.bests?.[k] != null || (k === 'gear' && d.bests?.gearn != null);
+  const bv = (k, g) => k !== 'gear' ? esc(g.fmt(d.bests[k])) : d.bests?.gear == null ? `${esc(GAMES.gearn.fmt(d.bests.gearn))}<em class="pg-sub">일반</em>`
+    : esc(g.fmt(d.bests.gear)) + (d.bests?.gearn != null ? `<em class="pg-sub">일반 ${esc(GAMES.gearn.fmt(d.bests.gearn))}</em>` : '');
+  const bests = gamesOn().map(([k, g]) => `<li><span>${ic(g.ic)}</span><small>${g.name}</small><b>${hasB(k) ? bv(k, g) : '-'}</b></li>`).join('');
+  const gOn = gamesOn(), gHas = gOn.filter(([k]) => hasB(k)), gNo = gOn.filter(([k]) => !hasB(k));
+  const bests2 = `<section class="pgrec" aria-label="게임 최고 기록"><p class="pg-h"><span>${ic('trophy')}게임 기록</span><small>${gHas.length}/${gOn.length}개 플레이</small></p>${gHas.length ? `<ul class="pg-grid">${gHas.map(([k, g]) => `<li><small>${ic(g.ic)}<span>${g.name}</span></small><b>${bv(k, g)}</b></li>`).join('')}</ul>` : '<p class="pg-none">아직 플레이한 게임이 없어요</p>'}${gNo.length && gHas.length ? `<p class="pg-no"><small>안 한 게임</small>${gNo.map(([, g]) => `<i data-tip="${esc(g.name)}" aria-label="${esc(g.name)}">${ic(g.ic)}</i>`).join('')}</p>` : ''}</section>`;
   return `<article class="pcard c-${esc(u.color)}${isDev(u) ? ' dev' : ''}${u.gcm ? ' gcm' : ''}${!isDev(u) && sk.cur >= FLAME_AT[1] ? ' hot' : ''}">${isDev(u) ? pfxDev() : u.pfx === 'r:fxstar' ? pfxStars() : ''}
     <div class="pban" aria-hidden="true">${(u.stickers || []).slice(0, stkMax(u)).map((s, i) => `<i class="stk ${STK_POS[i]}">${emo(s, 'stka')}</i>`).join('')}</div>
     <div class="pbody">
