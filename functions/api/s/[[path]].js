@@ -150,6 +150,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
 const TICKET_RE = /^[0-9a-f]{32}$/;
 const TICKET_TTL = 3600e3;
 // 시간 제한 없는 게임은 1시간 넘게 할 수 있음 → 티켓 6시간(2026-10-29 하율: 기자재 정리! 일반 100만 점 판이 '게임을 다시 시작해 주세요'로 저장 안 됨 — 1시간 지나 티켓 만료)
+const TK_GRACE = 86400e3;   // 만료 티켓 유예 — lib/db.js limited()의 rl 정리도 tk:는 이만큼 늦게 지움
 const LONG_TK = new Set(['gearn', 'blast']), ttlOf = game => LONG_TK.has(game) ? 6 * 3600e3 : TICKET_TTL;
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
@@ -1176,7 +1177,8 @@ const ROUTES = {
     const g = GAMES[game];
     if (!g || (g.ff && !ffOn(g.ff, isAdm(me))) || !Number.isFinite(v) || v < 0 || v > Math.max(1e7, g.max)) return err('기록이 이상해요');   // 카메라 가방 정리!은 BLAST_MAX(약 1억) − 점수라 1e7을 넘음(2026-10-29: 이 검사에 막혀 블록 기록이 하나도 저장 안 되던 버그)
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
-    const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
+    // 만료된 티켓도 24시간까지는 받음(2026-10-29 하율 "이런 변수도 생각해서"): 만료는 '새 판 시작' 개수 제한용일 뿐, 이미 시작한 판을 버릴 이유가 아님 — 기록 검사(scoreIn)는 그대로
+    const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() - TK_GRACE).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
     // 티켓을 쓴 뒤 서버 오류가 나면 기록이 사라지고 다시 보내도 '게임을 다시 시작해 주세요'가 됐음(2026-10-29 bests null.b로 약 150판 유실)
     // → 오류가 나면 티켓을 되돌려 놓고 던짐 → 화면이 같은 티켓으로 한 번 더 보냄(saveScore)

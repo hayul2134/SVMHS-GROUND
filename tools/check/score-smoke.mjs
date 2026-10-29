@@ -105,6 +105,14 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
   if (h?.st !== 4 || !ok) fails.push(`보관 검사: 게임 시작 때 자동 반영 안 됨 (st ${h?.st}, 기록 ${ok})`);
   sq.prepare("DELETE FROM errs WHERE msg LIKE '연기검사:%'").run();
 }
+// 오래 한 판 검사(2026-10-29 기자재 정리! 일반 100만 점 유실): 티켓이 만료된 뒤(2시간 뒤)에 끝난 판도 저장돼야 함
+{
+  cookie = '';
+  await call('POST', 'signup', { handle: 'smoke_l1', name: '연기검사l1', pw: 'zq8!kd02xa', grade: 2, cls: 3, club: '' });
+  const st = await call('POST', 'start', { game: 'reaction' }); skew += 2 * 3600e3;
+  const r = await call('POST', 'score', { game: 'reaction', ticket: st.j?.ticket, ...PLAY.reaction(300) });
+  if (!r.j?.ok) fails.push(`오래 한 판 검사: 티켓 만료 뒤 저장 거절 → ${r.s} ${JSON.stringify(r.j)}`);
+}
 const saved = sq.prepare('SELECT COUNT(*) AS n FROM scores').get().n;
 if (!saved) fails.push('정상 기록이 하나도 저장되지 않음 — 검사 데이터(PLAY)를 확인할 것');
 const errs = sq.prepare('SELECT route, msg FROM errs').all();
