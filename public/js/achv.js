@@ -9,11 +9,12 @@ import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX } from './gear-score.js';
 import { STAIR_MAX } from './stair-score.js';
 import { FILM_MAX } from './film-score.js';
+import { BLAST_MAX } from './blast-score.js';
 
 export const ACH_FF = 'achv';
-export const ACH_GAMES = ['film', 'home', 'stair', 'cut', 'reaction', 'num25', 'gear'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
+export const ACH_GAMES = ['film', 'home', 'stair', 'cut', 'reaction', 'num25', 'gear', 'blast'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
 // 저장값(작을수록 좋음) → 화면 단위
-export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : g === 'film' ? FILM_MAX - v : v;
+export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : g === 'film' ? FILM_MAX - v : g === 'blast' ? BLAST_MAX - v : v;
 
 const A = (k, g, lv, n, d, x = {}) => ({ k, g, lv, n, d, ...x });
 // lv: 1 브론즈 · 2 실버 · 3 골드 · 4 무지개(최상)
@@ -79,10 +80,19 @@ export const ACH = [
   A('g_5', 'gear', 2, '말끔하게', '한 판에 20줄 지우기', { t: 'live' }),
   A('g_6', 'gear', 2, '반납 담당', '서로 다른 5일 동안 정리하기', { t: 'days', v: 5 }),
   A('g_x', 'gear', 1, '일단 쌓고 보자', '블록 20개 넘게 놓고 한 줄도 못 지우기', { t: 'live', hid: 1 }),
+  // 기자재 정리! 블록 (점수, 2026-10-29) — 한 판 업적은 서버가 판을 다시 둬 본 결과(live.x: combo·wipe·n)로
+  A('b_1', 'blast', 1, '첫 케이스', '첫 판 하기', { t: 'first' }),
+  A('b_2', 'blast', 1, '선반 정돈', '1,000점 넘게 정리하기', { t: 'hi', v: 1000 }),
+  A('b_3', 'blast', 2, '장비실 조교', '3,000점 넘게 정리하기', { t: 'hi', v: 3000 }),
+  A('b_4', 'blast', 3, '칼각 마스터', '8,000점 넘게 정리하기', { t: 'hi', v: 8000 }),
+  A('b_5', 'blast', 4, '기자재실의 전설', '15,000점 넘게 정리하기', { t: 'hi', v: 15000 }),
+  A('b_7', 'blast', 2, '정리 폭주', '한 판에 15번 연속 정리하기', { t: 'live' }),
+  A('b_6', 'blast', 2, '매일 반납', '서로 다른 5일 동안 정리하기', { t: 'days', v: 5 }),
+  A('b_x', 'blast', 1, '텅 빈 선반', '한 판에 선반을 싹 비우기', { t: 'live', hid: 1 }),
 ];
 export const ACH_BY = Object.fromEntries(ACH.map(a => [a.k, a]));
 // 게임 하나의 일반 업적을 다 모으면 받는 칭호(프로필 꾸미기 칭호 목록)
-export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신' };
+export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신', blast: '정리정돈 끝판왕' };
 export const achOf = g => ACH.filter(a => a.g === g);
 export const titleDone = (g, own) => achOf(g).filter(a => !a.hid).every(a => own[a.k]);
 export const achTitles = own => Object.keys(ACH_TITLE).filter(g => titleDone(g, own)).map(g => ACH_TITLE[g]);
@@ -90,7 +100,7 @@ export const ACH_TITLES = Object.values(ACH_TITLE);
 export const parseAch = s => { try { const o = JSON.parse(s || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
 
 // 한 판 업적: r = 판 기록(서버 checkRounds를 통과한 형식), v = 저장값
-function liveOk(k, g, v, r) {
+function liveOk(k, g, v, r, x) {
   const n = (r || []).map(x => Math.round(+x));
   switch (k) {
     case 'h_x': return g === 'home' && nat(g, v) < 30;
@@ -104,6 +114,8 @@ function liveOk(k, g, v, r) {
     case 'n_x': return g === 'num25' && v > 60000;
     case 'g_5': return (g === 'gear' || g === 'gearn') && n.length === 4 && n[1] >= 20;
     case 'g_x': return (g === 'gear' || g === 'gearn') && n.length === 4 && n[1] === 0 && n[2] > 20;
+    case 'b_7': return g === 'blast' && !x?.err && (x?.combo || 0) >= 15;
+    case 'b_x': return g === 'blast' && !x?.err && (x?.wipe || 0) >= 1;
   }
   return false;
 }
@@ -126,7 +138,7 @@ export function achCheck(own, st, live) {
     else if (a.t === 'live' && live) {
       if (a.k === 'a_top3') ok = live.rank != null && live.rank <= 3;
       else if (a.k === 'a_night') ok = live.hour >= 2 && live.hour < 5;
-      else ok = a.g === gOf(live.game) && liveOk(a.k, live.game, live.v, live.r);
+      else ok = a.g === gOf(live.game) && liveOk(a.k, live.game, live.v, live.r, live.x);
     }
     if (ok) got.push(a.k);
   }

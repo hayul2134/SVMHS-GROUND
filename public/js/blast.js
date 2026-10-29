@@ -1,7 +1,9 @@
 // SVMHS GROUND — 기자재 정리! 블록(블록 블라스트 방식, 2026-10-29 하율, 미리보기 깃발 blast-game)
 // 8×8 장비 선반에 장비 케이스 3개를 끌어다 놓기 → 가로·세로 줄이 꽉 차면 정리. 놓을 곳이 없으면 끝. 규칙·검사는 blast-score.js(서버와 같음)
 // createBlast(root, { best, sound, seed: async () => 씨앗|null, onOver(res), onSound(on) })
-//   res = { score, n, lines, ms, rounds: [끝난 ms, ...놓기], why: 'stuck'|'max' }
+//   res = { score, n, lines, ms, rounds: [끝난 ms, ...놓기], why: 'stuck'|'max'|'quit' }
+// 조작(2026-10-29 출시 준비): ① 끌어다 놓기 ② 눌러서 집기 → 판을 눌러 놓기(트랙패드·터치에서 끌기 어려울 때) · 다시 누르면 내려놓기
+//   '그만하기'(두 번 눌러 확인) = 쉬는 시간이 끝날 때 지금 점수로 기록 남기기
 import { N, PIECES, MAX_MOVES, MIN_GAP, rng, newBoard, fits, canPlace, nextSet, place, enc } from './blast-score.js';
 
 const KINDS = {
@@ -18,12 +20,12 @@ const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, 
 export function createBlast(root, opt = {}) {
   let best = opt.best || 0, sound = !!opt.sound;
   root.innerHTML = `<div class="ml-top"><span class="ml-chip">점수 <b data-m="sc">0</b></span><span class="ml-chip">최고 <b data-m="best">${best.toLocaleString('ko-KR')}</b></span><span class="ml-chip bl-cb" data-m="cbw">연속 <b data-m="cb">0</b></span>
-      <button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></div>
+      <button type="button" class="btn ghost bl-stop" data-m="stop" hidden>그만하기</button><button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></div>
     <div class="ml-board bl-board" data-m="board"><canvas data-m="cv" aria-label="기자재 정리! 블록 판"></canvas><div class="ml-ov" data-m="ov"></div></div>`;
   const $ = k => root.querySelector(`[data-m="${k}"]`);
-  const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), board = $('board'), sndBtn = $('snd');
+  const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), board = $('board'), sndBtn = $('snd'), stopBtn = $('stop');
   let b = newBoard(), st = { score: 0, combo: 0, miss: 0 }, rand = null, set = [0, 1, 2], used = [true, true, true], moves = [], lines = 0;
-  let state = 'ready', cs = 40, pad = 10, W = 0, H = 0, horiz = false, dpr = 1, tiles = new Map(), drag = null, fx = [], floats = [], raf = 0, dead = false, busy = false, t0 = 0, ac = null, born = [], endT = 0;
+  let state = 'ready', cs = 40, pad = 10, W = 0, H = 0, horiz = false, dpr = 1, tiles = new Map(), drag = null, fx = [], floats = [], raf = 0, dead = false, busy = false, t0 = 0, ac = null, born = [], endT = 0, held = -1, setAt = 0, stopT = 0;
 
   /* ----- 소리(기본 꺼짐) ----- */
   function au() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } } if (ac.state === 'suspended') ac.resume().catch(() => {}); return ac; }
@@ -103,7 +105,7 @@ export function createBlast(root, opt = {}) {
     // 선반(판)
     ctx.fillStyle = '#26315c'; ctx.beginPath(); ctx.roundRect(bx - pad * .5, by - pad * .5, cs * 8 + pad, cs * 8 + pad, pad); ctx.fill();
     for (let i = 0; i < N * N; i++) { const x = bx + (i % N) * cs, y = by + Math.floor(i / N) * cs; ctx.fillStyle = (i + Math.floor(i / N)) % 2 ? '#2f3b6c' : '#2c3866'; ctx.beginPath(); ctx.roundRect(x + 1.5, y + 1.5, cs - 3, cs - 3, cs * .16); ctx.fill(); }
-    const pv = drag && state === 'play' ? preview(drag) : null;
+    const pv = drag && drag.x != null && state === 'play' ? preview(drag) : null;
     for (let i = 0; i < N * N; i++) {
       if (!b[i]) continue;
       const x = bx + (i % N) * cs, y = by + Math.floor(i / N) * cs, bn = born[i] && now - born[i] < 160 ? .82 + .18 * (now - born[i]) / 160 : 1, d = cs * bn;
@@ -128,17 +130,20 @@ export function createBlast(root, opt = {}) {
     // 받침: 남은 장비 3개(작게) + 이름
     for (let i = 0; i < 3; i++) {
       const [sx, sy, sw, sh] = slotRect(i);
-      if (used[i] || (drag && drag.slot === i)) continue;
-      const s = PIECES[set[i]].s, k = kindOf(set[i]), [h, w] = dims(s), m = mini(), ok = canPlace(b, s), lab = Math.max(10, Math.round(cs * .28));
+      if (used[i] || (drag && drag.slot === i && !drag.held)) continue;
+      const s = PIECES[set[i]].s, k = kindOf(set[i]), [h, w] = dims(s), ok = canPlace(b, s), lab = Math.max(10, Math.round(cs * .28));
+      const ap = Math.min(1, (now - setAt - i * 60) / 220), m = mini() * (ap < 0 ? .6 : .6 + .4 * (1 - (1 - ap) ** 3));   // 새 묶음은 하나씩 톡톡 커지며 등장
+      if (ap < 0) continue;
       const ox = sx + (sw - w * m) / 2, oy = sy + (sh - lab * 1.4 - h * m) / 2;
-      ctx.globalAlpha = ok || state !== 'play' ? 1 : .32;
+      if (held === i) { ctx.fillStyle = 'rgba(255,226,122,.22)'; ctx.strokeStyle = '#e0a21a'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.roundRect(sx + 4, sy + 4, sw - 8, sh - 8, cs * .3); ctx.fill(); ctx.stroke(); }   // 집은 장비
+      ctx.globalAlpha = (ok || state !== 'play' ? 1 : .32) * Math.max(0, Math.min(1, ap * 1.6));
       for (const [dr, dc] of s) ctx.drawImage(tile(k, m), ox + dc * m, oy + dr * m, m, m);
       ctx.globalAlpha = 1;
       ctx.font = `800 ${lab}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = ok ? '#8d93b8' : '#c0c4d8';
       ctx.fillText(KINDS[k][0], sx + sw / 2, Math.min(sy + sh - 4, oy + h * m + lab * 1.25));
     }
     // 끌고 있는 장비(원래 크기)
-    if (drag) {
+    if (drag && drag.x != null && !(drag.held && slotAt(drag) >= 0)) {
       const s = PIECES[set[drag.slot]].s, k = kindOf(set[drag.slot]), [h, w] = dims(s);
       const ox = drag.x - w * cs / 2, oy = drag.y - drag.lift - h * cs / 2;
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 6;
@@ -159,23 +164,49 @@ export function createBlast(root, opt = {}) {
   /* ----- 입력: 받침에서 장비를 눌러 끌기 → 판 위에서 놓기 ----- */
   const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   function slotAt(p) { for (let i = 0; i < 3; i++) { const [x, y, w, h] = slotRect(i); if (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h) return i; } return -1; }
+  const tryPut = d => {   // 놓기 시도 → 놓았으면 true
+    const sn = snapOf(d), t = Math.round(performance.now() - t0);
+    if (!sn) { tone(180, .08, 'triangle', .04); return false; }
+    if (moves.length && t - Math.floor(moves[moves.length - 1] / 1024) < MIN_GAP) return false;
+    put(d.slot, sn.r, sn.c, t); return true;
+  };
   const down = e => {
-    if (state !== 'play' || drag || e.button > 0) return;
-    const p = pos(e), i = slotAt(p); if (i < 0 || used[i]) return;
-    e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch {}
-    drag = { slot: i, x: p.x, y: p.y, id: e.pointerId, lift: e.pointerType === 'touch' || e.pointerType === 'pen' ? cs * 1.6 : 0 };
+    if (state !== 'play' || e.button > 0 || (drag && !drag.held)) return;
+    const p = pos(e), i = slotAt(p), touch = e.pointerType === 'touch' || e.pointerType === 'pen';
+    e.preventDefault();
+    if (drag?.held) {   // 집은 상태: 같은 장비 = 내려놓기 · 다른 장비 = 바꿔 집기 · 판 = 그 자리에 놓기
+      if (i === drag.slot) { drag = null; held = -1; kick(); return; }
+      if (i >= 0 && !used[i]) { held = -1; drag = null; }
+      else if (i < 0) { const d = { ...drag, x: p.x, y: p.y, lift: 0 }; if (tryPut(d)) { drag = null; held = -1; } kick(); return; }
+      else return;
+    }
+    if (i < 0 || used[i]) return;
+    try { cv.setPointerCapture(e.pointerId); } catch {}
+    drag = { slot: i, x: p.x, y: p.y, x0: p.x, y0: p.y, at: performance.now(), id: e.pointerId, moved: false, lift: touch ? cs * 1.6 : 0 };
     tone(440, .04, 'triangle', .04); kick();
   };
-  const move = e => { if (!drag || e.pointerId !== drag.id) return; const p = pos(e); drag.x = p.x; drag.y = p.y; kick(); };
+  const move = e => {
+    if (!drag) return;
+    const p = pos(e);
+    if (drag.held) { if (e.pointerType === 'mouse') { drag.x = p.x; drag.y = p.y; kick(); } return; }   // 집은 장비는 마우스를 따라다님(터치는 판을 누른 자리)
+    if (e.pointerId !== drag.id) return;
+    drag.x = p.x; drag.y = p.y; if (Math.hypot(p.x - drag.x0, p.y - drag.y0) > cs * .3) drag.moved = true; kick();
+  };
   const up = e => {
-    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag || drag.held || e.pointerId !== drag.id) return;
     const d = drag; drag = null;
     if (state !== 'play') { kick(); return; }
-    const sn = snapOf(d), t = Math.round(performance.now() - t0);
-    if (!sn || (moves.length && t - Math.floor(moves[moves.length - 1] / 1024) < MIN_GAP)) { if (!sn) tone(180, .08, 'triangle', .04); kick(); return; }
-    put(d.slot, sn.r, sn.c, t);
+    if (!d.moved && slotAt(d) === d.slot) { held = d.slot; drag = { slot: d.slot, held: true, x: null, y: null, lift: 0 }; kick(); return; }   // 끌지 않고 눌렀다 뗌 → 집기
+    tryPut(d); kick();
   };
-  const cancel = e => { if (drag && (!e || e.pointerId === drag.id)) { drag = null; kick(); } };
+  const cancel = e => { if (drag && !drag.held && (!e || e.pointerId === drag.id)) { drag = null; kick(); } };
+  const leave = () => { if (drag?.held) { drag.x = drag.y = null; kick(); } };
+  cv.addEventListener('pointerleave', leave);
+  stopBtn.onclick = () => {   // 두 번 눌러 확인
+    if (state !== 'play') return;
+    if (!stopBtn.classList.contains('ask')) { stopBtn.classList.add('ask'); stopBtn.textContent = '한 번 더 누르면 끝'; clearTimeout(stopT); stopT = setTimeout(() => { stopBtn.classList.remove('ask'); stopBtn.textContent = '그만하기'; }, 2500); return; }
+    clearTimeout(stopT); stopBtn.classList.remove('ask'); stopBtn.textContent = '그만하기'; stopBtn.blur(); end('quit');
+  };
   cv.addEventListener('pointerdown', down); cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', cancel);
 
   function put(slot, r, c, t) {
@@ -195,19 +226,19 @@ export function createBlast(root, opt = {}) {
     } else { floats.push({ s: '+' + res.pts, x: cx, y: cy, t: now, c: '#fff' }); tone(300, .05, 'square', .035); tone(220, .06, 'triangle', .04, .03); }
     $('sc').textContent = st.score.toLocaleString('ko-KR'); $('sc').classList.remove('bump'); void $('sc').offsetWidth; $('sc').classList.add('bump');
     $('cb').textContent = st.combo; $('cbw').classList.toggle('on', st.combo > 1);
-    if (used.every(Boolean)) { set = nextSet(rand, b); used = [false, false, false]; tone(660, .05, 'sine', .035, .1); }
+    if (used.every(Boolean)) { set = nextSet(rand, b, moves.length); used = [false, false, false]; setAt = now + 120; tone(660, .05, 'sine', .035, .1); }
     if (moves.length >= MAX_MOVES) end('max');
     else if (!set.some((pi2, i) => !used[i] && canPlace(b, PIECES[pi2].s))) { state = 'ending'; endT = setTimeout(() => end('stuck'), 650); }
     kick();
   }
 
   function kick() { if (!raf && !dead) raf = requestAnimationFrame(loop); }
-  function loop() { raf = 0; if (dead) return; draw(); if (drag || fx.length || floats.length || born.some(x => x && performance.now() - x < 170)) raf = requestAnimationFrame(loop); }
+  function loop() { raf = 0; if (dead) return; draw(); const now = performance.now(); if ((drag && !drag.held) || fx.length || floats.length || now - setAt < 400 || born.some(x => x && now - x < 170)) raf = requestAnimationFrame(loop); }
 
   /* ----- 판 흐름 ----- */
   function ready() {
     state = 'ready'; ov.hidden = false; ov.className = 'ml-ov';
-    ov.innerHTML = `<b>기자재 정리! 블록</b><span>장비 케이스를 끌어다 선반에 놓아요<br>가로·세로 한 줄이 꽉 차면 <em>정리!</em> · 놓을 곳이 없으면 끝</span><button type="button" class="btn big" data-m="go">시작</button>`;
+    ov.innerHTML = `<b>기자재 정리! 블록</b><span>장비 케이스를 끌어다 선반에 놓아요 <small>(눌러서 집고 판을 눌러도 돼요)</small><br>가로·세로 한 줄이 꽉 차면 <em>정리!</em> · 놓을 곳이 없으면 끝<br>연속으로 정리하면 점수가 몇 배로!</span><button type="button" class="btn big" data-m="go">시작</button>`;
     $('go').onclick = start; draw();
   }
   async function start() {
@@ -217,31 +248,32 @@ export function createBlast(root, opt = {}) {
     busy = false; if (dead) return;
     clearTimeout(endT);
     rand = rng(seed == null ? Math.floor(Math.random() * 4294967296) : seed);
-    b = newBoard(); st = { score: 0, combo: 0, miss: 0 }; moves = []; lines = 0; fx = []; floats = []; born = []; drag = null;
-    set = nextSet(rand, b); used = [false, false, false];
+    b = newBoard(); st = { score: 0, combo: 0, miss: 0 }; moves = []; lines = 0; fx = []; floats = []; born = []; drag = null; held = -1;
+    set = nextSet(rand, b, 0); used = [false, false, false]; setAt = performance.now() + 150;
     $('sc').textContent = 0; $('cb').textContent = 0; $('cbw').classList.remove('on');
-    state = 'play'; t0 = performance.now(); ov.hidden = true; tone(523, .08, 'triangle', .06); tone(784, .12, 'triangle', .06, .08);
+    state = 'play'; t0 = performance.now(); ov.hidden = true; stopBtn.hidden = false; tone(523, .08, 'triangle', .06); tone(784, .12, 'triangle', .06, .08);
     fit(); kick();
   }
   function end(why) {
     if (state !== 'play' && state !== 'ending') return;
-    const ms = Math.round(performance.now() - t0); state = 'over'; drag = null;
+    const ms = Math.round(performance.now() - t0); state = 'over'; drag = null; held = -1; stopBtn.hidden = true; clearTimeout(stopT); stopBtn.classList.remove('ask'); stopBtn.textContent = '그만하기';
     const nb = st.score > best; if (nb) { best = st.score; $('best').textContent = best.toLocaleString('ko-KR'); }
     tone(nb ? 784 : 392, .14, 'triangle', .07); tone(nb ? 1047 : 330, .22, 'triangle', .07, .14);
     ov.hidden = false; ov.className = 'ml-ov end';
-    ov.innerHTML = `<b>${why === 'max' ? '오늘 정리는 여기까지!' : '선반이 꽉 찼어요!'}</b><p class="ml-sc">${st.score.toLocaleString('ko-KR')}<small>점</small></p><span>${lines}줄 정리 · 장비 ${moves.length}개${nb ? ' · 최고 기록 경신!' : ''}</span>
+    ov.innerHTML = `<b>${why === 'max' ? '오늘 정리는 여기까지!' : why === 'quit' ? '여기까지 정리!' : '선반이 꽉 찼어요!'}</b><p class="ml-sc">${st.score.toLocaleString('ko-KR')}<small>점</small></p><span>${lines}줄 정리 · 장비 ${moves.length}개${nb ? ' · 최고 기록 경신!' : ''}</span>
       <small class="ml-msg" data-m="msg"></small><button type="button" class="btn big" data-m="go">한 번 더</button>`;
     $('go').onclick = start; draw();
     opt.onOver?.({ score: st.score, n: moves.length, lines, ms, why, nb, rounds: [ms, ...moves] });
   }
   const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe(root);
-  rand = rng(1); set = nextSet(rand, b); used = [false, false, false]; ready(); fit();
+  rand = rng(1); set = nextSet(rand, b, 0); used = [false, false, false]; ready(); fit();
   return {
     start,
     msg(html) { const m = $('msg'); if (m) m.innerHTML = html; },
     setBest(v, force) { if (force || v > best) { best = v; $('best').textContent = v.toLocaleString('ko-KR'); } },
-    destroy() { dead = true; clearTimeout(endT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
-    get st() { return { state, score: st.score, combo: st.combo, board: b, set, used, moves, cs, pad, horiz }; },
+    destroy() { dead = true; clearTimeout(endT); clearTimeout(stopT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
+    get st() { return { state, score: st.score, combo: st.combo, board: b, set, used, moves, cs, pad, horiz, held }; },
+    slotRect, end,
     _put(slot, r, c) { if (state === 'play' && !used[slot] && fits(b, PIECES[set[slot]].s, r, c)) { put(slot, r, c, Math.round(performance.now() - t0)); return true; } return false; },   // 테스트용
   };
 }

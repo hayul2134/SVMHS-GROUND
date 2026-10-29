@@ -34,7 +34,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   gearn: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game', casual: true },
   film: { min: FILM_MAX - FILM_CELLS, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷(0~170). 티어는 공개되는 순간부터(계단 오르기와 같게)
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },
-  blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game' },   // 기자재 정리! 블록(2026-10-29 미리보기): BLAST_MAX - 점수. 티어는 공개 때 하율 결정   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
+  blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game', tierOn: true },   // 기자재 정리! 블록(2026-10-29 미리보기): BLAST_MAX - 점수. 티어는 공개되는 순간부터(계단 오르기·필름 10과 같게)   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 // 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
@@ -42,6 +42,8 @@ const H = (a, u, bad) => ({ a, u, bad });
 const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5;   // 반응속도 부정출발 벌점 — public/js/social.js와 같게
 const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 const sec = ms => (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + '초';
+// 보류·보관 기록의 판 기록: 다시 둬 보는 게임(필름 10·기자재 정리! 블록)은 놓기 전부가 있어야 나중에 다시 검사(rescueReplay)할 수 있음 → 2,600칸까지(예전: 30칸·500자에서 잘려 다시 검사가 늘 실패)
+const heldR = r => JSON.stringify(r.slice(0, 2600).map(x => Math.round(+x) || 0));
 function checkRounds(game, v, r, elapsed, ticket = '') {
   if (!Array.isArray(r)) return H('판 기록 없음(예전 화면)', '판마다의 기록이 같이 오지 않았어요.');
   const n = r.map(x => Math.round(+x));
@@ -430,7 +432,7 @@ export async function onRequest({ request: req, env, params }) {
     const origin = req.headers.get('origin');
     if (origin && origin !== new URL(req.url).origin) return err('forbidden', 403);
     if (req.headers.get('sec-fetch-site') === 'cross-site') return err('forbidden', 403);
-    const cap = path === 'feedback' ? 4 << 20 : 32768;   // 의견(사진 5장까지)만 4MB, 나머지 API는 32KB 넘는 요청이 없음
+    const cap = path === 'feedback' ? 4 << 20 : path === 'score' ? 65536 : 32768;   // 의견(사진 5장까지)만 4MB · 기록 저장은 64KB(기자재 정리! 블록 판 기록이 놓기마다 한 칸 — 긴 판은 30KB 가까이) · 나머지 API는 32KB 넘는 요청이 없음
     if (+(req.headers.get('content-length') || 0) > cap) return err(path === 'feedback' ? '사진 용량이 너무 커요' : 'too large', 413);
     if (!(req.headers.get('content-type') || '').includes('application/json')) return err('bad content type', 415);
     try { body = await req.json(); } catch { return err('bad body'); }
@@ -1103,7 +1105,7 @@ const ROUTES = {
   'POST score': needMe(async ({ db, me, body }) => {
     let game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
-    if (!g || (g.ff && !ffOn(g.ff, isAdm(me))) || !Number.isFinite(v) || v < 0 || v > 1e7) return err('기록이 이상해요');
+    if (!g || (g.ff && !ffOn(g.ff, isAdm(me))) || !Number.isFinite(v) || v < 0 || v > Math.max(1e7, g.max)) return err('기록이 이상해요');   // 기자재 정리! 블록은 BLAST_MAX(약 1억) − 점수라 1e7을 넘음(2026-10-29: 이 검사에 막혀 블록 기록이 하나도 저장 안 되던 버그)
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
     const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
@@ -1114,7 +1116,7 @@ const ROUTES = {
       // 그래도 서버 오류면 기록을 버리지 않고 '서버 오류 보관'(held_scores st 3)으로 맡겨 둠 → 고쳐진 뒤 그 학생이 아무 게임이나 시작할 때 원래 검사를 그대로 거쳐 자동 반영(rescueReplay)
       // (2026-10-29 하율 "이런 일 다시는 없게": 같은 버그면 다시 보내도 또 실패해서 약 150판이 사라졌음). 보관마저 실패하면(DB 한도 등) 예전처럼 티켓 되돌리고 던짐
       const kept = Array.isArray(body.rounds) && await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at, st) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 3)')
-        .bind(me.id, game, v, JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500), `서버 오류로 보관 #${ticket}`, Math.min(Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL), 2e9), kstYmd(), Date.now()).run().then(() => true, () => false);
+        .bind(me.id, game, v, heldR(body.rounds), `서버 오류로 보관 #${ticket}`, Math.min(Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL), 2e9), kstYmd(), Date.now()).run().then(() => true, () => false);
       if (kept) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/api/s/score', method: 'POST' }, e); return json({ ok: true, held: true, rescued: true, why: '서버에 잠깐 문제가 있어서 기록을 안전하게 맡아 뒀어요.' }); }
       await db.prepare('INSERT OR IGNORE INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${ticket}`, tk.n, tk.reset).run().catch(() => {}); throw e;
     }
@@ -1657,7 +1659,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     if (why) {
       const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();
       if (wait.n >= 30) return err('확인을 기다리는 기록이 많아요. 개발자가 확인할 때까지 조금만 기다려 주세요', 429);
-      const rounds = JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500);
+      const rounds = heldR(body.rounds);
       await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
         .bind(me.id, game, v, rounds, why.a.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
       const mine = await myBest(db, me.id, game, rxOn(me));
@@ -1717,7 +1719,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
     const mis = (!g.casual || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
     // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
-    const achGot = await achRun(db, me, { game, v, r: body.rounds, rank: g.casual ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
+    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : null, rank: g.casual ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
     const ach = achGot.length && ffOn(ACH_FF, isAdm(me)) ? achGot : undefined;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
     return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, cheer: !g.casual && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });

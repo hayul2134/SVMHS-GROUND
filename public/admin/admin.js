@@ -441,8 +441,8 @@ const heldRounds = (game, raw) => {
   if (game === 'cut') return r.map(x => x + 'ms').join(' · ') + ` (합 ${r.reduce((a, b) => a + b, 0)})`;
   if (game === 'home') return `${(+r[0]).toLocaleString('ko-KR')}m · ${((+r[1] || 0) / 1000).toFixed(1)}초`;
   if (game === 'gear' || game === 'gearn') return `${(+r[0]).toLocaleString('ko-KR')}점 · ${r[1]}줄 · 블록 ${r[2]}개 · ${((+r[3] || 0) / 1000).toFixed(0)}초`;
-  if (game === 'blast') return `${((+r[0] || 0) / 1000).toFixed(0)}초 · 놓기 ${Math.max(0, r.length - 1)}번${r.length >= 30 ? '+' : ''}`;
-  if (game === 'film') return `${r[0] === 10 ? '세로' : '가로'} 판 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 묶음 ${Math.max(0, r.length - 2)}번${r.length >= 30 ? '+' : ''}`;   // 보류 기록은 앞 30개만 남음
+  if (game === 'blast') return `${((+r[0] || 0) / 1000).toFixed(0)}초 · 놓기 ${Math.max(0, r.length - 1)}번${r.length === 30 ? '+' : ''}`;
+  if (game === 'film') return `${r[0] === 10 ? '세로' : '가로'} 판 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 묶음 ${Math.max(0, r.length - 2)}번${r.length === 30 ? '+' : ''}`;   // 2026-10-29 전 보류 기록은 앞 30개만 남음(+)
   if (game === 'stair') return `${(+r[0]).toLocaleString('ko-KR')}칸 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 방향 ${r[2]}번`;
   if (game === 'num25') return `마지막 탭 ${((+r[24] || 0) / 1000).toFixed(2)}초 · 벌점 ${((+r[25] || 0) / 1000)}초`;
   return esc(raw).slice(0, 80);

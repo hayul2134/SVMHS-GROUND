@@ -48,7 +48,20 @@ const PLAY = {
   reaction: v => ({ value: v, rounds: [v - 10, v + 10, v - 5, v + 5, v, 0] }),
   num25: v => ({ value: v, rounds: Array.from({ length: 25 }, (_, i) => Math.round(i * v / 24)) }),
   cut: v => ({ value: v, rounds: [v / 5, v / 5, v / 5, v / 5, v / 5].map(Math.round) }),
+  // 기자재 정리! 블록: 티켓 씨앗으로 진짜 판을 둬서(첫 자리부터 채우기, 400ms마다 최대 40개) 정상 기록 → 업적(live.x 다시 두기)까지 탐. v = 1이면 하한 밑 그대로
+  blast: (v, tk) => {
+    if (v === 1) return { value: 1, rounds: [] };
+    const B = BL, rand = B.rng(B.seedOf(tk)), b = B.newBoard(), st = { score: 0, combo: 0, miss: 0 }, mv = [];
+    let set = B.nextSet(rand, b, 0), used = [0, 0, 0];
+    out: while (mv.length < 40) {
+      for (let s = 0; s < 3; s++) { if (used[s]) continue; const sh = B.PIECES[set[s]].s;
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (B.fits(b, sh, r, c)) { B.place(b, st, sh, r, c); mv.push(B.enc((mv.length + 1) * 400, s, r, c)); used[s] = 1; if (used.every(Boolean)) { set = B.nextSet(rand, b, mv.length); used = [0, 0, 0]; } continue out; } }
+      break;
+    }
+    return { value: B.BLAST_MAX - st.score, rounds: [(mv.length + 1) * 400, ...mv] };
+  },
 };
+const BL = await import(pathToFileURL(resolve('public/js/blast-score.js')).href);
 
 // 두 번 돈다: ① 지금 학생 화면(미리보기 깃발 꺼짐) ② 미리보기 깃발이 전부 공개된 뒤의 학생 화면
 //   (2026-10-29 버그는 깃발 rx-season이 공개된 뒤에만 타는 길이라 ①만으로는 못 잡았음)
@@ -65,8 +78,9 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
       const st = await call('POST', 'start', { game: g });
       if (!st.j?.ticket) continue;   // 아직 안 열린 미리보기 게임 — 정상
       opened++; skew += 20000;
-      const body = (PLAY[g] || (x => ({ value: x, rounds: [] })))(v);
+      const body = (PLAY[g] || (x => ({ value: x, rounds: [] })))(v, st.j.ticket);
       const r = await call('POST', 'score', { game: g, ticket: st.j.ticket, ...body });
+      if (process.env.DBG && g === process.env.DBG) console.log(mode, v, body.value, body.rounds.length, r.s, JSON.stringify(r.j).slice(0, 300));
       if (r.s >= 500 || r.j?.rescued) fails.push(`[${mode}] ${g} ${v}${r.j?.rescued ? ' (서버 오류 → 보관됨)' : ''}`);
     }
     await call('GET', `rank?game=${g}&scope=all`);

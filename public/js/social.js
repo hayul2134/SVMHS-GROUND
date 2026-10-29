@@ -2404,7 +2404,7 @@ async function playFilm() {
   quitGame = () => { run++; M.destroy(); if (window.__film === M) window.__film = null; };
 }
 
-/* 기자재 정리! 블록(2026-10-29, 미리보기 blast-game — 개발자만): js/blast.js. 판마다 시작 티켓 → 그 씨앗으로 장비 순서가 정해지고 서버가 놓기를 다시 둬 봄(blast-score.js) */
+/* 기자재 정리! 블록(2026-10-29, 미리보기 blast-game — 개발자만 → 출시 준비 완료, 공지와 함께 공개): js/blast.js. 판마다 시작 티켓 → 그 씨앗으로 장비 순서가 정해지고 서버가 놓기를 다시 둬 봄(blast-score.js) */
 let BLAST = null;
 async function playBlast() {
   const area = stage(ic('blast') + ' 기자재 정리! 블록', '<div class="fl"><div class="ml" id="bl"></div><aside class="sr-side fl-side" id="blRec"></aside></div>', true);
@@ -2437,6 +2437,7 @@ async function playBlast() {
       }).catch(e => { if (no === run) M.msg(esc(e.message)); });
     },
   });
+  $('#bl .ml-snd')?.insertAdjacentHTML('beforebegin', RE_BTN);   // 다시 시작(R) — 점수판 줄 오른쪽, 소리 버튼 옆
   window.__blast = M;   // 테스트용
   myRecInto($('#blRec'), 'blast', store.get('blast_best', 0) ? BLAST_MAX - store.get('blast_best', 0) : null, { open: true });
   quitGame = () => { run++; M.destroy(); if (window.__blast === M) window.__blast = null; };

@@ -1,6 +1,8 @@
 // SVMHS GROUND — 기자재 정리! 블록 규칙(블록 블라스트 방식, 2026-10-29 하율 "기자재 정리!를 블록블라스트 버전도") — 화면 js/blast.js · 서버 functions/api/s 같이 씀
 // 판 8×8, 장비 케이스 3개씩 받아 아무 데나 놓기(중력 없음) → 가로줄·세로줄이 꽉 차면 정리(지워짐). 놓을 곳이 없으면 끝. 시간 제한 없음.
 // 장비 순서 = 시작 티켓 씨앗(서버가 줌) + 지금 판 모양(3개 중 하나도 못 놓는 묶음은 다시 뽑음 — 판 모양에 따라 정해지니 서버도 똑같이 재현)
+// 난이도(2026-10-29 출시 준비): 놓은 장비 50개까지는 그대로, 그 뒤 300개까지 큰 장비(하드 케이스·붐 마이크·조명 스탠드 등)가 점점 많이 나옴
+//   — 시뮬레이션(묶음 3개를 미리 보고 두는 봇): 잘하는 학생 중앙 약 240개(10분 안팎)·보통 약 100개(약 5분)에서 끝남. 램프 없을 땐 잘하는 봇이 2,400개 상한까지 안 끝났음
 // 저장값 = BLAST_MAX - 점수(다른 게임처럼 작을수록 1등). 판 기록 rounds = [끝난 ms, ...놓기] → 서버가 처음부터 다시 둬 보고 점수를 계산
 export const BLAST_MAX = 99999999, N = 8, MIN_GAP = 120, MAX_MOVES = 2400;
 
@@ -17,7 +19,11 @@ const rot = s => { const m = Math.max(...s.map(x => x[0])); return s.map(([r, c]
 const rots = (s, n = 4) => { const o = [s]; for (let i = 1; i < n; i++) o.push(rot(o[i - 1])); return o; };
 const norm = s => { const r0 = Math.min(...s.map(x => x[0])), c0 = Math.min(...s.map(x => x[1])); return s.map(([r, c]) => [r - r0, c - c0]).sort((a, b) => a[0] - b[0] || a[1] - b[1]); };
 const P = [];
-const add = (k, w, shapes) => shapes.forEach(s => P.push({ k, w, s: norm(s) }));
+const add = (k, w, shapes) => shapes.forEach(s => P.push({ k, w, s: norm(s), d: HARD[k] || 0 }));
+// 난이도 묶음: 0 작은 것(갈수록 덜 나옴) · 1 중간(조금 더) · 2 큰 것(많이 더)
+const HARD = { led: 1, tri: 1, mon: 1, cab: 1, cst: 1, boom: 2, case: 2, light: 2 };
+export const RAMP = { from: 50, to: 300, mul: [-.7, .7, 2.2] };
+export const rampOf = n => Math.max(0, Math.min(1, (n - RAMP.from) / (RAMP.to - RAMP.from)));   // 0 = 처음 난이도 · 1 = 가장 어려움
 add('bat', 2.5, [[[0, 0]]]);                                  // 배터리 1칸
 add('lens', 2.5, [L(2), L(2, 1)]);                            // 렌즈 2칸
 add('sd', 2.5, [L(3), L(3, 1)]);                              // SD 카드 3칸
@@ -32,7 +38,6 @@ add('cst', .8, [...rots([[0, 0], [1, 0], [2, 0], [2, 1]]), ...rots([[0, 1], [1, 
 add('cab', .9, [[[0, 0], [0, 1], [1, 1], [1, 2]], [[0, 1], [0, 2], [1, 0], [1, 1]], [[0, 0], [1, 0], [1, 1], [2, 1]], [[0, 1], [1, 1], [1, 0], [2, 0]]]);   // 케이블 ㄹ
 add('light', .8, rots([[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]));   // 조명 스탠드 큰 ㄴ 5칸
 export const PIECES = P;
-const TOTAL = P.reduce((a, p) => a + p.w, 0);
 
 export const newBoard = () => new Array(N * N).fill(0);
 export function fits(b, s, r, c) {
@@ -40,11 +45,12 @@ export function fits(b, s, r, c) {
   return true;
 }
 export function canPlace(b, s) { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (fits(b, s, r, c)) return true; return false; }
-// 다음 묶음 3개(조각 번호). 셋 다 못 놓는 묶음은 최대 30번 다시 뽑음
-export function nextSet(rand, b) {
+// 다음 묶음 3개(조각 번호). n = 지금까지 놓은 장비 수(난이도). 셋 다 못 놓는 묶음은 최대 30번 다시 뽑음
+export function nextSet(rand, b, n = 0) {
+  const p = rampOf(n), w = P.map(x => x.w * (1 + RAMP.mul[x.d] * p)), T = w.reduce((a, x) => a + x, 0);
   let set;
   for (let t = 0; t < 30; t++) {
-    set = [0, 1, 2].map(() => { let x = rand() * TOTAL, i = 0; while (i < P.length - 1 && (x -= P[i].w) >= 0) i++; return i; });
+    set = [0, 1, 2].map(() => { let x = rand() * T, i = 0; while (i < P.length - 1 && (x -= w[i]) >= 0) i++; return i; });
     if (set.some(i => canPlace(b, P[i].s))) break;
   }
   return set;
@@ -73,13 +79,13 @@ export function place(b, st, s, r, c, v = 1) {
 export const enc = (t, slot, r, c) => Math.round(t) * 1024 + slot * 64 + r * 8 + c;
 export const dec = x => { const t = Math.floor(x / 1024), b = x - t * 1024; return { t, slot: b >> 6 & 3, r: b >> 3 & 7, c: b & 7 }; };
 
-// 판 기록 [끝난 ms, ...놓기]를 처음부터 다시 둬 봄 → { score, n: 놓은 수, lines } 또는 { err, k, fast }
+// 판 기록 [끝난 ms, ...놓기]를 처음부터 다시 둬 봄 → { score, n: 놓은 수, lines, combo: 가장 높은 연속, wipe: 싹 비운 횟수 } 또는 { err, k, fast }
 export function replay(seed, rounds) {
   const end = rounds[0], mv = rounds.slice(1);
   if (!(end >= 0 && end < 6 * 3600e3)) return { err: '끝난 시각이 이상해요' };
   if (mv.length > MAX_MOVES) return { err: '놓은 수가 너무 많아요' };
   const rand = rng(seed), b = newBoard(), st = { score: 0, combo: 0, miss: 0 };
-  let set = nextSet(rand, b), used = [false, false, false], prev = -Infinity, lines = 0;
+  let set = nextSet(rand, b, 0), used = [false, false, false], prev = -Infinity, lines = 0, combo = 0, wipe = 0;
   for (let k = 0; k < mv.length; k++) {
     const m = dec(mv[k]);
     if (m.t < prev || m.t > end + 50) return { err: `${k + 1}번째 놓기의 시각이 맞지 않아요`, k };
@@ -88,8 +94,8 @@ export function replay(seed, rounds) {
     if (m.slot > 2 || used[m.slot]) return { err: `${k + 1}번째 놓기의 장비가 없어요`, k };
     const s = P[set[m.slot]].s;
     if (!fits(b, s, m.r, m.c)) return { err: `${k + 1}번째 장비를 놓을 수 없는 자리예요`, k };
-    lines += place(b, st, s, m.r, m.c).n; used[m.slot] = true;
-    if (used.every(Boolean)) { set = nextSet(rand, b); used = [false, false, false]; }
+    const x = place(b, st, s, m.r, m.c); lines += x.n; used[m.slot] = true; combo = Math.max(combo, st.combo); if (x.clear) wipe++;
+    if (used.every(Boolean)) { set = nextSet(rand, b, k + 1); used = [false, false, false]; }
   }
-  return { score: st.score, n: mv.length, lines };
+  return { score: st.score, n: mv.length, lines, combo, wipe };
 }

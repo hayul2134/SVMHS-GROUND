@@ -6089,6 +6089,12 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .apps .gapp.g-blast .ai{--c:#c9d6ff}.ggrid .g-blast{--c:#c9d6ff}
 .bl-board{padding:6px}
 .bl-board canvas{cursor:grab}
+.ml-top .prestart{min-height:40px;height:40px;font-size:15px;padding:0 12px 0 10px;border-radius:12px}
+.ml-top .prestart svg{width:17px;height:17px}
+.bl-stop{padding:6px 12px;font-weight:800;font-size:14px;border-radius:12px}
+.bl-stop.ask{background:#fff1e0;border-color:#e0752a;color:#c4560f}
+:root[data-theme="dark"] .bl-stop.ask{background:#4a2c14;color:#ffc28a}
+.ml-ov small{font-weight:700;opacity:.85}
 .bl-board canvas:active{cursor:grabbing}
 .bl-cb.on{border-color:#e0a21a;background:#fff4d1}
 .bl-cb.on b{color:#c4560f}
