@@ -6063,3 +6063,19 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .ml-msg{font-weight:800;font-size:14px;color:var(--sub);min-height:1.4em}
 .ml-msg b{color:#2f9a3a}
 @media (prefers-reduced-motion:reduce){.ml-chip b.bump,.ml.low .ml-bar i{animation:none}}
+
+/* 다크 모드 글자 대비 (2026-10-29 하율 "공지에서 글자가 검은색이라 다크모드면 아예 안 보인다"):
+   다크에선 --ink가 #000(테두리·그림자용)이라, 어두운 칸(card·chip) 위 글자·아이콘에 --ink를 쓴 곳은 --text로.
+   노랑·라임·하늘 같은 밝은 칸 위 --ink 글자는 그대로 둠(대비 충분). */
+:root[data-theme="dark"] :is(
+  .ntlist .ntb.open .nb-txt,
+  .go-end svg,
+  .tt li.next .tm,
+  .week td.today, .week td.today .x2,
+  .pick .att-pk i,
+  .stk-btn,
+  .brag .bg-ic, .brag-tray .bg-ic, .brag-btn .ic,
+  .bo-ck
+){color:var(--text)}
+:root[data-theme="dark"] .bal-t .bo-ck{color:var(--card)}
+:root[data-theme="dark"] svg.in-st{stroke:var(--text);color:var(--text)}
