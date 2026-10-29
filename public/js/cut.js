@@ -58,6 +58,7 @@ export function run(root, o) {
   const frame = now => { if (lastF) { const d = now - lastF; if (d > 4 && d < 50) fi += (d - fi) * .2; } lastF = now; return Math.min(34, Math.max(6, fi)); };
   const errs = [], signed = [], timers = [], cuts = [];   // cuts: 판마다 [컷 지점 비율, 자른 곳 비율 또는 null(놓침)] — 결과 화면 '내 컷 다시 보기'
   let streak = 0;   // 연속 PERFECT
+  const shown = [];   // 이번 판에 화면에 그린 플레이헤드의 게임 시각(ms) — 확대창 ◆
   const later = (f, ms) => timers.push(setTimeout(() => alive && f(), ms));
 
   /* 소리 (기본 꺼짐 — 교실) */
@@ -96,7 +97,7 @@ export function run(root, o) {
     state = 'wait'; dur = DUR[round]; target = dur * (.35 + Math.random() * .5);
     const f = target / dur;
     ar.style.setProperty('--tg', (f * 100).toFixed(3) + '%');
-    clA.classList.remove('cut', 'gone'); clB.classList.remove('cut'); clB.hidden = true; clA.style.width = ''; gp.hidden = true; zm.hidden = true; zm.innerHTML = ''; mk.className = 'ctm-mk';
+    clA.classList.remove('cut', 'gone'); clB.classList.remove('cut'); clB.hidden = true; clA.style.width = ''; gp.hidden = true; zm.hidden = true; zm.innerHTML = ''; shown.length = 0; mk.className = 'ctm-mk';
     $('#ctClN').textContent = CLIPS[round][0]; $('#ctAn').textContent = CLIPS[round][1];
     const sc = SCENE[round]; ar.style.setProperty('--c1', sc[0]); ar.style.setProperty('--c2', sc[1]); ar.style.setProperty('--cb', sc[2]); ar.classList.toggle('last', round === 4);
     root.querySelectorAll('#ctRd li').forEach((li, i) => li.classList.toggle('now', i === round));
@@ -115,7 +116,7 @@ export function run(root, o) {
     if (state === 'armed') { t0 = now + f; state = 'run'; }
     if (state === 'run') {
       const tv = now + f - t0;   // 이 프레임이 화면에 보일 때의 게임 시각
-      setHead(Math.max(0, Math.min(1, tv / dur))); $('#ctTc').textContent = tc(Math.max(0, Math.min(tv, dur)));
+      setHead(Math.max(0, Math.min(1, tv / dur))); shown.push(Math.max(0, Math.min(dur, tv))); $('#ctTc').textContent = tc(Math.max(0, Math.min(tv, dur)));
       // 끝은 실제 시각으로(화면 예측으로 일찍 끝내지 않음). 바로 MISS로 판정하지 않고 GRACE ms 동안 기다림:
       // 끝나기 직전에 눌렀는데 기기가 바빠 입력 처리가 이 프레임보다 늦게 도착한 경우를 살리기 위해(그 입력의 timeStamp가 끝 전이면 정상 판정)
       if (performance.now() - t0 >= dur) { state = 'over'; setHead(1); $('#ctTc').textContent = tc(dur); later(() => { if (state === 'over') stop(dur, true); }, GRACE); }
@@ -123,33 +124,37 @@ export function run(root, o) {
     if (state !== 'done') raf = requestAnimationFrame(loop);
   };
 
-  // 가까운 컷 확대(2026-10-29 하율 "똑같이 정중앙처럼 보였는데 5ms·2ms로 다르게 나온다" → 얼마나 가까웠는지 확대해서 보여 줌, 깃발 cut-zoom)
-  // 타임라인 1px ≈ 2~3.5ms, 화면 1프레임(60Hz 16.7ms) 동안 플레이헤드가 5~9px씩 건너뜀 → 몇 ms 차이는 눈으로 구분 불가. 판정은 누른 순간(timeStamp)이라 정확함.
-  // 컷 지점 ±W ms 구간을 크게 펴서: 빨간 선 = 컷 지점, 파란 선 = 내가 자른 곳, 노란 칸 = 화면 1프레임(이 안은 화면에서 똑같이 보임)
-  const zoom = (d, k) => {
-    const W = Math.abs(d) <= 15 ? 20 : 60, aw = ar.clientWidth, bw = Math.min(aw - 12, Math.max(220, aw * .62)), tx = target / dur * aw;
-    const left = Math.max(6, Math.min(aw - bw - 6, tx - bw / 2)), mag = Math.max(2, Math.round((bw - 16) / (2 * W) / (aw / dur)));
-    const fr = Math.min(34, Math.max(6, fi)), P = v => 50 + v / W * 50, dr = Math.round(d);
+  // 가까운 컷 확대(2026-10-29 하율 "똑같이 정중앙처럼 보였는데 5ms·2ms로 다르게 나온다" → 얼마나 가까웠는지 확대, 깃발 cut-zoom)
+  // 타임라인 1px ≈ 2~3.5ms이고 화면은 1프레임(60Hz 16.7ms)마다 한 번 바뀌어 플레이헤드가 5~9px씩 건너뜀 → 몇 ms 차이는 눈으로 구분 불가.
+  // 2026-10-29 하율 "진짜로 완전 정확해야 돼": 확대창의 모든 값은 판정에 쓴 값 그대로 —
+  //   파란 선 = 누른 순간(timeStamp)의 게임 시각(반올림 전 값), 숫자 = 점수에 들어간 ms, ◆ = 그 판에 화면에 실제로 그린 플레이헤드 위치(loop가 기록한 tv, 추정 아님).
+  const zoom = (raw, e, k) => {
+    const a = Math.abs(raw), W = [20, 30, 40, 60, 80].find(w => a <= w * .72) || 80;
+    const aw = ar.clientWidth, tx = target / dur * aw, left = 8, bw = aw - 16;
+    const P = v => 50 + v / W * 50, pc = v => v.toFixed(4) + '%', sg = raw < 0 ? -1 : 1;
+    const inW = shown.filter(v => Math.abs(v - target) <= W), seen = shown.filter(v => v <= raw + target).pop();   // 누른 순간 화면에 떠 있던 프레임
+    const exact = (Math.round(a * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
     zm.className = 'ctm-zm ' + k; zm.style.left = left + 'px'; zm.style.width = bw + 'px'; zm.style.transformOrigin = `${(tx - left).toFixed(1)}px 50%`;
-    zm.innerHTML = `<p class="zm-h"><b>확대 ×${mag}</b><span>${dr === 0 ? '딱 맞게!' : side(dr)}</span></p>
-      <div class="zm-r"><div class="zm-sc"><i class="zm-fr"></i><i class="zm-tk"></i>${dr ? '<i class="zm-gp"></i>' : ''}<i class="zm-t"></i><i class="zm-c"></i></div>
+    zm.innerHTML = `<p class="zm-h"><b class="zm-x"></b><span>${e === 0 ? '<b>딱 맞게!</b>' : `<b>${e}ms ${sg < 0 ? '일찍' : '늦게'}</b>`}<small>실제 ${exact}ms → 반올림 ${e}ms</small></span></p>
+      <div class="zm-r"><div class="zm-sc"><i class="zm-tk"></i>${inW.map(v => `<i class="zm-fp${v === seen ? ' on' : ''}" data-v="${v - target}"></i>`).join('')}${a > .05 ? '<i class="zm-gp"></i>' : ''}<i class="zm-t"></i><i class="zm-c"></i></div>
       ${[-W, -W / 2, 0, W / 2, W].map(v => `<span class="zm-l" data-v="${v}">${v > 0 ? '+' : ''}${v}${Math.abs(v) === W ? 'ms' : ''}</span>`).join('')}
-      <b class="zm-v j-${k}">${dr > 0 ? '+' : ''}${dr}ms</b></div>
-      <p class="zm-f"><i></i>화면 1프레임 ${fr.toFixed(1)}ms — 이 안은 눈으로는 똑같아 보여요</p>`;
-    const q = s => zm.querySelector(s), pc = v => v.toFixed(3) + '%';
-    q('.zm-sc').style.setProperty('--n', 2 * W);
-    const f = q('.zm-fr'); f.style.left = pc(P(-fr / 2)); f.style.width = pc(fr / (2 * W) * 100);
-    if (dr) { const g = q('.zm-gp'); g.style.left = pc(P(Math.min(d, 0))); g.style.width = pc(Math.abs(d) / W * 50); }
-    q('.zm-c').style.left = pc(P(d));
-    zm.querySelectorAll('.zm-l').forEach(el => el.style.left = pc(P(+el.dataset.v)));
-    q('.zm-v').style.left = pc(Math.max(10, Math.min(90, P(d))));
+      <b class="zm-v j-${k}">${e === 0 ? '0ms' : (sg < 0 ? '−' : '+') + e + 'ms'}</b></div>
+      <p class="zm-f"><span><i class="k-t"></i>컷 지점</span><span><i class="k-c"></i>내가 누른 순간</span><span><i class="k-f"></i>화면에 보인 플레이헤드(${Math.min(34, Math.max(6, fi)).toFixed(1)}ms마다)</span></p>`;
+    const q = s => zm.querySelector(s), sc = q('.zm-sc');
+    sc.style.setProperty('--n', 2 * W); sc.style.setProperty('--mj', W > 40 ? 10 : 5);
+    if (q('.zm-gp')) { const g = q('.zm-gp'); g.style.left = pc(P(Math.min(raw, 0))); g.style.width = pc(a / W * 50); }
+    q('.zm-c').style.left = pc(P(raw));
+    zm.querySelectorAll('[data-v]').forEach(el => el.style.left = pc(P(+el.dataset.v)));
+    const v = q('.zm-v'), pv = P(raw); v.style.left = pc(pv); v.classList.toggle('lt', pv > 80); v.classList.toggle('rt', pv < 20);
     zm.hidden = false;
+    const rw = q('.zm-r').clientWidth;   // 확대 배율 = 확대창 1ms 폭 ÷ 타임라인 1ms 폭 (변형과 무관한 실제 배치 폭)
+    q('.zm-x').textContent = `확대 ×${Math.round(rw / (2 * W) / (aw / dur))}`;
   };
 
   const stop = (tAt, end) => {
     if (state !== 'run' && state !== 'over') return; state = 'judge';
     tAt = Math.max(0, Math.min(dur, tAt));
-    const e = end ? MISS_MS : Math.min(1000, Math.round(Math.abs(tAt - target))), d = Math.round(tAt - target), [k, name] = judge(e, end);
+    const e = end ? MISS_MS : Math.min(1000, Math.round(Math.abs(tAt - target))), d = end ? 0 : Math.sign(tAt - target) * e, [k, name] = judge(e, end);
     errs.push(e); signed.push(end ? null : d); sum += e;
     const cf = tAt / dur; cuts.push([target / dur, end ? null : cf]);
     streak = k === 'perfect' ? streak + 1 : 0;
@@ -174,11 +179,11 @@ export function run(root, o) {
         sp.style.animationDelay = (Math.random() * 80) + 'ms'; ar.append(sp); setTimeout(() => sp.remove(), 900); } }
     }
     const zoomed = o.zoom && !end && e <= 50;   // PERFECT·GREAT(눈으로 차이가 안 보이는 거리)만
-    if (zoomed) later(() => zoom(tAt - target, k), 140);
+    if (zoomed) later(() => zoom(tAt - target, e, k), 140);
     sfx(k);
     round++;
-    if (round >= 5) { state = 'done'; cancelAnimationFrame(raf); btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice(), cuts.slice()), zoomed ? 2000 : 900); }
-    else later(start, zoomed ? NEXT + 1100 : NEXT);
+    if (round >= 5) { state = 'done'; cancelAnimationFrame(raf); btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice(), cuts.slice()), zoomed ? 2600 : 900); }
+    else later(start, zoomed ? NEXT + 1700 : NEXT);
   };
 
   // 누른 시각 = 이벤트가 생긴 순간(timeStamp, performance.now와 같은 시계). 옛 Safari처럼 다른 시계를 주거나 이상하면 지금 시각으로
