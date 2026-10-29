@@ -39,50 +39,69 @@ export function createFilm(root, opt = {}) {
   sndBtn.onclick = () => { sound = !sound; if (sound) au(); paintSnd(); opt.onSound?.(sound); sndBtn.blur(); };
   paintSnd();
 
-  /* ----- 그림: 컷 한 장(2026-10-29 하율 "눈이 아프다" → 검은 필름·구멍 빼고 밝은 카드 + 칸 사이 여백) ----- */
+  /* ----- 그림(2026-10-29 하율 "특색이 사라졌다" → 줄마다 필름 띠 + 구멍은 띠 가장자리에만, 숫자 칸은 밝은 가로 컷) -----
+     눈 피로 원인이었던 것: 칸마다 검은 테두리·구멍 반복, 진한 노랑. → 띠는 차분한 필름 베이스색, 구멍은 띠에만 작게, 컷은 크림색 */
   const isDark = () => document.documentElement.dataset.theme === 'dark';
+  const TX = .07, TY = .25;   // 컷 안쪽 여백(가로 = 컷 사이 선, 세로 = 구멍 자리)
+  let seg = null, tiles = null;
   function makeFrame() {
-    const S = Math.round(cell * dpr), c = document.createElement('canvas'); c.width = c.height = S;
-    const g = c.getContext('2d'), m = S * .07, w = S - m * 2, h = S - m * 2, rr = S * .2, dk = isDark();
-    g.fillStyle = dk ? '#1b2036' : '#eadfc8'; g.beginPath(); g.roundRect(m, m + S * .03, w, h, rr); g.fill();   // 아래 살짝 그림자
-    const grd = g.createLinearGradient(0, m, 0, m + h); grd.addColorStop(0, dk ? '#39406a' : '#fffdf8'); grd.addColorStop(1, dk ? '#30375c' : '#fff6e4');
-    g.fillStyle = grd; g.beginPath(); g.roundRect(m, m, w, h, rr); g.fill();
-    g.lineWidth = Math.max(1, S * .022); g.strokeStyle = dk ? '#4c5584' : '#e2d3b4'; g.stroke();
-    c.dk = dk; frame = c;
+    const S = Math.round(cell * dpr), dk = isDark(), mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; return c; };
+    seg = mk(); const g = seg.getContext('2d');   // 띠 한 칸: 위아래 구멍 2개씩 + 빈 컷 자리
+    g.fillStyle = dk ? '#232842' : '#fbf8f1';
+    for (const y of [S * .095, S * .905 - S * .09]) for (const x of [S * .2, S * .62]) { g.beginPath(); g.roundRect(x, y, S * .18, S * .09, S * .025); g.fill(); }
+    g.fillStyle = dk ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.28)'; g.beginPath(); g.roundRect(S * TX, S * TY, S * (1 - TX * 2), S * (1 - TY * 2), S * .06); g.fill();
+    const tile = (top, bot, line, lw) => {   // 숫자 컷
+      const c = mk(), t = c.getContext('2d'), x = S * TX, y = S * TY, w = S * (1 - TX * 2), h = S * (1 - TY * 2);
+      const grd = t.createLinearGradient(0, y, 0, y + h); grd.addColorStop(0, top); grd.addColorStop(1, bot);
+      t.fillStyle = grd; t.beginPath(); t.roundRect(x, y, w, h, S * .06); t.fill();
+      t.lineWidth = S * lw; t.strokeStyle = line; t.stroke(); return c;
+    };
+    tiles = dk ? { n: tile('#3b4269', '#333a5e', '#59618f', .02), s: tile('#2f4f86', '#2a4778', '#8fb1ff', .045), k: tile('#2e6040', '#285638', '#8fe39a', .045) }
+               : { n: tile('#fffdf7', '#fff4de', '#b99a6a', .02), s: tile('#e6efff', '#d6e5ff', '#3a6fd0', .045), k: tile('#e3f6e5', '#cfeed3', '#2f9a3a', .045) };
+    tiles.dk = dk; frame = tiles.n;
   }
   function fit() {
     if (dead || !cv.isConnected) return;
     dpr = Math.min(devicePixelRatio || 1, 2);
     const w = root.clientWidth - 34, top = board.getBoundingClientRect().top, h = Math.max(260, innerHeight - Math.max(top, 0) - 24);
     if (state === 'ready' || state === 'over') { const c = w < 640 && h > w * 1.15 ? 8 : 15; if (c !== cols) { cols = c; rows = CELLS / c; } }
-    cell = Math.max(18, Math.min(64, Math.floor(w / cols), Math.floor(h / rows)));
+    cell = Math.max(20, Math.min(72, Math.floor(w / cols), Math.floor(h / rows)));
     cv.style.width = cell * cols + 'px'; cv.style.height = cell * rows + 'px';
     cv.width = cell * cols * dpr; cv.height = cell * rows * dpr;
     makeFrame(); draw();
   }
-  // 드래그 네모 안에 '가운데'가 든 칸 → 줄·칸 범위
+  // 드래그 네모가 컷(버튼) 자체에 닿은 칸 → 줄·칸 범위(2026-10-29 하율 "숫자 말고 버튼 자체가 선택되게")
+  // 컷과 겹친 길이가 컷 크기의 15% 이상이면 선택(스치는 정도는 제외), 탭·짧은 드래그는 컷 안에만 있으면 선택
+  function span(lo, hi, n, a, b) {
+    const t = cell * (b - a) * .15, need = Math.min(t, hi - lo); let k0 = -1, k1 = -2;
+    for (let k = 0; k < n; k++) { const ov = Math.min(hi, (k + b) * cell) - Math.max(lo, (k + a) * cell); if (ov >= 0 && ov >= need) { if (k0 < 0) k0 = k; k1 = k; } }
+    return [k0, k1];
+  }
   function range() {
     if (!drag) return null;
     const x0 = Math.min(drag.x0, drag.x1), x1 = Math.max(drag.x0, drag.x1), y0 = Math.min(drag.y0, drag.y1), y1 = Math.max(drag.y0, drag.y1);
-    const c0 = Math.max(0, Math.ceil(x0 / cell - .5)), c1 = Math.min(cols - 1, Math.floor(x1 / cell - .5)), r0 = Math.max(0, Math.ceil(y0 / cell - .5)), r1 = Math.min(rows - 1, Math.floor(y1 / cell - .5));
-    return { x0, x1, y0, y1, r0, r1, c0, c1, ok: c0 <= c1 && r0 <= r1 };
+    const [c0, c1] = span(x0, x1, cols, TX, 1 - TX), [r0, r1] = span(y0, y1, rows, TY, 1 - TY);
+    return { x0, x1, y0, y1, r0, r1, c0, c1, ok: c0 >= 0 && r0 >= 0 };
   }
   const selOf = R => R && R.ok ? cellsIn(grid, cols, R.r0, R.c0, R.r1, R.c1) : [];
   function draw() {
-    if (frame && frame.dk !== isDark()) makeFrame();   // 화이트/다크 바꾸면 카드 색도 새로
+    if (tiles && tiles.dk !== isDark()) makeFrame();   // 화이트/다크 바꾸면 색도 새로
     if (!frame) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cell * cols, cell * rows);
     const R = range(), sel = new Set(selOf(R)); let sum = 0; sel.forEach(i => sum += grid[i]);
     const ok = sum === 10, hide = state === 'ready' || state === 'pause';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `800 ${Math.round(cell * .4)}px Outfit,Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
+    ctx.font = `800 ${Math.round(cell * .36)}px Outfit,Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
+    const dk = isDark();
+    ctx.fillStyle = dk ? '#5b4b38' : '#d6bb8e';   // 줄마다 필름 띠
+    for (let r = 0; r < rows; r++) { ctx.beginPath(); ctx.roundRect(1, r * cell + cell * .03, cell * cols - 2, cell * .94, cell * .1); ctx.fill(); }
     for (let i = 0; i < CELLS; i++) {
-      const v = grid[i]; if (!v) continue;
-      const x = (i % cols) * cell, y = Math.floor(i / cols) * cell, on = sel.has(i);
-      if (on) { ctx.fillStyle = ok ? 'rgba(76,175,80,.38)' : 'rgba(80,140,230,.28)'; ctx.beginPath(); ctx.roundRect(x, y, cell, cell, cell * .16); ctx.fill(); }
-      const d = cell * (on ? 1.06 : 1);
-      ctx.drawImage(frame, x + (cell - d) / 2, y + (cell - d) / 2, d, d);
-      if (!hide) { ctx.fillStyle = on ? (isDark() ? (ok ? '#8fe39a' : '#a9c4ff') : ok ? '#1f7a2a' : '#2457b8') : isDark() ? '#eef0ff' : INK; ctx.fillText(v, x + cell / 2, y + cell * .52); }
+      const x = (i % cols) * cell, y = Math.floor(i / cols) * cell, v = grid[i], on = sel.has(i);
+      ctx.drawImage(seg, x, y, cell, cell);
+      if (!v) continue;
+      const d = cell * (on ? 1.05 : 1);
+      ctx.drawImage(on ? (ok ? tiles.k : tiles.s) : tiles.n, x + (cell - d) / 2, y + (cell - d) / 2, d, d);
+      if (!hide) { ctx.fillStyle = on ? (dk ? '#fff' : ok ? '#1f7a2a' : '#2457b8') : dk ? '#eef0ff' : INK; ctx.fillText(v, x + cell / 2, y + cell * .52); }
     }
     const now = performance.now();
     pops = pops.filter(p => now - p.t < 360);
@@ -107,8 +126,8 @@ export function createFilm(root, opt = {}) {
       ctx.strokeStyle = ok ? '#2f9a3a' : '#3a6fd0'; ctx.fillStyle = ok ? 'rgba(76,175,80,.1)' : 'rgba(80,140,230,.07)';
       ctx.beginPath(); ctx.rect(R.x0, R.y0, R.x1 - R.x0, R.y1 - R.y0); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
       if (sel.size) {
-        const bw = 34, bx = Math.min(R.x1 + 4, cell * cols - bw - 2), by = Math.max(R.y0 - 26, 2);
-        ctx.fillStyle = ok ? '#2f9a3a' : sum > 10 ? '#d9534f' : '#3a6fd0'; ctx.beginPath(); ctx.roundRect(bx, by, bw, 22, 8); ctx.fill();
+        const bw = 34, bx = Math.min(R.x1 + 4, cell * cols - bw - 2), by = Math.max(R.r0 * cell - 11, 1);   // 합 표시는 띠 구멍 줄 위에(숫자 안 가림)
+        ctx.fillStyle = ok ? '#2f9a3a' : sum > 10 ? '#d9534f' : '#3a6fd0'; ctx.beginPath(); ctx.roundRect(bx, by, bw, 22, 8); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
         ctx.fillStyle = '#fff'; ctx.font = '800 13px Outfit,sans-serif'; ctx.fillText(String(sum), bx + bw / 2, by + 11.5);
       }
       if (sum !== lastSum) { if (sel.size && lastSum !== -1) tone(ok ? 990 : 520 + Math.min(sum, 12) * 25, .035, 'square', .025); lastSum = sum; }
