@@ -48,7 +48,7 @@ const PLAY = {
   reaction: v => ({ value: v, rounds: [v - 10, v + 10, v - 5, v + 5, v, 0] }),
   num25: v => ({ value: v, rounds: Array.from({ length: 25 }, (_, i) => Math.round(i * v / 24)) }),
   cut: v => ({ value: v, rounds: [v / 5, v / 5, v / 5, v / 5, v / 5].map(Math.round) }),
-  // 기자재 정리! 블록: 티켓 씨앗으로 진짜 판을 둬서(첫 자리부터 채우기, 400ms마다 최대 40개) 정상 기록 → 업적(live.x 다시 두기)까지 탐. v = 1이면 하한 밑 그대로
+  // 카메라 가방 정리!: 티켓 씨앗으로 진짜 판을 둬서(첫 자리부터 채우기, 400ms마다 최대 40개) 정상 기록 → 업적(live.x 다시 두기)까지 탐. v = 1이면 하한 밑 그대로
   blast: (v, tk) => {
     if (v === 1) return { value: 1, rounds: [] };
     const B = BL, rand = B.rng(B.seedOf(tk)), b = B.newBoard(), st = { score: 0, combo: 0, miss: 0 }, mv = [];

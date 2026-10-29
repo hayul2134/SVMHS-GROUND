@@ -1,4 +1,4 @@
-// SVMHS GROUND — 기자재 정리! 블록(블록 블라스트 방식, 2026-10-29 하율, 미리보기 깃발 blast-game)
+// SVMHS GROUND — 카메라 가방 정리!(블록 블라스트 방식, 2026-10-29 하율, 미리보기 깃발 blast-game)
 // 8×8 카메라 가방에 장비 3개를(2026-10-29 하율 "카메라 가방 안에 장비들을 넣는 컨셉") 끌어다 놓기 → 가로·세로 줄이 꽉 차면 정리. 놓을 곳이 없으면 끝. 규칙·검사는 blast-score.js(서버와 같음)
 // createBlast(root, { best, sound, seed: async () => 씨앗|null, onOver(res), onSound(on) })
 //   res = { score, n, lines, ms, rounds: [끝난 ms, ...놓기], why: 'stuck'|'max'|'quit' }
@@ -23,7 +23,7 @@ export function createBlast(root, opt = {}) {
   root.innerHTML = `<div class="ml-top bl-top" data-m="top"><span class="bl-best" title="최고 기록"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z" fill="#fff3b0" stroke="#5a3a00" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 6H4.5a3 3 0 0 0 3 4.2M17 6h2.5a3 3 0 0 1-3 4.2" fill="none" stroke="#5a3a00" stroke-width="1.8" stroke-linecap="round"/><path d="M12 14v3.4M8.5 20h7l-.8-2.6H9.3z" fill="#fff3b0" stroke="#5a3a00" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 6.4v2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg><small>최고</small><b data-m="best">${best.toLocaleString('ko-KR')}</b></span>
       <div class="bl-score" aria-live="polite"><b data-m="sc">0</b><em class="bl-gain" data-m="gain"></em><span class="bl-cb" data-m="cbw">연속 <i data-m="cb">0</i></span></div>
       <span class="bl-tools"><button type="button" class="btn ghost bl-stop" data-m="stop" hidden>그만하기</button><button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></span></div>
-    <div class="ml-board bl-board" data-m="board"><canvas data-m="cv" aria-label="기자재 정리! 블록 — 카메라 가방"></canvas><div class="ml-ov" data-m="ov"></div></div>`;
+    <div class="ml-board bl-board" data-m="board"><canvas data-m="cv" aria-label="카메라 가방 정리! — 카메라 가방"></canvas><div class="ml-ov" data-m="ov"></div></div>`;
   const $ = k => root.querySelector(`[data-m="${k}"]`);
   const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), board = $('board'), sndBtn = $('snd'), stopBtn = $('stop');
   let b = newBoard(), st = { score: 0, combo: 0, miss: 0 }, rand = null, set = [0, 1, 2], used = [true, true, true], moves = [], lines = 0;
@@ -408,7 +408,7 @@ export function createBlast(root, opt = {}) {
   /* ----- 판 흐름 ----- */
   function ready() {
     state = 'ready'; ov.hidden = false; ov.className = 'ml-ov';
-    ov.innerHTML = `<b>기자재 정리! 블록</b><span>장비를 끌어다 카메라 가방에 넣어요 <small>(눌러서 집고 가방 칸을 눌러도 돼요)</small><br>가로·세로 한 줄이 꽉 차면 <em>쏙!</em> · 놓을 곳이 없으면 끝<br>연속으로 정리하면 점수가 몇 배로!</span><button type="button" class="btn big" data-m="go">시작</button>`;
+    ov.innerHTML = `<b>카메라 가방 정리!</b><span>장비를 끌어다 카메라 가방에 넣어요 <small>(눌러서 집고 가방 칸을 눌러도 돼요)</small><br>가로·세로 한 줄이 꽉 차면 <em>쏙!</em> · 놓을 곳이 없으면 끝<br>연속으로 정리하면 점수가 몇 배로!</span><button type="button" class="btn big" data-m="go">시작</button>`;
     $('go').onclick = start; draw();
   }
   async function start() {
