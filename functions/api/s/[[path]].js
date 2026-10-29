@@ -149,6 +149,8 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
 }
 const TICKET_RE = /^[0-9a-f]{32}$/;
 const TICKET_TTL = 3600e3;
+// 시간 제한 없는 게임은 1시간 넘게 할 수 있음 → 티켓 6시간(2026-10-29 하율: 기자재 정리! 일반 100만 점 판이 '게임을 다시 시작해 주세요'로 저장 안 됨 — 1시간 지나 티켓 만료)
+const LONG_TK = new Set(['gearn', 'blast']), ttlOf = game => LONG_TK.has(game) ? 6 * 3600e3 : TICKET_TTL;
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
 const RESERVED = h => h.startsWith('test_') || h === ADMIN_HANDLE || OLD_ADMIN_HANDLES.includes(h);   // 테스트 계정·개발자(예전 아이디 포함) 아이디는 가입 불가
@@ -1164,7 +1166,7 @@ const ROUTES = {
     // 시작 횟수 제한: 아직 안 쓴(살아 있는) 티켓이 60장 넘으면 잠깐 막음 — 예전 rl 카운터(시작마다 쓰기 3행) 대신 읽기로 셈(2026-10-29 쓰기 절약)
     if (!isAdm(me) && (await db.prepare('SELECT COUNT(*) AS n FROM rl WHERE k >= ?1 AND k < ?2 AND reset > ?3').bind(`tk:${me.id}:`, `tk:${me.id};`, Date.now()).first()).n >= 60) return err('잠깐 쉬었다가 해요', 429);
     const ticket = randHex(16);
-    await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + TICKET_TTL).run();
+    await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + ttlOf(game)).run();
     await rescueReplay(db, me);
     return json({ ticket });
   }),
@@ -1183,7 +1185,7 @@ const ROUTES = {
       // 그래도 서버 오류면 기록을 버리지 않고 '서버 오류 보관'(held_scores st 3)으로 맡겨 둠 → 고쳐진 뒤 그 학생이 아무 게임이나 시작할 때 원래 검사를 그대로 거쳐 자동 반영(rescueReplay)
       // (2026-10-29 하율 "이런 일 다시는 없게": 같은 버그면 다시 보내도 또 실패해서 약 150판이 사라졌음). 보관마저 실패하면(DB 한도 등) 예전처럼 티켓 되돌리고 던짐
       const kept = Array.isArray(body.rounds) && await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at, st) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 3)')
-        .bind(me.id, game, v, heldR(body.rounds), `서버 오류로 보관 #${ticket}`, Math.min(Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL), 2e9), kstYmd(), Date.now()).run().then(() => true, () => false);
+        .bind(me.id, game, v, heldR(body.rounds), `서버 오류로 보관 #${ticket}`, Math.min(Date.now() - (tk.n > 0 ? tk.n : tk.reset - ttlOf(game)), 2e9), kstYmd(), Date.now()).run().then(() => true, () => false);
       if (kept) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/api/s/score', method: 'POST' }, e); return json({ ok: true, held: true, rescued: true, why: '서버에 잠깐 문제가 있어서 기록을 안전하게 맡아 뒀어요.' }); }
       await db.prepare('INSERT OR IGNORE INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${ticket}`, tk.n, tk.reset).run().catch(() => {}); throw e;
     }
@@ -1717,7 +1719,7 @@ async function rescueReplay(db, me) {
   } catch (e) { console.log('rescueReplay', e?.message); }
 }
 async function scoreIn(db, me, body, game, v, ticket, g, tk) {
-    const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
+    const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - ttlOf(game));   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
