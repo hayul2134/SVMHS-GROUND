@@ -37,7 +37,7 @@ const GAMES = {
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 따로 순위만 — 게임 목록·티어엔 안 나옴(casual), 기자재 정리! 랭킹 창의 '일반' 전환으로 봄
   gearn: { ff: 'gear-game', casual: true, name: '기자재 정리! 일반', ic: 'gear', desc: '시간 제한 없이 자유롭게 · 티어·보상과 상관없는 일반 모드 순위', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   // 기자재 정리! 블록(2026-10-29 하율 "블록블라스트 버전도", 미리보기 깃발 blast-game — 개발자만): 8×8 선반에 장비 케이스 끌어 놓기. 높을수록 좋음 → 서버엔 BLAST_MAX - 점수
-  blast: { ff: 'blast-game', name: '기자재 정리! 블록', ic: 'blast', desc: '장비 케이스를 끌어다 선반에! 가로·세로 줄을 채워 정리해요 · 시간 제한 없음', fmt: v => (BLAST_MAX - v).toLocaleString('ko-KR') + '점' },
+  blast: { ff: 'blast-game', name: '기자재 정리! 블록', ic: 'blast', desc: '장비를 끌어다 카메라 가방에! 가로·세로 줄을 채워 쏙 챙겨요 · 시간 제한 없음', fmt: v => (BLAST_MAX - v).toLocaleString('ko-KR') + '점' },
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
