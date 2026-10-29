@@ -9,7 +9,8 @@ import { GAIN, FLOOR, drain, floorName, zoneOf, ROOF } from './stair-score.js';
 import { buildSprites, loadChar, SPR_W, SPR_H } from './runner.js';
 
 export const W = 160, H = 240;
-const DX = 22, DY = 10, SW = 22, ST = DY, FOOT = 168;   // 2026-10-28 17:52 하율: 계단 높이 12 → 8과 12의 중간(10), 꼭짓점은 계속 붙게 세로 간격도 10
+const DX = 22, DY = 10, SW = 22, ST = DY, FOOT = 137;   // 2026-10-29 하율 "캐릭터가 가운데에 유지되면서 올라가게": 발 높이 168 → 137(캐릭터 몸 가운데 = 화면 세로 가운데 120)
+//   // 2026-10-28 17:52 하율: 계단 높이 12 → 8과 12의 중간(10), 꼭짓점은 계속 붙게 세로 간격도 10
 const PS = 2, CS = 1.5;   // 캔버스 = 논리 화면 × 2(PS) · 캐릭터는 1.5배(CS, 하율 "캐릭터가 계단에 비해 너무 작다") → 캐릭터 그림 한 픽셀 = 캔버스 3픽셀로 고르게   // 2026-10-28 하율 "계단 중간을 이어 놓으니 헷갈림 → 끝과 끝을 이어서": 가로 간격 = 계단 폭(한 칸의 끝 = 다음 칸의 시작)   // 계단 가로·세로 간격 · 계단 폭·두께 · 캐릭터 발 높이(화면 y)
 const OL = '#2a2846';
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -590,14 +591,14 @@ export function createStair(cv, o = {}) {
     flash = Math.max(0, flash - dt / .9);
     const cx = fromX + (px - fromX) * moveT, cy = fromY + (py - fromY) * moveT;
     // 카메라 따라가기: 프레임 길이와 상관없이 같은 속도(60fps에서 예전과 똑같음) — 예전 식(dt×14, 최대 1)은 한 프레임이 길어지면 카메라가 한 번에 붙어 화면이 '툭' 튐(2026-10-29)
-    camX += (cx * DX - camX) * (1 - Math.pow(5 / 6, dt * 60)); camY += (-cy * DY - camY) * (1 - Math.pow(1 - 14 / 60, dt * 60));
-    if (st.scene === 'ready') { camX = cx * DX; camY = -cy * DY; }
+    // 2026-10-29 하율 "캐릭터가 가운데에 유지되면서 올라가게": 늦게 따라가던 카메라(빨리 오르면 캐릭터가 위·옆으로 밀려남) → 캐릭터에 고정. 한 칸 이동(0.075초)은 이미 부드럽게 이어져서 화면도 매끄럽게 따라감
+    camX = cx * DX; camY = -cy * DY;
     shake = Math.max(0, shake - dt * 12); shX = shake ? R((Math.random() - .5) * shake * 2) : 0; shY = shake ? R((Math.random() - .5) * shake * 2) : 0;
     g.setTransform(PS, 0, 0, PS, 0, 0); g.imageSmoothingEnabled = false;
     { const wq = Math.round((-camY / DY / FLOOR + 3) * 20); if (wq !== winQ) { winQ = wq; winSky = skyAt(wq / 20)[0]; } }
     const f = -camY / DY / FLOOR;
     bg(f);
-    const top = Math.floor(cy) + 24, bot = Math.max(0, Math.floor(cy) - 8);
+    const top = Math.floor(cy) + 24, bot = Math.max(0, Math.floor(cy) - 12);   // 캐릭터가 가운데라 아래쪽도 10칸 넘게 보임
     for (let i = Math.min(top, xs.length - 1); i >= bot; i--) drawStair(i);
     // 발밑 먼지·축하 가루
     parts = parts.filter(p => (p.t += dt) < (p.g ? .9 : .3));
