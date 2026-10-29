@@ -84,6 +84,9 @@ export function createBlast(root, opt = {}) {
     if (top0.classList.contains('side') !== side) { top0.classList.toggle('side', side); tools.classList.toggle('side', side); [c1, hz1] = lay(); }   // 점수판 높이가 바뀌니 다시 잼
     cs = c1; horiz = hz1; [W, H, pad] = dims2(cs, horiz).map(Math.round);
     $('top').style.width = Math.max(300, W + 16) + 'px';   // 점수판 폭 = 판 폭(최고 기록·버튼이 판 양 끝에 맞춰짐)
+    // 옆 버튼은 화면(게임 칸) 왼쪽 끝에 — 오른쪽 '내 기록' 칸과 좌우 짝(2026-10-29 하율 "그만하기부터 쭉 화면 옆으로")
+    if (side) { const fl = root.closest('.fl') || root.parentElement; const dx = Math.round(fl.getBoundingClientRect().left - top0.getBoundingClientRect().left); tools.style.right = 'auto'; tools.style.left = dx + 'px'; tools.style.width = Math.max(130, Math.min(200, -dx - 16)) + 'px'; }
+    else { tools.style.left = ''; tools.style.right = ''; tools.style.width = ''; }
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     draw();
   }
