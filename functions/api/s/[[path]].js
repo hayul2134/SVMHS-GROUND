@@ -365,10 +365,10 @@ async function mstRun(db, me, game, add, day) {
 // 방금 딴 업적마다: 학생 몇 %가 가졌는지(나 포함) · 전교 최초인지(다른 학생 아무도 없으면)
 async function achInfo(db, me, keys) {
   const R = await achRarity(db), dev = isAdm(me);
-  const others = dev ? [] : await db.batch(keys.map(k => db.prepare("SELECT COUNT(*) AS n FROM users WHERE id <> ?1 AND handle <> ?2 AND is_test = 0 AND ach LIKE ?3").bind(me.id, ADMIN_HANDLE, `%"${k}":%`)));
-  return keys.map((k, i) => {
-    const n = dev ? null : others[i].results[0]?.n ?? 0, pl = Math.max(R.n, 1);
-    return { k, p: n == null ? achPct(R, k) : Math.min(100, Math.round((n + 1) / pl * 1000) / 10), f: n === 0 ? 1 : 0, c: n == null ? (R.c[k] || 0) : n + 1 };
+  const others = await db.batch(keys.map(k => db.prepare("SELECT COUNT(*) AS n FROM users WHERE id <> ?1 AND handle <> ?2 AND is_test = 0 AND ach LIKE ?3").bind(me.id, ADMIN_HANDLE, `%"${k}":%`)));
+  return keys.map((k, i) => {   // 개발자: 학생들 기준 %만(최초·몇 번째는 학생만)
+    const n = others[i].results[0]?.n ?? 0, pl = Math.max(R.n, 1);
+    return dev ? { k, p: Math.min(100, Math.round(n / pl * 1000) / 10), f: 0, c: 0 } : { k, p: Math.min(100, Math.round((n + 1) / pl * 1000) / 10), f: n === 0 ? 1 : 0, c: n + 1 };
   });
 }
 // 개발자는 어떤 랭킹·1등 표시에도 안 나옴 (scores 쿼리에 붙이는 조건)
