@@ -6287,3 +6287,12 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 @media (max-height:500px) and (orientation:landscape){.ctm-zm{top:2px;bottom:2px;padding:3px 8px}.zm-f,.zm-h small{display:none}.zm-sc{inset:16px 0 13px}}
 @media (max-width:520px){.zm-h small{display:none}.zm-f span:last-child{display:none}}
 @media (prefers-reduced-motion:reduce){.ctm-zm,.zm-sc,.zm-l,.zm-v{animation:none}}
+/* 게임 칸 하나로 합침 + 카드마다 랭크/캐주얼 표시(2026-10-29 하율 "캐주얼, 랭크 이렇게 나누자", 미리보기 casual-games) */
+.gtag{display:inline-block;margin-top:auto;padding:1px 9px;border:2px solid var(--ink);border-radius:999px;font-style:normal;font-size:11.5px;font-weight:900;line-height:1.45;letter-spacing:.02em;box-shadow:1.5px 1.5px 0 var(--ink)}
+.gtag.gt-rk{background:#6aa7ff;color:#fff}
+.gtag.gt-cz{background:#e9e4d8;color:#5d5747}
+:root[data-theme="dark"] .gtag.gt-cz{background:#3a3f52;color:#d9dce6}
+.cat-h small.gtag-h{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+.cat-h small.gtag-h .gtag{margin:0 0 0 4px;font-size:10.5px;padding:0 7px;box-shadow:none}
+.cat-h small.gtag-h .gtag:first-child{margin-left:0}
+@media (max-width:560px){.gtag{font-size:10.5px;padding:0 7px}.cat-h small.gtag-h{font-size:11.5px}}

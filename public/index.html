@@ -558,25 +558,20 @@
       <h2 class="sec-t" id="appsT">서비스</h2>
       <!-- 2026-10-24 카테고리로 나눔(2026-10-25 순서: 게임 → 뽑기 → 학교생활 / 2026-10-26 하율: 뽑기와 티어 보기를 한 카테고리 '랭크·뽑기'로): 게임(아이콘을 누르면 그 게임 바로 시작, social.js [data-play]) · 랭크·뽑기(내 티어 + 뽑기 가로 카드 두 장, 출석 체크는 헤더 불꽃 버튼) · 학교생활. 프로필·설정·공유·DM·테마·이용 안내·급식은 헤더 메뉴·메시지 버튼·급식 카드에 이미 있음 -->
       <div class="svcat">
-        <div class="cat-h"><h3>게임</h3></div>
+        <div class="cat-h"><h3>게임</h3><small class="gtag-h" data-ff="casual-games"><em class="gtag gt-rk">랭크</em> 랭킹·티어·보상 <em class="gtag gt-cz">캐주얼</em> 기록만 가볍게</small></div>
         <div class="appgrid catgrid gm5">
-        <button class="app gapp g-film" data-play="film" data-ff="film-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-film"/></svg></i>게퍼 10<b class="beta new" data-nf="film-game">NEW</b></button>
-        <button class="app gapp g-stair" data-play="stair" data-ff="stair-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-stair"/></svg></i>영상고 계단 오르기<b class="beta new" data-nf="stair-game">NEW</b></button>
-        <button class="app gapp g-gear" data-play="gear" data-ff="gear-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-gear"/></svg></i>기자재 정리!<b class="beta new" data-nf="gear-game">NEW</b></button>
-        <button class="app gapp g-blast" data-play="blast" data-ff="blast-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-blast"/></svg></i>카메라 가방 정리!<b class="beta new" data-nf="blast-game">NEW</b></button>
-        <button class="app gapp g-home" data-play="home"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-run"/></svg></i>집에 가고 싶어!</button>
-        <button class="app gapp g-cut" data-play="cut"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-clap"/></svg></i><span class="nm-a">컷 타이밍</span><span class="nm-b">편집의 신</span><b class="beta nm-a">Beta</b></button>
-        <button class="app gapp g-reaction" data-play="reaction"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-bolt"/></svg></i>반응속도<b class="beta rx-b">Beta</b></button>
-        <button class="app gapp g-num25" data-play="num25"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-n25"/></svg></i>1 to 25</button>
-        </div>
-      </div>
-      <!-- 캐주얼 게임(2026-10-29 하율: 학교 컨셉에 맞추기 어려운 고전 미니 게임은 따로 — 미리보기 깃발 casual-games, js/casual.js · 랭킹·티어·보상 없음, 이 기기 최고 기록만) -->
-      <div class="svcat" data-ff="casual-games">
-        <div class="cat-h"><h3>캐주얼 게임</h3><small>가볍게 한 판</small></div>
-        <div class="appgrid catgrid gm5">
-        <button class="app gapp g-cz-mine" data-play="c_mine"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-mine"/></svg></i>지뢰찾기</button>
-        <button class="app gapp g-cz-snake" data-play="c_snake"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-snake"/></svg></i>뱀 게임</button>
-        <button class="app gapp g-cz-n2048" data-play="c_n2048"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-2048"/></svg></i>2048</button>
+        <button class="app gapp g-film" data-play="film" data-ff="film-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-film"/></svg></i>게퍼 10<b class="beta new" data-nf="film-game">NEW</b><em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <button class="app gapp g-stair" data-play="stair" data-ff="stair-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-stair"/></svg></i>영상고 계단 오르기<b class="beta new" data-nf="stair-game">NEW</b><em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <button class="app gapp g-gear" data-play="gear" data-ff="gear-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-gear"/></svg></i>기자재 정리!<b class="beta new" data-nf="gear-game">NEW</b><em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <button class="app gapp g-blast" data-play="blast" data-ff="blast-game"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-blast"/></svg></i>카메라 가방 정리!<b class="beta new" data-nf="blast-game">NEW</b><em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <button class="app gapp g-home" data-play="home"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-run"/></svg></i>집에 가고 싶어!<em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <button class="app gapp g-cut" data-play="cut"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-clap"/></svg></i><span class="nm-a">컷 타이밍</span><span class="nm-b">편집의 신</span><b class="beta nm-a">Beta</b><em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <button class="app gapp g-reaction" data-play="reaction"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-bolt"/></svg></i>반응속도<b class="beta rx-b">Beta</b><em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <button class="app gapp g-num25" data-play="num25"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-n25"/></svg></i>1 to 25<em class="gtag gt-rk" data-ff="casual-games">랭크</em></button>
+        <!-- 캐주얼 게임(2026-10-29 하율: 고전 미니 게임 — 미리보기 깃발 casual-games, js/casual.js · 랭킹·티어·보상 없음, 이 기기 최고 기록만) → 같은 날 "캐주얼, 랭크 이렇게 나누자": 게임 칸 하나로 합치고 카드마다 랭크/캐주얼 표시 -->
+        <button class="app gapp g-cz-mine" data-ff="casual-games" data-play="c_mine"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-mine"/></svg></i>지뢰찾기<em class="gtag gt-cz">캐주얼</em></button>
+        <button class="app gapp g-cz-snake" data-ff="casual-games" data-play="c_snake"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-snake"/></svg></i>뱀 게임<em class="gtag gt-cz">캐주얼</em></button>
+        <button class="app gapp g-cz-n2048" data-ff="casual-games" data-play="c_n2048"><i class="ai"><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-2048"/></svg></i>2048<em class="gtag gt-cz">캐주얼</em></button>
         </div>
       </div>
       <div class="svcat">
