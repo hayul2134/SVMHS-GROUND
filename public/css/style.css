@@ -1132,7 +1132,7 @@ html.prelogin .play,html.prelogin .dmdock{display:none}   /* 로그인 전엔 �
 
 /* 종 시계 스티커 */
 .in-live{position:relative;z-index:2;justify-self:center;width:min(100%,410px);display:flex;flex-direction:column;align-items:center;gap:14px;animation:inPop .7s .25s cubic-bezier(.34,1.4,.6,1) both}
-.in-say{position:relative;align-self:flex-start;margin-left:8%;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);border-radius:18px;padding:9px 16px;font-weight:900;font-size:15px;rotate:-3deg;animation:bob 3.4s ease-in-out infinite}
+.in-say{position:relative;z-index:4;align-self:flex-start;margin-left:8%;background:var(--card);border:var(--bd);box-shadow:var(--sh-s);border-radius:18px;padding:9px 16px;font-weight:900;font-size:15px;rotate:-3deg;animation:bob 3.4s ease-in-out infinite}
 .in-say::after{content:"";position:absolute;left:26px;bottom:-11px;width:16px;height:16px;background:var(--card);border-right:var(--bd);border-bottom:var(--bd);transform:rotate(45deg) skew(8deg,8deg);border-radius:0 0 4px 0}
 .in-clock{position:relative;width:100%;background:var(--hero);color:#fff;border:3px solid var(--ink);border-radius:32px;box-shadow:7px 7px 0 var(--ink);padding:34px 24px 22px;rotate:2deg;text-align:center;display:grid;gap:8px;overflow:hidden}
 .in-clock::before{content:"";position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.18) 1.5px,transparent 1.6px) 0 0/16px 16px;pointer-events:none}
