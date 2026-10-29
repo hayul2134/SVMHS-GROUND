@@ -11,7 +11,7 @@ import { BLAST_MAX, seedOf as blastSeed, replay as blastReplay } from '../../../
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
-import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat, mstAdd, mstSeed, mstXp } from '../../../public/js/achv.js';
+import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstSeed, mstXp, mstGrade, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -289,6 +289,7 @@ const ALL_OPEN = 1e6;
 /* ===== 게임 업적 (2026-10-28 하율, 미리보기 깃발 achv — public/js/achv.js) =====
    users.ach = { 키: 달성 시각 }. 판정은 저장된 기록(scores)과 방금 저장된 한 판으로만. 깃발이 꺼져 있어도 조용히 쌓아 둠(공개 때 소급 필요 없게) — 화면·칭호만 깃발 */
 const achOpen = me => ACH_GAMES.filter(g => !GAMES[g]?.ff || ffOn(GAMES[g].ff, isAdm(me)));
+const mstOpen = me => MST_GAMES.filter(g => GAMES[g] && (!GAMES[g].ff || ffOn(GAMES[g].ff, isAdm(me))));   // 숙련도(깃발 mastery): 보는 사람에게 열린 게임만
 async function achStats(db, uid, me) {
   const [b, d, D] = await db.batch([
     db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game <> 'gearn' GROUP BY game").bind(uid),
@@ -319,15 +320,17 @@ async function achRarity(db) {
     db.prepare("SELECT id, name, ach, mst FROM users WHERE ((ach <> '' AND ach <> '{}') OR (mst <> '' AND mst <> '{}')) AND handle <> ?1 AND is_test = 0").bind(ADMIN_HANDLE),
     db.prepare(`SELECT COUNT(DISTINCT uid) AS n FROM scores WHERE ${NOT_DEV}`),
   ]);
-  // c = 업적별 가진 수 · f = 업적별 최초 달성자 · m = 게임별 숙련 XP(큰 순) — 숙련도 전교 순위용
-  const c = {}, f = {}, m = {};
+  // c = 업적별 가진 수 · f = 업적별 최초 달성자 · m = 게임별 숙련 XP(큰 순) · s = 숙련도 점수(큰 순) — 숙련도 전교 순위용
+  const c = {}, f = {}, m = {}, s = [];
   for (const r of rows.results) {
     const o = parseAch(r.ach);
     for (const [k, at] of Object.entries(o)) { c[k] = (c[k] || 0) + 1; if (!f[k] || at < f[k].at) f[k] = { id: r.id, n: r.name, at }; }
-    const ms = parseAch(r.mst); for (const g of ACH_GAMES) { const x = mstXp(ms, g); if (x > 0) (m[g] = m[g] || []).push(x); }
+    const ms = parseAch(r.mst); for (const g of MST_GAMES) { const x = mstXp(ms, g); if (x > 0) (m[g] = m[g] || []).push(x); }
+    const sc = mstScore(ms); if (sc > 0) s.push(sc);
   }
   for (const g in m) m[g].sort((a, b) => b - a);
-  achRare = { at: Date.now(), n: pl.results[0]?.n || 0, c, f, m };
+  s.sort((a, b) => b - a);
+  achRare = { at: Date.now(), n: pl.results[0]?.n || 0, c, f, m, s };
   return achRare;
 }
 // 프로필 요약: 개수 + 가장 드문 업적 3개
@@ -343,14 +346,11 @@ const mstRank = (R, g, xp) => xp > 0 ? (R.m?.[g] || []).filter(x => x > xp).leng
 async function mstRun(db, me, game, add, day) {
   try {
     for (let t = 0; t < 4; t++) {
-      const cur = t ? (await db.prepare('SELECT mst, ach FROM users WHERE id = ?1').bind(me.id).first())?.mst ?? '' : me.mst ?? '';
+      const cur = t ? (await db.prepare('SELECT mst FROM users WHERE id = ?1').bind(me.id).first())?.mst ?? '' : me.mst ?? '';
       let o = parseAch(cur);
-      if (cur === '') {   // 처음 한 번: 예전 기록(게임한 날)·가진 업적으로 소급
+      if (cur === '') {   // 처음 한 번: 예전 기록(게임한 날)으로 소급 — 업적과는 따로(2026-10-30)
         const d = (await db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 GROUP BY g").bind(me.id).all()).results;
-        const own = parseAch(me.ach);
-        // 이번 판의 업적은 add.ach로 따로 더하니 소급에서는 빼고 셈
-        for (const k of add?.ach || []) delete own[k];
-        o = mstSeed(Object.fromEntries(d.map(x => [x.g, x.n])), own);
+        o = mstSeed(Object.fromEntries(d.map(x => [x.g, x.n])));
         if (game) { const gg = game === 'gearn' ? 'gear' : game; if (o[gg]) o[gg][0] = Math.max(0, o[gg][0] - 30); }   // 오늘 판 하루치는 아래에서 다시 더함
       }
       const a = game ? mstXp(o, game === 'gearn' ? 'gear' : game) : 0;
@@ -636,7 +636,7 @@ const ROUTES = {
     const me = await auth(req, db);
     if (!me) return json({ me: null });
     if (me.ach === '') await achRun(db, me, null);   // 업적: 예전 기록으로 처음 한 번 소급(그 뒤는 기록 저장 때)
-    if (me.mst === '' && ffOn(ACH_FF, isAdm(me))) await mstRun(db, me, null);   // 숙련도: 같은 방식으로 처음 한 번 소급(깃발 켜진 사람만)
+    if (me.mst === '' && ffOn(MST_FF, isAdm(me))) await mstRun(db, me, null);   // 숙련도: 같은 방식으로 처음 한 번 소급(깃발 켜진 사람만)
     const [unread, fo, fb, fr] = await Promise.all([
       db.prepare('SELECT COUNT(*) AS n FROM messages WHERE b = ?1 AND seen = 0 AND del = 0').bind(me.id).first(),
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE a = ?1').bind(me.id).first(),
@@ -791,10 +791,12 @@ const ROUTES = {
       rx ? db.prepare('SELECT game, best FROM bests WHERE uid = ?1').bind(u.id).all() : db.prepare('SELECT game, MIN(best) AS best FROM scores WHERE uid = ?1' + RXQ(rx) + ' GROUP BY game').bind(u.id).all(),
       topCrowns(db, u.id, rx),
     ]);
-    const achRow = ffOn(ACH_FF, isAdm(me)) ? await db.prepare('SELECT ach FROM users WHERE id = ?1').bind(u.id).first() : null;
+    const achF = ffOn(ACH_FF, isAdm(me)), mstF = ffOn(MST_FF, isAdm(me));
+    const achRow = achF || mstF ? await db.prepare('SELECT ach, mst FROM users WHERE id = ?1').bind(u.id).first() : null;
+    const mo = mstF && achRow ? parseAch(achRow.mst) : null, mOpen = mstOpen(me);   // 프로필 숙련도(롤 프로필처럼 대표 3개 + 숙련도 점수)
     return json({
       user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), counts: { following: fo.n, followers: fb.n },
-      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, ach: achRow ? await achSum(db, parseAch(achRow.ach)) : undefined, tier: isAdm(u) ? null : await tierOfUser(db, u, tierV2(me), rx, gtFor(me)),
+      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, ach: achF && achRow ? await achSum(db, parseAch(achRow.ach)) : undefined, mst: mo ? { score: mstScore(mo, mOpen), top: mOpen.map(g => ({ g, x: mstXp(mo, g) })).filter(x => x.x > 0).sort((a, b) => b.x - a.x).slice(0, 3) } : undefined, tier: isAdm(u) ? null : await tierOfUser(db, u, tierV2(me), rx, gtFor(me)),
       streak: isAdm(u) ? { cur: ALL_OPEN, best: ALL_OPEN, total: u.st_total || 0, pf: true } : { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
   }),
@@ -1200,12 +1202,23 @@ const ROUTES = {
     const u = !h || h === me.handle ? me : await db.prepare('SELECT id, handle, name, ach, mst FROM users WHERE handle = ?1').bind(String(h).toLowerCase()).first();
     if (!u || (u !== me && (await rel(db, me.id, u.id)).blockedMe)) return err('없는 사용자예요', 404);
     const st = await achStats(db, u.id, me);
-    if (u === me) { await achRun(db, me, null, st); if (me.mst === '') await mstRun(db, me, null); }
-    const R = await achRarity(db), ms = parseAch(u.mst), dev = isAdm(u);
-    // 숙련도: 게임별 XP · 전교 순위(개발자는 순위 없음) · 숙련도 있는 학생 수 / 업적 최초 달성자 이름
-    const mst = Object.fromEntries(ACH_GAMES.map(g => [g, { x: mstXp(ms, g), r: dev ? null : mstRank(R, g, mstXp(ms, g)), n: (R.m?.[g] || []).length }]));
+    if (u === me) await achRun(db, me, null, st);
+    const R = await achRarity(db);
+    // 업적 최초 달성자 이름
     const first = Object.fromEntries(Object.entries(R.f || {}).map(([k, v]) => [k, { n: v.n, me: v.id === u.id ? 1 : 0, at: v.at }]));
-    return json({ own: parseAch(u.ach), st, rare: Object.fromEntries(ACH.map(a => [a.k, achPct(R, a.k)])), players: R.n, me: u === me, mst, first });
+    return json({ own: parseAch(u.ach), st, rare: Object.fromEntries(ACH.map(a => [a.k, achPct(R, a.k)])), players: R.n, me: u === me, first });
+  }),
+  // 게임 숙련도(깃발 mastery, 2026-10-30 — 롤 챔피언 숙련도처럼 업적과 따로): ?u=아이디(없으면 나)
+  'GET mastery': needMe(async ({ db, me, url }) => {
+    if (!ffOn(MST_FF, isAdm(me))) return err('not found', 404);
+    const h = url.searchParams.get('u');
+    const u = !h || h === me.handle ? me : await db.prepare('SELECT id, handle, name, mst FROM users WHERE handle = ?1').bind(String(h).toLowerCase()).first();
+    if (!u || (u !== me && (await rel(db, me.id, u.id)).blockedMe)) return err('없는 사용자예요', 404);
+    if (u === me && me.mst === '') await mstRun(db, me, null);
+    const R = await achRarity(db), ms = parseAch(u.mst), dev = isAdm(u), open = mstOpen(me), score = mstScore(ms, open);
+    // 게임마다 x = XP · s = S 이상 받은 판 수 · gr = 최근 등급 · r/n = 전교 순위/숙련도 있는 학생 수(1시간 캐시, 개발자는 순위 없음)
+    const games = Object.fromEntries(open.map(g => { const x = mstXp(ms, g), c = Array.isArray(ms[g]) ? ms[g] : []; return [g, { x, s: +c[3] || 0, gr: c[4] || '', r: dev ? null : mstRank(R, g, x), n: (R.m?.[g] || []).length }]; }));
+    return json({ me: u === me, name: u.name, games, score, sr: dev || !score ? null : (R.s || []).filter(x => x > score).length + 1, sn: (R.s || []).length });
   }),
 
   'GET rank': needMe(async ({ db, me, url }) => {
@@ -1796,9 +1809,11 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : null, rank: isCas(g) ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
     const achF = ffOn(ACH_FF, isAdm(me));
     const ach = achGot.length && achF ? achGot : undefined;
-    // 게임 숙련도(깃발 achv와 같이, 2026-10-29 하율 "내 화면에만"): 1판 10 · 최고 기록 30 · 업적 XP — 깃발 켜진 사람만 쌓음(공개 때는 mstSeed가 예전 기록으로 소급)
-    const mstR = !achF ? null : await mstRun(db, me, game, { play: playCounts(game === 'gearn' ? 'gear' : game, v), best: newBest, ach: achGot }, day);
-    const mst = achF && mstR ? { g: mstR.g, a: mstR.a, b: mstR.b, r: isAdm(me) ? null : mstRank(await achRarity(db), mstR.g, mstR.b) } : undefined;
+    // 게임 숙련도(깃발 mastery, 2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌"): 판 등급(S+~D, 내 최고 기록 대비)별 XP — 업적·최고 기록 보너스와 따로
+    // 깃발 켜진 사람만 쌓음(공개 때는 mstSeed가 예전 기록으로 소급)
+    const mstF = ffOn(MST_FF, isAdm(me)), mgr = mstGrade(game, v, allPrev.b);
+    const mstR = !mstF ? null : await mstRun(db, me, game, { play: playCounts(game === 'gearn' ? 'gear' : game, v), gr: mgr }, day);
+    const mst = mstF && mstR ? { g: mstR.g, a: mstR.a, b: mstR.b, gr: mgr, r: isAdm(me) ? null : mstRank(await achRarity(db), mstR.g, mstR.b) } : undefined;
     const achX = ach ? await achInfo(db, me, ach).catch(() => undefined) : undefined;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
     return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, achX, mst, cheer: !isCas(g) && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });

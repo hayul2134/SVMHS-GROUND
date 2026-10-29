@@ -6358,3 +6358,37 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .acb span{display:flex;flex-direction:column;min-width:0}
 .acb small{font-size:11.5px;font-weight:900;color:var(--accent)}.acb b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.acb em{font-style:normal;font-size:12px;color:var(--sub)}
 @media (prefers-reduced-motion:reduce){.mem.m5,.acx-art{animation:none}.acb{transition:none}}
+/* ===== 게임 숙련도 창·등급 (2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌" — 깃발 mastery, social.js openMst·paintMst·mstProf) ===== */
+.mst-bar{background:color-mix(in srgb,#8fc2ff 26%,var(--card))}.mst-bar .mem{width:30px;height:34px}
+.mgr{display:inline-grid;place-items:center;min-width:24px;height:18px;margin-left:6px;padding:0 5px;border:1.5px solid var(--ink);border-radius:6px;font:900 11.5px/1 var(--num);font-style:normal;color:#fff;vertical-align:1px;background:#9aa6b6}
+.mgr.gsp{background:linear-gradient(120deg,#ff8fb8,#b39cff,#6fb6f4);text-shadow:0 1px 0 rgba(0,0,0,.25)}.mgr.gs{background:#f2a92b}.mgr.ga{background:#3fb98e}.mgr.gb{background:#4f9be8}.mgr.gc{background:#8b7fd6}.mgr.gd{background:#9aa6b6}
+.mgr-big{display:grid;place-items:center;width:46px;height:46px;flex:none;border:2.5px solid var(--ink);border-radius:12px;font:900 20px/1 var(--num);color:#fff;background:#9aa6b6}
+.mgr-big.gsp{background:linear-gradient(120deg,#ff8fb8,#b39cff,#6fb6f4)}.mgr-big.gs{background:#f2a92b}.mgr-big.ga{background:#3fb98e}.mgr-big.gb{background:#4f9be8}.mgr-big.gc{background:#8b7fd6}
+.acb .mgr-big{display:grid;align-items:center;width:38px;height:38px;font-size:17px}
+.mst-sheet{text-align:left}
+.mst-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding:12px 16px;border:var(--bd);border-radius:18px;background:var(--chip)}
+.mst-top .mem.big{width:62px;height:72px;filter:none}
+.mst-top h3{margin:0;font:400 22px/1.2 var(--disp)}.mst-top small{display:block;color:var(--sub);font-weight:800;font-size:12.5px}
+.mst-sc{display:block;margin:2px 0;font:900 20px var(--num)}
+.mst-grid{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mst-grid li{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 10px 10px;border:2px solid var(--ink);border-radius:16px;background:var(--card);text-align:center}
+.mst-grid li.m4{background:#fff6d4}.mst-grid li.m5{background:linear-gradient(140deg,#e8f6ff,#f1eaff,#ffeaf6,#fff8dc)}
+.mst-grid li.none{opacity:.6}.mst-grid li.none .mem{filter:grayscale(1)}
+.mst-grid li.sel{box-shadow:0 0 0 3px var(--accent)}
+.mc-art{position:relative}.mc-art .mem.big{width:58px;height:66px;filter:none}.mc-art .mgr{position:absolute;right:-12px;bottom:0;margin:0}
+.mc-n{display:flex;align-items:center;gap:4px;font-size:13.5px;font-weight:900}.mc-n .sic{width:16px;height:16px}
+.mc-lv{font:800 14px var(--num)}.mc-lv em{font:900 12px var(--sans,inherit);font-style:normal;color:var(--sub)}
+.mst-grid .mbar{width:100%}
+.mst-grid small{font-size:11.5px;font-weight:800;color:var(--sub)}.mc-meta{min-height:1em}
+.mst-how{margin:0 0 12px;padding:10px 12px;border:2px dashed var(--line);border-radius:14px;font-size:12.5px}
+.mst-how ul{list-style:none;margin:8px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:5px}
+.mst-how li{display:flex;align-items:center;gap:8px;font-weight:700}.mst-how li .mgr{margin:0}.mst-how li span{flex:1}.mst-how li em{font:800 12px var(--num);font-style:normal;color:var(--accent)}
+.mst-how small{color:var(--sub);font-weight:700;line-height:1.5}
+.pmst{display:grid;gap:6px;width:100%;margin-top:8px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:color-mix(in srgb,#8fc2ff 20%,var(--card));color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.pmst .pach-h .mem{width:20px;height:23px}
+.pmst-l{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pmst-l i{display:flex;align-items:center;gap:6px;min-width:0;padding:5px 6px;border-radius:10px;background:var(--card);border:1.5px solid var(--line);font-style:normal}
+.pmst-l i .mem{width:24px;height:28px}.pmst-l span{display:flex;flex-direction:column;min-width:0}.pmst-l b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmst-l small{font:800 11px var(--num);color:var(--sub)}
+.pmst-l i.m4{background:#fff6d4}.pmst-l i.m5{background:linear-gradient(120deg,#e8f6ff,#f1eaff,#ffeaf6)}
+@media (max-width:560px){.pmst-l{grid-template-columns:1fr}}
+:root[data-theme="dark"] .mst-grid li.m4,:root[data-theme="dark"] .mst-grid li.m5,:root[data-theme="dark"] .pmst-l i.m4,:root[data-theme="dark"] .pmst-l i.m5{color:#1f1d33}

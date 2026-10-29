@@ -87,7 +87,14 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
     await call('GET', `rank?game=${g}&scope=class`);
     await call('GET', `myrec?game=${g}`);
   }
-  for (const p of ['games', 'tier', 'mission', 'me', 'user/' + handle, 'att', 'ach']) await call('GET', p);
+  for (const p of ['games', 'tier', 'mission', 'me', 'user/' + handle, 'att', 'ach', 'mastery']) await call('GET', p);
+  // 숙련도(깃발 mastery, 2026-10-30): 공개 상태에선 판을 한 게임에 XP·등급이 쌓여야 함
+  if (mode === '깃발 전부 공개') {
+    const m = (await call('GET', 'mastery')).j, u = (await call('GET', 'user/' + handle)).j;
+    if (process.env.DBG === 'mst') console.log(JSON.stringify(m), JSON.stringify(u?.mst));
+    if (!m?.games || !Object.values(m.games).some(x => x.x > 0 && x.gr) || !(m.score > 0)) fails.push(`[${mode}] 숙련도가 안 쌓임 → ${JSON.stringify(m).slice(0, 300)}`);
+    if (!u?.mst?.top?.length) fails.push(`[${mode}] 프로필 숙련도 대표 게임 없음 → ${JSON.stringify(u?.mst)}`);
+  }
 }
 // 서버 오류 보관 → 자동 반영 검사(2026-10-29): 저장 중 쿼리 하나를 일부러 터뜨려 '보관'되는지, 고친 뒤 게임 시작 때 반영되는지
 {
