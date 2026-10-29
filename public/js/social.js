@@ -33,7 +33,7 @@ const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 
 const GAMES = {
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
   // 기자재 정리!(2026-10-27 하율, 미리보기 깃발 gear-game — 개발자만): 촬영 장비 블록 쌓기. 높을수록 좋음 → 서버엔 GEAR_MAX - 점수
-  gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 빈틈없이 정리해 줄을 채워요 · 랭킹전은 2분 점수 대결', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
+  gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 빈틈없이 정리해 줄을 채워요 · 타임어택은 2분 점수 대결', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 따로 순위만 — 게임 목록·티어엔 안 나옴(casual), 기자재 정리! 랭킹 창의 '일반' 전환으로 봄
   gearn: { ff: 'gear-game', casual: true, name: '기자재 정리! 일반', ic: 'gear', desc: '시간 제한 없이 자유롭게 · 티어·보상과 상관없는 일반 모드 순위', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   // 카메라 가방 정리!(2026-10-29 하율 "블록블라스트 버전도", 미리보기 깃발 blast-game — 개발자만): 8×8 선반에 장비 케이스 끌어 놓기. 높을수록 좋음 → 서버엔 BLAST_MAX - 점수
@@ -1448,15 +1448,15 @@ async function renderGame() {
 // 기자재 정리! 티어 반영(2026-10-28 하율, 미리보기 깃발 gear-tier): 랭킹전·일반 중 순위 점수가 높은 쪽 한 칸 → 어느 쪽이 들어갔는지 표시
 //   개발자는 티어 밖이라 '내' 내역이 없음 → 1위 학생 내역으로 미리보기
 const GT = 'gear-tier', gtOn = () => ffOn(GT, isDev(S.me)), GT_FROM = '10/29';
-const gtMode = m => m === 'n' ? '일반' : '랭킹전';
+const gtMode = m => m === 'n' ? '일반' : '타임어택';
 async function gearTier() {
   try { const d = await call('tier'); if (!d.g) return null; const dev = !d.me && isDev(S.me), u = d.me || (dev ? d.top?.[0] : null);
     return { on: !!d.g.on, x: u?.games?.gear || null, dev }; } catch { return null; }
 }
 function gtText(t) {
   if (!t) return '';
-  if (!t.on) return `${GT_FROM}부터 티어엔 랭킹전·일반 중 순위가 더 좋은 쪽이 들어가요`;
-  const x = t.x; if (!x) return '티어엔 랭킹전·일반 중 순위가 더 좋은 쪽이 들어가요';
+  if (!t.on) return `${GT_FROM}부터 티어엔 타임어택·일반 중 순위가 더 좋은 쪽이 들어가요`;
+  const x = t.x; if (!x) return '티어엔 타임어택·일반 중 순위가 더 좋은 쪽이 들어가요';
   return `${t.dev ? '미리보기(1위 학생 기준) · 티어엔' : '내 티어엔'} 지금 ${gtMode(x.m)} ${x.r}위(${x.p}점)가 들어가 있어요${x.o ? ` · ${gtMode(x.m === 'n' ? 'r' : 'n')}은 ${x.o.r}위(${x.o.p}점)` : ''}`;
 }
 // 게임 화면 (진짜·뼈대 공용)
@@ -1570,7 +1570,7 @@ async function loadTier() {
   const per = pm ? gamesOn().map(([k, g]) => { const x = pm.games[k];
     if (k === 'gear' && d.g) {   // 기자재 정리!: 반영된 모드 + 다른 모드
       if (!d.g.on) return `<li>${ic(g.ic)}<span>${g.name}</span><b><i>${GT_FROM}부터 티어에 들어가요</i></b></li>`;
-      return `<li class="tg-gear">${ic(g.ic)}<span>${g.name}</span><b>${x ? `<span class="tg-m">${gtMode(x.m)} ✓</span>${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b>${x?.o ? `<small class="tg-o">${gtMode(x.m === 'n' ? 'r' : 'n')} ${x.o.r}위 / ${x.o.n}명 · +${x.o.p} (미반영)</small>` : x ? '' : '<small class="tg-o">랭킹전·일반 중 순위가 더 좋은 쪽이 들어가요</small>'}</li>`;
+      return `<li class="tg-gear">${ic(g.ic)}<span>${g.name}</span><b>${x ? `<span class="tg-m">${gtMode(x.m)} ✓</span>${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b>${x?.o ? `<small class="tg-o">${gtMode(x.m === 'n' ? 'r' : 'n')} ${x.o.r}위 / ${x.o.n}명 · +${x.o.p} (미반영)</small>` : x ? '' : '<small class="tg-o">타임어택·일반 중 순위가 더 좋은 쪽이 들어가요</small>'}</li>`;
     }
     return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
   const perPv = !m && pm ? '<p class="tr-pv">미리보기 · 1위 학생 기준 점수 내역(개발자는 티어 밖)</p>' : '';
@@ -1719,7 +1719,7 @@ async function openRank(game, scope = 'week') {
   const gm = game === 'gear' || game === 'gearn', gt = gm && gtOn();   // gear-tier: 일반 모드도 티어에 들어가니 '이번 라운드' 탭
   if (g.casual && (scope === 'class' || (scope === 'round' && !gt))) scope = 'all';
   const gtP = gt ? gearTier() : null;
-  const modeSeg = gm ? `<div class="segs rk-mode" role="group" aria-label="게임 방식"><button data-rank="gear" data-scope="week" class="${game === 'gear' ? 'on' : ''}">${ic('trophy')}랭킹전</button><button data-rank="gearn" data-scope="all" class="${game === 'gearn' ? 'on' : ''}">일반</button></div>` : '';
+  const modeSeg = gm ? `<div class="segs rk-mode" role="group" aria-label="게임 방식"><button data-rank="gear" data-scope="week" class="${game === 'gear' ? 'on' : ''}">${ic('clock')}타임어택</button><button data-rank="gearn" data-scope="all" class="${game === 'gearn' ? 'on' : ''}">일반</button></div>` : '';
   const tabs = (g.casual ? (gt ? [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구']] : [['week', '이번 주'], ['all', '역대'], ['friends', '친구']]) : [['week', '이번 주'], ['round', '이번 라운드'], ['all', '역대'], ['friends', '친구'], ['class', '반 대항전']]).map(([k, t]) => `<button data-rank="${game}" data-scope="${k}" class="${k === scope ? 'on' : ''}">${t}</button>`).join('');
   const scopeName = { week: '이번 주', round: '이번 라운드', all: '역대', friends: '친구', class: '반 대항전' }[scope] || '';
   sheet(`<h3 class="rk-h3">${ic(g.ic)} ${gm ? '기자재 정리!' : g.name} 랭킹<button type="button" class="rk-story" id="rkStory"${ffOn('story-share', isDev(S.me)) ? '' : ' hidden'} aria-label="스토리용 이미지로 공유">${ic('photo')}스토리 공유</button></h3>${modeSeg}<div class="segs">${tabs}</div><ol class="rank" id="rankList">${ghostOr(() => FK_US(5).map((u, i) => `<li><span class="rk">${i < 3 ? `<i class="mdl m${i + 1}">${i + 1}</i>` : i + 1}</span><a>${av(u)}<span class="pi"><b>${esc(u.name)}</b><small>1학년 1반</small></span></a><b class="rv">000</b></li>`).join(''), 2)}</ol>
@@ -2496,7 +2496,7 @@ async function playGear() {
     ov.querySelectorAll('[data-gm]').forEach(b => { const on = b.dataset.gm === mode; if (on && b.getAttribute('aria-pressed') === 'false') { b.classList.remove('pick'); void b.offsetWidth; b.classList.add('pick'); } b.setAttribute('aria-pressed', on); }); paintHud(); };
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
   const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul>
-    <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>${gtOn() ? '시간 제한 없이 오래 버티기' : '시간 제한 없음 · 티어 제외'}</small></button><button type="button" data-gm="rank"><b>${ic('trophy')}랭킹전</b><small>${gtOn() ? '2분 안에 최고 점수' : '2분 점수 대결 · 티어 반영'}</small></button></div>
+    <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>${gtOn() ? '시간 제한 없이 오래 버티기' : '시간 제한 없음 · 티어 제외'}</small></button><button type="button" data-gm="rank"><b>${ic('clock')}타임어택</b><small>${gtOn() ? '2분 안에 최고 점수' : '2분 점수 대결 · 티어 반영'}</small></button></div>
     ${gtOn() ? '<small class="gr-gt">티어엔 두 방식 중 순위가 더 좋은 쪽이 들어가요</small>' : ''}<small>${touchy ? '방식을 누르면 바로 시작' : '← → 로 방식 고르고, 아무 키나 누르면 시작'}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); setMode(mode); requestAnimationFrame(() => ov.querySelectorAll('[data-k]').forEach(c => { const w = c.getBoundingClientRect().width || 78; snapMini(c, w, Math.max(w, (c.closest('ul')?.clientWidth || 4 * w) / 4 - 4)); R.drawMini(c, c.dataset.k); })); };
   // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
   let shown = 0;
@@ -2545,7 +2545,7 @@ async function playGear() {
       if (nb && rk) { best = res.score; store.set('gear_best', best); } else if (nb) { bestN = res.score; store.set('gear_best_n', bestN); }
       ov.hidden = false; ov.className = 'gr-ov hr-ov dead';
       const msg = !S.me ? (rk ? '로그인하면 랭킹에 올라가요' : '로그인하면 일반 모드 순위에 올라가요') : !rk && res.score >= 1 ? '일반 순위 확인 중…' : !rk ? '0점은 기록하지 않아요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…';
-      ov.innerHTML = `<b>${res.timeUp ? '시간 끝! 반납 완료' : '장비실이 꽉 찼어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${rk ? '랭킹전 · ' : '일반 · '}${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
+      ov.innerHTML = `<b>${res.timeUp ? '시간 끝! 반납 완료' : '장비실이 꽉 찼어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${rk ? '타임어택 · ' : '일반 · '}${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
         <small class="hr-msg" id="grMsg">${msg}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
       if (!S.me || res.score < 1) return;
       // 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 'gearn'으로 저장 → 따로 순위만(티어·보상·미션 제외)
@@ -2558,7 +2558,7 @@ async function playGear() {
           $('#grMsg').innerHTML = `${r.newBest ? '<b>일반 최고 기록 경신!</b> ' : ''}일반 모드 <b>${r.rank}위</b> · 내 최고 ${esc(GAMES.gearn.fmt(r.best))} <button type="button" class="hr-rklink" data-rank="gearn" data-scope="${gtOn() ? 'round' : 'all'}">순위 보기</button><br><small${gtOn() ? ' id="grTi">티어 확인 중…' : '>티어·보상과는 상관없어요'}</small>`;
           paintRk(); gtEnd(no); return;
         }
-        $('#grMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 잘했어요' : `랭킹전 내 최고 ${esc(GAMES.gear.fmt(r.best))}`) + (gtOn() ? '<br><small id="grTi">티어 확인 중…</small>' : '');
+        $('#grMsg').innerHTML = (r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 잘했어요' : `타임어택 내 최고 ${esc(GAMES.gear.fmt(r.best))}`) + (gtOn() ? '<br><small id="grTi">티어 확인 중…</small>' : '');
         syncBest(r.best); paintRk(); gtEnd(no);
       }).catch(e => { if (no === runNo && $('#grMsg')) $('#grMsg').textContent = e.message; });
     },
@@ -2569,7 +2569,7 @@ async function playGear() {
     gearTier().then(t => { const el = $('#grTi'); if (!el || no !== runNo) return;
       if (!t) { el.textContent = ''; return; }
       const x = t.on ? t.x : null;
-      el.innerHTML = x && x.m === 'n' && !t.dev ? `<b>일반 모드가 티어에 반영돼요!</b> (${x.p}점${x.o ? ` · 랭킹전 ${x.o.p}점` : ''})` : esc(t.dev ? gtText(t) : x ? `티어엔 ${gtMode(x.m)}(${x.p}점)이 들어가 있어요` : gtText(t)); });
+      el.innerHTML = x && x.m === 'n' && !t.dev ? `<b>일반 모드가 티어에 반영돼요!</b> (${x.p}점${x.o ? ` · 타임어택 ${x.o.p}점` : ''})` : esc(t.dev ? gtText(t) : x ? `티어엔 ${gtMode(x.m)}(${x.p}점)이 들어가 있어요` : gtText(t)); });
   }
   window.__gear = R;   // 테스트용
   ready(); paintHud(); paintQ();
@@ -2700,7 +2700,7 @@ async function playGear() {
     const el = $('#grRk'); if (!el) return;
     const r = await myRecInto(el, 'gear', best ? GEAR_MAX - best : null, { open: false });   // 접는 버튼(2026-10-28 하율)
     if (r?.best) syncBest(r.best.v);
-    const lb = el.querySelector('.mr-best > span'); if (lb) lb.textContent = '랭킹전 최고';
+    const lb = el.querySelector('.mr-best > span'); if (lb) lb.textContent = '타임어택 최고';
     // 일반 모드: 서버 기록 순위(2026-10-28) — 이번에 저장한 결과가 있으면 그 순위, 없으면 이 기기 최고
     if (bestN || nRec) (el.querySelector('.mr-body') || el.querySelector('.myrec'))?.insertAdjacentHTML('beforeend', `<p class="mr-n">일반 모드 내 최고 <b>${(nRec?.best || bestN).toLocaleString('ko-KR')}점</b>${nRec?.rank ? `<small>${nRec.rank}위</small>` : `<small>${S.me ? '' : '이 기기'}</small>`}${S.me ? '<button type="button" class="hr-rklink" data-rank="gearn" data-scope="all">일반 순위</button>' : ''}</p>`);
   }

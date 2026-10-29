@@ -99,7 +99,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (ln * 10 > pc * 4) return H(`줄(${ln})이 블록 수(${pc})보다 많음`, `블록 ${pc}개로는 많아야 ${Math.floor(pc * 4 / 10)}줄까지 지울 수 있는데 ${ln}줄로 기록됐어요.`);
     if (pc > ms / 125 + 5) return H(`블록을 너무 빨리 놓음(${pc}개 · ${sec(ms)})`, `${sec(ms)} 동안 블록 ${pc}개를 놓았어요. 1초에 8개보다 빠르게 놓을 수는 없어서 자동 입력으로 보일 수 있어요.`);
     if (sc > gearMax(ln, pc)) return H(`점수(${sc})가 줄·블록 수로 낼 수 있는 최대(${gearMax(ln, pc)})보다 큼`, `${ln}줄 · 블록 ${pc}개로 낼 수 있는 점수는 많아야 ${gearMax(ln, pc).toLocaleString('ko-KR')}점인데 ${sc.toLocaleString('ko-KR')}점으로 기록됐어요.`);
-    if (game === 'gear' && ms > GEAR_TIME + 1000) return H(`랭킹전 2분보다 오래 함(${sec(ms)})`, `랭킹전은 2분 동안만 할 수 있는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);   // 2026-10-27: 랭킹 기록은 랭킹전(2분)만
+    if (game === 'gear' && ms > GEAR_TIME + 1000) return H(`타임어택 2분보다 오래 함(${sec(ms)})`, `타임어택은 2분 동안만 할 수 있는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);   // 2026-10-27: 랭킹 기록은 랭킹전(2분)만
     if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'stair') {   // [오른 칸, 플레이 ms, 방향 바꾼 횟수] — stair-score.js 규칙: 1칸에 최소 55ms · 종 게이지로 버틸 수 있는 시간 안 · 실제 흐른 시간 안
     if (n.length !== 3) return H('판 기록 형식이 다름', '오른 칸 수와 시간이 제대로 오지 않았어요.');
