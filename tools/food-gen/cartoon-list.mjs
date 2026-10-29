@@ -128,7 +128,7 @@ export const LIST = {
   muk_white: 'Korean mung bean jelly on a small light blue plate: translucent pale milky white jelly cut into thick rectangular strips, glossy like soft tofu, sprinkled with sesame seeds and a few small green seaweed flakes',
   mandu: 'four pan-fried Korean dumplings on a small plain white plate, half-moon shaped with thin wrappers and crimped pleated edges, golden brown crispy spots',
   fish_grilled: 'grilled mackerel fish fillet, crispy skin',
-  fish_braised: 'Korean braised mackerel jorim on a small plain white plate: three thick boneless fillet pieces of fish with grey-blue striped skin on top and flaky fish flesh, next to thick white radish slices, all covered in thick red chili sauce, cut fillet pieces only, no head, no tail, no whole fish',
+  fish_braised: 'Korean spicy braised fish jorim on a small plain white plate: four square bite-size boneless chunks of fish fillet, each chunk showing white flaky flesh with a thin strip of silver-grey skin, piled with thick white radish slices, all smothered in thick glossy red chili sauce with green onion slices, square chunks only, no head, no eyes, no tail, no fins, no whole fish',
   potato_stirfry: 'Korean stir-fried shredded potato on a small round light blue plate: a heap of thin pale cream-yellow julienned potato strips, mostly pale yellow, with just a few thin orange carrot strips and green pepper strips, lightly glossy',
   potato_braised: 'small cubes of potato braised glossy brown in soy glaze with sesame seeds in a small plain white dish',
   lotus: 'a few round slices of braised lotus root vegetable, each slice showing its typical pattern of small round openings, glossy amber soy glaze, sprinkled sesame, on a small plain white dish',
