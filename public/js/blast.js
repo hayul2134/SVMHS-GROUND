@@ -20,7 +20,7 @@ const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, 
 export function createBlast(root, opt = {}) {
   let best = opt.best || 0, sound = !!opt.sound;
   // 점수판(2026-10-29 하율 "블록 블라스트처럼 — 올라가는 점수가 잘 안 보여 재미없어"): 왼쪽 위 작게 최고 기록, 가운데 큰 점수(올라갈 때 숫자가 굴러 올라감 + 얻은 점수 팝), 오른쪽 버튼
-  root.innerHTML = `<div class="ml-top bl-top" data-m="top"><span class="bl-best" title="최고 기록"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg><b data-m="best">${best.toLocaleString('ko-KR')}</b></span>
+  root.innerHTML = `<div class="ml-top bl-top" data-m="top"><span class="bl-best" title="최고 기록"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg><small>최고</small><b data-m="best">${best.toLocaleString('ko-KR')}</b></span>
       <div class="bl-score" aria-live="polite"><b data-m="sc">0</b><em class="bl-gain" data-m="gain"></em><span class="bl-cb" data-m="cbw">연속 <i data-m="cb">0</i></span></div>
       <span class="bl-tools"><button type="button" class="btn ghost bl-stop" data-m="stop" hidden>그만하기</button><button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></span></div>
     <div class="ml-board bl-board" data-m="board"><canvas data-m="cv" aria-label="기자재 정리! 블록 판"></canvas><div class="ml-ov" data-m="ov"></div></div>`;
@@ -68,14 +68,21 @@ export function createBlast(root, opt = {}) {
   function fit() {
     if (dead || !cv.isConnected) return;
     dpr = Math.min(devicePixelRatio || 1, 2); tiles.clear();
-    const aw = Math.max(240, root.clientWidth - 30), top = board.getBoundingClientRect().top, ah = Math.max(300, innerHeight - Math.max(top, 0) - 26);
-    // 옆 배치: 가로 = 빈자리 3.4칸+8칸+받침 3.4칸, 세로 = 8칸 / 아래 배치: 가로 = 8칸, 세로 = 8칸+받침 3.3칸
-    const sH = Math.min((aw - 4 * pad) / 14.8, (ah - 2 * pad) / 8), sV = Math.min((aw - 2 * pad) / 8, (ah - 3 * pad) / 11.3);
-    horiz = sH > sV * 1.08;
-    cs = Math.floor(Math.max(22, Math.min(64, horiz ? sH : sV)));
-    pad = Math.round(Math.max(8, cs * .25));
-    W = horiz ? pad * 4 + cs * 14.8 : pad * 2 + cs * 8; H = horiz ? pad * 2 + cs * 8 : pad * 3 + cs * 11.3;
-    W = Math.round(W); H = Math.round(H);
+    // 버튼 자리(2026-10-29 하율 "위에 버튼을 옆으로 빼"): 판 왼쪽에 150px 넘게 빈 곳이 있으면 버튼을 판 왼쪽에 세로로, 없으면 점수판 오른쪽 위
+    const wide = innerWidth >= 901, top0 = root.querySelector('.bl-top'), tools = root.querySelector('.bl-tools');
+    const sideOk = cw => (root.clientWidth - cw) / 2 + (wide ? 254 : 0) >= 150;
+    // 판 크기(2026-10-29 하율 "아래 부분 스크롤 안 해도 되게 안 잘리게"): 판 틀(안쪽 여백·테두리·그림자)까지 뺀 높이 안에 캔버스가 다 들어가도록, 맞을 때까지 칸 크기를 줄임
+    const dims2 = (c, hz) => { const p = Math.round(Math.max(8, c * .25)); return hz ? [p * 4 + c * 14.8, p * 2 + c * 8, p] : [p * 2 + c * 8, p * 3 + c * 10.75, p]; };
+    const lay = () => {
+      const aw = Math.max(240, root.clientWidth - 24), top = board.getBoundingClientRect().top, ah = Math.max(260, innerHeight - Math.max(top, 0) - 40);
+      const best = hz => { let c = 64; while (c > 22) { const [w, h] = dims2(c, hz); if (w <= aw && h <= ah) break; c--; } return c; };
+      const cH = best(true), cV = best(false);
+      return cH > cV * 1.08 ? [cH, true] : [cV, false];
+    };
+    let [c1, hz1] = lay();
+    const side = sideOk(dims2(c1, hz1)[0] + 16);
+    if (top0.classList.contains('side') !== side) { top0.classList.toggle('side', side); tools.classList.toggle('side', side); [c1, hz1] = lay(); }   // 점수판 높이가 바뀌니 다시 잼
+    cs = c1; horiz = hz1; [W, H, pad] = dims2(cs, horiz).map(Math.round);
     $('top').style.width = Math.max(300, W + 16) + 'px';   // 점수판 폭 = 판 폭(최고 기록·버튼이 판 양 끝에 맞춰짐)
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     draw();
@@ -83,9 +90,9 @@ export function createBlast(root, opt = {}) {
   const BX = () => horiz ? pad * 2 + cs * 3.4 : pad, BY = () => pad;
   function slotRect(i) {   // 받침 칸 i의 [x, y, w, h]
     if (horiz) { const x = BX() + cs * 8 + pad, h = cs * 8 / 3; return [x, pad + h * i, cs * 3.4, h]; }
-    const y = pad * 2 + cs * 8, w = cs * 8 / 3; return [pad + w * i, y, w, cs * 3.3];
+    const y = pad * 2 + cs * 8, w = cs * 8 / 3; return [pad + w * i, y, w, cs * 2.75];   // 받침 높이 3.3 → 2.75칸(아래 빈 곳 줄여 판이 안 잘리게)
   }
-  const mini = () => cs * (horiz ? .5 : .52);
+  const mini = () => cs * (horiz ? .5 : .42);   // 아래 받침: 5칸짜리 세로 장비도 2.1칸 + 이름이 2.75칸 안에
 
   // 끌고 있는 장비가 놓일 자리(맞으면 {r, c}) — 장비 가운데 = 손가락(터치는 손가락보다 위로 띄움)
   function snapOf(d) {
