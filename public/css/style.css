@@ -2396,6 +2396,8 @@ html.away .mascot *{animation-play-state:paused!important}
 .av.avdev.big::after{content:"👑";position:absolute;top:-26px;left:50%;transform:translateX(-50%) rotate(-8deg);font-size:30px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
 .pcard.dev .pname{background:linear-gradient(90deg,#2f8fe0,#6b4bd8,#e8667a,#e8a23a,#2f8fe0);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:devname 4s linear infinite}
 @keyframes devname{to{background-position:200% center}}
+/* 개발자 프로필 색(2026-10-30): 10/27부터 쓰였지만 정의가 빠져 있어 버튼 테두리·배경이 비어 보였음(꾸미기·로그아웃·학과 보기·옆 칸) */
+:root{--dv-sky:linear-gradient(135deg,#0f2236,#2a2f7a 55%,#5a46c8);--dv-holo:linear-gradient(90deg,#94d8ff,#b39cff,#ffb3e6,#ffe98a,#94d8ff);--dv-stars:radial-gradient(circle,#ffffffcc 0 1px,transparent 1.6px),radial-gradient(circle,#ffe08a99 0 .8px,transparent 1.4px)}
 .pcard.dev .chip.dev{background:linear-gradient(90deg,#ffe08a,#fff3c4,#ffe08a);background-size:200% auto;animation:devname 2.5s linear infinite;box-shadow:0 0 12px rgba(255,224,138,.8)}
 .pdev{display:block;margin:12px auto 10px;max-width:380px;padding:11px 16px;border-radius:16px;border:2.5px solid var(--ink);background:var(--yellow);color:var(--ink);font-weight:900;font-size:15.5px;line-height:1.4;box-shadow:var(--sh-s);transform:rotate(-1deg);cursor:pointer;transition:transform .12s}
 @media (hover:hover){.pdev:hover{transform:rotate(0) scale(1.03)}}
