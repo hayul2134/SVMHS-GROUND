@@ -6215,7 +6215,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 @keyframes czUp{to{transform:translateY(-22px);opacity:0}}
 @media (prefers-reduced-motion:reduce){.cz-tl .t{transition:none}.cz-tl .t b,.cz-mb,.cz-tb,.cz-card,.cz-ov{animation:none!important}}
 /* 기자재 정리! 블록: 판+받침을 화면 가운데로(2026-10-29 하율) — 왼쪽에 오른쪽 '내 기록' 칸과 같은 폭의 빈 칸을 둠 */
-@media (min-width:901px){.bl-fl{display:grid;grid-template-columns:240px minmax(0,1fr) 240px;gap:14px;align-items:start}.bl-fl>.ml{grid-column:2}.bl-fl>.fl-side{grid-column:3;width:auto}}
+@media (min-width:901px){div.fl{display:grid;grid-template-columns:240px minmax(0,1fr) 240px;gap:14px;align-items:start}div.fl>.ml{grid-column:2}div.fl>.fl-side{grid-column:3;width:auto}}   /* 게퍼 10도 판이 화면 가운데(2026-10-29 하율) */
 
 /* 기자재 정리! 블록 타격감: 연속 칩 튀기 */
 .bl-cb.pop{animation:blPop .32s cubic-bezier(.3,1.8,.5,1)}
