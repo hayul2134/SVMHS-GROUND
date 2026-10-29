@@ -5942,7 +5942,11 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .sr-side:empty{display:none}
 .sr-side .myrec{margin:0 auto;max-width:440px}
 @media (min-width:900px) and (min-height:520px){
-  .sr{margin-top:clamp(8px,3vh,28px);--srh:clamp(380px,calc(100dvh / var(--gz,1) - 185px),760px);--sgap:clamp(16px,2.4vw,28px);position:relative}
+  .sr{margin-top:8px;--srh:clamp(380px,calc(100dvh - 100px),900px);--sgap:clamp(16px,2.4vw,28px);position:relative}
+  /* 2026-10-29 하율 "아이콘 말고 화면만 크게": 아래 버튼 줄을 판 왼쪽 아래로 옮겨 세로 자리를 판에 다 줌 */
+  .sr .sr-main > .hr-bar{position:absolute;top:var(--bh,480px);translate:0 -100%;right:calc(50% + var(--bw,320px) / 2 + var(--sgap));width:min(240px,calc(50% - var(--bw,320px) / 2 - var(--sgap)));flex-direction:column;flex-wrap:nowrap;align-items:flex-end;gap:12px}
+  .sr .sr-main > .hr-bar .hr-keys{flex:none;min-width:0;display:grid;justify-items:end;gap:10px}
+  .sr .hr-keys .hk-dot{display:none}
   .sr-scr{width:calc(var(--srh) * 2 / 3)}
   /* 2026-10-29: 가운데 칸 = 판·버튼 줄·꾸미기 창이 전체 폭에서 가운데 정렬, 내 기록은 판 오른쪽에 붙여 띄움(--bw = 판 폭, snapScr이 넣음) — 아래 버튼 줄이 넓어도 내 기록 칸이 좁아지지 않게 */
   .sr .hr-dress{width:min(100%,560px);min-width:0;box-sizing:border-box}
