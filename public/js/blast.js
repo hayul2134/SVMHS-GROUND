@@ -164,6 +164,10 @@ export function createBlast(root, opt = {}) {
     else { tools.style.left = ''; tools.style.right = ''; tools.style.width = ''; }
     arts.clear();
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
+    // 옆 버튼·오른쪽 '내 기록' 칸은 판 위쪽 선에 맞춤(2026-10-29 하율 "화면 위 기준으로 벗어나지 않게")
+    const bt = board.getBoundingClientRect().top, fl2 = root.closest('.fl'), aside = fl2?.querySelector(':scope > .fl-side');
+    tools.style.top = side ? Math.round(bt - top0.getBoundingClientRect().top) + 'px' : '';
+    if (aside) aside.style.marginTop = wide && fl2 ? Math.max(0, Math.round(bt - fl2.getBoundingClientRect().top)) + 'px' : '';
     draw();
   }
   const BX = () => horiz ? pad * 2 + cs * 3.4 : pad, BY = () => pad;
@@ -437,7 +441,7 @@ export function createBlast(root, opt = {}) {
     start,
     msg(html) { const m = $('msg'); if (m) m.innerHTML = html; },
     setBest(v, force) { if (force || v > best) { best = v; $('best').textContent = v.toLocaleString('ko-KR'); } },
-    destroy() { dead = true; cancelAnimationFrame(rollRaf); clearTimeout(endT); clearTimeout(stopT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
+    destroy() { dead = true; const as = root.closest('.fl')?.querySelector(':scope > .fl-side'); if (as) as.style.marginTop = ''; cancelAnimationFrame(rollRaf); clearTimeout(endT); clearTimeout(stopT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
     get st() { return { state, score: st.score, combo: st.combo, board: b, set, used, moves, cs, pad, horiz, held }; },
     slotRect, end, _art: (pi, s) => art(pi, s).c,   // 테스트용
     _put(slot, r, c) { if (state === 'play' && !used[slot] && fits(b, PIECES[set[slot]].s, r, c)) { put(slot, r, c, Math.round(performance.now() - t0)); return true; } return false; },   // 테스트용
