@@ -174,6 +174,9 @@ function markFF(root) {
 }
 function paintFF() {
   markFF(document.body);
+  // 집에 가고 싶어!: 2026-11-09(다음 라운드)부터 캐주얼(서버 GAMES.home.casualFrom) — 카드 표시도 그날부터 '캐주얼'로, 맨 뒤 캐주얼 쪽으로
+  const hc = document.querySelector('.gapp.g-home'), ymd = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10).replace(/-/g, '');
+  if (hc && ymd >= '20261109' && !hc.dataset.cz) { hc.dataset.cz = 1; const t = hc.querySelector('.gtag'); if (t) { t.className = 'gtag gt-cz'; t.textContent = '캐주얼'; } const f = document.querySelector('.gapp.g-film'); if (f) f.before(hc); }
   if (!ffObs) { ffObs = new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) markFF(n); }); ffObs.observe(document.body, { childList: true, subtree: true }); }
 }
 let meP = null;   // 진행 중인 refreshMe (play가 기다림)

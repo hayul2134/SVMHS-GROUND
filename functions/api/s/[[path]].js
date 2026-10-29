@@ -27,7 +27,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   reaction: { min: 80, max: 1500, play: 4000 },      // 반응속도 5번 평균 (5판 대기 합 최소 약 3.65초 — social.js rxDelay, 2026-10-28 5000→4000) · 하한 140 → 120 (2026-10-26) → 100 (2026-10-27 하율) → 80 (2026-10-29 하율 "봇·오토클릭만 잡게 널널하게")
   num25: { min: 4000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기 · 하한 5000 → 4000 (2026-10-27 하율: 모바일은 훨씬 쉬움)
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
-  home: { min: 1, max: HOME_MAX - 1, play: 0 },        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
+  home: { min: 1, max: HOME_MAX - 1, play: 0, casualFrom: '20261109' },   // 2026-11-09(다음 라운드)부터 캐주얼        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
   gear: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
   //   casual = 티어·역대 1등 표시(topCrowns)·주간 미션·1~3등 축하에서 빠짐 → 순위표(GET rank)·내 기록에만 나옴
@@ -225,8 +225,10 @@ const pub = u => u && ({
 const isAdm = u => u?.handle === ADMIN_HANDLE;
 // 주간 미션(2026-10-27 하율, 미리보기 깃발 week-mission): 모두 같은 미션 5개(public/js/mission.js), 미션에 나오는 게임 = 깃발 없는 게임만
 // missions 표: day = 'w' + 그 주 월요일 · p = 진행 JSON. 미션 하나 끝낼 때마다 뽑기권 MS.tix장
-const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff && !GAMES[g].casual);
-const RANKED = () => Object.keys(GAMES).filter(g => !GAMES[g].casual);   // 티어·1등 표시에 들어가는 게임(일반 모드 같은 casual 제외)
+// casualFrom(YYYYMMDD): 그날부터 캐주얼(티어·1등 표시·주간 미션·축하에서 빠지고 순위표만) — 2026-10-29 하율 "집에 가고 싶어는 다음 라운드에 캐쥬얼로"
+const isCas = (g, ymd = kstYmd()) => !!(g && (g.casual || (g.casualFrom && ymd >= g.casualFrom)));
+const MS_GAMES = () => Object.keys(GAMES).filter(g => !GAMES[g].ff && !isCas(GAMES[g]));
+const RANKED = () => Object.keys(GAMES).filter(g => !isCas(GAMES[g]));   // 티어·1등 표시에 들어가는 게임(일반 모드 같은 casual 제외)
 const misOut = (wk, p) => {
   const list = missionsOf(wk, MS_GAMES());
   return { wk, list: list.map((m, i) => { const c = progOf(m, p), done = !!p.d?.[i]; return { t: m.t, k: m.k, g: m.g || '', n: m.n, u: m.u || '', c, done, ready: !done && c >= m.n }; }), rw: MS };
@@ -1555,7 +1557,7 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   const startMs = Date.UTC(+from.slice(0, 4), +from.slice(4, 6) - 1, +from.slice(6, 8)) - 9 * 36e5;   // 라운드 첫날 0시(KST)
   const bans = (await db.prepare('SELECT uid, reason FROM bans WHERE until = 0 OR until > ?1').bind(startMs).all()).results;
   const out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '')).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 = 제외
-  const games = Object.entries(GAMES).filter(([, g]) => !g.casual).filter(([, g]) => !g.ff || (ffOn(g.ff, gt === 2) && (g.tierOn || (g.tierFrom && from >= g.tierFrom.replace(/-/g, '')))));   // gt 2 = 개발자 미리보기: 아직 안 연 게임도 같이 계산
+  const games = Object.entries(GAMES).filter(([, g]) => !isCas(g, from)).filter(([, g]) => !g.ff || (ffOn(g.ff, gt === 2) && (g.tierOn || (g.tierFrom && from >= g.tierFrom.replace(/-/g, '')))));   // gt 2 = 개발자 미리보기: 아직 안 연 게임도 같이 계산
   const gOn = gt === 2 || (gt === 1 && (from >= GEAR_TIER_FROM || to >= GEAR_TIER_FROM && kstYmd() >= GEAR_TIER_FROM));
   if (gOn) for (const k of ['gear', 'gearn']) if (!games.some(([x]) => x === k)) games.push([k, GAMES[k]]);
   const acc = new Map();
@@ -1717,12 +1719,12 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 3,000점 밑이면 판 수에 안 셈(누적 미션에도 안 더함)
     // 기자재 정리! 일반 모드도 주간 미션 판 수로 인정(gear-tier, 2026-10-28 하율) — 'gear' 한 판으로 셈, 최고 기록 깨기는 랭킹전만
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
-    const mis = (!g.casual || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
+    const mis = (!isCas(g) || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
     // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
-    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : null, rank: g.casual ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
+    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : null, rank: isCas(g) ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
     const ach = achGot.length && ffOn(ACH_FF, isAdm(me)) ? achGot : undefined;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, cheer: !g.casual && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, cheer: !isCas(g) && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
 }
 async function rankOfC(db, game, best, rx = rxOn(null)) {
   if (rx) return rankOf(db, game, best, rx);   // bests 인덱스(game, best)로 나보다 좋은 사람만 셈 — 캐시 없이도 싸고 정확
