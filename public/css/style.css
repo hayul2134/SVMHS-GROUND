@@ -6187,3 +6187,35 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .bl-cb.pop{animation:blPop .32s cubic-bezier(.3,1.8,.5,1)}
 @keyframes blPop{0%{transform:scale(1)}40%{transform:scale(1.28) rotate(-4deg)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.bl-cb.pop{animation:none}}
+
+/* ===== 패드 조작 버튼을 게임 화면 안으로 (2026-10-29 하율 "패드로 하면 조작키들을 다 화면 아래에 배치해서 보기 안 좋다 → 화면 안에") =====
+   깃발 pad-ctl → html.padin. 패드(터치 + 가로·세로 700·600px 이상)일 때 social.js padCtl이 버튼 노드를 옮기고 게임 틀에 .padded를 붙임 */
+.pad-in{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;padding:0 1.8% 2.6%;pointer-events:none}
+.pad-in .btn{pointer-events:auto;flex:none;aspect-ratio:1;height:auto;min-height:0;min-width:0;padding:0 4px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;word-break:keep-all;
+  border:2px solid #2a2846;border-radius:50%;background:rgba(255,255,255,.66);color:#2a2846;box-shadow:2px 2px 0 rgba(42,40,70,.5);font-weight:900;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .06s,box-shadow .06s,opacity .2s}
+.pad-in .btn:not(.ghost){background:rgba(49,146,230,.8);color:#fff}
+.pad-in .btn:active,.pad-in .btn.is-pressed{transform:translate(2px,2px);box-shadow:0 0 0 rgba(42,40,70,.5)}
+/* 집에 가고 싶어!: 캐릭터(왼쪽 약 9%부터)를 안 가리게 숙이기는 왼쪽 끝에 작게, 점프는 오른쪽 아래 크게 — 화면 아무 데나 톡 = 점프는 그대로 */
+.hr.padded .hr-touch{display:none}
+.hr-pad{padding-left:1%}
+.hr-pad #hrD{width:6.4%;min-width:42px;max-width:66px;font-size:clamp(10.5px,1.35vw,14px)}
+.hr-pad #hrJ{width:11%;min-width:58px;max-width:108px;font-size:clamp(13px,1.9vw,19px)}
+.hr.on .hr-pad .btn{opacity:.72}
+/* 계단 오르기: 화면 반쪽 누르기 안내(.sr-tap) 대신 진짜 버튼을 양쪽 아래에 */
+.sr.padded .sr-touch,.sr.padded .sr-tap{display:none!important}
+.sr-pad{padding:0 3.5% 3.5%}
+.sr-pad .btn{width:27%;border-radius:24%;font-size:clamp(12px,4.6cqw,17px)}
+.sr-scr:not(.rdy) .sr-pad .btn{opacity:.72}
+/* 기자재 정리!(세로 패드): 판 아래 7개 줄 → 왼쪽 칸 아래 이동·내리기 / 오른쪽 칸 아래 돌리기·놓기·보관 (가로 패드는 원래대로 판 양옆) */
+.gr.padded .gr-touch{display:none}
+.gr.padded .gr-main{align-items:stretch}
+.gr-rcol{display:flex;flex-direction:column;gap:12px}
+.gr.padded :is(.gr-lcol,.gr-rcol) > .gt{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;margin-top:auto}
+.gr.padded .gt .btn{min-height:62px;padding:0;font-size:21px;touch-action:none;-webkit-user-select:none;user-select:none}
+.gr.padded .gt-l [data-gk="down"]{grid-column:1 / -1}
+.gr.padded .gt [data-gk="hold"]{font-size:15px}
+/* 뱀 게임(가로 패드): 방향 버튼을 판 아래 대신 판 오른쪽 아래 */
+@media (pointer:coarse) and (min-width:700px) and (min-height:600px) and (orientation:landscape){
+  html.padin .cz-snake{position:relative}   /* 판 크기는 그대로 두고, 버튼은 판 오른쪽 바깥 빈자리에(casual.js fit이 --bw = 판 폭) */
+  html.padin .cz-snake > .cz-pad{position:absolute;left:calc(50% + var(--bw,400px) / 2 + 22px);bottom:0;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,58px);gap:8px}
+}

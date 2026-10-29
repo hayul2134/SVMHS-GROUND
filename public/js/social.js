@@ -182,10 +182,10 @@ async function refreshMe0() {
   try {
     const [r] = await Promise.all([call('me'), loadReleased()]);
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
-    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); paintFF(); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me))); document.documentElement.classList.toggle('tpad', ffOn('tier-pad', isDev(S.me)));
+    document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); paintFF(); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me))); document.documentElement.classList.toggle('tpad', ffOn('tier-pad', isDev(S.me))); document.documentElement.classList.toggle('padin', ffOn('pad-ctl', isDev(S.me)));
     { const c2 = ffOn('cut-v2', isDev(S.me)); document.documentElement.classList.toggle('cut2', c2); GAMES.cut.name = c2 ? '편집의 신' : '컷 타이밍'; GAMES.cut.beta = !c2; }
     { const rx = ffOn('rx-season', isDev(S.me)); document.documentElement.classList.toggle('rxs', rx); GAMES.reaction.beta = !rx; }   // 반응속도 정식 출시(새 시즌) — Beta 떼기
-    try { const h = document.documentElement; localStorage.setItem('sg_ffc', JSON.stringify({ c: ['dev-pv', 'rk2', 'tl2', 'tf', 'tpad', 'cut2', 'rxs'].filter(x => h.classList.contains(x)), r: h.dataset.ffr || '' })); } catch {}   // 2026-10-28 하율 "게임 4개 먼저 나오고 기자재 정리가 툭 튀어나온다": 깃발 상태를 저장 → 다음 접속 땐 theme.js가 첫 화면 그리기 전에 붙임   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
+    try { const h = document.documentElement; localStorage.setItem('sg_ffc', JSON.stringify({ c: ['dev-pv', 'rk2', 'tl2', 'tf', 'tpad', 'cut2', 'rxs', 'padin'].filter(x => h.classList.contains(x)), r: h.dataset.ffr || '' })); } catch {}   // 2026-10-28 하율 "게임 4개 먼저 나오고 기자재 정리가 툭 튀어나온다": 깃발 상태를 저장 → 다음 접속 땐 theme.js가 첫 화면 그리기 전에 붙임   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
     if (r.errAlert) toast(`최근 30분 서버 오류 ${r.errAlert.n}건 — ${r.errAlert.m || ''} (관리자 › 모니터링)`, 8000);   // 개발자에게만 옴
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
@@ -1871,6 +1871,15 @@ function endPlay() { try { unfitHome(); quitGame?.(); } catch (e) { console.erro
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
 
 // 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
+// 패드 조작 버튼을 게임 화면 안으로(2026-10-29 하율 "패드로 하면 조작키들을 다 화면 아래에 배치해서 보기 안 좋다 → 화면 안에", 깃발 pad-ctl)
+//   패드 = 터치 + 가로·세로 모두 넉넉한 화면(눕힌 폰·세로 폰은 그대로). place(on)는 처음과 화면 방향이 바뀔 때마다 불림 → 버튼 노드를 옮기기만(이벤트 그대로)
+const PAD_MQ = matchMedia('(pointer:coarse) and (min-width:700px) and (min-height:600px)');
+function padCtl(place) {
+  const run = () => place(document.documentElement.classList.contains('padin') && PAD_MQ.matches);
+  run(); PAD_MQ.addEventListener?.('change', run); return Object.assign(() => PAD_MQ.removeEventListener?.('change', run), { run });
+}
+// 화면 안 버튼 묶음: 누른 게 화면(톡 = 점프·반쪽 = 방향)으로 한 번 더 전달되지 않게 막음
+function padBox(cls) { const d = document.createElement('div'); d.className = 'pad-in ' + cls; ['pointerdown', 'pointerup', 'pointermove', 'click'].forEach(t => d.addEventListener(t, e => e.stopPropagation())); return d; }
 const RE_BTN = `<button class="prestart" type="button" data-restart aria-label="처음부터 다시 시작 (R)" aria-keyshortcuts="R"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작<span data-ka="restart" data-one></span></button>`;
 const RE_ROW = `<div class="prow">${RE_BTN}</div>`;
 document.addEventListener('click', e => { const b = e.target.closest('[data-restart]'); if (b) { b.blur(); restartGame(); } });   // 누른 뒤 포커스가 남아 있으면 스페이스·엔터가 이 버튼을 또 눌러 판이 다시 시작되던 문제 (2026-10-28)
@@ -2335,6 +2344,11 @@ async function playStair() {
   const pd = (kind, e) => { e.preventDefault(); if (e.button > 0) return; act(kind); };
   $('#srT').addEventListener('pointerdown', e => pd('turn', e)); $('#srC').addEventListener('pointerdown', e => pd('climb', e));
   scr.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); pd(e.clientX < r.left + r.width / 2 ? 'turn' : 'climb', e); });
+  const srBox = padBox('sr-pad'), unPad = padCtl(on => {   // 패드: 방향 바꾸기·오르기를 게임 화면 양쪽 아래로(깃발 pad-ctl)
+    const tch = $('#sr .sr-touch'); if (!tch) return;
+    if (on) { srBox.append($('#srT'), $('#srC')); if (!srBox.isConnected) scr.insertBefore(srBox, ov); } else { tch.append($('#srT'), $('#srC')); srBox.remove(); }
+    $('#sr').classList.toggle('padded', on);
+  });
   const kd = e => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || dress.open || document.querySelector('.modal.open') || e.target.closest?.('input,textarea')) return;
     const c = e.code, ka = KM.actOf('stair', e), turn = ka === 'turn', climb = ka === 'climb';   // 키 설정대로(2026-10-28)
@@ -2362,7 +2376,7 @@ async function playStair() {
   };
   let snapRaf = 0; const snapSoon = () => { cancelAnimationFrame(snapRaf); snapRaf = requestAnimationFrame(snapScr); };
   const snapRO = new ResizeObserver(snapSoon); snapRO.observe($('#parea')); addEventListener('resize', snapSoon); snapScr();
-  quitGame = () => { run++; R.destroy(); clearTimeout(popT); snapRO.disconnect(); removeEventListener('resize', snapSoon); document.removeEventListener('keydown', kd); if (window.__stair === R) window.__stair = null; };
+  quitGame = () => { run++; unPad(); R.destroy(); clearTimeout(popT); snapRO.disconnect(); removeEventListener('resize', snapSoon); document.removeEventListener('keydown', kd); if (window.__stair === R) window.__stair = null; };
 }
 
 /* 필름 10(2026-10-29, 미리보기 film-game — 개발자만): js/film.js가 판을 그림. 판마다 시작 티켓을 새로 받아 그 티켓으로 판을 만듦(film-score.js seedOf)
@@ -2623,7 +2637,7 @@ async function playGear() {
   };
   document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
   // 터치 버튼: 누르고 있으면 좌우·아래는 계속
-  $('#gr .gr-touch').addEventListener('pointerdown', e => {
+  $('#gr').addEventListener('pointerdown', e => {   // 2026-10-29: 버튼이 판 옆 칸으로 옮겨 가도(패드 세로) 받게 #gr 전체에서
     const b = e.target.closest('[data-gk]'); if (!b) return; e.preventDefault();
     if (over) { restart(); return; }
     const a = b.dataset.gk; R.input(a, true);
@@ -2631,6 +2645,15 @@ async function playGear() {
     try { b.setPointerCapture(e.pointerId); } catch {}
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
   });
+  // 패드 세로(깃발 pad-ctl): 판 아래 버튼 7개 줄 대신 왼쪽 칸(보관·점수) 아래 = 이동·내리기, 오른쪽 칸(다음) 아래 = 돌리기·놓기·보관 — 가로 패드는 원래대로 판 양옆
+  const gtL = $('#gr .gt-l'), gtR = $('#gr .gt-r'), gTch = $('#gr .gr-touch'), gRc = document.createElement('div'); gRc.className = 'gr-rcol';
+  const unPad = padCtl(on => {
+    const pt = on && !sideMQ.matches, rs = $('#gr .gr-main > .gr-side, #gr .gr-rcol > .gr-side');
+    if (pt) { if (!gRc.isConnected) { rs.before(gRc); gRc.append(rs); } $('#gr .gr-lcol').append(gtL); gRc.append(gtR); }
+    else { gTch.append(gtL, gtR); if (gRc.isConnected) { gRc.before(rs); gRc.remove(); } }
+    $('#gr').classList.toggle('padded', pt); requestAnimationFrame(fit);
+  });
+  sideMQ.addEventListener?.('change', unPad.run);
   // 게임 화면 손가락 조작: 톡 = 돌리기 · 옆으로 밀기 = 한 칸씩 이동 · 아래로 휙 = 바로 놓기 · 아래로 천천히 = 내리기
   let tp = null;
   const scr = $('#grScr');
@@ -2684,7 +2707,7 @@ async function playGear() {
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound); };
   paintSnd();
   sndBtn.onclick = () => { sound = !sound; store.set('gear_snd', sound); R.setSound(sound); paintSnd(); sndBtn.blur(); };
-  quitGame = () => { R.destroy(); clearInterval(hudT); recMQ.removeEventListener?.("change", placeRk); fitT.forEach(clearTimeout); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); sideMQ.removeEventListener?.('change', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
+  quitGame = () => { unPad(); sideMQ.removeEventListener?.('change', unPad.run); R.destroy(); clearInterval(hudT); recMQ.removeEventListener?.("change", placeRk); fitT.forEach(clearTimeout); clearTimeout(popT); ro.disconnect(); removeEventListener('resize', fit); sideMQ.removeEventListener?.('change', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__gear === R) delete window.__gear; };
 }
 
 /* 캐릭터 꾸미기 창 — 캐릭터를 쓰는 게임 공용(집에 가고 싶어!·영상고 계단 오르기)
@@ -2786,7 +2809,7 @@ async function playHome() {
   const R = RUN.createRunner(cv, char, {
     frozen: () => !!document.querySelector('.modal.open'),   // 랭킹 등 창이 떠 있는 동안 멈춤 (2026-10-28)
     sound, best: () => best, sfx2: ffOn('home-sfx', isDev(S.me)),
-    onStart() { ov.hidden = true; ov.classList.remove('dead', 'win', 'again'); $('#hr').classList.add('on'); closeDress(); },
+    onStart() { ov.hidden = true; ov.classList.remove('dead', 'win', 'again'); $('#hr').classList.add('on'); dress?.close(); },   // 2026-10-29: 없는 closeDress()를 불러 출발할 때마다 오류가 나던 것
     onReady() {   // 집에서 나와 출발 자리에 섬 → 입력하면 다시 출발
       ov.hidden = false; ov.className = 'hr-ov again';
       ov.innerHTML = `<b>다시 출발!</b><span>이제 끝없이 달려요</span><small>${touchy ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · 화살표 · 화면 클릭으로 출발'}</small>`;
@@ -2903,9 +2926,14 @@ async function playHome() {
     el.addEventListener('contextmenu', e => e.preventDefault());
   };
   hold(scr, 'jump'); hold($('#hrJ'), 'jump'); hold($('#hrD'), 'duck');
+  const hrBox = padBox('hr-pad'), unPad = padCtl(on => {   // 패드: 숙이기(왼쪽 아래)·점프(오른쪽 아래)를 게임 화면 안으로(깃발 pad-ctl) — 화면 아무 데나 톡 = 점프는 그대로
+    const tch = $('#hr .hr-touch'); if (!tch) return;
+    if (on) { hrBox.append($('#hrD'), $('#hrJ')); if (!hrBox.isConnected) scr.insertBefore(hrBox, ov); } else { tch.prepend($('#hrJ'), $('#hrD')); hrBox.remove(); }
+    $('#hr').classList.toggle('padded', on); fit?.();
+  });
   const blur = () => { R.input('jump', false); R.input('duck', false); };
   window.addEventListener('blur', blur);
-  function cleanup() { R.destroy(); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__home === R) delete window.__home; }
+  function cleanup() { unPad(); R.destroy(); ro.disconnect(); removeEventListener('resize', fit); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); window.removeEventListener('blur', blur); if (window.__home === R) delete window.__home; }
   quitGame = cleanup;
   const sndBtn = $('#hrSnd');
   const paintSnd = () => {   // 소리 아이콘: 켜짐 = 스피커+소리 물결, 꺼짐 = 스피커+✕ (2026-10-25)

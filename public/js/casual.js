@@ -13,6 +13,9 @@ const modalOpen = () => !!document.querySelector('.modal.open');
 const typing = e => e.target.closest?.('input,textarea,select,[contenteditable]');
 const DIRS = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 };
 const DV = [[0, -1], [1, 0], [0, 1], [-1, 0]];   // 위·오른쪽·아래·왼쪽 [dx, dy]
+// 가로 패드 + 깃발 pad-ctl(html.padin) → 뱀 방향 버튼을 판 오른쪽에(CSS '패드 조작 버튼')
+const PAD_SIDE = matchMedia('(pointer:coarse) and (min-width:700px) and (min-height:600px) and (orientation:landscape)');
+const padSide = () => document.documentElement.classList.contains('padin') && PAD_SIDE.matches;
 const fmtS = ms => (ms / 1000).toFixed(1) + '초';
 // 화면에 남은 높이(위 제목 줄·아래 다시 시작 줄을 뺀 것) — 스크롤 없이 한 화면(2026-10-28 하율 규칙)
 function roomOf(root, extra = 70) {
@@ -157,15 +160,15 @@ function snake(el) {
   const cv = el.querySelector('#snCv'), cx = cv.getContext('2d'), ov = el.querySelector('#snOv'), $s = el.querySelector('#snS'), $b = el.querySelector('#snB');
   let cs = 24, body, prev, dir, q, food, score, step, acc, last, raf = 0, state, dieT = 0;   // state: ready | run | pause | dead
   function fit() {
-    const r = roomOf(el, matchMedia('(pointer:fine)').matches ? 110 : 220);
-    cs = Math.max(14, Math.min(34, Math.floor(r.w / W), Math.floor(r.h / H)));
-    const d = devicePixelRatio || 1; cv.width = W * cs * d; cv.height = H * cs * d; cv.style.width = W * cs + 'px'; cv.style.height = H * cs + 'px';
+    const side = padSide(), r = roomOf(el, matchMedia('(pointer:fine)').matches || side ? 110 : 220);   // 가로 패드(깃발 pad-ctl): 방향 버튼이 판 오른쪽이라 아래 자리를 비우지 않음
+    cs = Math.max(14, Math.min(34, Math.floor(r.w / W), side ? Math.floor((innerWidth - 2 * 250) / W) : 99, Math.floor(r.h / H)));
+    const d = devicePixelRatio || 1; cv.width = W * cs * d; cv.height = H * cs * d; cv.style.width = W * cs + 'px'; cv.style.height = H * cs + 'px'; el.style.setProperty('--bw', W * cs + 'px');
     cx.setTransform(d, 0, 0, d, 0, 0); draw(1);
   }
   function reset() {
     const y = (H / 2) | 0; body = [[5, y], [4, y], [3, y]]; prev = body.map(p => [...p]);
     dir = 1; q = []; score = 0; step = 135; acc = 0; state = 'ready'; $s.textContent = 0; place();
-    showOv('<b>뱀 게임</b><span>방향키 · 스와이프 · 아래 버튼으로 시작</span>');
+    showOv(`<b>뱀 게임</b><span>방향키 · 스와이프 · ${padSide() ? '오른쪽' : '아래'} 버튼으로 시작</span>`);
     draw(1);
   }
   function place() {
