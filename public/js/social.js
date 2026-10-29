@@ -1516,7 +1516,7 @@ function acBody(it) {
   if (it.t === 'mst') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: it.big ? '숙련도 단계 상승!' : '숙련도 레벨 업!', art: mEmb(it.lv, 'big'), n: `Lv.${it.lv} ${b.n}`, d: '', g: `${ic(g?.ic || 'play')} ${esc(g?.name || '')}`, r: it.r ? `<b>전교 숙련도 ${it.r}위</b>` : '', x: it.lv >= MST_MAX ? '최고 레벨 도달!' : '' }; }
   const a = it.a, x = it.x, g = a.g === 'all' ? '공통 업적' : `${ic(GAMES[a.g]?.ic || 'play')} ${esc(GAMES[a.g]?.name || '')}`;
   return { cls: 'lv' + a.lv + (x.f ? ' first' : ''), k: x.f ? '전교 최초 달성!' : a.hid ? '숨겨진 업적 발견!' : '업적 달성!', art: medal(a.lv, true), n: esc(a.n), d: esc(a.d), g,
-    r: x.f ? '아직 아무도 못 깬 업적을 <b>처음으로</b> 깼어요' : x.p != null ? `<b>학생 ${x.p}%</b>만 가진 업적${x.c ? ` · ${x.c}번째` : ''}` : '', x: `숙련도 +${achXp(a.k)} XP` };
+    r: x.f ? '아직 아무도 못 깬 업적을 <b>처음으로</b> 깼어요' : x.p === 0 ? '아직 이 업적을 가진 학생이 없어요' : x.p != null ? `<b>학생 ${x.p}%</b>만 가진 업적${x.c ? ` · ${x.c}번째` : ''}` : '', x: `숙련도 +${achXp(a.k)} XP` };
 }
 function acBig(it, done) {
   const b = acBody(it), el = document.createElement('div');
