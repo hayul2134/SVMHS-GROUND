@@ -2150,7 +2150,7 @@ let inPk = 'home';
     e.preventDefault();
     if (e.type === 'pointerdown' && (!e.isPrimary || e.button > 0)) return;   // 두 번째 손가락·오른쪽 클릭 무시
     const n = performance.now(), at = e.timeStamp > 0 && e.timeStamp <= n + 1 && e.timeStamp > n - 1000 ? e.timeStamp : n;   // 입력이 일어난 시각 (게임과 같은 판정, 2026-10-28)
-    if (st === 'go' && t0 && at - t0 < 100) { cancelAnimationFrame(rf); st = 'shown'; show('early', `<b>너무 빨랐어요!</b><small>${Math.round(at - t0)}ms · 0.1초 안은 보고 누를 수 없는 속도예요 · 탭해서 다시</small>`); return; }   // 보이고 0.1초 안 = 보고 반응하기 전(게임과 같은 판정, 잰 시간을 보여 줌 2026-10-29)
+    if (st === 'go' && t0 && at - t0 < 50) { cancelAnimationFrame(rf); st = 'shown'; show('early', `<b>너무 빨랐어요!</b><small>${Math.round(at - t0)}ms · 0.05초 안은 보고 누를 수 없는 속도예요 · 탭해서 다시</small>`); return; }   // 보이고 0.1초 안 = 보고 반응하기 전(게임과 같은 판정, 잰 시간을 보여 줌 2026-10-29)
     if (st === 'go' && !t0) { cancelAnimationFrame(rf); st = 'wait'; }   // 초록이 화면에 뜨기 전
     if (st === 'wait') { clearTimeout(tm); cancelAnimationFrame(rf); st = 'shown'; show('early', '<b>앗, 너무 빨라요!</b><small>초록색이 될 때까지 참기 · 탭해서 다시</small>'); return; }
     if (st === 'go') {

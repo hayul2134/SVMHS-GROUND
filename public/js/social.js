@@ -2064,13 +2064,13 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
    · 초록이 그려지기 전에 누름 = 부정출발(못 보고 누른 것) · 두 번째 손가락·오른쪽 클릭은 무시 · 스페이스바로도(노트북)
    · 화면을 벗어나면(탭 전환·창 내림) 그 판은 무효 → 다시(벌점 없음) — 숨은 탭은 타이머가 밀려 기록이 엉터리가 됨
    · 1500ms 넘는 판은 1500으로 쳐서 평균(서버와 같게 — 예전엔 화면은 원래 값, 서버는 1500으로 계산해 '평균이 다름'으로 보류됐음) */
-const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5, RX_ANTI = 100, RX_LOCK = 1000, RX_CAP = 1500;
+const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5, RX_ANTI = 50, RX_LOCK = 1000, RX_CAP = 1500;
 const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 const evT = e => { const n = performance.now(), t = e.timeStamp; return t > 0 && t <= n + 1 && t > n - 1000 ? t : n; };   // 이벤트 시각(같은 시간축이 아니면 지금)
 function playReaction() {
   stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요${matchMedia('(pointer:fine)').matches ? ' · 스페이스바도 돼요' : ''}</small></button>${RE_ROW}<ol class="rxlog" id="rxlog"></ol><p class="rxfoul" id="rxfoul">초록색 전에 누르면 부정출발 · 첫 번은 봐주고, 그다음부터 한 번마다 +${RX_PEN}ms · ${RX_OUT}번이면 실격</p>`);
   const pad = $('#rx'), log = $('#rxlog'), fl = $('#rxfoul');
-  const times = []; let state = 'idle', t0 = 0, timer = 0, raf = 0, alive = true, lastD = 0, fouls = 0;
+  const times = []; let state = 'idle', t0 = 0, tG = 0, timer = 0, raf = 0, alive = true, lastD = 0, fouls = 0;
   /* 대기 시간: 고르게 뽑으면(예전 1~3.5초) 기다릴수록 '이제 곧'이 보여 예측됨 →
      지수 분포(언제든 나올 확률이 같음)로 0.7~7초, 가끔 아주 짧게(0.45~0.95초), 직전과 0.7초 이상 차이
      → 5판 대기 합의 최솟값 ≈ 0.45+1.15+0.45+1.15+0.45 = 3.65초 (서버 checkRounds 플레이 시간 검사가 이 값 기준) */
@@ -2086,15 +2086,15 @@ function playReaction() {
     state = 'wait'; t0 = 0; pad.className = 'rx wait'; pad.innerHTML = `<b>기다려…</b><small>${times.length + 1} / 5</small>`;
     timer = setTimeout(() => {
       if (!alive || state !== 'wait') return;
-      raf = requestAnimationFrame(() => {   // 이 프레임에 초록으로 바꾸고
+      raf = requestAnimationFrame(tg => {   // 이 프레임에 초록으로 바꾸고
         if (!alive || state !== 'wait') return;
-        state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>';
+        tG = tg; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>';
         raf = requestAnimationFrame(ts => { if (alive && state === 'go') t0 = ts; });   // 다음 프레임 시작 = 초록이 화면에 나온 시각
       });
     }, rxDelay());
   };
   /* 부정출발 안내(2026-10-29 학생 의견 "보고 눌렀는데 나한테 왜 그러는거에요" — '미리 눌렀죠?'가 이유 없이 몰아세우는 말로 보였음)
-     → 탓하는 말 대신 무슨 일이 있었는지(잰 시간·기준)를 그대로 보여 줌. 판정 기준(0.1초)은 그대로. */
+     → 탓하는 말 대신 무슨 일이 있었는지(잰 시간·기준)를 그대로 보여 줌. 판정 기준은 2026-10-29에 0.1초 → 0.05초로 완화. */
   const foul = (why, note = '') => {
     stop(); fouls++;
     const pen = rxPen(fouls);
@@ -2116,9 +2116,10 @@ function playReaction() {
     if (state === 'idle' || state === 'shown') return arm();
     if (state === 'wait') return foul('앗, 너무 빨라요!', '초록색으로 바뀌기 전에 눌렀어요');
     if (state !== 'go') return;
-    if (!t0) return foul('앗, 너무 빨라요!', '초록색이 화면에 뜨기 전에 눌렸어요');   // 초록으로 바꿨지만 아직 화면에 안 나온 순간 = 보고 누른 게 아님
-    const ms = Math.round(at - t0);
-    if (ms < RX_ANTI) return foul('너무 빨랐어요!', `${ms}ms · 0.1초 안은 사람이 보고 누를 수 없는 속도라 이번 판은 다시 해요`);   // 초록이 보이고 0.1초 안 = 보고 반응하기 전에 눌림(육상 부정출발 기준과 같음)
+    // 초록으로 바꾼 뒤 다음 프레임 전에 눌림: 예전엔 무조건 부정출발 → 느린 기기(디벗)에서 프레임이 밀리면 초록을 보고 누른 학생도 걸림(2026-10-29 하율 "억울하다")
+    //   → 초록 프레임 + 1프레임(16.7ms)을 화면에 나온 시각으로 보고 같은 기준(RX_ANTI)으로 판정
+    const ms = Math.round(at - (t0 || tG + 16.7));
+    if (ms < RX_ANTI) return foul('너무 빨랐어요!', `${ms}ms · 0.05초 안은 사람이 보고 누를 수 없는 속도라 이번 판은 다시 해요`);   // 초록이 보이고 0.05초 안 = 봇·오토클릭 수준(2026-10-29 하율 "정말 봇이나 오토클릭만 잡게" — 예전 0.1초는 순발력 좋은 학생이 억울하게 걸림)
     stop(); times.push(ms); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
     if (times.length >= 5) {
       state = 'done';
