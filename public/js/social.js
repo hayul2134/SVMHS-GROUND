@@ -2408,7 +2408,7 @@ async function playFilm() {
 /* 기자재 정리! 블록(2026-10-29, 미리보기 blast-game — 개발자만 → 출시 준비 완료, 공지와 함께 공개): js/blast.js. 판마다 시작 티켓 → 그 씨앗으로 장비 순서가 정해지고 서버가 놓기를 다시 둬 봄(blast-score.js) */
 let BLAST = null;
 async function playBlast() {
-  const area = stage(ic('blast') + ' 기자재 정리! 블록', '<div class="fl"><div class="ml" id="bl"></div><aside class="sr-side fl-side" id="blRec"></aside></div>', true);
+  const area = stage(ic('blast') + ' 기자재 정리! 블록', '<div class="fl bl-fl"><div class="ml" id="bl"></div><aside class="sr-side fl-side" id="blRec"></aside></div>', true);
   if (!BLAST) { try { BLAST = await import('./blast.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#bl')) return;
   let runTk = null, run = 0, tkWhy = '';
