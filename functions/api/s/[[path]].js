@@ -1164,8 +1164,8 @@ const ROUTES = {
   'POST start': needMe(async ({ db, me, body }) => {
     const game = String(body.game || '');
     if (!GAMES[game] || (GAMES[game].ff && !ffOn(GAMES[game].ff, isAdm(me)))) return err('bad game');   // 미리보기 게임은 개발자만
-    // 시작 횟수 제한: 아직 안 쓴(살아 있는) 티켓이 60장 넘으면 잠깐 막음 — 예전 rl 카운터(시작마다 쓰기 3행) 대신 읽기로 셈(2026-10-29 쓰기 절약)
-    if (!isAdm(me) && (await db.prepare('SELECT COUNT(*) AS n FROM rl WHERE k >= ?1 AND k < ?2 AND reset > ?3').bind(`tk:${me.id}:`, `tk:${me.id};`, Date.now()).first()).n >= 60) return err('잠깐 쉬었다가 해요', 429);
+    // 시작 횟수 제한(6시간 티켓도 처음 1시간만 셈 — 2026-10-29 기자재 정리! 일반을 자주 다시 시작하면 60장에 걸리던 것 방지): 아직 안 쓴(살아 있는) 티켓이 60장 넘으면 잠깐 막음 — 예전 rl 카운터(시작마다 쓰기 3행) 대신 읽기로 셈(2026-10-29 쓰기 절약)
+    if (!isAdm(me) && (await db.prepare(`SELECT COUNT(*) AS n FROM rl WHERE k >= ?1 AND k < ?2 AND reset - (CASE WHEN ${[...LONG_TK].map(g => `k LIKE '%:${g}:%'`).join(' OR ')} THEN ${6 * 3600e3 - TICKET_TTL} ELSE 0 END) > ?3`).bind(`tk:${me.id}:`, `tk:${me.id};`, Date.now()).first()).n >= 60) return err('잠깐 쉬었다가 해요', 429);
     const ticket = randHex(16);
     await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + ttlOf(game)).run();
     await rescueReplay(db, me);
