@@ -9,6 +9,7 @@ import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX, GEAR_TIME } from './gear-score.js';
 import { STAIR_MAX, floorName as stairFloor } from './stair-score.js';
 import { FILM_MAX, seedOf } from './film-score.js';
+import { BLAST_MAX, seedOf as blastSeed } from './blast-score.js';
 import { ffOn, RELEASED } from './flags.js';
 import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
@@ -35,6 +36,8 @@ const GAMES = {
   gear: { ff: 'gear-game', name: '기자재 정리!', ic: 'gear', desc: '수업 끝! 촬영 장비를 빈틈없이 정리해 줄을 채워요 · 랭킹전은 2분 점수 대결', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 따로 순위만 — 게임 목록·티어엔 안 나옴(casual), 기자재 정리! 랭킹 창의 '일반' 전환으로 봄
   gearn: { ff: 'gear-game', casual: true, name: '기자재 정리! 일반', ic: 'gear', desc: '시간 제한 없이 자유롭게 · 티어·보상과 상관없는 일반 모드 순위', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
+  // 기자재 정리! 블록(2026-10-29 하율 "블록블라스트 버전도", 미리보기 깃발 blast-game — 개발자만): 8×8 선반에 장비 케이스 끌어 놓기. 높을수록 좋음 → 서버엔 BLAST_MAX - 점수
+  blast: { ff: 'blast-game', name: '기자재 정리! 블록', ic: 'blast', desc: '장비 케이스를 끌어다 선반에! 가로·세로 줄을 채워 정리해요 · 시간 제한 없음', fmt: v => (BLAST_MAX - v).toLocaleString('ko-KR') + '점' },
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
@@ -1531,7 +1534,7 @@ function chUpLine(c) {   // 내 티어 칸 아래: 어제보다 · 지난 라운
 function chBlock(c) {
   const gs = gamesOn().filter(([k]) => GAMES[k]);
   const byG = new Map((c.games || []).map(x => [x.g, x]));
-  const GAP = { film: v => v.toLocaleString('ko-KR') + '컷', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
+  const GAP = { blast: v => v.toLocaleString('ko-KR') + '점', film: v => v.toLocaleString('ko-KR') + '컷', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
   const champs = gs.map(([k, g]) => { const x = byG.get(k);
     if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">1등 자리 비어 있음</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
     const rec = x.b != null && g.fmt ? g.fmt(x.b) : '', gm = k === 'gear' && x.m ? `<i class="tcc-mode">${gtMode(x.m)}</i>` : '';
@@ -1911,7 +1914,7 @@ function playTicket(game) {
    ② 하던 게임 정리(quitGame)가 오류를 내면 다음 게임이 영영 안 열렸음 → 오류를 삼키고 계속
    ③ 학교 와이파이가 느려 서비스 워커가 옛 social.js를 준 경우(버튼은 새 index.html, 게임 목록은 옛 파일) → 옛 파일을 지우고 새로 고침
    ④ 게임을 여는 중 오류 → 빈 화면 대신 안내 + 새로 고침 버튼 */
-const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm };
+const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm, blast: playBlast };
 function staleReload() {
   try { if (Date.now() - (+sessionStorage.getItem('sg_rl') || 0) < 60e3) { toast('게임을 불러오지 못했어요. 앱을 완전히 닫았다가 다시 열어 주세요'); return; } sessionStorage.setItem('sg_rl', Date.now()); } catch {}
   toast('새 버전을 받는 중이에요…');
@@ -1937,7 +1940,7 @@ async function play(game) {
   }
   try { quitGame?.(); } catch (e) { console.error(e); }
   quitGame = null; curGame = game;
-  ticket = S.me && game !== 'gear' && game !== 'stair' && game !== 'film' ? playTicket(game) : null;
+  ticket = S.me && game !== 'gear' && game !== 'stair' && game !== 'film' && game !== 'blast' ? playTicket(game) : null;
   try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
 
@@ -2367,6 +2370,44 @@ async function playFilm() {
   window.__film = M;   // 테스트용
   myRecInto($('#flRec'), 'film', store.get('film_best', 0) ? FILM_MAX - store.get('film_best', 0) : null, { open: true });
   quitGame = () => { run++; M.destroy(); if (window.__film === M) window.__film = null; };
+}
+
+/* 기자재 정리! 블록(2026-10-29, 미리보기 blast-game — 개발자만): js/blast.js. 판마다 시작 티켓 → 그 씨앗으로 장비 순서가 정해지고 서버가 놓기를 다시 둬 봄(blast-score.js) */
+let BLAST = null;
+async function playBlast() {
+  const area = stage(ic('blast') + ' 기자재 정리! 블록', '<div class="fl"><div class="ml" id="bl"></div><aside class="sr-side fl-side" id="blRec"></aside></div>', true);
+  if (!BLAST) { try { BLAST = await import('./blast.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!area.isConnected || !$('#bl')) return;
+  let runTk = null, run = 0, tkWhy = '';
+  const M = BLAST.createBlast($('#bl'), {
+    best: store.get('blast_best', 0), sound: store.get('blast_snd', false),
+    onSound: on => store.set('blast_snd', on),
+    async seed() {
+      runTk = null; tkWhy = ''; run++;
+      if (!S.me) return null;
+      try { runTk = (await call('start', { game: 'blast' }).catch(() => wait(2000).then(() => call('start', { game: 'blast' })))).ticket || null; } catch (e) { tkWhy = e.message; }
+      if (!runTk) toast('지금 판은 기록이 저장되지 않아요' + (tkWhy ? ' · ' + tkWhy : ''));
+      return runTk ? blastSeed(runTk) : null;
+    },
+    onOver(res) {
+      const no = run, tk = runTk; runTk = null;
+      if (!S.me) { if (res.score > store.get('blast_best', 0)) store.set('blast_best', res.score); M.msg('로그인하면 랭킹에 올라가요'); return; }
+      if (!tk) { M.msg('이번 판은 서버에 등록되지 않아 저장 못 했어요'); return; }
+      if (res.score < 1) { M.msg('0점은 기록하지 않아요'); return; }
+      M.msg('기록 저장 중…');
+      ticket = tk;
+      saveScore('blast', BLAST_MAX - res.score, res.rounds).then(r => {
+        if (no !== run) return;
+        if (r.held) { M.msg(heldLine(r)); return; }
+        const b = r.best != null ? BLAST_MAX - r.best : res.score; M.setBest(b, true); store.set('blast_best', b);
+        M.msg(r.newBest ? `<b>최고 기록 경신!</b> 전체 ${r.rank}등` : `내 최고 ${b.toLocaleString('ko-KR')}점 · 전체 ${r.rank}등`);
+        myRecInto($('#blRec'), 'blast', null, { open: true });
+      }).catch(e => { if (no === run) M.msg(esc(e.message)); });
+    },
+  });
+  window.__blast = M;   // 테스트용
+  myRecInto($('#blRec'), 'blast', store.get('blast_best', 0) ? BLAST_MAX - store.get('blast_best', 0) : null, { open: true });
+  quitGame = () => { run++; M.destroy(); if (window.__blast === M) window.__blast = null; };
 }
 
 /* 5) 기자재 정리!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */

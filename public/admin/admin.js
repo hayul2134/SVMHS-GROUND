@@ -12,6 +12,7 @@ const GAMES = {
   home: { name: '집에 가고 싶어!', em: '🏠', fmt: v => (1000000 - v).toLocaleString('ko-KR') + 'm', sus: 1000000 - 30000 },   // 저장값 = 1000000 - 거리. 3만m(약 13분 무사고) 넘으면 의심
   gear: { name: '기자재 정리!', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점', sus: 9999999 - 200000 },   // 저장값 = 9999999 - 점수. 20만 점 넘으면 의심
   gearn: { name: '기자재 정리! 일반', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점', sus: 9999999 - 500000 },   // 일반 모드(시간 제한 없음, 순위만·티어 제외)
+  blast: { name: '기자재 정리! 블록', em: '🧰', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 3000000 },   // 서버가 놓기를 다시 둬 보고 검사
   film: { name: '필름 10', em: '🎞️', fmt: v => (9999999 - v) + '컷', sus: 9999999 - 165 },   // 저장값 = 9999999 - 지운 컷(최대 170). 165컷 넘으면 의심 — 서버가 판을 다시 둬 보고 검사함
   stair: { name: '영상고 계단 오르기', em: '🪜', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '칸', sus: 9999999 - 3000 },   // 저장값 = 9999999 - 오른 칸. 3천 칸 넘으면 의심
   reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 160 },
@@ -440,6 +441,7 @@ const heldRounds = (game, raw) => {
   if (game === 'cut') return r.map(x => x + 'ms').join(' · ') + ` (합 ${r.reduce((a, b) => a + b, 0)})`;
   if (game === 'home') return `${(+r[0]).toLocaleString('ko-KR')}m · ${((+r[1] || 0) / 1000).toFixed(1)}초`;
   if (game === 'gear' || game === 'gearn') return `${(+r[0]).toLocaleString('ko-KR')}점 · ${r[1]}줄 · 블록 ${r[2]}개 · ${((+r[3] || 0) / 1000).toFixed(0)}초`;
+  if (game === 'blast') return `${((+r[0] || 0) / 1000).toFixed(0)}초 · 놓기 ${Math.max(0, r.length - 1)}번${r.length >= 30 ? '+' : ''}`;
   if (game === 'film') return `${r[0] === 10 ? '세로' : '가로'} 판 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 묶음 ${Math.max(0, r.length - 2)}번${r.length >= 30 ? '+' : ''}`;   // 보류 기록은 앞 30개만 남음
   if (game === 'stair') return `${(+r[0]).toLocaleString('ko-KR')}칸 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 방향 ${r[2]}번`;
   if (game === 'num25') return `마지막 탭 ${((+r[24] || 0) / 1000).toFixed(2)}초 · 벌점 ${((+r[25] || 0) / 1000)}초`;
