@@ -60,7 +60,7 @@ function mine(el) {
   const paintBest = () => { const b = store.get(bestKey(), 0); $b.textContent = b ? '최고 ' + fmtS(b) : '최고 -'; };
   function fit() {
     const r = roomOf(el, 140);
-    const cs = Math.max(18, Math.min(40, Math.floor((r.w - 12) / W), Math.floor((r.h - 12) / H)));
+    const cs = Math.max(18, Math.min(48, Math.floor((r.w - 12) / W), Math.floor((r.h - 12) / H)));
     bd.style.setProperty('--cs', cs + 'px'); bd.style.setProperty('--cols', W);
   }
   function setup() {

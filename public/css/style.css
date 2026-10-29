@@ -6093,7 +6093,7 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc) 62%,#1a1f45)}   /* 티어 계단 꼭대기 인원 칩: 챌린저 금색 위 흰 글자 대비 */
 
 /* ===== 캐주얼 게임(2026-10-29, 미리보기 깃발 casual-games) — js/casual.js: 지뢰찾기·뱀·2048 ===== */
-.cat-h small{margin-left:8px;font-size:13px;font-weight:700;color:var(--sub);font-family:var(--sans)}
+.cat-h small{margin:0 auto 0 8px;font-size:13px;font-weight:700;color:var(--sub);font-family:var(--sans)}
 .apps .gapp.g-cz-mine .ai{--c:#cfe2f0}.apps .gapp.g-cz-snake .ai{--c:#c9f0dc}.apps .gapp.g-cz-n2048 .ai{--c:#ffe6a8}
 .cz{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
 .cz-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;width:100%}
