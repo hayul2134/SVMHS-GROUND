@@ -1,8 +1,8 @@
 // SVMHS GROUND — 필름 10 규칙(화면 js/film.js · 서버 functions/api/s 같이 씀, 2026-10-29)
-// 판: 숫자 1~9 필름 컷 170개(가로 17×10 / 세로 화면 10×17 — 같은 배열을 줄 바꿈만 다르게). 숫자 합은 항상 10의 배수.
+// 판: 숫자 1~9 필름 컷 120개(가로 15×8 / 세로 화면 8×15 — 2026-10-29 하율 "눈 아프다"로 170→120 — 같은 배열을 줄 바꿈만 다르게). 숫자 합은 항상 10의 배수.
 // 판 씨앗 = 시작 티켓(서버가 줌) → 서버가 같은 판을 다시 만들어 보낸 묶음을 처음부터 다시 둬 봄(점수·순서 조작 방지)
 // 저장값 = FILM_MAX - 지운 컷 수(다른 게임처럼 작을수록 1등)
-export const FILM_MAX = 9999999, CELLS = 170, TIME_MS = 120000, MIN_GAP = 100;
+export const FILM_MAX = 9999999, CELLS = 120, TIME_MS = 120000, MIN_GAP = 100;
 
 // 씨앗 → 0~1 난수(mulberry32)
 export function rng(seed) {
@@ -25,7 +25,7 @@ export function cellsIn(grid, cols, r0, c0, r1, c1) {
   for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const i = r * cols + c; if (grid[i]) out.push(i); }
   return out;
 }
-// 아직 묶을 수 있는 네모가 있는지(합 10) — 누적합으로 모든 네모를 봄(170칸이라 8천 개 남짓)
+// 아직 묶을 수 있는 네모가 있는지(합 10) — 누적합으로 모든 네모를 봄(120칸이라 4천 개 남짓)
 export function hasMove(grid, cols) {
   const rows = CELLS / cols, P = Array.from({ length: rows + 1 }, () => new Array(cols + 1).fill(0));
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) P[r + 1][c + 1] = grid[r * cols + c] + P[r][c + 1] + P[r + 1][c] - P[r][c];
@@ -38,7 +38,7 @@ export function hasMove(grid, cols) {
 // 판 기록 rounds = [가로 칸 수, 끝난 시각 ms, ...묶음] 을 처음부터 다시 둬 봄 → { n: 지운 수 } 또는 { err: 이유 }
 export function replay(seed, rounds) {
   const cols = rounds[0], end = rounds[1], mv = rounds.slice(2);
-  if (cols !== 10 && cols !== 17) return { err: '판 모양이 이상해요' };
+  if (cols !== 8 && cols !== 15) return { err: '판 모양이 이상해요' };
   if (!(end >= 0 && end <= TIME_MS + 500)) return { err: `끝난 시각(${end}ms)이 2분을 넘었어요` };
   if (mv.length > CELLS / 2) return { err: '묶음 수가 너무 많아요' };
   const rows = CELLS / cols, g = makeGrid(seed);

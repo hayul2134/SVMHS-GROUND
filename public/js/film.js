@@ -13,7 +13,7 @@ export function createFilm(root, opt = {}) {
       <div class="ml-ov" data-m="ov"></div></div>`;
   const $ = k => root.querySelector(`[data-m="${k}"]`);
   const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), tf = $('tf'), board = $('board'), sndBtn = $('snd');
-  let cols = 17, rows = 10, grid = [], score = 0, state = 'ready', cell = 40, dpr = 1, frame = null, drag = null, pops = [], floats = [], raf = 0, dead = false;
+  let cols = 15, rows = 8, grid = [], score = 0, state = 'ready', cell = 40, dpr = 1, frame = null, drag = null, pops = [], floats = [], raf = 0, dead = false;
   let used = 0, lastAt = 0, lastTm = -1, moves = [], lastSum = -1, busy = false, ac = null;
   const clock = () => used + (state === 'play' ? performance.now() - lastAt : 0);   // 멈춘 시간은 뺀 판 시계
 
@@ -39,27 +39,23 @@ export function createFilm(root, opt = {}) {
   sndBtn.onclick = () => { sound = !sound; if (sound) au(); paintSnd(); opt.onSound?.(sound); sndBtn.blur(); };
   paintSnd();
 
-  /* ----- 그림: 필름 한 컷(검은 필름 + 위아래 구멍 + 밝은 화면) ----- */
+  /* ----- 그림: 컷 한 장(2026-10-29 하율 "눈이 아프다" → 검은 필름·구멍 빼고 밝은 카드 + 칸 사이 여백) ----- */
+  const isDark = () => document.documentElement.dataset.theme === 'dark';
   function makeFrame() {
     const S = Math.round(cell * dpr), c = document.createElement('canvas'); c.width = c.height = S;
-    const g = c.getContext('2d'), m = S * .06, w = S - m * 2, h = S - m * 2, rr = S * .12;
-    g.fillStyle = '#2b2d3c'; g.beginPath(); g.roundRect(m, m, w, h, rr); g.fill();
-    g.lineWidth = Math.max(1.2, S * .035); g.strokeStyle = '#14151f'; g.stroke();
-    g.fillStyle = '#f4efe2';   // 구멍(위아래 3개씩)
-    const hw = w * .15, hh = h * .085;
-    for (const y of [m + h * .045, m + h - h * .045 - hh]) for (let k = 0; k < 3; k++) { g.beginPath(); g.roundRect(m + w * (.14 + k * .28) + (w * .14 - hw) / 2 + w * .02, y, hw, hh, hh * .35); g.fill(); }
-    const fx = m + w * .1, fy = m + h * .19, fw = w * .8, fh = h * .62;   // 화면
-    const grd = g.createLinearGradient(0, fy, 0, fy + fh); grd.addColorStop(0, '#fff6dc'); grd.addColorStop(1, '#ffd98a');
-    g.fillStyle = grd; g.beginPath(); g.roundRect(fx, fy, fw, fh, S * .05); g.fill();
-    g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.roundRect(fx + fw * .06, fy + fh * .08, fw * .35, fh * .1, fh * .05); g.fill();   // 반사광
-    frame = c;
+    const g = c.getContext('2d'), m = S * .07, w = S - m * 2, h = S - m * 2, rr = S * .2, dk = isDark();
+    g.fillStyle = dk ? '#1b2036' : '#eadfc8'; g.beginPath(); g.roundRect(m, m + S * .03, w, h, rr); g.fill();   // 아래 살짝 그림자
+    const grd = g.createLinearGradient(0, m, 0, m + h); grd.addColorStop(0, dk ? '#39406a' : '#fffdf8'); grd.addColorStop(1, dk ? '#30375c' : '#fff6e4');
+    g.fillStyle = grd; g.beginPath(); g.roundRect(m, m, w, h, rr); g.fill();
+    g.lineWidth = Math.max(1, S * .022); g.strokeStyle = dk ? '#4c5584' : '#e2d3b4'; g.stroke();
+    c.dk = dk; frame = c;
   }
   function fit() {
     if (dead || !cv.isConnected) return;
     dpr = Math.min(devicePixelRatio || 1, 2);
     const w = root.clientWidth - 34, top = board.getBoundingClientRect().top, h = Math.max(260, innerHeight - Math.max(top, 0) - 24);
-    if (state === 'ready' || state === 'over') { const c = w < 640 && h > w * 1.15 ? 10 : 17; if (c !== cols) { cols = c; rows = CELLS / c; } }
-    cell = Math.max(16, Math.min(56, Math.floor(w / cols), Math.floor(h / rows)));
+    if (state === 'ready' || state === 'over') { const c = w < 640 && h > w * 1.15 ? 8 : 15; if (c !== cols) { cols = c; rows = CELLS / c; } }
+    cell = Math.max(18, Math.min(64, Math.floor(w / cols), Math.floor(h / rows)));
     cv.style.width = cell * cols + 'px'; cv.style.height = cell * rows + 'px';
     cv.width = cell * cols * dpr; cv.height = cell * rows * dpr;
     makeFrame(); draw();
@@ -73,19 +69,20 @@ export function createFilm(root, opt = {}) {
   }
   const selOf = R => R && R.ok ? cellsIn(grid, cols, R.r0, R.c0, R.r1, R.c1) : [];
   function draw() {
+    if (frame && frame.dk !== isDark()) makeFrame();   // 화이트/다크 바꾸면 카드 색도 새로
     if (!frame) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cell * cols, cell * rows);
     const R = range(), sel = new Set(selOf(R)); let sum = 0; sel.forEach(i => sum += grid[i]);
     const ok = sum === 10, hide = state === 'ready' || state === 'pause';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `800 ${Math.round(cell * .38)}px Outfit,Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
+    ctx.font = `800 ${Math.round(cell * .4)}px Outfit,Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
     for (let i = 0; i < CELLS; i++) {
       const v = grid[i]; if (!v) continue;
       const x = (i % cols) * cell, y = Math.floor(i / cols) * cell, on = sel.has(i);
       if (on) { ctx.fillStyle = ok ? 'rgba(76,175,80,.38)' : 'rgba(80,140,230,.28)'; ctx.beginPath(); ctx.roundRect(x, y, cell, cell, cell * .16); ctx.fill(); }
       const d = cell * (on ? 1.06 : 1);
       ctx.drawImage(frame, x + (cell - d) / 2, y + (cell - d) / 2, d, d);
-      if (!hide) { ctx.fillStyle = on ? (ok ? '#1f7a2a' : '#2457b8') : INK; ctx.fillText(v, x + cell / 2, y + cell * .52); }
+      if (!hide) { ctx.fillStyle = on ? (isDark() ? (ok ? '#8fe39a' : '#a9c4ff') : ok ? '#1f7a2a' : '#2457b8') : isDark() ? '#eef0ff' : INK; ctx.fillText(v, x + cell / 2, y + cell * .52); }
     }
     const now = performance.now();
     pops = pops.filter(p => now - p.t < 360);
@@ -195,7 +192,7 @@ export function createFilm(root, opt = {}) {
     tone(nb ? 784 : 523, .14, 'triangle', .07); tone(nb ? 1047 : 392, .22, 'triangle', .07, .14);
     ov.hidden = false; ov.className = 'ml-ov end';
     const head = why === 'clear' ? '전부 잘라냈어요!' : why === 'stuck' ? '더 묶을 컷이 없어요' : '시간 끝!';
-    ov.innerHTML = `${sb(head)}<p class="ml-sc">${score}<small>컷</small></p><span>${why === 'clear' ? `${(ms / 1000).toFixed(1)}초 만에 170컷 전부` : nb ? '최고 기록 경신!' : `내 최고 ${best}컷`}</span>
+    ov.innerHTML = `${sb(head)}<p class="ml-sc">${score}<small>컷</small></p><span>${why === 'clear' ? `${(ms / 1000).toFixed(1)}초 만에 ${CELLS}컷 전부` : nb ? '최고 기록 경신!' : `내 최고 ${best}컷`}</span>
       <small class="ml-msg" data-m="msg"></small><button type="button" class="btn big" data-m="go">한 번 더</button>`;
     $('go').onclick = start;
     opt.onOver?.({ n: score, ms, why, nb, rounds: [cols, ms, ...moves] });
