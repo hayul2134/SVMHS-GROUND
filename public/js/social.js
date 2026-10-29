@@ -71,7 +71,7 @@ async function call(path, body) {
     const e = new Error(j.error || '잠시 후 다시 시도해 주세요'); e.status = r.status; throw e;
   }
   if (j.mis) msResult(j.mis);
-  if (j.ach || j.mst) achResult(j.ach, j.achX, j.mst);   // 게임 업적 달성(기록 저장 응답)   // 주간 미션을 깬 응답(게임·뽑기·출석·DM·팔로우·프로필)
+  if (Array.isArray(j.ach) || j.mst) achResult(Array.isArray(j.ach) ? j.ach : [], j.achX, j.mst);   // 게임 업적 달성(기록 저장 응답)   // 주간 미션을 깬 응답(게임·뽑기·출석·DM·팔로우·프로필)
   return j;
 }
 const fail = e => toast(e.message || '문제가 생겼어요');
