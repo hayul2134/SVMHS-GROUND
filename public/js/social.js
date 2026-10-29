@@ -2054,7 +2054,9 @@ function playReaction() {
       });
     }, rxDelay());
   };
-  const foul = why => {
+  /* 부정출발 안내(2026-10-29 학생 의견 "보고 눌렀는데 나한테 왜 그러는거에요" — '미리 눌렀죠?'가 이유 없이 몰아세우는 말로 보였음)
+     → 탓하는 말 대신 무슨 일이 있었는지(잰 시간·기준)를 그대로 보여 줌. 판정 기준(0.1초)은 그대로. */
+  const foul = (why, note = '') => {
     stop(); fouls++;
     const pen = rxPen(fouls);
     fl.className = 'rxfoul on' + (fouls >= RX_OUT - 1 ? ' hot' : '');
@@ -2067,17 +2069,17 @@ function playReaction() {
       return;
     }
     state = 'lock'; pad.className = 'rx early';
-    pad.innerHTML = `<b>${why}</b><small>${pen ? `벌점 +${RX_PEN}ms · ` : ''}잠깐만요…</small>`;
-    timer = setTimeout(() => { if (!alive || state !== 'lock') return; state = 'shown'; const s = pad.querySelector('small'); if (s) s.textContent = `${pen ? `벌점 +${RX_PEN}ms · ` : ''}탭해서 이번 판 다시 (${times.length + 1} / 5)`; }, RX_LOCK);
+    pad.innerHTML = `<b>${why}</b>${note ? `<small class="rxwhy">${note}</small>` : ''}<small class="rxnx">${pen ? `벌점 +${RX_PEN}ms · ` : ''}잠깐만요…</small>`;
+    timer = setTimeout(() => { if (!alive || state !== 'lock') return; state = 'shown'; const s = pad.querySelector('.rxnx'); if (s) s.textContent = `${pen ? `벌점 +${RX_PEN}ms · ` : ''}탭해서 이번 판 다시 (${times.length + 1} / 5)`; }, RX_LOCK);
   };
   const press = at => {
     if (state === 'lock' || state === 'done') return;   // 부정출발 뒤 1초는 연타해도 안 넘어감
     if (state === 'idle' || state === 'shown') return arm();
-    if (state === 'wait') return foul('앗, 너무 빨라요!');
+    if (state === 'wait') return foul('앗, 너무 빨라요!', '초록색으로 바뀌기 전에 눌렀어요');
     if (state !== 'go') return;
-    if (!t0) return foul('앗, 너무 빨라요!');   // 초록으로 바꿨지만 아직 화면에 안 나온 순간 = 보고 누른 게 아님
+    if (!t0) return foul('앗, 너무 빨라요!', '초록색이 화면에 뜨기 전에 눌렸어요');   // 초록으로 바꿨지만 아직 화면에 안 나온 순간 = 보고 누른 게 아님
     const ms = Math.round(at - t0);
-    if (ms < RX_ANTI) return foul('미리 눌렀죠?');   // 초록이 보이고 0.1초 안 = 사람이 보고 누를 수 없는 속도(찍은 것)
+    if (ms < RX_ANTI) return foul('너무 빨랐어요!', `${ms}ms · 0.1초 안은 사람이 보고 누를 수 없는 속도라 이번 판은 다시 해요`);   // 초록이 보이고 0.1초 안 = 보고 반응하기 전에 눌림(육상 부정출발 기준과 같음)
     stop(); times.push(ms); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
     if (times.length >= 5) {
       state = 'done';

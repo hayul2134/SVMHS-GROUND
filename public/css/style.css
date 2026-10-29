@@ -1005,6 +1005,7 @@ body.playing .modal{z-index:75}/* 게임 중 연 랭킹 창이 게임 화면(.pl
 .rx{flex:1;max-height:440px;border-radius:28px;border:var(--bd);box-shadow:var(--sh);display:grid;place-content:center;gap:8px;color:#fff;text-align:center;transition:none;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .rx b{font-family:var(--disp);font-weight:400;font-size:clamp(30px,7vw,48px)}
 .rx small{font-weight:800;font-size:15px;opacity:.9}
+.rx .rxwhy{max-width:min(88%,420px);margin:0 auto;line-height:1.4;word-break:keep-all;opacity:1}
 .rx.idle,.rx.shown,.rx.done{background:var(--accent)}.rx.wait{background:#e2483d}.rx.go{background:#1fbf6a}.rx.early{background:#ff9f43}
 .rxlog{list-style:none;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:34px}
 .rxlog li{background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:3px 10px;font:800 14px var(--num)}
