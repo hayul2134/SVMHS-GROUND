@@ -170,7 +170,9 @@ function paintFF() {
   markFF(document.body);
   if (!ffObs) { ffObs = new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) markFF(n); }); ffObs.observe(document.body, { childList: true, subtree: true }); }
 }
-async function refreshMe() {
+let meP = null;   // 진행 중인 refreshMe (play가 기다림)
+function refreshMe() { return meP = refreshMe0(); }
+async function refreshMe0() {
   try {
     const [r] = await Promise.all([call('me'), loadReleased()]);
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
@@ -1858,7 +1860,7 @@ addEventListener('resize', () => { if (document.body.classList.contains('playing
 // 게임 중 집 버튼을 누르면 게임을 닫고 처음 화면으로 (이동 자체는 app.js의 [data-go] 처리)
 document.addEventListener('click', e => { if (e.target.closest('[data-go]') && document.body.classList.contains('playing')) endPlay(); });
 // 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
-function endPlay() { unfitHome(); quitGame?.(); quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
+function endPlay() { try { unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
 
 // 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
@@ -1900,12 +1902,39 @@ function playTicket(game) {
   p.then(t => { if (!t && tkKeep?.p === p) tkKeep = null; });   // 못 받은 티켓은 다음 판에 다시 받기
   return p;
 }
-function play(game) {
+/* 게임 들어가기(2026-10-29 하율 "계단 오르기 버튼이 보이고 눌리는데 게임이 안 들어감" — 조용히 아무 일도 안 일어나던 길을 모두 막음)
+   ① 첫 접속 직후: 저장해 둔 깃발 상태로 버튼은 먼저 보이는데 내 정보·공개 목록이 아직 안 와서 막혔음 → 기다렸다가 다시 판단
+   ② 하던 게임 정리(quitGame)가 오류를 내면 다음 게임이 영영 안 열렸음 → 오류를 삼키고 계속
+   ③ 학교 와이파이가 느려 서비스 워커가 옛 social.js를 준 경우(버튼은 새 index.html, 게임 목록은 옛 파일) → 옛 파일을 지우고 새로 고침
+   ④ 게임을 여는 중 오류 → 빈 화면 대신 안내 + 새로 고침 버튼 */
+const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair };
+function staleReload() {
+  try { if (Date.now() - (+sessionStorage.getItem('sg_rl') || 0) < 60e3) { toast('게임을 불러오지 못했어요. 앱을 완전히 닫았다가 다시 열어 주세요'); return; } sessionStorage.setItem('sg_rl', Date.now()); } catch {}
+  toast('새 버전을 받는 중이에요…');
+  (self.caches ? caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('sg-shell')).map(k => caches.delete(k)))) : Promise.resolve()).catch(() => {}).then(() => location.reload());
+}
+function gameFail(e) {
+  console.error(e);
+  const area = $('#parea'); if (!area) { toast('게임을 열지 못했어요 · 새로 고침해 주세요'); return; }
+  area.innerHTML = '<div class="empty"><p>게임을 여는 중에 문제가 생겼어요</p><button type="button" class="btn" id="gfReload">새로 고침</button></div>';
+  $('#gfReload').onclick = staleReload;
+}
+let playSeq = 0;
+async function play(game) {
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
-  quitGame?.(); quitGame = null; curGame = game;
+  const fn = PLAYERS[game];
+  if (!fn || !GAMES[game]) { staleReload(); return; }
+  const seq = ++playSeq;
+  const gate = () => !GAMES[game].ff || ffOn(GAMES[game].ff, isDev(S.me));
+  if (!gate()) {
+    await Promise.all([meP, loadReleased()]).catch(() => {});
+    if (seq !== playSeq) return;
+    if (!gate()) { toast('아직 열리지 않은 게임이에요'); return; }
+  }
+  try { quitGame?.(); } catch (e) { console.error(e); }
+  quitGame = null; curGame = game;
   ticket = S.me && game !== 'gear' && game !== 'stair' ? playTicket(game) : null;
-  if (GAMES[game]?.ff && !ffOn(GAMES[game].ff, isDev(S.me))) return;
-  ({ reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair })[game]?.();
+  try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
 
 // 편집의 신 결과 한 화면에(2026-10-28 하율 "스크롤 안 하고도 보이게"): 왼쪽 = 점수·등급·저장 결과·내 기록(접는 버튼) / 오른쪽 = 내 컷 다시 보기·판별 판정
@@ -2199,7 +2228,7 @@ async function playStair() {
       <aside class="sr-side" id="srRec"></aside>
     </div>`, true);   // 넓은 칸: 오른쪽에 내 기록
   if (!STAIR || !RUN) { try { STAIR = await import('./stair.js'); RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
-  if (!$('#srCv')) return;
+  if (!area.isConnected) return;   // 불러오는 사이 그만두거나 다시 눌러 새 판이 열림(2026-10-29: 두 판이 한 캔버스에 겹치던 것)
   const cv = $('#srCv'), ov = $('#srOv'), scr = $('#srScr'), gEl = $('#srG'), nEl = $('#srN'), fEl = $('#srF'), pop = $('#srPop');
   let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0, shownG = '', shownLow = false, shownC = null;
   const ready = () => {
@@ -2312,7 +2341,7 @@ async function playGear() {
       <div class="hr-rk" id="grRk"></div>
     </div>`, true);
   if (!GEAR) { try { GEAR = await import('./gear.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
-  if (!$('#grCv')) return;
+  if (!area.isConnected) return;
   const cv = $('#grCv'), ov = $('#grOv'), pop = $('#grPop');
   // 2026-10-27 하율: 일반(연습 — 랭킹 제외) / 랭킹전(2분 점수 대결 — 랭킹·보상) 두 가지로. best = 랭킹전 최고, bestN = 일반 최고(이 기기만)
   let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), bestN = store.get('gear_best_n', 0), nRec = null, over = false, deadAt = 0, runNo = 0;
@@ -2583,7 +2612,7 @@ async function playHome() {
       <div class="hr-rk" id="hrRk"></div>
     </div>`, true);
   if (!RUN) { try { RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
-  if (!$('#hrCv')) return;   // 불러오는 사이 그만둠
+  if (!area.isConnected) return;   // 불러오는 사이 그만둠·다시 눌러 새 판
   const cv = $('#hrCv'), ov = $('#hrOv'), scr = $('#hrScr');
   // 안내 글자 맞춤 (2026-10-27 하율: 게임 오버 문구가 위아래로 잘림). 게임 화면은 3:1로 납작해서 세로가 먼저 모자라는데
   // 글자 크기는 가로 폭(vw·컨테이너 폭) 기준이라, 3배 화면(세로 312px)에서도 제목+결과 카드+'다시' 안내가 세로를 넘쳤음.
