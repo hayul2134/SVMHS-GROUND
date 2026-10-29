@@ -73,7 +73,7 @@ export function createFilm(root, opt = {}) {
     if (dead || !cv.isConnected) return;
     dpr = Math.min(devicePixelRatio || 1, 2);
     const w = root.clientWidth - 34, top = board.getBoundingClientRect().top, h = Math.max(260, innerHeight - Math.max(top, 0) - 24);
-    if (state === 'ready' || state === 'over') { const c = w < 640 && h > w * 1.15 ? 8 : 15; if (c !== cols) { cols = c; rows = CELLS / c; } }
+    if (state === 'ready' || state === 'over') { const c = innerHeight > innerWidth && w < 640 && h > w * 1.15 ? 8 : 15;   // 세로판(8×15)은 세로로 든 폰·패드만 — 가로 화면은 항상 가로판 15×8(2026-10-29 하율 "가로로 보게") if (c !== cols) { cols = c; rows = CELLS / c; } }
     cell = Math.max(20, Math.min(72, Math.floor(w / cols), Math.floor(h / rows)));
     cv.style.width = cell * cols + 'px'; cv.style.height = cell * rows + 'px';
     cv.width = cell * cols * dpr; cv.height = cell * rows * dpr;
