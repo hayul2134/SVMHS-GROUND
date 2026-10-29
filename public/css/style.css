@@ -6182,3 +6182,8 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 @media (prefers-reduced-motion:reduce){.cz-tl .t{transition:none}.cz-tl .t b,.cz-mb,.cz-tb,.cz-card,.cz-ov{animation:none!important}}
 /* 기자재 정리! 블록: 판+받침을 화면 가운데로(2026-10-29 하율) — 왼쪽에 오른쪽 '내 기록' 칸과 같은 폭의 빈 칸을 둠 */
 @media (min-width:901px){.bl-fl{display:grid;grid-template-columns:240px minmax(0,1fr) 240px;gap:14px;align-items:start}.bl-fl>.ml{grid-column:2}.bl-fl>.fl-side{grid-column:3;width:auto}}
+
+/* 기자재 정리! 블록 타격감: 연속 칩 튀기 */
+.bl-cb.pop{animation:blPop .32s cubic-bezier(.3,1.8,.5,1)}
+@keyframes blPop{0%{transform:scale(1)}40%{transform:scale(1.28) rotate(-4deg)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.bl-cb.pop{animation:none}}
