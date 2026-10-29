@@ -6407,3 +6407,8 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 @media (prefers-reduced-motion:reduce){.ptop .pmchip{transition:none}}
 :root[data-theme="dark"] .mst-grid li.m4,:root[data-theme="dark"] .mst-grid li.m5,:root[data-theme="dark"] .pmst-l i.m4,:root[data-theme="dark"] .pmst-l i.m5,:root[data-theme="dark"] .ptop .pmchip.m4,:root[data-theme="dark"] .ptop .pmchip.m5{color:#1f1d33}
 @media (max-width:420px){.ptop .pmchip > span{display:none}.ptop .pmchip{padding:3px}}
+
+/* 친구 찾기 아이콘·창(2026-10-30, 깃발 prof-find — social.js findBtn·openFind) */
+.pfind svg{width:20px;height:20px;fill:none;stroke:currentColor}
+.find-sheet{text-align:left}.find-sheet .ct h2{display:flex;align-items:center;gap:8px}.find-sheet .ct .sic{width:22px;height:22px}
+.find-sheet .plist{max-height:min(52vh,440px);overflow-y:auto;overscroll-behavior:contain}

@@ -402,6 +402,9 @@ function crownHtml(c) {
 }
 
 /* ===== 프로필 카드 ===== */
+// 친구 찾기 아이콘(2026-10-30 하율 "프로필 아래 친구 추가를 아이콘으로 빼서" — 미리보기 깃발 prof-find): 누르면 검색 창(openFind)
+const findOn = () => ffOn('prof-find', isDev(S.me));
+const findBtn = () => findOn() ? `<button class="btn ghost icb pfind" type="button" data-find-open data-ff="prof-find" aria-label="친구 찾기" data-tip="친구 찾기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-user-plus"/></svg></button>` : '';
 const STK_POS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12'];
 function profileHtml(d) {
   const u = d.user, self = d.me;
@@ -418,9 +421,9 @@ function profileHtml(d) {
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
-    ? isDev(u) ? `<a class="btn dv-adm" href="/admin/#monitor">${ic('tool')}관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
+    ? isDev(u) ? `<a class="btn dv-adm" href="/admin/#monitor">${ic('tool')}관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button>${findBtn()}<button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
       : S.me?.sw ? ''   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만(아래 swBar)
-      : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button><button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
+      : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button>${findBtn()}<button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
@@ -471,6 +474,7 @@ async function renderMe() {
   if (!box.querySelector('.pcard:not(.skz)')) box.innerHTML = ghProfile(true);
   try {
     const d = await call('user/' + encodeURIComponent(S.me.handle)); S.meProf = d;
+    if (findOn()) { box.innerHTML = profileHtml(d); return; }   // prof-find: 프로필만(스크롤), 친구 찾기는 위 아이콘 창
     box.innerHTML = profileHtml(d) + `
       <section class="card findcard">
         <div class="ct"><h2>👋 친구 찾기</h2></div>
@@ -489,7 +493,19 @@ async function renderMe() {
 }
 // 홈 친구 카드의 '친구 찾기'(2026-10-25 하율): 프로필 화면을 열고 바로 아래 친구 찾기 칸까지 내려 줌
 let wantFind = false;
-document.addEventListener('click', e => { if (e.target.closest('[data-find]')) wantFind = true; }, true);
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-find-open]') || (e.target.closest('[data-find]') && S.me && findOn())) { e.preventDefault(); e.stopImmediatePropagation(); openFind(); return; }   // prof-find: 프로필로 이동하지 않고 바로 검색 창
+  if (e.target.closest('[data-find]')) wantFind = true;
+}, true);
+function openFind() {
+  sheet(`<div class="find-sheet"><div class="ct"><h2><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-user-plus"/></svg>친구 찾기</h2></div>
+    <form class="form" id="findForm" autocomplete="off" role="search"><input id="findQ" placeholder="아이디나 이름으로 검색" maxlength="16" aria-label="친구 검색"><button class="btn">검색</button></form>
+    <p class="note" id="findNote">최근에 들어온 친구들</p>
+    <ul class="plist" id="findList" data-swap>${ghPeople(4)}</ul>
+    <div class="row"><button type="button" class="btn ghost" data-close>닫기</button></div></div>`);
+  findPeople('');
+  setTimeout(() => { if (matchMedia('(hover:hover)').matches) $('#findQ')?.focus(); }, 80);   // 키보드 있는 기기만 바로 입력(태블릿은 화면 키보드가 갑자기 올라오지 않게)
+}
 async function findPeople(q) {
   const list = $('#findList'); if (!list) return;
   try {
