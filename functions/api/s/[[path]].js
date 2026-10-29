@@ -8,6 +8,7 @@ import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
 import { BLAST_MAX, seedOf as blastSeed, replay as blastReplay } from '../../../public/js/blast-score.js';
+import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
 import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat } from '../../../public/js/achv.js';
@@ -27,14 +28,18 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   reaction: { min: 80, max: 1500, play: 4000 },      // 반응속도 5번 평균 (5판 대기 합 최소 약 3.65초 — social.js rxDelay, 2026-10-28 5000→4000) · 하한 140 → 120 (2026-10-26) → 100 (2026-10-27 하율) → 80 (2026-10-29 하율 "봇·오토클릭만 잡게 널널하게")
   num25: { min: 4000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기 · 하한 5000 → 4000 (2026-10-27 하율: 모바일은 훨씬 쉬움)
   cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
-  home: { min: 1, max: HOME_MAX - 1, play: 0, casualFrom: '20261109' },   // 2026-11-09(다음 라운드)부터 캐주얼        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
+  home: { min: 1, max: HOME_MAX - 1, play: 0 },   // (2026-10-29 '11/9부터 캐주얼'은 같은 날 하율 "모두 랭크에"로 취소)        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
   gear: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
   //   casual = 티어·역대 1등 표시(topCrowns)·주간 미션·1~3등 축하에서 빠짐 → 순위표(GET rank)·내 기록에만 나옴
   gearn: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game', casual: true },
   film: { min: FILM_MAX - FILM_CELLS, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷(0~170). 티어는 공개되는 순간부터(계단 오르기와 같게)
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },
-  blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game', tierOn: true },   // 카메라 가방 정리!(2026-10-29 미리보기): BLAST_MAX - 점수. 티어는 공개되는 순간부터(계단 오르기·필름 10과 같게)   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
+  blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game', tierOn: true },
+  // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에 — 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 시작 티켓 씨앗으로 판이 정해지고 서버가 다시 둬 봄(cz-score.js)
+  mine: { min: 5000, max: 3600000, play: 0, ff: 'casual-games', tierOn: true },   // 중급 클리어 시간(ms) — 작을수록 1등
+  snake: { min: SNAKE_MAX - 252, max: SNAKE_MAX - 1, play: 0, ff: 'casual-games', tierOn: true },   // SNAKE_MAX - 별 수
+  n2048: { min: 1, max: N2_MAX - 1, play: 0, ff: 'casual-games', tierOn: true },   // N2_MAX - 3분 점수   // 카메라 가방 정리!(2026-10-29 미리보기): BLAST_MAX - 점수. 티어는 공개되는 순간부터(계단 오르기·필름 10과 같게)   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 // 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
@@ -118,6 +123,21 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     const x = blastReplay(blastSeed(ticket), n);
     if (x.err) return x.fast ? H(`놓기 간격이 너무 짧음(${x.k + 1}번째) — 매크로 의심`, x.err) : H(`다시 둬 보니 안 맞음: ${x.err}`, `${x.err}. 판과 놓은 기록이 서로 맞지 않아요.`);
     if (BLAST_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${BLAST_MAX - v})이 다름`, `놓은 기록을 다시 둬 보면 ${x.score.toLocaleString('ko-KR')}점인데 ${(BLAST_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
+    if (n[0] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
+  } else if (game === 'mine') {   // [첫 칸, ...(연 시각×1000 + 칸)] — 지뢰 배치는 이 티켓 씨앗 + 첫 칸으로 정해짐 → 연 칸을 다시 열어 봄
+    const x = mineReplay(czSeed(ticket), n);
+    if (x.err) return x.fast ? H(`칸을 너무 빠르게 엶 — 매크로 의심`, x.err) : H(`다시 열어 보니 안 맞음: ${x.err}`, `${x.err}. 판과 연 기록이 서로 맞지 않아요.`);
+    if (Math.abs(x.ms - v) > 2) return H(`시간(${x.ms})과 기록(${v})이 다름`, `연 기록으로는 ${sec(x.ms)}인데 ${sec(v)}로 기록됐어요.`);
+    if (x.ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 한 걸로 기록됐어요.`);
+  } else if (game === 'snake') {   // [끝난 틱, ...(틱×4 + 방향)] — 별 위치는 이 티켓 씨앗으로 정해짐 → 꺾은 기록대로 다시 움직여 봄
+    const x = snakeReplay(czSeed(ticket), n);
+    if (x.err) return H(`다시 움직여 보니 안 맞음: ${x.err}`, `${x.err}. 판과 움직인 기록이 서로 맞지 않아요.`);
+    if (SNAKE_MAX - x.score !== v) return H(`별(${x.score})과 기록(${SNAKE_MAX - v})이 다름`, `움직인 기록으로는 별 ${x.score}개인데 ${SNAKE_MAX - v}개로 기록됐어요.`);
+    if (x.ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 한 걸로 기록됐어요.`);
+  } else if (game === 'n2048') {   // [끝난 ms, ...(시각×4 + 방향)] — 새 칸은 이 티켓 씨앗으로 정해짐 → 민 기록대로 다시 밀어 봄 · 3분
+    const x = n2Replay(czSeed(ticket), n);
+    if (x.err) return x.fast ? H(`너무 빠르게 밂 — 매크로 의심`, x.err) : H(`다시 밀어 보니 안 맞음: ${x.err}`, `${x.err}. 판과 민 기록이 서로 맞지 않아요.`);
+    if (N2_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${N2_MAX - v})이 다름`, `민 기록으로는 ${x.score.toLocaleString('ko-KR')}점인데 ${(N2_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
     if (n[0] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
@@ -1653,7 +1673,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
-    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '컷' }[gk];
+    const fv = { mine: x => sec(x), snake: x => '별 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '컷' }[gk];
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)

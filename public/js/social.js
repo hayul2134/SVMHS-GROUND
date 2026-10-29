@@ -10,6 +10,7 @@ import { GEAR_MAX, GEAR_TIME } from './gear-score.js';
 import { STAIR_MAX, floorName as stairFloor } from './stair-score.js';
 import { FILM_MAX, seedOf } from './film-score.js';
 import { BLAST_MAX, seedOf as blastSeed } from './blast-score.js';
+import { SNAKE_MAX, N2_MAX } from './cz-score.js';
 import { ffOn, RELEASED } from './flags.js';
 import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
@@ -45,6 +46,10 @@ const GAMES = {
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
+  // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에, 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 게임 안 '랭크전'만 순위·티어 · '자유'는 이 기기 기록
+  mine: { ff: 'casual-games', name: '지뢰찾기', ic: 'mine', desc: '랭크전은 중급(16×16·지뢰 40) 클리어 시간 · 모두 같은 규칙', fmt: v => (v / 1000).toFixed(v < 10000 ? 2 : 1) + '초' },
+  snake: { ff: 'casual-games', name: '뱀 게임', ic: 'snake', desc: '랭크전은 별 위치가 정해진 판에서 별 많이 먹기', fmt: v => '별 ' + (SNAKE_MAX - v) + '개' },
+  n2048: { ff: 'casual-games', name: '2048', ic: '2048', desc: '랭크전은 3분 동안 최고 점수 · 되돌리기 없음', fmt: v => (N2_MAX - v).toLocaleString('ko-KR') + '점' },
   num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
 };
 
@@ -174,9 +179,6 @@ function markFF(root) {
 }
 function paintFF() {
   markFF(document.body);
-  // 집에 가고 싶어!: 2026-11-09(다음 라운드)부터 캐주얼(서버 GAMES.home.casualFrom) — 카드 표시도 그날부터 '캐주얼'로, 맨 뒤 캐주얼 쪽으로
-  const hc = document.querySelector('.gapp.g-home'), ymd = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10).replace(/-/g, '');
-  if (hc && ymd >= '20261109' && !hc.dataset.cz) { hc.dataset.cz = 1; const t = hc.querySelector('.gtag'); if (t) { t.className = 'gtag gt-cz'; t.textContent = '캐주얼'; } const f = document.querySelector('.gapp.g-film'); if (f) f.before(hc); }
   if (!ffObs) { ffObs = new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) markFF(n); }); ffObs.observe(document.body, { childList: true, subtree: true }); }
 }
 let meP = null;   // 진행 중인 refreshMe (play가 기다림)
@@ -1943,7 +1945,8 @@ function gameFail(e) {
 }
 let playSeq = 0;
 async function play(game) {
-  if (game.startsWith('c_')) return playCz(game);   // 캐주얼 게임(2026-10-29, 깃발 casual-games) — GAMES·랭킹·티켓과 따로
+  if (game.startsWith('c_')) return playCz(game);
+  if (game === 'mine' || game === 'snake' || game === 'n2048') return playCz('c_' + game);   // 랭크전 순위 창 '도전하기'   // 캐주얼 게임(2026-10-29, 깃발 casual-games) — GAMES·랭킹·티켓과 따로
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
   const fn = PLAYERS[game];
   if (!fn || !GAMES[game]) { staleReload(); return; }
@@ -1977,7 +1980,26 @@ async function playCz(game) {
     const k = game.slice(2), g = CZ.CASUAL[k]; if (!g) { staleReload(); return; }
     if (seq !== playSeq) return;
     stage(ic(g.ic) + ' ' + g.name, '<div class="cz" id="czBox"></div>' + (k === 'n2048' ? '' : RE_ROW));
-    const ctl = CZ.mount(k, $('#czBox'));
+    // 랭크전(2026-10-29 하율 "모든 게임을 랭크에"): 판마다 시작 티켓 → 씨앗으로 판이 정해지고 서버가 다시 둬 보고 순위·티어에(cz-score.js)
+    let czTk = null, czRun = 0;
+    const rk = S.me ? {
+      async seed(gm) {
+        czTk = null; const my = ++czRun;
+        try { const t = (await call('start', { game: gm }).catch(() => wait(2000).then(() => call('start', { game: gm })))).ticket || null; if (my === czRun) czTk = t; return t; } catch (e) { toast('지금 판은 기록이 저장되지 않아요 · ' + e.message); return null; }
+      },
+      async done(gm, v, rounds) {
+        const tk = czTk, my = czRun; czTk = null;
+        if (!tk) return '이번 판은 서버에 등록되지 않아 저장 못 했어요';
+        ticket = tk;
+        try {
+          const r = await saveScore(gm, v, rounds);
+          if (my !== czRun) return '';
+          if (r.held) return heldLine(r);
+          return (r.newBest ? '<b>최고 기록 경신!</b> ' : '') + `랭크전 전체 ${r.rank}등 · 내 최고 ${GAMES[gm].fmt(r.best ?? v)}`;
+        } catch (e) { return esc(e.message); }
+      },
+    } : null;
+    const ctl = CZ.mount(k, $('#czBox'), rk);
     quitGame = () => ctl.destroy();
   } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }

@@ -25,7 +25,7 @@ export function playCounts(game, v) {
   if (game === 'blast') return BLAST_MAX - v >= PLAY_MIN.blast;
   return true;
 }
-export const MS_NAME = { home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '기자재 정리!', stair: '영상고 계단 오르기', film: '게퍼 10', blast: '카메라 가방 정리!' };
+export const MS_NAME = { home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '기자재 정리!', stair: '영상고 계단 오르기', film: '게퍼 10', blast: '카메라 가방 정리!', mine: '지뢰찾기', snake: '뱀 게임', n2048: '2048' };
 // 목표 기록: v = 서버에 저장되는 값(작을수록 좋음)
 const GOAL = {
   home: { t: '8,000m 넘게 달리기', ok: v => HOME_MAX - v >= 8000 },
