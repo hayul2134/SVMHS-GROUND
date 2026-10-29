@@ -2285,7 +2285,7 @@ async function playStair() {
       <small>${touchy ? '왼쪽·오른쪽을 눌러 출발' : `${esc(KM.keyName(KM.keysOf('stair').climb[0] || ''))} 오르기 · ${esc(KM.keyName(KM.keysOf('stair').turn[0] || ''))} 방향 바꾸기로 출발`}</small>`;
   };
   const R = STAIR.createStair(cv, {
-    sound,
+    sound, center: ffOn('stair-center', isDev(S.me)),
     onStart() { ov.hidden = true; scr.classList.remove('rdy'); runTk = S.me ? tkGet('stair') : null; },   // 실패하면 2초 뒤 한 번 더(tkGet)
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>종 게이지도 같이 멈췄어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
     onFrame(st) {
