@@ -1096,82 +1096,10 @@ const ROUTES = {
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
     const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now()).first();
     if (!tk) return err('게임을 다시 시작해 주세요');
-    const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
-    // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
-    if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
-    const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
-    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '컷' }[gk];
-    const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
-      : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
-      : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
-      : checkRounds(game, v, body.rounds, elapsed, ticket);
-    if (why) {
-      const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();
-      if (wait.n >= 30) return err('확인을 기다리는 기록이 많아요. 개발자가 확인할 때까지 조금만 기다려 주세요', 429);
-      const rounds = JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500);
-      await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
-        .bind(me.id, game, v, rounds, why.a.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
-      const mine = await myBest(db, me.id, game, rxOn(me));
-      return json({ ok: true, held: true, why: why.u, bad: why.bad || [], best: mine?.b ?? null });
-    }
-    if (game === 'reaction') {   // 판 평균보다 나쁘게 온 기록은 판 평균(+벌점)으로 바로잡음 — 예전 화면이 1.5초 넘는 판을 원래 값으로 평균 낸 경우(2026-10-28)
-      const r = body.rounds.map(x => Math.round(+x)), f = r.length === 6 ? r.pop() : 0;
-      const e = Math.min(Math.round(r.reduce((a, b) => a + b, 0) / 5) + rxPen(f), 1500);
-      if (v > e + 1) v = e;
-    }
-    const rx = rxOn(me), day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
-    const [prev, allPrev] = await Promise.all([
-      db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
-      myBest(db, me.id, game, rx).then(x => x || { b: null }),   // bests 표엔 첫 기록 전엔 줄이 없어 null(2026-10-29 '잠시 후 다시 시도해 주세요'로 첫 기록이 저장 안 되던 버그)
-    ]);
-    const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b, rx) : null;   // 기록 넣기 전 순위(축하 판단용)
-    if (!prev || v < prev.best) {
-      await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
-        ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, game, day, v, Date.now()).run();
-    }
-    const best = allPrev.b == null ? v : Math.min(allPrev.b, v);
-    const rank = await rankOf(db, game, best, rx);
-    const newBest = allPrev.b == null || v < allPrev.b;
-    tierMemo.clear();
-    // 히든 보상(2026-10-25 하율): 집(50,000m, home-score.js GOAL)에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
-    let first = false, arrived = false;
-    // 집에 도착한 판(5만 m 이상): 같은 판을 '밖으로 나가기'로 이어 달릴 수 있게 출발 시각이 같은 이어 달리기 티켓을 하나 더 줌 (2026-10-25 하율)
-    let next = null;
-    if (game === 'home' && v <= HOME_MAX - GOAL) {
-      next = randHex(16);
-      await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${next}`, Date.now() - elapsed, Date.now() + 6 * 3600e3).run();   // n = 원래 출발 시각, 6시간 유효
-    }
-    if (game === 'home' && v <= HOME_MAX - GOAL && !isAdm(me)) {
-      // 도착한 사람 모두: 칭호 '하교 성공' (처음 한 번만 표시)
-      arrived = (await ownEdit(db, me.id, o => { if (o[HOME_MARK] > 0) return false; o[HOME_MARK] = 1; })) === true;
-      const won = await db.prepare("INSERT INTO settings (k, v) VALUES ('home_first', ?1) ON CONFLICT (k) DO NOTHING RETURNING k")
-        .bind(JSON.stringify({ uid: me.id, at: Date.now() })).first();
-      if (won) {
-        first = true;
-        await ownEdit(db, me.id, o => { for (const h of HIDDEN) o[h.v] = 1; });
-        // 사이트 전체 알림: 관리자가 올린 공지가 떠 있지 않을 때만 띠 공지로 48시간 (보상 내용은 말하지 않음 — 히든)
-        try {
-          const cur = JSON.parse((await db.prepare("SELECT v FROM settings WHERE k = 'notice'").first())?.v || 'null');
-          if (!cur || (cur.until && cur.until < Date.now())) {
-            const n = { id: randHex(4), text: `${me.name}님이 처음으로 집에 도착했어요! (집에 가고 싶어! ${GOAL.toLocaleString('en-US')}m)`.slice(0, 120), body: '', tone: 'fun', link: '#game', at: Date.now(), until: Date.now() + 48 * 3600e3 };
-            await db.batch([
-              db.prepare("INSERT INTO settings (k, v) VALUES ('notice', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(n)),
-              db.prepare('INSERT INTO notices (id, text, tone, link, at, until, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)').bind(n.id, n.text, n.tone, n.link, n.at, n.until, n.body),
-            ]);
-          }
-        } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/home_first', method: 'NOTICE' }, e); }
-      }
-    }
-    // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
-    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 3,000점 밑이면 판 수에 안 셈(누적 미션에도 안 더함)
-    // 기자재 정리! 일반 모드도 주간 미션 판 수로 인정(gear-tier, 2026-10-28 하율) — 'gear' 한 판으로 셈, 최고 기록 깨기는 랭킹전만
-    const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
-    const mis = (!g.casual || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }) : null;
-    // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
-    const achGot = await achRun(db, me, { game, v, r: body.rounds, rank: g.casual ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() });
-    const ach = achGot.length && ffOn(ACH_FF, isAdm(me)) ? achGot : undefined;
-    // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, cheer: !g.casual && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    // 티켓을 쓴 뒤 서버 오류가 나면 기록이 사라지고 다시 보내도 '게임을 다시 시작해 주세요'가 됐음(2026-10-29 bests null.b로 약 150판 유실)
+    // → 오류가 나면 티켓을 되돌려 놓고 던짐 → 화면이 같은 티켓으로 한 번 더 보냄(saveScore)
+    try { return await scoreIn(db, me, body, game, v, ticket, g, tk); }
+    catch (e) { await db.prepare('INSERT OR IGNORE INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${ticket}`, tk.n, tk.reset).run().catch(() => {}); throw e; }
   }),
 
   // 게임 업적 목록(깃발 achv): ?u=아이디(없으면 나). 내 것은 열 때마다 소급 판정
@@ -1681,6 +1609,85 @@ async function tierOfUser(db, u, v2 = false, rx = rxOn(null), gt = gtFor(null)) 
 }
 
 // 순위 보기용(기록 저장 직후 축하 판단은 rankOf 그대로): 게임별 '사람마다 최고 기록' 정렬 목록을 데이터센터 공용 캐시 30초 → 순위는 이분 탐색(2026-10-29 읽기 절약)
+// POST score 본체(티켓 확인 뒤) — 오류 나면 위에서 티켓을 되돌림
+async function scoreIn(db, me, body, game, v, ticket, g, tk) {
+    const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
+    // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
+    if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
+    const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
+    const fv = { reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '컷' }[gk];
+    const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
+      : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
+      : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
+      : checkRounds(game, v, body.rounds, elapsed, ticket);
+    if (why) {
+      const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();
+      if (wait.n >= 30) return err('확인을 기다리는 기록이 많아요. 개발자가 확인할 때까지 조금만 기다려 주세요', 429);
+      const rounds = JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500);
+      await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
+        .bind(me.id, game, v, rounds, why.a.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
+      const mine = await myBest(db, me.id, game, rxOn(me));
+      return json({ ok: true, held: true, why: why.u, bad: why.bad || [], best: mine?.b ?? null });
+    }
+    if (game === 'reaction') {   // 판 평균보다 나쁘게 온 기록은 판 평균(+벌점)으로 바로잡음 — 예전 화면이 1.5초 넘는 판을 원래 값으로 평균 낸 경우(2026-10-28)
+      const r = body.rounds.map(x => Math.round(+x)), f = r.length === 6 ? r.pop() : 0;
+      const e = Math.min(Math.round(r.reduce((a, b) => a + b, 0) / 5) + rxPen(f), 1500);
+      if (v > e + 1) v = e;
+    }
+    const rx = rxOn(me), day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
+    const [prev, allPrev] = await Promise.all([
+      db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
+      myBest(db, me.id, game, rx).then(x => x || { b: null }),   // bests 표엔 첫 기록 전엔 줄이 없어 null(2026-10-29 '잠시 후 다시 시도해 주세요'로 첫 기록이 저장 안 되던 버그)
+    ]);
+    const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b, rx) : null;   // 기록 넣기 전 순위(축하 판단용)
+    if (!prev || v < prev.best) {
+      await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
+        ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, game, day, v, Date.now()).run();
+    }
+    const best = allPrev.b == null ? v : Math.min(allPrev.b, v);
+    const rank = await rankOf(db, game, best, rx);
+    const newBest = allPrev.b == null || v < allPrev.b;
+    tierMemo.clear();
+    // 히든 보상(2026-10-25 하율): 집(50,000m, home-score.js GOAL)에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
+    let first = false, arrived = false;
+    // 집에 도착한 판(5만 m 이상): 같은 판을 '밖으로 나가기'로 이어 달릴 수 있게 출발 시각이 같은 이어 달리기 티켓을 하나 더 줌 (2026-10-25 하율)
+    let next = null;
+    if (game === 'home' && v <= HOME_MAX - GOAL) {
+      next = randHex(16);
+      await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${next}`, Date.now() - elapsed, Date.now() + 6 * 3600e3).run();   // n = 원래 출발 시각, 6시간 유효
+    }
+    if (game === 'home' && v <= HOME_MAX - GOAL && !isAdm(me)) {
+      // 도착한 사람 모두: 칭호 '하교 성공' (처음 한 번만 표시)
+      arrived = (await ownEdit(db, me.id, o => { if (o[HOME_MARK] > 0) return false; o[HOME_MARK] = 1; })) === true;
+      const won = await db.prepare("INSERT INTO settings (k, v) VALUES ('home_first', ?1) ON CONFLICT (k) DO NOTHING RETURNING k")
+        .bind(JSON.stringify({ uid: me.id, at: Date.now() })).first();
+      if (won) {
+        first = true;
+        await ownEdit(db, me.id, o => { for (const h of HIDDEN) o[h.v] = 1; });
+        // 사이트 전체 알림: 관리자가 올린 공지가 떠 있지 않을 때만 띠 공지로 48시간 (보상 내용은 말하지 않음 — 히든)
+        try {
+          const cur = JSON.parse((await db.prepare("SELECT v FROM settings WHERE k = 'notice'").first())?.v || 'null');
+          if (!cur || (cur.until && cur.until < Date.now())) {
+            const n = { id: randHex(4), text: `${me.name}님이 처음으로 집에 도착했어요! (집에 가고 싶어! ${GOAL.toLocaleString('en-US')}m)`.slice(0, 120), body: '', tone: 'fun', link: '#game', at: Date.now(), until: Date.now() + 48 * 3600e3 };
+            await db.batch([
+              db.prepare("INSERT INTO settings (k, v) VALUES ('notice', ?1) ON CONFLICT (k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(n)),
+              db.prepare('INSERT INTO notices (id, text, tone, link, at, until, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)').bind(n.id, n.text, n.tone, n.link, n.at, n.until, n.body),
+            ]);
+          }
+        } catch (e) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/home_first', method: 'NOTICE' }, e); }
+      }
+    }
+    // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
+    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 3,000점 밑이면 판 수에 안 셈(누적 미션에도 안 더함)
+    // 기자재 정리! 일반 모드도 주간 미션 판 수로 인정(gear-tier, 2026-10-28 하율) — 'gear' 한 판으로 셈, 최고 기록 깨기는 랭킹전만
+    const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
+    const mis = (!g.casual || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
+    // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
+    const achGot = await achRun(db, me, { game, v, r: body.rounds, rank: g.casual ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
+    const ach = achGot.length && ffOn(ACH_FF, isAdm(me)) ? achGot : undefined;
+    // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
+    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, cheer: !g.casual && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+}
 async function rankOfC(db, game, best, rx = rxOn(null)) {
   if (rx) return rankOf(db, game, best, rx);   // bests 인덱스(game, best)로 나보다 좋은 사람만 셈 — 캐시 없이도 싸고 정확
   const bs = await cached(`bests:${game}:${rx ? 1 : 0}`, 30, async () => (await db.prepare(`SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid ORDER BY b`).bind(game).all()).results.map(r => r.b));

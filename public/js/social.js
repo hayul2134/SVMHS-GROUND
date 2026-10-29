@@ -2009,7 +2009,11 @@ async function saveScore(game, value, rounds) {
   if (tkKeep?.p === t) tkKeep = null;   // 이 티켓은 이제 씀 → 다음 판은 새로 받기
   const tk = await t;
   if (t && !tk) throw new Error(`게임을 시작할 때 서버에 등록되지 않아 이번 기록은 저장 못 했어요${tkErr ? ` (${tkErr})` : ''}. 다시 하기를 눌러 주세요`);
-  const r = await call('score', { game, value, rounds, ticket: tk });
+  // 서버 오류(5xx)·연결 끊김이면 같은 티켓으로 한 번 더 — 서버가 오류 때 티켓을 되돌려 둠(2026-10-29 첫 기록 null.b로 기록이 사라지던 일 재발 방지)
+  const send = () => call('score', { game, value, rounds, ticket: tk });
+  let r;
+  try { r = await send(); }
+  catch (e) { if (e.status && (e.status < 500 || e.status === 503)) throw e; await wait(1500); r = await send(); }
   if ($('#v-game').classList.contains('on')) renderGame();
   return r;
 }
@@ -2243,7 +2247,7 @@ async function playStair() {
   };
   const R = STAIR.createStair(cv, {
     sound,
-    onStart() { ov.hidden = true; scr.classList.remove('rdy'); runTk = S.me ? call('start', { game: 'stair' }).then(r => r.ticket).catch(() => '') : null; },
+    onStart() { ov.hidden = true; scr.classList.remove('rdy'); runTk = S.me ? tkGet('stair') : null; },   // 실패하면 2초 뒤 한 번 더(tkGet)
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>종 게이지도 같이 멈췄어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
     onFrame(st) {
       // 최적화(2026-10-28): 바뀐 것만 DOM에 씀(매 프레임 class·style을 다시 쓰면 스타일 재계산)
@@ -2338,7 +2342,7 @@ async function playFilm() {
     async seed() {   // 판마다 새 티켓 = 새 판
       runTk = null; tkWhy = ''; run++;
       if (!S.me) return null;
-      try { runTk = (await call('start', { game: 'film' })).ticket || null; } catch (e) { tkWhy = e.message; }
+      try { runTk = (await call('start', { game: 'film' }).catch(() => wait(2000).then(() => call('start', { game: 'film' })))).ticket || null; } catch (e) { tkWhy = e.message; }   // 실패하면 2초 뒤 한 번 더
       if (!runTk) toast('지금 판은 기록이 저장되지 않아요' + (tkWhy ? ' · ' + tkWhy : ''));
       return runTk ? seedOf(runTk) : null;
     },
@@ -2422,7 +2426,7 @@ async function playGear() {
   const R = GEAR.createGear(cv, {
     sound,
     // 시작 티켓은 판을 시작하는 순간 고른 방식으로 받음(2026-10-28: 일반 모드도 서버에 저장 → 'gearn' 순위, 티어 제외)
-    onStart() { ov.hidden = true; over = false; paintQ(); ticket = S.me ? call('start', { game: mode === 'rank' ? 'gear' : 'gearn' }).then(r => r.ticket).catch(() => '') : null; },
+    onStart() { ov.hidden = true; over = false; paintQ(); ticket = S.me ? tkGet(mode === 'rank' ? 'gear' : 'gearn') : null; },
     onQueue: paintQ,
     onScore: floatPt,
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
@@ -2784,7 +2788,7 @@ async function playHome() {
   // 다시 하기: 죽은 뒤 0.4초가 지나야 (누르고 있던 점프로 바로 다시 시작되지 않게). 새 판마다 서버 시작 티켓을 새로 받음
   const restart = () => {
     if (!over || choosing || performance.now() - deadAt < 400) return false;
-    over = false; ticket = S.me ? call('start', { game: 'home' }).then(r => r.ticket).catch(() => '') : null;
+    over = false; ticket = S.me ? tkGet('home') : null;
     R.reset(); R.jump(); return true;
   };
   // 아래 랭킹 (2026-10-25 하율: 버튼 없이 바로 보이게) — 왼쪽 친구 랭킹 · 오른쪽 전체 랭킹, 각 1~5등 + 순위 밖이면 내 순위
