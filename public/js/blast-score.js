@@ -26,7 +26,7 @@ export const RAMP = { from: 50, to: 300, mul: [-.7, .7, 2.2] };
 export const rampOf = n => Math.max(0, Math.min(1, (n - RAMP.from) / (RAMP.to - RAMP.from)));   // 0 = 처음 난이도 · 1 = 가장 어려움
 add('bat', 2.5, [[[0, 0]]]);                                  // 배터리 1칸
 add('lens', 2.5, [L(2), L(2, 1)]);                            // 렌즈 2칸
-add('sd', 2.5, [L(3), L(3, 1)]);                              // SD 카드 3칸
+add('sd', 2.5, [[[0, 0]]]);                                   // SD 카드 1칸(2026-10-29 하율 "SD를 1X1로" — 이전 3칸 직선)
 add('led', 1.6, [L(4), L(4, 1)]);                             // LED 바 4칸
 add('boom', 1, [L(5), L(5, 1)]);                              // 붐 마이크 5칸
 add('cam', 3.5, [R(2, 2)]);                                   // 카메라 2×2

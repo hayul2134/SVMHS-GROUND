@@ -27,7 +27,7 @@ export function createBlast(root, opt = {}) {
   const $ = k => root.querySelector(`[data-m="${k}"]`);
   const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), board = $('board'), sndBtn = $('snd'), stopBtn = $('stop');
   let b = newBoard(), st = { score: 0, combo: 0, miss: 0 }, rand = null, set = [0, 1, 2], used = [true, true, true], moves = [], lines = 0;
-  let state = 'ready', cs = 40, pad = 10, W = 0, H = 0, horiz = false, dpr = 1, drag = null, arts = new Map(), bagC = null, cellArt = [], fx = [], floats = [], raf = 0, dead = false, busy = false, t0 = 0, ac = null, born = [], endT = 0, held = -1, setAt = 0, stopT = 0;
+  let state = 'ready', cs = 40, pad = 10, W = 0, H = 0, horiz = false, dpr = 1, drag = null, arts = new Map(), cellArt = [], fx = [], floats = [], raf = 0, dead = false, busy = false, t0 = 0, ac = null, born = [], endT = 0, held = -1, setAt = 0, stopT = 0;
 
   /* ----- 소리(기본 꺼짐) ----- */
   function au() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } } if (ac.state === 'suspended') ac.resume().catch(() => {}); return ac; }
@@ -64,7 +64,7 @@ export function createBlast(root, opt = {}) {
     const dot = (x, y, r, f, st) => { g.beginPath(); g.arc(x, y, r, 0, 7); g.fillStyle = f; g.fill(); if (st) { g.lineWidth = Math.max(1, S * .04); g.strokeStyle = st; g.stroke(); } };
     const rr = (x, y, ww, hh, r, f) => { g.beginPath(); g.roundRect(x, y, ww, hh, r); g.fillStyle = f; g.fill(); };
     // 막대 모양 장비(렌즈·SD·LED 바·붐 마이크)는 가로로 그린 뒤 세로면 돌림 — X = 길이 방향, Y = 폭 방향(0~S)
-    const L = Math.max(w, h); if (['lens', 'sd', 'led', 'boom'].includes(k) && h > w) g.setTransform(0, 1, -1, 0, w * S, 0);
+    const L = Math.max(w, h); if (['lens', 'led', 'boom'].includes(k) && h > w) g.setTransform(0, 1, -1, 0, w * S, 0);
     const Y = S * .46;   // 몸통 가운데(아래 그림자 면 뺀 높이)
     if (k === 'bat') {
       rr(S * .36, S * .03, S * .28, S * .12, S * .04, D);
@@ -73,11 +73,11 @@ export function createBlast(root, opt = {}) {
       g.fillStyle = 'rgba(30,30,60,.5)'; for (let i = 0; i < 4; i++) g.fillRect(S * (.32 + i * .24), S * .2, S * .09, S * .54);
       const gx = L * S - S * .34, gr = g.createRadialGradient(gx - S * .05, Y - S * .1, S * .02, gx, Y, S * .32); gr.addColorStop(0, '#ffffff'); gr.addColorStop(.35, '#cfe8ff'); gr.addColorStop(1, '#3d6fc4');
       g.beginPath(); g.ellipse(gx, Y, S * .17, S * .33, 0, 0, 7); g.fillStyle = gr; g.fill(); g.lineWidth = Math.max(1, S * .05); g.strokeStyle = D; g.stroke();
-    } else if (k === 'sd') {
-      g.save(); g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.moveTo(L * S - S * .42, 0); g.lineTo(L * S, 0); g.lineTo(L * S, S * .4); g.closePath(); g.fill(); g.restore();
-      g.lineWidth = Math.max(1, S * .05); g.strokeStyle = dk; g.beginPath(); g.moveTo(L * S - S * .42 - m, m + lw * .5); g.lineTo(L * S - m - lw * .5, S * .42 + m); g.stroke();
-      [.2, .36, .52].forEach(y => rr(S * .14, S * y, S * .2, S * .1, S * .02, '#ffd25e'));
-      rr(S * .55, S * .22, L * S - S * 1.15, S * .48, S * .06, '#fff'); g.fillStyle = D; g.font = `900 ${S * .3}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('SD', S * .55 + (L * S - S * 1.15) / 2, S * .47);
+    } else if (k === 'sd') {   // SD 카드 1칸(2026-10-29 하율 "SD를 1X1로"): 오른쪽 위 모서리 깎임 + 금색 단자 + 라벨
+      g.save(); g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.moveTo(S * .64, 0); g.lineTo(S, 0); g.lineTo(S, S * .36); g.closePath(); g.fill(); g.restore();
+      g.lineWidth = Math.max(1, S * .05); g.strokeStyle = dk; g.beginPath(); g.moveTo(S * .62, m + lw * .5); g.lineTo(S - m - lw * .5, S * .38); g.stroke();
+      [.2, .33, .46].forEach(x => rr(S * x, S * .14, S * .09, S * .2, S * .02, '#ffd25e'));
+      rr(S * .2, S * .44, S * .6, S * .3, S * .05, '#fff'); g.fillStyle = D; g.font = `900 ${S * .2}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('SD', S * .5, S * .6);
     } else if (k === 'led') {
       rr(S * .22, S * .18, L * S - S * .44, S * .56, S * .08, D);
       g.fillStyle = '#fff6c2'; g.shadowColor = '#ffe27a'; g.shadowBlur = S * .12;
@@ -135,32 +135,6 @@ export function createBlast(root, opt = {}) {
   // 판 칸 하나 = 그 칸에 놓인 장비 그림의 해당 칸(a = {pi, dr, dc})
   function cell(a, x, y, d) { const A = art(a.pi, cs); ctx.drawImage(A.c, a.dc * A.S, a.dr * A.S, A.S, A.S, x, y, d, d); }
   function whole(pi, x, y, s) { const A = art(pi, s), [h, w] = dims(PIECES[pi].s); ctx.drawImage(A.c, x, y, w * s, h * s); }
-  /* ----- 카메라 가방(판 배경, 크기가 바뀔 때만 다시 그림): 남색 나일론 겉감 + 둘레 지퍼(손잡이 고리) + 안감 + 칸마다 폭신한 칸막이(박음질) ----- */
-  function bag() {
-    if (bagC || W < 1 || H < 1) return bagC;
-    const c = document.createElement('canvas'); c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
-    const g = c.getContext('2d'); g.scale(dpr, dpr);
-    const bx = BX(), by = BY(), B = cs * N, o = pad * .94, z = pad * .34;
-    g.fillStyle = '#1b2140'; g.beginPath(); g.roundRect(bx - o, by - o, B + o * 2, B + o * 2, pad * 1.1); g.fill();
-    g.strokeStyle = 'rgba(255,255,255,.1)'; g.lineWidth = 1; g.beginPath(); g.roundRect(bx - o + .5, by - o + .5, B + o * 2 - 1, B + o * 2 - 1, pad * 1.1); g.stroke();
-    const d = (o + z) / 2, x0 = bx - d, y0 = by - d, Ld = B + d * 2, th = Math.max(2, (o - z) * .62), step = Math.max(4, pad * .62), tw = step * .42;
-    g.strokeStyle = '#0f1329'; g.lineWidth = th * 1.25; g.beginPath(); g.roundRect(x0, y0, Ld, Ld, pad * .7); g.stroke();
-    g.fillStyle = '#8f98b3';
-    for (let t = pad * .9, i = 0; t < Ld - pad * .9; t += step, i++) { const a = (i % 2 ? .2 : -.2) * th; g.fillRect(x0 + t - tw / 2, y0 - th / 2 + a, tw, th); g.fillRect(x0 + t - tw / 2, y0 + Ld - th / 2 + a, tw, th); g.fillRect(x0 - th / 2 + a, y0 + t - tw / 2, th, tw); g.fillRect(x0 + Ld - th / 2 + a, y0 + t - tw / 2, th, tw); }
-    const sx = x0 + Ld - pad * 2.6;   // 지퍼 손잡이(오른쪽 위)
-    g.fillStyle = '#e6eaf4'; g.strokeStyle = '#0f1329'; g.lineWidth = 1; g.beginPath(); g.roundRect(sx - pad * .55, y0 - th * .85, pad * 1.1, th * 1.7, th * .4); g.fill(); g.stroke();
-    g.fillStyle = '#ffd25e'; g.beginPath(); g.roundRect(sx - pad * 1.9, y0 - th * .45, pad * 1.4, th * .9, th * .45); g.fill(); g.stroke();
-    g.fillStyle = '#2f3757'; g.beginPath(); g.roundRect(bx - z, by - z, B + z * 2, B + z * 2, pad * .55); g.fill();
-    for (let i = 0; i < N * N; i++) {
-      const x = bx + (i % N) * cs, y = by + Math.floor(i / N) * cs;
-      g.fillStyle = (i + Math.floor(i / N)) % 2 ? '#3a4369' : '#374064'; g.beginPath(); g.roundRect(x + 1.5, y + 1.5, cs - 3, cs - 3, cs * .2); g.fill();
-      const gr = g.createLinearGradient(0, y, 0, y + cs); gr.addColorStop(0, 'rgba(255,255,255,.07)'); gr.addColorStop(.5, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(0,0,20,.12)'); g.fillStyle = gr; g.beginPath(); g.roundRect(x + 1.5, y + 1.5, cs - 3, cs - 3, cs * .2); g.fill();
-    }
-    g.strokeStyle = 'rgba(205,215,245,.2)'; g.lineWidth = 1; g.setLineDash([Math.max(2, cs * .1), Math.max(2, cs * .09)]); g.beginPath();
-    for (let i = 1; i < N; i++) { g.moveTo(bx + i * cs, by + cs * .12); g.lineTo(bx + i * cs, by + B - cs * .12); g.moveTo(bx + cs * .12, by + i * cs); g.lineTo(bx + B - cs * .12, by + i * cs); }
-    g.stroke(); g.setLineDash([]);
-    return (bagC = c);
-  }
   const kindOf = i => PIECES[i].k;
   const dims = s => [Math.max(...s.map(x => x[0])) + 1, Math.max(...s.map(x => x[1])) + 1];
 
@@ -188,7 +162,7 @@ export function createBlast(root, opt = {}) {
     // 옆 버튼은 화면(게임 칸) 왼쪽 끝에 — 오른쪽 '내 기록' 칸과 좌우 짝(2026-10-29 하율 "그만하기부터 쭉 화면 옆으로")
     if (side) { const fl = root.closest('.fl') || root.parentElement; const dx = Math.round(fl.getBoundingClientRect().left - top0.getBoundingClientRect().left); tools.style.right = 'auto'; tools.style.left = dx + 'px'; tools.style.width = Math.max(130, Math.min(200, -dx - 16)) + 'px'; }
     else { tools.style.left = ''; tools.style.right = ''; tools.style.width = ''; }
-    arts.clear(); bagC = null;
+    arts.clear();
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     draw();
   }
@@ -232,13 +206,14 @@ export function createBlast(root, opt = {}) {
     const sk = Math.max(0, 1 - (now - shake.t) / 280) ** 2 * shake.a, sx0 = sk ? (Math.random() * 2 - 1) * sk : 0, sy0 = sk ? (Math.random() * 2 - 1) * sk : 0;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     ctx.setTransform(dpr, 0, 0, dpr, sx0 * dpr, sy0 * dpr);
-    // 카메라 가방(판)
-    const bg = bag(); if (bg) ctx.drawImage(bg, 0, 0, W, H);
-    if (st.combo > 1 && state !== 'ready') {   // 연속 정리 중: 안감 둘레가 색을 바꾸며 빛남(연속이 길수록 굵고 밝게)
-      const hu = (now / 6) % 360, lw = Math.min(2 + st.combo * .6, pad * .7), z = pad * .34;
-      ctx.save(); ctx.shadowColor = `hsl(${hu},95%,65%)`; ctx.shadowBlur = 8 + st.combo * 2; ctx.strokeStyle = `hsl(${hu},95%,68%)`; ctx.lineWidth = lw;
-      ctx.beginPath(); ctx.roundRect(bx - z, by - z, cs * 8 + z * 2, cs * 8 + z * 2, pad * .55); ctx.stroke(); ctx.restore();
+    // 판(2026-10-29 하율: 지퍼 가방 그림은 "오히려 이상하다" → 예전 판으로)
+    if (st.combo > 1 && state !== 'ready') {   // 연속 정리 중: 판 둘레가 색을 바꾸며 빛남(연속이 길수록 굵고 밝게)
+      const hu = (now / 6) % 360, lw = Math.min(3 + st.combo, 9);
+      ctx.save(); ctx.shadowColor = `hsl(${hu},95%,65%)`; ctx.shadowBlur = 10 + st.combo * 2; ctx.strokeStyle = `hsl(${hu},95%,68%)`; ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.roundRect(bx - pad * .5 - lw / 2, by - pad * .5 - lw / 2, cs * 8 + pad + lw, cs * 8 + pad + lw, pad + lw / 2); ctx.stroke(); ctx.restore();
     }
+    ctx.fillStyle = '#26315c'; ctx.beginPath(); ctx.roundRect(bx - pad * .5, by - pad * .5, cs * 8 + pad, cs * 8 + pad, pad); ctx.fill();
+    for (let i = 0; i < N * N; i++) { const x = bx + (i % N) * cs, y = by + Math.floor(i / N) * cs; ctx.fillStyle = (i + Math.floor(i / N)) % 2 ? '#2f3b6c' : '#2c3866'; ctx.beginPath(); ctx.roundRect(x + 1.5, y + 1.5, cs - 3, cs - 3, cs * .16); ctx.fill(); }
     const pv = drag && drag.x != null && state === 'play' ? preview(drag) : null;
     for (let i = 0; i < N * N; i++) {
       if (!b[i]) continue;
