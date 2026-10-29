@@ -13,7 +13,7 @@ import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../.
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
 import { randHex, sha256, hashPw, sameStr, cookieOf, clean } from '../../../lib/sec.js';
-import { setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr } from '../../../lib/db.js';
+import { ONLINE_MS, SEEN_MS, setup, getSettings, joinCodeOf, signupOpen, dmOpen, kstYmd, limited, countOf, ipKey, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, OLD_ADMIN_HANDLES, TEST_ACCOUNTS, TEST_GRADE, maskIp, logErr, RX_FROM } from '../../../lib/db.js';
 
 /* ===== 공용 목록 (public/js/social.js와 같게 유지) ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl','k:shark'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -202,7 +202,7 @@ async function devSession(req, db) {   // 보관된 개발자 세션이 아직 �
 const PUB = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, stickers, seen, insta, dm_pref, st_cur, st_best, st_last, st_total, st_shield, st_pf, st_title, st_rep, st_deco, gc_fx, gc_own, tier_last';
 const pub = u => u && ({
   ...fxPub(u), gcm: isAdm(u) || gcDone(gcOwn(u)), handle: u.handle, name: u.name, title: u.st_title || '', rep: u.st_rep || '', bio: u.bio, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, club: u.club, mood: u.mood, insta: u.insta || '',
-  stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < 150e3,
+  stickers: (() => { try { return JSON.parse(u.stickers); } catch { return []; } })(), online: Date.now() - (u.seen || 0) < ONLINE_MS,
 });
 // 개발자(관리자) 계정은 제한을 모두 풂(2026-10-23 하율 지시): 출석 보상 전부 해금 · 시계 칸·방패 최대 · 내 행동 횟수 제한 없음 ·
 // 밸런스 투표 없이 댓글·결과 보기 · DM 받기 설정·DM 끄기 무시. 단 상대가 개발자를 차단했으면 존중, 비밀번호 시도 제한은 보안상 유지
@@ -294,8 +294,12 @@ const OWNER_HANDLE = 'hayul2094';   // 하율 본인(학생용) 계정
 const NOT_DEV = `uid NOT IN (SELECT id FROM users WHERE handle = '${ADMIN_HANDLE}')`;
 // 반응속도 정식 출시 새 시즌(2026-10-28 하율 "기록 관련해서 초기화" + "일단 내 화면에만"): 깃발 rx-season이 켜진 사람에게는
 //   RX_FROM(10/29) 이전 반응속도 기록을 빼고 랭킹·티어·내 최고 기록을 계산. DB 기록은 지우지 않음(되돌릴 수 있게). 공지로 공개되면 모두에게 적용
-const RX_FROM = '20261029';
 const rxOn = me => ffOn('rx-season', me ? isAdm(me) : false);
+// 개인 최고 기록: 반응속도 새 시즌(rx)이면 bests 표 한 줄(트리거로 맞춰짐), 아니면 예전처럼 scores 묶기 — 2026-10-29 읽기 절약
+const myBest = (db, uid, game, rx) => rx ? db.prepare('SELECT best AS b FROM bests WHERE uid = ?1 AND game = ?2').bind(uid, game).first()
+  : db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(uid, game).first();
+// 게임별 '사람마다 최고 기록 하나' 묶음 (uid, best, at) — rx면 bests 그대로
+const BESTS = rx => rx ? `SELECT uid, best, at FROM bests WHERE game = ?1 AND ${NOT_DEV}` : `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid`;
 const RXQ = (rx, p = '') => rx ? ` AND (${p}game <> 'reaction' OR ${p}day >= '${RX_FROM}')` : '';
 const ND = rx => NOT_DEV + RXQ(rx);
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
@@ -325,7 +329,7 @@ const rwStk = u => [...unlockedOf(effBest(u), effTotal(u), 'sticker'), ...gcStk(
 const gcPub = u => ({ tix: isAdm(u) ? ALL_OPEN : u.gc_tix ?? 0, shard: u.gc_shard || 0, pity: u.gc_pity || 0, leg: u.gc_leg || 0, own: isAdm(u) ? Object.fromEntries(GACHA.flatMap(g => g.fx ? [[g.v, 1]] : [[g.v, 1], [g.v + SHN, 1]])) : gcOwn(u), fx: gcFx(u) });
 // 스티커만 보내는 댓글·DM('::r:이름'): 내가 받은 출석 보상 스티커만 허용 → 틀리면 오류 문구, 스티커가 아니면 null
 const stkErr = (me, text) => { const m = STK_MSG.exec(text); return m && !rwStk(me).includes(rwNorm(m[1])) ? '아직 받지 못한 스티커예요' : null; };
-const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', nfx: fxPub(u).nfx, mfx: fxPub(u).mfx, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < 150e3 });
+const card = u => u && ({ handle: u.handle, name: u.name, rep: u.st_rep || '', nfx: fxPub(u).nfx, mfx: fxPub(u).mfx, avatar: u.avatar, color: u.color, mood: u.mood, online: Date.now() - (u.seen || 0) < ONLINE_MS });
 const byHandle = (db, h) => db.prepare(`SELECT ${PUB} FROM users WHERE handle = ?1`).bind(String(h || '').toLowerCase()).first();
 
 const CCU_MS = 300e3;   // 동접 그래프 칸 = 5분
@@ -340,7 +344,7 @@ async function auth(req, db) {
     await db.prepare('UPDATE sessions SET exp = ?1 WHERE token = ?2').bind(Date.now() + KEEP_DAYS * 86400e3, await sha256(token)).run();
     RENEW.set(req, token);
   }
-  if (Date.now() - row.seen > 60e3) {
+  if (Date.now() - row.seen > SEEN_MS) {   // 2026-10-29 쓰기 절약: 60초 → 170초마다(60초 폴링 3번에 1번) — '접속 중'은 ONLINE_MS(4분) 안
     // 동접 그래프(관리자 모니터링): 5분 칸마다 '그 칸에 처음 들어온 사람'이면 칸 수 +1 — 사람당 5분에 한 번만 씀
     // seen을 조건부로 바꿔서(동시 요청이 둘 다 세는 것 방지) 실제로 바뀐 요청만 셈
     const now = Date.now(), r = await db.prepare('UPDATE users SET seen = ?1 WHERE id = ?2 AND seen = ?3').bind(now, row.id, row.seen).run();
@@ -377,10 +381,10 @@ async function bragBody(env, db, me, k) {
   }
   const g = GAMES[k];
   if (!g || (g.ff && !ffOn(g.ff, isAdm(me)))) return { e: '자랑할 수 없는 기록이에요' };
-  const rx = rxOn(me), m = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, k).first();
+  const rx = rxOn(me), m = await myBest(db, me.id, k, rx);
   if (m?.b == null) return { e: '이 게임 기록이 아직 없어요' };
   if (isAdm(me)) return { body: `::b:${k}:${m.b}:0:0` };
-  const r = await db.prepare(`SELECT SUM(b < ?2) + 1 AS r, COUNT(*) AS n FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid)`).bind(k, m.b).first();
+  const r = await db.prepare(`SELECT SUM(b < ?2) + 1 AS r, COUNT(*) AS n FROM (SELECT best AS b FROM (${BESTS(rx)}))`).bind(k, m.b).first();
   return { body: `::b:${k}:${m.b}:${r?.r || 0}:${r?.n || 0}` };
 }
 // 받는 사람(uid)이 보낸 사람(src)의 자랑을 가렸는지 (src 0 = 모두 가림)
@@ -695,7 +699,7 @@ const ROUTES = {
     const rx = rxOn(me), [fo, fb, bests, crowns] = await Promise.all([
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE a = ?1').bind(u.id).first(),
       db.prepare('SELECT COUNT(*) AS n FROM follows WHERE b = ?1').bind(u.id).first(),
-      db.prepare('SELECT game, MIN(best) AS best FROM scores WHERE uid = ?1' + RXQ(rx) + ' GROUP BY game').bind(u.id).all(),
+      rx ? db.prepare('SELECT game, best FROM bests WHERE uid = ?1').bind(u.id).all() : db.prepare('SELECT game, MIN(best) AS best FROM scores WHERE uid = ?1' + RXQ(rx) + ' GROUP BY game').bind(u.id).all(),
       topCrowns(db, u.id, rx),
     ]);
     const achRow = ffOn(ACH_FF, isAdm(me)) ? await db.prepare('SELECT ach FROM users WHERE id = ?1').bind(u.id).first() : null;
@@ -1071,7 +1075,8 @@ const ROUTES = {
   'POST start': needMe(async ({ db, me, body }) => {
     const game = String(body.game || '');
     if (!GAMES[game] || (GAMES[game].ff && !ffOn(GAMES[game].ff, isAdm(me)))) return err('bad game');   // 미리보기 게임은 개발자만
-    if (!isAdm(me) && await limited(db, 'gs:' + me.id, 60, 600)) return err('잠깐 쉬었다가 해요', 429);
+    // 시작 횟수 제한: 아직 안 쓴(살아 있는) 티켓이 60장 넘으면 잠깐 막음 — 예전 rl 카운터(시작마다 쓰기 3행) 대신 읽기로 셈(2026-10-29 쓰기 절약)
+    if (!isAdm(me) && (await db.prepare('SELECT COUNT(*) AS n FROM rl WHERE k >= ?1 AND k < ?2 AND reset > ?3').bind(`tk:${me.id}:`, `tk:${me.id};`, Date.now()).first()).n >= 60) return err('잠깐 쉬었다가 해요', 429);
     const ticket = randHex(16);
     await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + TICKET_TTL).run();
     return json({ ticket });
@@ -1099,7 +1104,7 @@ const ROUTES = {
       const rounds = JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500);
       await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)')
         .bind(me.id, game, v, rounds, why.a.slice(0, 200), Math.min(elapsed, 2e9), kstYmd(), Date.now()).run();
-      const mine = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rxOn(me))).bind(me.id, game).first();
+      const mine = await myBest(db, me.id, game, rxOn(me));
       return json({ ok: true, held: true, why: why.u, bad: why.bad || [], best: mine?.b ?? null });
     }
     if (game === 'reaction') {   // 판 평균보다 나쁘게 온 기록은 판 평균(+벌점)으로 바로잡음 — 예전 화면이 1.5초 넘는 판을 원래 값으로 평균 낸 경우(2026-10-28)
@@ -1110,7 +1115,7 @@ const ROUTES = {
     const rx = rxOn(me), day = kstYmd();   // 기록은 날짜별로 쌓되(관리용), 랭킹은 개인 최고 기록 하나로만 매김
     const [prev, allPrev] = await Promise.all([
       db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, game, day).first(),
-      db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first(),
+      myBest(db, me.id, game, rx),
     ]);
     const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b, rx) : null;   // 기록 넣기 전 순위(축하 판단용)
     if (!prev || v < prev.best) {
@@ -1178,7 +1183,7 @@ const ROUTES = {
     const game = url.searchParams.get('game'), scope = url.searchParams.get('scope') || 'all';
     if (!GAMES[game]) return err('bad game');
     const U = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen, u.st_rep, u.gc_fx, u.gc_own';
-    const rx = rxOn(me), BEST = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid`;
+    const rx = rxOn(me), BEST = BESTS(rx);
     if (scope === 'class') {   // 반 대항전: 반마다 최고 기록 상위 3명 평균
       const rows = (await db.prepare(`SELECT t.best, u.grade, u.cls FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE u.grade > 0 AND u.cls > 0 ORDER BY t.best`).bind(game).all()).results;
       const by = new Map();
@@ -1190,7 +1195,8 @@ const ROUTES = {
     let rows;
     if (scope === 'round' || scope === 'week') {   // round = 이번 라운드(2주, 점수·티어) · week = 이번 주(1주, 끝나면 1~3등 뽑기권)
       const wk = scope === 'week', rd = wk ? wkOf(kstYmd()) : rkOf(kstYmd()), cur = rd.n < 0 ? (wk ? wkRange(0) : rkRange(0)) : rd;
-      const BR = `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid`;
+      // 라운드(2주)는 라운드별 최고 기록 표(rbests)로 — ?2·?3(기간)은 같은 자리 맞추기용(2026-10-29 읽기 절약)
+      const BR = rx && !wk ? `SELECT uid, best, at FROM rbests WHERE game = ?1 AND r = ${+cur.n} AND ?2 <= ?3 AND ${NOT_DEV}` : `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid`;
       rows = (await db.prepare(`SELECT ${U}, t.best AS value, t.uid FROM (${BR}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 50`).bind(game, cur.from, cur.to).all()).results;
       const list = rows.map(r => ({ ...card(r), grade: r.grade, cls: r.cls, value: r.value, isMe: r.uid === me.id }));
       let mine = list.findIndex(x => x.isMe) + 1 || null, myValue = list.find(x => x.isMe)?.value ?? null;
@@ -1214,7 +1220,7 @@ const ROUTES = {
     let mine = list.findIndex(x => x.isMe) + 1 || null;
     let myValue = list.find(x => x.isMe)?.value ?? null;
     if (!mine && scope === 'all') {
-      const s = await db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first();
+      const s = await myBest(db, me.id, game, rx);
       if (s?.b != null) { myValue = s.b; mine = await rankOfC(db, game, s.b, rx); }
     }
     return json({ scope, list, mine, myValue });
@@ -1442,8 +1448,8 @@ const ROUTES = {
     const out = {}, rx = rxOn(me);
     await Promise.all(RANKED().map(async game => {
       const [top, ma] = await Promise.all([
-        db.prepare(`SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM scores s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND u.handle <> '${ADMIN_HANDLE}'${RXQ(rx, 's.')} ORDER BY s.best, s.at LIMIT 1`).bind(game).first(),
-        db.prepare('SELECT MIN(best) AS b FROM scores WHERE uid = ?1 AND game = ?2' + RXQ(rx)).bind(me.id, game).first(),
+        db.prepare(`SELECT u.handle, u.name, u.avatar, u.color, u.seen, u.mood, s.best FROM ${rx ? 'bests' : 'scores'} s JOIN users u ON u.id = s.uid WHERE s.game = ?1 AND u.handle <> '${ADMIN_HANDLE}'${rx ? '' : RXQ(rx, 's.')} ORDER BY s.best, s.at LIMIT 1`).bind(game).first(),
+        myBest(db, me.id, game, rx),
       ]);
       const best = ma?.b ?? null;
       out[game] = { top: top ? { ...card(top), value: top.best } : null, best, rank: best != null ? await rankOfC(db, game, best, rx) : null };
@@ -1566,7 +1572,7 @@ async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), u
   const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to: end } = rkRange(cur), to = upTo && upTo < end ? upTo : end;
   const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt + (to !== end ? ':u' + to : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
   if (to < from) return { n: cur, from, to, list: [], mode: tierMode(0), v2 };
-  if (v2) { const b = await cached('tb2:' + mk + ':' + from + to, 45, () => tierBoard2(db, cur, from, to, rx, gt)); tierMemo.set(mk, { at: Date.now(), b }); return b; }   // 데이터센터 공용 캐시 45초(2026-10-29 읽기 절약)
+  if (v2) { const b = await cached('tb2:' + mk + ':' + from + to, to !== end || cur < rd.n ? 1800 : 45, () => tierBoard2(db, cur, from, to, rx, gt)); tierMemo.set(mk, { at: Date.now(), b }); return b; }   // '어제까지' 판(to < end)·끝난 라운드는 지난 기록이라 30분   // 데이터센터 공용 캐시 45초(2026-10-29 읽기 절약)
   const acc = new Map();
   await Promise.all(RANKED().map(async game => {
     const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
@@ -1599,7 +1605,9 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   if (gOn) for (const k of ['gear', 'gearn']) if (!games.some(([x]) => x === k)) games.push([k, GAMES[k]]);
   const acc = new Map();
   await Promise.all(games.map(async ([game]) => {
-    const raw = (await db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)}`).bind(game, from, to).all()).results;
+    // 라운드 전체면 라운드별 최고 기록 표(rbests, 트리거로 자동)만 읽음 — 사람마다 한 줄. '어제까지'처럼 중간에서 자른 판만 날짜별 기록을 읽음(2026-10-29 읽기 절약)
+    const raw = (rx && to === rkRange(cur).to ? await db.prepare(`SELECT uid, best, at FROM rbests WHERE r = ?1 AND game = ?2 AND ${NOT_DEV}`).bind(cur, game).all()
+      : await db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)}`).bind(game, from, to).all()).results;
     const bu = new Map();
     for (const r of raw) { if (out.has(r.uid)) continue; const o = bu.get(r.uid); if (!o || r.best < o.b || (r.best === o.b && r.at < o.at)) bu.set(r.uid, { uid: r.uid, b: r.best, at: r.at }); }
     const rows = [...bu.values()].sort((a, b) => a.b - b.b || a.at - b.at);
@@ -1667,22 +1675,25 @@ async function tierOfUser(db, u, v2 = false, rx = rxOn(null), gt = gtFor(null)) 
 
 // 순위 보기용(기록 저장 직후 축하 판단은 rankOf 그대로): 게임별 '사람마다 최고 기록' 정렬 목록을 데이터센터 공용 캐시 30초 → 순위는 이분 탐색(2026-10-29 읽기 절약)
 async function rankOfC(db, game, best, rx = rxOn(null)) {
+  if (rx) return rankOf(db, game, best, rx);   // bests 인덱스(game, best)로 나보다 좋은 사람만 셈 — 캐시 없이도 싸고 정확
   const bs = await cached(`bests:${game}:${rx ? 1 : 0}`, 30, async () => (await db.prepare(`SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid ORDER BY b`).bind(game).all()).results.map(r => r.b));
   let lo = 0, hi = bs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bs[m] < best) lo = m + 1; else hi = m; }
   return lo + 1;
 }
 async function rankOf(db, game, best, rx = rxOn(null)) {   // 나보다 최고 기록이 좋은 사람 수 + 1
+  if (rx) return (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM bests WHERE game = ?1 AND best < ?2 AND ${NOT_DEV}`).bind(game, best).first()).r;
   return (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid) WHERE b < ?2`).bind(game, best).first()).r;
 }
 
 async function topCrowns(db, uid, rx = rxOn(null)) {   // 역대 1등인 게임 + 자세히(기록·언제부터·2등과 차이·참가 인원) — 2026-10-25 하율 요청
   const games = RANKED();
-  const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND ${ND(rx)} ORDER BY best, at LIMIT 1`).bind(game).first()));
+  const T = rx ? 'bests' : 'scores', W = rx ? NOT_DEV : ND(rx);
+  const tops = await Promise.all(games.map(game => db.prepare(`SELECT uid, best, at FROM ${T} WHERE game = ?1 AND ${W} ORDER BY best, at LIMIT 1`).bind(game).first()));
   const mine = games.map((g, i) => [g, tops[i]]).filter(([, t]) => t?.uid === uid);
   return Promise.all(mine.map(async ([g, t]) => {
     const [sec, cnt] = await Promise.all([
-      db.prepare(`SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} AND uid != ?2`).bind(g, uid).first(),
-      db.prepare(`SELECT COUNT(DISTINCT uid) AS n FROM scores WHERE game = ?1 AND ${ND(rx)}`).bind(g).first(),
+      db.prepare(`SELECT MIN(best) AS b FROM ${T} WHERE game = ?1 AND ${W} AND uid != ?2`).bind(g, uid).first(),
+      db.prepare(`SELECT COUNT(${rx ? '*' : 'DISTINCT uid'}) AS n FROM ${T} WHERE game = ?1 AND ${W}`).bind(g).first(),
     ]);
     return { g, best: t.best, at: t.at, gap: sec?.b != null ? sec.b - t.best : null, n: cnt?.n || 1 };
   }));

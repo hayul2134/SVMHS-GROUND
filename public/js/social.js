@@ -1080,7 +1080,7 @@ function paintHomeRank(tab, r) {   // 시간표 아래 따로 떨어진 랭킹 �
 }
 function startBuddies() {
   clearInterval(bdTimer);
-  bdTimer = setInterval(() => { if (!document.hidden && !idle() && S.me && (document.body.dataset.view || 'home') === 'home') loadBuddies(); }, 90000);
+  bdTimer = setInterval(() => { if (!document.hidden && !idle() && S.me && (document.body.dataset.view || 'home') === 'home') loadBuddies(); }, 180000);   // 2026-10-29 크레딧 절약: 90초 → 3분(접속 표시는 서버가 4분 기준)
   document.addEventListener('click', e => { const b = e.target.closest('[data-bdm]'); if (!b) return; e.preventDefault(); openPanel(b.dataset.bdm); });
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-rk]');

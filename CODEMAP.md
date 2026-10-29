@@ -235,3 +235,9 @@ npx wrangler@4 pages dev --port 8788
 - 도트 선명도: 계단 오르기 판 폭을 160도트 × 기기 픽셀 정수 배로 맞춤(social.js `snapScr`, 짝수 배 우선, 2배 미만이면 그대로) · 기자재 정리! 작은 장비 그림(`snapMini`, 52×28 정수 배) · 기자재 판 `setScale` 반올림→내림(캔버스가 화면보다 커져 도트가 사라지던 것) · 편집의 신 파형은 offsetWidth 기준(등장 애니메이션 중 재서 3% 작게 그려지던 것).
 - 겹침·잘림: `.hr-ov` 칸 폭을 판 폭으로(`grid-template-columns:minmax(0,100%)`, 기자재 시작 안내 양옆 잘림) · `.cal .e` 위아래 여백을 테두리로 + `overflow-wrap:anywhere`(세 번째 줄이 비치고 좁은 칸에서 글자가 반쯤 잘리던 것) · 띠 공지 `.notice`는 홈에서만(`body:not([data-view=home]) .notice{display:none}` — 다른 화면에선 달력 이전/다음 버튼 등을 덮었음), 폰(560px 이하)에선 띠가 자리를 차지(홈 인사 말풍선 덮던 것) · `#gcBox` 아래 여백(메시지 버튼에 안내 글이 가림).
 - body `data-view`는 app.js `go()`가 바로 붙임(index.html 기본 `home`) — social.js가 늦게 떠도 CSS가 씀.
+
+## 2026-10-29 Cloudflare 사용량 절약 2차 (하율 "코드 싹다 개선해서 크레딧 많이 안 쓰게")
+- **경로별 계량**: `_middleware.js`가 요청마다 경로 키('GET s/me' 등)로 `meterDB(db, route)` → `lib/meter.js`가 [요청 수, 읽은 행, 쓴 행]을 모아 60초마다 `usage_rt`(하루 한 줄 JSON)에 더함. 관리자 `GET status`의 `routes`(읽은 행 많은 순). 새 기능 뒤엔 여기서 많이 읽는 API를 먼저 볼 것.
+- **bests / rbests 표(v45, 트리거)**: `scores`에 넣기·고치기·지우기 때 SQLite 트리거(`scores_bi/bu/bd`)가 사람마다 게임별 최고 기록(`bests`)과 라운드별 최고 기록(`rbests`, r = 라운드 번호 — `lib/db.js RK_SQL`, `RK.start·days`를 바꾸면 SCHEMA_V 올려 트리거 다시 만들 것)을 자동으로 맞춤. 반응속도는 `RX_FROM`(lib/db.js로 옮김)부터만. 전체 랭킹·순위(`rankOf`)·게임 1등(`games`)·역대 1등(`topCrowns`)·프로필 최고 기록·자랑·라운드 랭킹·티어(`tierBoard2`, 라운드 전체일 때)는 이 표만 읽음 — 읽는 행이 '날짜별 기록 전체'에서 '참가자 수'로. rx 깃발이 꺼진 경우만 예전 scores 묶기(`myBest`·`BESTS`). `scores_gub`·`scores_top` 인덱스는 지움. 티어 '어제까지' 판·끝난 라운드는 캐시 30분.
+- **쓰기 절약**: `seen`은 `SEEN_MS`(170초)마다만 씀(이전 60초), '접속 중'은 `ONLINE_MS`(4분). 게임 시작(`POST start`)의 횟수 제한은 rl 카운터 대신 살아 있는 티켓 수(60장) 읽기로 셈 — 시작 한 번 쓰기 5행 → 2행.
+- **읽기 절약**: `schoolDays`는 워커 메모리에 있는 달이면 school_off를 안 읽음. 홈 친구 카드 새로 고침 90초 → 3분.

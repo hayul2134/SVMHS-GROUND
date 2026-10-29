@@ -3,7 +3,7 @@ import { cached } from '../../../lib/cache.js';
 // 로그인: 사이트에서 관리자 계정(lib/db.js ADMIN_HANDLE)으로 로그인 → 비밀번호 재확인(/api/s/admin-pass) → 12시간 관리자 세션(HttpOnly 쿠키, 경로 /api/admin만).
 // DM 내용은 '신고된 메시지와 그 앞뒤'만 볼 수 있다(학생 사생활 보호). 모든 조치는 admin_log에 남는다.
 import { randHex, sha256, hashPw, cookieOf as readCookie, clean } from '../../../lib/sec.js';
-import { setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, logErr } from '../../../lib/db.js';
+import { ONLINE_MS, setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, logErr } from '../../../lib/db.js';
 import { previewBalance, balDay, isBalDay } from '../../../lib/balance.js';
 
 const COOKIE = 'sg_a';
@@ -33,7 +33,7 @@ const NA = `handle <> '${ADMIN_HANDLE}' AND is_test = 0`;   // 학과별 테스�
 const U = 'id, handle, name, bio, avatar, color, grade, cls, club, mood, created, seen, insta';
 const userOf = (db, h) => db.prepare(`SELECT ${U} FROM users WHERE handle = ?1`).bind(String(h || '').trim().toLowerCase()).first();
 const banOf = (db, uid) => db.prepare('SELECT until, reason, at FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(uid, Date.now()).first();
-const row = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, created: u.created, seen: u.seen, online: Date.now() - (u.seen || 0) < 150e3 });
+const row = u => u && ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, created: u.created, seen: u.seen, online: Date.now() - (u.seen || 0) < ONLINE_MS });
 
 // DB 저장 가능 여부: 한 줄 써 보고 판단하되 5분에 한 번만 (쓰기 한도 절약). 나이스 연결 확인은 2분에 한 번만
 let probeAt = 0, probeOk = true, neisAt = 0, neisLast = null;
@@ -112,7 +112,7 @@ const ROUTES = {
     const r = await db.batch([
       one(`SELECT COUNT(*) AS n FROM users WHERE ${NA}`),
       one(`SELECT COUNT(*) AS n FROM users WHERE seen >= ?1 AND ${NA}`).bind(t0),
-      one(`SELECT COUNT(*) AS n FROM users WHERE seen >= ?1 AND ${NA}`).bind(now - 150e3),
+      one(`SELECT COUNT(*) AS n FROM users WHERE seen >= ?1 AND ${NA}`).bind(now - ONLINE_MS),
       one(`SELECT COUNT(*) AS n FROM users WHERE created >= ?1 AND ${NA}`).bind(t0),
       one('SELECT COUNT(*) AS n FROM messages WHERE at >= ?1').bind(t0),
       one('SELECT COUNT(*) AS n FROM scores WHERE day = ?1').bind(day),
@@ -159,7 +159,7 @@ const ROUTES = {
     const TABLES = ['users', 'sessions', 'follows', 'blocks', 'messages', 'scores', 'reports', 'bans', 'meal_votes', 'balance_votes', 'admin_log', 'rl', 'errs'];
     const P = 'u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen';
     const r = await db.batch([
-      db.prepare(`SELECT handle, name, avatar, color, grade, cls, seen FROM users u WHERE seen >= ?1 AND ${NA} ORDER BY seen DESC LIMIT 100`).bind(now - 150e3),
+      db.prepare(`SELECT handle, name, avatar, color, grade, cls, seen FROM users u WHERE seen >= ?1 AND ${NA} ORDER BY seen DESC LIMIT 100`).bind(now - ONLINE_MS),
       db.prepare(`SELECT SUM(seen >= ?1) AS h, SUM(seen >= ?2) AS w, SUM(seen >= ?3) AS m FROM users WHERE ${NA}`).bind(now - 3600e3, now - 7 * 86400e3, now - 30 * 86400e3),
       db.prepare('SELECT COUNT(*) AS n FROM sessions WHERE exp > ?1').bind(now),
       // 최근 활동 (가입 · 게임 기록 · 팔로우 · 신고 · 관리 조치) — 각 20개씩 모아 시간순
@@ -183,7 +183,7 @@ const ROUTES = {
     ]);
     if (Math.random() < 0.02) await db.prepare('DELETE FROM ccu WHERE b < ?1').bind(Math.floor((now - 31 * 86400e3) / C)).run().catch(() => {});
     const rows = i => r[i].results, one = i => r[i].results[0];
-    const card = u => ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, seen: u.seen, online: now - (u.seen || 0) < 150e3 });
+    const card = u => ({ handle: u.handle, name: u.name, avatar: u.avatar, color: u.color, grade: u.grade, cls: u.cls, seen: u.seen, online: now - (u.seen || 0) < ONLINE_MS });
     const feed = [3, 4, 5, 6].flatMap(rows).sort((a, b) => b.at - a.at).slice(0, 40).map(x => ({ k: x.k, at: x.at, user: card(x), x: x.x }));
     const hours = i => { const a = Array(24).fill(0); for (const x of rows(i)) a[x.h] = x.n; return a; };
     const dbWrite = await canWrite(db);
@@ -224,7 +224,7 @@ const ROUTES = {
     const rows = (await db.prepare(`SELECT f.id, f.kind, f.body, f.at, f.done, f.note, f.rd, (SELECT COUNT(*) FROM feedback_img i WHERE i.fid = f.id) AS imgs, u.handle, u.name, u.avatar, u.color, u.grade, u.cls, u.seen
       FROM feedback f LEFT JOIN users u ON u.id = f.uid WHERE f.done ${open ? '= 0' : '> 0'} ORDER BY f.id DESC LIMIT 200`).all()).results;
     const cnt = await db.prepare('SELECT SUM(done = 0) AS open, SUM(done = 0 AND rd = 0) AS unread, COUNT(*) AS total FROM feedback').first();
-    return json({ list: rows.map(x => ({ id: x.id, kind: x.kind, body: x.body, at: x.at, done: x.done, rd: x.rd ? 1 : 0, note: x.note, imgs: x.imgs || 0, user: x.handle ? { handle: x.handle, name: x.name, avatar: x.avatar, color: x.color, grade: x.grade, cls: x.cls, online: Date.now() - (x.seen || 0) < 150e3 } : null })), open: cnt.open || 0, unread: cnt.unread || 0, total: cnt.total || 0 });
+    return json({ list: rows.map(x => ({ id: x.id, kind: x.kind, body: x.body, at: x.at, done: x.done, rd: x.rd ? 1 : 0, note: x.note, imgs: x.imgs || 0, user: x.handle ? { handle: x.handle, name: x.name, avatar: x.avatar, color: x.color, grade: x.grade, cls: x.cls, online: Date.now() - (x.seen || 0) < ONLINE_MS } : null })), open: cnt.open || 0, unread: cnt.unread || 0, total: cnt.total || 0 });
   },
   // 의견 사진: GET /api/admin/fbimg/<의견 id>/<번호> → 이미지 그대로 (관리자 화면 <img>에서 씀)
   'GET fbimg': async ({ db, arg }) => {
