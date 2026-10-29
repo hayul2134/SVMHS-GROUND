@@ -36,6 +36,7 @@ export function html(touchy) {
         <i class="ctm-gp" id="ctGp" hidden><b id="ctGpT"></b></i>
         <div class="ctm-hs" id="ctHs"><i class="ctm-hd"></i></div>
         <i class="ctm-flash" id="ctFl"></i>
+        <div class="ctm-zm" id="ctZm" hidden></div>
       </div>
     </div>
     <p class="ctm-msg" id="ctMsg" aria-live="polite"></p>
@@ -45,10 +46,10 @@ export function html(touchy) {
   </div>`;
 }
 
-// root: html()을 넣은 영역. o: { sound, onSound(on), onDone(sum, errs, signed) }. 반환: 그만두기 함수
+// root: html()을 넣은 영역. o: { sound, zoom, onSound(on), onDone(sum, errs, signed) }. zoom = 가까운 컷 확대(깃발 cut-zoom). 반환: 그만두기 함수
 export function run(root, o) {
   const $ = s => root.querySelector(s);
-  const ar = $('#ctAr'), hs = $('#ctHs'), mk = $('#ctMk'), clA = $('#ctClA'), clB = $('#ctClB'), wv = $('#ctWv'), ov = $('#ctOv'), msg = $('#ctMsg'), btn = $('#ctBtn'), gp = $('#ctGp'), fl = $('#ctFl');
+  const ar = $('#ctAr'), hs = $('#ctHs'), mk = $('#ctMk'), clA = $('#ctClA'), clB = $('#ctClB'), wv = $('#ctWv'), ov = $('#ctOv'), msg = $('#ctMsg'), btn = $('#ctBtn'), gp = $('#ctGp'), fl = $('#ctFl'), zm = $('#ctZm');
   let round = 0, sum = 0, raf = 0, t0 = 0, target = 0, dur = 0, state = 'intro', alive = true, sound = !!o.sound, actx = null, frac = 0;
   // 판정 시각 맞추기(2026-10-27 판정 패치): requestAnimationFrame의 시각은 '그리기 시작한 때'이고 실제로 화면에 보이는 건 한 프레임 뒤.
   // 그래서 플레이헤드를 '화면에 보일 때의 시각'(지금 + 1프레임) 위치에 그림 → 눈에 보이는 위치 = 판정에 쓰는 시각. 프레임 간격은 기기마다 달라(60·120Hz) 직접 잼.
@@ -95,7 +96,7 @@ export function run(root, o) {
     state = 'wait'; dur = DUR[round]; target = dur * (.35 + Math.random() * .5);
     const f = target / dur;
     ar.style.setProperty('--tg', (f * 100).toFixed(3) + '%');
-    clA.classList.remove('cut', 'gone'); clB.classList.remove('cut'); clB.hidden = true; clA.style.width = ''; gp.hidden = true; mk.className = 'ctm-mk';
+    clA.classList.remove('cut', 'gone'); clB.classList.remove('cut'); clB.hidden = true; clA.style.width = ''; gp.hidden = true; zm.hidden = true; zm.innerHTML = ''; mk.className = 'ctm-mk';
     $('#ctClN').textContent = CLIPS[round][0]; $('#ctAn').textContent = CLIPS[round][1];
     const sc = SCENE[round]; ar.style.setProperty('--c1', sc[0]); ar.style.setProperty('--c2', sc[1]); ar.style.setProperty('--cb', sc[2]); ar.classList.toggle('last', round === 4);
     root.querySelectorAll('#ctRd li').forEach((li, i) => li.classList.toggle('now', i === round));
@@ -120,6 +121,29 @@ export function run(root, o) {
       if (performance.now() - t0 >= dur) { state = 'over'; setHead(1); $('#ctTc').textContent = tc(dur); later(() => { if (state === 'over') stop(dur, true); }, GRACE); }
     }
     if (state !== 'done') raf = requestAnimationFrame(loop);
+  };
+
+  // 가까운 컷 확대(2026-10-29 하율 "똑같이 정중앙처럼 보였는데 5ms·2ms로 다르게 나온다" → 얼마나 가까웠는지 확대해서 보여 줌, 깃발 cut-zoom)
+  // 타임라인 1px ≈ 2~3.5ms, 화면 1프레임(60Hz 16.7ms) 동안 플레이헤드가 5~9px씩 건너뜀 → 몇 ms 차이는 눈으로 구분 불가. 판정은 누른 순간(timeStamp)이라 정확함.
+  // 컷 지점 ±W ms 구간을 크게 펴서: 빨간 선 = 컷 지점, 파란 선 = 내가 자른 곳, 노란 칸 = 화면 1프레임(이 안은 화면에서 똑같이 보임)
+  const zoom = (d, k) => {
+    const W = Math.abs(d) <= 15 ? 20 : 60, aw = ar.clientWidth, bw = Math.min(aw - 12, Math.max(220, aw * .62)), tx = target / dur * aw;
+    const left = Math.max(6, Math.min(aw - bw - 6, tx - bw / 2)), mag = Math.max(2, Math.round((bw - 16) / (2 * W) / (aw / dur)));
+    const fr = Math.min(34, Math.max(6, fi)), P = v => 50 + v / W * 50, dr = Math.round(d);
+    zm.className = 'ctm-zm ' + k; zm.style.left = left + 'px'; zm.style.width = bw + 'px'; zm.style.transformOrigin = `${(tx - left).toFixed(1)}px 50%`;
+    zm.innerHTML = `<p class="zm-h"><b>확대 ×${mag}</b><span>${dr === 0 ? '딱 맞게!' : side(dr)}</span></p>
+      <div class="zm-r"><div class="zm-sc"><i class="zm-fr"></i><i class="zm-tk"></i>${dr ? '<i class="zm-gp"></i>' : ''}<i class="zm-t"></i><i class="zm-c"></i></div>
+      ${[-W, -W / 2, 0, W / 2, W].map(v => `<span class="zm-l" data-v="${v}">${v > 0 ? '+' : ''}${v}${Math.abs(v) === W ? 'ms' : ''}</span>`).join('')}
+      <b class="zm-v j-${k}">${dr > 0 ? '+' : ''}${dr}ms</b></div>
+      <p class="zm-f"><i></i>화면 1프레임 ${fr.toFixed(1)}ms — 이 안은 눈으로는 똑같아 보여요</p>`;
+    const q = s => zm.querySelector(s), pc = v => v.toFixed(3) + '%';
+    q('.zm-sc').style.setProperty('--n', 2 * W);
+    const f = q('.zm-fr'); f.style.left = pc(P(-fr / 2)); f.style.width = pc(fr / (2 * W) * 100);
+    if (dr) { const g = q('.zm-gp'); g.style.left = pc(P(Math.min(d, 0))); g.style.width = pc(Math.abs(d) / W * 50); }
+    q('.zm-c').style.left = pc(P(d));
+    zm.querySelectorAll('.zm-l').forEach(el => el.style.left = pc(P(+el.dataset.v)));
+    q('.zm-v').style.left = pc(Math.max(10, Math.min(90, P(d))));
+    zm.hidden = false;
   };
 
   const stop = (tAt, end) => {
@@ -149,10 +173,12 @@ export function run(root, o) {
         sp.style.left = (cf * 100).toFixed(2) + '%'; sp.style.setProperty('--dx', (Math.random() * 2 - 1) * (40 + streak * 14) + 'px'); sp.style.setProperty('--dy', -(20 + Math.random() * (40 + streak * 10)) + 'px');
         sp.style.animationDelay = (Math.random() * 80) + 'ms'; ar.append(sp); setTimeout(() => sp.remove(), 900); } }
     }
+    const zoomed = o.zoom && !end && e <= 50;   // PERFECT·GREAT(눈으로 차이가 안 보이는 거리)만
+    if (zoomed) later(() => zoom(tAt - target, k), 140);
     sfx(k);
     round++;
-    if (round >= 5) { state = 'done'; cancelAnimationFrame(raf); btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice(), cuts.slice()), 900); }
-    else later(start, NEXT);
+    if (round >= 5) { state = 'done'; cancelAnimationFrame(raf); btn.disabled = true; off(); later(() => o.onDone(sum, errs.slice(), signed.slice(), cuts.slice()), zoomed ? 2000 : 900); }
+    else later(start, zoomed ? NEXT + 1100 : NEXT);
   };
 
   // 누른 시각 = 이벤트가 생긴 순간(timeStamp, performance.now와 같은 시계). 옛 Safari처럼 다른 시계를 주거나 이상하면 지금 시각으로

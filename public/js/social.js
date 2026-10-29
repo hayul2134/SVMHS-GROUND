@@ -2201,7 +2201,7 @@ async function playCut2() {
   cb?.insertAdjacentHTML('afterend', RE_ROW.replace('class="prow"', 'class="prow re-alt"'));
   cb?.querySelector('.ctm-snd')?.insertAdjacentHTML('beforebegin', RE_BTN.replace('class="prestart"', 'class="prestart re-in"'));
   const quit = CUT.run(area, {
-    sound: store.get('cut_snd', false), onSound: on => store.set('cut_snd', on),
+    sound: store.get('cut_snd', false), zoom: ffOn('cut-zoom', isDev(S.me)), onSound: on => store.set('cut_snd', on),
     onDone: (sum, errs, signed, cuts) => { finish('cut', Math.min(sum, 6000), CUT.resultHtml(sum, errs, signed, cuts), errs); CUT.paintReplay($('#parea')); },
   });
   quitGame = quit;
