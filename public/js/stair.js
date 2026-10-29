@@ -181,13 +181,19 @@ export function createStair(cv, o = {}) {
   let skyQ = null, skyBands = [], skyTop = '#7cc8ff', winSky = '#9fd8ff', winQ = null, lastStepAt = 0, overT = 0, lowT = 0, recent = [], xs = [], run = 0, runDir = 1, px = 0, py = 0, fromX = 0, fromY = 0, moveT = 1, fall = null, shake = 0, parts = [], camX = 0, camY = 0, t = 0, flash = 0, stepN = 0, shoot = null;
   const stars = Array.from({ length: 60 }, (_, i) => [hash(i * 3 + 1) * W, hash(i * 3 + 2) * 400, hash(i * 3 + 3)]);
 
-  function more(n) {   // 같은 방향으로 1~6칸 이어지다 꺾임(처음 한 칸은 항상 오른쪽 → 첫 '오르기'가 실패하지 않게)
+  // 같은 방향 길이(칸)를 먼저 뽑고 그만큼 이어지다 꺾임(처음 한 칸은 항상 오른쪽 → 첫 '오르기'가 실패하지 않게)
+  // 2026-10-29 하율 "직선 파트가 얼마 없어서 너무 힘들대": 예전(칸마다 22~38% 꺾임, 최대 6칸 · 평균 약 2.9칸)
+  //   → 평균 약 4.6칸, 1칸 지그재그는 드물게, 가끔 8~12칸 긴 직선(숨 돌리는 구간)
+  const RUNS = [[1, 6], [2, 12], [3, 17], [4, 18], [5, 15], [6, 11], [7, 8], [8, 5], [9, 3], [10, 2], [11, 2], [12, 1]];
+  const RUN_SUM = RUNS.reduce((a, r) => a + r[1], 0);
+  const pickRun = () => { let v = rnd() * RUN_SUM; for (const [n, w] of RUNS) if ((v -= w) < 0) return n; return 4; };
+  let runLen = 0;
+  function more(n) {
     while (xs.length < n) {
       const i = xs.length;
       if (i === 0) { xs.push(0); continue; }
-      if (i === 1) { xs.push(1); runDir = 1; run = 1; continue; }
-      const turnP = run >= 6 ? 1 : run <= 1 ? .22 : .38;
-      if (rnd() < turnP) { runDir = -runDir; run = 0; }
+      if (i === 1) { xs.push(1); runDir = 1; run = 1; runLen = Math.max(2, pickRun()); continue; }
+      if (run >= runLen) { runDir = -runDir; run = 0; runLen = pickRun(); }
       xs.push(xs[i - 1] + runDir); run++;
     }
   }
