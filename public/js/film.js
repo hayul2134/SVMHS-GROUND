@@ -43,7 +43,7 @@ export function createFilm(root, opt = {}) {
      한 칸 = 비스듬히 본 게퍼 테이프 롤: 옆면 두께 + 앞면 감긴 결 + 갈색 종이 심 + 바닥에 풀린 끝. 숫자는 심 가운데(밝은 칸이라 화이트/다크 모두 진한 글자) */
   const isDark = () => document.documentElement.dataset.theme === 'dark';
   const TX = .06, TY = .06;   // 선택 판정(span) 여백
-  const RC = { x: .45, y: .45, R: .37 };   // 롤 앞면 가운데·반지름(칸 비율) — 숫자도 이 가운데에
+  const RC = { x: .43, y: .48, R: .37 };   // 롤 앞면 가운데·반지름(칸 비율) — 숫자도 이 가운데에
   let seg = null, tiles = null;
   function makeFrame() {
     const S = Math.round(cell * dpr), dk = isDark(), mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; return c; };
@@ -51,8 +51,6 @@ export function createFilm(root, opt = {}) {
     seg = mk(); { const g = seg.getContext('2d'); g.fillStyle = dk ? 'rgba(255,255,255,.035)' : 'rgba(60,80,140,.045)'; g.beginPath(); g.ellipse(S * .5, S * .86, S * .36, S * .07, 0, 0, 7); g.fill(); }   // 롤이 있던 자리(바닥 자국)
     const tile = (tape, side) => {
       const c = mk(), t = c.getContext('2d');
-      // 바닥에 풀린 끝(롤 아래에서 왼쪽으로)
-      t.fillStyle = side; t.beginPath(); t.moveTo(cx + S * .1, cy + R - S * .02); t.lineTo(S * .04, cy + R + S * .045); t.lineTo(S * .06, cy + R + S * .115); t.lineTo(cx + S * .12, cy + R + S * .05); t.closePath(); t.fill();
       // 옆면(두께): 뒤쪽 원 + 이음
       t.fillStyle = side; t.beginPath(); t.arc(cx + d, cy - d * .35, R, 0, 7); t.fill();
       t.beginPath(); t.moveTo(cx, cy - R); t.lineTo(cx + d, cy - d * .35 - R); t.lineTo(cx + d + R, cy - d * .35); t.lineTo(cx + R, cy); t.closePath(); t.fill();
@@ -66,8 +64,9 @@ export function createFilm(root, opt = {}) {
       t.fillStyle = '#fbf7ee'; t.beginPath(); t.arc(cx + S * .008, cy - S * .004, r * .84, 0, 7); t.fill();
       return c;
     };
-    tiles = dk ? { n: tile('#6e7894', '#4c5470'), s: tile('#4f86e6', '#2f5fb8'), k: tile('#45b85a', '#2c8a40') }
-               : { n: tile('#a7afc2', '#7d869b'), s: tile('#4f86e6', '#3263bf'), k: tile('#45b85a', '#2d8c41') };
+    // 기본 = 초록 게퍼(2026-10-29 하율), 고른 것 = 파랑, 합 10 = 노랑
+    tiles = dk ? { n: tile('#3c9a4e', '#276f37'), s: tile('#4f86e6', '#2f5fb8'), k: tile('#f2b234', '#c48712') }
+               : { n: tile('#46b55a', '#2d8c41'), s: tile('#4f86e6', '#3263bf'), k: tile('#f4b73c', '#c98a12') };
     tiles.dk = dk; frame = tiles.n;
   }
   function fit() {
@@ -109,7 +108,7 @@ export function createFilm(root, opt = {}) {
       if (!v) continue;
       const d = cell * (on ? 1.05 : 1);
       ctx.drawImage(on ? (ok ? tiles.k : tiles.s) : tiles.n, x + (cell - d) / 2, y + (cell - d) / 2, d, d);
-      if (!hide) { ctx.fillStyle = on ? (ok ? '#1f7a2a' : '#2457b8') : INK; ctx.fillText(v, x + (cell - d) / 2 + d * RC.x, y + (cell - d) / 2 + d * RC.y + cell * .015); }   // 심이 밝아서 다크에서도 진한 글자
+      if (!hide) { ctx.fillStyle = on ? (ok ? '#8a5600' : '#2457b8') : INK; ctx.fillText(v, x + (cell - d) / 2 + d * RC.x, y + (cell - d) / 2 + d * RC.y + cell * .015); }   // 심이 밝아서 다크에서도 진한 글자
     }
     const now = performance.now();
     pops = pops.filter(p => now - p.t < 360);
