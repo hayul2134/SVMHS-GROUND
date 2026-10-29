@@ -2342,8 +2342,8 @@ async function playFilm() {
     },
     onOver(res) {
       const no = run, tk = runTk; runTk = null;
-      if (res.n > store.get('film_best', 0)) store.set('film_best', res.n);
-      if (!S.me) { M.msg('로그인하면 랭킹에 올라가요'); return; }
+      if (!S.me) { if (res.n > store.get('film_best', 0)) store.set('film_best', res.n);   // 로그인 중엔 서버가 인정한 기록만 최고로(보류·저장 실패 판 제외)
+ M.msg('로그인하면 랭킹에 올라가요'); return; }
       if (!tk) { M.msg('이번 판은 서버에 등록되지 않아 저장 못 했어요'); return; }
       if (res.n < 1) { M.msg('0컷은 기록하지 않아요'); return; }
       M.msg('기록 저장 중…');
@@ -2351,7 +2351,7 @@ async function playFilm() {
       saveScore('film', FILM_MAX - res.n, res.rounds).then(r => {
         if (no !== run) return;
         if (r.held) { M.msg(heldLine(r)); return; }
-        const b = r.best != null ? FILM_MAX - r.best : res.n; M.setBest(b); if (b > store.get('film_best', 0)) store.set('film_best', b);
+        const b = r.best != null ? FILM_MAX - r.best : res.n; M.setBest(b, true); store.set('film_best', b);
         M.msg(r.newBest ? `<b>최고 기록 경신!</b> 전체 ${r.rank}등` : `내 최고 ${b}컷 · 전체 ${r.rank}등`);
         myRecInto($('#flRec'), 'film', null, { open: true });
       }).catch(e => { if (no === run) M.msg(esc(e.message)); });

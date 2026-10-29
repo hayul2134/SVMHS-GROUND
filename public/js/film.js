@@ -208,7 +208,7 @@ export function createFilm(root, opt = {}) {
   return {
     start, pause,
     msg(html) { const m = $('msg'); if (m) m.innerHTML = html; },
-    setBest(b) { if (b > best) { best = b; $('best').textContent = b; } },
+    setBest(b, force) { if (force || b > best) { best = b; $('best').textContent = b; } },
     destroy() { dead = true; cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('blur', blur); document.removeEventListener('visibilitychange', vis); try { ac?.close(); } catch {} },
     get st() { return { state, score, cols, rows, cell, grid, moves }; },
     _end() { used = TIME_MS; lastAt = performance.now(); },   // 테스트용: 시간 다 씀
