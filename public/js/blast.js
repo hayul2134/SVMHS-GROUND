@@ -20,7 +20,7 @@ const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, 
 export function createBlast(root, opt = {}) {
   let best = opt.best || 0, sound = !!opt.sound;
   // 점수판(2026-10-29 하율 "블록 블라스트처럼 — 올라가는 점수가 잘 안 보여 재미없어"): 왼쪽 위 작게 최고 기록, 가운데 큰 점수(올라갈 때 숫자가 굴러 올라감 + 얻은 점수 팝), 오른쪽 버튼
-  root.innerHTML = `<div class="ml-top bl-top" data-m="top"><span class="bl-best" title="최고 기록"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg><small>최고</small><b data-m="best">${best.toLocaleString('ko-KR')}</b></span>
+  root.innerHTML = `<div class="ml-top bl-top" data-m="top"><span class="bl-best" title="최고 기록"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z" fill="#fff3b0" stroke="#5a3a00" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 6H4.5a3 3 0 0 0 3 4.2M17 6h2.5a3 3 0 0 1-3 4.2" fill="none" stroke="#5a3a00" stroke-width="1.8" stroke-linecap="round"/><path d="M12 14v3.4M8.5 20h7l-.8-2.6H9.3z" fill="#fff3b0" stroke="#5a3a00" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 6.4v2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg><small>최고</small><b data-m="best">${best.toLocaleString('ko-KR')}</b></span>
       <div class="bl-score" aria-live="polite"><b data-m="sc">0</b><em class="bl-gain" data-m="gain"></em><span class="bl-cb" data-m="cbw">연속 <i data-m="cb">0</i></span></div>
       <span class="bl-tools"><button type="button" class="btn ghost bl-stop" data-m="stop" hidden>그만하기</button><button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></span></div>
     <div class="ml-board bl-board" data-m="board"><canvas data-m="cv" aria-label="기자재 정리! 블록 판"></canvas><div class="ml-ov" data-m="ov"></div></div>`;
