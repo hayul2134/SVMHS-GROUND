@@ -170,7 +170,7 @@ const FLOOR_MSG = ['', '교무실 앞은 조용히!', '이제 겨우 3층이라�
 
 export function createStair(cv, o = {}) {
   // 2026-10-29 하율 "캐릭터가 가운데에 유지되면서 올라가게" → "내 화면에만"(깃발 stair-center): 발 높이 168 → 137(캐릭터 몸 가운데 = 화면 세로 가운데 120) + 카메라를 캐릭터에 고정
-  const CENTER = !!o.center, FOOT = CENTER ? 137 : 168;
+  const CENTER = !!o.center, FOOT = CENTER ? 145 : 168;   // 137 → 145(하율 "아주 살짝만 내려")
   let g = cv.getContext('2d');   // let: warm()이 잠깐 빈 판으로 바꿔 그림
   // 캔버스 배율은 2로 고정 — 4로 올리면 또렷하지만 느린 기기에서 프레임이 반으로 떨어짐(2026-10-28 측정: CPU 6배 느림 기준 60→30fps)
   const TXT = new Map();   // 글자 판 캐시(이름표·교훈) — 매 프레임 measureText/fillText 하던 것
