@@ -154,3 +154,43 @@ export function achProg(a, st) {
   if (a.t === 'all') return [(st.open || []).filter(g => (st.days[g] || 0) >= 1).length, (st.open || []).length];
   return null;
 }
+
+/* ===== 게임 숙련도(2026-10-29 하율: "숙련도·업적 강화 — 학교니까 바로바로 자랑할 수 있게", 깃발 achv와 같이) =====
+   게임마다 XP → Lv 1~50. 10레벨마다 단계(입문·숙련·베테랑·장인·마스터·레전드).
+   XP: 1판(mission.js playCounts 기준을 넘은 판) 10 · 그 게임 하루 판 XP 상한 300(30판) · 내 최고 기록 경신 30 · 업적 달성 lv별 20/50/120/300(공통 업적은 그 판의 게임으로)
+   저장: users.mst = { 게임: [XP, 마지막 판 날(YYYYMMDD), 그날 판 XP] } — gearn은 gear로. 소급(처음 한 번): 게임한 날 × 30 + 가진 업적 XP */
+export const MST_MAX = 50;
+export const MST_XP = { play: 10, dayCap: 300, best: 30, ach: [0, 20, 50, 120, 300], seedDay: 30 };
+export const MST_BAND = [
+  { from: 1, k: 'm0', n: '입문' }, { from: 10, k: 'm1', n: '숙련' }, { from: 20, k: 'm2', n: '베테랑' },
+  { from: 30, k: 'm3', n: '장인' }, { from: 40, k: 'm4', n: '마스터' }, { from: 50, k: 'm5', n: '레전드' },
+];
+const mNeed = L => 40 + 12 * (L - 1);   // L → L+1에 필요한 XP (Lv10 ≈ 800 · Lv20 ≈ 2,800 · Lv30 ≈ 6,000 · Lv40 ≈ 10,300 · Lv50 ≈ 16,100)
+export function mstLv(xp) {
+  let L = 1, x = Math.max(0, Math.floor(xp || 0));
+  while (L < MST_MAX && x >= mNeed(L)) { x -= mNeed(L); L++; }
+  return { lv: L, cur: L < MST_MAX ? x : 0, need: L < MST_MAX ? mNeed(L) : 0 };
+}
+export const mstBand = lv => MST_BAND.filter(b => lv >= b.from).pop();
+export const mstXp = (m, g) => Math.max(0, +(m?.[g]?.[0]) || 0);
+export const achXp = k => { const a = ACH_BY[k]; return a ? MST_XP.ach[a.lv] || 0 : 0; };
+// 판 하나로 얻는 XP를 더한 새 값. add = { play: 1판으로 침, best: 최고 기록 경신, ach: [키] } · day = 오늘(YYYYMMDD)
+export function mstAdd(m, g, add, day) {
+  g = gOf(g); const o = { ...m }, cur = Array.isArray(o[g]) ? [...o[g]] : [0, '', 0];
+  if (cur[1] !== day) { cur[1] = day; cur[2] = 0; }
+  let x = 0;
+  if (add.play && cur[2] < MST_XP.dayCap) { const p = Math.min(MST_XP.play, MST_XP.dayCap - cur[2]); cur[2] += p; x += p; }
+  if (add.best) x += MST_XP.best;
+  const byG = {};
+  for (const k of add.ach || []) { const a = ACH_BY[k]; if (!a) continue; const t = a.g === 'all' ? g : a.g; byG[t] = (byG[t] || 0) + achXp(k); }
+  x += byG[g] || 0; cur[0] = (+cur[0] || 0) + x; o[g] = cur;
+  for (const [t, v] of Object.entries(byG)) if (t !== g) { const c = Array.isArray(o[t]) ? [...o[t]] : [0, '', 0]; c[0] = (+c[0] || 0) + v; o[t] = c; }
+  return o;
+}
+// 처음 한 번 소급: days = { 게임: 게임한 날 수 } · own = 가진 업적
+export function mstSeed(days, own) {
+  const o = {};
+  for (const g of ACH_GAMES) { const d = days[g] || 0; if (d) o[g] = [d * MST_XP.seedDay, '', 0]; }
+  for (const k of Object.keys(own || {})) { const a = ACH_BY[k]; if (!a || a.g === 'all') continue; const c = o[a.g] || [0, '', 0]; c[0] += achXp(k); o[a.g] = c; }
+  return o;
+}
