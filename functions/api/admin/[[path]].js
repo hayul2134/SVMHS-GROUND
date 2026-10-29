@@ -87,7 +87,7 @@ export async function onRequest({ request: req, env, params }) {
 
 /* 로그인 없이 되는 것 */
 const OPEN = {
-  'GET status': async ({ req, db }) => json({ db: true, admin: ADMIN_HANDLE, authed: await isAdmin(req, db), usage: await db.prepare('SELECT day, r, w FROM usage ORDER BY day DESC LIMIT 3').all().then(x => x.results).catch(() => []) }),
+  'GET status': async ({ req, db }) => json({ db: true, admin: ADMIN_HANDLE, authed: await isAdmin(req, db), usage: await db.prepare('SELECT day, r, w FROM usage ORDER BY day DESC LIMIT 3').all().then(x => x.results).catch(() => []), routes: await db.prepare('SELECT day, j FROM usage_rt ORDER BY day DESC LIMIT 2').all().then(x => x.results.map(y => ({ day: y.day, rt: Object.entries(JSON.parse(y.j)).sort((a, b) => b[1][1] - a[1][1]) }))).catch(() => []) }),
 
   'POST logout': async ({ req, db }) => {
     const t = cookieOf(req);
