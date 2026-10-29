@@ -61,24 +61,25 @@ export function createBlast(root, opt = {}) {
   const kindOf = i => PIECES[i].k;
   const dims = s => [Math.max(...s.map(x => x[0])) + 1, Math.max(...s.map(x => x[1])) + 1];
 
-  /* ----- 배치: 판(8칸) + 장비 받침(3칸) — 넓으면 옆, 좁으면 아래 ----- */
+  /* ----- 배치: 판(8칸) + 장비 받침 — 검은 판이 항상 화면 가운데(2026-10-29 하율 "검정 화면이 중앙에 들어와야 보기 편해")
+     아래 배치가 기본, 세로가 아주 짧을 때만 옆 배치(받침 반대쪽에 같은 폭 빈자리를 둬서 판이 가운데) ----- */
   function fit() {
     if (dead || !cv.isConnected) return;
     dpr = Math.min(devicePixelRatio || 1, 2); tiles.clear();
     const aw = Math.max(240, root.clientWidth - 30), top = board.getBoundingClientRect().top, ah = Math.max(300, innerHeight - Math.max(top, 0) - 26);
-    // 옆 배치: 가로 = 8칸+받침 3.4칸, 세로 = 8칸 / 아래 배치: 가로 = 8칸, 세로 = 8칸+받침 3.3칸
-    const sH = Math.min((aw - 3 * pad) / 11.4, (ah - 2 * pad) / 8), sV = Math.min((aw - 2 * pad) / 8, (ah - 3 * pad) / 11.3);
+    // 옆 배치: 가로 = 빈자리 3.4칸+8칸+받침 3.4칸, 세로 = 8칸 / 아래 배치: 가로 = 8칸, 세로 = 8칸+받침 3.3칸
+    const sH = Math.min((aw - 4 * pad) / 14.8, (ah - 2 * pad) / 8), sV = Math.min((aw - 2 * pad) / 8, (ah - 3 * pad) / 11.3);
     horiz = sH > sV * 1.08;
     cs = Math.floor(Math.max(22, Math.min(64, horiz ? sH : sV)));
     pad = Math.round(Math.max(8, cs * .25));
-    W = horiz ? pad * 3 + cs * 11.4 : pad * 2 + cs * 8; H = horiz ? pad * 2 + cs * 8 : pad * 3 + cs * 11.3;
+    W = horiz ? pad * 4 + cs * 14.8 : pad * 2 + cs * 8; H = horiz ? pad * 2 + cs * 8 : pad * 3 + cs * 11.3;
     W = Math.round(W); H = Math.round(H);
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     draw();
   }
-  const BX = () => pad, BY = () => pad;
+  const BX = () => horiz ? pad * 2 + cs * 3.4 : pad, BY = () => pad;
   function slotRect(i) {   // 받침 칸 i의 [x, y, w, h]
-    if (horiz) { const x = pad * 2 + cs * 8, h = cs * 8 / 3; return [x, pad + h * i, cs * 3.4, h]; }
+    if (horiz) { const x = BX() + cs * 8 + pad, h = cs * 8 / 3; return [x, pad + h * i, cs * 3.4, h]; }
     const y = pad * 2 + cs * 8, w = cs * 8 / 3; return [pad + w * i, y, w, cs * 3.3];
   }
   const mini = () => cs * (horiz ? .5 : .52);
