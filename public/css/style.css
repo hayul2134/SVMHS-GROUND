@@ -6091,3 +6091,77 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 :root[data-theme="dark"] .bl-cb.on b{color:#ffd27a}
 :root[data-theme="dark"] .cal .dh:nth-child(7),:root[data-theme="dark"] .cal .dy.sat .n{color:#8cc4ff}   /* 달력 토요일 숫자: 진한 파랑이 어두운 칸(특히 쉬는 날 칸)에서 안 보이던 것 */
 html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc) 62%,#1a1f45)}   /* 티어 계단 꼭대기 인원 칩: 챌린저 금색 위 흰 글자 대비 */
+
+/* ===== 캐주얼 게임(2026-10-29, 미리보기 깃발 casual-games) — js/casual.js: 지뢰찾기·뱀·2048 ===== */
+.cat-h small{margin-left:8px;font-size:13px;font-weight:700;color:var(--sub);font-family:var(--sans)}
+.apps .gapp.g-cz-mine .ai{--c:#cfe2f0}.apps .gapp.g-cz-snake .ai{--c:#c9f0dc}.apps .gapp.g-cz-n2048 .ai{--c:#ffe6a8}
+.cz{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.cz-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;width:100%}
+.cz-stat{position:relative;display:flex;flex-direction:column;align-items:center;min-width:78px;padding:5px 12px;border:var(--bd);border-radius:14px;background:var(--card);box-shadow:var(--sh-s);line-height:1.15}
+.cz-stat b{font-family:var(--num);font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.cz-stat small{font-size:11.5px;font-weight:700;color:var(--sub)}
+.cz-seg{display:flex;border:var(--bd);border-radius:14px;overflow:hidden;box-shadow:var(--sh-s);background:var(--card)}
+.cz-seg button{padding:8px 13px;font-weight:800;font-size:14px}
+.cz-seg button+button{border-left:2px solid var(--ink)}
+.cz-seg button.on{background:var(--accent);color:#fff}
+.cz-flag{display:inline-flex;align-items:center;gap:5px;padding:8px 13px;border:var(--bd);border-radius:14px;background:var(--card);box-shadow:var(--sh-s);font-weight:800;font-size:14px;transition:transform .08s,box-shadow .08s}
+.cz-flag svg{width:18px;height:18px}
+.cz-flag.on{background:#ffe08a;color:#173048}
+.cz-flag:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.cz-flag:disabled{opacity:.45;pointer-events:none}
+.cz-wrap{display:flex;justify-content:center;width:100%}
+.cz-in{position:relative}
+.cz-help{font-size:12.5px;color:var(--sub);text-align:center}
+.cz-ov{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;background:rgba(15,35,55,.35);border-radius:16px;animation:czIn .22s ease-out}
+.cz-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 24px;border:var(--bd);border-radius:18px;background:var(--card);box-shadow:var(--sh);text-align:center;animation:czPop .32s cubic-bezier(.2,1.4,.4,1)}
+.cz-card b{font-family:var(--disp);font-size:26px;font-weight:400}
+.cz-card span{font-weight:700}
+.cz-card small{color:var(--sub);font-size:12.5px}
+.cz-card.good b{color:#e0a21a}
+.cz-card .btn{margin-top:6px}
+.cz-card .row{display:flex;gap:8px;margin-top:6px}
+@keyframes czIn{from{opacity:0}}
+@keyframes czPop{from{transform:scale(.8);opacity:0}}
+/* 지뢰찾기 */
+.cz-mb{display:grid;grid-template-columns:repeat(var(--cols),var(--cs));grid-auto-rows:var(--cs);gap:0;padding:5px;border:var(--bd);border-radius:14px;background:#8fbfe0;box-shadow:var(--sh);touch-action:manipulation;-webkit-touch-callout:none;user-select:none}
+.cz-mb i{display:flex;align-items:center;justify-content:center;font-style:normal;font-family:var(--num);font-weight:900;font-size:calc(var(--cs)*.6);line-height:1;cursor:pointer;
+  background:linear-gradient(160deg,#a9d8f7,#7cc3f2);border:1px solid #5a9fcf;border-radius:calc(var(--cs)*.18);box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(23,48,72,.15)}
+.cz-mb i.pr,.cz-mb i.hl{background:#cfe7f8;box-shadow:none}
+.cz-mb i.o{background:#f1f8fd;border-color:#d3e6f3;border-radius:2px;box-shadow:none;cursor:default}
+.cz-mb i.o[data-n]{cursor:pointer}
+.cz-mb i.f{background:linear-gradient(160deg,#ffe9a8,#ffd56b);border-color:#d9a930}
+.cz-mb i svg{width:72%;height:72%;pointer-events:none}
+.cz-mb i.m{background:#e6eef5}
+.cz-mb i.x{background:#ff8f8f}
+.cz-mb i.w{background:repeating-linear-gradient(45deg,#ffd56b 0 4px,#ffb1b1 4px 8px)}
+.cz-mb i[data-n="1"]{color:#1f6fd1}.cz-mb i[data-n="2"]{color:#1d9a5a}.cz-mb i[data-n="3"]{color:#e0413c}.cz-mb i[data-n="4"]{color:#2a3a9c}
+.cz-mb i[data-n="5"]{color:#9c2a2a}.cz-mb i[data-n="6"]{color:#14868c}.cz-mb i[data-n="7"]{color:#173048}.cz-mb i[data-n="8"]{color:#6b7c8c}
+.cz-mb.boom{animation:czShake .36s}
+@keyframes czShake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+/* 뱀 */
+.cz-cv{display:block;border:var(--bd);border-radius:14px;box-shadow:var(--sh);background:#e6f4fd}
+.cz-pad{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(2,46px);gap:6px;justify-content:center}
+.cz-pad button{border:var(--bd);border-radius:12px;background:var(--card);box-shadow:var(--sh-s);font-size:16px;color:var(--text);touch-action:none}
+.cz-pad button:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.cz-pad [data-d="0"]{grid-column:2}.cz-pad [data-d="3"]{grid-column:1;grid-row:2}.cz-pad [data-d="2"]{grid-column:2;grid-row:2}.cz-pad [data-d="1"]{grid-column:3;grid-row:2}
+@media (pointer:fine){.cz-pad{display:none}}
+/* 2048 */
+.cz-tb{position:relative;width:var(--S);height:var(--S);border:var(--bd);border-radius:16px;background:#9cc7e6;box-shadow:var(--sh);user-select:none}
+.cz-tbg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,var(--cs));grid-auto-rows:var(--cs);gap:var(--gap);padding:var(--gap)}
+.cz-tbg i{border-radius:10px;background:rgba(255,255,255,.38)}
+.cz-tl{position:absolute;inset:0}
+.cz-tl .t{position:absolute;left:0;top:0;width:var(--cs);height:var(--cs);transition:transform .11s ease-in-out}
+.cz-tl .t b{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border:2px solid #173048;border-radius:10px;font-family:var(--num);font-weight:900;font-size:calc(var(--cs)*.42);color:#173048;background:var(--tc,#eef7fd);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 3px 0 rgba(23,48,72,.35)}
+.cz-tl .t b.l3{font-size:calc(var(--cs)*.34)}.cz-tl .t b.l4{font-size:calc(var(--cs)*.27)}
+.cz-tl .t.nw b{animation:czNew .18s .1s backwards}
+.cz-tl .t.mg b{animation:czMg .18s}
+@keyframes czNew{from{transform:scale(0)}}
+@keyframes czMg{50%{transform:scale(1.16)}}
+.t[data-v="2"]{--tc:#f4faff}.t[data-v="4"]{--tc:#dcefff}.t[data-v="8"]{--tc:#b5dcf8}.t[data-v="16"]{--tc:#86c6f2}
+.t[data-v="32"]{--tc:#58aeea}.t[data-v="64"]{--tc:#2f8fe0}.t[data-v="128"]{--tc:#c9f0dc}.t[data-v="256"]{--tc:#8fe8cf}
+.t[data-v="512"]{--tc:#ffe9a8}.t[data-v="1024"]{--tc:#ffd56b}.t[data-v="2048"]{--tc:#ffb43a}.t[data-v="big"]{--tc:#b9a6ff}
+.t[data-v="32"] b,.t[data-v="64"] b{color:#fff;text-shadow:0 1.5px 0 #173048}
+.cz-tb.nope{animation:czShake .25s}
+.cz-plus{position:absolute;top:-6px;right:-6px;font-family:var(--num);font-weight:900;font-size:14px;color:#1d9a5a;pointer-events:none;animation:czUp .7s ease-out forwards}
+@keyframes czUp{to{transform:translateY(-22px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.cz-tl .t{transition:none}.cz-tl .t b,.cz-mb,.cz-tb,.cz-card,.cz-ov{animation:none!important}}

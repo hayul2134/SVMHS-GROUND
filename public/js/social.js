@@ -1887,7 +1887,7 @@ function restartGame() {
 // R 키로 다시 시작(2026-10-27 하율) — 게임 키보다 먼저 받아서(capture) 기자재 정리!의 '아무 키나 누르면 시작'과 겹치지 않게. 한글 입력 상태(ㄱ)도 e.code로 잡힘
 addEventListener('keydown', e => {
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || $('#gamePlay').hidden || KM.actOf(curGame, e) !== 'restart') return;   // 다시 시작 키도 키 설정대로(기본 R)
-  if (curGame === 'stair') return;   // 영상고 계단 오르기는 다시 시작 버튼·R 키 없음(2026-10-28 하율: 열심히 하다 잘못 눌릴까 봐) — 끝나면 아무 키로 새 판
+  if (curGame === 'stair' || curGame === 'c_n2048') return;   // 영상고 계단 오르기는 다시 시작 버튼·R 키 없음(2026-10-28 하율: 열심히 하다 잘못 눌릴까 봐) — 끝나면 아무 키로 새 판
   if (e.target.closest?.('input,textarea,select,[contenteditable]') || document.querySelector('.modal.open')) return;
   e.preventDefault(); e.stopImmediatePropagation(); restartGame();
 }, true);
@@ -1928,6 +1928,7 @@ function gameFail(e) {
 }
 let playSeq = 0;
 async function play(game) {
+  if (game.startsWith('c_')) return playCz(game);   // 캐주얼 게임(2026-10-29, 깃발 casual-games) — GAMES·랭킹·티켓과 따로
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
   const fn = PLAYERS[game];
   if (!fn || !GAMES[game]) { staleReload(); return; }
@@ -1944,6 +1945,27 @@ async function play(game) {
   try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
 
+/* 캐주얼 게임(2026-10-29 하율 "구글 플레이 게임즈 미니 게임처럼 캐주얼로 — 내 화면에만"): js/casual.js가 판을 그림
+   랭킹·티어·뽑기권·업적·미션 없음(서버 안 거침) → 위 줄엔 나가기만. 2048은 판이 이어지는 게임이라 R/다시 시작 대신 판 안 '새 게임' */
+let CZ = null;
+async function playCz(game) {
+  const seq = ++playSeq, gate = () => ffOn('casual-games', isDev(S.me));
+  if (!gate()) {
+    await Promise.all([meP, loadReleased()]).catch(() => {});
+    if (seq !== playSeq) return;
+    if (!gate()) { toast('아직 열리지 않은 게임이에요'); return; }
+  }
+  try { quitGame?.(); } catch (e) { console.error(e); }
+  quitGame = null; curGame = game; ticket = null;
+  try {
+    if (!CZ) CZ = await import('./casual.js');
+    const k = game.slice(2), g = CZ.CASUAL[k]; if (!g) { staleReload(); return; }
+    if (seq !== playSeq) return;
+    stage(ic(g.ic) + ' ' + g.name, '<div class="cz" id="czBox"></div>' + (k === 'n2048' ? '' : RE_ROW));
+    const ctl = CZ.mount(k, $('#czBox'));
+    quitGame = () => ctl.destroy();
+  } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
+}
 // 편집의 신 결과 한 화면에(2026-10-28 하율 "스크롤 안 하고도 보이게"): 왼쪽 = 점수·등급·저장 결과·내 기록(접는 버튼) / 오른쪽 = 내 컷 다시 보기·판별 판정
 function cutLayout(res) {
   if (!res || res.classList.contains('ct-out')) return;
