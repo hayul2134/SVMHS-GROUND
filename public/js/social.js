@@ -1852,7 +1852,10 @@ let homeRO = null;
 function fitHome() {
   const t = $('#gamePlay .ptop'), h = $('#btnHome'), g = $('#gamePlay .hr-scr') || $('#parea')?.firstElementChild;
   if (!t || !h || !g) return;
-  t.style.paddingLeft = t.style.paddingRight = ''; h.style.translate = '';
+  const pa = $('#parea');
+  t.style.paddingLeft = t.style.paddingRight = ''; h.style.translate = ''; if (pa) pa.style.paddingLeft = pa.style.paddingRight = '';
+  // 게임 칸도 집 버튼 ~ 나가기 버튼 사이 안으로(2026-10-29 하율 "나가기 버튼 기준으로 아래 오브젝트 나가지 않게") — 화면 양 끝에서 집 버튼만큼 비움
+  if (pa) { const hb = h.getBoundingClientRect(), pb = pa.getBoundingClientRect(), m = Math.round(Math.max(0, hb.left - pb.left, pb.right - (innerWidth - hb.left))); if (hb.width && m) pa.style.paddingLeft = pa.style.paddingRight = m + 'px'; }
   const a = h.getBoundingClientRect(), p = t.getBoundingClientRect(), r = g.getBoundingClientRect();
   if (!a.width || !r.width) return;
   // 2026-10-28 하율 "랭킹·키 설정·나가기 버튼 모든 게임이 다 저 위치에": 게임 칸 폭과 상관없이 제목은 집 버튼 바로 오른쪽, 버튼 묶음은 화면 오른쪽 끝(집 버튼과 좌우 대칭 여백)
