@@ -184,6 +184,7 @@ async function refreshMe0() {
     { const rx = ffOn('rx-season', isDev(S.me)); document.documentElement.classList.toggle('rxs', rx); GAMES.reaction.beta = !rx; }   // 반응속도 정식 출시(새 시즌) — Beta 떼기
     try { const h = document.documentElement; localStorage.setItem('sg_ffc', JSON.stringify({ c: ['dev-pv', 'rk2', 'tl2', 'tf', 'tpad', 'cut2', 'rxs'].filter(x => h.classList.contains(x)), r: h.dataset.ffr || '' })); } catch {}   // 2026-10-28 하율 "게임 4개 먼저 나오고 기자재 정리가 툭 튀어나온다": 깃발 상태를 저장 → 다음 접속 땐 theme.js가 첫 화면 그리기 전에 붙임   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
+    if (r.errAlert) toast(`최근 30분 서버 오류 ${r.errAlert.n}건 — ${r.errAlert.m || ''} (관리자 › 모니터링)`, 8000);   // 개발자에게만 옴
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
   paintBadges();
   applyFx();
@@ -1977,8 +1978,8 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
 // 기록 저장(서버가 판 기록·티켓으로 다시 검사) — 결과 화면 없이 그 자리에서 다시 하는 게임(집에 가고 싶어!)도 같이 씀
 // 검사에 걸린 기록은 서버가 버리지 않고 보류(2026-10-26 하율) — 개발자가 관리자 화면에서 반영/버림
 // 결과 화면용: 왜 보류됐는지(서버 r.why) → 그래서 어떻게 됐는지
-const heldBox = r => `<div class="rheld" id="rMsg"><b>기록 보류</b><p>${esc(r.why || '확인이 필요한 기록이에요.')}</p><small>그래서 이 기록은 바로 랭킹에 올리지 않고 맡아 뒀어요. 개발자가 확인한 뒤 문제없으면 랭킹에 반영돼요. 억울하면 <button type="button" class="rheld-fb" data-fb>의견 보내기</button>로 알려 주세요!</small></div>`;
-const heldLine = r => `<b>기록 보류</b> ${esc(r.why || '')} 개발자가 확인한 뒤 반영돼요`;
+const heldBox = r => r.rescued ? `<div class="rheld" id="rMsg"><b>기록 보관</b><p>${esc(r.why)}</p><small>사라지지 않아요! 문제가 고쳐지면 다음에 게임을 시작할 때 자동으로 랭킹에 반영돼요.</small></div>` : `<div class="rheld" id="rMsg"><b>기록 보류</b><p>${esc(r.why || '확인이 필요한 기록이에요.')}</p><small>그래서 이 기록은 바로 랭킹에 올리지 않고 맡아 뒀어요. 개발자가 확인한 뒤 문제없으면 랭킹에 반영돼요. 억울하면 <button type="button" class="rheld-fb" data-fb>의견 보내기</button>로 알려 주세요!</small></div>`;
+const heldLine = r => r.rescued ? `<b>기록 보관</b> ${esc(r.why)} 고쳐지면 자동으로 반영돼요` : `<b>기록 보류</b> ${esc(r.why || '')} 개발자가 확인한 뒤 반영돼요`;
 // 게임 안 '내 기록' 칸 (2026-10-27 하율: 게임 화면에선 순위·랭킹 대신 — 못하는 친구도 스트레스 없이 자기 기록만 보게)
 //   역대 최고 + 최근 날짜별 최고(막대는 내 기록끼리 비교, 작을수록 좋음인 저장값 기준) · 로그인 안 했으면 이 기기 최고만
 // fold(2026-10-28 하율 "스크롤 안 해도 보이게, 난잡하면 버튼처럼 펴고 접어서"): '내 최고' 줄이 펼치기 버튼, 아래 최근 기록은 접힘 · 펼침 상태는 게임마다 이 기기에 기억(sg_mr_<게임>)

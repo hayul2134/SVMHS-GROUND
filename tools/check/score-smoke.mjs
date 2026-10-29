@@ -67,13 +67,29 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
       opened++; skew += 20000;
       const body = (PLAY[g] || (x => ({ value: x, rounds: [] })))(v);
       const r = await call('POST', 'score', { game: g, ticket: st.j.ticket, ...body });
-      if (r.s >= 500) fails.push(`[${mode}] ${g} ${v}`);
+      if (r.s >= 500 || r.j?.rescued) fails.push(`[${mode}] ${g} ${v}${r.j?.rescued ? ' (서버 오류 → 보관됨)' : ''}`);
     }
     await call('GET', `rank?game=${g}&scope=all`);
     await call('GET', `rank?game=${g}&scope=class`);
     await call('GET', `myrec?game=${g}`);
   }
   for (const p of ['games', 'tier', 'mission', 'me', 'user/' + handle, 'att', 'ach']) await call('GET', p);
+}
+// 서버 오류 보관 → 자동 반영 검사(2026-10-29): 저장 중 쿼리 하나를 일부러 터뜨려 '보관'되는지, 고친 뒤 게임 시작 때 반영되는지
+{
+  cookie = '';
+  await call('POST', 'signup', { handle: 'smoke_r1', name: '연기검사r1', pw: 'zq8!kd02xa', grade: 2, cls: 3, club: '' });
+  const st = await call('POST', 'start', { game: 'reaction' }); skew += 20000;
+  const orig = DB.prepare; let boom = true;
+  DB.prepare = sql => { if (boom && /INSERT INTO scores/.test(sql)) { boom = false; throw new Error('연기검사: 일부러 낸 오류'); } return orig(sql); };
+  const r = await call('POST', 'score', { game: 'reaction', ticket: st.j?.ticket, ...PLAY.reaction(300) });
+  DB.prepare = orig;
+  if (!r.j?.rescued) fails.push(`보관 검사: 서버 오류인데 보관 안 됨 → ${r.s} ${JSON.stringify(r.j)}`);
+  await call('POST', 'start', { game: 'reaction' });
+  const h = sq.prepare("SELECT st FROM held_scores WHERE reason LIKE '서버 오류로 보관%'").get();
+  const ok = sq.prepare("SELECT COUNT(*) AS n FROM scores s JOIN users u ON u.id = s.uid WHERE u.handle = 'smoke_r1' AND s.game = 'reaction'").get().n;
+  if (h?.st !== 4 || !ok) fails.push(`보관 검사: 게임 시작 때 자동 반영 안 됨 (st ${h?.st}, 기록 ${ok})`);
+  sq.prepare("DELETE FROM errs WHERE msg LIKE '연기검사:%'").run();
 }
 const saved = sq.prepare('SELECT COUNT(*) AS n FROM scores').get().n;
 if (!saved) fails.push('정상 기록이 하나도 저장되지 않음 — 검사 데이터(PLAY)를 확인할 것');

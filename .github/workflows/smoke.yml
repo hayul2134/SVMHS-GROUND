@@ -1,0 +1,16 @@
+# 서버 코드를 올릴 때마다 기록 저장 연기 검사를 자동으로 돌림(2026-10-29 bests null.b 재발 방지).
+# 실패하면 GitHub가 저장소 주인에게 메일로 알림 — 사람이 push 전에 검사를 잊어도 바로 드러나게.
+name: score-smoke
+on:
+  push:
+    branches: [main]
+    paths: ['functions/**', 'lib/**', 'public/js/**', 'tools/check/**']
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node --no-warnings tools/check/score-smoke.mjs

@@ -565,8 +565,10 @@ const ROUTES = {
       friendIds(db, me.id),
     ]);
     const sw = me.handle === ADMIN_HANDLE ? 'dev' : me.is_test && await devSession(req, db) ? Object.keys(TEST_ACCOUNTS).find(k => TEST_ACCOUNTS[k].handle === me.handle) : '';
+    // 개발자에게 서버 오류 경보(2026-10-29: 기록 저장 버그가 1시간 넘게 학생 문의로만 드러났음) — 최근 30분 3건 이상이면 화면에 빨간 알림
+    const errAlert = me.handle === ADMIN_HANDLE ? await db.prepare('SELECT COUNT(*) AS n, (SELECT route || \' · \' || msg FROM errs WHERE at >= ?1 GROUP BY route, msg ORDER BY COUNT(*) DESC LIMIT 1) AS m FROM errs WHERE at >= ?1').bind(Date.now() - 1800e3).first().catch(() => null) : null;
     const rkGift = (await db.prepare("SELECT round, game, place, tix FROM rank_rewards WHERE uid = ?1 AND seen = 0 AND (game LIKE 'w:%' OR game LIKE 't:%') ORDER BY round, game").bind(me.id).all()).results;
-    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), ach: parseAch(me.ach), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length }, rkGift });
+    return json({ me: { ...pub(me), online: true, dmPref: me.dm_pref || 0, google: !!me.google_sub, sw, attBest: effBest(me), attTotal: effTotal(me), deco: jsonArr(me.st_deco), gc: gcPub(me), ach: parseAch(me.ach), sessExp: me.exp }, unread: unread.n, counts: { following: fo.n, followers: fb.n, friends: fr.length }, rkGift, ...(errAlert?.n >= 3 ? { errAlert } : {}) });
   },
 
   'POST me': needMe(async ({ db, me, body }) => {
@@ -1087,6 +1089,7 @@ const ROUTES = {
     if (!isAdm(me) && (await db.prepare('SELECT COUNT(*) AS n FROM rl WHERE k >= ?1 AND k < ?2 AND reset > ?3').bind(`tk:${me.id}:`, `tk:${me.id};`, Date.now()).first()).n >= 60) return err('잠깐 쉬었다가 해요', 429);
     const ticket = randHex(16);
     await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + TICKET_TTL).run();
+    await rescueReplay(db, me);
     return json({ ticket });
   }),
 
@@ -1100,7 +1103,14 @@ const ROUTES = {
     // 티켓을 쓴 뒤 서버 오류가 나면 기록이 사라지고 다시 보내도 '게임을 다시 시작해 주세요'가 됐음(2026-10-29 bests null.b로 약 150판 유실)
     // → 오류가 나면 티켓을 되돌려 놓고 던짐 → 화면이 같은 티켓으로 한 번 더 보냄(saveScore)
     try { return await scoreIn(db, me, body, game, v, ticket, g, tk); }
-    catch (e) { await db.prepare('INSERT OR IGNORE INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${ticket}`, tk.n, tk.reset).run().catch(() => {}); throw e; }
+    catch (e) {
+      // 그래도 서버 오류면 기록을 버리지 않고 '서버 오류 보관'(held_scores st 3)으로 맡겨 둠 → 고쳐진 뒤 그 학생이 아무 게임이나 시작할 때 원래 검사를 그대로 거쳐 자동 반영(rescueReplay)
+      // (2026-10-29 하율 "이런 일 다시는 없게": 같은 버그면 다시 보내도 또 실패해서 약 150판이 사라졌음). 보관마저 실패하면(DB 한도 등) 예전처럼 티켓 되돌리고 던짐
+      const kept = Array.isArray(body.rounds) && await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at, st) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 3)')
+        .bind(me.id, game, v, JSON.stringify(body.rounds.slice(0, 30).map(x => Math.round(+x) || 0)).slice(0, 500), `서버 오류로 보관 #${ticket}`, Math.min(Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL), 2e9), kstYmd(), Date.now()).run().then(() => true, () => false);
+      if (kept) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/api/s/score', method: 'POST' }, e); return json({ ok: true, held: true, rescued: true, why: '서버에 잠깐 문제가 있어서 기록을 안전하게 맡아 뒀어요.' }); }
+      await db.prepare('INSERT OR IGNORE INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${ticket}`, tk.n, tk.reset).run().catch(() => {}); throw e;
+    }
   }),
 
   // 게임 업적 목록(깃발 achv): ?u=아이디(없으면 나). 내 것은 열 때마다 소급 판정
@@ -1611,6 +1621,22 @@ async function tierOfUser(db, u, v2 = false, rx = rxOn(null), gt = gtFor(null)) 
 
 // 순위 보기용(기록 저장 직후 축하 판단은 rankOf 그대로): 게임별 '사람마다 최고 기록' 정렬 목록을 데이터센터 공용 캐시 30초 → 순위는 이분 탐색(2026-10-29 읽기 절약)
 // POST score 본체(티켓 확인 뒤) — 오류 나면 위에서 티켓을 되돌림
+// 서버 오류 때 맡아 둔 기록(held_scores st 3) 다시 넣기 — 그 학생이 게임을 시작할 때마다 최대 3개. 원래 검사(scoreIn) 그대로, 걸리면 보통 보류로.
+// st: 3 보관 중 → 5 처리 중(동시 처리 막기) → 4 반영됨 / 다시 실패하면 3으로 되돌림, 7일 지나면 2(버림). 오류는 삼켜서 게임 시작을 막지 않음
+async function rescueReplay(db, me) {
+  try {
+    const rows = (await db.prepare('SELECT id, game, value, rounds, reason, elapsed, at FROM held_scores WHERE st = 3 AND uid = ?1 ORDER BY id LIMIT 3').bind(me.id).all()).results;
+    for (const h of rows) {
+      if (Date.now() - h.at > 7 * 86400e3 || !GAMES[h.game]) { await db.prepare('UPDATE held_scores SET st = 2 WHERE id = ?1').bind(h.id).run(); continue; }
+      if (!(await db.prepare('UPDATE held_scores SET st = 5 WHERE id = ?1 AND st = 3').bind(h.id).run()).meta.changes) continue;
+      try {
+        const tk = { n: Date.now() - h.elapsed, reset: Date.now() + TICKET_TTL };   // 보관할 때 잰 플레이 시간 그대로
+        await scoreIn(db, me, { rounds: JSON.parse(h.rounds || '[]') }, h.game, h.value, (/#([0-9a-f]{32})$/.exec(h.reason) || [])[1] || '', GAMES[h.game], tk);
+        await db.prepare('UPDATE held_scores SET st = 4 WHERE id = ?1').bind(h.id).run();
+      } catch (e) { await db.prepare('UPDATE held_scores SET st = 3 WHERE id = ?1').bind(h.id).run().catch(() => {}); await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/rescue', method: 'REPLAY' }, e); break; }
+    }
+  } catch (e) { console.log('rescueReplay', e?.message); }
+}
 async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - TICKET_TTL);   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
