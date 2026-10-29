@@ -2253,7 +2253,7 @@ async function playStair() {
       <div class="hr-scr sr-scr" id="srScr"><canvas id="srCv" aria-label="게임 화면"></canvas>
         <div class="sr-hud" aria-hidden="true"><svg class="sr-bell" id="srBell" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="7" y="0" width="2" height="3" fill="#2a2846"/><path d="M6 2.5h4v1h1v1h1v3h1v3h1v1.5H2V10.5h1v-3h1v-3h1v-1h1z" fill="#ffd25e" stroke="#2a2846" stroke-width="1"/><path d="M5.5 4.5h1v5h-1zM4.5 8h1v2h-1z" fill="#fff1b8"/><path d="M3 10.5h10v1H3z" fill="#e09a2a"/><rect x="6.5" y="12.5" width="3" height="2.5" fill="#2a2846"/></svg><div class="sr-gauge"><b id="srG"></b></div></div>
         <div class="sr-num" aria-live="off"><b id="srN">0</b><small id="srF">1층</small></div>
-        <div class="sr-pop" id="srPop" aria-live="polite"></div>
+        <div class="sr-pop" id="srPop" aria-live="polite"><b> </b><small> </small></div>
         <div class="sr-tap" aria-hidden="true"><span>방향 바꾸기</span><span>오르기</span></div>
         <div class="hr-ov" id="srOv"></div></div>
       <div class="sr-touch"><button type="button" class="btn big ghost" id="srT" aria-label="방향 바꾸기">⇄ 방향 바꾸기</button><button type="button" class="btn big" id="srC" aria-label="오르기">오르기 ▲</button></div>
@@ -2264,8 +2264,8 @@ async function playStair() {
     </div>`, true);   // 넓은 칸: 오른쪽에 내 기록
   if (!STAIR || !RUN) { try { STAIR = await import('./stair.js'); RUN = await import('./runner.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected) return;   // 불러오는 사이 그만두거나 다시 눌러 새 판이 열림(2026-10-29: 두 판이 한 캔버스에 겹치던 것)
-  const cv = $('#srCv'), ov = $('#srOv'), scr = $('#srScr'), gEl = $('#srG'), nEl = $('#srN'), fEl = $('#srF'), pop = $('#srPop');
-  let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0, shownG = '', shownLow = false, shownC = null;
+  const cv = $('#srCv'), ov = $('#srOv'), scr = $('#srScr'), gEl = $('#srG'), nEl = $('#srN'), fEl = $('#srF'), pop = $('#srPop'), popB = pop.firstChild.firstChild, popS = pop.lastChild.firstChild;
+  let sound = store.get('stair_snd', false), best = store.get('stair_best', 0), run = 0, runTk = null, shownN = -1, shownF = -1, popT = 0, shownG = '', shownLow = false, shownC = null, bumpK = 0, popK = 0;
   const ready = () => {
     ov.hidden = false; ov.className = 'hr-ov sr-ready'; scr.classList.add('rdy'); scr.classList.remove('low', 'end');
     ov.innerHTML = `<b>영상고 계단 오르기</b><span>종 치기 전에 계단으로 7층 꼭대기까지!</span>${best ? `<em class="sr-best">${ic('trophy')}내 최고 ${best.toLocaleString('ko-KR')}칸</em>` : ''}
@@ -2278,14 +2278,20 @@ async function playStair() {
     onFrame(st) {
       // 최적화(2026-10-28): 바뀐 것만 DOM에 씀(매 프레임 class·style을 다시 쓰면 스타일 재계산)
       const gv = st.gauge.toFixed(3); if (gv !== shownG) { shownG = gv; gEl.style.setProperty('--g', gv); }   // CSP: style 속성 대신 CSSOM
-      const low = st.scene === 'play' && st.gauge < .22; if (low !== shownLow) { shownLow = low; scr.classList.toggle('low', low); }
+      // 2026-10-29: 0.22 한 줄로 켜고 끄면 게이지가 그 근처를 오갈 때(5~6층쯤 칸마다 +0.075) 빨간 깜빡·종 흔들림이 켜졌다 꺼졌다 반복 → 켜기 0.22 미만 · 끄기 0.30 이상(여유 폭)
+      const low = st.scene === 'play' && (shownLow ? st.gauge < .30 : st.gauge < .22); if (low !== shownLow) { shownLow = low; scr.classList.toggle('low', low); }
       const gc = st.gauge > .45 ? '' : st.gauge > .22 ? 'mid' : 'bad'; if (gc !== shownC) { shownC = gc; gEl.className = gc; }
-      if (st.steps !== shownN) { shownN = st.steps; nEl.textContent = st.steps.toLocaleString('ko-KR'); if (st.steps) { nEl.classList.remove('bump'); void nEl.offsetWidth; nEl.classList.add('bump'); } }
-      if (st.floor !== shownF) { shownF = st.floor; fEl.textContent = stairFloor(st.floor); }
+      // 숫자 튀는 효과: 같은 애니메이션 두 벌(bump/bump2)을 번갈아 → 다시 시작하려고 offsetWidth로 레이아웃을 강제하던 것(칸마다 페이지 전체 레이아웃) 없앰(2026-10-29)
+      // 글자는 textContent(글자 칸 통째 교체 = childList 변화 → 페이지 전체를 지켜보는 MutationObserver 4개가 칸마다 깨어나 문서 전체 검색·등장 애니메이션 판단)
+      //   대신 글자 칸의 내용(.data)만 바꿈 → 판 도중엔 그 감시가 전혀 안 돎(2026-10-29)
+      if (st.steps !== shownN) { shownN = st.steps; nEl.firstChild.data = st.steps.toLocaleString('ko-KR'); nEl.className = st.steps ? ((bumpK ^= 1) ? 'bump' : 'bump2') : ''; }
+      if (st.floor !== shownF) { shownF = st.floor; fEl.firstChild.data = stairFloor(st.floor); }
     },
     onFloor(f, label, big, sub) {
-      clearTimeout(popT); pop.className = 'sr-pop'; void pop.offsetWidth;
-      pop.innerHTML = `<b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}`; pop.className = 'sr-pop on' + (big ? ' big' : '');
+      // on/on2 번갈아(강제 레이아웃 없이 애니메이션 다시 시작) · 글자는 미리 만들어 둔 칸의 내용만 바꿈(innerHTML로 새로 만들면 첫 층 도착 때 등장 애니메이션 판단이
+      //   페이지 전체 레이아웃을 강제하고 알림 위에 애니메이션을 하나 더 얹던 것 — 2026-10-29 측정)
+      clearTimeout(popT); popB.data = label; popS.data = sub || ' ';
+      pop.className = 'sr-pop ' + ((popK ^= 1) ? 'on' : 'on2') + (big ? ' big' : '') + (sub ? ' sub' : '');
       popT = setTimeout(() => { pop.className = 'sr-pop'; }, sub ? 1900 : 1300);
     },
     onOver(res) {
@@ -2309,6 +2315,10 @@ async function playStair() {
     },
   });
   window.__stair = R;   // 테스트용
+  // 판에서 쓰는 글자의 글꼴 조각(Jua·Pretendard는 글자 범위별로 나뉜 파일)을 시작 전에 미리 받음 — 판 도중 처음 보는 글자(6층 '음악실·체육관 층, 쿵쾅쿵쾅!' 등)가
+  //   나오면 그때 파일을 받고, 도착하는 순간 페이지 글자를 다시 배치하느라 한 프레임이 끊기던 것(2026-10-29 하율 "5층→6층 끊김"). 받으면 이름표를 새 글꼴로 다시 만듦(판 밖에서만)
+  { const tx = R.text() + '종 쳤다… 지각! 발을 헛디뎠어요! 잠깐 멈춤 최고 기록 경신 내 최고 칸까지 초 1초에 0123456789,.·';
+    Promise.allSettled([document.fonts?.load?.('400 20px Jua', tx), document.fonts?.load?.('900 15px "Pretendard Variable"', tx), document.fonts?.load?.('400 15px "Pretendard Variable"', tx)]).then(() => { if (area.isConnected) R.refont(); }); }
   ready();
   // 끝난 뒤 다시: 결과 창이 뜬 뒤 0.5초부터만 → 판 번호를 올리고 새 판(화면은 그대로)
   const again = () => {

@@ -168,7 +168,7 @@ const kindOf = i => i === FLOOR * ROOF ? 'roof' : i > 0 && i % FLOOR === 0 ? 'la
 const FLOOR_MSG = ['', '교무실 앞은 조용히!', '이제 겨우 3층이라고??', '아직도 4층??', '아이고 나죽네', '음악실·체육관 층, 쿵쾅쿵쾅!', '옥상까지 딱 한 층!', '저건... 요술 램프인가..?'];
 
 export function createStair(cv, o = {}) {
-  const g = cv.getContext('2d');
+  let g = cv.getContext('2d');   // let: warm()이 잠깐 빈 판으로 바꿔 그림
   // 캔버스 배율은 2로 고정 — 4로 올리면 또렷하지만 느린 기기에서 프레임이 반으로 떨어짐(2026-10-28 측정: CPU 6배 느림 기준 60→30fps)
   const TXT = new Map();   // 글자 판 캐시(이름표·교훈) — 매 프레임 measureText/fillText 하던 것
   cv.width = W * PS; cv.height = H * PS; g.imageSmoothingEnabled = false;
@@ -264,14 +264,27 @@ export function createStair(cv, o = {}) {
   // 한글 이름표(작은 흰 판) — 픽셀 글꼴엔 한글이 없어 캔버스 글자로
   function textCv(s, size, w, h, bg) {   // 글자를 한 번만 그려 둔 판(PS 배율 해상도) → drawImage
     const k = s + '|' + size + '|' + PS + '|' + bg; let c = TXT.get(k);
-    if (!c) { c = document.createElement('canvas'); c.width = w * PS; c.height = h * PS; const q = c.getContext('2d'); q.scale(PS, PS);
+    if (!c) { TEXTS.add(s); c = document.createElement('canvas'); c.width = w * PS; c.height = h * PS; const q = c.getContext('2d'); q.scale(PS, PS);
       if (bg) { q.fillStyle = OL; q.fillRect(0, 0, w, h); q.fillStyle = bg; q.fillRect(1, 1, w - 2, h - 2); }
       q.font = `400 ${size}px Jua, sans-serif`; q.fillStyle = OL; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(s, w / 2, h / 2 + .5);
       TXT.set(k, c); }
     return c;
   }
   const lw = new Map();
-  const fontDone = () => { TXT.clear(); lw.clear(); };   // 글꼴(Jua)이 늦게 오면 그때 한 번 다시 그림 — 매 프레임 새로 만들던 것(글꼴 실패 시 계속) 막음
+  // 2026-10-29 하율 "5층→6층에서 끊김": 6층 이름표(음악실·체육관)처럼 처음 화면에 들어오는 이름표를 판 도중에 처음 만들고(글자 그리기 + 한글 대체 글꼴 찾기),
+  //   그 글자의 Jua 조각 파일이 늦게 도착하면 'loadingdone'에서 캐시를 전부 비워 보이는 이름표를 또 다시 만들던 것 → 판 도중 한 프레임이 길어짐(느린 기기에서 수십~수백 ms).
+  //   고침: ① 판 시작 전에 모든 층 장식을 빈 판에 한 번 그려 이름표를 미리 만들어 둠(warm) ② 글꼴이 와서 다시 만드는 건 판 도중이면 미뤘다가 판 밖(준비·멈춤·끝)에서
+  //   ③ Jua가 아닌 글꼴(본문 Pretendard 등) 도착엔 반응하지 않음. 쓰는 글자는 text()로 내보내 social.js가 판 시작 전에 글꼴 조각을 미리 받게 함
+  const TEXTS = new Set();
+  let refontLater = false;
+  const wctx = document.createElement('canvas').getContext('2d');
+  function warm() {
+    const g0 = g; g = wctx;
+    try { for (let fl = 0; fl < ROOF; fl++) for (let k = 0; k < 5; k++) floorDeco(fl, k, 300, (sd, w) => (sd < 0 ? 5 : W - w - 5)); motto(0, 0); } catch {}
+    finally { g = g0; }
+  }
+  function refont() { if (st.scene === 'play') { refontLater = true; return; } refontLater = false; TXT.clear(); lw.clear(); warm(); }
+  const fontDone = e => { const ff = e?.fontfaces; if (ff && ff.length && !ff.some(f => /jua/i.test(f.family))) return; refont(); };
   document.fonts?.addEventListener?.('loadingdone', fontDone);
   function label(cx, y, s) {
     let w = lw.get(s); if (!w) { g.font = '400 6px Jua, sans-serif'; w = Math.ceil(g.measureText(s).width) + 8; lw.set(s, w); }
@@ -560,6 +573,7 @@ export function createStair(cv, o = {}) {
   function frame(now) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
+    if (refontLater && st.scene !== 'play') refont();
     const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now; t += dt;   // 상한 0.05 → 0.1: 느린 기기에서 시간이 덜 흐르던 것 완화
     if (st.scene === 'play') {
       st.ms += dt * 1000; st.gauge -= drain(st.steps) * dt;
@@ -568,7 +582,8 @@ export function createStair(cv, o = {}) {
     moveT = Math.min(1, moveT + dt / .075);
     flash = Math.max(0, flash - dt / .9);
     const cx = fromX + (px - fromX) * moveT, cy = fromY + (py - fromY) * moveT;
-    camX += (cx * DX - camX) * Math.min(1, dt * 10); camY += (-cy * DY - camY) * Math.min(1, dt * 14);
+    // 카메라 따라가기: 프레임 길이와 상관없이 같은 속도(60fps에서 예전과 똑같음) — 예전 식(dt×14, 최대 1)은 한 프레임이 길어지면 카메라가 한 번에 붙어 화면이 '툭' 튐(2026-10-29)
+    camX += (cx * DX - camX) * (1 - Math.pow(5 / 6, dt * 60)); camY += (-cy * DY - camY) * (1 - Math.pow(1 - 14 / 60, dt * 60));
     if (st.scene === 'ready') { camX = cx * DX; camY = -cy * DY; }
     shake = Math.max(0, shake - dt * 12); shX = shake ? R((Math.random() - .5) * shake * 2) : 0; shY = shake ? R((Math.random() - .5) * shake * 2) : 0;
     g.setTransform(PS, 0, 0, PS, 0, 0); g.imageSmoothingEnabled = false;
@@ -608,9 +623,10 @@ export function createStair(cv, o = {}) {
   const vis = () => { if (document.hidden) pause(); };
   const blur = () => pause();
   document.addEventListener('visibilitychange', vis); window.addEventListener('blur', blur);
-  reset(); raf = requestAnimationFrame(frame);
+  reset(); warm(); raf = requestAnimationFrame(frame);
   return {
-    st, input, reset, pause,
+    st, input, reset, pause, refont,
+    text: () => [...TEXTS, ...FLOOR_MSG].join('') + Array.from({ length: 16 }, (_, f) => floorName(f) + floorName(f, true) + zoneOf(f)).join('') + ' 도착! 돌파!',   // 판에서 쓰는 글자(글꼴 미리 받기용)
     setChar(c) { o.char = c; loadSpr(); },
     setSound(v) { sound = !!v; if (v) beep(660, .05); },
     destroy() { alive = false; document.fonts?.removeEventListener?.('loadingdone', fontDone); clearTimeout(overT); cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', vis); window.removeEventListener('blur', blur); try { ac?.close(); } catch {} },
