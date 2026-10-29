@@ -36,6 +36,8 @@ const GAMES = {
   gearn: { ff: 'gear-game', casual: true, name: '기자재 정리! 일반', ic: 'gear', desc: '시간 제한 없이 자유롭게 · 티어·보상과 상관없는 일반 모드 순위', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
+  // 멜론 게임(2026-10-29 하율 "사과 게임을 멜론으로" — 미리보기 깃발 melon-game, 개발자만): 합이 10인 멜론 묶기. local = 아직 서버 기록·랭킹 없음(이 기기 최고만), casual = 게임 목록·티어엔 안 나옴
+  melon: { ff: 'melon-game', local: true, casual: true, name: '멜론 게임', ic: 'melon', desc: '드래그로 묶어 합이 10이면 사라져요 · 2분', fmt: v => v + '개' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
@@ -1784,7 +1786,7 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b><span class="pbtns">${GAMES[curGame] && !GAMES[curGame].local ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
   const kb = $('#pKeys'); if (kb) kb.onclick = () => openKeys(curGame);
@@ -1907,7 +1909,7 @@ function playTicket(game) {
    ② 하던 게임 정리(quitGame)가 오류를 내면 다음 게임이 영영 안 열렸음 → 오류를 삼키고 계속
    ③ 학교 와이파이가 느려 서비스 워커가 옛 social.js를 준 경우(버튼은 새 index.html, 게임 목록은 옛 파일) → 옛 파일을 지우고 새로 고침
    ④ 게임을 여는 중 오류 → 빈 화면 대신 안내 + 새로 고침 버튼 */
-const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair };
+const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, melon: playMelon };
 function staleReload() {
   try { if (Date.now() - (+sessionStorage.getItem('sg_rl') || 0) < 60e3) { toast('게임을 불러오지 못했어요. 앱을 완전히 닫았다가 다시 열어 주세요'); return; } sessionStorage.setItem('sg_rl', Date.now()); } catch {}
   toast('새 버전을 받는 중이에요…');
@@ -1933,7 +1935,7 @@ async function play(game) {
   }
   try { quitGame?.(); } catch (e) { console.error(e); }
   quitGame = null; curGame = game;
-  ticket = S.me && game !== 'gear' && game !== 'stair' ? playTicket(game) : null;
+  ticket = S.me && game !== 'gear' && game !== 'stair' && !GAMES[game].local ? playTicket(game) : null;
   try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
 
@@ -2317,6 +2319,17 @@ async function playStair() {
   let snapRaf = 0; const snapSoon = () => { cancelAnimationFrame(snapRaf); snapRaf = requestAnimationFrame(snapScr); };
   const snapRO = new ResizeObserver(snapSoon); snapRO.observe($('#parea')); addEventListener('resize', snapSoon); snapScr();
   quitGame = () => { run++; R.destroy(); clearTimeout(popT); snapRO.disconnect(); removeEventListener('resize', snapSoon); document.removeEventListener('keydown', kd); if (window.__stair === R) window.__stair = null; };
+}
+
+/* 멜론 게임(2026-10-29, 미리보기 melon-game — 개발자만): js/melon.js가 판·점수·결과를 다 그림. 아직 서버 기록 없음(이 기기 최고 melon_best) */
+let MELON = null;
+async function playMelon() {
+  const area = stage(ic('melon') + ' 멜론 게임', '<div class="ml" id="ml"></div>', true);
+  if (!MELON) { try { MELON = await import('./melon.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!area.isConnected || !$('#ml')) return;
+  const M = MELON.createMelon($('#ml'), { best: store.get('melon_best', 0), onBest: b => store.set('melon_best', b) });
+  window.__melon = M;   // 테스트용
+  quitGame = () => { M.destroy(); if (window.__melon === M) window.__melon = null; };
 }
 
 /* 5) 기자재 정리!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */
