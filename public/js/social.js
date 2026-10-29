@@ -41,7 +41,7 @@ const GAMES = {
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
-  film: { ff: 'film-game', name: '필름 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '컷' },
+  film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '컷' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
@@ -2369,7 +2369,7 @@ async function playStair() {
    → 서버가 같은 판에 보낸 묶음을 처음부터 다시 둬 보고 점수를 확인. 로그인 안 했거나 티켓을 못 받으면 아무 판(기록 저장 안 됨) */
 let FILM = null;
 async function playFilm() {
-  const area = stage(ic('film') + ' 필름 10', '<div class="fl"><div class="ml" id="ml"></div><aside class="sr-side fl-side" id="flRec"></aside></div>', true);
+  const area = stage(ic('film') + ' 게퍼 10', '<div class="fl"><div class="ml" id="ml"></div><aside class="sr-side fl-side" id="flRec"></aside></div>', true);
   if (!FILM) { try { FILM = await import('./film.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#ml')) return;
   let runTk = null, run = 0, tkWhy = '';

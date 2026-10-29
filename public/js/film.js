@@ -1,4 +1,4 @@
-// SVMHS GROUND — 필름 10(2026-10-29 하율: 사과 게임 → 멜론 → "필름으로 바꾸고 출시해도 될 정도로", 미리보기 깃발 film-game)
+// SVMHS GROUND — 게퍼 10(옛 이름 필름 10, 2026-10-29 하율 "제목도 게퍼 10으로"): 사과 게임 → 멜론 → "필름으로 바꾸고 출시해도 될 정도로", 미리보기 깃발 film-game)
 // 숫자 게퍼 테이프 롤을 드래그 네모로 묶어 합이 딱 10이면 잘려 나감. 지운 컷 수 = 점수, 2분. 규칙·판 생성·검사는 film-score.js(서버와 같음)
 // createFilm(root, { best, sound, seed: async () => 씨앗|null, onOver(res), onSound(on) })
 //   res = { n, ms, rounds: [가로 칸 수, 끝난 ms, ...묶음], why: 'time'|'clear'|'stuck' }
@@ -9,7 +9,7 @@ export function createFilm(root, opt = {}) {
   let best = opt.best || 0, sound = !!opt.sound;
   root.innerHTML = `<div class="ml-top"><span class="ml-chip">점수 <b data-m="sc">0</b></span><span class="ml-chip">최고 <b data-m="best">${best}</b></span><span class="ml-chip ml-tm">남은 시간 <b data-m="tm">${TIME_MS / 1000}</b></span>
       <button type="button" class="btn ghost hr-snd ml-snd" data-m="snd"></button></div>
-    <div class="ml-board" data-m="board"><canvas data-m="cv" aria-label="필름 10 판"></canvas><div class="ml-bar" aria-hidden="true"><i data-m="tf"></i></div>
+    <div class="ml-board" data-m="board"><canvas data-m="cv" aria-label="게퍼 10 판"></canvas><div class="ml-bar" aria-hidden="true"><i data-m="tf"></i></div>
       <div class="ml-ov" data-m="ov"></div></div>`;
   const $ = k => root.querySelector(`[data-m="${k}"]`);
   const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), tf = $('tf'), board = $('board'), sndBtn = $('snd');
@@ -39,26 +39,35 @@ export function createFilm(root, opt = {}) {
   sndBtn.onclick = () => { sound = !sound; if (sound) au(); paintSnd(); opt.onSound?.(sound); sndBtn.blur(); };
   paintSnd();
 
-  /* ----- 그림(2026-10-29 하율 "필름 말고 한눈에 들어오는 심플한 영상 물건" → 게퍼 테이프 → "동그랗게, 가운데에 숫자") -----
-     한 칸 = 앞에서 본 게퍼 테이프 롤: 바깥 테이프 고리(단색) + 가운데 심(밝은 종이 심)에 숫자. 테두리·무늬 없이 숫자만 또렷하게 */
+  /* ----- 그림(2026-10-29 하율: 필름 → 클립 → 게퍼 테이프 → "동그랗게, 가운데 숫자" → "전혀 테이프 같지 않아") -----
+     한 칸 = 비스듬히 본 게퍼 테이프 롤: 옆면 두께 + 앞면 감긴 결 + 갈색 종이 심 + 바닥에 풀린 끝. 숫자는 심 가운데(밝은 칸이라 화이트/다크 모두 진한 글자) */
   const isDark = () => document.documentElement.dataset.theme === 'dark';
-  const TX = .06, TY = .06;   // 롤 바깥 여백 — 선택 판정(span)도 롤 크기 기준
+  const TX = .06, TY = .06;   // 선택 판정(span) 여백
+  const RC = { x: .45, y: .45, R: .37 };   // 롤 앞면 가운데·반지름(칸 비율) — 숫자도 이 가운데에
   let seg = null, tiles = null;
   function makeFrame() {
     const S = Math.round(cell * dpr), dk = isDark(), mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; return c; };
-    const cx = S / 2, R = S * (.5 - TX), r = R * .64;
-    seg = mk(); { const g = seg.getContext('2d'); g.fillStyle = dk ? 'rgba(255,255,255,.035)' : 'rgba(60,80,140,.045)'; g.beginPath(); g.arc(cx, cx, R, 0, 7); g.fill(); }   // 떼어 낸 자리
-    const tile = (tape, edge) => {
+    const cx = S * RC.x, cy = S * RC.y, R = S * RC.R, r = R * .66, d = S * .085;
+    seg = mk(); { const g = seg.getContext('2d'); g.fillStyle = dk ? 'rgba(255,255,255,.035)' : 'rgba(60,80,140,.045)'; g.beginPath(); g.ellipse(S * .5, S * .86, S * .36, S * .07, 0, 0, 7); g.fill(); }   // 롤이 있던 자리(바닥 자국)
+    const tile = (tape, side) => {
       const c = mk(), t = c.getContext('2d');
-      t.fillStyle = tape; t.beginPath(); t.arc(cx, cx, R, 0, 7); t.fill();   // 테이프 고리
-      t.strokeStyle = dk ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.35)'; t.lineWidth = S * .025; t.beginPath(); t.arc(cx, cx, (R + r) / 2 + S * .03, Math.PI * 1.05, Math.PI * 1.55); t.stroke();   // 감긴 결 한 줄(왼쪽 위)
-      t.fillStyle = dk ? '#262b47' : '#fffdf8'; t.beginPath(); t.arc(cx, cx, r, 0, 7); t.fill();   // 종이 심
-      t.strokeStyle = dk ? 'rgba(255,255,255,.1)' : 'rgba(120,100,70,.18)'; t.lineWidth = S * .02; t.beginPath(); t.arc(cx, cx, r - S * .01, 0, 7); t.stroke();
-      if (edge) { t.lineWidth = S * .05; t.strokeStyle = edge; t.beginPath(); t.arc(cx, cx, R - S * .025, 0, 7); t.stroke(); }
+      // 바닥에 풀린 끝(롤 아래에서 왼쪽으로)
+      t.fillStyle = side; t.beginPath(); t.moveTo(cx + S * .1, cy + R - S * .02); t.lineTo(S * .04, cy + R + S * .045); t.lineTo(S * .06, cy + R + S * .115); t.lineTo(cx + S * .12, cy + R + S * .05); t.closePath(); t.fill();
+      // 옆면(두께): 뒤쪽 원 + 이음
+      t.fillStyle = side; t.beginPath(); t.arc(cx + d, cy - d * .35, R, 0, 7); t.fill();
+      t.beginPath(); t.moveTo(cx, cy - R); t.lineTo(cx + d, cy - d * .35 - R); t.lineTo(cx + d + R, cy - d * .35); t.lineTo(cx + R, cy); t.closePath(); t.fill();
+      // 앞면: 테이프 + 감긴 결
+      t.fillStyle = tape; t.beginPath(); t.arc(cx, cy, R, 0, 7); t.fill();
+      t.lineWidth = S * .012; t.strokeStyle = 'rgba(0,0,0,.08)';
+      for (const k of [.35, .7]) { t.beginPath(); t.arc(cx, cy, r + (R - r) * k, 0, 7); t.stroke(); }
+      t.strokeStyle = 'rgba(255,255,255,.32)'; t.lineWidth = S * .03; t.beginPath(); t.arc(cx, cy, R - S * .035, Math.PI * 1.08, Math.PI * 1.45); t.stroke();   // 무광 반사 한 줄
+      // 종이 심(갈색 테 + 밝은 안쪽)
+      t.fillStyle = '#c9ad7f'; t.beginPath(); t.arc(cx, cy, r, 0, 7); t.fill();
+      t.fillStyle = '#fbf7ee'; t.beginPath(); t.arc(cx + S * .008, cy - S * .004, r * .84, 0, 7); t.fill();
       return c;
     };
-    tiles = dk ? { n: tile('#4a66a8'), s: tile('#3a7be0', '#bcd4ff'), k: tile('#35a852', '#bff0c6') }
-               : { n: tile('#8fb3ef'), s: tile('#3a6fd0', '#1f4fa8'), k: tile('#3fb553', '#23863a') };
+    tiles = dk ? { n: tile('#6e7894', '#4c5470'), s: tile('#4f86e6', '#2f5fb8'), k: tile('#45b85a', '#2c8a40') }
+               : { n: tile('#a7afc2', '#7d869b'), s: tile('#4f86e6', '#3263bf'), k: tile('#45b85a', '#2d8c41') };
     tiles.dk = dk; frame = tiles.n;
   }
   function fit() {
@@ -92,7 +101,7 @@ export function createFilm(root, opt = {}) {
     const R = range(), sel = new Set(selOf(R)); let sum = 0; sel.forEach(i => sum += grid[i]);
     const ok = sum === 10, hide = state === 'ready' || state === 'pause';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `800 ${Math.round(cell * .37)}px Outfit,Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
+    ctx.font = `800 ${Math.round(cell * .34)}px Outfit,Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
     const dk = isDark();
     for (let i = 0; i < CELLS; i++) {
       const x = (i % cols) * cell, y = Math.floor(i / cols) * cell, v = grid[i], on = sel.has(i);
@@ -100,7 +109,7 @@ export function createFilm(root, opt = {}) {
       if (!v) continue;
       const d = cell * (on ? 1.05 : 1);
       ctx.drawImage(on ? (ok ? tiles.k : tiles.s) : tiles.n, x + (cell - d) / 2, y + (cell - d) / 2, d, d);
-      if (!hide) { ctx.fillStyle = on ? (dk ? '#fff' : ok ? '#1f7a2a' : '#2457b8') : dk ? '#eef0ff' : INK; ctx.fillText(v, x + cell / 2, y + cell * .52); }
+      if (!hide) { ctx.fillStyle = on ? (ok ? '#1f7a2a' : '#2457b8') : INK; ctx.fillText(v, x + (cell - d) / 2 + d * RC.x, y + (cell - d) / 2 + d * RC.y + cell * .015); }   // 심이 밝아서 다크에서도 진한 글자
     }
     const now = performance.now();
     pops = pops.filter(p => now - p.t < 360);
@@ -175,7 +184,7 @@ export function createFilm(root, opt = {}) {
   const sb = s => `<b>${s}</b>`;
   function ready() {
     state = 'ready'; ov.hidden = false; ov.className = 'ml-ov';
-    ov.innerHTML = `${sb('필름 10')}<span>드래그로 네모를 그려 숫자 테이프를 묶어요<br>숫자 합이 <em>딱 10</em>이면 싹둑! · 2분 동안 많이 자르기</span><button type="button" class="btn big" data-m="go">시작</button>`;
+    ov.innerHTML = `${sb('게퍼 10')}<span>드래그로 네모를 그려 숫자 테이프를 묶어요<br>숫자 합이 <em>딱 10</em>이면 싹둑! · 2분 동안 많이 자르기</span><button type="button" class="btn big" data-m="go">시작</button>`;
     $('go').onclick = start; draw();
   }
   async function start() {
