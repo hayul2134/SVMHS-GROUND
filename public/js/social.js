@@ -1543,6 +1543,7 @@ const MGEM = { m0: '#9fb0c6', m1: '#2fd3a0', m2: '#3aa0ff', m3: '#a77bff', m4: '
 const mSub = lv => lv >= 50 ? 3 : Math.min(2, Math.floor(((lv < 10 ? lv - 1 : lv % 10)) / (lv < 10 ? 3 : 3.34)));   // 단계 안 I·II·III
 const mLeaf = (L, w) => `M0 0C${(L * .3).toFixed(1)} ${(-w).toFixed(1)} ${(L * .75).toFixed(1)} ${(-w * .9).toFixed(1)} ${L} 0C${(L * .75).toFixed(1)} ${(w * .7).toFixed(1)} ${(L * .3).toFixed(1)} ${(w * .8).toFixed(1)} 0 0z`;
 const mMir = x => x + `<g transform="matrix(-1 0 0 1 60 0)">${x}</g>`;
+// 레전드 빛 꽃잎: 왕관 뒤(위쪽 3장)는 비우고 회전 대신 숨쉬기(왕관과 겹쳐 보임, 2026-10-30)
 // 깃털 날개(2026-10-30 하율 "너무 날카로움" → 둥근 깃털 → "넓고 크게" → "더 미니멀하게"): 뿌리(13.6, 27)에서 왼쪽 위로 부채꼴
 //   끝이 둥근 통통한 깃털만(결 선·덮깃 없음), 단계마다 1장씩 늘어남(베테랑 2 → 레전드 5)
 const mPlume = (L, w) => { const r = w, b = w * .42, x = (L - r).toFixed(1); return `M0 ${(-b).toFixed(1)}C${(L * .35).toFixed(1)} ${(-w * 1.02).toFixed(1)} ${x} ${(-r).toFixed(1)} ${x} ${(-r).toFixed(1)}A${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${x} ${r.toFixed(1)}C${x} ${r.toFixed(1)} ${(L * .35).toFixed(1)} ${(w * .9).toFixed(1)} 0 ${b.toFixed(1)}Q-1 0 0 ${(-b).toFixed(1)}z`; };
@@ -1552,10 +1553,10 @@ const mLaurel = () => mMir([[18.5, 47, 200], [14.6, 42.6, 215], [11.8, 37.2, 232
 const mGem = (x, y, r, c) => `<g class="me-gm" transform="translate(${x} ${y})"><path d="M0 ${-r}L${r * .9} ${-r * .2}L0 ${r}L${-r * .9} ${-r * .2}z" fill="${c}"/><path class="me-gh" d="M0 ${-r}L${r * .9} ${-r * .2}L0 ${-r * .05}z"/></g>`;
 const mEmb = (lv, cls = '', g = '') => { const b = mstBand(lv), k = b.k, n = +k.slice(1), t = mSub(lv), ico = g && GAMES[g]?.ic, gem = MGEM[k];
   const spk = (x, y, r, c = '') => `<path class="me-sp${c}" d="M${x} ${y - r}Q${x + r * .18} ${y - r * .18} ${x + r} ${y}Q${x + r * .18} ${y + r * .18} ${x} ${y + r}Q${x - r * .18} ${y + r * .18} ${x - r} ${y}Q${x - r * .18} ${y - r * .18} ${x} ${y - r}z"/>`;
-  const glow = n >= 5 ? `<g class="me-ray">${Array.from({ length: 10 }, (_, i) => `<path class="${i % 2 ? 'r2' : ''}" d="${mLeaf(i % 2 ? 11 : 14, i % 2 ? 3.4 : 4.4)}" transform="translate(30 29) rotate(${i * 36 - 90}) translate(17 0)"/>`).join('')}</g>` : '';
+  const glow = n >= 5 ? `<g class="me-ray">${[1, 2, 3, 4, 5, 6, 7, 8].map(i => `<path class="${i % 2 ? 'r2' : ''}" d="${mLeaf(i % 2 ? 11 : 14, i % 2 ? 3.4 : 4.4)}" transform="translate(30 29) rotate(${i * 36 - 90}) translate(17 0)"/>`).join('')}</g>` : '';
   const tails = n >= 4 || t >= 2 ? mMir('<path class="me-tl" d="M19.6 49.4 14.6 57.4l3.4-.3 1.6 3.4 4.4-8.2z"/><path class="me-tf" d="M19.6 49.4l2.4 3.6 1.8-.9z"/>') : '';
   const wings = n >= 2 ? mWing(k, [0, 0, 2, 3, 4, 5][n]) : '';
-  const rivet = n >= 1 ? [[30, 10.4], [45.6, 19.8], [45.6, 38.2], [30, 47.6], [14.4, 38.2], [14.4, 19.8]].map(([x, y]) => `<circle class="me-rv" cx="${x}" cy="${y}" r="1"/>`).join('') : '';
+  const rivet = '';   // 테 위 작은 점(리벳) 2026-10-30 하율 요청으로 뺌
   const gems = t >= 1 ? mMir(mGem(12.6, 29, 3.6, gem)) : '';
   const top = n >= 4 ? `<path class="me-c" d="M20.6 12.4Q20 7.4 21.6 4.4Q24.6 7.6 26.4 7.4Q28 4 30 1.6Q32 4 33.6 7.4Q35.4 7.6 38.4 4.4Q40 7.4 39.4 12.4Q30 10 20.6 12.4z"/><circle class="me-cb" cx="21.6" cy="4.2" r="1.4"/><circle class="me-cb" cx="30" cy="1.4" r="1.5"/><circle class="me-cb" cx="38.4" cy="4.2" r="1.4"/>${t >= 2 || n >= 5 ? mGem(30, 8.6, 2.4, gem) : ''}`
     : n >= 3 ? `<path class="me-s" d="M30 1.4Q31.4 4.6 32.4 5.4Q35.6 5.8 37 6.6Q34.8 9 34.4 10.2Q35 13.6 34.6 14.6Q31.4 13 30 13Q28.6 13 25.4 14.6Q25 13.6 25.6 10.2Q25.2 9 23 6.6Q24.4 5.8 27.6 5.4Q28.6 4.6 30 1.4z"/>${t >= 2 ? `<circle class="me-cb" cx="30" cy="8.6" r="1.6" fill="${gem}"/>` : ''}`

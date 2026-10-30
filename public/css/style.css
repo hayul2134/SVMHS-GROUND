@@ -6379,7 +6379,8 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .mem.m3{--mr:#7c5ce6;--mb:#6a4bd8}
 .mem.m4{--mr:#d99a12;--mb:#d08a0a}
 .mem.m5{--mr:#b39cff;--mb:#b06ae0;animation:memHue 5s linear infinite}
-.mem.m5 .me-ray{transform-origin:30px 29px;animation:memSpin 16s linear infinite}
+.mem.m5 .me-ray{transform-origin:30px 29px;animation:memRayP 3.2s ease-in-out infinite}
+@keyframes memRayP{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.8}}
 @keyframes memSpin{to{transform:rotate(360deg)}}
 @keyframes memHue{0%{filter:var(--stk) hue-rotate(0)}100%{filter:var(--stk) hue-rotate(360deg)}}
 .mem.big{width:104px;height:110px;filter:var(--stk) drop-shadow(0 0 22px rgba(255,255,255,.35))}
