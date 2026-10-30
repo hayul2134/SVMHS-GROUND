@@ -3895,7 +3895,7 @@ html.rk2 .rk-empty button{margin-left:4px;padding:2px 9px;border-radius:99px;bor
 .pquit:active{transform:translate(2px,2px);box-shadow:none}
 .pquit svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 /* 다시 시작: 게임 화면 바로 아래 오른쪽 빨간 버튼 (2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 기자재 정리!는 아래 줄(소리 버튼 왼쪽)에 넣어 판 크기 그대로 */
-.prow{display:flex;justify-content:flex-end}
+.prow{display:flex;justify-content:flex-end;gap:10px}
 .prestart{display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:8px;min-height:52px;padding:0 18px 0 16px;border-radius:16px;background:#e5484d;color:#fff;border:var(--bd);box-shadow:var(--sh-s);font-family:inherit;font-weight:800;font-size:17px;line-height:1;cursor:pointer;transition:transform .15s,background .15s;touch-action:manipulation}
 @media (hover:hover){.prestart:hover{transform:translateY(-2px);background:#d93d42}}
 .prestart:active{transform:translate(2px,2px);box-shadow:none}
@@ -6256,7 +6256,9 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 @media (min-width:901px){div.fl{display:grid;grid-template-columns:240px minmax(0,1fr) 240px;gap:14px;align-items:start}div.fl>.ml{grid-column:2}div.fl>.fl-side{grid-column:3;width:auto}}   /* 게퍼 10도 판이 화면 가운데(2026-10-29 하율) */
 /* 게퍼 10(2026-10-30 하율 "화면이 너무 작게 · 점수·최고·남은 시간이 잘 안 보여 · 정 중앙"):
    양옆 240px 칸이 가로를 먹어 판이 작았음 → 아주 넓은 화면(1500px↑)이 아니면 판을 가로 전체로 크게, 내 기록은 판 아래로 */
-@media (min-width:901px) and (max-width:1499px){div.fl:not(.bl-fl){display:flex;flex-direction:column;align-items:stretch}div.fl:not(.bl-fl)>.fl-side{width:min(560px,100%);align-self:center}}
+@media (min-width:901px) and (max-width:1199px){div.fl:not(.bl-fl){display:flex;flex-direction:column;align-items:stretch}div.fl:not(.bl-fl)>.fl-side{width:min(560px,100%);align-self:center}}
+/* 2026-10-30 21:10 하율 "정 중앙": 게퍼 10 칸 폭 제한(1240px)을 풀어 판을 크게 + 위아래 가운데 */
+.parea.wide:has(> .fl:not(.bl-fl)){max-width:min(1800px,100%);justify-content:center;padding-bottom:clamp(0px,6vh,64px)}
 .fl:not(.bl-fl) .ml-top{gap:10px}
 .fl:not(.bl-fl) .ml-chip{align-items:center;gap:8px;padding:6px 16px;border-width:2.5px;border-radius:14px;box-shadow:3px 3px 0 var(--ink);font-size:15px}
 .fl:not(.bl-fl) .ml-chip b{font-size:30px;line-height:1.05}

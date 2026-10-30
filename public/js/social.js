@@ -1,6 +1,7 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
 import { $, $$, esc, toast, store, idle, onWake, ghost, ghostIn, ghostOr } from './util.js';
 import * as ATT from './attend.js';
+import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';   // 효과음(반응속도, 2026-10-30)
 import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시(2026-10-25)
 import { wearOf, wearSvg } from './wear.js';
 import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
@@ -2312,8 +2313,8 @@ const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 const evT = e => { const n = performance.now(), t = e.timeStamp; return t > 0 && t <= n + 1 && t > n - 1000 ? t : n; };   // 이벤트 시각(같은 시간축이 아니면 지금)
 function playReaction() {
   const quick = reQuick; reQuick = false;
-  stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요${matchMedia('(pointer:fine)').matches ? ' · 스페이스바도 돼요' : ''}</small></button>${RE_ROW}<ol class="rxlog" id="rxlog"></ol><p class="rxfoul" id="rxfoul">초록색 전에 누르면 부정출발 · 첫 번은 봐주고, 그다음부터 한 번마다 +${RX_PEN}ms · ${RX_OUT}번이면 실격</p>`);
-  const pad = $('#rx'), log = $('#rxlog'), fl = $('#rxfoul');
+  stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요${matchMedia('(pointer:fine)').matches ? ' · 스페이스바도 돼요' : ''}</small></button>${RE_ROW.replace('</div>', sndBtnHtml('rxSnd') + '</div>')}<ol class="rxlog" id="rxlog"></ol><p class="rxfoul" id="rxfoul">초록색 전에 누르면 부정출발 · 첫 번은 봐주고, 그다음부터 한 번마다 +${RX_PEN}ms · ${RX_OUT}번이면 실격</p>`);
+  const pad = $('#rx'), log = $('#rxlog'), fl = $('#rxfoul'), sfx = makeSfx('rx_snd'); bindSnd($('#rxSnd'), sfx);
   const times = []; let state = 'idle', t0 = 0, tG = 0, timer = 0, raf = 0, alive = true, lastD = 0, fouls = 0;
   /* 대기 시간: 고르게 뽑으면(예전 1~3.5초) 기다릴수록 '이제 곧'이 보여 예측됨 →
      지수 분포(언제든 나올 확률이 같음)로 0.7~7초, 가끔 아주 짧게(0.45~0.95초), 직전과 0.7초 이상 차이
@@ -2332,7 +2333,7 @@ function playReaction() {
       if (!alive || state !== 'wait') return;
       raf = requestAnimationFrame(tg => {   // 이 프레임에 초록으로 바꾸고
         if (!alive || state !== 'wait') return;
-        tG = tg; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>';
+        tG = tg; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>'; sfx.tone(1046, .12, 'square', .05);
         raf = requestAnimationFrame(ts => { if (alive && state === 'go') t0 = ts; });   // 다음 프레임 시작 = 초록이 화면에 나온 시각
       });
     }, rxDelay());
@@ -2341,7 +2342,7 @@ function playReaction() {
      → 탓하는 말 대신 무슨 일이 있었는지(잰 시간·기준)를 그대로 보여 줌. 판정 기준은 2026-10-29에 0.1초 → 0.05초로 완화. */
   const foul = (why, note = '') => {
     stop(); fouls++;
-    const pen = rxPen(fouls);
+    const pen = rxPen(fouls); sfx.tone(180, .22, 'sawtooth', .06, 0, 110);
     fl.className = 'rxfoul on' + (fouls >= RX_OUT - 1 ? ' hot' : '');
     fl.innerHTML = `부정출발 <b>${fouls} / ${RX_OUT}</b>` + (pen ? ` · 벌점 <b>+${pen}ms</b>` : ' · 이번 한 번은 봐줄게요');
     if (fouls >= RX_OUT) {
@@ -2357,14 +2358,14 @@ function playReaction() {
   };
   const press = at => {
     if (state === 'lock' || state === 'done') return;   // 부정출발 뒤 1초는 연타해도 안 넘어감
-    if (state === 'idle' || state === 'shown') return arm();
+    if (state === 'idle' || state === 'shown') { sfx.tone(440, .05, 'triangle', .035); return arm(); }
     if (state === 'wait') return foul('앗, 너무 빨라요!', '초록색으로 바뀌기 전에 눌렀어요');
     if (state !== 'go') return;
     // 초록으로 바꾼 뒤 다음 프레임 전에 눌림: 예전엔 무조건 부정출발 → 느린 기기(디벗)에서 프레임이 밀리면 초록을 보고 누른 학생도 걸림(2026-10-29 하율 "억울하다")
     //   → 초록 프레임 + 1프레임(16.7ms)을 화면에 나온 시각으로 보고 같은 기준(RX_ANTI)으로 판정
     const ms = Math.round(at - (t0 || tG + 16.7));
     if (ms < RX_ANTI) return foul('너무 빨랐어요!', `${ms}ms · 0.05초 안은 사람이 보고 누를 수 없는 속도라 이번 판은 다시 해요`);   // 초록이 보이고 0.05초 안 = 봇·오토클릭 수준(2026-10-29 하율 "정말 봇이나 오토클릭만 잡게" — 예전 0.1초는 순발력 좋은 학생이 억울하게 걸림)
-    stop(); times.push(ms); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
+    stop(); times.push(ms); sfx.tone(ms < 200 ? 1318 : ms < 280 ? 988 : 784, .08, 'triangle', .05); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
     if (times.length >= 5) {
       state = 'done';
       const cap = times.map(t => Math.min(t, RX_CAP)), avg = Math.round(cap.reduce((a, b) => a + b, 0) / 5), pen = rxPen(fouls);

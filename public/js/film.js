@@ -72,12 +72,17 @@ export function createFilm(root, opt = {}) {
   function fit() {
     if (dead || !cv.isConnected) return;
     dpr = Math.min(devicePixelRatio || 1, 2);
-    const w = root.clientWidth - 34, top = board.getBoundingClientRect().top, h = Math.max(260, innerHeight - Math.max(top, 0) - 48);   // 판 테두리·여백(약 25px)까지 화면 안에(2026-10-30)
+    // 높이(2026-10-30 21:10 하율 "정 중앙"): 판이 화면 세로 가운데로 움직여도 크기가 흔들리지 않게 판 위치 대신 게임 칸(.parea) 위 + 판 위 점수 줄 높이로 잼
+    const pa = root.closest('.parea'), paTop = pa ? pa.getBoundingClientRect().top : 0, off = board.getBoundingClientRect().top - root.getBoundingClientRect().top;
+    const w = root.clientWidth - 34, h = Math.max(260, innerHeight - Math.max(paTop, 0) - off - 64);
     if (state === 'ready' || state === 'over') { const c = innerHeight > innerWidth && w < 640 && h > w * 1.15 ? 8 : 15; if (c !== cols) { cols = c; rows = CELLS / c; } }   // 세로판(8×15)은 세로로 든 폰·패드만 — 가로 화면은 항상 가로판 15×8(2026-10-29 하율 "가로로 보게")
     cell = Math.max(20, Math.min(72, Math.floor(w / cols), Math.floor(h / rows)));
     cv.style.width = cell * cols + 'px'; cv.style.height = cell * rows + 'px';
     cv.width = cell * cols * dpr; cv.height = cell * rows * dpr;
     makeFrame(); draw();
+    // 내 기록 칸은 판 바로 오른쪽에 붙임(2026-10-30 하율 "옆 오브젝트 붙여")
+    const aside = root.closest('.fl')?.querySelector(':scope > .fl-side');
+    if (aside) requestAnimationFrame(() => { aside.style.translate = ''; if (innerWidth < 1200) return; const d = Math.round(aside.getBoundingClientRect().left - board.getBoundingClientRect().right - 16); if (d > 0) aside.style.translate = -d + 'px 0'; aside.style.marginTop = Math.max(0, Math.round(board.getBoundingClientRect().top - aside.parentElement.getBoundingClientRect().top)) + 'px'; });
   }
   // 드래그 네모가 컷(버튼) 자체에 닿은 칸 → 줄·칸 범위(2026-10-29 하율 "숫자 말고 버튼 자체가 선택되게")
   // 컷과 겹친 길이가 컷 크기의 15% 이상이면 선택(스치는 정도는 제외), 탭·짧은 드래그는 컷 안에만 있으면 선택
