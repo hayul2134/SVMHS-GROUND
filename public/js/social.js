@@ -1473,7 +1473,8 @@ async function renderGame() {
 }
 // 기자재 정리! 티어 반영(2026-10-28 하율, 미리보기 깃발 gear-tier): 랭킹전·일반 중 순위 점수가 높은 쪽 한 칸 → 어느 쪽이 들어갔는지 표시
 //   개발자는 티어 밖이라 '내' 내역이 없음 → 1위 학생 내역으로 미리보기
-const GT = 'gear-tier', gtOn = () => ffOn(GT, isDev(S.me)), GT_FROM = '10/29';
+// 2026-10-30 하율: 일반 모드를 티어에서 뺌(깃발 gear-tier-r) → 켜지면 '두 모드 중 높은 쪽' 표시를 다 끄고 일반은 '티어·뽑기권과 상관없어요' 안내로 돌아감
+const GT = 'gear-tier', gtOn = () => ffOn(GT, isDev(S.me)) && !ffOn('gear-tier-r', isDev(S.me)), GT_FROM = '10/29';
 const gtMode = m => m === 'n' ? '일반' : '타임어택';
 async function gearTier() {
   try { const d = await call('tier'); if (!d.g) return null; const dev = !d.me && isDev(S.me), u = d.me || (dev ? d.top?.[0] : null);

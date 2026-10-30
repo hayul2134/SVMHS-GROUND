@@ -1605,10 +1605,13 @@ const tierV2 = me => ffOn(TIER2, me ? isAdm(me) : false);
 //   2026-10-28 21:22 하율 "내일부터 티어에 반영되게" → 10/29부터(11/9 라운드 계획에서 앞당김)
 const GEAR_TIER = 'gear-tier', GEAR_TIER_FROM = '20261029';
 const gtFor = me => (me && isAdm(me)) ? 2 : ffOn(GEAR_TIER, false) ? 1 : 0;
+// 2026-10-30 하율 "일반 모드를 티어에서 빼자"(미리보기 깃발 gear-tier-r): 끝없는 일반 모드는 오래 할수록 점수가 커져 티어가 시간 경쟁이 됨 → 티어엔 타임어택(gear)만.
+//   개발자 미리보기(gt 2)에서만 켜짐 — 정산·학생 화면(gt 0·1)은 깃발 공개 전까지 그대로
+const GEAR_TR = 'gear-tier-r', gtrOn = gt => ffOn(GEAR_TR, gt === 2);
 // upTo(YYYYMMDD) = 그날까지의 기록만으로 계산(티어 변화 '어제보다' 비교용, tier-champ 미리보기 — v2 전용)
 async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), upTo = '') {
   const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to: end } = rkRange(cur), to = upTo && upTo < end ? upTo : end;
-  const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt + (to !== end ? ':u' + to : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
+  const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt + (gtrOn(gt) ? 'r' : '') + (to !== end ? ':u' + to : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
   if (to < from) return { n: cur, from, to, list: [], mode: tierMode(0), v2 };
   if (v2) { const b = await cached('tb2:' + mk + ':' + from + to, to !== end || cur < rd.n ? 1800 : 45, () => tierBoard2(db, cur, from, to, rx, gt)); tierMemo.set(mk, { at: Date.now(), b }); return b; }   // '어제까지' 판(to < end)·끝난 라운드는 지난 기록이라 30분   // 데이터센터 공용 캐시 45초(2026-10-29 읽기 절약)
   const acc = new Map();
@@ -1640,7 +1643,8 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   const out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '')).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 = 제외
   const games = Object.entries(GAMES).filter(([, g]) => !isCas(g, from)).filter(([, g]) => !g.ff || (ffOn(g.ff, gt === 2) && (g.tierOn || (g.tierFrom && from >= g.tierFrom.replace(/-/g, '')))));   // gt 2 = 개발자 미리보기: 아직 안 연 게임도 같이 계산
   const gOn = gt === 2 || (gt === 1 && (from >= GEAR_TIER_FROM || to >= GEAR_TIER_FROM && kstYmd() >= GEAR_TIER_FROM));
-  if (gOn) for (const k of ['gear', 'gearn']) if (!games.some(([x]) => x === k)) games.push([k, GAMES[k]]);
+  const rOnly = gtrOn(gt);   // 일반(gearn) 빼고 타임어택만
+  if (gOn) for (const k of rOnly ? ['gear'] : ['gear', 'gearn']) if (!games.some(([x]) => x === k)) games.push([k, GAMES[k]]);
   const acc = new Map();
   await Promise.all(games.map(async ([game]) => {
     // 라운드 전체면 라운드별 최고 기록 표(rbests, 트리거로 자동)만 읽음 — 사람마다 한 줄. '어제까지'처럼 중간에서 자른 판만 날짜별 기록을 읽음(2026-10-29 읽기 절약)
@@ -1654,7 +1658,7 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
       const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts2(rk, rows.length); a.games[game] = { r: rk, n: rows.length, p, at: r.at, b: r.b }; acc.set(r.uid, a); });
   }));
   // 기자재 정리!: 두 모드 중 순위 점수가 높은 쪽 한 칸(같으면 랭킹전). m = 반영된 모드(r 랭킹전 · n 일반), o = 다른 모드 순위·점수(표시용)
-  if (gOn) for (const a of acc.values()) {
+  if (gOn && !rOnly) for (const a of acc.values()) {
     const r = a.games.gear, nn = a.games.gearn; delete a.games.gearn; if (!r && !nn) continue;
     const useN = !!nn && (!r || nn.p > r.p), w = useN ? nn : r, o = useN ? r : nn;
     a.games.gear = { ...w, m: useN ? 'n' : 'r', ...(o ? { o: { r: o.r, n: o.n, p: o.p } } : {}) };
