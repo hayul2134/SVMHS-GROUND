@@ -6602,6 +6602,7 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 /* 2026-10-30 기록실(깃발 hall) — 게임·모드마다 역대 최고 기록 카드 */
 .vhead .hall-go{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-weight:800}
 .vhead .hall-go .sic{width:18px;height:18px}
+.vhead .hall-go .tri{width:24px;height:22px;margin:-3px 0}   /* 2026-10-31 하율: 트로피 → 티어 엠블럼 */
 .hl-lead{display:flex;flex-direction:column;gap:3px;margin:0 0 14px;padding:12px 16px;border:var(--bd);border-radius:16px;background:var(--card);box-shadow:var(--sh-s);color:var(--text)}
 .hl-lead b{font:400 19px/1.2 var(--disp)}
 .hl-lead span{font-size:13.5px;font-weight:700;color:var(--sub);word-break:keep-all}
