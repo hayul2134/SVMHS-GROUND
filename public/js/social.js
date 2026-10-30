@@ -185,6 +185,12 @@ function paintFF() {
 // 할로윈 테마 기간(2026-10-30 하율 "내일 공지랑 같이 바뀌고 일주일 동안만"): KST 10/31 00:00 ~ 11/7 00:00. 개발자는 미리보기로 지금부터. theme.js에도 같은 값
 const HW_S = Date.UTC(2026, 9, 30, 15), HW_E = Date.UTC(2026, 10, 6, 15);
 const hwDay = dev => { const t = Date.now(); return t < HW_E && (dev || t >= HW_S); };
+// 켜 둔 채로 경계를 넘는 화면: 시작(10/31 0시)엔 0~2분 흩어서 한 번만 다시 확인(공지 게시 → 깃발 공개), 끝(11/7 0시)엔 바로 끔
+setInterval(() => {
+  const h = document.documentElement, t = Date.now();
+  if (h.classList.contains('hw') && t >= HW_E) { h.classList.remove('hw'); document.dispatchEvent(new Event('sg:mfx')); }
+  else if (!h.classList.contains('hw') && S.me && t >= HW_S + (S.hwJit ??= Math.random() * 120e3) && t < HW_S + 15 * 60e3 && !S.hwChk) { S.hwChk = 1; refreshMe(); }
+}, 30e3);
 let meP = null;   // 진행 중인 refreshMe (play가 기다림)
 function refreshMe() { return meP = refreshMe0(); }
 async function refreshMe0() {
