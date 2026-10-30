@@ -6435,3 +6435,8 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .find-sheet{text-align:left}.find-sheet .ct h2{display:flex;align-items:center;gap:8px}.find-sheet .ct .sic{width:22px;height:22px}
 .find-sheet .plist{max-height:min(52vh,440px);overflow-y:auto;overscroll-behavior:contain}
 .iconbtn.hb-fd svg{fill:none;stroke:currentColor}
+/* 숙련도 레벨 미리보기(개발자만, social.js mstPv) */
+.mst-pv{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0 0 10px;padding:7px 10px;border:2px dashed #b39cff;border-radius:12px;background:color-mix(in srgb,#b39cff 10%,var(--card))}
+.mst-pv small{flex-basis:100%;font-weight:900;font-size:11.5px;color:#6a4bd8}
+.mst-pv button{padding:4px 10px;border:2px solid var(--ink);border-radius:999px;background:var(--card);color:var(--text);font:800 12.5px var(--num);cursor:pointer}
+.mst-pv button.on{background:#6a4bd8;color:#fff}
