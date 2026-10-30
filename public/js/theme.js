@@ -27,6 +27,7 @@
     // 할로윈 테마(hw)는 KST 10/31 00:00 ~ 11/7 00:00만(개발자는 시작 전 미리보기) — social.js HW_S·HW_E와 같은 값
     var tn = Date.now(), de = document.documentElement;
     if (tn >= Date.UTC(2026, 10, 6, 15) || (tn < Date.UTC(2026, 9, 30, 15) && !de.classList.contains('dev-pv'))) de.classList.remove('hw');
+    if (de.classList.contains('hw')) { var hl = document.createElement('link'); hl.rel = 'stylesheet'; hl.href = '/css/hw-chars.css?v=1'; hl.id = 'hwCss'; document.head.appendChild(hl); }   // 할로윈 의상 캐릭터(프로필 사진·배경 무늬) — 기간에만 받음
   } catch (e) {}
   // 로그인 전이면 소개 화면만 보임 — 로그인 없이는 사이트를 볼 수 없음 (sg_in: 로그인돼 있던 기기 표시 → 깜빡임 방지)
   try { sessionStorage.removeItem('sg_peek'); if (!localStorage.getItem('sg_in')) document.documentElement.classList.add('prelogin'); } catch (e) { document.documentElement.classList.add('prelogin'); }

@@ -92,7 +92,22 @@ function bellInfo(n) {
 
 // 지금 상태에 맞춘 G의 한마디 (시간대가 아니라 종 시간 기준이라 '수업 중인데 점심 인사' 같은 어긋남이 없음)
 const SAY = { today: '', tmr: '' };   // 학사일정 알림(loadOffDays가 채움)
+// 할로윈 주간(html.hw, 2026-10-30 하율 "전체적으로 할로윈 느낌을 귀엽게") — 학사일정 알림·새벽 응원은 그대로, 나머지 몇 상태만 할로윈 말풍선(10분마다 바뀜)
+const HW_SAY = {
+  '주말': ['Happy Halloween! 🎃 사탕 줄래, 장난칠래?', '오늘 밤은 유령들도 쉬는 날 👻', '호박 랜턴 켜 두고 푹 쉬자 🎃'],
+  '쉬는 시간': ['쉬는 시간! 사탕 하나 까먹자 🍬', '복도에 유령 있나 살짝 보고 와 👻', '쉬는 시간… 박쥐처럼 잠깐 매달려 쉬자 🦇'],
+  '방과 후': ['오늘도 수고했어! 트릭 오어 트릿 🎃', '집 가는 길에 호박 조심 🎃', '수고했어~ 오늘 밤은 으스스하게 🦇'],
+  '등교 전': ['좋은 아침! 유령도 일어났어 👻', '오늘도 가보자, 호박 기운 받아서 🎃'],
+  '점심시간': ['점심시간! 급식에 호박죽 나오려나 🎃'],
+};
 function sayLine(b) {
+  const t = sayLine0(b);
+  if (!document.documentElement.classList.contains('hw') || t === SAY.today || t === SAY.tmr) return t;
+  const L = HW_SAY[b.state === '쉬는 날' ? '주말' : b.state === '방과 후' && b.free ? '주말' : b.state], hr = bellNow().getHours();
+  if (!L || hr >= 23 || hr < 5) return t;
+  return L[Math.floor(bellNow().getMinutes() / 10 + hr * 6) % L.length];
+}
+function sayLine0(b) {
   const p = +((b.state.match(/^(\d)교시/) || [])[1] || 0);
   const hr = bellNow().getHours();
   // 새벽(23시~5시)에 들어온 건 공부·작업하다 등교까지 얼마나 남았나 보려는 것 → 응원 문구 (2026-10-24 하율 요청). 10분마다 바뀜
@@ -1904,7 +1919,8 @@ async function syncMascot(hi) {
   let el = document.getElementById('mascot');
   const spot = wearSpot(), mfx = spot === 'mascot' ? mfxV() : '';
   syncWear(spot);
-  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) + (mfx ? ':' + mfx : '') : CHAR_SET.has(k) ? k + (mfx ? ':' + mfx : '') : '';
+  const hw = document.documentElement.classList.contains('hw');   // 할로윈 기간엔 의상 입은 캐릭터(mascots.js MASCOT_HW)
+  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) + (mfx ? ':' + mfx : '') : CHAR_SET.has(k) ? k + (hw ? ':hw' : '') + (mfx ? ':' + mfx : '') : '';
   if (!key) { if (el) el.remove(); return; }
   if (!art) {
     try { mascotMod = mascotMod || await import('./mascots.js'); } catch { return; }
@@ -1914,7 +1930,7 @@ async function syncMascot(hi) {
   if (el.dataset.key !== key) {
     el.dataset.key = key; el.dataset.k = art ? '' : k;
     if (art) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.src = art; el.replaceChildren(im); if (mfx) el.insertAdjacentHTML('beforeend', `<i class="m-wear">${wearSvg(mfx)}</i>`); }
-    else { el.innerHTML = mascotMod.MASCOT[k] || ''; if (mfx) (el.querySelector('.mh') || el.querySelector('.mb'))?.insertAdjacentHTML('beforeend', wearG(mfx)); }   // 머리(.mh)에 넣어 고개 짓을 같이 탐(머리 묶음이 없는 캐릭터는 몸)
+    else { el.innerHTML = (hw && mascotMod.MASCOT_HW?.[k]) || mascotMod.MASCOT[k] || ''; if (mfx) (el.querySelector('.mh') || el.querySelector('.mb'))?.insertAdjacentHTML('beforeend', wearG(mfx)); }   // 머리(.mh)에 넣어 고개 짓을 같이 탐(머리 묶음이 없는 캐릭터는 몸)
   }
   if (art && mfx) placeArtWear(el, art);   // 손으로 맞춘 위치가 바뀌어도 다시 그리지 않고 자리만
   if (hi && !art) { el.classList.remove('m-hello'); void el.offsetWidth; el.classList.add('m-hello'); }  // .hi는 메뉴 항목 클래스라 쓰면 안 됨

@@ -258,3 +258,183 @@ def _wrap(v):
 
 # 움직이는 부위 클래스: .msh 그림자 · .mb 몸 전체 · .mbo 몸통 · .mh 머리 · .me 눈(깜빡임) · .ma 흔드는 팔 · .mt 꼬리 · .ms 고래 물줄기 · .mk 반짝이
 MASCOT = {k[2:]: _wrap(v()) for k, v in list(globals().items()) if k.startswith('M_')}
+
+
+# ===== 할로윈 의상 (2026-10-30 하율: "캐릭터들도 각자 할로윈 캐릭터를 정해서 꾸미는 거지 — 고양이에 송곳니·망토로 뱀파이어처럼")
+# 원래 그림(M_*)을 그대로 두고 의상만 덧입힘: back = 몸 뒤(그림자 바로 다음) · pre = 몸통 위(머리 아래) · head = 머리 위(얼굴 위)
+# 의상도 같은 규칙: 파스텔·외곽선은 그 색의 진한 색 2.6 · 무섭지 않게(작은 송곳니·동그란 눈 유지)
+import re as _re
+HP, HPL = '#7a55ad', '#4e3275'      # 할로윈 보라(망토·모자)
+HO, HOL = '#ff9a3c', '#c96a1c'      # 호박 주황
+HK, HKL = '#3e3550', '#2a2238'      # 밤색(검정 대신 아주 진한 보라)
+
+
+def _fangs(x1, x2, y):
+    return ''.join(f"<path d='M{x-1.25:.2f} {y} l1.25 2.9 l1.25 -2.9z' fill='#fff' {ln(F, 1)}/>" for x in (x1, x2))
+
+
+def _hat(cx, by, w, h, tilt=0, star=True):
+    # 마녀 모자: 챙 + 살짝 꺾인 고깔 + 주황 띠 (+ 노란 별)
+    o = (f"<g transform='rotate({tilt} {cx} {by})'><ellipse cx='{cx}' cy='{by}' rx='{w}' ry='{w*.24:.1f}' fill='{HP}' {ln(HPL)}/>"
+         f"<path d='M{cx-w*.55:.1f} {by-.5} Q{cx-w*.25:.1f} {by-h*.55:.1f} {cx+w*.3:.1f} {by-h} Q{cx+w*.2:.1f} {by-h*.5:.1f} {cx+w*.55:.1f} {by-.5}Z' fill='{HP}' {ln(HPL)}/>"
+         f"<path d='M{cx-w*.5:.1f} {by-3} Q{cx} {by-1} {cx+w*.5:.1f} {by-3} L{cx+w*.53:.1f} {by-.8} Q{cx} {by+1.4} {cx-w*.53:.1f} {by-.8}Z' fill='{HO}' {ln(HOL, 1.6)}/>")
+    if star:
+        o += f"<path d='M{cx+w*.12:.1f} {by-h*.45:.1f} l1.2 2.6 2.8 .3 -2.1 1.9 .6 2.8 -2.5 -1.4 -2.5 1.4 .6 -2.8 -2.1 -1.9 2.8 -.3z' fill='#ffe27a' {ln('#d9a63a', 1)}/>"
+    return o + '</g>'
+
+
+def _pumpkin(cx, cy, rx, ry, face=True, stem=True):
+    o = ''
+    if stem:
+        o += f"<path d='M{cx-1.5} {cy-ry+1} q0 -4.5 3.5 -6 l1.6 1.8 q-2.4 1 -2.4 4.2z' fill='#7fbf6a' {ln('#4f8a41', 1.6)}/>"
+    o += (f"<ellipse cx='{cx-rx*.42:.1f}' cy='{cy}' rx='{rx*.62:.1f}' ry='{ry}' fill='{HO}' {ln(HOL)}/>"
+          f"<ellipse cx='{cx+rx*.42:.1f}' cy='{cy}' rx='{rx*.62:.1f}' ry='{ry}' fill='{HO}' {ln(HOL)}/>"
+          f"<ellipse cx='{cx}' cy='{cy}' rx='{rx*.5:.1f}' ry='{ry}' fill='#ffad57' {ln(HOL)}/>")
+    if face:
+        s = rx / 10
+        o += (f"<path d='M{cx-5*s:.1f} {cy-.4*s:.1f} l2.2 {-3*s:.1f} l2.2 {3*s:.1f}z M{cx+.6*s:.1f} {cy-.4*s:.1f} l2.2 {-3*s:.1f} l2.2 {3*s:.1f}z' fill='{HK}'/>"
+              f"<path d='M{cx-5*s:.1f} {cy+2*s:.1f} q{5*s:.1f} {4*s:.1f} {10*s:.1f} 0 q{-5*s:.1f} {1.6*s:.1f} {-10*s:.1f} 0z' fill='{HK}'/>")
+    return o
+
+
+def _band(d, w=5.5):
+    # 미라 붕대(진한 테두리 → 흰 띠 → 옅은 결)
+    return (f"<path d='{d}' fill='none' stroke='#cbbfae' stroke-width='{w+2.4}' stroke-linecap='round'/>"
+            f"<path d='{d}' fill='none' stroke='#fffaf0' stroke-width='{w}' stroke-linecap='round'/>")
+
+
+def _suit(pre, c, new, line=None):
+    # 몸통·팔(·흔드는 팔) 색만 바꿔 '옷' 입히기 — 꼬리·발은 그대로
+    pre = _re.sub(r"(<ellipse cx='(?:50' cy='81|33\.5|66\.5|72)'[^>]*?fill=')" + _re.escape(c) + "'", r"\g<1>" + new + "'", pre)
+    if line:
+        pre = _re.sub(r"(<ellipse cx='(?:50' cy='81|33\.5|66\.5|72)'[^>]*?fill='" + _re.escape(new) + "' stroke=')[^']*'", r"\g<1>" + line + "'", pre)
+    return pre
+
+
+def H_cat(pre, head):   # 뱀파이어: 세운 깃 망토(안감 빨강) + 리본 + 작은 송곳니
+    back = (f"<path d='M17 66 L1 34 Q9 44 20 50Z M83 66 L99 34 Q91 44 80 50Z' fill='{HK}' {ln(HKL)}/>"
+            f"<path d='M15 60 L5 41 Q11 47 18 51Z M85 60 L95 41 Q89 47 82 51Z' fill='#e0546a'/>"
+            f"<path d='M30 68 Q16 82 21 95 Q36 98 50 96 Q64 98 79 95 Q84 82 70 68Z' fill='{HK}' {ln(HKL)}/>"
+            f"<path d='M34 71 Q24 82 27 92 Q39 95 50 93.5 Q61 95 73 92 Q76 82 66 71Z' fill='#e0546a'/>")
+    pre += (f"<path d='M44 74 l6 2.6 l6 -2.6 l-1.2 5.6 l-4.8 -2.2 l-4.8 2.2z' fill='#e0546a' {ln('#a8344a', 1.6)}/><circle cx='50' cy='76.8' r='2' fill='#ffd34d' {ln('#c9962a', 1.2)}/>")
+    return back, pre, head + _fangs(47.6, 52.4, 61.2)
+
+
+def H_dog(pre, head):   # 해골 옷: 밤색 전신 옷 + 흰 뼈
+    pre = _suit(pre, '#fff3df', HK, HKL).replace("fill='#ffffff'/>", f"fill='{HK}'/>", 1)
+    pre += ("<g fill='none' stroke='#fffaf0' stroke-width='2.2' stroke-linecap='round'><path d='M50 74.5 v16'/>"
+            "<path d='M43 78.5 q7 2.6 14 0 M42 83 q8 2.8 16 0 M43.5 87.5 q6.5 2.4 13 0'/></g>"
+            "<g fill='#fffaf0'><circle cx='31' cy='79' r='1.6'/><circle cx='33' cy='84' r='1.6'/><circle cx='69' cy='79' r='1.6'/><circle cx='67' cy='84' r='1.6'/></g>")
+    return '', pre, head
+
+
+def H_bear(pre, head):  # 미라: 머리·몸에 붕대 (눈·입은 비움)
+    pre += _band('M34 73 Q50 79 66 74', 4.6) + _band('M33.5 84 Q48 82 66.5 88', 4.6)
+    head += _band('M17 38 Q46 27 83 33') + _band('M20 46 Q30 44 36 46') + _band('M70 71 Q78 68 85 63', 4.4)
+    return '', pre, head
+
+
+def H_bunny(pre, head):  # 꼬마 마녀: 귀 사이 마녀 모자
+    return '', pre, head + _hat(50, 25, 15, 20, -8)
+
+
+def H_frog(pre, head):  # 프랑켄슈타인: 관자놀이 볼트 + 이마 꿰맨 자국
+    bolt = ''.join(f"<rect x='{x}' y='53' width='7' height='5' rx='1.4' fill='#b9bfc9' {ln('#7b8291', 1.8)}/><rect x='{x2}' y='51.5' width='3' height='8' rx='1' fill='#d6dbe2' {ln('#7b8291', 1.6)}/>"
+                   for x, x2 in ((7, 5.5), (86, 91.5)))
+    stitch = f"<path d='M41 39.5 h18 M43.5 37 v5 M47.8 37 v5 M52.2 37 v5 M56.5 37 v5' fill='none' {ln('#5c8d4c', 1.8)}/>"
+    return '', pre, bolt + head + stitch
+
+
+def H_chick(pre, head):  # 꼬마 악마: 빨간 뿔 + 뾰족 꼬리 + 삼지창 없이 귀엽게
+    back = (tail('M64 88 Q80 92 82 80', '#ff7b7b', '#c94b4b', 4)
+            + f"<path d='M78.5 80 L82 72.5 L86 80.5 Q82 78.5 78.5 80Z' fill='#ff7b7b' {ln('#c94b4b', 2)}/>")
+    horns = ''.join(f"<path d='M{x} 27 Q{x+d*-5} 15 {x+d*2} 10 Q{x+d*2} 19 {x+d*7} 24Z' fill='#ff7b7b' {ln('#c94b4b', 2.2)}/>" for x, d in ((31, 1), (69, -1)))
+    return back, pre, horns + head
+
+
+def H_hamster(pre, head):  # 사탕 받으러 온 햄찌: 호박 바구니(사탕 가득)
+    pre += (f"<path d='M40 79 Q50 64 60 79' fill='none' {ln('#4f3a2a', 2)}/>"
+            "<circle cx='45' cy='77' r='3' fill='#ff8fbf' stroke='#d9608f' stroke-width='1.4'/><circle cx='51' cy='75.5' r='3' fill='#8fd7ff' stroke='#4f9cd0' stroke-width='1.4'/><circle cx='56' cy='77.5' r='2.8' fill='#ffe27a' stroke='#d9a63a' stroke-width='1.4'/>"
+            + _pumpkin(50, 85, 13, 8, stem=False))
+    return '', pre, head
+
+
+def H_penguin(pre, head):  # 박쥐: 등에 박쥐 날개 + 박쥐 귀 머리띠
+    wing = lambda s: (f"<path d='M{50-s*14} 74 Q{50-s*30} 62 {50-s*40} 68 Q{50-s*35} 72 {50-s*36} 78 Q{50-s*30} 75 {50-s*28} 81 Q{50-s*22} 78 {50-s*16} 84Z' fill='{HK}' {ln(HKL)}/>")
+    back = wing(1) + wing(-1)
+    ears = ''.join(f"<path d='M{x} 15 L{x+d*3} 1.5 L{x+d*10} 12Z' fill='{HK}' {ln(HKL, 2.2)}/><path d='M{x+d*2} 12.5 L{x+d*3.4} 5 L{x+d*7} 11.5Z' fill='#b58cff'/>" for x, d in ((33, 1), (67, -1)))
+    return back, pre, head + ears
+
+
+def H_fox(pre, head):  # 랜턴 든 여우: 잭오랜턴 랜턴
+    pre += f"<path d='M66.5 74 L70 66' fill='none' {ln('#6b4a2e', 2)}/>" + _pumpkin(70.5, 84, 9, 6.5)
+    return '', pre, head
+
+
+def H_panda(pre, head):  # 강시: 청나라 모자 + 이마 부적
+    hat = (f"<ellipse cx='50' cy='20' rx='19' ry='4.5' fill='{HK}' {ln(HKL)}/><path d='M37 19.5 Q38 7 50 7 Q62 7 63 19.5Z' fill='{HK}' {ln(HKL)}/>"
+           "<circle cx='50' cy='6' r='2.6' fill='#e0546a' stroke='#a8344a' stroke-width='1.4'/>")
+    tag = ("<path d='M44.5 21 h11 l-.6 19 q-4.9 1.6 -9.8 0z' fill='#ffe27a' stroke='#d9a63a' stroke-width='1.4' stroke-linejoin='round'/>"
+           "<path d='M50 24 v13 M47 27 h6 M47.5 31 q2.5 2 5 0 M47.5 34.5 q2.5 -2 5 0' fill='none' stroke='#e0546a' stroke-width='1.4' stroke-linecap='round'/>")
+    return '', pre, head + tag + hat
+
+
+def H_dino(pre, head):  # 사탕옥수수 공룡: 주황·흰 가시 + 막대사탕
+    head = head.replace("fill='#ffd877'", f"fill='{HO}'", 1).replace("stroke='#d6a842'", f"stroke='{HOL}'", 1)
+    lolly = (f"<path d='M84 66 L91 47' {ln('#c9b8a0', 4.4)}/><path d='M84 66 L91 47' stroke='#fff' stroke-width='2.4' stroke-linecap='round'/>"
+             f"<ellipse cx='84.5' cy='66' rx='4.6' ry='6.6' transform='rotate(-30 84.5 66)' fill='#aee8c8' {ln('#5fae86')}/>"
+             "<circle cx='92' cy='43' r='6' fill='#ff8fbf' stroke='#d9608f' stroke-width='2'/><path d='M92 43 m-3.5 0 a3.5 3.5 0 1 1 3.5 3.5 a2 2 0 1 1 -2 -2' fill='none' stroke='#fff' stroke-width='1.6' stroke-linecap='round'/>")
+    return '', pre, head + lolly + "<path d='M38.5 12.2 l2 2.4 M50 7 l0 3 M61.5 12.2 l-2 2.4' stroke='#fff' stroke-width='2' stroke-linecap='round'/>"
+
+
+def H_ghost(pre, head):  # 호박 쓴 유령: 머리에 잭오랜턴 모자
+    return '', pre, head + _pumpkin(50, 13, 15, 8.5)
+
+
+def H_slime(pre, head):  # 마녀 슬라임: 큰 마녀 모자
+    return '', pre, head + _hat(50, 27, 22, 26, 6)
+
+
+def H_sheep(pre, head):  # 유령 풍선 든 양
+    return '', pre, head + ("<path d='M71 76 Q80 62 85 48' fill='none' stroke='#b8acdf' stroke-width='1.4'/>"
+                            f"<path d='M76 46 Q76 30 85 30 Q94 30 94 46 l-2.8 -2.4 -2.8 2.4 -2.8 -2.4 -2.8 2.4 -2.8 -2.4z' fill='#fbfaff' {ln('#b8acdf', 2.2)}/>"
+                            f"<circle cx='82' cy='38' r='1.4' fill='{F}'/><circle cx='88' cy='38' r='1.4' fill='{F}'/><path d='M83.5 41.5 q1.5 1.4 3 0' fill='none' {ln(F, 1.2)}/>")
+
+
+def H_whale(pre, head):  # 꼬마 해적 고래: 해골 해적 모자(물줄기는 모자 위로)
+    return '', pre, head + (f"<path d='M20 34 Q30 14 50 16 Q70 14 80 34 Q66 27 50 29 Q34 27 20 34Z' fill='{HK}' {ln(HKL)}/>"
+                            "<path d='M22 32.5 Q36 26 50 27.5 Q64 26 78 32.5' fill='none' stroke='#ffd34d' stroke-width='1.6'/>"
+                            "<circle cx='50' cy='21.5' r='3.4' fill='#fffaf0'/><rect x='48' y='23.5' width='4' height='2.4' rx='.8' fill='#fffaf0'/>"
+                            f"<circle cx='48.7' cy='21.3' r='.9' fill='{HK}'/><circle cx='51.3' cy='21.3' r='.9' fill='{HK}'/>")
+
+
+def H_axolotl(pre, head):  # 검은 고양이 분장: 고양이 귀 머리띠 + 방울 목걸이
+    ears = ''.join(f"<path d='M{x} 25 L{x+d*2} 9 L{x+d*13} 19Z' fill='{HK}' {ln(HKL, 2.2)}/><path d='M{x+d*3} 21.5 L{x+d*3.6} 13.5 L{x+d*9.5} 18.5Z' fill='#ff9ebd'/>" for x, d in ((30, 1), (70, -1)))
+    band = f"<path d='M27.5 27 Q50 15 72.5 27' fill='none' stroke='{HK}' stroke-width='3' stroke-linecap='round'/>"
+    pre += (f"<path d='M38 73.5 Q50 78 62 73.5' fill='none' stroke='#e0546a' stroke-width='3' stroke-linecap='round'/>"
+            "<circle cx='50' cy='78' r='3' fill='#ffd34d' stroke='#c9962a' stroke-width='1.4'/><path d='M48.4 78.6 h3.2' stroke='#c9962a' stroke-width='1'/>")
+    return '', pre, head + band + ears
+
+
+def H_shark(pre, head):  # 저승사자 상어: 검은 도포 + 갓(등지느러미가 갓을 뚫고 나옴)
+    pre = _suit(pre, '#b4c8dc', HK, HKL).replace("fill='#f4f8fc'/>", "fill='#fffaf0'/>", 1)
+    pre += f"<path d='M43 70 L50 84 L57 70' fill='none' stroke='#fffaf0' stroke-width='2.2' stroke-linejoin='round'/>"
+    fin = "<path d='M38 22 Q46 1 64 3 Q58 10 60 22Z' fill='#b4c8dc' " + ln('#6e8aa8') + "/>"
+    gat = (f"<ellipse cx='50' cy='22' rx='31' ry='5.4' fill='#2a2238' fill-opacity='.78' {ln('#120d1a', 2)}/>"
+           f"<path d='M38 21 L39.5 9 Q50 6.5 60.5 9 L62 21Z' fill='#2a2238' fill-opacity='.85' {ln('#120d1a', 2)}/>"
+           )
+    return '', pre, head + gat + fin
+
+
+def _hw(name, v):
+    assert v.startswith(SHADOW)
+    rest = v[len(SHADOW):]
+    if HEAD in rest:
+        pre, head = rest.split(HEAD, 1)
+    else:
+        pre, head = '', rest
+    back, pre, head = globals()['H_' + name](pre, head)
+    return SHADOW + back + pre + (HEAD if HEAD in rest else '') + head
+
+
+MASCOT_HW = {k[2:]: _wrap(_hw(k[2:], v())) for k, v in list(globals().items()) if k.startswith('M_')}

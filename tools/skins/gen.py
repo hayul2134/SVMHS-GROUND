@@ -12,7 +12,7 @@ def svg(body, vb='0 0 100 100'):
 
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from mascots import MASCOT  # 마스코트 그림은 mascots.py
+from mascots import MASCOT, MASCOT_HW  # 마스코트 그림은 mascots.py
 
 # 이름(화면에 보일 이름은 app.js SKINS) · 색상 h · 채도 s(%) · 캐릭터
 SKINS = [
@@ -87,7 +87,18 @@ out.append("/* ===== 스킨 끝 ===== */")
 import json
 JS = CSS.parents[1] / 'js/mascots.js'
 JS.write_text("// 자동 생성: tools/skins/gen.py — 직접 고치지 말 것. 캐릭터 테마 마스코트 인라인 SVG\nexport const MASCOT = "
-              + json.dumps({k: f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>{v}</svg>" for k, v in MASCOT.items()}, ensure_ascii=False, indent=0) + ";\n")
+              + json.dumps({k: f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>{v}</svg>" for k, v in MASCOT.items()}, ensure_ascii=False, indent=0) + ";\n"
+              + "// 할로윈 의상(2026-10-30, mascots.py H_*) — html.hw일 때 app.js syncMascot이 씀\nexport const MASCOT_HW = "
+              + json.dumps({k: f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>{v}</svg>" for k, v in MASCOT_HW.items()}, ensure_ascii=False, indent=0) + ";\n")
+# 할로윈 캐릭터 CSS(프로필 사진·고르기 버튼 --art, 캐릭터 테마 배경 무늬) — 기간에만 theme.js/social.js가 불러옴(style.css 무게 늘리지 않게)
+hw = ["/* 자동 생성: tools/skins/gen.py — 할로윈 의상 캐릭터(html.hw). 기간 동안만 theme.js·social.js가 <link>로 불러옴 */"]
+for name, h, s_, m in SKINS:
+    if not m: continue
+    hw.append(f'html.hw .sk-{name}{{--art:{svg(MASCOT_HW[m])}}}')
+    p2 = svg(f"<defs><g id='m'>{MASCOT_HW[m]}</g></defs><g opacity='.09'><use href='#m' transform='translate(6 6) scale(.3)'/><use href='#m' transform='translate(51 51) scale(.3)'/></g>", '0 0 90 90')
+    hw.append(f':root.hw[data-skin="{name}"]{{--pat:{p2},url("/hw/pat.svg");--pat-size:90px 90px,260px 260px}}')
+    hw.append(f':root.hw[data-skin="{name}"][data-theme="dark"]{{--pat:{p2},url("/hw/pat-d.svg")}}')
+(CSS.parent / 'hw-chars.css').write_text('\n'.join(hw) + '\n')
 block = '\n'.join(out)
 
 src = CSS.read_text()
