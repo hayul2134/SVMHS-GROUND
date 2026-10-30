@@ -49,7 +49,7 @@ const GAMES = {
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에, 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 게임 안 '랭크전'만 순위·티어 · '자유'는 이 기기 기록
   mine: { ff: 'casual-games', name: '지뢰찾기', ic: 'mine', desc: '랭크전은 중급(16×16·지뢰 40) 클리어 시간 · 모두 같은 규칙', fmt: v => (v / 1000).toFixed(v < 10000 ? 2 : 1) + '초' },
-  snake: { ff: 'casual-games', name: '뱀 게임', ic: 'snake', desc: '랭크전은 별 위치가 정해진 판에서 별 많이 먹기', fmt: v => '별 ' + (SNAKE_MAX - v) + '개' },
+  snake: { ff: 'casual-games', name: '뱀 게임', ic: 'snake', desc: '랭크전은 사과 위치가 정해진 판에서 사과 많이 먹기', fmt: v => '사과 ' + (SNAKE_MAX - v) + '개' },
   n2048: { ff: 'casual-games', name: '2048', ic: '2048', desc: '랭크전은 3분 동안 최고 점수 · 되돌리기 없음', fmt: v => (N2_MAX - v).toLocaleString('ko-KR') + '점' },
   num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
 };

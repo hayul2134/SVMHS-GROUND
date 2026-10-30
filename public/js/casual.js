@@ -7,7 +7,7 @@ import * as Z from './cz-score.js';   // 랭크전 규칙(2026-10-29 하율 "모
 
 export const CASUAL = {
   mine: { name: '지뢰찾기', ic: 'mine', desc: '숫자를 보고 지뢰를 피해 칸을 모두 열기' },
-  snake: { name: '뱀 게임', ic: 'snake', desc: '별을 먹고 길어지기 · 벽과 내 몸에 부딪히면 끝' },
+  snake: { name: '뱀 게임', ic: 'snake', desc: '사과를 먹고 길어지기 · 벽과 내 몸에 부딪히면 끝' },
   n2048: { name: '2048', ic: '2048', desc: '같은 숫자를 밀어 합쳐 2048 만들기' },
 };
 
@@ -61,7 +61,7 @@ function center(el) {
 }
 // 랭크전 / 자유 전환(랭크전 = 모두 같은 규칙 · 서버가 다시 둬 보고 순위·티어에 · 자유 = 지금처럼 이 기기 기록만)
 // 2026-10-30 하율 "일반 모드와 랭크 모드는 플레이할 때 제대로 보고 고를 수 있게": 맨 위 한 줄 크게 + 지금 모드가 무엇에 반영되는지 한 줄 (모든 게임 같은 모양 .md-pick)
-const RK_TXT = { mine: '중급 고정 · 클리어 시간', snake: '모은 별 수', n2048: '3분 점수' };
+const RK_TXT = { mine: '중급 고정 · 클리어 시간', snake: '먹은 사과 수', n2048: '3분 점수' };
 const modeBar = (rk, k) => rk ? `<div class="md-pick" role="group" aria-label="게임 모드"><button type="button" data-md="rk"><b><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg>랭크</b><small>${RK_TXT[k]} · 티어·순위·기록실</small></button><button type="button" data-md="free"><b>일반</b><small>${k === 'mine' ? '난이도 자유 · ' : k === 'n2048' ? '시간 제한·되돌리기 자유 · ' : ''}이 기기에만 기록</small></button></div>` : '';
 const rkOn = (k, rk) => !!rk && store.get('cz_md_' + k, 'rk') === 'rk';
 function bindMode(el, k, rk, onChange) {
@@ -200,7 +200,7 @@ function mine(el, rk) {
 }
 
 /* ===================== 뱀 게임 ===================== */
-// 17×15 판, 방향키·WASD·스와이프·화면 버튼. 별(사이트 로고 별)을 먹으면 한 칸 길어지고 조금씩 빨라짐. 창을 벗어나면 멈춤
+// 17×15 판, 방향키·WASD·스와이프·화면 버튼. 사과를 먹으면(새 사과는 톡 튀어나오는 등장 연출) 한 칸 길어지고 조금씩 빨라짐. 창을 벗어나면 멈춤
 function snake(el, rk, quick = false) {
   const W = 17, H = 15;
   el.innerHTML = `${modeBar(rk, 'snake')}<div class="cz-bar"><span class="cz-stat"><b id="snS">0</b><small>점수</small></span><span class="cz-stat"><b id="snB">${store.get('cz_snake', 0)}</b><small>최고</small></span>${sndBtnHtml('snSnd')}</div>
@@ -208,7 +208,7 @@ function snake(el, rk, quick = false) {
     <div class="cz-pad" aria-label="방향 버튼"><button type="button" data-d="0" aria-label="위">▲</button><button type="button" data-d="3" aria-label="왼쪽">◀</button><button type="button" data-d="2" aria-label="아래">▼</button><button type="button" data-d="1" aria-label="오른쪽">▶</button></div>${RKMSG}`;
   const sfx = makeSfx('cz_snd_snake'); bindSnd(el.querySelector('#snSnd'), sfx);
   const cv = el.querySelector('#snCv'), cx = cv.getContext('2d'), ov = el.querySelector('#snOv'), $s = el.querySelector('#snS'), $b = el.querySelector('#snB');
-  let cs = 24, body, prev, dir, q, food, score, step, acc, last, raf = 0, state, dieT = 0, crash = null, rkm = false, rseed = null, rand = Math.random, tk = 0, rec = [], runN = 0;   // state: wait(랭크전 판 준비) | ready | run | pause | dead
+  let cs = 24, body, prev, dir, q, food, foodAt = 0, score, step, acc, last, raf = 0, state, dieT = 0, crash = null, rkm = false, rseed = null, rand = Math.random, tk = 0, rec = [], runN = 0;   // state: wait(랭크전 판 준비) | ready | run | pause | dead
   function fit() {
     const side = padSide(), r = roomOf(el, matchMedia('(pointer:fine)').matches || side ? 110 : 220);   // 가로 패드(깃발 pad-ctl): 방향 버튼이 판 오른쪽이라 아래 자리를 비우지 않음
     cs = Math.max(14, Math.min(34, Math.floor(r.w / W), side ? Math.floor((innerWidth - 2 * 250) / W) : 99, Math.floor(r.h / H)));
@@ -219,12 +219,13 @@ function snake(el, rk, quick = false) {
     const y = (H / 2) | 0; body = [[5, y], [4, y], [3, y]]; prev = body.map(p => [...p]);
     dir = 1; q = []; score = 0; step = 135; crash = null; acc = 0; $s.textContent = 0; tk = 0; rec = []; food = null; say(el, '');
     rkm = rkOn('snake', rk); const my = ++runN;
-    const ready = () => { place(); state = 'ready'; if (quick) { quick = false; draw(1); start(); return; } showOv(`<b>뱀 게임${rkm ? ' · 랭크' : ''}</b><span>방향키 · 스와이프 · ${padSide() ? '오른쪽' : '아래'} 버튼으로 시작</span>`); draw(1); };
+    const ready = () => { place(); state = 'ready'; if (quick) { quick = false; draw(1); start(); return; } showOv(`<b>뱀 게임${rkm ? ' · 랭크' : ''}</b><span>방향키 · 스와이프 · ${padSide() ? '오른쪽' : '아래'} 버튼으로 시작</span>`); popIdle(); };
     if (!rkm) { rand = Math.random; rseed = null; ready(); return; }
     state = 'wait'; showOv('<b>뱀 게임 · 랭크</b><span>판 준비 중…</span>'); draw(1);
     rk.seed('snake').then(t => { if (my !== runN) return; rseed = t ? Z.seedOf(t) : null; rand = rseed != null ? Z.rng(rseed) : Math.random; if (rseed == null) say(el, '이번 판은 서버에 등록되지 않아 기록이 저장되지 않아요'); ready(); });
   }
-  function place() { food = Z.snakeFood(rand, body, W, H); }   // 랭크전이면 씨앗으로(서버도 같은 자리)
+  function place() { food = Z.snakeFood(rand, body, W, H); foodAt = performance.now(); }   // 랭크전이면 씨앗으로(서버도 같은 자리)
+  function popIdle() { if (state === 'run' || state === 'gone') return; draw(1); if (performance.now() - foodAt < 360) requestAnimationFrame(popIdle); }   // 판이 멈춰 있을 때도 첫 사과 등장 연출
   function showOv(h) { ov.innerHTML = `<div class="cz-card">${h}</div>`; ov.hidden = false; }
   function turn(d) {
     if (state === 'wait' || state === 'gone') return;
@@ -253,9 +254,9 @@ function snake(el, rk, quick = false) {
     else if (full) [523, 659, 784, 1047].forEach((f, k) => sfx.tone(f, .14, 'triangle', .06, k * .09));   // 부딪힘(2026-10-30 하율): 머리가 벽에 쿵 → 살짝 튕겨 나오고 눈이 빙글빙글 + 머리 위 별 띠가 빙빙
     const b = store.get('cz_snake', 0), nb = !rkm && score > b; if (nb) { store.set('cz_snake', score); $b.textContent = score; }
     if (!full) navigator.vibrate?.(50);
-    if (rkm && rseed != null) { if (score > 0) { say(el, '기록 저장 중…'); rk.done('snake', Z.SNAKE_MAX - score, [tk, ...rec]).then(h => say(el, h)); } else say(el, '별을 하나 이상 먹어야 기록돼요'); }
+    if (rkm && rseed != null) { if (score > 0) { say(el, '기록 저장 중…'); rk.done('snake', Z.SNAKE_MAX - score, [tk, ...rec]).then(h => say(el, h)); } else say(el, '사과를 하나 이상 먹어야 기록돼요'); }
     draw(1);
-    const ovH = `<b>${full ? '판을 가득 채웠어요!' : '끝!'}</b><span>별 ${score}개${nb ? ' · 최고 기록!' : ''}</span><small>방향키·스와이프로 다시 시작</small>`;
+    const ovH = `<b>${full ? '판을 가득 채웠어요!' : '끝!'}</b><span>사과 ${score}개${nb ? ' · 최고 기록!' : ''}</span><small>방향키·스와이프로 다시 시작</small>`;
     if (!crash) { showOv(ovH); return; }
     cancelAnimationFrame(raf); raf = requestAnimationFrame(dizzy);
     { const w = cv.parentElement; w.classList.remove('cz-shake'); void w.offsetWidth; w.classList.add('cz-shake'); }   // 쿵! 판 흔들림(2026-10-30 21:08 하율 "타격감")
@@ -274,10 +275,30 @@ function snake(el, rk, quick = false) {
     for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .46 : r; cx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
     cx.closePath(); cx.fillStyle = '#ffd24a'; cx.fill(); cx.lineWidth = Math.max(1, lw); cx.strokeStyle = '#173048'; cx.lineJoin = 'round'; cx.stroke();
   }
+  function apple(x, y, r, tilt = 0) {
+    if (r <= .5) return;
+    cx.save(); cx.translate(x, y + r * .08); cx.rotate(tilt); const lw = Math.max(1, cs * .07);
+    cx.beginPath(); cx.moveTo(0, -r * .62);   // 몸통: 위가 살짝 오목한 사과 모양
+    cx.bezierCurveTo(r * .55, -r * 1.05, r * 1.15, -r * .55, r * .95, r * .25);
+    cx.bezierCurveTo(r * .8, r * .85, r * .35, r * 1.02, 0, r * .82);
+    cx.bezierCurveTo(-r * .35, r * 1.02, -r * .8, r * .85, -r * .95, r * .25);
+    cx.bezierCurveTo(-r * 1.15, -r * .55, -r * .55, -r * 1.05, 0, -r * .62); cx.closePath();
+    cx.fillStyle = '#f0474e'; cx.fill(); cx.lineWidth = lw; cx.strokeStyle = '#173048'; cx.lineJoin = 'round'; cx.stroke();
+    cx.beginPath(); cx.ellipse(-r * .42, -r * .18, r * .14, r * .26, -.5, 0, 7); cx.fillStyle = 'rgba(255,255,255,.7)'; cx.fill();   // 반짝임
+    cx.beginPath(); cx.moveTo(0, -r * .55); cx.quadraticCurveTo(r * .04, -r * .9, r * .16, -r * 1.08); cx.lineCap = 'round'; cx.lineWidth = Math.max(1, cs * .08); cx.stroke();   // 꼭지
+    cx.beginPath(); cx.moveTo(r * .1, -r * .78); cx.quadraticCurveTo(r * .45, -r * 1.25, r * .78, -r * .95); cx.quadraticCurveTo(r * .45, -r * .62, r * .1, -r * .78); cx.closePath();   // 잎
+    cx.fillStyle = '#4cc26a'; cx.fill(); cx.lineWidth = Math.max(1, cs * .05); cx.stroke();
+    cx.restore();
+  }
   function draw(t) {
     if (!body) return;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { cx.fillStyle = (x + y) % 2 ? '#d7ecfb' : '#e6f4fd'; cx.fillRect(x * cs, y * cs, cs, cs); }
-    if (food) { const p = .9 + .1 * Math.sin(performance.now() / 180); star((food[0] + .5) * cs, (food[1] + .5) * cs, cs * .46 * p); }
+    if (food) {   // 사과(2026-10-30 하율 "별 → 사과, 나오는 애니메이션 짧게"): 0.32초 동안 톡 튀어나옴(살짝 넘쳤다 돌아옴) + 퍼지는 고리
+      const e = Math.min(1, (performance.now() - foodAt) / 320), fx = (food[0] + .5) * cs, fy = (food[1] + .5) * cs;
+      const pop = e < 1 ? 1 + 2.7 * (e - 1) ** 3 + 1.7 * (e - 1) ** 2 : 1, bob = e < 1 ? 1 : 1 + .05 * Math.sin((performance.now() - foodAt) / 220);
+      if (e < 1) { cx.beginPath(); cx.arc(fx, fy, cs * (.25 + .4 * e), 0, 7); cx.strokeStyle = `rgba(255,255,255,${.85 * (1 - e)})`; cx.lineWidth = Math.max(1, cs * .08 * (1 - e)); cx.stroke(); }
+      apple(fx, fy, cs * .4 * Math.max(0, pop) * bob, e < 1 ? (1 - e) * .5 : 0);
+    }
     // 몸 모양(2026-10-30 하율 "움직임 더 자연스럽게"): 예전엔 마디마다 따로 보간해 꺾이는 곳이 대각선으로 깎였음 →
     //   머리·꼬리 끝만 미끄러지게 움직이고 가운데 마디는 칸 중심 그대로(꺾인 모양 유지) + 머리는 살짝 감속 곡선
     const cc = p => [(p[0] + .5) * cs, (p[1] + .5) * cs], lerp = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];

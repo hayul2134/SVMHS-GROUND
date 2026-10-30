@@ -132,7 +132,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
   } else if (game === 'snake') {   // [끝난 틱, ...(틱×4 + 방향)] — 별 위치는 이 티켓 씨앗으로 정해짐 → 꺾은 기록대로 다시 움직여 봄
     const x = snakeReplay(czSeed(ticket), n);
     if (x.err) return H(`다시 움직여 보니 안 맞음: ${x.err}`, `${x.err}. 판과 움직인 기록이 서로 맞지 않아요.`);
-    if (SNAKE_MAX - x.score !== v) return H(`별(${x.score})과 기록(${SNAKE_MAX - v})이 다름`, `움직인 기록으로는 별 ${x.score}개인데 ${SNAKE_MAX - v}개로 기록됐어요.`);
+    if (SNAKE_MAX - x.score !== v) return H(`별(${x.score})과 기록(${SNAKE_MAX - v})이 다름`, `움직인 기록으로는 사과 ${x.score}개인데 ${SNAKE_MAX - v}개로 기록됐어요.`);
     if (x.ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'n2048') {   // [끝난 ms, ...(시각×4 + 방향)] — 새 칸은 이 티켓 씨앗으로 정해짐 → 민 기록대로 다시 밀어 봄 · 3분
     const x = n2Replay(czSeed(ticket), n);
@@ -1785,7 +1785,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
-    const fv = { mine: x => sec(x), snake: x => '별 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '컷' }[gk];
+    const fv = { mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '컷' }[gk];
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
