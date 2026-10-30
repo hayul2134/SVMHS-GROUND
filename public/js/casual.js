@@ -21,7 +21,8 @@ const fmtS = ms => (ms / 1000).toFixed(1) + '초';
 // 화면에 남은 높이(위 제목 줄·아래 다시 시작 줄을 뺀 것) — 스크롤 없이 한 화면(2026-10-28 하율 규칙)
 function roomOf(root, extra = 70) {
   const top = (root.closest('.parea') || root).getBoundingClientRect().top, hd = root.querySelector('.cz-hd'), ft = root.querySelector('.cz-ft');
-  if (hd && ft) return { w: root.clientWidth || 320, h: Math.max(200, innerHeight - top - 2 * Math.max(hd.offsetHeight, ft.offsetHeight) - 44) };   // 판이 가운데라 위·아래 중 큰 쪽을 두 번 뺌
+  const pa = root.closest('.parea'), pb = pa ? parseFloat(getComputedStyle(pa).paddingBottom) || 0 : 0;
+  if (hd && ft) return { w: root.clientWidth || 320, h: Math.max(200, innerHeight - top - pb - 2 * Math.max(hd.offsetHeight, ft.offsetHeight) - 44) };   // 판이 가운데라 위·아래 중 큰 쪽을 두 번 뺌
   const bar = root.querySelector('.cz-bar')?.offsetHeight || 0;
   return { w: root.clientWidth || 320, h: Math.max(200, innerHeight - top - bar - extra) };
 }
@@ -54,6 +55,7 @@ function center(el) {
   const hd = document.createElement('div'), ft = document.createElement('div'); hd.className = 'cz-hd'; ft.className = 'cz-ft';
   const kids = [...el.children], i = kids.indexOf(wrap);
   hd.append(...kids.slice(0, i)); ft.append(...kids.slice(i + 1)); el.prepend(hd); wrap.after(ft);
+  const mp = hd.querySelector(':scope > .md-pick'); if (mp) ft.prepend(mp);   // 랭크/일반 고르기는 판 아래로(2026-10-30 21:07 하율)
   el.dispatchEvent(new Event('cz-fit'));
 }
 // 랭크전 / 자유 전환(랭크전 = 모두 같은 규칙 · 서버가 다시 둬 보고 순위·티어에 · 자유 = 지금처럼 이 기기 기록만)

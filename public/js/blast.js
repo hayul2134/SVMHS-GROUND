@@ -124,14 +124,15 @@ export function createBlast(root, opt = {}) {
     cs = c1; horiz = hz1; [W, H, pad] = dims2(cs, horiz).map(Math.round);
     $('top').style.width = Math.max(300, W + 16) + 'px';   // 점수판 폭 = 판 폭(최고 기록·버튼이 판 양 끝에 맞춰짐)
     // 옆 버튼은 화면(게임 칸) 왼쪽 끝에 — 오른쪽 '내 기록' 칸과 좌우 짝(2026-10-29 하율 "그만하기부터 쭉 화면 옆으로")
-    if (side) { const fl = root.closest('.fl') || root.parentElement; const dx = Math.round(fl.getBoundingClientRect().left - top0.getBoundingClientRect().left); tools.style.right = 'auto'; tools.style.left = dx + 'px'; tools.style.width = Math.max(130, Math.min(200, -dx - 16)) + 'px'; }
-    else { tools.style.left = ''; tools.style.right = ''; tools.style.width = ''; }
+    // 2026-10-30 21:07 하율 "플레이 화면 옆 오브젝트들 붙여" → 옆 버튼은 판 바로 왼쪽(CSS right: 100% + 16px), 내 기록 칸은 판 바로 오른쪽(아래 translate)
+    tools.style.left = ''; tools.style.right = ''; tools.style.width = '';
     arts.clear();
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     // 옆 버튼·오른쪽 '내 기록' 칸은 판 위쪽 선에 맞춤(2026-10-29 하율 "화면 위 기준으로 벗어나지 않게")
     const bt = board.getBoundingClientRect().top, fl2 = root.closest('.fl'), aside = fl2?.querySelector(':scope > .fl-side');
     tools.style.top = side ? Math.round(bt - top0.getBoundingClientRect().top) + 'px' : '';
     if (aside) aside.style.marginTop = wide && fl2 ? Math.max(0, Math.round(bt - fl2.getBoundingClientRect().top)) + 'px' : '';
+    if (aside) { aside.style.translate = ''; if (wide) { const d = Math.round(aside.getBoundingClientRect().left - board.getBoundingClientRect().right - 16); if (d > 0) aside.style.translate = -d + 'px 0'; } }
     draw();
   }
   const BX = () => horiz ? pad * 2 + cs * 3.4 : pad, BY = () => pad;

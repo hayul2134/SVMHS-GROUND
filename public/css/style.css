@@ -6500,6 +6500,9 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .ptop .pmchip .mgr{height:20px;min-width:26px;font-size:12px}
 .ptop .pmchip .mbar{height:9px;background:color-mix(in srgb,var(--ink) 18%,transparent)}
 @media (max-width:760px){.ptop .pmchip .mem{width:38px;height:41px}.ptop .pmchip b{font-size:16px}.ptop .pmchip span{min-width:80px}}
+/* 숙련도 칩 자리 통일(2026-10-30 21:06 하율 "모든 게임에서 같은 곳에"): 제목 길이·오른쪽 버튼 수와 상관없이 위 줄 정가운데 */
+@media (min-width:761px){.ptop{position:relative}.ptop .pmchip{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0}}
+.cz-ft > .md-pick{margin:4px auto 0}
 :root[data-theme="dark"] .mst-grid li.m4,:root[data-theme="dark"] .mst-grid li.m5,:root[data-theme="dark"] .pmst-l i.m4,:root[data-theme="dark"] .pmst-l i.m5,:root[data-theme="dark"] .ptop .pmchip.m4,:root[data-theme="dark"] .ptop .pmchip.m5{color:#1f1d33}
 @media (max-width:420px){.ptop .pmchip > span{display:none}.ptop .pmchip{padding:3px}}
 
