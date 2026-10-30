@@ -1545,7 +1545,8 @@ function mstChipPaint(up) {
   const g = el.dataset.g; el.className = `pmchip ${mInfo(myMst(g)).b.k}${up ? ' up' : ''}`; el.innerHTML = mstChipIn(g);
   if (up) setTimeout(() => el.classList.remove('up'), 1200);
 }
-const mstBar = () => { const sc = mstScore(S.me?.mst, mstOpenG()); return `<button type="button" class="ach-bar mst-bar" data-mst="" data-ff="${MST_FF}">${mEmb(Math.max(1, ...mstOpenG().map(g => mstLv(myMst(g)).lv)))}<span><b>게임 숙련도</b><small>숙련도 점수 ${sc} · 판마다 등급 S+~D로 XP가 쌓여요</small></span><i aria-hidden="true">›</i></button>`; };
+const mySc = () => mstScore(Object.fromEntries(mstOpenG().map(g => [g, [myMst(g)]])));
+const mstBar = () => { const sc = mySc(); return `<button type="button" class="ach-bar mst-bar" data-mst="" data-ff="${MST_FF}">${mEmb(Math.max(1, ...mstOpenG().map(g => mstLv(myMst(g)).lv)))}<span><b>게임 숙련도</b><small>숙련도 점수 ${sc} · 판마다 점수 구간(S+~C)·오늘 첫 판 보너스로 XP가 쌓여요</small></span><i aria-hidden="true">›</i></button>`; };
 // 업적·숙련도 축하(2026-10-29 하율: "학교니까 바로바로 자랑할 수 있게") — 크게(화면 전체) / 작게(위 띠). 순서대로 하나씩
 const AQ = []; let aqBusy = false;
 function achResult(keys, info, mst) {
@@ -1565,7 +1566,7 @@ function achResult(keys, info, mst) {
     else if (gain > 0) AQ.push({ t: 'mgr', g: mst.g, lv: B.lv, gr: mst.gr, fb: mst.fb, gain, left: B.need - B.cur, big: false });   // 롤 게임 끝 화면처럼: 이번 판 등급 + 얻은 XP
   }
   if (mst && mstOn()) mstChipPaint(mst.b > mst.a);
-  const ms = $('.mst-bar small'); if (ms) ms.textContent = `숙련도 점수 ${mstScore(S.me?.mst, mstOpenG())} · 판마다 등급 S+~D로 XP가 쌓여요`;
+  const ms = $('.mst-bar small'); if (ms) ms.textContent = `숙련도 점수 ${mySc()} · 판마다 점수 구간(S+~C)·오늘 첫 판 보너스로 XP가 쌓여요`;
   const t = $('.ach-bar small'); if (t) t.textContent = `모은 업적 ${achCnt(S.me?.ach)} / ${ACH.length} · 게임마다 업적을 다 모으면 칭호`;
   aqNext();
 }
