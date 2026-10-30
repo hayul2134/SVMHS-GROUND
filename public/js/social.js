@@ -1554,9 +1554,10 @@ function achResult(keys, info, mst) {
   if (mst && S.me && mstOn()) {
     S.me.mst = { ...(S.me.mst || {}) }; const c = Array.isArray(S.me.mst[mst.g]) ? [...S.me.mst[mst.g]] : [0, '', 0]; c[0] = mst.b; S.me.mst[mst.g] = c;
     if (mst.gr) c[4] = mst.gr;
+    if (mst.fb) c[1] = kstNow();
     const A = mstLv(mst.a), B = mstLv(mst.b), gain = mst.b - mst.a;
-    if (B.lv > A.lv) AQ.push({ t: 'mst', g: mst.g, lv: B.lv, r: mst.r, gr: mst.gr, gain, big: mstBand(B.lv).k !== mstBand(A.lv).k });
-    else if (gain > 0) AQ.push({ t: 'mgr', g: mst.g, lv: B.lv, gr: mst.gr, gain, left: B.need - B.cur, big: false });   // 롤 게임 끝 화면처럼: 이번 판 등급 + 얻은 XP
+    if (B.lv > A.lv) AQ.push({ t: 'mst', g: mst.g, lv: B.lv, r: mst.r, gr: mst.gr, fb: mst.fb, gain, big: mstBand(B.lv).k !== mstBand(A.lv).k });
+    else if (gain > 0) AQ.push({ t: 'mgr', g: mst.g, lv: B.lv, gr: mst.gr, fb: mst.fb, gain, left: B.need - B.cur, big: false });   // 롤 게임 끝 화면처럼: 이번 판 등급 + 얻은 XP
   }
   if (mst && mstOn()) mstChipPaint(mst.b > mst.a);
   const ms = $('.mst-bar small'); if (ms) ms.textContent = `숙련도 점수 ${mstScore(S.me?.mst, mstOpenG())} · 판마다 등급 S+~D로 XP가 쌓여요`;
@@ -1569,8 +1570,8 @@ function aqNext() {
   (it.big ? acBig : acBan)(it, done);
 }
 function acBody(it) {
-  if (it.t === 'mst') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: it.big ? '숙련도 단계 상승!' : '숙련도 레벨 업!', art: mEmb(it.lv, 'big', it.g), n: `Lv.${it.lv} ${b.n}`, d: '', g: `${ic(g?.ic || 'play')} ${esc(g?.name || '')}`, r: it.r ? `<b>전교 숙련도 ${it.r}위</b>` : '', x: [it.gr ? `이번 판 ${it.gr} 등급 +${it.gain} XP` : '', it.lv >= MST_MAX ? '최고 레벨 도달!' : ''].filter(Boolean).join(' · ') }; }
-  if (it.t === 'mgr') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: `${esc(g?.name || '')} 숙련도`, art: `<span class="mgr-big ${grCls(it.gr)}">${it.gr || '-'}</span>`, n: `${it.gr || ''} 등급 · +${it.gain} XP`, d: '', g: '', r: '', x: it.lv >= MST_MAX ? `Lv.${it.lv} 최고 레벨` : `Lv.${it.lv} · 다음 레벨까지 ${it.left.toLocaleString('ko-KR')} XP` }; }
+  if (it.t === 'mst') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: it.big ? '숙련도 단계 상승!' : '숙련도 레벨 업!', art: mEmb(it.lv, 'big', it.g), n: `Lv.${it.lv} ${b.n}`, d: '', g: `${ic(g?.ic || 'play')} ${esc(g?.name || '')}`, r: it.r ? `<b>전교 숙련도 ${it.r}위</b>` : '', x: [it.gr ? `이번 판 ${it.gr} 등급 +${it.gain} XP${it.fb ? ` (오늘 첫 판 +${MST_XP.first} 포함)` : ''}` : '', it.lv >= MST_MAX ? '최고 레벨 도달!' : ''].filter(Boolean).join(' · ') }; }
+  if (it.t === 'mgr') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: `${esc(g?.name || '')} 숙련도`, art: `<span class="mgr-big ${grCls(it.gr)}">${it.gr || '-'}</span>`, n: `${it.gr || ''} 등급 · +${it.gain} XP${it.fb ? ` <i class="mgr gfb">첫 판 +${MST_XP.first}</i>` : ''}`, d: '', g: '', r: '', x: it.lv >= MST_MAX ? `Lv.${it.lv} 최고 레벨` : `Lv.${it.lv} · 다음 레벨까지 ${it.left.toLocaleString('ko-KR')} XP` }; }
   const a = it.a, x = it.x, g = a.g === 'all' ? '공통 업적' : `${ic(GAMES[a.g]?.ic || 'play')} ${esc(GAMES[a.g]?.name || '')}`;
   return { cls: 'lv' + a.lv + (x.f ? ' first' : ''), k: x.f ? '전교 최초 달성!' : a.hid ? '숨겨진 업적 발견!' : '업적 달성!', art: medal(a.lv, true), n: esc(a.n), d: esc(a.d), g,
     r: x.f ? '아직 아무도 못 깬 업적을 <b>처음으로</b> 깼어요' : x.p === 0 ? '아직 이 업적을 가진 학생이 없어요' : x.p != null ? `<b>학생 ${x.p}%</b>만 가진 업적${x.c ? ` · ${x.c}번째` : ''}` : '', x: '' };
@@ -1650,7 +1651,7 @@ function paintMst() {
   $('#socSheet').innerHTML = `<div class="mst-sheet">
     <div class="mst-top">${mEmb(top, 'big')}<div><h3>${d.me ? '내 숙련도' : esc(d.name) + '의 숙련도'}</h3><b class="mst-sc">숙련도 점수 ${d.score}</b><small>${d.sr ? `전교 ${d.sr}위 / ${d.sn}명 · ` : ''}해 본 게임 레벨을 모두 더한 점수예요</small></div></div>
     <ol class="mst-grid">${gs.map(cell).join('')}</ol>
-    ${d.me ? `<div class="mst-how"><b>판마다 등급으로 XP가 쌓여요</b> — 내 최고 기록과 비교해요<ul>${MST_GR.map(([k, x, t]) => `<li>${grChip(k)}<span>${t}</span><em>+${x} XP</em></li>`).join('')}</ul><small>한 게임에 하루 ${MST_XP.dayCap} XP까지 · 숙련도는 내려가지 않아요 · 업적·티어와는 따로예요 · 10레벨마다 엠블럼이 바뀌어요</small></div>` : ''}
+    ${d.me ? `<div class="mst-how"><b>판마다 점수 구간으로 XP가 쌓여요</b> — 그 판 점수가 전체 학생 기록 중 어디쯤인지<ul>${MST_GR.map(([k, x, t]) => `<li>${grChip(k)}<span>${t}</span><em>+${x} XP</em></li>`).join('')}<li><i class="mgr gfb">첫 판</i><span>그 게임 오늘 첫 판 보너스</span><em>+${MST_XP.first} XP</em></li></ul><small>참가 학생이 ${MST_XP.minN}명보다 적은 게임은 A로 쳐요 · 등급 XP는 한 게임에 하루 ${MST_XP.dayCap} XP까지 · 숙련도는 내려가지 않아요 · 업적·티어와는 따로예요 · 10레벨마다 엠블럼이 바뀌어요</small></div>` : ''}
     <div class="row"><button type="button" class="btn ghost" data-close>닫기</button></div>
   </div>`;
   if (mstSel) $('#socSheet .mst-grid li.sel')?.scrollIntoView({ block: 'nearest' });

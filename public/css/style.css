@@ -6382,6 +6382,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 /* ===== 게임 숙련도 창·등급 (2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌" — 깃발 mastery, social.js openMst·paintMst·mstProf) ===== */
 .mst-bar{background:color-mix(in srgb,#8fc2ff 26%,var(--card))}.mst-bar .mem{width:36px;height:38px}
 .mgr{display:inline-grid;place-items:center;min-width:24px;height:18px;margin-left:6px;padding:0 5px;border:1.5px solid var(--ink);border-radius:6px;font:900 11.5px/1 var(--num);font-style:normal;color:#fff;vertical-align:1px;background:#9aa6b6}
+.mgr.gfb{background:#ff7a59;min-width:auto;padding:0 6px}
 .mgr.gsp{background:linear-gradient(120deg,#ff8fb8,#b39cff,#6fb6f4);text-shadow:0 1px 0 rgba(0,0,0,.25)}.mgr.gs{background:#f2a92b}.mgr.ga{background:#3fb98e}.mgr.gb{background:#4f9be8}.mgr.gc{background:#8b7fd6}.mgr.gd{background:#9aa6b6}
 .mgr-big{display:grid;place-items:center;width:46px;height:46px;flex:none;border:2.5px solid var(--ink);border-radius:12px;font:900 20px/1 var(--num);color:#fff;background:#9aa6b6}
 .mgr-big.gsp{background:linear-gradient(120deg,#ff8fb8,#b39cff,#6fb6f4)}.mgr-big.gs{background:#f2a92b}.mgr-big.ga{background:#3fb98e}.mgr-big.gb{background:#4f9be8}.mgr-big.gc{background:#8b7fd6}
