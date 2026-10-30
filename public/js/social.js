@@ -1546,9 +1546,9 @@ const mLeaf = (L, w) => `M0 0C${(L * .3).toFixed(1)} ${(-w).toFixed(1)} ${(L * .
 const mMir = x => x + `<g transform="matrix(-1 0 0 1 60 0)">${x}</g>`;
 // 레전드 빛 꽃잎: 왕관 뒤(위쪽 3장)는 비우고 회전 대신 숨쉬기(왕관과 겹쳐 보임, 2026-10-30)
 // 옆 장식 = 리본 배너(2026-10-30 하율: 깃털 날개 → 시안 B '리본 배너' 선택 → "리본을 중앙에"): 날개 자리에 양옆 제비꼬리 리본
-//   c겹(베테랑 2 → 레전드 5)을 문장 가운데 높이(y 29)에 위아래 대칭으로 쌓음, 가운데 줄이 가장 길고 맨 앞
+//   c겹(베테랑 2 → 레전드 5)을 문장 가운데 높이(y 29)에 위아래 대칭으로 쌓음, 가운데 줄이 가장 길고 맨 앞, 바깥 끝이 살짝 위로 부채꼴(6° ± 줄마다 4°, "살짝 기울여")
 const mWing = (k, c) => { const h = 6.4, gap = 4.6, m = (c - 1) / 2; return mMir(Array.from({ length: c }, (_, i) => i).sort((a, b) => Math.abs(b - m) - Math.abs(a - m)).map(i => { const d = Math.abs(i - m), y = 29 + (i - m) * gap - h / 2, L = 15 + c * 2 - d * 3, x = 16 - L, n = Math.min(3, L * .22);
-    return `<path class="me-f" fill="url(#mg-w-${k})" d="M17 ${y.toFixed(1)}H${x.toFixed(1)}L${(x + n).toFixed(1)} ${(y + h / 2).toFixed(1)}L${x.toFixed(1)} ${(y + h).toFixed(1)}H17Z"/>`; }).join('')); };
+    return `<path class="me-f" fill="url(#mg-w-${k})" d="M17 ${y.toFixed(1)}H${x.toFixed(1)}L${(x + n).toFixed(1)} ${(y + h / 2).toFixed(1)}L${x.toFixed(1)} ${(y + h).toFixed(1)}H17Z" transform="rotate(${(6 - (i - m) * 4).toFixed(1)} 17 ${(y + h / 2).toFixed(1)})"/>`; }).join('')); };
 // 월계수: 아래에서 위로 둥글게 잎 4장
 const mLaurel = () => mMir([[18.5, 47, 200], [14.6, 42.6, 215], [11.8, 37.2, 232], [10.6, 31.4, 250]].map(([x, y, a]) => `<path class="me-lf" d="${mLeaf(6.4, 2.6)}" transform="translate(${x} ${y}) rotate(${a})"/>`).join('') + '<path class="me-st" d="M21 48.6Q12 45 10.8 30"/>');
 const mGem = (x, y, r, c) => `<g class="me-gm" transform="translate(${x} ${y})"><path d="M0 ${-r}L${r * .9} ${-r * .2}L0 ${r}L${-r * .9} ${-r * .2}z" fill="${c}"/><path class="me-gh" d="M0 ${-r}L${r * .9} ${-r * .2}L0 ${-r * .05}z"/></g>`;
