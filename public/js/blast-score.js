@@ -38,6 +38,10 @@ add('cst', .8, [...rots([[0, 0], [1, 0], [2, 0], [2, 1]]), ...rots([[0, 1], [1, 
 add('cab', .9, [[[0, 0], [0, 1], [1, 1], [1, 2]], [[0, 1], [0, 2], [1, 0], [1, 1]], [[0, 0], [1, 0], [1, 1], [2, 1]], [[0, 1], [1, 1], [1, 0], [2, 0]]]);   // 케이블 ㄹ
 add('light', .8, rots([[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]));   // 조명 스탠드 큰 ㄴ 5칸
 export const PIECES = P;
+// 장면(종류) 번호: 판 칸에 들어가는 값(1~). 같은 장면 보너스 판정에 씀 — 화면·서버가 같은 번호를 쓰도록 여기서 정함(PIECES 등장 순서)
+export const KIND_ORDER = [...new Set(P.map(x => x.k))];
+export const kindV = pi => KIND_ORDER.indexOf(P[pi].k) + 1;
+export const SAME_MULT = 2;   // 2026-10-30 하율(디벨롭 1번): 정리된 줄 중 한 장면으로만 꽉 찬 줄이 있으면 그 판의 정리 점수 ×2 (2줄 이상이면 ×3)
 
 export const newBoard = () => new Array(N * N).fill(0);
 export function fits(b, s, r, c) {
@@ -64,16 +68,18 @@ export function place(b, st, s, r, c, v = 1) {
   const cells = new Set();
   rows.forEach(y => { for (let x = 0; x < N; x++) cells.add(y * N + x); });
   cols.forEach(x => { for (let y = 0; y < N; y++) cells.add(y * N + x); });
+  // 같은 장면 줄: 지우기 전 값으로 판정(줄 8칸이 모두 같은 장면 번호)
+  const same = [...rows.map(y => b.slice(y * N, y * N + N)), ...cols.map(x => Array.from({ length: N }, (_, y) => b[y * N + x]))].filter(l => l.every(v2 => v2 === l[0])).length;
   cells.forEach(i => { b[i] = 0; });
   const n = rows.length + cols.length;
   let pts = s.length;   // 놓은 칸마다 1점
   if (n) {
     st.combo++; st.miss = 0;
-    pts += 10 * n * (n + 1) / 2 * Math.min(st.combo, 10);   // 1줄 10 · 2줄 30 · 3줄 60 … × 연속 정리(최대 ×10)
+    pts += 10 * n * (n + 1) / 2 * Math.min(st.combo, 10) * (same ? SAME_MULT + Math.min(same, 2) - 1 : 1);   // 1줄 10 · 2줄 30 · 3줄 60 … × 연속 정리(최대 ×10) × 같은 장면(×2, 2줄↑ ×3)
     if (b.every(v => !v)) pts += 300;   // 선반 싹 비움
   } else if (++st.miss >= 3) { st.combo = 0; st.miss = 0; }   // 3번 연속 정리 못 하면 연속 끊김
   st.score += pts;
-  return { cells: [...cells], rows, cols, n, pts, clear: n > 0 && b.every(v => !v) };
+  return { cells: [...cells], rows, cols, n, pts, same, clear: n > 0 && b.every(v => !v) };
 }
 // 놓기 하나 = 정수: 판 시작부터 ms · 묶음 안 자리(0~2) · 줄 · 칸
 export const enc = (t, slot, r, c) => Math.round(t) * 1024 + slot * 64 + r * 8 + c;
@@ -94,7 +100,7 @@ export function replay(seed, rounds) {
     if (m.slot > 2 || used[m.slot]) return { err: `${k + 1}번째 놓기의 장비가 없어요`, k };
     const s = P[set[m.slot]].s;
     if (!fits(b, s, m.r, m.c)) return { err: `${k + 1}번째 장비를 놓을 수 없는 자리예요`, k };
-    const x = place(b, st, s, m.r, m.c); lines += x.n; used[m.slot] = true; combo = Math.max(combo, st.combo); if (x.clear) wipe++;
+    const x = place(b, st, s, m.r, m.c, kindV(set[m.slot])); lines += x.n; used[m.slot] = true; combo = Math.max(combo, st.combo); if (x.clear) wipe++;
     if (used.every(Boolean)) { set = nextSet(rand, b, k + 1); used = [false, false, false]; }
   }
   return { score: st.score, n: mv.length, lines, combo, wipe };

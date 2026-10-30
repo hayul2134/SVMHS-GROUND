@@ -4,7 +4,7 @@
 //   res = { score, n, lines, ms, rounds: [끝난 ms, ...놓기], why: 'stuck'|'max'|'quit' }
 // 조작(2026-10-29 출시 준비): ① 끌어다 놓기 ② 눌러서 집기 → 판을 눌러 놓기(트랙패드·터치에서 끌기 어려울 때) · 다시 누르면 내려놓기
 //   '그만하기'(두 번 눌러 확인) = 쉬는 시간이 끝날 때 지금 점수로 기록 남기기
-import { N, PIECES, MAX_MOVES, MIN_GAP, rng, newBoard, fits, canPlace, nextSet, place, enc } from './blast-score.js';
+import { N, PIECES, MAX_MOVES, MIN_GAP, rng, newBoard, fits, canPlace, nextSet, place, enc, kindV, KIND_ORDER } from './blast-score.js';
 
 const KINDS = {   // 2026-10-30 LED 월 컨셉: 장비 종류 키는 규칙(blast-score.js)과 같고, 화면에서는 장면 이름 + 장면 색 두 개(첫 색 = 파편·빛줄기 색)
   bat: ['노을', '#ff9a5a', '#ff4f8b'], sd: ['하늘', '#6fcaff', '#c8efff'], lens: ['바다', '#33b8ff', '#1749c9'], slide: ['숲', '#7be08a', '#1c8f63'],
@@ -158,9 +158,12 @@ export function createBlast(root, opt = {}) {
   }
 
   /* ----- 타격감(2026-10-29 하율 "더 타격감 있게, 화려하게"): 화면 흔들림 · 줄 빛줄기 · 파편 · 번쩍 · 놓을 때 꾹 눌림 · 연속 테두리 ----- */
+  const SWEEP_MS = 1100; let sweep = { t: -1e9 }, sweepT = 0;   // 2026-10-30 디벨롭 2번: 켜진 패널 위로 6초마다 빛이 한 번 쓸고 지나감(그 1.1초만 다시 그림 → 가만히 있을 땐 그리기 0)
+  let airT = 0; function airTick() { clearTimeout(airT); if (dead) return; if (st.combo > 1 && state === 'play' && !document.hidden) kick(); airT = setTimeout(airTick, 500); }
+  function sweepLoop() { clearTimeout(sweepT); if (dead) return; sweepT = setTimeout(() => { if (!dead && state === 'play' && !document.hidden && b.some(Boolean)) { sweep = { t: performance.now() }; kick(); } sweepLoop(); }, 6000); }
   let shake = { t: 0, a: 0 }, parts = [], beams = [], flash = { t: 0, a: 0 }, rings = [], waves = [], glitch = { t: 0, a: 0 }, punch = { t: 0, a: 0 };
   const bump = a => { const now = performance.now(), left = Math.max(0, shake.a * (1 - (now - shake.t) / 280)); shake = { t: now, a: Math.min(16, Math.max(left, a)) }; };
-  const busyFx = now => parts.length || beams.length || rings.length || waves.length || now - shake.t < 280 || now - flash.t < 260 || now - glitch.t < 220 || now - punch.t < 260;
+  const busyFx = now => now - sweep.t < SWEEP_MS || parts.length || beams.length || rings.length || waves.length || now - shake.t < 280 || now - flash.t < 260 || now - glitch.t < 220 || now - punch.t < 260;
   function noise(d, vol, f = 1200, type = 'bandpass', at = 0) {   // 짧은 잡음(쾅·쉭)
     const a = sound && au(); if (!a) return;
     const len = Math.floor(a.sampleRate * d), bf = a.createBuffer(1, len, a.sampleRate), x = bf.getChannelData(0);
@@ -207,17 +210,29 @@ export function createBlast(root, opt = {}) {
       ctx.save(); ctx.globalAlpha = .5 + .12 * Math.sin(now / 500); ctx.font = `900 ${Math.round(cs * .62)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#39406a'; ctx.fillText('NO SIGNAL', bx + cs * 4, by + cs * 4); ctx.restore();
     }
     const pv = drag && drag.x != null && state === 'play' ? preview(drag) : null;
+    const swK = now - sweep.t < SWEEP_MS ? (now - sweep.t) / SWEEP_MS : -1, swD = swK < 0 ? 0 : -3 + swK * 22;   // 빛 쓸기: 대각선(줄+칸) 위치
     for (let i = 0; i < N * N; i++) {
       if (!b[i]) continue;
       const x = bx + (i % N) * cs, y = by + Math.floor(i / N) * cs, ba = born[i] ? now - born[i] : 999, bk = Math.min(1, ba / 220), bn = ba < 220 ? 1 + .22 * Math.sin(bk * Math.PI) * (1 - bk) - .1 * (bk < .25 ? 1 - bk * 4 : 0) : 1, d = cs * bn;
       cellArt[i] ? cell(cellArt[i], x + (cs - d) / 2, y + (cs - d) / 2, d) : 0;
+      if (swK >= 0) { const dd = Math.abs(i % N + Math.floor(i / N) - swD); if (dd < 2) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,255,255,${.22 * (1 - dd / 2)})`; ctx.fillRect(x + cs * .05, y + cs * .05, cs * .9, cs * .9); ctx.restore(); } }
       if (ba < 180) { ctx.fillStyle = `rgba(255,255,255,${.55 * (1 - ba / 180)})`; ctx.beginPath(); ctx.roundRect(x + (cs - d) / 2, y + (cs - d) / 2, d, d, d * .2); ctx.fill(); }
       if (pv?.hit.has(i)) { ctx.fillStyle = `rgba(255,255,255,${.28 + .18 * Math.sin(now / 80)})`; ctx.beginPath(); ctx.roundRect(x + 2, y + 2, cs - 4, cs - 4, cs * .18); ctx.fill(); }
+    }
+    if (!pv && drag && drag.x != null && state === 'play') {   // 못 놓는 자리: 판 안이면 가장 가까운 자리에 빨간 테두리(왜 안 놓이는지 바로 보이게)
+      const s = PIECES[set[drag.slot]].s, [h, w] = dims(s), r = Math.round((drag.y - drag.lift - h * cs / 2 - by) / cs), c = Math.round((drag.x - w * cs / 2 - bx) / cs);
+      if (r > -1 && c > -1 && r + h < N + 1 && c + w < N + 1) { ctx.save(); ctx.strokeStyle = 'rgba(255,70,90,.85)'; ctx.fillStyle = 'rgba(255,70,90,.14)'; ctx.lineWidth = 2; for (const [dr, dc] of s) { const rr = r + dr, cc = c + dc; if (rr < 0 || cc < 0 || rr >= N || cc >= N) continue; ctx.beginPath(); ctx.roundRect(bx + cc * cs + 3, by + rr * cs + 3, cs - 6, cs - 6, cs * .12); ctx.fill(); ctx.stroke(); } ctx.restore(); }
     }
     if (pv) {   // 놓일 자리(반투명) + 정리될 줄의 빈칸도 빛나게
       const s = PIECES[set[drag.slot]].s, k = kindOf(set[drag.slot]);
       ctx.globalAlpha = .5; whole(set[drag.slot], bx + pv.sn.c * cs, by + pv.sn.r * cs, cs); ctx.globalAlpha = 1;
       pv.hit.forEach(i => { if (b[i]) return; const x = bx + (i % N) * cs, y = by + Math.floor(i / N) * cs; ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.roundRect(x + 2, y + 2, cs - 4, cs - 4, cs * .18); ctx.fill(); });
+    }
+    if (st.combo > 1 && state !== 'ready') {   // 2026-10-30 디벨롭 3번: 연속 송출 중 ON AIR 불빛(판 위 테두리 왼쪽에 걸침, 빨간 점이 깜빡임)
+      const fh = Math.max(14, Math.round(cs * .42)), fw = fh * 3.9, ax = bx + cs * .1, ay = Math.max(1, by - pad * .5 - fh * .5), on = Math.floor(now / 500) % 2 === 0;
+      ctx.save(); ctx.fillStyle = '#e8243c'; ctx.beginPath(); ctx.roundRect(ax, ay, fw, fh, fh * .3); ctx.fill(); ctx.strokeStyle = '#0b0f22'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = on ? '#fff' : 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(ax + fh * .55, ay + fh / 2, fh * .2, 0, 7); ctx.fill();
+      ctx.font = `900 ${Math.round(fh * .62)}px ${FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText('ON AIR', ax + fh * .95, ay + fh * .54); ctx.restore();
     }
     // 정리된 칸: 하얗게 번쩍 → 작아지며 사라짐 + 반짝이
     fx = fx.filter(f => now - f.t < 420);
@@ -286,7 +301,8 @@ export function createBlast(root, opt = {}) {
       whole(set[i], ox, oy, m);
       ctx.globalAlpha = 1;
       ctx.font = `800 ${lab}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = ok ? '#8d93b8' : '#c0c4d8';
-      ctx.fillText(KINDS[k][0], sx + sw / 2, Math.min(sy + sh - 4, oy + h * m + lab * 1.25));
+      if (!ok && state === 'play') { ctx.fillStyle = '#e8243c'; ctx.fillText('놓을 곳 없음', sx + sw / 2, Math.min(sy + sh - 4, oy + h * m + lab * 1.25)); ctx.save(); ctx.strokeStyle = 'rgba(232,36,60,.55)'; ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(sx + 6, sy + 6, sw - 12, sh - 12, cs * .3); ctx.stroke(); ctx.restore(); }   // 2026-10-30 디벨롭 5번
+      else ctx.fillText(KINDS[k][0], sx + sw / 2, Math.min(sy + sh - 4, oy + h * m + lab * 1.25));
     }
     // 끌고 있는 장비(원래 크기)
     if (drag && drag.x != null && !(drag.held && slotAt(drag) >= 0)) {
@@ -378,7 +394,7 @@ export function createBlast(root, opt = {}) {
   function put(slot, r, c, t) {
     const pi = set[slot], s = PIECES[pi].s, k = kindOf(pi), now = performance.now(), prevB = b.slice();
     moves.push(enc(t, slot, r, c));
-    const res = place(b, st, s, r, c, KEYS.indexOf(k) + 1);
+    const res = place(b, st, s, r, c, kindV(pi));
     used[slot] = true; lines += res.n;
     for (const [dr, dc] of s) { born[(r + dr) * N + c + dc] = now; cellArt[(r + dr) * N + c + dc] = { pi, dr, dc }; }
     const bx = BX(), by = BY(), [h, w] = dims(s), cx = bx + (c + w / 2) * cs, cy = by + (r + h / 2) * cs;
@@ -389,7 +405,7 @@ export function createBlast(root, opt = {}) {
       res.rows.forEach(y => beams.push({ row: y, from: c + w / 2 - .5, t: now, c: KINDS[k][1] }));
       res.cols.forEach(x => beams.push({ col: x, from: r + h / 2 - .5, t: now, c: KINDS[k][1] }));
       res.cells.forEach(i => {   // 칸마다 조각 4개 + 별 1개(많이 지우면 조금 줄여 느린 기기 보호)
-        const x = bx + (i % N + .5) * cs, y = by + (Math.floor(i / N) + .5) * cs, col = KINDS[KEYS[prevB[i] ? prevB[i] - 1 : KEYS.indexOf(k)] || k][1], nn = res.cells.length > 24 ? 3 : 6;
+        const x = bx + (i % N + .5) * cs, y = by + (Math.floor(i / N) + .5) * cs, col = KINDS[(prevB[i] && KIND_ORDER[prevB[i] - 1]) || k][1], nn = res.cells.length > 24 ? 3 : 6;
         for (let j = 0; j < nn; j++) parts.push({ x, y, vx: (Math.random() - .5) * cs * .42, vy: -cs * (.1 + Math.random() * .28), r: Math.random() * 6, vr: (Math.random() - .5) * .4, s: cs * (.1 + Math.random() * .14), c: col, t: now + Math.random() * 60, life: 650 + Math.random() * 300 });
         parts.push({ star: true, x, y, vx: (Math.random() - .5) * cs * .2, vy: -cs * (.15 + Math.random() * .15), r: 0, vr: 0, s: cs * (.18 + Math.random() * .14), t: now, life: 600 });
       });
@@ -397,6 +413,7 @@ export function createBlast(root, opt = {}) {
       punch = { t: now, a: Math.min(.06, .018 + .012 * res.n + cb * .003) };
       waves.push({ x: ox, y: oy, t: now, r: 3 + res.n * 1.6 + cb * .25, c: KINDS[k][1] }); if (res.n >= 2) waves.push({ x: ox, y: oy, t: now + 90, r: 5 + res.n * 1.8, c: '#ffffff' });
       if (res.n >= 2 || res.clear) glitch = { t: now + 40, a: Math.min(1.6, .7 + res.n * .25) };
+      if (res.same) { floats.push({ s: `같은 장면 ×${res.same > 1 ? 3 : 2}!`, x: ox, y: oy - cs * 1.3, t: now + 140, big: true, rb: true, sc: 1.25 }); waves.push({ x: ox, y: oy, t: now + 140, r: 9, c: '#ffe27a' }); for (let j = 0; j < 10; j++) blip(1046 * 2 ** ([0, 4, 7, 12, 16][j % 5] / 12 + Math.floor(j / 5)), .5 + j * .035, .07); }   // 2026-10-30 디벨롭 1번
       floats.push({ s: res.clear ? '전체 화면 송출!' : CLEAR_NAME[Math.min(res.n, 4) - 1], x: ox, y: oy - cs * .45, t: now, big: true, c: '#ffe27a', sc: 1 + Math.min(res.n - 1, 3) * .18, rb: res.clear || res.n >= 3 });
       if (st.combo > 1) floats.push({ s: `콤보 ×${cb}`, x: bx + cs * 4, y: by + cs * 1.2, t: now + 90, big: true, rb: true, sc: 1 + cb * .05 });
       floats.push({ s: '+' + res.pts.toLocaleString('ko-KR') + (st.combo > 1 ? `  연속 ×${Math.min(st.combo, 10)}` : ''), x: ox, y: oy + cs * .35, t: now + 60, c: '#9ff0a8' });
@@ -422,7 +439,7 @@ export function createBlast(root, opt = {}) {
   /* ----- 판 흐름 ----- */
   function ready() {
     state = 'ready'; ov.hidden = false; ov.className = 'ml-ov';
-    ov.innerHTML = `<b>LED 월 켜기!</b><span>LED 패널을 끌어다 벽에 붙여요 <small>(눌러서 집고 벽 칸을 눌러도 돼요)</small><br>가로·세로 한 줄이 꽉 차면 <em>송출!</em> · 놓을 곳이 없으면 끝<br>연속으로 정리하면 점수가 몇 배로!</span><button type="button" class="btn big" data-m="go">시작</button>`;
+    ov.innerHTML = `<b>LED 월 켜기!</b><span>LED 패널을 끌어다 벽에 붙여요 <small>(눌러서 집고 벽 칸을 눌러도 돼요)</small><br>가로·세로 한 줄이 꽉 차면 <em>송출!</em> · 놓을 곳이 없으면 끝<br>연속으로 정리하면 점수가 몇 배로! · 한 줄을 <em>같은 장면</em>으로 채우면 ×2</span><button type="button" class="btn big" data-m="go">시작</button>`;
     $('go').onclick = start; draw();
   }
   async function start() {
@@ -433,7 +450,7 @@ export function createBlast(root, opt = {}) {
     clearTimeout(endT);
     rand = rng(seed == null ? Math.floor(Math.random() * 4294967296) : seed);
     b = newBoard(); cellArt = []; st = { score: 0, combo: 0, miss: 0 }; moves = []; lines = 0; fx = []; floats = []; born = []; parts = []; beams = []; rings = []; waves = []; drag = null; held = -1;
-    set = nextSet(rand, b, 0); used = [false, false, false]; setAt = performance.now() + 150;
+    set = nextSet(rand, b, 0); used = [false, false, false]; setAt = performance.now() + 150; sweepLoop(); airTick();
     shown = 0; cancelAnimationFrame(rollRaf); rollRaf = 0; $('sc').textContent = 0; $('gain').className = 'bl-gain'; $('cb').textContent = 0; $('cbw').classList.remove('on');
     state = 'play'; t0 = performance.now(); ov.hidden = true; stopBtn.hidden = false; tone(523, .08, 'triangle', .06); tone(784, .12, 'triangle', .06, .08);
     fit(); kick();
@@ -455,7 +472,7 @@ export function createBlast(root, opt = {}) {
     start,
     msg(html) { const m = $('msg'); if (m) m.innerHTML = html; },
     setBest(v, force) { if (force || v > best) { best = v; $('best').textContent = v.toLocaleString('ko-KR'); } },
-    destroy() { dead = true; const as = root.closest('.fl')?.querySelector(':scope > .fl-side'); if (as) as.style.marginTop = ''; cancelAnimationFrame(rollRaf); clearTimeout(endT); clearTimeout(stopT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
+    destroy() { dead = true; const as = root.closest('.fl')?.querySelector(':scope > .fl-side'); if (as) as.style.marginTop = ''; cancelAnimationFrame(rollRaf); clearTimeout(endT); clearTimeout(stopT); clearTimeout(sweepT); clearTimeout(airT); cancelAnimationFrame(raf); ro.disconnect(); try { ac?.close(); } catch {} },
     get st() { return { state, score: st.score, combo: st.combo, board: b, set, used, moves, cs, pad, horiz, held }; },
     slotRect, end, _art: (pi, s) => art(pi, s).c,   // 테스트용
     _put(slot, r, c) { if (state === 'play' && !used[slot] && fits(b, PIECES[set[slot]].s, r, c)) { put(slot, r, c, Math.round(performance.now() - t0)); return true; } return false; },   // 테스트용
