@@ -254,7 +254,7 @@ export function createBlast(root, opt = {}) {
       q.vy += .35 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.r += q.vr * dt;
       const k = (now - q.t) / q.life; ctx.globalAlpha = k < .6 ? 1 : 1 - (k - .6) / .4;
       if (q.star) { ctx.fillStyle = '#fff6c2'; const z = q.s * (1 - k); ctx.beginPath(); ctx.moveTo(q.x, q.y - z); ctx.lineTo(q.x + z * .3, q.y - z * .3); ctx.lineTo(q.x + z, q.y); ctx.lineTo(q.x + z * .3, q.y + z * .3); ctx.lineTo(q.x, q.y + z); ctx.lineTo(q.x - z * .3, q.y + z * .3); ctx.lineTo(q.x - z, q.y); ctx.lineTo(q.x - z * .3, q.y - z * .3); ctx.fill(); }
-      else { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(q.x, q.y); ctx.rotate(q.r); if (parts.length < 70) { ctx.shadowColor = q.c; ctx.shadowBlur = q.s * 1.2; }   // 파편이 많으면 번짐 생략(학교 태블릿 보호) ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s); ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(-q.s * .22, -q.s * .22, q.s * .44, q.s * .44); ctx.restore(); }   // 빛나는 LED 픽셀
+      else { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(q.x, q.y); ctx.rotate(q.r); if (parts.length < 70) { ctx.shadowColor = q.c; ctx.shadowBlur = q.s * 1.2; /* 파편이 많으면 번짐 생략(학교 태블릿 보호) */ } ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s); ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(-q.s * .22, -q.s * .22, q.s * .44, q.s * .44); ctx.restore(); }   // 빛나는 LED 픽셀
     }
     ctx.globalAlpha = 1;
     // 충격파: 정리된 자리에서 퍼지는 빛 고리(여러 줄·연속일수록 크게)
