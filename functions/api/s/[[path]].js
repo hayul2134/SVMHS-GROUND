@@ -11,7 +11,7 @@ import { BLAST_MAX, seedOf as blastSeed, replay as blastReplay } from '../../../
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
-import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
+import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, ACH_TITLES, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -292,11 +292,30 @@ const achOpen = me => ACH_GAMES.filter(g => !GAMES[g]?.ff || ffOn(GAMES[g].ff, i
 const mstOpen = me => MST_GAMES.filter(g => GAMES[g] && (!GAMES[g].ff || ffOn(GAMES[g].ff, isAdm(me))));   // 숙련도(깃발 mastery): 보는 사람에게 열린 게임만
 // 업적 한 판 판정용 KST 시각(2026-10-30 공통 숨김 업적: 점심·월요일 아침·금요일 오후·일요일·0시 정각·10/31)
 const kstNowParts = () => { const k = new Date(Date.now() + 9 * 3600e3); return { hour: k.getUTCHours(), min: k.getUTCMinutes(), dow: k.getUTCDay(), md: String(k.getUTCMonth() + 1).padStart(2, '0') + String(k.getUTCDate()).padStart(2, '0') }; };
+// 업적 새 출발(2026-10-30 21:11 하율 "업적도 모든 사람들이 처음부터" → 10/31 00:00 KST 패치 때): 그 시각부터 모든 업적을 비우고, 그 날 이후 기록만 셈
+const ACH_FROM = Date.UTC(2026, 9, 30, 15), ACH_DAY = '20261031';
+let achResetOk = false;
+async function achReset(db, me) {
+  if (achResetOk || Date.now() < ACH_FROM) return;
+  try {
+    const first = await db.prepare("INSERT OR IGNORE INTO settings (k, v) VALUES ('ach_reset_1031', '1')").run();
+    if (first.meta?.changes) {
+      await db.batch([
+        db.prepare("UPDATE users SET ach = ''"),
+        db.prepare(`UPDATE users SET st_title = '' WHERE st_title IN (${ACH_TITLES.map(() => '?').join(',')})`).bind(...ACH_TITLES),   // 업적 칭호를 달고 있던 사람은 떼어 줌
+      ]);
+      if (me) { me.ach = ''; if (ACH_TITLES.includes(me.st_title)) me.st_title = ''; }
+      achRare = { at: 0, n: 0, c: {} };
+    }
+    achResetOk = true;
+  } catch (e) { console.log('achReset', e?.message); }
+}
 async function achStats(db, uid, me) {
+  const since = Date.now() >= ACH_FROM ? ACH_DAY : '0';   // 새 출발 뒤엔 그 날부터의 기록만(예전 기록으로 다시 채우지 않음)
   const [b, d, D, T] = await db.batch([
-    db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game <> 'gearn' GROUP BY game").bind(uid),
-    db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 GROUP BY g").bind(uid),
-    db.prepare('SELECT COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1').bind(uid),
+    db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game <> 'gearn' AND day >= ?2 GROUP BY game").bind(uid, since),
+    db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 AND day >= ?2 GROUP BY g").bind(uid, since),
+    db.prepare('SELECT COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 AND day >= ?2').bind(uid, since),
     db.prepare("SELECT DISTINCT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g FROM scores WHERE uid = ?1 AND day = ?2").bind(uid, kstYmd()),   // 오늘 한 게임(하루 종일 오락실)
   ]);
   return { best: Object.fromEntries(b.results.map(x => [x.game, achNat(x.game, x.b)])), days: Object.fromEntries(d.results.map(x => [x.g, x.n])), D: D.results[0]?.n || 0, T: T.results.map(x => x.g), open: achOpen(me) };
@@ -634,6 +653,7 @@ const ROUTES = {
     try { await settleRounds(db); } catch (e) { console.log('settleRounds', e?.message); }   // 끝난 게임 랭킹 라운드 보상(한 번만)
     const me = await auth(req, db);
     if (!me) return json({ me: null });
+    await achReset(db, me);
     if (me.ach === '') await achRun(db, me, null);   // 업적: 예전 기록으로 처음 한 번 소급(그 뒤는 기록 저장 때)
     if (me.mst === '' && ffOn(MST_FF, isAdm(me))) await mstRun(db, me, null);   // 숙련도: 같은 방식으로 처음 한 번 소급(깃발 켜진 사람만)
     const [unread, fo, fb, fr] = await Promise.all([
