@@ -74,7 +74,8 @@ export function createFilm(root, opt = {}) {
     dpr = Math.min(devicePixelRatio || 1, 2);
     // 높이(2026-10-30 21:10 하율 "정 중앙"): 판이 화면 세로 가운데로 움직여도 크기가 흔들리지 않게 판 위치 대신 게임 칸(.parea) 위 + 판 위 점수 줄 높이로 잼
     const pa = root.closest('.parea'), paTop = pa ? pa.getBoundingClientRect().top : 0, off = board.getBoundingClientRect().top - root.getBoundingClientRect().top;
-    const w = root.clientWidth - 34, h = Math.max(260, innerHeight - Math.max(paTop, 0) - off - 64);
+    const pb = pa ? parseFloat(getComputedStyle(pa).paddingBottom) || 0 : 0;   // 칸 아래 여백(6vh)도 빼야 판이 화면 안에 들어옴(2026-10-30 점검: 낮은 화면에서 넘침)
+    const w = root.clientWidth - 34, h = Math.max(260, innerHeight - Math.max(paTop, 0) - off - 64 - pb);
     if (state === 'ready' || state === 'over') { const c = innerHeight > innerWidth && w < 640 && h > w * 1.15 ? 8 : 15; if (c !== cols) { cols = c; rows = CELLS / c; } }   // 세로판(8×15)은 세로로 든 폰·패드만 — 가로 화면은 항상 가로판 15×8(2026-10-29 하율 "가로로 보게")
     cell = Math.max(20, Math.min(72, Math.floor(w / cols), Math.floor(h / rows)));
     cv.style.width = cell * cols + 'px'; cv.style.height = cell * rows + 'px';

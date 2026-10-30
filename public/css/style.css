@@ -6258,7 +6258,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
    양옆 240px 칸이 가로를 먹어 판이 작았음 → 아주 넓은 화면(1500px↑)이 아니면 판을 가로 전체로 크게, 내 기록은 판 아래로 */
 @media (min-width:901px) and (max-width:1199px){div.fl:not(.bl-fl){display:flex;flex-direction:column;align-items:stretch}div.fl:not(.bl-fl)>.fl-side{width:min(560px,100%);align-self:center}}
 /* 2026-10-30 21:10 하율 "정 중앙": 게퍼 10 칸 폭 제한(1240px)을 풀어 판을 크게 + 위아래 가운데 */
-.parea.wide:has(> .fl:not(.bl-fl)){max-width:min(1800px,100%);justify-content:center;padding-bottom:clamp(0px,6vh,64px)}
+.parea.wide:has(> .fl:not(.bl-fl)){max-width:min(1800px,100%);justify-content:flex-start;justify-content:safe center;padding-bottom:clamp(0px,6vh,64px)}   /* safe: 화면이 낮아 판이 넘치면 위로 넘치지 않게(2026-10-30 점검: 1024×640에서 점수·남은 시간 줄이 머리글 밑으로 잘렸음) — safe를 모르는 브라우저는 위에서부터 */
 .fl:not(.bl-fl) .ml-top{gap:10px}
 .fl:not(.bl-fl) .ml-chip{align-items:center;gap:8px;padding:6px 16px;border-width:2.5px;border-radius:14px;box-shadow:3px 3px 0 var(--ink);font-size:15px}
 .fl:not(.bl-fl) .ml-chip b{font-size:30px;line-height:1.05}
@@ -6300,6 +6300,10 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 @media (pointer:coarse) and (min-width:700px) and (min-height:600px) and (orientation:landscape){
   html.padin .cz-snake{position:relative}   /* 판 크기는 그대로 두고, 버튼은 판 오른쪽 바깥 빈자리에(casual.js fit이 --bw = 판 폭) */
   html.padin .cz-snake > .cz-pad{position:absolute;left:calc(50% + var(--bw,400px) / 2 + 22px);bottom:0;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,58px);gap:8px}
+  /* 2026-10-30 점검: '판 정가운데'(casual.js center)로 방향 버튼이 .cz-ft 안으로 옮겨져 위 규칙(> .cz-pad)이 안 맞음 → 버튼이 판 아래로 내려가
+     아래 칸이 커지고 판이 가장 작은 크기(14px 칸)로 줄었음(1024×640 패드에서 판 238px). 아래 칸 안에서 판 오른쪽 아래(판 바닥선)에 붙임 */
+  html.padin .cz-snake > .cz-ft{position:relative}
+  html.padin .cz-snake > .cz-ft > .cz-pad{position:absolute;left:calc(50% + var(--bw,400px) / 2 + 22px);bottom:calc(100% + 12px);grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,58px);gap:8px}
 }
 /* 편집의 신 가까운 컷 확대 (2026-10-29, 깃발 cut-zoom) — 타임라인 폭 전체로 크게 */
 .ctm-zm{position:absolute;top:5px;bottom:5px;z-index:6;display:flex;flex-direction:column;gap:3px;padding:6px 12px 6px;border-radius:12px;background:#0b0e17;border:3px solid #ffd23f;box-shadow:0 0 0 999px rgba(5,7,12,.55),0 0 24px rgba(255,210,63,.35);pointer-events:none;animation:ctZmIn .34s cubic-bezier(.2,1.2,.4,1) both}
