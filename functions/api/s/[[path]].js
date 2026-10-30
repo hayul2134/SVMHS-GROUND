@@ -1831,7 +1831,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
       }
     }
     // 주간 미션 진행(미리보기 깃발 week-mission) — 처음 낸 기록은 '최고 기록 깨기'로 안 셈
-    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 6,000m · 기자재 정리! 3,000점 밑이면 판 수에 안 셈(누적 미션에도 안 더함)
+    // 1판 기준(mission.js playCounts): 집에 가고 싶어! 1,500m · 기자재 정리! 3,000점 밑이면 판 수에 안 셈(누적 미션에도 안 더함)
     // 기자재 정리! 일반 모드도 주간 미션 판 수로 인정(gear-tier, 2026-10-28 하율) — 'gear' 한 판으로 셈, 최고 기록 깨기는 랭킹전만
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
     const mis = (!isCas(g) || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
