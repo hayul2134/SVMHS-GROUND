@@ -1503,12 +1503,25 @@ const achCnt = own => ACH.filter(a => own?.[a.k]).length;
 const achBar = () => `<button type="button" class="ach-bar" data-ach="" data-ff="${ACH_FF}">${medal(4, true)}<span><b>게임 업적</b><small>모은 업적 ${achCnt(S.me?.ach)} / ${ACH.length} · 게임마다 업적을 다 모으면 칭호</small></span><i aria-hidden="true">›</i></button>`;
 const gName = g => g === 'all' ? '공통' : GAMES[g]?.name || g;
 // 숙련도 엠블럼(2026-10-29): 육각 스티커 + 레벨 숫자, 10레벨마다 색 단계(입문 회색·숙련 민트·베테랑 파랑·장인 보라·마스터 금·레전드 무지개)
-// 숙련도 문장(2026-10-30 하율 "공통 틀 + 게임 아이콘"): 롤처럼 틀은 모든 게임이 같고 단계마다 자람 — 입문 육각 → 숙련 테두리 → 베테랑 작은 날개 → 장인 큰 날개·별 → 마스터 금 왕관 → 레전드 빛 고리
-//   가운데 = 그 게임 아이콘(sj-*), 레벨은 아래 리본. 게임이 없는 자리(숙련도 점수 등)는 가운데에 숫자
-const MW = 'M13 21.5C7 19.5 2.6 22.5 1 29c4-2 7.6-1.4 12 .6z', MW2 = 'M13 30.5C7.4 31 3.6 34.6 3.2 40.4c3.2-2.6 6.2-3.4 9.8-3.2z';
-const mEmb = (lv, cls = '', g = '') => { const b = mstBand(lv), n = +b.k.slice(1), ico = g && GAMES[g]?.ic;
-  const wing = d => `<path class="me-w" d="${d}"/><path class="me-w" d="${d}" transform="matrix(-1 0 0 1 60 0)"/>`;
-  return `<svg class="mem ${b.k}${cls ? ' ' + cls : ''}" viewBox="0 0 60 64" aria-hidden="true">${n >= 5 ? '<circle class="me-halo" cx="30" cy="29" r="27"/>' : ''}${n >= 3 ? wing(MW2) : ''}${n >= 2 ? wing(MW) : ''}<path class="me-o" d="M30 8 47.5 18.5v21L30 50 12.5 39.5v-21z"/><path class="me-i" d="M30 12.6 43.6 20.8v16.4L30 45.4 16.4 37.2V20.8z"/>${n >= 1 ? '<path class="me-r" d="M30 15.6 41 22.2v13.6L30 42.4 19 35.8V22.2z"/>' : ''}<path class="me-h" d="M18.6 21.6 30 14.8l11.4 6.8"/>${n >= 4 ? '<path class="me-c" d="M21 11.2 22.6 3l4.6 4.6L30 1.4l2.8 6.2L37.4 3l1.6 8.2z"/>' : n >= 3 ? '<path class="me-s" d="m30 1.6 1.9 3.9 4.3.6-3.1 3 .7 4.2-3.8-2-3.8 2 .7-4.2-3.1-3 4.3-.6z"/>' : ''}${ico ? `<circle class="me-p" cx="30" cy="29" r="11.8"/><use href="#sj-${ico}" transform="translate(19.5 18.5) scale(.875)"/><path class="me-rb" d="M15.5 47.5h29l-2.6 4.6 2.6 4.6h-29l2.6-4.6z"/><text class="me-t" x="30" y="55">${lv}</text>` : `<text class="me-t me-tc" x="30" y="34.2">${lv}</text>`}</svg>`; };
+// 숙련도 문장(2026-10-30 하율 "공통 틀 + 게임 아이콘" → "더 화려하게"): 롤처럼 틀은 모든 게임이 같고 레벨마다 자람(그라데이션은 index.html 스프라이트 defs mg-*)
+//   단계(10레벨) — 입문 회색 육각 → 숙련 민트·잎 → 베테랑 파랑·날개 → 장인 보라·큰 날개·별 → 마스터 금·왕관·리본 꼬리·반짝이 → 레전드(50) 무지개·빛살 고리
+//   단계 안 3칸(I·II·III) — II: 양옆 보석 · III: 위 보석(장인↑은 별·왕관에 보석) + 리본 꼬리. 가운데 = 게임 아이콘(sj-*), 레벨은 아래 리본(게임이 없는 자리는 가운데 숫자)
+const MW = 'M13 21.5C7 19.5 2.6 22.5 1 29c4-2 7.6-1.4 12 .6z', MW2 = 'M13 30.5C7.4 31 3.6 34.6 3.2 40.4c3.2-2.6 6.2-3.4 9.8-3.2z', MW3 = 'M14 17.8C11.4 12 6.6 9.6 2.4 10.6c3 1.6 5.8 4.4 7.2 8.6z';
+const MGEM = { m0: '#9fb0c6', m1: '#2fd3a0', m2: '#3aa0ff', m3: '#a77bff', m4: '#ff6b8a', m5: '#ff6b8a' };
+const mSub = lv => lv >= 50 ? 3 : Math.min(2, Math.floor(((lv < 10 ? lv - 1 : lv % 10)) / (lv < 10 ? 3 : 3.34)));   // 단계 안 I·II·III
+const mEmb = (lv, cls = '', g = '') => { const b = mstBand(lv), k = b.k, n = +k.slice(1), t = mSub(lv), ico = g && GAMES[g]?.ic, gem = MGEM[k];
+  const mir = x => x + x.replace(/^<(\w+)/, '<$1 transform="matrix(-1 0 0 1 60 0)"');
+  const wing = d => mir(`<path class="me-w" fill="url(#mg-w-${k})" d="${d}"/>`);
+  const spk = (x, y, r, c = '') => `<path class="me-sp${c}" d="M${x} ${y - r}q.6 ${r * .7} ${r} ${r}q-${r * .7} .6-${r} ${r}q-.6-${r * .7}-${r}-${r}q${r * .7}-.6 ${r}-${r}z"/>`;
+  const rays = n >= 5 ? `<g class="me-ray">${Array.from({ length: 16 }, (_, i) => { const a = i * Math.PI / 8, c = Math.cos(a), s = Math.sin(a), R = i % 2 ? 27 : 31.5; return `<path class="${i % 2 ? 'r2' : ''}" d="M${(30 + 19 * c).toFixed(1)} ${(29 + 19 * s).toFixed(1)}L${(30 + R * Math.cos(a - .11)).toFixed(1)} ${(29 + R * Math.sin(a - .11)).toFixed(1)}L${(30 + R * Math.cos(a + .11)).toFixed(1)} ${(29 + R * Math.sin(a + .11)).toFixed(1)}z"/>`; }).join('')}</g><circle class="me-halo" cx="30" cy="29" r="27"/>` : '';
+  const tails = n >= 4 || t >= 2 ? mir(`<path class="me-tl" d="M18.4 50.6 13 58.6l3.6-.6 1.4 3.6 5-8.6z"/>`) : '';
+  const leaf = n === 1 ? mir(`<path class="me-lf" d="M12.6 33.5c-3.4-.4-5.6-2.6-6.2-6 3.2.2 5.6 2.2 6.2 6zM13 40c-3.4.6-6-.8-7.4-3.8 3.2-.6 5.8.8 7.4 3.8z"/>`) : '';
+  const gems = t >= 1 ? mir(`<circle class="me-g" cx="12.5" cy="29" r="3.3" fill="${gem}"/>`) : '';
+  const top = n >= 4 ? `<path class="me-c" d="M20.4 11.6 22 2.6l5 4.8L30 .8l3 6.6 5-4.8 1.6 9z"/>${t >= 2 || n >= 5 ? `<circle class="me-g" cx="30" cy="7.4" r="2.2" fill="${gem}"/>` : ''}`
+    : n >= 3 ? `<path class="me-s" d="m30 .9 2.2 4.5 5 .7-3.6 3.5.9 4.9L30 12.2l-4.5 2.3.9-4.9-3.6-3.5 5-.7z"/>${t >= 2 ? `<circle class="me-g" cx="30" cy="7.6" r="1.6" fill="${gem}"/>` : ''}`
+    : t >= 2 ? `<path class="me-g" d="M30 2.4l3.4 4.6L30 11.6 26.6 7z" fill="${gem}"/>` : '';
+  const sp = n >= 4 ? `<g class="me-tw">${spk(6, 8, 3.2)}${spk(54.5, 12, 2.6, ' d2')}${spk(53, 47, 2.2, ' d3')}${n >= 5 ? spk(5.5, 46, 2.6, ' d2') : ''}</g>` : '';
+  return `<svg class="mem ${k}${cls ? ' ' + cls : ''}" viewBox="0 0 60 64" aria-hidden="true">${rays}${tails}${n >= 4 ? wing(MW3) : ''}${n >= 3 ? wing(MW2) : ''}${n >= 2 ? wing(MW) : ''}${leaf}<path class="me-o" fill="url(#mg-o-${k})" d="M30 8 47.5 18.5v21L30 50 12.5 39.5v-21z"/><path class="me-i" fill="url(#mg-i-${k})" d="M30 12.6 43.6 20.8v16.4L30 45.4 16.4 37.2V20.8z"/>${n >= 1 ? '<path class="me-r" d="M30 15.6 41 22.2v13.6L30 42.4 19 35.8V22.2z"/>' : ''}<path class="me-gl" d="M17.6 21.4 30 14l7.4 4.4-17.4 10.4z"/>${gems}${top}${ico ? `<circle class="me-p" cx="30" cy="29" r="11.8"/><use href="#sj-${ico}" transform="translate(19.5 18.5) scale(.875)"/><path class="me-rb" d="M15.5 47.5h29l-2.6 4.6 2.6 4.6h-29l2.6-4.6z"/><text class="me-t" x="30" y="55">${lv}</text>` : `<text class="me-t me-tc" x="30" y="34.2">${lv}</text>`}${sp}</svg>`; };
 const mInfo = xp => { const L = mstLv(xp), b = mstBand(L.lv); return { ...L, b, pct: L.need ? Math.round(L.cur / L.need * 20) * 5 : 100 }; };
 const myMst = g => mstXp(S.me?.mst, g);
 // 숙련도(2026-10-30 하율 "업적이랑 숙련도 살짝 분리, 롤 느낌" — 깃발 mastery): 업적 창과 따로, 판마다 등급(S+~D)
