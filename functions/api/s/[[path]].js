@@ -11,7 +11,7 @@ import { BLAST_MAX, seedOf as blastSeed, replay as blastReplay } from '../../../
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
-import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstSeed, mstXp, mstGrade, mstScore } from '../../../public/js/achv.js';
+import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGrade, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -348,11 +348,7 @@ async function mstRun(db, me, game, add, day) {
     for (let t = 0; t < 4; t++) {
       const cur = t ? (await db.prepare('SELECT mst FROM users WHERE id = ?1').bind(me.id).first())?.mst ?? '' : me.mst ?? '';
       let o = parseAch(cur);
-      if (cur === '') {   // 처음 한 번: 예전 기록(게임한 날)으로 소급 — 업적과는 따로(2026-10-30)
-        const d = (await db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 GROUP BY g").bind(me.id).all()).results;
-        o = mstSeed(Object.fromEntries(d.map(x => [x.g, x.n])));
-        if (game) { const gg = game === 'gearn' ? 'gear' : game; if (o[gg]) o[gg][0] = Math.max(0, o[gg][0] - 30); }   // 오늘 판 하루치는 아래에서 다시 더함
-      }
+      if (cur === '') o = {};   // 2026-10-30 하율 "숙련도 추가하면 모두 1레벨부터": 예전 기록으로 소급하지 않음
       const a = game ? mstXp(o, game === 'gearn' ? 'gear' : game) : 0;
       if (game) o = mstAdd(o, game, add || {}, day);
       const nv = JSON.stringify(o);
@@ -1810,7 +1806,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const achF = ffOn(ACH_FF, isAdm(me));
     const ach = achGot.length && achF ? achGot : undefined;
     // 게임 숙련도(깃발 mastery, 2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌"): 판 등급(S+~D, 내 최고 기록 대비)별 XP — 업적·최고 기록 보너스와 따로
-    // 깃발 켜진 사람만 쌓음(공개 때는 mstSeed가 예전 기록으로 소급)
+    // 깃발 켜진 사람만 쌓음 · 모두 Lv.1부터(소급 없음)
     const mstF = ffOn(MST_FF, isAdm(me)), mgr = mstGrade(game, v, allPrev.b);
     const mstR = !mstF ? null : await mstRun(db, me, game, { play: playCounts(game === 'gearn' ? 'gear' : game, v), gr: mgr }, day);
     const mst = mstF && mstR ? { g: mstR.g, a: mstR.a, b: mstR.b, gr: mgr, r: isAdm(me) ? null : mstRank(await achRarity(db), mstR.g, mstR.b) } : undefined;

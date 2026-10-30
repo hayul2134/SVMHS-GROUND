@@ -161,14 +161,14 @@ export function achProg(a, st) {
    등급 = 이번 판 ÷ 내 최고 기록(자연 단위): 최고 기록 경신 S+ · 같거나 90%↑ S · 75%↑ A · 55%↑ B · 35%↑ C · 그 밑 D
    XP: S+ 40 · S 30 · A 24 · B 18 · C 14 · D 10 (1판 기준 mission.js playCounts를 넘은 판만) · 한 게임 하루 300XP까지
    Lv 1~50, 10레벨마다 단계(입문·숙련·베테랑·장인·마스터·레전드) · 숙련도 점수 = 해 본 게임 레벨 합(롤 숙련도 점수)
-   저장: users.mst = { 게임: [XP, 마지막 판 날(YYYYMMDD), 그날 XP, S 이상 횟수, 최근 등급] } — gearn은 gear로. 소급(처음 한 번): 게임한 날 × 30 */
+   저장: users.mst = { 게임: [XP, 마지막 판 날(YYYYMMDD), 그날 XP, S 이상 횟수, 최근 등급] } — gearn은 gear로. 모두 Lv.1부터(소급 없음, 2026-10-30 하율) */
 export const MST_FF = 'mastery';
 export const MST_GAMES = [...ACH_GAMES, 'mine', 'snake', 'n2048'];
 const MST_LOW = new Set(['cut', 'reaction', 'num25', 'mine']);   // 자연 단위가 작을수록 좋은 게임(ms·초)
 export const MST_MAX = 50;
 export const MST_GR = [['S+', 40, '내 최고 기록 경신'], ['S', 30, '최고 기록의 90% 이상'], ['A', 24, '75% 이상'], ['B', 18, '55% 이상'], ['C', 14, '35% 이상'], ['D', 10, '그 밑']];
 const GR_XP = Object.fromEntries(MST_GR.map(x => [x[0], x[1]]));
-export const MST_XP = { dayCap: 300, seedDay: 30 };
+export const MST_XP = { dayCap: 300 };
 export const MST_BAND = [
   { from: 1, k: 'm0', n: '입문' }, { from: 10, k: 'm1', n: '숙련' }, { from: 20, k: 'm2', n: '베테랑' },
   { from: 30, k: 'm3', n: '장인' }, { from: 40, k: 'm4', n: '마스터' }, { from: 50, k: 'm5', n: '레전드' },
@@ -199,12 +199,6 @@ export function mstAdd(m, g, add, day) {
   cur[0] = (+cur[0] || 0) + p; cur[2] = (+cur[2] || 0) + p;
   cur[3] = (+cur[3] || 0) + (add.gr === 'S+' || add.gr === 'S' ? 1 : 0); cur[4] = add.gr || '';
   o[g] = cur;
-  return o;
-}
-// 처음 한 번 소급: days = { 게임: 게임한 날 수 }
-export function mstSeed(days) {
-  const o = {};
-  for (const g of MST_GAMES) { const d = days[g] || 0; if (d) o[g] = [d * MST_XP.seedDay, '', 0, 0, '']; }
   return o;
 }
 // 숙련도 점수(롤 숙련도 점수): 해 본 게임 레벨 합
