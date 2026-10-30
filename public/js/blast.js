@@ -309,7 +309,7 @@ export function createBlast(root, opt = {}) {
   function slotAt(p) { for (let i = 0; i < 3; i++) { const [x, y, w, h] = slotRect(i); if (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h) return i; } return -1; }
   // 마우스 감도(2026-10-30 하율 "블럭을 잡았을 때만 마우스 감도 확 올려서 옮기기 편하게"): 잡은 동안만 블록이 마우스 이동량의 MOUSE_GAIN배로 움직임
   //   기준점 = 잡은 자리, 블록은 캔버스 밖으로 안 나가게, 잡은 동안 커서는 숨김(블록이 커서 역할). 터치·펜은 그대로(손가락 위로 띄우기만)
-  const MOUSE_GAIN = 1.9;
+  const MOUSE_GAIN = 1.5;   // 1.9 → 1.5(2026-10-30 하율 "살짝 너무 빨라")
   const gainPos = (d, p) => ({ x: Math.max(0, Math.min(W, d.x0 + (p.x - d.x0) * MOUSE_GAIN)), y: Math.max(0, Math.min(H, d.y0 + (p.y - d.y0) * MOUSE_GAIN)) });
   const cur = on => { cv.style.cursor = on ? 'none' : ''; };
   const tryPut = d => {   // 놓기 시도 → 놓았으면 true
