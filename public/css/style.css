@@ -6064,6 +6064,7 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .ml-board{position:relative;display:flex;justify-content:center;align-self:center;max-width:100%;gap:10px;padding:10px;border:2.5px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);
   background:linear-gradient(rgba(120,150,200,.09) 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,rgba(120,150,200,.09) 1px,transparent 1px) 0 0/20px 20px,#fbfcff}
 :root[data-theme="dark"] .ml-board{background:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px) 0 0/20px 20px,#232842}
+.ml-board.nb canvas{animation:mlNb .45s cubic-bezier(.2,.9,.3,1.3)}@keyframes mlNb{0%{opacity:.25;transform:scale(.96)}100%{opacity:1;transform:none}}
 .ml-board canvas{display:block;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none}
 .ml-bar{width:12px;flex:none;border:2px solid var(--ink);border-radius:8px;background:color-mix(in srgb,var(--ink) 10%,transparent);position:relative;overflow:hidden}
 .ml-bar i{position:absolute;left:0;right:0;bottom:0;height:calc(var(--t,1)*100%);background:#ffc24a}
@@ -6516,3 +6517,62 @@ html.hw .ticker{background:#3f2860;color:#ffe9d3}
 /* 테마 창: 할로윈 주간엔 색깔을 골라도 할로윈 색이 우선 → 안내 한 줄(캐릭터는 의상 입은 모습으로 미리보기) */
 html.hw .sk-h:first-of-type::after{content:" · 11/6까지는 할로윈 색으로 보여요";font-size:12px;font-weight:600;color:var(--accent)}
 /* ===== 할로윈 끝 ===== */
+/* 2026-10-30 게임 모드 고르기(랭크 / 일반) — 지뢰찾기·뱀·2048 맨 위 한 줄, 기자재 정리! 시작 화면 버튼에도 같은 꼬리표 */
+.md-pick{display:flex;gap:8px;width:100%;max-width:520px;margin:0 auto 8px}
+.md-pick button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 10px;border:2.5px solid var(--ink);border-radius:14px;background:var(--card);color:var(--sub);box-shadow:2px 2px 0 var(--ink);font:inherit;cursor:pointer;transition:transform .14s cubic-bezier(.3,1.6,.5,1),box-shadow .14s,background .15s,color .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.md-pick button b{display:flex;align-items:center;gap:5px;font:400 18px/1 var(--disp);color:inherit}
+.md-pick button b .sic{width:17px;height:17px}
+.md-pick button small{font-size:11.5px;font-weight:800;line-height:1.2;word-break:keep-all;text-align:center;color:var(--sub)}
+.md-pick button.on{color:var(--ink);background:#e7f0ff;box-shadow:3px 4px 0 var(--ink);transform:translateY(-2px)}
+.md-pick button[data-md="rk"].on{background:linear-gradient(#fff7d8,#ffe7a0)}
+.md-pick button.on small{color:#4a5577}
+:root[data-theme="dark"] .md-pick button.on{background:#2c3a62;color:#fff}
+:root[data-theme="dark"] .md-pick button[data-md="rk"].on{background:linear-gradient(#5a4a1c,#44380f);color:#ffe9a6}
+:root[data-theme="dark"] .md-pick button.on small{color:#cfd6ee}
+.md-pick button:not(.on):active{transform:translateY(1px) scale(.97)}
+.md-tag{display:inline-block;margin-left:4px;padding:2px 7px;border:2px solid var(--ink);border-radius:999px;font:800 11px/1.2 Pretendard,sans-serif;letter-spacing:0;vertical-align:middle;background:#eef2fa;color:#3a4566}
+.md-tag.md-rk{background:#ffe08a;color:#5a4000}
+.gr-modes .md-tag{margin:0}
+.gr-mdc{margin:0 0 6px;text-align:center}
+.gr-mdc .md-tag{margin:0}
+@media (max-height:640px){.md-pick{margin-bottom:5px}.md-pick button{padding:5px 8px}.md-pick button small{font-size:10.5px}}
+/* 2026-10-30 기록실(깃발 hall) — 게임·모드마다 역대 최고 기록 카드 */
+.vhead .hall-go{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-weight:800}
+.vhead .hall-go .sic{width:18px;height:18px}
+.hl-lead{display:flex;flex-direction:column;gap:3px;margin:0 0 14px;padding:12px 16px;border:var(--bd);border-radius:16px;background:var(--card);box-shadow:var(--sh-s);color:var(--text)}
+.hl-lead b{font:400 19px/1.2 var(--disp)}
+.hl-lead span{font-size:13.5px;font-weight:700;color:var(--sub);word-break:keep-all}
+.hl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:28px}
+.hl-card{display:flex;flex-direction:column;gap:9px;min-width:0;padding:13px 14px 12px;border:var(--bd);border-radius:18px;background:var(--card);box-shadow:var(--sh-s);color:var(--text);animation:hlIn .4s cubic-bezier(.2,.9,.3,1.2) both}
+.hl-card:nth-child(2){animation-delay:.04s}.hl-card:nth-child(3){animation-delay:.08s}.hl-card:nth-child(4){animation-delay:.12s}.hl-card:nth-child(n+5){animation-delay:.16s}
+@keyframes hlIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.hl-card.ghost{min-height:220px;background:linear-gradient(100deg,var(--card) 30%,var(--chip) 50%,var(--card) 70%) 0 0/300% 100%;animation:hlSk 1.2s linear infinite}
+@keyframes hlSk{to{background-position:-150% 0}}
+.hl-card .hl-h{display:flex;align-items:center;gap:9px}
+.hl-card .hl-h>.sic{width:30px;height:30px;flex:none}
+.hl-card .hl-h span{display:flex;flex-direction:column;min-width:0}
+.hl-card .hl-h b{font:400 19px/1.15 var(--disp);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hl-card .hl-h small{font-size:12px;font-weight:800;color:var(--sub)}
+.hl-one{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 11px;border:2.5px solid var(--ink);border-radius:14px;background:linear-gradient(135deg,#fff8dc,#ffe9a6);color:#3b2c00;text-decoration:none;box-shadow:2px 3px 0 var(--ink)}
+:root[data-theme="dark"] .hl-one{background:linear-gradient(135deg,#4d4019,#3a3010);color:#ffeab0}
+.hl-one .av{width:44px;height:44px;flex:none}
+.hl-who{display:flex;flex-direction:column;min-width:96px;flex:1}
+.hl-who small{font-size:11.5px;font-weight:800;opacity:.8;white-space:nowrap}
+.hl-who b{font-size:15.5px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hl-v{margin-left:auto;font:400 21px/1 var(--disp);font-style:normal;white-space:nowrap}
+.hl-one.me{outline:3px solid #6aa7ff;outline-offset:2px}
+.hl-none{margin:0;padding:16px 10px;border:2px dashed var(--line);border-radius:14px;text-align:center;font-size:13px;font-weight:800;color:var(--sub)}
+.hl-more{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.hl-more li{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:10px;font-size:13.5px}
+.hl-more li.me{background:var(--chip)}
+.hl-more .hl-rk{width:20px;text-align:center;font-weight:900;color:var(--sub)}
+.hl-more a{display:flex;align-items:center;gap:7px;min-width:0;flex:1;color:inherit;text-decoration:none}
+.hl-more a .av{width:26px;height:26px;flex:none}
+.hl-more a b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+.hl-more em{font-style:normal;font-weight:900;white-space:nowrap}
+.hl-my{margin:0;font-size:13px;font-weight:700;color:var(--sub)}
+.hl-my b{color:var(--text);font-weight:900}
+.hl-btns{display:flex;gap:8px;margin-top:auto}
+.hl-btns .btn{flex:1;justify-content:center;padding:8px 10px;font-size:14px}
+.hl-btns .btn .sic{width:16px;height:16px}
+@media (prefers-reduced-motion:reduce){.hl-card{animation:none}}

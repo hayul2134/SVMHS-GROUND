@@ -14,7 +14,7 @@ import { wearG, wearSvg, spotPref, resolveSpot, anchorOf } from './wear.js';
 /* ===== 설정 ===== */
 const SITE_URL = 'https://svmhs-ground.pages.dev/';
 const MAX_GRADE = 3, MAX_CLASS = 10, BASE_CLASS = 6, MAX_DDAY = 20;   // 2026년 학년별 6개 반 (반 목록은 나이스에서 받아옴, 실패 시 BASE_CLASS)
-const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday', 'me', 'u', 'dm', 'game', 'gacha'];   // me·u·dm·game·gacha는 social.js가 그림
+const VIEWS = ['home', 'meal', 'tt', 'cal', 'dday', 'me', 'u', 'dm', 'game', 'gacha', 'hall'];   // me·u·dm·game·gacha·hall(기록실)은 social.js가 그림
 
 /* ===== 저장된 값 불러오기 (손상·조작된 값은 버림) ===== */
 const validClass = c => c && +c.g >= 1 && +c.g <= MAX_GRADE && +c.c >= 1 && +c.c <= MAX_CLASS

@@ -87,7 +87,7 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
     await call('GET', `rank?game=${g}&scope=class`);
     await call('GET', `myrec?game=${g}`);
   }
-  for (const p of ['games', 'tier', 'mission', 'me', 'user/' + handle, 'att', 'ach', 'mastery']) await call('GET', p);
+  for (const p of ['games', 'tier', 'mission', 'me', 'user/' + handle, 'att', 'ach', 'mastery', 'hall']) await call('GET', p);
   // 숙련도(깃발 mastery, 2026-10-30): 공개 상태에선 판을 한 게임에 XP·등급이 쌓여야 함
   if (mode === '깃발 전부 공개') {
     const m = (await call('GET', 'mastery')).j, u = (await call('GET', 'user/' + handle)).j;

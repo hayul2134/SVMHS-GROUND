@@ -51,7 +51,8 @@ export function fits(b, s, r, c) {
 export function canPlace(b, s) { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (fits(b, s, r, c)) return true; return false; }
 // 다음 묶음 3개(조각 번호). n = 지금까지 놓은 장비 수(난이도). 셋 다 못 놓는 묶음은 최대 30번 다시 뽑음
 export function nextSet(rand, b, n = 0) {
-  const p = rampOf(n), w = P.map(x => x.w * (1 + RAMP.mul[x.d] * p)), T = w.reduce((a, x) => a + x, 0);
+  // 2026-10-30(하율 '끝이 정해진 기록만' 원칙): 300개 뒤에도 큰 장비 비율이 계속 늘어남(300개마다 +100%) → 판이 반드시 끝남. 300개 전 판은 전과 똑같음
+  const p = rampOf(n), x2 = Math.max(0, n - RAMP.to) / RAMP.to, w = P.map(x => x.w * (1 + RAMP.mul[x.d] * (p + (x.d === 2 ? x2 : 0)))), T = w.reduce((a, x) => a + x, 0);
   let set;
   for (let t = 0; t < 30; t++) {
     set = [0, 1, 2].map(() => { let x = rand() * T, i = 0; while (i < P.length - 1 && (x -= w[i]) >= 0) i++; return i; });

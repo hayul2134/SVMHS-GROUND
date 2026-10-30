@@ -204,15 +204,23 @@ export const gamePts = (r, n) => Math.round(100 * (n - r + 1) / n);
 export const TIER2 = 'tier-v2';
 export const PTS_MIN_N = 5;
 export const gamePts2 = (r, n) => Math.round(100 * (n - r + 1) / Math.max(n, PTS_MIN_N));
-const ptsTier = pts => TIERS.slice(2).find(t => pts >= t.pt) || TIERS[TIERS.length - 1];
-export const tierAt2 = (rank, n, pts = 0) => {
-  if (rank === 1) return TIERS[0];
-  if (rank <= 3) return TIERS[1];
-  const a = ptsTier(pts);
+// ── 티어 3차(2026-10-30 하율 "모든 게임 티어 책정 방식 문제없을지" — 미리보기 깃발 tier-v3, 11/9 라운드부터) ──
+//   게임이 4개 → 11개로 늘어 '잘한 3개'를 고를 폭이 커짐 → 같은 실력이어도 게임을 많이 할수록 잘한 3개 합이 오름
+//   (평균 실력: 3게임 약 150점 · 6게임 약 214점 · 11게임 약 246점 — 옛 구간이면 평균이 에메랄드~다이아).
+//   실제 10/30 판(44명·6게임)도 에메랄드 10명(23%)·다이아 이상 11명으로 위가 무거움 → 점수 구간만 올림(순위·게임 점수·잘한 3개는 그대로).
+//   시뮬레이션(11게임·40명): 마스터 7.5% · 다이아 8.3% · 에메랄드 14% · 플래티넘 13% · 골드 15% · 실버 16% · 브론즈 12% · 아이언 7% (목표 백분위와 비슷)
+//   게임 수가 크게 바뀌면 다시 맞출 것(tools/check 시뮬레이션).
+export const TIER3 = 'tier-v3', TIER3_FROM = '20261109';
+const PT3 = { master: 275, diamond: 240, emerald: 200, platinum: 155, gold: 110, silver: 70, bronze: 35, iron: 0 };
+export const TIERS3 = TIERS.map(t => t.pt == null ? t : { ...t, pt: PT3[t.k], pl: PT3[t.k] ? `${PT3[t.k]}점+` : '그 외' });
+export const tierAt2 = (rank, n, pts = 0, T = TIERS) => {
+  if (rank === 1) return T[0];
+  if (rank <= 3) return T[1];
+  const a = T.slice(2).find(t => pts >= t.pt) || T[T.length - 1];
   if (n < TIER_PCT) return a;
   const p = (rank - 4) / Math.max(1, n - 3);
-  const b = TIERS.slice(2).find(t => p < t.top) || TIERS[TIERS.length - 1];
-  return TIERS.indexOf(a) < TIERS.indexOf(b) ? a : b;   // 높은 쪽
+  const b = T.slice(2).find(t => p < t.top) || T[T.length - 1];
+  return T.indexOf(a) < T.indexOf(b) ? a : b;   // 높은 쪽
 };
 export const GAME_FRAUD = /게임|매크로|부정|기록|조작|핵|오토/;   // 이 말이 들어간 정지 사유 = 게임 부정 → 티어·보상 제외
 export const GC_TITLE = '쉬는 시간 마스터';   // 시즌 1 시리즈를 다 모으면 받는 칭호

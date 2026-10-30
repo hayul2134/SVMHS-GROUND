@@ -2,7 +2,7 @@
 // 숫자 게퍼 테이프 롤을 드래그 네모로 묶어 합이 딱 10이면 잘려 나감. 지운 컷 수 = 점수, 2분. 규칙·판 생성·검사는 film-score.js(서버와 같음)
 // createFilm(root, { best, sound, seed: async () => 씨앗|null, onOver(res), onSound(on) })
 //   res = { n, ms, rounds: [가로 칸 수, 끝난 ms, ...묶음], why: 'time'|'clear'|'stuck' }
-import { CELLS, TIME_MS, makeGrid, enc, cellsIn, hasMove } from './film-score.js';
+import { CELLS, TIME_MS, makeGrid, gridAt, enc, cellsIn, hasMove } from './film-score.js';
 
 const INK = '#2a2846';
 export function createFilm(root, opt = {}) {
@@ -14,7 +14,7 @@ export function createFilm(root, opt = {}) {
   const $ = k => root.querySelector(`[data-m="${k}"]`);
   const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), tf = $('tf'), board = $('board'), sndBtn = $('snd');
   let cols = 15, rows = 8, grid = [], score = 0, state = 'ready', cell = 40, dpr = 1, frame = null, drag = null, pops = [], floats = [], raf = 0, dead = false;
-  let used = 0, lastAt = 0, lastTm = -1, moves = [], lastSum = -1, busy = false, ac = null;
+  let used = 0, lastAt = 0, lastTm = -1, moves = [], lastSum = -1, busy = false, ac = null, seed0 = 0, bk = 0, boards = 1;
   const clock = () => used + (state === 'play' ? performance.now() - lastAt : 0);   // 멈춘 시간은 뺀 판 시계
 
   /* ----- 소리(Web Audio 합성, 기본 꺼짐) ----- */
@@ -122,11 +122,12 @@ export function createFilm(root, opt = {}) {
       }
       ctx.globalAlpha = 1;
     }
-    floats = floats.filter(f => now - f.t < 700);
+    floats = floats.filter(f => now - f.t < (f.big ? 1100 : 700));
     for (const f of floats) {
-      const k = (now - f.t) / 700; ctx.globalAlpha = 1 - k * k;
-      ctx.font = `900 ${Math.round(Math.max(16, cell * .5))}px Outfit,sans-serif`; ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round';
-      ctx.strokeText('+' + f.n, f.x, f.y - k * cell * .8); ctx.fillStyle = '#2f9a3a'; ctx.fillText('+' + f.n, f.x, f.y - k * cell * .8); ctx.globalAlpha = 1;
+      const k = (now - f.t) / (f.big ? 1100 : 700), t = f.txt || '+' + f.n; ctx.globalAlpha = 1 - k * k;
+      ctx.font = `900 ${Math.round(Math.max(16, cell * (f.big ? .9 : .5)))}px Jua,Outfit,sans-serif`; ctx.lineWidth = f.big ? 6 : 4; ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round';
+      const y = f.y - k * cell * (f.big ? .5 : .8);
+      ctx.strokeText(t, f.x, y); ctx.fillStyle = f.big ? '#2a6fd6' : '#2f9a3a'; ctx.fillText(t, f.x, y); ctx.globalAlpha = 1;
     }
     if (R) {   // 편집 프로그램 선택 상자처럼 점선
       ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.lineDashOffset = -(now / 40) % 10;
@@ -159,13 +160,18 @@ export function createFilm(root, opt = {}) {
     score += sel.length; $('sc').textContent = score;
     $('sc').classList.remove('bump'); void $('sc').offsetWidth; $('sc').classList.add('bump');
     snip(sel.length);
-    if (!grid.some(v => v)) end('clear');
-    else if (!hasMove(grid, cols)) end('stuck');
+    if (!hasMove(grid, cols)) nextBoard(!grid.some(v => v));   // 막혔거나 다 지움 → 바로 새 판(서버 replay와 같은 순간, 2026-10-30)
     kick();
   };
   const cancel = e => { if (drag && (!e || e.pointerId === drag.id)) { drag = null; kick(); } };
   cv.addEventListener('pointerdown', down); cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', cancel);
 
+  function nextBoard(all) {
+    ({ g: grid, k: bk } = gridAt(seed0, bk + 1, cols)); boards++;
+    const now = performance.now(); floats.push({ n: 0, txt: all ? '전부 싹둑! 새 판' : '새 판!', x: cols * cell / 2, y: rows * cell / 2, t: now, big: 1 });
+    board.classList.remove('nb'); void board.offsetWidth; board.classList.add('nb');
+    tone(660, .08, 'triangle', .06); tone(990, .12, 'triangle', .06, .07);
+  }
   function kick() { if (!raf && !dead) raf = requestAnimationFrame(loop); }
   function loop() {
     raf = 0; if (dead) return;
@@ -183,7 +189,7 @@ export function createFilm(root, opt = {}) {
   const sb = s => `<b>${s}</b>`;
   function ready() {
     state = 'ready'; ov.hidden = false; ov.className = 'ml-ov';
-    ov.innerHTML = `${sb('게퍼 10')}<span>드래그로 네모를 그려 숫자 테이프를 묶어요<br>숫자 합이 <em>딱 10</em>이면 싹둑! · 2분 동안 많이 자르기</span><button type="button" class="btn big" data-m="go">시작</button>`;
+    ov.innerHTML = `${sb('게퍼 10')}<span>드래그로 네모를 그려 숫자 테이프를 묶어요<br>숫자 합이 <em>딱 10</em>이면 싹둑! · 더 묶을 게 없으면 바로 새 판<br>2분 동안 많이 자르기</span><button type="button" class="btn big" data-m="go">시작</button>`;
     $('go').onclick = start; draw();
   }
   async function start() {
@@ -191,10 +197,9 @@ export function createFilm(root, opt = {}) {
     const go = $('go'); if (go) { go.disabled = true; go.textContent = '준비 중…'; }
     let seed = null; try { seed = await opt.seed?.(); } catch {}
     busy = false; if (dead) return;
-    grid = makeGrid(seed == null ? Math.floor(Math.random() * 4294967296) : seed);
+    if (state === 'over') fit();   // 화면 방향이 바뀌었으면 판 모양도 새로(판 번호 계산이 가로 칸 수에 따라 달라서 판 만들기 전에)
+    seed0 = seed == null ? Math.floor(Math.random() * 4294967296) : seed; ({ g: grid, k: bk } = gridAt(seed0, 0, cols)); boards = 1;
     score = 0; $('sc').textContent = 0; drag = null; pops = []; floats = []; moves = []; used = 0; lastTm = -1; root.classList.remove('low');
-    if (state === 'over') fit();   // 화면 방향이 바뀌었으면 판 모양도 새로
-    if (!hasMove(grid, cols)) { start(); return; }   // (거의 없음) 처음부터 묶을 게 없는 판
     state = 'play'; lastAt = performance.now(); ov.hidden = true; tone(523, .08, 'triangle', .06); tone(784, .12, 'triangle', .06, .08);
     kick();
   }
@@ -213,8 +218,7 @@ export function createFilm(root, opt = {}) {
     const nb = score > best; if (nb) { best = score; $('best').textContent = best; }
     tone(nb ? 784 : 523, .14, 'triangle', .07); tone(nb ? 1047 : 392, .22, 'triangle', .07, .14);
     ov.hidden = false; ov.className = 'ml-ov end';
-    const head = why === 'clear' ? '전부 잘라냈어요!' : why === 'stuck' ? '더 묶을 컷이 없어요' : '시간 끝!';
-    ov.innerHTML = `${sb(head)}<p class="ml-sc">${score}<small>컷</small></p><span>${why === 'clear' ? `${(ms / 1000).toFixed(1)}초 만에 ${CELLS}컷 전부` : nb ? '최고 기록 경신!' : `내 최고 ${best}컷`}</span>
+    ov.innerHTML = `${sb('시간 끝!')}<p class="ml-sc">${score}<small>컷</small></p><span>${boards > 1 ? `${boards}번째 판까지 · ` : ''}${nb ? '최고 기록 경신!' : `내 최고 ${best}컷`}</span>
       <small class="ml-msg" data-m="msg"></small><button type="button" class="btn big" data-m="go">한 번 더</button>`;
     $('go').onclick = start;
     opt.onOver?.({ n: score, ms, why, nb, rounds: [cols, ms, ...moves] });

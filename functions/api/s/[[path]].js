@@ -3,7 +3,7 @@ import { cached } from '../../../lib/cache.js';
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { balanceOf, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD, TIER3, TIER3_FROM, TIERS3 } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
@@ -33,7 +33,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
   //   casual = 티어·역대 1등 표시(topCrowns)·주간 미션·1~3등 축하에서 빠짐 → 순위표(GET rank)·내 기록에만 나옴
   gearn: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game', casual: true },
-  film: { min: FILM_MAX - FILM_CELLS, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷(0~170). 티어는 공개되는 순간부터(계단 오르기와 같게)
+  film: { min: FILM_MAX - FILM_CELLS * 12, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷. 2026-10-30 막히면 새 판 → 2분 동안 여러 판(상한 120×12). 티어는 공개되는 순간부터(계단 오르기와 같게)
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },
   blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game', tierOn: true },
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에 — 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 시작 티켓 씨앗으로 판이 정해지고 서버가 다시 둬 봄(cz-score.js)
@@ -1406,6 +1406,24 @@ const ROUTES = {
     return json({ scope, list: list.map(({ uid, ...x }) => x) });
   }),
 
+  // 기록실(2026-10-30 하율 "랭크 말고 따로 기록으로만 자랑할 수 있는 곳" — 미리보기 깃발 hall): 게임·모드마다 역대 최고 기록 1~3등 + 내 기록·순위.
+  //   티어와 상관없음 — 시간 제한 없는 일반 모드(gearn)·집 도착 뒤 끝없이 달린 거리처럼 티어에 안 들어가는 기록도 그대로. 개발자 제외(랭킹과 같음)
+  //   1~3등·참가 인원은 데이터센터 공용 캐시 60초(학생마다 같음), 내 기록·순위만 따로 읽음
+  'GET hall': needMe(async ({ db, me }) => {
+    const rx = rxOn(me), dev = isAdm(me), BEST = BESTS(rx);
+    const gs = Object.keys(GAMES).filter(g => !GAMES[g].ff || ffOn(GAMES[g].ff, dev));
+    const U = 'u.handle, u.name, u.avatar, u.color, u.mood, u.seen, u.st_rep, u.gc_fx, u.gc_own';
+    const pub = await cached(`hall:${dev ? 'd' : 's'}:${rx ? 1 : 0}:${gs.join(',')}`, 60, async () => Object.fromEntries(await Promise.all(gs.map(async g => {
+      const [top, cnt] = await Promise.all([
+        db.prepare(`SELECT ${U}, t.best AS v, t.at, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 3`).bind(g).all(),
+        db.prepare(`SELECT COUNT(*) AS n FROM (${BEST})`).bind(g).first(),
+      ]);
+      return [g, { n: cnt?.n || 0, top: top.results.map(r => ({ ...card(r), v: r.v, at: r.at, uid: r.uid })) }];
+    }))));
+    const mine = await Promise.all(gs.map(async g => { const m = await myBest(db, me.id, g, rx); return m?.b != null ? { v: m.b, r: await rankOfC(db, g, m.b, rx) } : null; }));
+    return json({ games: gs.map((g, i) => ({ g, n: pub[g].n, top: pub[g].top.map(({ uid, ...x }) => ({ ...x, isMe: uid === me.id })), me: mine[i] })) });
+  }),
+
   // 이번 라운드 티어판(2026-10-25): 내 티어·점수·게임별 순위 + 상위 10명
   // ?k=티어 → 그 티어에 지금 있는 사람 전부(순위순, 최대 200명) — 2026-10-26 하율 '티어 누르면 누가 있는지'
   'GET tier': needMe(async ({ db, me, url }) => {
@@ -1431,7 +1449,7 @@ const ROUTES = {
     const cnt = {}; b.list.forEach(x => { cnt[x.tier] = (cnt[x.tier] || 0) + 1; });
     const top = b.list.slice(0, 10), byId = await usersOf(top.map(x => x.uid));
     const champ = ffOn(CHAMP_FF, isAdm(me)) ? await tierChamp(db, me, b, mine, usersOf) : undefined;
-    return json({ cnt, champ, round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, v2: !!b.v2, g: b.g || null, tiers: TIERS,
+    return json({ cnt, champ, round: { n: b.n, from: b.from, to: b.to }, players: b.list.length, mode: b.mode, v2: !!b.v2, g: b.g || null, tiers: b.v3 ? TIERS3 : TIERS,
       me: mine ? pub1(mine) : null, last: tierLastOf(me),
       top: top.map(x => ({ ...card(byId.get(x.uid)), ...pub1(x), isMe: x.uid === me.id })).filter(x => x.handle) });
   }),
@@ -1613,11 +1631,13 @@ const gtFor = me => (me && isAdm(me)) ? 2 : ffOn(GEAR_TIER, false) ? 1 : 0;
 const GEAR_TR = 'gear-tier-r', gtrOn = gt => ffOn(GEAR_TR, gt === 2);
 //   같은 원칙을 다른 게임에도(2026-10-30 하율 "다른 게임들도 같이 적용"): 끝이 없는 구간은 티어에 안 셈 → 집에 가고 싶어!는 집 도착(GOAL 5만 m)까지만.
 //   집에서 '밖으로 나가기' 뒤 끝없이 달린 거리(최고 속도 고정 = 시간 경쟁)는 개인 기록·순위표에만. 나머지 게임은 이미 끝이 정해짐(시간 제한·판 수·난이도 상승)
+// 티어 3차(att-rewards.js TIER3): 점수 구간을 11게임 기준으로 올림 — 개발자 미리보기는 바로, 학생은 깃발 공개 뒤 TIER3_FROM(11/9) 라운드부터(라운드 도중 바뀌지 않게)
+const tier3On = (gt, from) => gt === 2 || (ffOn(TIER3, false) && from >= TIER3_FROM);
 const tierCap = (game, best) => game === 'home' ? Math.max(best, HOME_MAX - GOAL) : best;
 // upTo(YYYYMMDD) = 그날까지의 기록만으로 계산(티어 변화 '어제보다' 비교용, tier-champ 미리보기 — v2 전용)
 async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), upTo = '') {
   const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to: end } = rkRange(cur), to = upTo && upTo < end ? upTo : end;
-  const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt + (gtrOn(gt) ? 'r' : '') + (to !== end ? ':u' + to : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
+  const mk = cur + (v2 ? ':2' : '') + (rx ? ':rx' : '') + ':g' + gt + (gtrOn(gt) ? 'r' : '') + (tier3On(gt, from) ? ':t3' : '') + (to !== end ? ':u' + to : ''), hit = tierMemo.get(mk); if (hit && Date.now() - hit.at < 60e3) return hit.b;
   if (to < from) return { n: cur, from, to, list: [], mode: tierMode(0), v2 };
   if (v2) { const b = await cached('tb2:' + mk + ':' + from + to, to !== end || cur < rd.n ? 1800 : 45, () => tierBoard2(db, cur, from, to, rx, gt)); tierMemo.set(mk, { at: Date.now(), b }); return b; }   // '어제까지' 판(to < end)·끝난 라운드는 지난 기록이라 30분   // 데이터센터 공용 캐시 45초(2026-10-29 읽기 절약)
   const acc = new Map();
@@ -1680,8 +1700,9 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   }
   const cmp = (a, b) => b.pts - a.pts || b.all - a.all || b.first - a.first || a.done - b.done;
   const list = [...acc.values()].sort(cmp);
-  list.forEach((x, i) => { x.rank = i > 0 && !cmp(list[i - 1], x) ? list[i - 1].rank : i + 1; x.tier = tierAt2(x.rank, list.length, x.pts).k; });
-  return { n: cur, from, to, list, mode: tierMode(list.length), v2: true, g: gt ? { on: gOn, from: GEAR_TIER_FROM } : null };
+  const v3 = tier3On(gt, from), TT = v3 ? TIERS3 : TIERS;
+  list.forEach((x, i) => { x.rank = i > 0 && !cmp(list[i - 1], x) ? list[i - 1].rank : i + 1; x.tier = tierAt2(x.rank, list.length, x.pts, TT).k; });
+  return { n: cur, from, to, list, mode: tierMode(list.length), v2: true, v3, g: gt ? { on: gOn, from: GEAR_TIER_FROM } : null };
 }
 // 티어 박탈감 줄이기(2026-10-28 하율 '1·2번 내 화면에만' — 미리보기 깃발 tier-champ)
 //   ① 게임별 이번 라운드 1등(챌린저 한 자리 말고 게임 수만큼 1등이 보이게) ② 어제보다 오른 티어·점수 + 오늘 많이 오른 학생 + 지난 라운드 대비

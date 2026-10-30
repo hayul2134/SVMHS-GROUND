@@ -42,7 +42,7 @@ const GAMES = {
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
-  film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '컷' },
+  film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 막히면 새 판, 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '컷' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
@@ -2688,7 +2688,7 @@ async function playGear() {
   const touchy = matchMedia('(pointer:coarse)').matches;
   const area = stage(ic('gear') + ' 기자재 정리!', `<div class="gr" id="gr">
       <div class="gr-main">
-        <div class="gr-lcol"><aside class="gr-side"><p class="gr-lb">보관 <span data-ka="hold" data-one></span></p><canvas class="gr-mini" id="grHold" width="104" height="56"></canvas>
+        <div class="gr-lcol"><aside class="gr-side"><p class="gr-mdc" id="grMd"></p><p class="gr-lb">보관 <span data-ka="hold" data-one></span></p><canvas class="gr-mini" id="grHold" width="104" height="56"></canvas>
           <dl class="gr-stat"><dt class="gr-tmL">남은 시간</dt><dd id="grTm" class="gr-tm">2:00</dd><dt>점수</dt><dd id="grSc">0</dd><div class="gr-fxs" id="grFx"></div><dt>정리한 줄</dt><dd id="grLn">0</dd><dt>레벨</dt><dd id="grLv">1</dd></dl></aside><div class="gr-rkslot" id="grRkSlot"></div></div>
         <div class="gr-scr" id="grScr"><canvas id="grCv" aria-label="게임 화면"></canvas>
           <div class="gr-ov" id="grOv"></div><div class="gr-pop" id="grPop" aria-live="polite"></div></div>
@@ -2710,10 +2710,11 @@ async function playGear() {
   let sound = store.get('gear_snd', false), best = store.get('gear_best', 0), bestN = store.get('gear_best_n', 0), nRec = null, over = false, deadAt = 0, runNo = 0;
   let mode = 'normal';   // 2026-10-27 하율: 들어올 때마다 기본은 일반 모드(지난번 고른 방식 기억 안 함)
   const setMode = m => { mode = m === 'rank' ? 'rank' : 'normal'; store.set('gear_mode', mode); $('#gr').dataset.mode = mode; R.setLimit(mode === 'rank' ? GEAR_TIME : 0);
+    $('#grMd').innerHTML = mode === 'rank' ? '<i class="md-tag md-rk">랭크 · 타임어택</i>' : `<i class="md-tag">일반${gtOn() ? '' : ' · 기록만'}</i>`;
     ov.querySelectorAll('[data-gm]').forEach(b => { const on = b.dataset.gm === mode; if (on && b.getAttribute('aria-pressed') === 'false') { b.classList.remove('pick'); void b.offsetWidth; b.classList.add('pick'); } b.setAttribute('aria-pressed', on); }); paintHud(); };
   const hint = touchy ? '화면을 누르거나 버튼으로 시작' : '아무 키나 누르면 시작';
   const ready = () => { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>기자재 정리!</b><span>수업 끝! 장비를 선반에 빈틈없이 정리해서<br>가로 한 줄을 채우면 반납 완료</span><ul class="gr-kinds">${GEAR.ORDER.map(k => `<li><canvas class="gr-k" data-k="${k}" width="104" height="56"></canvas><small>${GEAR.KIND[k].n}</small></li>`).join('')}</ul>
-    <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><b>일반</b><small>${gtOn() ? '시간 제한 없이 오래 버티기' : '시간 제한 없음 · 티어 제외'}</small></button><button type="button" data-gm="rank"><b>${ic('clock')}타임어택</b><small>${gtOn() ? '2분 안에 최고 점수' : '2분 점수 대결 · 티어 반영'}</small></button></div>
+    <div class="gr-modes" role="group" aria-label="게임 방식"><button type="button" data-gm="normal"><i class="md-tag">${gtOn() ? '티어 반영' : '기록만'}</i><b>일반</b><small>${gtOn() ? '시간 제한 없이 오래 버티기' : '시간 제한 없이 · 기록실에 남아요'}</small></button><button type="button" data-gm="rank"><i class="md-tag md-rk">랭크</i><b>${ic('clock')}타임어택</b><small>${gtOn() ? '2분 안에 최고 점수' : '2분 점수 대결 · 티어·순위'}</small></button></div>
     ${gtOn() ? '<small class="gr-gt">티어엔 두 방식 중 순위가 더 좋은 쪽이 들어가요</small>' : ''}<small>${touchy ? '방식을 누르면 바로 시작' : '← → 로 방식 고르고, 아무 키나 누르면 시작'}</small>`; ov.querySelectorAll('[data-k]').forEach(c => R.drawMini(c, c.dataset.k)); setMode(mode); requestAnimationFrame(() => ov.querySelectorAll('[data-k]').forEach(c => { const w = c.getBoundingClientRect().width || 78; snapMini(c, w, Math.max(w, (c.closest('ul')?.clientWidth || 4 * w) / 4 - 4)); R.drawMini(c, c.dataset.k); })); };
   // 점수는 올라가는 게 보이게 굴려서 표시 + 오를 때 툭 튀김 (2026-10-27 하율 "점수 얻을 때 확실한 이펙트")
   let shown = 0;
@@ -3192,6 +3193,9 @@ export async function init(c) {
   c.RENDER.me = renderMe; c.RENDER.u = renderUser; c.RENDER.dm = renderDm; c.RENDER.game = renderGame;
   // 뽑기(gacha.js·gacha-fx.js)는 뽑기 화면을 처음 열 때만 불러옴 — 첫 화면에서 받는 코드 줄이기
   let gch = null;
+  // 기록실(2026-10-30, 깃발 hall): 처음 열 때만 hall.js를 불러옴. 깃발이 꺼진 학생이 주소로 들어오면 게임 화면으로
+  let hll = null;
+  c.RENDER.hall = () => { if (!ffOn('hall', isDev(S.me))) { ctx.go('game'); return; } return (hll ||= import('./hall.js').then(m => { m.init({ call, GAMES, ic, av, nameOf, devTag, esc, me: () => S.me }); return m; })).then(m => m.render()); };
   c.RENDER.gacha = () => (gch ||= import('./gacha.js').then(m => { m.init({ call, refreshMe, me: () => S.me, setGc, edit: o => { if (S.me) openEdit(o); } }); return m; })).then(m => m.render());
 NW.init(() => S.me);
   c.report = openReport;

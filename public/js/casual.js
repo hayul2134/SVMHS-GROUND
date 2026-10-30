@@ -46,10 +46,12 @@ export function mount(k, el, rk = null) {
   return k === 'mine' ? mine(el, rk) : k === 'snake' ? snake(el, rk) : n2048(el, rk);
 }
 // 랭크전 / 자유 전환(랭크전 = 모두 같은 규칙 · 서버가 다시 둬 보고 순위·티어에 · 자유 = 지금처럼 이 기기 기록만)
-const modeBar = rk => rk ? '<div class="cz-seg cz-mode" role="group" aria-label="모드"><button type="button" data-md="rk">랭크전</button><button type="button" data-md="free">자유</button></div>' : '';
+// 2026-10-30 하율 "일반 모드와 랭크 모드는 플레이할 때 제대로 보고 고를 수 있게": 맨 위 한 줄 크게 + 지금 모드가 무엇에 반영되는지 한 줄 (모든 게임 같은 모양 .md-pick)
+const RK_TXT = { mine: '중급 고정 · 클리어 시간', snake: '모은 별 수', n2048: '3분 점수' };
+const modeBar = (rk, k) => rk ? `<div class="md-pick" role="group" aria-label="게임 모드"><button type="button" data-md="rk"><b><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-trophy"/></svg>랭크</b><small>${RK_TXT[k]} · 티어·순위·기록실</small></button><button type="button" data-md="free"><b>일반</b><small>${k === 'mine' ? '난이도 자유 · ' : k === 'n2048' ? '시간 제한·되돌리기 자유 · ' : ''}이 기기에만 기록</small></button></div>` : '';
 const rkOn = (k, rk) => !!rk && store.get('cz_md_' + k, 'rk') === 'rk';
 function bindMode(el, k, rk, onChange) {
-  const bs = el.querySelectorAll('[data-md]'), paint = () => bs.forEach(b => b.classList.toggle('on', (b.dataset.md === 'rk') === rkOn(k, rk)));
+  const bs = el.querySelectorAll('[data-md]'), paint = () => { bs.forEach(b => { const on = (b.dataset.md === 'rk') === rkOn(k, rk); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); el.dataset.md = rkOn(k, rk) ? 'rk' : 'free'; };
   bs.forEach(b => b.onclick = () => { store.set('cz_md_' + k, b.dataset.md); paint(); onChange(); }); paint();
 }
 const say = (el, h) => { const p = el.querySelector('.cz-rkmsg'); if (p) { p.innerHTML = h || ''; p.hidden = !h; } };
@@ -63,7 +65,7 @@ const SV_MINE = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.4v15
 function mine(el, rk) {
   let lv = store.get('cz_mine_lv', 'e'); if (!MLV[lv]) lv = 'e';
   let W, H, M, cells, els, opened, flags, started, over, t0, tEnd, tick = 0, fmode = false, lp = 0, lpHit = false, px = 0, py = 0, rkm = false, rseed = null, rec = [], runN = 0;
-  el.innerHTML = `<div class="cz-bar">${modeBar(rk)}<div class="cz-seg cz-lv" role="group" aria-label="난이도">${Object.entries(MLV).map(([k, v]) => `<button type="button" data-lv="${k}">${v[0]}</button>`).join('')}</div>
+  el.innerHTML = `${modeBar(rk, 'mine')}<div class="cz-bar"><div class="cz-seg cz-lv" role="group" aria-label="난이도">${Object.entries(MLV).map(([k, v]) => `<button type="button" data-lv="${k}">${v[0]}</button>`).join('')}</div>
     <span class="cz-stat"><b class="cz-cnt" id="mnC">0</b><small>남은 지뢰</small></span><span class="cz-stat"><b id="mnT">0.0초</b><small id="mnB">최고 -</small></span>
     <button type="button" class="cz-flag" id="mnF" aria-pressed="false">${SV_FLAG}<span>깃발</span></button></div>
     <div class="cz-wrap"><div class="cz-in"><div class="cz-mb" id="mnBd" role="grid" aria-label="지뢰찾기 판"></div><div class="cz-ov" id="mnOv" hidden></div></div></div>
@@ -88,7 +90,7 @@ function mine(el, rk) {
     bd.innerHTML = cells.map((_, i) => `<i data-i="${i}" role="gridcell"></i>`).join(''); els = [...bd.children];
     el.querySelectorAll('[data-lv]').forEach(b => b.classList.toggle('on', b.dataset.lv === lv));
     fit(); paintCnt(); paintT(); paintBest();
-    if (rkm) $b.textContent = '랭크전 · 중급';
+    if (rkm) $b.textContent = '랭크 · 중급';
   }
   const paintCnt = () => { $c.textContent = M - flags; };
   const paintT = () => { $t.textContent = fmtS(started ? (tEnd || performance.now()) - t0 : 0); };
@@ -145,7 +147,7 @@ function mine(el, rk) {
     end(); cells.forEach((c, j) => { if (c.m && !c.f) { c.f = 1; paint(j); } }); flags = M; paintCnt();
     if (rkm) {   // 랭크전: 마지막으로 연 시각 = 기록 → 서버가 다시 열어 보고 저장
       const v = Math.floor(rec[rec.length - 1] / 1000);
-      showOv(`<b>성공!</b><span>${fmtS(v)} · 랭크전</span>`, true);
+      showOv(`<b>성공!</b><span>${fmtS(v)} · 랭크</span>`, true);
       if (rseed != null) { say(el, '기록 저장 중…'); rk.done('mine', v, [rec[0] % 1000, ...rec]).then(h => say(el, h)); }
       return;
     }
@@ -183,7 +185,7 @@ function mine(el, rk) {
 // 17×15 판, 방향키·WASD·스와이프·화면 버튼. 별(사이트 로고 별)을 먹으면 한 칸 길어지고 조금씩 빨라짐. 창을 벗어나면 멈춤
 function snake(el, rk) {
   const W = 17, H = 15;
-  el.innerHTML = `<div class="cz-bar">${modeBar(rk)}<span class="cz-stat"><b id="snS">0</b><small>점수</small></span><span class="cz-stat"><b id="snB">${store.get('cz_snake', 0)}</b><small>최고</small></span></div>
+  el.innerHTML = `${modeBar(rk, 'snake')}<div class="cz-bar"><span class="cz-stat"><b id="snS">0</b><small>점수</small></span><span class="cz-stat"><b id="snB">${store.get('cz_snake', 0)}</b><small>최고</small></span></div>
     <div class="cz-wrap"><div class="cz-in"><canvas class="cz-cv" id="snCv" aria-label="뱀 게임 판"></canvas><div class="cz-ov" id="snOv"></div></div></div>
     <div class="cz-pad" aria-label="방향 버튼"><button type="button" data-d="0" aria-label="위">▲</button><button type="button" data-d="3" aria-label="왼쪽">◀</button><button type="button" data-d="2" aria-label="아래">▼</button><button type="button" data-d="1" aria-label="오른쪽">▶</button></div>${RKMSG}`;
   const cv = el.querySelector('#snCv'), cx = cv.getContext('2d'), ov = el.querySelector('#snOv'), $s = el.querySelector('#snS'), $b = el.querySelector('#snB');
@@ -198,9 +200,9 @@ function snake(el, rk) {
     const y = (H / 2) | 0; body = [[5, y], [4, y], [3, y]]; prev = body.map(p => [...p]);
     dir = 1; q = []; score = 0; step = 135; acc = 0; $s.textContent = 0; tk = 0; rec = []; food = null; say(el, '');
     rkm = rkOn('snake', rk); const my = ++runN;
-    const ready = () => { place(); state = 'ready'; showOv(`<b>뱀 게임${rkm ? ' · 랭크전' : ''}</b><span>방향키 · 스와이프 · ${padSide() ? '오른쪽' : '아래'} 버튼으로 시작</span>`); draw(1); };
+    const ready = () => { place(); state = 'ready'; showOv(`<b>뱀 게임${rkm ? ' · 랭크' : ''}</b><span>방향키 · 스와이프 · ${padSide() ? '오른쪽' : '아래'} 버튼으로 시작</span>`); draw(1); };
     if (!rkm) { rand = Math.random; rseed = null; ready(); return; }
-    state = 'wait'; showOv('<b>뱀 게임 · 랭크전</b><span>판 준비 중…</span>'); draw(1);
+    state = 'wait'; showOv('<b>뱀 게임 · 랭크</b><span>판 준비 중…</span>'); draw(1);
     rk.seed('snake').then(t => { if (my !== runN) return; rseed = t ? Z.seedOf(t) : null; rand = rseed != null ? Z.rng(rseed) : Math.random; if (rseed == null) say(el, '이번 판은 서버에 등록되지 않아 기록이 저장되지 않아요'); ready(); });
   }
   function place() { food = Z.snakeFood(rand, body, W, H); }   // 랭크전이면 씨앗으로(서버도 같은 자리)
@@ -282,7 +284,7 @@ function snake(el, rk) {
 // 4×4, 방향키·WASD·스와이프. 판은 이 기기에 저장돼 나갔다 와도 이어서(sg_cz_2048s) · 한 번 되돌리기
 function n2048(el, rk) {
   const N = 4, ANI = 110;
-  el.innerHTML = `<div class="cz-bar">${modeBar(rk)}<span class="cz-stat"><b id="tzS">0</b><small>점수</small></span><span class="cz-stat" id="tzTw" hidden><b id="tzT">3:00</b><small>남은 시간</small></span><span class="cz-stat" id="tzBw"><b id="tzB">${store.get('cz_2048', 0).toLocaleString('ko-KR')}</b><small>최고</small></span>
+  el.innerHTML = `${modeBar(rk, 'n2048')}<div class="cz-bar"><span class="cz-stat"><b id="tzS">0</b><small>점수</small></span><span class="cz-stat" id="tzTw" hidden><b id="tzT">3:00</b><small>남은 시간</small></span><span class="cz-stat" id="tzBw"><b id="tzB">${store.get('cz_2048', 0).toLocaleString('ko-KR')}</b><small>최고</small></span>
     <button type="button" class="cz-flag" id="tzU" disabled><span>되돌리기</span></button><button type="button" class="cz-flag" id="tzN"><span>새 게임</span></button></div>
     <div class="cz-wrap"><div class="cz-tb" id="tzBd"><div class="cz-tbg">${'<i></i>'.repeat(N * N)}</div><div class="cz-tl" id="tzL"></div><div class="cz-ov" id="tzOv" hidden></div></div></div>
     ${RKMSG}<p class="cz-help">방향키 · WASD · 스와이프로 밀어서 같은 숫자를 합쳐요</p>`;
@@ -321,7 +323,7 @@ function n2048(el, rk) {
   function finish() {
     if (over) return; over = true; clearInterval(tmr);
     const end = Math.min(Z.N2_TIME, Math.round(performance.now() - t0));
-    showOv(`<b>${end >= Z.N2_TIME ? '시간 끝!' : '더 밀 수 없어요'}</b><span>랭크전 ${score.toLocaleString('ko-KR')}점</span>`, [['새 게임', newGame]]);
+    showOv(`<b>${end >= Z.N2_TIME ? '시간 끝!' : '더 밀 수 없어요'}</b><span>랭크 ${score.toLocaleString('ko-KR')}점</span>`, [['새 게임', newGame]]);
     if (rseed == null) return;
     if (!rec.length) { say(el, '한 번 이상 밀어야 기록돼요'); return; }
     say(el, '기록 저장 중…'); rk.done('n2048', Z.N2_MAX - score, [end, ...rec]).then(h => say(el, h));
@@ -331,11 +333,11 @@ function n2048(el, rk) {
     rkm = rkOn('n2048', rk); $u.hidden = rkm; $tw.hidden = !rkm; $bw.hidden = rkm; const my = ++runN;
     if (!rkm) { rand = Math.random; rseed = null; store.set('cz_2048s', null); load(null); save(); return; }
     layer.innerHTML = ''; grid = empty(); score = 0; $s.textContent = 0; paintTm(); busy = true;
-    showOv('<b>2048 · 랭크전</b><span>판 준비 중…</span>', []);
+    showOv('<b>2048 · 랭크</b><span>판 준비 중…</span>', []);
     rk.seed('n2048').then(t => {
       if (my !== runN) return; busy = false; rseed = t ? Z.seedOf(t) : null; rand = rseed != null ? Z.rng(rseed) : Math.random;
       if (rseed == null) say(el, '이번 판은 서버에 등록되지 않아 기록이 저장되지 않아요');
-      load(null); showOv('<b>2048 · 랭크전</b><span>3분 동안 최고 점수! 처음 밀면 시간이 흘러요 · 되돌리기 없음</span>', [['시작', () => { ov.hidden = true; }]], true);
+      load(null); showOv('<b>2048 · 랭크</b><span>3분 동안 최고 점수! 처음 밀면 시간이 흘러요 · 되돌리기 없음</span>', [['시작', () => { ov.hidden = true; }]], true);
     });
   }
   function canMove() {
