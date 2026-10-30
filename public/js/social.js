@@ -3197,7 +3197,7 @@ export async function init(c) {
   let gch = null;
   // 기록실(2026-10-30, 깃발 hall): 처음 열 때만 hall.js를 불러옴. 깃발이 꺼진 학생이 주소로 들어오면 게임 화면으로
   let hll = null;
-  c.RENDER.hall = () => { if (!ffOn('hall', isDev(S.me))) { ctx.go('game'); return; } return (hll ||= import('./hall.js').then(m => { m.init({ call, GAMES, ic, av, nameOf, devTag, esc, me: () => S.me }); return m; })).then(m => m.render()); };
+  c.RENDER.hall = () => { if (!ffOn('hall', isDev(S.me))) { ctx.go('game'); return; } return (hll ||= import('./hall.js').then(m => { m.init({ call, GAMES, ic, av, nameOf, devTag, esc, isDev, me: () => S.me }); return m; })).then(m => m.render()); };
   c.RENDER.gacha = () => (gch ||= import('./gacha.js').then(m => { m.init({ call, refreshMe, me: () => S.me, setGc, edit: o => { if (S.me) openEdit(o); } }); return m; })).then(m => m.render());
 NW.init(() => S.me);
   c.report = openReport;

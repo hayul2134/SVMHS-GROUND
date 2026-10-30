@@ -30,7 +30,8 @@ function cardHtml(x) {
   const one = a ? `<a class="hl-one${a.isMe ? ' me' : ''}" href="#u/${e(a.handle)}" data-u="1">${D.av(a, 'lg')}<span class="hl-who"><small>1위 · ${dayN(a.at)}일째</small><b>${e(D.nameOf(a))}${D.devTag(a)}</b></span><em class="hl-v">${e(g.fmt(a.v))}</em></a>`
     : '<p class="hl-none">아직 기록이 없어요 — 첫 기록이 곧 1위!</p>';
   const more = rest.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="hl-rk">${i + 2}</span><a href="#u/${e(u.handle)}" data-u="1">${D.av(u)}<b>${e(D.nameOf(u))}</b></a><em>${e(g.fmt(u.v))}</em></li>`).join('');
-  const my = x.me ? `<p class="hl-my">내 기록 <b>${e(g.fmt(x.me.v))}</b> · ${x.n}명 중 <b>${x.me.r}위</b></p>` : `<p class="hl-my no">아직 내 기록이 없어요</p>`;
+  const my = x.me && D.isDev(D.me()) ? `<p class="hl-my">내 기록 <b>${e(g.fmt(x.me.v))}</b> · 개발자는 순위에서 빠져요</p>`
+    : x.me ? `<p class="hl-my">내 기록 <b>${e(g.fmt(x.me.v))}</b> · ${x.n}명 중 <b>${x.me.r}위</b></p>` : `<p class="hl-my no">아직 내 기록이 없어요</p>`;
   return `<article class="hl-card g-${e(x.g)}"><div class="hl-h">${D.ic(g.ic)}<span><b>${e(nm)}</b>${md ? `<small>${e(md)}</small>` : ''}</span></div>
     ${one}${more ? `<ol class="hl-more">${more}</ol>` : ''}${my}
     <div class="hl-btns"><button type="button" class="btn ghost" data-rank="${e(x.g)}" data-scope="all">전체 기록</button><button type="button" class="btn" data-play="${x.g === 'gearn' ? 'gear' : CZ.includes(x.g) ? 'c_' + x.g : e(x.g)}">${D.ic('play')}도전</button></div></article>`;
