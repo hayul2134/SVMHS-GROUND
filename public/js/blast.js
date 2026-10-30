@@ -31,12 +31,26 @@ export function createBlast(root, opt = {}) {
   let state = 'ready', cs = 40, pad = 10, W = 0, H = 0, horiz = false, dpr = 1, drag = null, arts = new Map(), cellArt = [], fx = [], floats = [], raf = 0, dead = false, busy = false, t0 = 0, ac = null, born = [], endT = 0, held = -1, setAt = 0, stopT = 0;
 
   /* ----- 소리(기본 꺼짐) ----- */
-  function au() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } } if (ac.state === 'suspended') ac.resume().catch(() => {}); return ac; }
+  // 2026-10-30 LED 월 디벨롭: 소리는 모두 마스터(압축기 + 짧은 잔향 섞기)로 → 여러 소리가 겹쳐도 찢어지지 않고 공간감
+  let master = null;
+  function au() {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
+    if (ac.state === 'suspended') ac.resume().catch(() => {});
+    if (!master) {
+      const cp = ac.createDynamicsCompressor(); cp.threshold.value = -16; cp.knee.value = 10; cp.ratio.value = 5; cp.attack.value = .002; cp.release.value = .16;
+      const out = ac.createGain(); out.gain.value = .9; cp.connect(out).connect(ac.destination);
+      const dry = ac.createGain(), cv2 = ac.createConvolver(), wet = ac.createGain(); wet.gain.value = .22;
+      const len = Math.floor(ac.sampleRate * .9), ir = ac.createBuffer(2, len, ac.sampleRate);   // 잔향: 지수로 줄어드는 잡음
+      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * (1 - k / len) ** 3.2; }
+      cv2.buffer = ir; dry.connect(cp); dry.connect(cv2).connect(wet).connect(cp); master = dry;
+    }
+    return ac;
+  }
   function tone(f, d, type = 'square', vol = .06, at = 0, f2 = 0) {
     const a = sound && au(); if (!a) return;
     const t = a.currentTime + at, o = a.createOscillator(), g = a.createGain();
     o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + .02);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g).connect(master); o.start(t); o.stop(t + d + .02);
   }
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; };
   sndBtn.onclick = () => { sound = !sound; if (sound) au(); paintSnd(); opt.onSound?.(sound); sndBtn.blur(); };
@@ -144,15 +158,35 @@ export function createBlast(root, opt = {}) {
   }
 
   /* ----- 타격감(2026-10-29 하율 "더 타격감 있게, 화려하게"): 화면 흔들림 · 줄 빛줄기 · 파편 · 번쩍 · 놓을 때 꾹 눌림 · 연속 테두리 ----- */
-  let shake = { t: 0, a: 0 }, parts = [], beams = [], flash = { t: 0, a: 0 }, rings = [];
+  let shake = { t: 0, a: 0 }, parts = [], beams = [], flash = { t: 0, a: 0 }, rings = [], waves = [], glitch = { t: 0, a: 0 }, punch = { t: 0, a: 0 };
   const bump = a => { const now = performance.now(), left = Math.max(0, shake.a * (1 - (now - shake.t) / 280)); shake = { t: now, a: Math.min(16, Math.max(left, a)) }; };
-  const busyFx = now => parts.length || beams.length || rings.length || now - shake.t < 280 || now - flash.t < 260;
+  const busyFx = now => parts.length || beams.length || rings.length || waves.length || now - shake.t < 280 || now - flash.t < 260 || now - glitch.t < 220 || now - punch.t < 260;
   function noise(d, vol, f = 1200, type = 'bandpass', at = 0) {   // 짧은 잡음(쾅·쉭)
     const a = sound && au(); if (!a) return;
     const len = Math.floor(a.sampleRate * d), bf = a.createBuffer(1, len, a.sampleRate), x = bf.getChannelData(0);
     for (let i = 0; i < len; i++) x[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2.2;
     const src = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain(); src.buffer = bf; fl.type = type; fl.frequency.value = f; g.gain.value = vol;
-    src.connect(fl).connect(g).connect(a.destination); src.start(a.currentTime + at);
+    src.connect(fl).connect(g).connect(master); src.start(a.currentTime + at);
+  }
+  // 필터가 열리며 올라가는 톱니파(전원 켜지는 '위잉') — 송출 소리의 몸통
+  function riser(f1, f2, d, vol, at = 0) {
+    const a = sound && au(); if (!a) return;
+    const t = a.currentTime + at, g = a.createGain(), fl = a.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 9; fl.frequency.setValueAtTime(300, t); fl.frequency.exponentialRampToValueAtTime(6000, t + d);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + d * .7); g.gain.exponentialRampToValueAtTime(.0001, t + d + .06);
+    [-9, 9].forEach(dt => { const o = a.createOscillator(); o.type = 'sawtooth'; o.detune.value = dt; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + d); o.connect(fl); o.start(t); o.stop(t + d + .08); });
+    fl.connect(g).connect(master);
+  }
+  const thump = (vol, at = 0, f = 150) => { tone(f, .32, 'sine', vol, at, 38); noise(.025, vol * .9, 3200, 'bandpass', at); };   // 쿵 + 딱(어택)
+  function sparkle(n, base, at = 0) { for (let j = 0; j < n; j++) tone(base * (1 + Math.random() * 1.6), .07 + Math.random() * .08, 'sine', .035, at + Math.random() * .22); }   // 유리 파편 반짝이
+  function sndClear(n, cb, all) {   // 줄 송출: 위잉(올라감) → 쿵 + 쨍(유리 깨짐) → 반짝이 → 화음(연속일수록 높게)
+    const up = Math.min(cb, 8);
+    riser(160 * 2 ** (up / 12), 1400 * 2 ** (up / 12), .11, .09);
+    thump(.5 + Math.min(n, 4) * .07, .1); noise(.3, .55, 5200, 'highpass', .1); noise(.18, .4, 1800, 'bandpass', .11);
+    sparkle(6 + n * 4, 2200, .12);
+    if (n >= 2) { tone(55, .6, 'sine', .32, .1, 30); noise(.5, .3, 380, 'lowpass', .12); }   // 여러 줄: 바닥 울림
+    const ch = n >= 3 ? [0, 4, 7, 11, 14] : n === 2 ? [0, 4, 7, 12] : [0, 7, 12];
+    ch.forEach((x, j) => { const f = 392 * 2 ** ((x + up) / 12); tone(f, .32, 'triangle', .07, .14 + j * .045); tone(f * 2, .16, 'square', .018, .14 + j * .045); });
+    if (all) { [0, 4, 7, 12, 16, 19, 24].forEach((x, j) => tone(523 * 2 ** (x / 12), .4, 'triangle', .08, .4 + j * .06)); thump(.6, .4, 120); sparkle(18, 3000, .45); }   // 전체 화면 송출 팡파르
   }
   const ease = k => 1 - (1 - k) ** 3;
   function draw() {
@@ -160,6 +194,8 @@ export function createBlast(root, opt = {}) {
     const sk = Math.max(0, 1 - (now - shake.t) / 280) ** 2 * shake.a, sx0 = sk ? (Math.random() * 2 - 1) * sk : 0, sy0 = sk ? (Math.random() * 2 - 1) * sk : 0;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     ctx.setTransform(dpr, 0, 0, dpr, sx0 * dpr, sy0 * dpr);
+    const pk = now - punch.t < 260 ? punch.a * Math.sin(Math.PI * Math.min(1, (now - punch.t) / 260)) * (1 - (now - punch.t) / 260) : 0;   // 줌 펀치: 판 가운데 기준으로 살짝 커졌다 돌아옴
+    if (pk) { const pcx = bx + cs * 4, pcy = by + cs * 4; ctx.translate(pcx, pcy); ctx.scale(1 + pk, 1 + pk); ctx.translate(-pcx, -pcy); }
     // 판(2026-10-29 하율: 지퍼 가방 그림은 "오히려 이상하다" → 예전 판으로)
     if (st.combo > 1 && state !== 'ready') {   // 연속 정리 중: 판 둘레가 색을 바꾸며 빛남(연속이 길수록 굵고 밝게)
       const hu = (now / 6) % 360, lw = Math.min(3 + st.combo, 9);
@@ -168,6 +204,9 @@ export function createBlast(root, opt = {}) {
     }
     ctx.fillStyle = '#0b0f22'; ctx.beginPath(); ctx.roundRect(bx - pad * .5, by - pad * .5, cs * 8 + pad, cs * 8 + pad, pad); ctx.fill();
     for (let i = 0; i < N * N; i++) { const x = bx + (i % N) * cs, y = by + Math.floor(i / N) * cs; ctx.fillStyle = '#151a33'; ctx.beginPath(); ctx.roundRect(x + cs * .045, y + cs * .045, cs * .91, cs * .91, cs * .07); ctx.fill(); ctx.fillStyle = '#1b2140'; for (let j = 1; j < 3; j++) { ctx.fillRect(x + cs * j / 3 - .5, y + cs * .12, 1, cs * .76); ctx.fillRect(x + cs * .12, y + cs * j / 3 - .5, cs * .76, 1); } }   // 꺼진 LED 패널
+    if (!b.some(Boolean)) {   // 판이 비면 꺼진 화면 'NO SIGNAL'(LED 월 컨셉)
+      ctx.save(); ctx.globalAlpha = .5 + .12 * Math.sin(now / 500); ctx.font = `900 ${Math.round(cs * .62)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#39406a'; ctx.fillText('NO SIGNAL', bx + cs * 4, by + cs * 4); ctx.restore();
+    }
     const pv = drag && drag.x != null && state === 'play' ? preview(drag) : null;
     for (let i = 0; i < N * N; i++) {
       if (!b[i]) continue;
@@ -187,7 +226,8 @@ export function createBlast(root, opt = {}) {
       const k = Math.max(0, (now - f.t - f.dl) / 360); if (k > 1) continue;
       const x = bx + (f.i % N) * cs + cs / 2, y = by + Math.floor(f.i / N) * cs + cs / 2, d = cs * (1 - k * .9);
       ctx.globalAlpha = 1 - k * .6; if (f.a2) cell(f.a2, x - d / 2, y - d / 2, d);
-      ctx.fillStyle = `rgba(255,255,255,${(1 - k) * .7})`; ctx.beginPath(); ctx.roundRect(x - d / 2, y - d / 2, d, d, d * .2); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${(1 - k) * .85})`; ctx.beginPath(); ctx.roundRect(x - d / 2, y - d / 2, d, d, d * .1); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${(1 - k) * .9})`; const sh2 = d * .12; ctx.fillRect(x - d * .6, y - sh2 / 2 + (k - .5) * d, d * 1.2, sh2);   // 꺼질 때 지나가는 주사선
       ctx.fillStyle = '#fff6c2'; for (let j = 0; j < 3; j++) { const a = f.a + j * 2.1, rr = k * cs * .9; ctx.beginPath(); ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, Math.max(1, cs * .06 * (1 - k)), 0, 7); ctx.fill(); }
       ctx.globalAlpha = 1;
     }
@@ -214,9 +254,23 @@ export function createBlast(root, opt = {}) {
       q.vy += .35 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.r += q.vr * dt;
       const k = (now - q.t) / q.life; ctx.globalAlpha = k < .6 ? 1 : 1 - (k - .6) / .4;
       if (q.star) { ctx.fillStyle = '#fff6c2'; const z = q.s * (1 - k); ctx.beginPath(); ctx.moveTo(q.x, q.y - z); ctx.lineTo(q.x + z * .3, q.y - z * .3); ctx.lineTo(q.x + z, q.y); ctx.lineTo(q.x + z * .3, q.y + z * .3); ctx.lineTo(q.x, q.y + z); ctx.lineTo(q.x - z * .3, q.y + z * .3); ctx.lineTo(q.x - z, q.y); ctx.lineTo(q.x - z * .3, q.y - z * .3); ctx.fill(); }
-      else { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s); ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s * .3); ctx.restore(); }
+      else { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(q.x, q.y); ctx.rotate(q.r); if (parts.length < 70) { ctx.shadowColor = q.c; ctx.shadowBlur = q.s * 1.2; }   // 파편이 많으면 번짐 생략(학교 태블릿 보호) ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s); ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(-q.s * .22, -q.s * .22, q.s * .44, q.s * .44); ctx.restore(); }   // 빛나는 LED 픽셀
     }
     ctx.globalAlpha = 1;
+    // 충격파: 정리된 자리에서 퍼지는 빛 고리(여러 줄·연속일수록 크게)
+    waves = waves.filter(o => now - o.t < 520);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const o of waves) { const k = Math.max(0, (now - o.t) / 520); if (now < o.t) continue; const e2 = ease(k); ctx.globalAlpha = 1 - k; ctx.strokeStyle = o.c; ctx.shadowColor = o.c; ctx.shadowBlur = cs * .5; ctx.lineWidth = Math.max(1.5, cs * .28 * (1 - k)); ctx.beginPath(); ctx.arc(o.x, o.y, cs * (.4 + o.r * e2), 0, 7); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, cs * .08 * (1 - k)); ctx.stroke(); }
+    ctx.restore(); ctx.globalAlpha = 1;
+    // 화면 글리치: 판의 가로 띠를 좌우로 어긋나게 + 빨강/파랑 잔상(방송 신호가 튀는 느낌) — 여러 줄 정리 때만
+    if (now - glitch.t < 220) {
+      const k = 1 - (now - glitch.t) / 220, gx = Math.round((bx - pad * .5) * dpr), gy = Math.round((by - pad * .5) * dpr), gw = Math.round((cs * 8 + pad) * dpr);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      for (let j = 0; j < 5; j++) { const hh = Math.round(gw * (.03 + Math.random() * .07)), yy = gy + Math.floor(Math.random() * (gw - hh)), off = Math.round((Math.random() * 2 - 1) * cs * .5 * glitch.a * k * dpr); ctx.drawImage(cv, gx, yy, gw, hh, gx + off, yy, gw, hh); }
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .18 * k * glitch.a; const o2 = Math.round(cs * .12 * dpr * glitch.a);
+      ctx.drawImage(cv, gx, gy, gw, gw, gx + o2, gy, gw, gw); ctx.drawImage(cv, gx, gy, gw, gw, gx - o2, gy, gw, gw);
+      ctx.restore(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
     // 받침: 남은 장비 3개(작게) + 이름
     for (let i = 0; i < 3; i++) {
       const [sx, sy, sw, sh] = slotRect(i);
@@ -327,20 +381,22 @@ export function createBlast(root, opt = {}) {
       res.rows.forEach(y => beams.push({ row: y, from: c + w / 2 - .5, t: now, c: KINDS[k][1] }));
       res.cols.forEach(x => beams.push({ col: x, from: r + h / 2 - .5, t: now, c: KINDS[k][1] }));
       res.cells.forEach(i => {   // 칸마다 조각 4개 + 별 1개(많이 지우면 조금 줄여 느린 기기 보호)
-        const x = bx + (i % N + .5) * cs, y = by + (Math.floor(i / N) + .5) * cs, col = KINDS[KEYS[prevB[i] ? prevB[i] - 1 : KEYS.indexOf(k)] || k][1], nn = res.cells.length > 24 ? 2 : 4;
-        for (let j = 0; j < nn; j++) parts.push({ x, y, vx: (Math.random() - .5) * cs * .3, vy: -cs * (.08 + Math.random() * .22), r: Math.random() * 6, vr: (Math.random() - .5) * .4, s: cs * (.16 + Math.random() * .16), c: col, t: now + Math.random() * 60, life: 650 + Math.random() * 300 });
+        const x = bx + (i % N + .5) * cs, y = by + (Math.floor(i / N) + .5) * cs, col = KINDS[KEYS[prevB[i] ? prevB[i] - 1 : KEYS.indexOf(k)] || k][1], nn = res.cells.length > 24 ? 3 : 6;
+        for (let j = 0; j < nn; j++) parts.push({ x, y, vx: (Math.random() - .5) * cs * .42, vy: -cs * (.1 + Math.random() * .28), r: Math.random() * 6, vr: (Math.random() - .5) * .4, s: cs * (.1 + Math.random() * .14), c: col, t: now + Math.random() * 60, life: 650 + Math.random() * 300 });
         parts.push({ star: true, x, y, vx: (Math.random() - .5) * cs * .2, vy: -cs * (.15 + Math.random() * .15), r: 0, vr: 0, s: cs * (.18 + Math.random() * .14), t: now, life: 600 });
       });
-      flash = { t: now, a: Math.min(.5, .14 + .12 * res.n) }; bump(3 + res.n * 3 + cb);
+      flash = { t: now, a: Math.min(.6, .18 + .14 * res.n) }; bump(4 + res.n * 3.5 + cb);
+      punch = { t: now, a: Math.min(.06, .018 + .012 * res.n + cb * .003) };
+      waves.push({ x: ox, y: oy, t: now, r: 3 + res.n * 1.6 + cb * .25, c: KINDS[k][1] }); if (res.n >= 2) waves.push({ x: ox, y: oy, t: now + 90, r: 5 + res.n * 1.8, c: '#ffffff' });
+      if (res.n >= 2 || res.clear) glitch = { t: now + 40, a: Math.min(1.6, .7 + res.n * .25) };
       floats.push({ s: res.clear ? '전체 화면 송출!' : CLEAR_NAME[Math.min(res.n, 4) - 1], x: ox, y: oy - cs * .45, t: now, big: true, c: '#ffe27a', sc: 1 + Math.min(res.n - 1, 3) * .18, rb: res.clear || res.n >= 3 });
       if (st.combo > 1) floats.push({ s: `콤보 ×${cb}`, x: bx + cs * 4, y: by + cs * 1.2, t: now + 90, big: true, rb: true, sc: 1 + cb * .05 });
       floats.push({ s: '+' + res.pts.toLocaleString('ko-KR') + (st.combo > 1 ? `  연속 ×${Math.min(st.combo, 10)}` : ''), x: ox, y: oy + cs * .35, t: now + 60, c: '#9ff0a8' });
-      noise(.22, .5, 2600, 'highpass'); tone(110, .28, 'sine', .22, 0, 45); if (res.n >= 2) { noise(.35, .35, 500, 'lowpass', .02); tone(70, .4, 'sine', .25, .03, 35); }
-      [0, 4, 7, 12, 16].slice(0, Math.min(5, res.n + 2)).forEach((n, j) => tone(523 * 2 ** ((n + Math.min(st.combo, 8)) / 12), .14, 'square', .045, .03 + j * .055));
+      sndClear(res.n, st.combo, res.clear);
       if (navigator.vibrate) try { navigator.vibrate(res.n >= 2 ? [22, 30, 30] : 24); } catch {}
     } else {
       floats.push({ s: '+' + res.pts, x: cx, y: cy, t: now, c: '#fff' }); bump(2.2);
-      tone(150, .1, 'sine', .16, 0, 60); noise(.05, .3, 900); tone(240, .05, 'triangle', .04, .02);
+      tone(170, .12, 'sine', .22, 0, 55); noise(.03, .35, 2400, 'bandpass'); tone(1320, .035, 'square', .03, .015); tone(880 + s.length * 60, .09, 'triangle', .05, .03);   // 패널 '철컥' + 켜짐 '삐'
       if (navigator.vibrate) try { navigator.vibrate(8); } catch {}
     }
     rings.push({ x: cx, y: cy, w: w * cs, h: h * cs, t: now });
@@ -368,7 +424,7 @@ export function createBlast(root, opt = {}) {
     busy = false; if (dead) return;
     clearTimeout(endT);
     rand = rng(seed == null ? Math.floor(Math.random() * 4294967296) : seed);
-    b = newBoard(); cellArt = []; st = { score: 0, combo: 0, miss: 0 }; moves = []; lines = 0; fx = []; floats = []; born = []; parts = []; beams = []; rings = []; drag = null; held = -1;
+    b = newBoard(); cellArt = []; st = { score: 0, combo: 0, miss: 0 }; moves = []; lines = 0; fx = []; floats = []; born = []; parts = []; beams = []; rings = []; waves = []; drag = null; held = -1;
     set = nextSet(rand, b, 0); used = [false, false, false]; setAt = performance.now() + 150;
     shown = 0; cancelAnimationFrame(rollRaf); rollRaf = 0; $('sc').textContent = 0; $('gain').className = 'bl-gain'; $('cb').textContent = 0; $('cbw').classList.remove('on');
     state = 'play'; t0 = performance.now(); ov.hidden = true; stopBtn.hidden = false; tone(523, .08, 'triangle', .06); tone(784, .12, 'triangle', .06, .08);
