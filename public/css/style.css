@@ -6493,4 +6493,11 @@ html.hw[data-theme="dark"]:not(.prelogin) body::after{background-image:url("/hw/
 @keyframes hwSpin{0%,100%{transform:none}50%{transform:translateY(3px)}}
 html.away.hw body::after{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){html.hw body::after{animation:none}}
+/* 파란색을 직접 박아 둔 곳(점검 2026-10-30): 홈 전체 랭킹 카드 · 전광판 → 밤하늘 보라 */
+html.hw.rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.55) 0 1.5px,transparent 2.5px),radial-gradient(circle at 76% 6%,rgba(255,255,255,.4) 0 1px,transparent 2px),radial-gradient(circle at 95% 34%,rgba(255,211,77,.7) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#4e3275 0%,#6b46a0 55%,#9a6fd0 100%)}
+:root.hw[data-theme="dark"].rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.4) 0 1.5px,transparent 2.5px),radial-gradient(circle at 95% 34%,rgba(255,211,77,.5) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#2a1840 0%,#3f2860 55%,#5b3a86 100%)}
+html.hw.rk2 .s-rk::before{background:rgba(255,154,60,.92)}
+html.hw .ticker{background:#3f2860;color:#ffe9d3}
+/* 테마 창: 할로윈 주간엔 색깔을 골라도 할로윈 색이 우선 → 안내 한 줄(캐릭터는 의상 입은 모습으로 미리보기) */
+html.hw .sk-h:first-of-type::after{content:" · 11/6까지는 할로윈 색으로 보여요";font-size:12px;font-weight:600;color:var(--accent)}
 /* ===== 할로윈 끝 ===== */
