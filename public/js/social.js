@@ -3083,7 +3083,8 @@ async function playHome() {
         : first ? `<div class="hr-hidden"><i>히든 칭호 발견!</i><p>처음으로 히든 칭호를 발견했어요</p><p class="hr-ttl"><span class="t-first">${esc(HOME_FIRST)}</span> ${esc(HOME_TITLE)}</p><small>착용 소품 ‘집 열쇠’도 함께 받았어요 · 프로필 꾸미기에서 달 수 있어요</small></div>`
         : `<p class="hr-prize">${r.arrived ? '칭호를 얻었어요' : '보유 중인 칭호'} <b class="hr-ttl">${esc(HOME_TITLE2)}</b>${r.arrived ? ' · 프로필 꾸미기에서 달 수 있어요' : ''}</p>`;
       ov.innerHTML = `<b class="hr-win">${title}<br>축하합니다!</b>${prize}
-        <div class="hr-pick"><button type="button" class="btn ghost" data-hr="rest">${ic('home')}집에서 쉬기</button><button type="button" class="btn" data-hr="out">${ic('run')}밖으로 나가기</button></div>`;
+        <div class="hr-pick"><button type="button" class="btn ghost" data-hr="rest">${ic('home')}집에서 쉬기</button><button type="button" class="btn" data-hr="out">${ic('run')}밖으로 나가기</button></div>
+        <p class="hr-pick-note"><b>집에서 쉬기</b> = 50,000m로 기록하고 끝 · <b>밖으로 나가기</b> = 이 판을 이어서 달려요. 더 달린 거리도 내 기록·순위·<b>티어</b>에 그대로 들어가요</p>`;
     };
     paint(null);
     goTicket = null;

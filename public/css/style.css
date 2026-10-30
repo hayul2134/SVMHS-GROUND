@@ -4461,9 +4461,11 @@ html.gfx-on .view,html.gfx-on header{visibility:hidden}
 @keyframes hrHid{from{transform:scale(.4) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
 .hr-pick{display:flex;gap:10px;pointer-events:auto}
 .hr-pick .btn{min-width:132px;justify-content:center}
+.hr-pick-note{margin:0;max-width:min(380px,100%);padding:5px 12px;border-radius:10px;background:rgba(255,255,255,.94);border:1.5px solid #2a2846;color:#2a2846;font-size:12.5px;font-weight:700;line-height:1.45;text-align:center;pointer-events:none}
+.hr-ov .hr-pick-note b{all:unset;font-weight:900;color:#c2402f}
 .hr-ov.again{background:rgba(255,255,255,.12);place-content:start center;padding-top:6%}
 .hr-ov.again b{font-size:clamp(18px,3.4vw,32px)}
-@container (max-width:600px){.hr-ov.dead.win{gap:5px}.hr-prize{font-size:12px;padding:3px 9px}.hr-hidden{padding:5px 12px;gap:1px}.hr-hidden > i{font-size:16px}.hr-hidden p{font-size:12px}.hr-hidden .hr-ttl{font-size:13px}.hr-hidden small{font-size:10.5px}.hr-pick .btn{min-width:0;padding:6px 12px;font-size:13px}}
+@container (max-width:600px){.hr-ov.dead.win{gap:5px}.hr-prize{font-size:12px;padding:3px 9px}.hr-hidden{padding:5px 12px;gap:1px}.hr-hidden > i{font-size:16px}.hr-hidden p{font-size:12px}.hr-hidden .hr-ttl{font-size:13px}.hr-hidden small{font-size:10.5px}.hr-pick .btn{min-width:0;padding:6px 12px;font-size:13px}.hr-pick-note{font-size:11px;max-width:280px}}
 @media (prefers-reduced-motion:reduce){.hr-hidden{animation:none}}
 
 /* ===== 앱으로 설치하기 (install.js, 2026-10-25) ===== */
