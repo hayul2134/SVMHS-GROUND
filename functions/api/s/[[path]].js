@@ -1760,8 +1760,10 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     ]);
     const prevRank = allPrev.b != null && v < allPrev.b ? await rankOf(db, game, allPrev.b, rx) : null;   // 기록 넣기 전 순위(축하 판단용)
     if (!prev || v < prev.best) {
-      await db.prepare(`INSERT INTO scores (uid, game, day, best, at) VALUES (?1, ?2, ?3, ?4, ?5)
-        ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, game, day, v, Date.now()).run();
+      // v49(2026-10-30 하율): 기자재 정리!는 판 내용 [점수, 줄, 블록 수, 플레이 ms, 실제 흐른 ms]를 같은 줄에 남김(쓰는 줄 수 그대로) — 관리자 기록 화면에서 확인
+      const meta = (game === 'gear' || game === 'gearn') && body.rounds.length === 4 ? JSON.stringify([...body.rounds.map(x => Math.round(+x)), Math.round(Math.min(elapsed, 2e9))]) : null;
+      await db.prepare(`INSERT INTO scores (uid, game, day, best, at, meta) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at, meta = excluded.meta`).bind(me.id, game, day, v, Date.now(), meta).run();
     }
     const best = allPrev.b == null ? v : Math.min(allPrev.b, v);
     const rank = await rankOf(db, game, best, rx);

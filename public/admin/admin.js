@@ -437,13 +437,14 @@ async function openUser(handle) {
 /* ===== 게임 기록 ===== */
 const SC = { game: 'home', day: kstYmd() };
 // 보류된 기록의 판 기록 보기 (2026-10-26)
+const mmss = ms => { const t = Math.round((ms || 0) / 1000); return t >= 60 ? `${Math.floor(t / 60)}분 ${t % 60}초` : `${t}초`; };
 const heldRounds = (game, raw) => {
   let r = []; try { r = JSON.parse(raw || '[]'); } catch {}
   if (!Array.isArray(r) || !r.length) return '-';
   if (game === 'reaction') return r.map(x => x + 'ms').join(' · ');
   if (game === 'cut') return r.map(x => x + 'ms').join(' · ') + ` (합 ${r.reduce((a, b) => a + b, 0)})`;
   if (game === 'home') return `${(+r[0]).toLocaleString('ko-KR')}m · ${((+r[1] || 0) / 1000).toFixed(1)}초`;
-  if (game === 'gear' || game === 'gearn') return `${(+r[0]).toLocaleString('ko-KR')}점 · ${r[1]}줄 · 블록 ${r[2]}개 · ${((+r[3] || 0) / 1000).toFixed(0)}초`;
+  if (game === 'gear' || game === 'gearn') return `${(+r[0]).toLocaleString('ko-KR')}점 · ${r[1]}줄 · 블록 ${r[2]}개 · ${mmss(+r[3])}${r[4] != null ? ` (실제 ${mmss(+r[4])})` : ''}`;
   if (game === 'blast') return `${((+r[0] || 0) / 1000).toFixed(0)}초 · 놓기 ${Math.max(0, r.length - 1)}번${r.length === 30 ? '+' : ''}`;
   if (game === 'film') return `${r[0] === 10 ? '세로' : '가로'} 판 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 묶음 ${Math.max(0, r.length - 2)}번${r.length === 30 ? '+' : ''}`;   // 2026-10-29 전 보류 기록은 앞 30개만 남음(+)
   if (game === 'stair') return `${(+r[0]).toLocaleString('ko-KR')}칸 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 방향 ${r[2]}번`;
@@ -470,8 +471,8 @@ VIEWS.scores = async () => {
     </div>
     ${held.list.length ? heldCard(held) : ''}
     <p class="sub sp-b">이상하게 빠른 기록(핵·매크로 의심)은 지울 수 있어요. 지워도 그 사람은 다시 도전할 수 있어요. ${g.fmt(g.sus)} 이하는 <b class="sus">의심</b> 표시${d.list.some(x => x.best <= g.sus) ? ` — 이 날 ${d.list.filter(x => x.best <= g.sus).length}건` : ''}.</p>
-    <section class="card"><div class="scroll">${d.list.length ? `<table class="tbl"><thead><tr><th>#</th><th>사용자</th><th>반</th><th class="r">기록</th><th>시각</th><th></th></tr></thead><tbody>
-      ${d.list.map((x, i) => `<tr><td class="num">${i + 1}</td><td>${who(x)}</td><td>${cls(x) || '-'}</td><td class="r num">${x.best <= g.sus ? '<b class="sus">의심</b> ' : ''}${esc(g.fmt(x.best))}</td><td>${when(x.at)}</td>
+    <section class="card"><div class="scroll">${d.list.length ? `<table class="tbl"><thead><tr><th>#</th><th>사용자</th><th>반</th><th class="r">기록</th>${d.list.some(x => x.meta) ? '<th>판 내용</th>' : ''}<th>시각</th><th></th></tr></thead><tbody>
+      ${d.list.map((x, i) => `<tr><td class="num">${i + 1}</td><td>${who(x)}</td><td>${cls(x) || '-'}</td><td class="r num">${x.best <= g.sus ? '<b class="sus">의심</b> ' : ''}${esc(g.fmt(x.best))}</td>${d.list.some(y => y.meta) ? `<td>${x.meta ? heldRounds(d.game, x.meta) : '-'}</td>` : ''}<td>${when(x.at)}</td>
         <td class="r">${all ? '' : `<button class="btn sm" type="button" data-act="delscore" data-h="${esc(x.handle)}">지우기</button> `}<button class="btn sm bad" type="button" data-act="delscoreall" data-h="${esc(x.handle)}">이 게임 기록 전부</button></td></tr>`).join('')}
       </tbody></table>` : `<p class="empty">${all ? '' : ymdLabel(d.day) + ' '}${g.name} 기록이 없어요</p>`}</div></section>`;
   $('#scDay').onchange = e => { if (e.target.value) { SC.day = e.target.value.replace(/-/g, ''); route(); } };
