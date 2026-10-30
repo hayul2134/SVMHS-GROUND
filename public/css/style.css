@@ -6459,3 +6459,38 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .tcc-list li.tcc.split .tcc-row .tcc-rec{grid-column:auto;grid-row:auto;font-size:15px}
 .tcc-list li.tcc.split .tcc-meta{grid-row:3}
 [data-theme="dark"] .tcc-row a{color:#fff1c7}
+
+/* ===== 할로윈 (2026-10-30 하율 "디자인을 할로윈 컨셉에 맞게") — html.hw: 깃발 halloween + 기간(KST 10/31 00:00 ~ 11/7 00:00, social.js HW_S·HW_E·theme.js)
+   색깔 스킨보다 뒤에 둬서 기간 동안 색 토큰을 덮음(캐릭터·밝음/어두움은 그대로). 그림은 /hw/*.svg(스티커: 흰 칼선 + 잉크 외곽) */
+:root.hw{
+  --bg:#fff3e6; --dot:rgba(91,58,134,.14);
+  --chip:#ffe9d3; --line:#f0cfae;
+  --ink:#2a1838; --text:#2a1838; --sub:#6a5578; --on-bg:#2a1838; --onc:#2a1838;
+  --accent:#f2771c; --hero:#ff8a2a; --sky:#ffb46b; --next:#ffc58f; --pink:#d7b8ff; --violet:#b58cff; --lime:#b6e86a; --yellow:#ffd34d;
+  --pat:url("/hw/pat.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px); --pat-size:260px 260px,22px 22px;
+}
+:root.hw[data-theme="dark"]{
+  --bg:#1a1026; --dot:rgba(255,255,255,.06);
+  --card:#261838; --chip:#33224a; --line:#4a3466;
+  --ink:#000; --text:#fff3e6; --sub:#c7b3dd; --on-bg:#fff3e6;
+  --accent:#ff9a3c; --hero:#ff8a2a;
+  --pat:url("/hw/pat-d.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px);
+}
+html.hw .k-meal{--k:#d4600f;--ks:#ffe6cc}
+html.hw[data-theme="dark"] .k-meal{--k:#ffb46b}
+/* 시계 옆 별 스티커 → 호박·박쥐·유령 (자리·크기·반짝 애니메이션은 그대로라 시계를 더 가리지 않음) */
+html.hw .clock .dk.k1,html.hw .clock .dk.k3,html.hw .clock .dk.k4{background:center/contain no-repeat;filter:none}
+html.hw .clock .dk.k1 path,html.hw .clock .dk.k3 path,html.hw .clock .dk.k4 path{display:none}
+html.hw .clock .dk.k1{background-image:url("/hw/pumpkin.svg")}
+html.hw .clock .dk.k4{background-image:url("/hw/bat.svg")}
+html.hw .clock .dk.k3{background-image:url("/hw/ghost.svg")}
+html.hw .clock .dk.k2,html.hw .clock .dk.k5{fill:#ffd34d}
+/* 로고 마녀 모자(로고에 왕관을 씌웠으면 왕관 우선) */
+html.hw .logo:not(:has(> .wear-lg))::before{content:"";position:absolute;left:-2px;top:-19px;width:34px;height:30px;background:url("/hw/hat.svg") center/contain no-repeat;transform:rotate(-16deg);z-index:2;pointer-events:none}
+/* 오른쪽 위 구석 거미줄 + 매달린 거미 (헤더 버튼 뒤, 클릭 통과) */
+html.hw:not(.prelogin) body::after{content:"";position:fixed;right:0;top:0;width:clamp(90px,11vw,140px);aspect-ratio:140/170;background:url("/hw/web.svg") top right/contain no-repeat;pointer-events:none;z-index:0;transform-origin:82% 0;animation:hwSpin 6s ease-in-out infinite}
+html.hw[data-theme="dark"]:not(.prelogin) body::after{background-image:url("/hw/web-d.svg")}
+@keyframes hwSpin{0%,100%{transform:none}50%{transform:translateY(3px)}}
+html.away.hw body::after{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){html.hw body::after{animation:none}}
+/* ===== 할로윈 끝 ===== */

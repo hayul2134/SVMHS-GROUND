@@ -182,6 +182,9 @@ function paintFF() {
   markFF(document.body);
   if (!ffObs) { ffObs = new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) markFF(n); }); ffObs.observe(document.body, { childList: true, subtree: true }); }
 }
+// 할로윈 테마 기간(2026-10-30 하율 "내일 공지랑 같이 바뀌고 일주일 동안만"): KST 10/31 00:00 ~ 11/7 00:00. 개발자는 미리보기로 지금부터. theme.js에도 같은 값
+const HW_S = Date.UTC(2026, 9, 30, 15), HW_E = Date.UTC(2026, 10, 6, 15);
+const hwDay = dev => { const t = Date.now(); return t < HW_E && (dev || t >= HW_S); };
 let meP = null;   // 진행 중인 refreshMe (play가 기다림)
 function refreshMe() { return meP = refreshMe0(); }
 async function refreshMe0() {
@@ -190,8 +193,9 @@ async function refreshMe0() {
     S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
     document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); paintFF(); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me))); document.documentElement.classList.toggle('tpad', ffOn('tier-pad', isDev(S.me))); document.documentElement.classList.toggle('padin', ffOn('pad-ctl', isDev(S.me)));
     { const c2 = ffOn('cut-v2', isDev(S.me)); document.documentElement.classList.toggle('cut2', c2); GAMES.cut.name = c2 ? '편집의 신' : '컷 타이밍'; GAMES.cut.beta = !c2; }
+    document.documentElement.classList.toggle('hw', ffOn('halloween', isDev(S.me)) && hwDay(isDev(S.me)));   // 할로윈 디자인(2026-10-30) — 기간 밖이면 꺼짐
     { const rx = ffOn('rx-season', isDev(S.me)); document.documentElement.classList.toggle('rxs', rx); GAMES.reaction.beta = !rx; }   // 반응속도 정식 출시(새 시즌) — Beta 떼기
-    try { const h = document.documentElement; localStorage.setItem('sg_ffc', JSON.stringify({ c: ['dev-pv', 'rk2', 'tl2', 'tf', 'tpad', 'cut2', 'rxs', 'padin'].filter(x => h.classList.contains(x)), r: h.dataset.ffr || '' })); } catch {}   // 2026-10-28 하율 "게임 4개 먼저 나오고 기자재 정리가 툭 튀어나온다": 깃발 상태를 저장 → 다음 접속 땐 theme.js가 첫 화면 그리기 전에 붙임   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
+    try { const h = document.documentElement; localStorage.setItem('sg_ffc', JSON.stringify({ c: ['dev-pv', 'rk2', 'tl2', 'tf', 'tpad', 'cut2', 'rxs', 'padin', 'hw'].filter(x => h.classList.contains(x)), r: h.dataset.ffr || '' })); } catch {}   // 2026-10-28 하율 "게임 4개 먼저 나오고 기자재 정리가 툭 튀어나온다": 깃발 상태를 저장 → 다음 접속 땐 theme.js가 첫 화면 그리기 전에 붙임   // 2026-10-28 하율: 새 컷 타이밍은 이름 '편집의 신'·정식(Beta 뗌) — 깃발 cut-v2와 함께 공개   // 미리보기 기능([data-ff]) 개발자에게만 보이게
     if (r.rkGift?.length) rkGiftToast(r.rkGift);
     if (r.errAlert) toast(`최근 30분 서버 오류 ${r.errAlert.n}건 — ${r.errAlert.m || ''} (관리자 › 모니터링)`, 8000);   // 개발자에게만 옴
   } catch (e) { S.me = null; S.meErr = !e.status || e.status >= 500; }   // meErr: 연결·서버 문제(로그아웃 상태라고 단정 못 함)
