@@ -236,7 +236,9 @@ export function createBlast(root, opt = {}) {
     for (const m of beams) {
       const e = now - m.t, g = ease(Math.min(1, e / 110)), al = e < 110 ? 1 : 1 - (e - 110) / 270, th = cs * (1.15 - .5 * Math.max(0, (e - 110) / 270));
       const len = cs * 8 * g, c0 = m.from * cs;
-      ctx.globalAlpha = al; ctx.fillStyle = m.c; ctx.shadowColor = m.c; ctx.shadowBlur = cs * .6;
+      ctx.globalAlpha = al * .35; ctx.fillStyle = m.c;   // 번짐 대신 넓고 옅은 띠(shadowBlur는 학교 태블릿에서 무거움)
+      if (m.row != null) { const y = by + (m.row + .5) * cs; ctx.fillRect(bx + Math.max(0, c0 - len), y - th, Math.min(cs * 8, c0 + len) - Math.max(0, c0 - len), th * 2); } else { const x = bx + (m.col + .5) * cs; ctx.fillRect(x - th, by + Math.max(0, c0 - len), th * 2, Math.min(cs * 8, c0 + len) - Math.max(0, c0 - len)); }
+      ctx.globalAlpha = al;
       if (m.row != null) { const y = by + (m.row + .5) * cs; ctx.fillRect(bx + Math.max(0, c0 - len), y - th / 2, Math.min(cs * 8, c0 + len) - Math.max(0, c0 - len), th); ctx.fillStyle = '#fff'; ctx.fillRect(bx + Math.max(0, c0 - len), y - th * .18, Math.min(cs * 8, c0 + len) - Math.max(0, c0 - len), th * .36); }
       else { const x = bx + (m.col + .5) * cs; ctx.fillRect(x - th / 2, by + Math.max(0, c0 - len), th, Math.min(cs * 8, c0 + len) - Math.max(0, c0 - len)); ctx.fillStyle = '#fff'; ctx.fillRect(x - th * .18, by + Math.max(0, c0 - len), th * .36, Math.min(cs * 8, c0 + len) - Math.max(0, c0 - len)); }
     }
@@ -253,13 +255,13 @@ export function createBlast(root, opt = {}) {
       q.vy += .35 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.r += q.vr * dt;
       const k = (now - q.t) / q.life; ctx.globalAlpha = k < .6 ? 1 : 1 - (k - .6) / .4;
       if (q.star) { ctx.fillStyle = '#fff6c2'; const z = q.s * (1 - k); ctx.beginPath(); ctx.moveTo(q.x, q.y - z); ctx.lineTo(q.x + z * .3, q.y - z * .3); ctx.lineTo(q.x + z, q.y); ctx.lineTo(q.x + z * .3, q.y + z * .3); ctx.lineTo(q.x, q.y + z); ctx.lineTo(q.x - z * .3, q.y + z * .3); ctx.lineTo(q.x - z, q.y); ctx.lineTo(q.x - z * .3, q.y - z * .3); ctx.fill(); }
-      else { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(q.x, q.y); ctx.rotate(q.r); if (parts.length < 70) { ctx.shadowColor = q.c; ctx.shadowBlur = q.s * 1.2; /* 파편이 많으면 번짐 생략(학교 태블릿 보호) */ } ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s); ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(-q.s * .22, -q.s * .22, q.s * .44, q.s * .44); ctx.restore(); }   // 빛나는 LED 픽셀
+      else { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(q.x, q.y); ctx.rotate(q.r); if (parts.length < 40) { ctx.shadowColor = q.c; ctx.shadowBlur = q.s * 1.2; /* 파편이 많으면 번짐 생략(학교 태블릿 보호) */ } ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s); ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(-q.s * .22, -q.s * .22, q.s * .44, q.s * .44); ctx.restore(); }   // 빛나는 LED 픽셀
     }
     ctx.globalAlpha = 1;
     // 충격파: 정리된 자리에서 퍼지는 빛 고리(여러 줄·연속일수록 크게)
     waves = waves.filter(o => now - o.t < 520);
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    for (const o of waves) { const k = Math.max(0, (now - o.t) / 520); if (now < o.t) continue; const e2 = ease(k); ctx.globalAlpha = 1 - k; ctx.strokeStyle = o.c; ctx.shadowColor = o.c; ctx.shadowBlur = cs * .5; ctx.lineWidth = Math.max(1.5, cs * .28 * (1 - k)); ctx.beginPath(); ctx.arc(o.x, o.y, cs * (.4 + o.r * e2), 0, 7); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, cs * .08 * (1 - k)); ctx.stroke(); }
+    for (const o of waves) { const k = Math.max(0, (now - o.t) / 520); if (now < o.t) continue; const e2 = ease(k); ctx.strokeStyle = o.c; ctx.beginPath(); ctx.arc(o.x, o.y, cs * (.4 + o.r * e2), 0, 7); ctx.globalAlpha = (1 - k) * .3; ctx.lineWidth = Math.max(3, cs * .6 * (1 - k)); ctx.stroke(); ctx.globalAlpha = 1 - k; ctx.lineWidth = Math.max(1.5, cs * .28 * (1 - k)); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, cs * .08 * (1 - k)); ctx.stroke(); }
     ctx.restore(); ctx.globalAlpha = 1;
     // 화면 글리치: 판의 가로 띠를 좌우로 어긋나게 + 빨강/파랑 잔상(방송 신호가 튀는 느낌) — 여러 줄 정리 때만
     if (now - glitch.t < 220) {
@@ -270,6 +272,7 @@ export function createBlast(root, opt = {}) {
       ctx.drawImage(cv, gx, gy, gw, gw, gx + o2, gy, gw, gw); ctx.drawImage(cv, gx, gy, gw, gw, gx - o2, gy, gw, gw);
       ctx.restore(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
+    ctx.setTransform(dpr, 0, 0, dpr, sx0 * dpr, sy0 * dpr);   // 줌 펀치 해제: 받침·끌고 있는 블록은 커서·손가락 자리 그대로
     // 받침: 남은 장비 3개(작게) + 이름
     for (let i = 0; i < 3; i++) {
       const [sx, sy, sw, sh] = slotRect(i);
