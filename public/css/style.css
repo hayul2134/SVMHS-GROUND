@@ -6305,17 +6305,27 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .cz-rkmsg b{color:#2f8fe0}
 
 /* ===== 게임 숙련도·업적 축하 (2026-10-29, 깃발 achv — social.js mEmb·mstLine·mstPanel·acBig·acBan) ===== */
-.mem{width:30px;height:34px;flex:none;overflow:visible;--mf:#cfd8e3;--mi:#eef2f7}
-.mem .me-o{fill:var(--mf);stroke:var(--ink,#1f1d33);stroke-width:2.4;stroke-linejoin:round}
-.mem .me-i{fill:var(--mi);opacity:.9}
-.mem .me-h{fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round;opacity:.85}
-.mem .me-s{fill:#ffe08a;stroke:var(--ink,#1f1d33);stroke-width:1.3;stroke-linejoin:round}
-.mem .me-t{font:800 13px var(--num);text-anchor:middle;fill:#173048}
-.mem.m1{--mf:#7fd8c4;--mi:#cdf4ea}.mem.m2{--mf:#6fb6f4;--mi:#cde6ff}.mem.m3{--mf:#a98bff;--mi:#e2d8ff}
-.mem.m4{--mf:#f2bf3a;--mi:#fff0b4}.mem.m4 .me-s{fill:#fff}
-.mem.m5{--mf:#ff8fb8;--mi:#fff;animation:memHue 4s linear infinite}
+.mem{width:32px;height:34px;flex:none;overflow:visible;--mf:#c9d2de;--mi:#eef2f7;--mr:#fff;--mw:#dfe6ef;--mb:#8b98ab}
+.mem .me-o{fill:var(--mf);stroke:var(--ink,#1f1d33);stroke-width:2.6;stroke-linejoin:round}
+.mem .me-i{fill:var(--mi)}
+.mem .me-r{fill:none;stroke:var(--mr);stroke-width:1.6;opacity:.9}
+.mem .me-h{fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;opacity:.8}
+.mem .me-w{fill:var(--mw);stroke:var(--ink,#1f1d33);stroke-width:2;stroke-linejoin:round}
+.mem .me-s{fill:#ffe08a;stroke:var(--ink,#1f1d33);stroke-width:1.6;stroke-linejoin:round}
+.mem .me-c{fill:#ffd24a;stroke:var(--ink,#1f1d33);stroke-width:2;stroke-linejoin:round}
+.mem .me-halo{fill:none;stroke:#ffd6f0;stroke-width:3;stroke-dasharray:2 4.5;opacity:.9}
+.mem .me-rb{fill:var(--mb);stroke:var(--ink,#1f1d33);stroke-width:1.8;stroke-linejoin:round}
+.mem .me-t{font:900 8.5px var(--num);text-anchor:middle;fill:#fff}
+.mem .me-tc{font-size:17px;fill:#173048}
+.mem use{color:#1f1d33;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mem .me-p{fill:#fff;stroke:var(--mr);stroke-width:1.4}
+.mem.m1{--mf:#7fd8c4;--mi:#d8f6ee;--mr:#3fb98e;--mb:#2f9e7a}
+.mem.m2{--mf:#6fb6f4;--mi:#dcecff;--mr:#3a87d6;--mw:#bfe0ff;--mb:#2f74c4}
+.mem.m3{--mf:#a98bff;--mi:#ebe3ff;--mr:#7c5ce6;--mw:#d6c8ff;--mb:#6a4bd8}
+.mem.m4{--mf:#f2bf3a;--mi:#fff3c4;--mr:#d99a12;--mw:#ffe08a;--mb:#c98a0a}
+.mem.m5{--mf:#ff9ccb;--mi:#fff;--mr:#b39cff;--mw:#ffd6f0;--mb:#b06ae0;animation:memHue 4s linear infinite}
 @keyframes memHue{to{filter:hue-rotate(360deg)}}
-.mem.big{width:96px;height:110px;filter:drop-shadow(0 0 22px rgba(255,255,255,.35))}
+.mem.big{width:104px;height:110px;filter:drop-shadow(0 0 22px rgba(255,255,255,.35))}
 .mbar{display:block;height:6px;border-radius:9px;background:color-mix(in srgb,var(--ink) 12%,transparent);overflow:hidden}
 .mbar i{display:block;height:100%;border-radius:9px;background:var(--accent)}
 .m4 .mbar i,.mbar i.m4{background:#f2bf3a}.m5 .mbar i{background:linear-gradient(90deg,#94d8ff,#b39cff,#ffb3e6,#ffe98a)}
@@ -6323,7 +6333,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .gmst{display:flex;align-items:center;gap:8px;width:100%;margin:0;padding:5px 9px;border:2px solid var(--ink);border-radius:12px;background:var(--chip);color:var(--text);font:inherit;text-align:left;cursor:pointer}
 .gmst > span{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .gmst b{font:800 13px var(--num);white-space:nowrap}.gmst b em{font:900 11.5px var(--sans,inherit);font-style:normal;color:var(--sub)}
-.gmst .mem{width:28px;height:32px}
+.gmst .mem{width:34px;height:36px}
 .gmst.m4{background:#fff6d4}.gmst.m5{background:linear-gradient(120deg,#e8f6ff,#f1eaff,#ffeaf6,#fff8dc)}
 .mst-big{display:flex;align-items:center;gap:16px;margin:4px 0 6px;padding:12px 16px;border:var(--bd);border-radius:18px;background:var(--chip)}
 .mst-big .mem.big{width:68px;height:78px;filter:none}
@@ -6356,12 +6366,12 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 /* 작게: 위 띠 */
 .acb{position:fixed;left:50%;top:14px;z-index:190;display:flex;align-items:center;gap:10px;max-width:min(92vw,420px);padding:8px 16px 8px 10px;border:var(--bd);border-radius:16px;background:var(--card);box-shadow:var(--sh-s);color:var(--text);font:inherit;text-align:left;cursor:pointer;transform:translate(-50%,-140%);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
 .acb.on{transform:translate(-50%,0)}
-.acb .amd{width:38px;height:38px;flex:none}.acb .mem{width:32px;height:36px}
+.acb .amd{width:38px;height:38px;flex:none}.acb .mem{width:40px;height:42px}
 .acb span{display:flex;flex-direction:column;min-width:0}
 .acb small{font-size:11.5px;font-weight:900;color:var(--accent)}.acb b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.acb em{font-style:normal;font-size:12px;color:var(--sub)}
 @media (prefers-reduced-motion:reduce){.mem.m5,.acx-art{animation:none}.acb{transition:none}}
 /* ===== 게임 숙련도 창·등급 (2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌" — 깃발 mastery, social.js openMst·paintMst·mstProf) ===== */
-.mst-bar{background:color-mix(in srgb,#8fc2ff 26%,var(--card))}.mst-bar .mem{width:30px;height:34px}
+.mst-bar{background:color-mix(in srgb,#8fc2ff 26%,var(--card))}.mst-bar .mem{width:36px;height:38px}
 .mgr{display:inline-grid;place-items:center;min-width:24px;height:18px;margin-left:6px;padding:0 5px;border:1.5px solid var(--ink);border-radius:6px;font:900 11.5px/1 var(--num);font-style:normal;color:#fff;vertical-align:1px;background:#9aa6b6}
 .mgr.gsp{background:linear-gradient(120deg,#ff8fb8,#b39cff,#6fb6f4);text-shadow:0 1px 0 rgba(0,0,0,.25)}.mgr.gs{background:#f2a92b}.mgr.ga{background:#3fb98e}.mgr.gb{background:#4f9be8}.mgr.gc{background:#8b7fd6}.mgr.gd{background:#9aa6b6}
 .mgr-big{display:grid;place-items:center;width:46px;height:46px;flex:none;border:2.5px solid var(--ink);border-radius:12px;font:900 20px/1 var(--num);color:#fff;background:#9aa6b6}
@@ -6369,7 +6379,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .acb .mgr-big{display:grid;align-items:center;width:38px;height:38px;font-size:17px}
 .mst-sheet{text-align:left}
 .mst-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding:12px 16px;border:var(--bd);border-radius:18px;background:var(--chip)}
-.mst-top .mem.big{width:62px;height:72px;filter:none}
+.mst-top .mem.big{width:70px;height:75px;filter:none}
 .mst-top h3{margin:0;font:400 22px/1.2 var(--disp)}.mst-top small{display:block;color:var(--sub);font-weight:800;font-size:12.5px}
 .mst-sc{display:block;margin:2px 0;font:900 20px var(--num)}
 .mst-grid{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
@@ -6377,7 +6387,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .mst-grid li.m4{background:#fff6d4}.mst-grid li.m5{background:linear-gradient(140deg,#e8f6ff,#f1eaff,#ffeaf6,#fff8dc)}
 .mst-grid li.none{opacity:.6}.mst-grid li.none .mem{filter:grayscale(1)}
 .mst-grid li.sel{box-shadow:0 0 0 3px var(--accent)}
-.mc-art{position:relative}.mc-art .mem.big{width:58px;height:66px;filter:none}.mc-art .mgr{position:absolute;right:-12px;bottom:0;margin:0}
+.mc-art{position:relative}.mc-art .mem.big{width:76px;height:81px;filter:none}.mc-art .mgr{position:absolute;right:-12px;bottom:0;margin:0}
 .mc-n{display:flex;align-items:center;gap:4px;font-size:13.5px;font-weight:900}.mc-n .sic{width:16px;height:16px}
 .mc-lv{font:800 14px var(--num)}.mc-lv em{font:900 12px var(--sans,inherit);font-style:normal;color:var(--sub)}
 .mst-grid .mbar{width:100%}
@@ -6387,18 +6397,18 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .mst-how li{display:flex;align-items:center;gap:8px;font-weight:700}.mst-how li .mgr{margin:0}.mst-how li span{flex:1}.mst-how li em{font:800 12px var(--num);font-style:normal;color:var(--accent)}
 .mst-how small{color:var(--sub);font-weight:700;line-height:1.5}
 .pmst{display:grid;gap:8px;width:100%;margin-top:8px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:color-mix(in srgb,#8fc2ff 20%,var(--card));color:var(--text);font:inherit;font-size:14px;text-align:left;cursor:pointer}
-.pmst .pach-h .mem{width:20px;height:23px}
+.pmst .pach-h .mem{width:24px;height:26px}
 /* 대표 3개: 좁은 프로필 칸에서도 안 깨지게 세로 카드(엠블럼 위·이름·레벨), 이름은 두 줄까지 (2026-10-30 '편/집/영'으로 잘리던 것) */
 .pmst-l{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .pmst-l i{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:7px 4px 6px;border-radius:10px;background:var(--card);border:1.5px solid var(--line);font-style:normal;text-align:center}
-.pmst-l i .mem{width:28px;height:32px}
+.pmst-l i .mem{width:38px;height:40px}
 .pmst-l span{display:flex;flex-direction:column;align-items:center;min-width:0;width:100%}
 .pmst-l b{font-size:12px;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pmst-l small{font:800 11px var(--num);color:var(--sub);white-space:nowrap}
 .pmst-l i.m4{background:#fff6d4}.pmst-l i.m5{background:linear-gradient(120deg,#e8f6ff,#f1eaff,#ffeaf6)}
 /* 게임 화면 위 줄 숙련도 칩(제목 옆) */
 .ptop .pmchip{display:flex;align-items:center;gap:6px;flex:none;margin-right:auto;padding:3px 10px 3px 5px;border:2px solid var(--ink);border-radius:12px;background:var(--card);color:var(--text);font-family:var(--sans,inherit);font-size:13px;transition:transform .2s}
-.ptop .pmchip .mem{width:24px;height:27px}
+.ptop .pmchip .mem{width:30px;height:32px}
 .ptop .pmchip span{display:flex;flex-direction:column;gap:3px;min-width:56px}
 .ptop .pmchip b{display:flex;align-items:center;gap:4px;font:800 13px/1 var(--num);white-space:nowrap}.ptop .pmchip b em{font:900 11px var(--sans,inherit);font-style:normal;color:var(--sub)}
 .ptop .pmchip .mgr{margin-left:2px;height:16px;min-width:22px;font-size:10.5px}

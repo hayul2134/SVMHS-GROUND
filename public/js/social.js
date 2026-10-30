@@ -1503,7 +1503,12 @@ const achCnt = own => ACH.filter(a => own?.[a.k]).length;
 const achBar = () => `<button type="button" class="ach-bar" data-ach="" data-ff="${ACH_FF}">${medal(4, true)}<span><b>게임 업적</b><small>모은 업적 ${achCnt(S.me?.ach)} / ${ACH.length} · 게임마다 업적을 다 모으면 칭호</small></span><i aria-hidden="true">›</i></button>`;
 const gName = g => g === 'all' ? '공통' : GAMES[g]?.name || g;
 // 숙련도 엠블럼(2026-10-29): 육각 스티커 + 레벨 숫자, 10레벨마다 색 단계(입문 회색·숙련 민트·베테랑 파랑·장인 보라·마스터 금·레전드 무지개)
-const mEmb = (lv, cls = '') => { const b = mstBand(lv); return `<svg class="mem ${b.k}${cls ? ' ' + cls : ''}" viewBox="0 0 40 46" aria-hidden="true">${lv >= 30 ? '<path class="me-s" d="M20 .6l1.7 3.4 3.7.5-2.7 2.6.7 3.7-3.4-1.8-3.4 1.8.7-3.7-2.7-2.6 3.7-.5z"/>' : ''}<path class="me-o" d="M20 5 35.5 13.8v18.4L20 41 4.5 32.2V13.8z"/><path class="me-i" d="M20 9.6 31.4 16v14L20 36.4 8.6 30V16z"/><path class="me-h" d="M10.4 16.9 20 11.4l9.6 5.5"/><text class="me-t" x="20" y="28.6">${lv}</text></svg>`; };
+// 숙련도 문장(2026-10-30 하율 "공통 틀 + 게임 아이콘"): 롤처럼 틀은 모든 게임이 같고 단계마다 자람 — 입문 육각 → 숙련 테두리 → 베테랑 작은 날개 → 장인 큰 날개·별 → 마스터 금 왕관 → 레전드 빛 고리
+//   가운데 = 그 게임 아이콘(sj-*), 레벨은 아래 리본. 게임이 없는 자리(숙련도 점수 등)는 가운데에 숫자
+const MW = 'M13 21.5C7 19.5 2.6 22.5 1 29c4-2 7.6-1.4 12 .6z', MW2 = 'M13 30.5C7.4 31 3.6 34.6 3.2 40.4c3.2-2.6 6.2-3.4 9.8-3.2z';
+const mEmb = (lv, cls = '', g = '') => { const b = mstBand(lv), n = +b.k.slice(1), ico = g && GAMES[g]?.ic;
+  const wing = d => `<path class="me-w" d="${d}"/><path class="me-w" d="${d}" transform="matrix(-1 0 0 1 60 0)"/>`;
+  return `<svg class="mem ${b.k}${cls ? ' ' + cls : ''}" viewBox="0 0 60 64" aria-hidden="true">${n >= 5 ? '<circle class="me-halo" cx="30" cy="29" r="27"/>' : ''}${n >= 3 ? wing(MW2) : ''}${n >= 2 ? wing(MW) : ''}<path class="me-o" d="M30 8 47.5 18.5v21L30 50 12.5 39.5v-21z"/><path class="me-i" d="M30 12.6 43.6 20.8v16.4L30 45.4 16.4 37.2V20.8z"/>${n >= 1 ? '<path class="me-r" d="M30 15.6 41 22.2v13.6L30 42.4 19 35.8V22.2z"/>' : ''}<path class="me-h" d="M18.6 21.6 30 14.8l11.4 6.8"/>${n >= 4 ? '<path class="me-c" d="M21 11.2 22.6 3l4.6 4.6L30 1.4l2.8 6.2L37.4 3l1.6 8.2z"/>' : n >= 3 ? '<path class="me-s" d="m30 1.6 1.9 3.9 4.3.6-3.1 3 .7 4.2-3.8-2-3.8 2 .7-4.2-3.1-3 4.3-.6z"/>' : ''}${ico ? `<circle class="me-p" cx="30" cy="29" r="11.8"/><use href="#sj-${ico}" transform="translate(19.5 18.5) scale(.875)"/><path class="me-rb" d="M15.5 47.5h29l-2.6 4.6 2.6 4.6h-29l2.6-4.6z"/><text class="me-t" x="30" y="55">${lv}</text>` : `<text class="me-t me-tc" x="30" y="34.2">${lv}</text>`}</svg>`; };
 const mInfo = xp => { const L = mstLv(xp), b = mstBand(L.lv); return { ...L, b, pct: L.need ? Math.round(L.cur / L.need * 20) * 5 : 100 }; };
 const myMst = g => mstXp(S.me?.mst, g);
 // 숙련도(2026-10-30 하율 "업적이랑 숙련도 살짝 분리, 롤 느낌" — 깃발 mastery): 업적 창과 따로, 판마다 등급(S+~D)
@@ -1512,10 +1517,10 @@ const grCls = gr => 'g' + (gr === 'S+' ? 'sp' : (gr || 'x').toLowerCase());
 const grChip = gr => gr ? `<i class="mgr ${grCls(gr)}">${gr}</i>` : '';
 const mstOpenG = () => MST_GAMES.filter(g => GAMES[g] && gamesOn().some(([k]) => k === g));
 // 게임 카드 숙련도 줄
-const mstLine = k => { if (!S.me || !mstOn() || !MST_GAMES.includes(k)) return ''; const m = mInfo(myMst(k)), gr = S.me.mst?.[k]?.[4] || ''; return `<button type="button" class="gmst ${m.b.k}" data-mst="${k}" data-ff="${MST_FF}" title="숙련도 — 판마다 등급에 따라 XP가 쌓여요">${mEmb(m.lv)}<span><b>Lv.${m.lv} <em>${m.b.n}</em>${grChip(gr)}</b><i class="mbar"><i class="w${m.pct}"></i></i></span></button>`; };
+const mstLine = k => { if (!S.me || !mstOn() || !MST_GAMES.includes(k)) return ''; const m = mInfo(myMst(k)), gr = S.me.mst?.[k]?.[4] || ''; return `<button type="button" class="gmst ${m.b.k}" data-mst="${k}" data-ff="${MST_FF}" title="숙련도 — 판마다 등급에 따라 XP가 쌓여요">${mEmb(m.lv, '', k)}<span><b>Lv.${m.lv} <em>${m.b.n}</em>${grChip(gr)}</b><i class="mbar"><i class="w${m.pct}"></i></i></span></button>`; };
 // 게임 화면 위 줄 숙련도 칩(2026-10-30 하율 "게임할 때도 숙련도가 잘 보이게"): 제목 옆 — 판 위를 가리지 않게, 판이 끝나면 바로 차오름(mstChipPaint)
 const mstGOf = g => !g ? '' : g.startsWith('c_') ? g.slice(2) : g === 'gearn' ? 'gear' : g;
-const mstChipIn = g => { const m = mInfo(myMst(g)), gr = S.me.mst?.[g]?.[4] || ''; return `${mEmb(m.lv)}<span><b>Lv.${m.lv}<em>${m.b.n}</em>${grChip(gr)}</b><i class="mbar"><i class="w${m.pct}"></i></i></span>`; };
+const mstChipIn = g => { const m = mInfo(myMst(g)), gr = S.me.mst?.[g]?.[4] || ''; return `${mEmb(m.lv, '', g)}<span><b>Lv.${m.lv}<em>${m.b.n}</em>${grChip(gr)}</b><i class="mbar"><i class="w${m.pct}"></i></i></span>`; };
 const mstChip = game => { const g = mstGOf(game); return S.me && mstOn() && MST_GAMES.includes(g) ? `<span class="pmchip ${mInfo(myMst(g)).b.k}" id="pMst" data-g="${g}" data-ff="${MST_FF}" title="${esc(GAMES[g]?.name || '')} 숙련도">${mstChipIn(g)}</span>` : ''; };
 function mstChipPaint(up) {
   const el = $('#pMst'); if (!el || !S.me) return;
@@ -1551,7 +1556,7 @@ function aqNext() {
   (it.big ? acBig : acBan)(it, done);
 }
 function acBody(it) {
-  if (it.t === 'mst') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: it.big ? '숙련도 단계 상승!' : '숙련도 레벨 업!', art: mEmb(it.lv, 'big'), n: `Lv.${it.lv} ${b.n}`, d: '', g: `${ic(g?.ic || 'play')} ${esc(g?.name || '')}`, r: it.r ? `<b>전교 숙련도 ${it.r}위</b>` : '', x: [it.gr ? `이번 판 ${it.gr} 등급 +${it.gain} XP` : '', it.lv >= MST_MAX ? '최고 레벨 도달!' : ''].filter(Boolean).join(' · ') }; }
+  if (it.t === 'mst') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: it.big ? '숙련도 단계 상승!' : '숙련도 레벨 업!', art: mEmb(it.lv, 'big', it.g), n: `Lv.${it.lv} ${b.n}`, d: '', g: `${ic(g?.ic || 'play')} ${esc(g?.name || '')}`, r: it.r ? `<b>전교 숙련도 ${it.r}위</b>` : '', x: [it.gr ? `이번 판 ${it.gr} 등급 +${it.gain} XP` : '', it.lv >= MST_MAX ? '최고 레벨 도달!' : ''].filter(Boolean).join(' · ') }; }
   if (it.t === 'mgr') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: `${esc(g?.name || '')} 숙련도`, art: `<span class="mgr-big ${grCls(it.gr)}">${it.gr || '-'}</span>`, n: `${it.gr || ''} 등급 · +${it.gain} XP`, d: '', g: '', r: '', x: it.lv >= MST_MAX ? `Lv.${it.lv} 최고 레벨` : `Lv.${it.lv} · 다음 레벨까지 ${it.left.toLocaleString('ko-KR')} XP` }; }
   const a = it.a, x = it.x, g = a.g === 'all' ? '공통 업적' : `${ic(GAMES[a.g]?.ic || 'play')} ${esc(GAMES[a.g]?.name || '')}`;
   return { cls: 'lv' + a.lv + (x.f ? ' first' : ''), k: x.f ? '전교 최초 달성!' : a.hid ? '숨겨진 업적 발견!' : '업적 달성!', art: medal(a.lv, true), n: esc(a.n), d: esc(a.d), g,
@@ -1623,7 +1628,7 @@ function paintMst() {
   const gs = Object.keys(d.games).filter(g => GAMES[g] && gamesOn().some(([k]) => k === g)).sort((a, b) => d.games[b].x - d.games[a].x || MST_GAMES.indexOf(a) - MST_GAMES.indexOf(b));
   const top = Math.max(1, ...gs.map(g => mstLv(d.games[g].x).lv));
   const cell = g => { const v = d.games[g], m = mInfo(v.x), none = !v.x;
-    return `<li class="${m.b.k}${none ? ' none' : ''}${g === mstSel ? ' sel' : ''}"><div class="mc-art">${mEmb(none ? 1 : m.lv, 'big')}${grChip(v.gr)}</div>
+    return `<li class="${m.b.k}${none ? ' none' : ''}${g === mstSel ? ' sel' : ''}"><div class="mc-art">${mEmb(none ? 1 : m.lv, 'big', g)}${grChip(v.gr)}</div>
       <b class="mc-n">${ic(GAMES[g].ic)}${esc(GAMES[g].name)}</b>
       <span class="mc-lv">${none ? '아직 안 해 봤어요' : `Lv.${m.lv} <em>${m.b.n}</em>`}</span>
       <span class="mbar"><i class="w${none ? 0 : m.pct}"></i></span>
@@ -1644,7 +1649,7 @@ document.addEventListener('click', e => {
   e.preventDefault(); openAch(b.dataset.h || '', b.dataset.ach || '');
 });
 // 프로필 숙련도(롤 프로필처럼 대표 3개 + 숙련도 점수, 깃발 mastery)
-const mstProf = (d, u) => !d.mst ? '' : `<button type="button" class="pmst" data-mst="" data-h="${esc(u.handle)}" data-ff="${MST_FF}"><span class="pach-h">${mEmb(Math.max(1, ...d.mst.top.map(x => mstLv(x.x).lv)))}숙련도 점수 <b>${d.mst.score}</b></span>${d.mst.top.length ? `<span class="pmst-l">${d.mst.top.map(x => { const m = mInfo(x.x); return `<i class="${m.b.k}">${mEmb(m.lv)}<span><b>${esc(GAMES[x.g]?.name || x.g)}</b><small>Lv.${m.lv} ${m.b.n}</small></span></i>`; }).join('')}</span>` : '<span class="pach-l"><i class="none">아직 없어요</i></span>'}</button>`;
+const mstProf = (d, u) => !d.mst ? '' : `<button type="button" class="pmst" data-mst="" data-h="${esc(u.handle)}" data-ff="${MST_FF}"><span class="pach-h">${mEmb(Math.max(1, ...d.mst.top.map(x => mstLv(x.x).lv)))}숙련도 점수 <b>${d.mst.score}</b></span>${d.mst.top.length ? `<span class="pmst-l">${d.mst.top.map(x => { const m = mInfo(x.x); return `<i class="${m.b.k}">${mEmb(m.lv, '', x.g)}<span><b>${esc(GAMES[x.g]?.name || x.g)}</b><small>Lv.${m.lv} ${m.b.n}</small></span></i>`; }).join('')}</span>` : '<span class="pach-l"><i class="none">아직 없어요</i></span>'}</button>`;
 const achProf = (d, u) => !d.ach || isDev(u) ? '' : `<button type="button" class="pach" data-ach="" data-h="${esc(u.handle)}" data-ff="${ACH_FF}"><span class="pach-h">${medal(3, true)}업적 <b>${d.ach.n}</b>/${d.ach.of}</span>${d.ach.top.length ? `<span class="pach-l">${d.ach.top.map(x => { const a = ACH.find(y => y.k === x.k); return a ? `<i title="학생 ${x.p}% 달성">${medal(a.lv, true)}${esc(a.n)}</i>` : ''; }).join('')}</span>` : '<span class="pach-l"><i class="none">아직 없어요</i></span>'}</button>`;
 // 티어 박탈감 줄이기(2026-10-28 하율 — 미리보기 깃발 tier-champ): 게임별 이번 라운드 1등 · 어제보다 오른 것 · 오늘 많이 오른 학생
 const tIx = k => TIERS.findIndex(t => t.k === k);
