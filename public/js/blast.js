@@ -308,6 +308,11 @@ export function createBlast(root, opt = {}) {
   /* ----- 입력: 받침에서 장비를 눌러 끌기 → 판 위에서 놓기 ----- */
   const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   function slotAt(p) { for (let i = 0; i < 3; i++) { const [x, y, w, h] = slotRect(i); if (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h) return i; } return -1; }
+  // 마우스 감도(2026-10-30 하율 "블럭을 잡았을 때만 마우스 감도 확 올려서 옮기기 편하게"): 잡은 동안만 블록이 마우스 이동량의 MOUSE_GAIN배로 움직임
+  //   기준점 = 잡은 자리, 블록은 캔버스 밖으로 안 나가게, 잡은 동안 커서는 숨김(블록이 커서 역할). 터치·펜은 그대로(손가락 위로 띄우기만)
+  const MOUSE_GAIN = 1.9;
+  const gainPos = (d, p) => ({ x: Math.max(0, Math.min(W, d.x0 + (p.x - d.x0) * MOUSE_GAIN)), y: Math.max(0, Math.min(H, d.y0 + (p.y - d.y0) * MOUSE_GAIN)) });
+  const cur = on => { cv.style.cursor = on ? 'none' : ''; };
   const tryPut = d => {   // 놓기 시도 → 놓았으면 true
     const sn = snapOf(d), t = Math.round(performance.now() - t0);
     if (!sn) { tone(180, .08, 'triangle', .04); return false; }
@@ -319,32 +324,33 @@ export function createBlast(root, opt = {}) {
     const p = pos(e), i = slotAt(p), touch = e.pointerType === 'touch' || e.pointerType === 'pen';
     e.preventDefault();
     if (drag?.held) {   // 집은 상태: 같은 장비 = 내려놓기 · 다른 장비 = 바꿔 집기 · 판 = 그 자리에 놓기
-      if (i === drag.slot) { drag = null; held = -1; kick(); return; }
-      if (i >= 0 && !used[i]) { held = -1; drag = null; }
-      else if (i < 0) { const d = { ...drag, x: p.x, y: p.y, lift: 0 }; if (tryPut(d)) { drag = null; held = -1; } kick(); return; }
+      if (i === drag.slot) { drag = null; held = -1; cur(false); kick(); return; }
+      if (i >= 0 && !used[i]) { held = -1; drag = null; cur(false); }
+      else if (i < 0) { const mp = e.pointerType === 'mouse' && drag.x0 != null ? gainPos(drag, p) : p, d = { ...drag, x: mp.x, y: mp.y, lift: 0 }; if (tryPut(d)) { drag = null; held = -1; cur(false); } kick(); return; }   // 마우스는 감도 적용된 블록 자리에 놓음
       else return;
     }
     if (i < 0 || used[i]) return;
     try { cv.setPointerCapture(e.pointerId); } catch {}
-    drag = { slot: i, x: p.x, y: p.y, x0: p.x, y0: p.y, at: performance.now(), id: e.pointerId, moved: false, lift: touch ? cs * 1.6 : 0 };
+    drag = { slot: i, x: p.x, y: p.y, x0: p.x, y0: p.y, at: performance.now(), id: e.pointerId, moved: false, lift: touch ? cs * 1.6 : 0, mouse: e.pointerType === 'mouse' };
+    if (drag.mouse) cur(true);
     tone(440, .04, 'triangle', .04); kick();
   };
   const move = e => {
     if (!drag) return;
     const p = pos(e);
-    if (drag.held) { if (e.pointerType === 'mouse') { drag.x = p.x; drag.y = p.y; kick(); } return; }   // 집은 장비는 마우스를 따라다님(터치는 판을 누른 자리)
+    if (drag.held) { if (e.pointerType === 'mouse') { if (drag.x0 == null) { drag.x0 = p.x; drag.y0 = p.y; cur(true); } const g = gainPos(drag, p); drag.x = g.x; drag.y = g.y; kick(); } return; }   // 집은 장비는 마우스를 따라다님(터치는 판을 누른 자리)
     if (e.pointerId !== drag.id) return;
-    drag.x = p.x; drag.y = p.y; if (Math.hypot(p.x - drag.x0, p.y - drag.y0) > cs * .3) drag.moved = true; kick();
+    const g = drag.mouse ? gainPos(drag, p) : p; drag.x = g.x; drag.y = g.y; if (Math.hypot(p.x - drag.x0, p.y - drag.y0) > cs * .3) drag.moved = true; kick();
   };
   const up = e => {
     if (!drag || drag.held || e.pointerId !== drag.id) return;
-    const d = drag; drag = null;
+    const d = drag; drag = null; cur(false);
     if (state !== 'play') { kick(); return; }
-    if (!d.moved && slotAt(d) === d.slot) { held = d.slot; drag = { slot: d.slot, held: true, x: null, y: null, lift: 0 }; kick(); return; }   // 끌지 않고 눌렀다 뗌 → 집기
+    if (!d.moved && slotAt(d) === d.slot) { held = d.slot; drag = { slot: d.slot, held: true, x: null, y: null, x0: e.pointerType === 'mouse' ? d.x0 : null, y0: e.pointerType === 'mouse' ? d.y0 : null, lift: 0 }; kick(); return; }   // 끌지 않고 눌렀다 뗌 → 집기
     tryPut(d); kick();
   };
-  const cancel = e => { if (drag && !drag.held && (!e || e.pointerId === drag.id)) { drag = null; kick(); } };
-  const leave = () => { if (drag?.held) { drag.x = drag.y = null; kick(); } };
+  const cancel = e => { if (drag && !drag.held && (!e || e.pointerId === drag.id)) { drag = null; cur(false); kick(); } };
+  const leave = () => { if (drag?.held) { drag.x = drag.y = null; drag.x0 = drag.y0 = null; cur(false); kick(); } };
   cv.addEventListener('pointerleave', leave);
   stopBtn.onclick = () => {   // 두 번 눌러 확인
     if (state !== 'play') return;
@@ -432,7 +438,7 @@ export function createBlast(root, opt = {}) {
   }
   function end(why) {
     if (state !== 'play' && state !== 'ending') return;
-    const ms = Math.round(performance.now() - t0); state = 'over'; drag = null; held = -1; stopBtn.hidden = true; clearTimeout(stopT); stopBtn.classList.remove('ask'); stopBtn.textContent = '그만하기';
+    const ms = Math.round(performance.now() - t0); state = 'over'; drag = null; held = -1; cur(false); stopBtn.hidden = true; clearTimeout(stopT); stopBtn.classList.remove('ask'); stopBtn.textContent = '그만하기';
     const nb = st.score > best; if (nb) { best = st.score; $('best').textContent = best.toLocaleString('ko-KR'); }
     tone(nb ? 784 : 392, .14, 'triangle', .07); tone(nb ? 1047 : 330, .22, 'triangle', .07, .14);
     ov.hidden = false; ov.className = 'ml-ov end';
