@@ -420,9 +420,9 @@ def H_shark(pre, head):  # 저승사자 상어: 검은 도포 + 갓(등지느러
     pre = _suit(pre, '#b4c8dc', HK, HKL).replace("fill='#f4f8fc'/>", "fill='#fffaf0'/>", 1)
     pre += f"<path d='M43 70 L50 84 L57 70' fill='none' stroke='#fffaf0' stroke-width='2.2' stroke-linejoin='round'/>"
     fin = "<path d='M38 22 Q46 1 64 3 Q58 10 60 22Z' fill='#b4c8dc' " + ln('#6e8aa8') + "/>"
-    gat = (f"<ellipse cx='50' cy='22' rx='31' ry='5.4' fill='#2a2238' fill-opacity='.78' {ln('#120d1a', 2)}/>"
-           f"<path d='M38 21 L39.5 9 Q50 6.5 60.5 9 L62 21Z' fill='#2a2238' fill-opacity='.85' {ln('#120d1a', 2)}/>"
-           )
+    # 2026-10-30 하율 "지느러미가 모자에 이상하게 튀어나와 있다" → 갓을 작게, 머리 왼쪽에 비스듬히(지느러미는 그대로 보이게)
+    gat = (f"<g transform='rotate(-22 30 29.5)'><ellipse cx='30' cy='29.5' rx='16' ry='3.6' fill='#2a2238' fill-opacity='.82' {ln('#120d1a', 2)}/>"
+           f"<path d='M23.5 29 L24.5 20.5 Q30 19.1 35.5 20.5 L36.5 29Z' fill='#2a2238' fill-opacity='.88' {ln('#120d1a', 2)}/></g>")
     return '', pre, head + gat + fin
 
 
