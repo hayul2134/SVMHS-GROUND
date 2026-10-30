@@ -6450,3 +6450,12 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .tcc-list li.tcc.tie .tcc-rec small{font-family:inherit;font-size:11px;font-weight:800;color:#7a5a12}
 .tcc-list li.tcc.tie .tcc-u{grid-column:1/-1;grid-row:3}
 [data-theme="dark"] .tcc-list li.tcc.tie .tcc-rec small{color:#e8cf8a}
+/* 기자재 모드별 1등(2026-10-30 하율 "기록이 같은 게 아니라 순위만 같은 거잖아") — 학생마다 [이름 · 모드 · 자기 기록] 한 줄 */
+.tcc-list li.tcc.split .tcc-rows{grid-column:1/-1;grid-row:2;display:flex;flex-direction:column;gap:3px;min-width:0}
+.tcc-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:6px}
+.tcc-row a{display:inline-flex;align-items:center;gap:5px;min-width:0;color:#3d2600;text-decoration:none;font-weight:900;font-size:13px}
+.tcc-row a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcc-row a .av.xs{width:22px;height:22px;font-size:12px;border-width:1.5px;box-shadow:0 0 0 2px #ecc95e}
+.tcc-list li.tcc.split .tcc-row .tcc-rec{grid-column:auto;grid-row:auto;font-size:15px}
+.tcc-list li.tcc.split .tcc-meta{grid-row:3}
+[data-theme="dark"] .tcc-row a{color:#fff1c7}

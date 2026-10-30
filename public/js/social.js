@@ -1707,6 +1707,16 @@ function chBlock(c) {
   const champs = gs.map(([k, g]) => { const x = byG.get(k);
     if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">1등 자리 비어 있음</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
     // 공동 1등(2026-10-30 하율 "누가 했는지, 뭘로 90만 점 찍은 건지 헷갈려"): 메달을 '공동 1등'으로, 기록을 이름 위 한 줄로 올리고 'N명 같은 기록' — 합친 점수로 안 읽히게
+    // 2026-10-30 하율 "기록이 같은 게 아니라 순위만 같은 거잖아": 기자재는 일반·타임어택 모드별 1등이 같이 1등으로 잡힘 → 공동 1등이 아니라 학생마다 '모드 · 자기 기록' 줄로
+    const modes = [...new Set(x.users.map(u => u.m).filter(Boolean))], split = modes.length > 1;
+    if (split) {
+      const rows = x.users.map(u => `<span class="tcc-row"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<span>${esc(nameOf(u))}</span></a><i class="tcc-mode">${gtMode(u.m)} 모드</i><b class="tcc-rec">${u.b != null && g.fmt ? esc(g.fmt(u.b)) : ''}</b></span>`).join('');
+      const ns = modes.map(m => { const u = x.users.find(v => v.m === m); return `<span>${ic('flag')}${gtMode(m)} ${u.n}명 중 1등</span>`; }).join('');
+      return `<li class="tcc split${x.me ? ' me' : ''}">
+      <span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md">${ic('trophy')}모드별 1등</span>
+      <span class="tcc-rows">${rows}</span>
+      <span class="tcc-meta">${ns}${x.me ? '<span class="tcc-mine">나!</span>' : ''}</span></li>`;
+    }
     const tie = (x.tie || x.users.length + (x.more || 0)) > 1;
     const rec = x.b != null && g.fmt ? g.fmt(x.b) : '', gm = k === 'gear' && x.m ? `<i class="tcc-mode">${gtMode(x.m)} 모드</i>` : '';
     const gap = x.gap > 0 && GAP[k] ? `${x.nr || 2}등과 ${GAP[k](x.gap)} 차이` : x.n === 1 ? '유일한 도전자' : '';

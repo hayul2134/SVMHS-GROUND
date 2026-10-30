@@ -1683,7 +1683,7 @@ async function tierChamp(db, me, b, mine, usersOf) {
   const ch = {};
   const sec2 = {};   // 1등 바로 다음 순위 기록(공동 1등이면 3등 등) — 차이 표시(2026-10-30 하율: 공동 1등이 '2등과 차이' 대신 다음 순위와 차이)
   for (const x of b.list) for (const [g, v] of Object.entries(x.games || {})) {
-    if (v.r === 1) (ch[g] = ch[g] || { g, n: v.n, b: v.b, m: v.m, uids: [] }).uids.push(x.uid);
+    if (v.r === 1) { const c = ch[g] = ch[g] || { g, n: v.n, b: v.b, m: v.m, uids: [], per: [] }; c.uids.push(x.uid); c.per.push({ b: v.b, m: v.m, n: v.n }); }   // per: 학생마다 자기 기록·모드(기자재는 일반/타임어택 각 모드 1등이 함께 1등으로 잡힘)
     else if (v.r > 1 && !v.m && (!sec2[g] || v.r < sec2[g].r)) sec2[g] = { r: v.r, b: v.b };   // 기자재는 모드가 섞여 차이를 안 셈
   }
   // ② 어제까지 기록으로 만든 판과 비교 (라운드 첫날이면 비교 없음)
@@ -1700,7 +1700,7 @@ async function tierChamp(db, me, b, mine, usersOf) {
   if (tgt && b.n >= 1) { const pb = await tierBoard(db, b.n - 1, v2, rx, gt), p = pb.list.find(x => x.uid === tgt.uid); if (p) prev = { k: p.tier, rank: p.rank, pts: p.pts, players: pb.list.length, d: ix(p.tier) - ix(tgt.tier) }; }
   const ids = [...new Set([...Object.values(ch).flatMap(c => c.uids.slice(0, 3)), ...risers.map(o => o.x.uid)])], byId = await usersOf(ids);
   return {
-    games: Object.values(ch).map(c => ({ g: c.g, n: c.n, b: c.b, m: c.m, gap: sec2[c.g] && c.b != null ? sec2[c.g].b - c.b : c.uids.length > 1 ? 0 : null, nr: sec2[c.g]?.r || null, tie: c.uids.length, more: Math.max(0, c.uids.length - 3), me: c.uids.includes(me.id), users: c.uids.slice(0, 3).map(u => card(byId.get(u))).filter(Boolean) })),
+    games: Object.values(ch).map(c => ({ g: c.g, n: c.n, b: c.b, m: c.m, gap: sec2[c.g] && c.b != null ? sec2[c.g].b - c.b : c.uids.length > 1 ? 0 : null, nr: sec2[c.g]?.r || null, tie: c.uids.length, more: Math.max(0, c.uids.length - 3), me: c.uids.includes(me.id), users: c.uids.slice(0, 3).map((u, i) => { const o = card(byId.get(u)); return o && { ...o, b: c.per[i].b, m: c.per[i].m, n: c.per[i].n }; }).filter(Boolean) })),
     since: yb ? y : null, me: tgt ? delta(tgt) : null, pv: !mine && !!tgt, prev,
     rise: risers.map(o => ({ ...card(byId.get(o.x.uid)), to: o.x.tier, ...o.r, isMe: o.x.uid === me.id })).filter(u => u.handle),
   };
