@@ -251,6 +251,7 @@ function snake(el, rk, quick = false) {
     const ovH = `<b>${full ? '판을 가득 채웠어요!' : '끝!'}</b><span>별 ${score}개${nb ? ' · 최고 기록!' : ''}</span><small>방향키·스와이프로 다시 시작</small>`;
     if (!crash) { showOv(ovH); return; }
     cancelAnimationFrame(raf); raf = requestAnimationFrame(dizzy);
+    { const w = cv.parentElement; w.classList.remove('cz-shake'); void w.offsetWidth; w.classList.add('cz-shake'); }   // 쿵! 판 흔들림(2026-10-30 21:08 하율 "타격감")
     const my = runN; setTimeout(() => { if (my === runN && state === 'dead') showOv(ovH); }, 900);   // 쓰러지는 모습을 먼저 보여 주고 결과 창
   }
   function dizzy() { if (state !== 'dead' || !crash) return; draw(1); raf = requestAnimationFrame(dizzy); }

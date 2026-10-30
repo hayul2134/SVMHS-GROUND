@@ -6503,6 +6503,9 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 /* 숙련도 칩 자리 통일(2026-10-30 21:06 하율 "모든 게임에서 같은 곳에"): 제목 길이·오른쪽 버튼 수와 상관없이 위 줄 정가운데 */
 @media (min-width:761px){.ptop{position:relative}.ptop .pmchip{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0}}
 .cz-ft > .md-pick{margin:4px auto 0}
+.cz-in.cz-shake{animation:czShake .45s cubic-bezier(.36,.07,.19,.97)}
+@keyframes czShake{0%{transform:none}10%{transform:translate(-9px,4px) rotate(-1deg)}22%{transform:translate(8px,-5px) rotate(.8deg)}34%{transform:translate(-6px,3px)}46%{transform:translate(5px,-2px)}60%{transform:translate(-3px,1px)}75%{transform:translate(2px,0)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.cz-in.cz-shake{animation:none}}
 :root[data-theme="dark"] .mst-grid li.m4,:root[data-theme="dark"] .mst-grid li.m5,:root[data-theme="dark"] .pmst-l i.m4,:root[data-theme="dark"] .pmst-l i.m5,:root[data-theme="dark"] .ptop .pmchip.m4,:root[data-theme="dark"] .ptop .pmchip.m5{color:#1f1d33}
 @media (max-width:420px){.ptop .pmchip > span{display:none}.ptop .pmchip{padding:3px}}
 
