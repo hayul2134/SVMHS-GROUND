@@ -16,7 +16,7 @@ import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
 import { TIERS, TIER_PCT, BEST_N, tierOfK, PTS_MIN_N } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';
-import { ACH, ACH_FF, ACH_GAMES, ACH_TITLE, ACH_TITLES, achOf, achProg, achTitles, titleDone, mstLv, mstBand, mstXp, MST_XP, MST_MAX, MST_FF, MST_GAMES, MST_GR, mstScore } from './achv.js';   // 게임 업적(2026-10-28, 미리보기 깃발 achv)   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
+import { ACH, ACH_FF, ACH_GAMES, ACH_TITLE, ACH_TITLES, achOf, achProg, achTitles, titleDone, mstLv, mstBand, mstXp, MST_XP, MST_MAX, MST_FF, MST_GAMES, MST_GR, MST_BANDS, mstBandTxt, mstScore } from './achv.js';   // 게임 업적(2026-10-28, 미리보기 깃발 achv)   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl','k:shark'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -1572,7 +1572,7 @@ function mstChipPaint(up) {
   if (up) setTimeout(() => el.classList.remove('up'), 1200);
 }
 const mySc = () => mstScore(Object.fromEntries(mstOpenG().map(g => [g, [myMst(g)]])));
-const mstBar = () => { const sc = mySc(); return `<button type="button" class="ach-bar mst-bar" data-mst="" data-ff="${MST_FF}">${mEmb(Math.max(1, ...mstOpenG().map(g => mstLv(myMst(g)).lv)))}<span><b>게임 숙련도</b><small>숙련도 점수 ${sc} · 판마다 점수 구간(S+~C)·오늘 첫 판 보너스로 XP가 쌓여요</small></span><i aria-hidden="true">›</i></button>`; };
+const mstBar = () => { const sc = mySc(); return `<button type="button" class="ach-bar mst-bar" data-mst="" data-ff="${MST_FF}">${mEmb(Math.max(1, ...mstOpenG().map(g => mstLv(myMst(g)).lv)))}<span><b>게임 숙련도</b><small>숙련도 점수 ${sc} · 판마다 점수로 등급(S+~C)·오늘 첫 판 보너스로 XP가 쌓여요</small></span><i aria-hidden="true">›</i></button>`; };
 // 업적·숙련도 축하(2026-10-29 하율: "학교니까 바로바로 자랑할 수 있게") — 크게(화면 전체) / 작게(위 띠). 순서대로 하나씩
 const AQ = []; let aqBusy = false;
 function achResult(keys, info, mst) {
@@ -1592,7 +1592,7 @@ function achResult(keys, info, mst) {
     else if (gain > 0) AQ.push({ t: 'mgr', g: mst.g, lv: B.lv, gr: mst.gr, fb: mst.fb, gain, left: B.need - B.cur, big: false });   // 롤 게임 끝 화면처럼: 이번 판 등급 + 얻은 XP
   }
   if (mst && mstOn()) mstChipPaint(mst.b > mst.a);
-  const ms = $('.mst-bar small'); if (ms) ms.textContent = `숙련도 점수 ${mySc()} · 판마다 점수 구간(S+~C)·오늘 첫 판 보너스로 XP가 쌓여요`;
+  const ms = $('.mst-bar small'); if (ms) ms.textContent = `숙련도 점수 ${mySc()} · 판마다 점수로 등급(S+~C)·오늘 첫 판 보너스로 XP가 쌓여요`;
   const t = $('.ach-bar small'); if (t) t.textContent = `모은 업적 ${achCnt(S.me?.ach)} / ${ACH.length} · 게임마다 업적을 다 모으면 칭호`;
   aqNext();
 }
@@ -1687,7 +1687,9 @@ function paintMst() {
     ${d0.me && isDev(S.me) ? `<div class="mst-pv" role="group" aria-label="레벨 미리보기(개발자만)"><small>레벨 미리보기 · 개발자만</small>${[['', '실제'], ['mix', '섞어서'], ['5', 'Lv.5'], ['15', 'Lv.15'], ['25', 'Lv.25'], ['35', 'Lv.35'], ['45', 'Lv.45'], ['50', 'Lv.50']].map(([v, t]) => `<button type="button" class="${mstPv === v ? 'on' : ''}" data-mst-pv="${v}">${t}</button>`).join('')}</div>` : ''}
     <div class="mst-top">${mEmb(top, 'big')}<div><h3>${d.me ? '내 숙련도' : esc(d.name) + '의 숙련도'}</h3><b class="mst-sc">숙련도 점수 ${d.score}</b><small>${d.sr ? `전교 ${d.sr}위 / ${d.sn}명 · ` : ''}해 본 게임 레벨을 모두 더한 점수예요</small></div></div>
     <ol class="mst-grid">${gs.map(cell).join('')}</ol>
-    ${d.me ? `<div class="mst-how"><b>판마다 점수 구간으로 XP가 쌓여요</b> — 그 판 점수가 전체 학생 기록 중 어디쯤인지<ul>${MST_GR.map(([k, x, t]) => `<li>${grChip(k)}<span>${t}</span><em>+${x} XP</em></li>`).join('')}<li><i class="mgr gfb">첫 판</i><span>그 게임 오늘 첫 판 보너스</span><em>+${MST_XP.first} XP</em></li></ul><small>참가 학생이 ${MST_XP.minN}명보다 적은 게임은 A로 쳐요 · 등급 XP는 한 게임에 하루 ${MST_XP.dayCap} XP까지 · 숙련도는 내려가지 않아요 · 업적·티어와는 따로예요 · 10레벨마다 엠블럼이 바뀌어요</small></div>` : ''}
+    ${d.me ? `<div class="mst-how"><b>판마다 그 판 점수로 등급이 정해져요</b> — 다른 학생과 비교하지 않고, 게임마다 정한 점수만 넘으면 돼요<ul>${MST_GR.map(([k, x]) => `<li>${grChip(k)}<em>+${x} XP</em></li>`).join('')}<li><i class="mgr gfb">첫 판</i><span>그 게임 오늘 첫 판 보너스</span><em>+${MST_XP.first} XP</em></li></ul>
+      <table class="mst-bt"><thead><tr><th>게임</th>${['S+', 'S', 'A', 'B'].map(k => `<th>${grChip(k)}</th>`).join('')}</tr></thead><tbody>${gs.filter(g => MST_BANDS[g]).map(g => `<tr><th>${ic(GAMES[g].ic)}${esc(GAMES[g].name)}</th>${mstBandTxt(g).map(t => `<td>${t}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      <small>그 밑은 C(+12 XP) · 등급 XP는 한 게임에 하루 ${MST_XP.dayCap} XP까지(반응속도·1 to 25·편집의 신처럼 짧은 게임은 ${MST_XP.dayCapShort} XP) · 숙련도는 내려가지 않아요 · 업적·티어와는 따로예요 · 10레벨마다 엠블럼이 바뀌어요</small></div>` : ''}
     <div class="row"><button type="button" class="btn ghost" data-close>닫기</button></div>
   </div>`;
   if (mstSel) $('#socSheet .mst-grid li.sel')?.scrollIntoView({ block: 'nearest' });

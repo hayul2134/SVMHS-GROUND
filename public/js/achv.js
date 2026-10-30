@@ -224,16 +224,46 @@ export function achProg(a, st) {
 
 /* ===== 게임 숙련도(2026-10-29 → 2026-10-30 하율 "업적이랑 숙련도를 살짝 분리, 롤 느낌으로" → "점수 구간 비례 + 첫 판 보너스" — 깃발 mastery, 업적 achv와 따로) =====
    롤 챔피언 숙련도처럼: 게임마다 판을 할수록 쌓이고 내려가지 않음. 업적·티어와 XP를 주고받지 않음. 모두 Lv.1부터(소급 없음).
-   판 등급 = 이번 판 점수가 그 게임 전체 학생(최고 기록) 중 어디인지: 상위 10% S+ 40 · 25% S 32 · 50% A 24 · 75% B 17 · 그 밑 C 12 XP (참가 5명 미만이면 A)
-   + 그 게임 그날 첫 판 보너스 30 XP. 1판 기준(mission.js playCounts)을 넘은 판만 · 등급 XP는 한 게임 하루 300까지(첫 판 보너스는 따로)
+   판 등급 = 게임마다 정한 점수 구간(MST_BANDS, 2026-10-30 하율 "그냥 점수에 따라서"): S+ 40 · S 32 · A 24 · B 17 · C 12 XP
+   + 그 게임 그날 첫 판 보너스 30 XP. 숙련도 1판 기준(mstCounts)을 넘은 판만 · 등급 XP는 한 게임 하루 300(짧은 게임 150)까지(첫 판 보너스는 따로)
    Lv 1~50, 10레벨마다 단계(입문·숙련·베테랑·장인·마스터·레전드) · 숙련도 점수 = 해 본 게임 레벨 합(롤 숙련도 점수)
    저장: users.mst = { 게임: [XP, 마지막 판 날(YYYYMMDD), 그날 등급 XP, S 이상 횟수, 최근 등급] } — gearn은 gear로 */
 export const MST_FF = 'mastery';
 export const MST_GAMES = [...ACH_GAMES, 'mine', 'snake', 'n2048'];
 export const MST_MAX = 50;
-export const MST_GR = [['S+', 40, '전체 학생 중 상위 10%'], ['S', 32, '상위 25%'], ['A', 24, '상위 50%'], ['B', 17, '상위 75%'], ['C', 12, '그 밑']];
+export const MST_GR = [['S+', 40], ['S', 32], ['A', 24], ['B', 17], ['C', 12]];
+// 2026-10-30 하율 "등급은 그냥 점수에 따라서" — 다른 학생 기록과 비교하지 않고 게임마다 정한 점수 구간(화면 단위, nat)으로.
+// 구간은 10/30 실제 학생 최고 기록 분포로 맞춤: S+ ≈ 최상위 몇 명의 최고 기록 · S ≈ 상위 25% 최고 기록 · A ≈ 중간 · B ≈ 하위 · 그 밑 C
+// lo = 작을수록 좋음(ms) · u = 화면 단위 · s = 화면에 보일 때 나눌 값(ms → 초) · min = 숙련도 1판으로 치는 최소 기록(너무 짧은 판 제외)
+export const MST_BANDS = {
+  home: { b: [15000, 9000, 5000, 2500], u: 'm', min: 1000 },
+  stair: { b: [900, 600, 300, 150], u: '칸', min: 30 },
+  film: { b: [90, 70, 50, 30], u: '컷', min: 10 },
+  cut: { lo: 1, b: [25, 40, 70, 150], u: 'ms' },
+  reaction: { lo: 1, b: [190, 215, 245, 290], u: 'ms' },
+  num25: { lo: 1, b: [8500, 11000, 14500, 20000], u: '초', s: 1000 },
+  gear: { b: [30000, 15000, 8000, 4000], u: '점', min: 1000 },
+  blast: { b: [6000, 3500, 2000, 1000], u: '점', min: 300 },
+  mine: { lo: 1, b: [60000, 90000, 150000, 240000], u: '초', s: 1000 },
+  snake: { b: [60, 40, 25, 12], u: '개' },
+  n2048: { b: [6000, 4000, 2500, 1200], u: '점' },
+};
+const MG = ['S+', 'S', 'A', 'B'];
+export function mstGradeOf(game, v) {
+  const g = game === 'gearn' ? 'gear' : game, B = MST_BANDS[g]; if (!B) return 'C';
+  const x = nat(game, v);
+  for (let i = 0; i < 4; i++) if (B.lo ? x <= B.b[i] : x >= B.b[i]) return MG[i];
+  return 'C';
+}
+// 숙련도 1판으로 치는가(2026-10-30: 주간 미션 1판 기준(3분)은 학생 대부분이 못 넘어 숙련도가 안 오르던 문제 → 숙련도는 따로 낮은 기준)
+export const mstCounts = (game, v) => { const B = MST_BANDS[game === 'gearn' ? 'gear' : game]; return !B?.min || nat(game, v) >= B.min; };
+// 구간 글자(화면): ['15,000m 이상', …] — S+·S·A·B
+export const mstBandTxt = g => { const B = MST_BANDS[g]; if (!B) return []; return B.b.map(x => `${(B.s ? x / B.s : x).toLocaleString('ko-KR')}${B.u} ${B.lo ? '안' : '이상'}`); };
+// 짧은 게임(한 판 10~30초)은 하루 등급 XP 상한을 낮춤(2026-10-30 하율 "짧은 게임 하루 상한 낮추고") — 긴 게임과 하루 최대 성장이 비슷하게
+export const MST_SHORT = ['reaction', 'num25', 'cut'];
+export const mstCap = g => MST_SHORT.includes(g) ? MST_XP.dayCapShort : MST_XP.dayCap;
 const GR_XP = Object.fromEntries(MST_GR.map(x => [x[0], x[1]]));
-export const MST_XP = { dayCap: 300, first: 30, minN: 5 };
+export const MST_XP = { dayCap: 300, dayCapShort: 150, first: 30 };
 export const MST_BAND = [
   { from: 1, k: 'm0', n: '입문' }, { from: 10, k: 'm1', n: '숙련' }, { from: 20, k: 'm2', n: '베테랑' },
   { from: 30, k: 'm3', n: '장인' }, { from: 40, k: 'm4', n: '마스터' }, { from: 50, k: 'm5', n: '레전드' },
@@ -246,12 +276,7 @@ export function mstLv(xp) {
 }
 export const mstBand = lv => MST_BAND.filter(b => lv >= b.from).pop();
 export const mstXp = (m, g) => Math.max(0, +(m?.[g]?.[0]) || 0);
-// 판 등급: better = 이 판보다 최고 기록이 좋은 학생 수, n = 그 게임 학생 수(나 포함, 개발자 제외)
-export function mstGrade(better, n) {
-  if (!(n >= MST_XP.minN)) return 'A';
-  const p = better / n;
-  return p < 0.1 ? 'S+' : p < 0.25 ? 'S' : p < 0.5 ? 'A' : p < 0.75 ? 'B' : 'C';
-}
+
 // 판 하나로 얻는 XP(등급 XP + 첫 판 보너스)를 더한 새 값. add = { play: 1판으로 침, gr: 등급 } · day = 오늘(YYYYMMDD)
 export function mstAdd(m, g, add, day) {
   if (!add.play) return m;
@@ -259,7 +284,7 @@ export function mstAdd(m, g, add, day) {
   const o = { ...m }, cur = Array.isArray(o[g]) ? [...o[g]] : [0, '', 0, 0, ''];
   const fb = cur[1] !== day ? MST_XP.first : 0;   // 그 게임 그날 첫 판 보너스
   if (fb) { cur[1] = day; cur[2] = 0; }
-  const p = Math.max(0, Math.min(GR_XP[add.gr] || 12, MST_XP.dayCap - (+cur[2] || 0)));
+  const p = Math.max(0, Math.min(GR_XP[add.gr] || 12, mstCap(g) - (+cur[2] || 0)));
   cur[0] = (+cur[0] || 0) + p + fb; cur[2] = (+cur[2] || 0) + p;
   cur[3] = (+cur[3] || 0) + (add.gr === 'S+' || add.gr === 'S' ? 1 : 0); cur[4] = add.gr || '';
   o[g] = cur;

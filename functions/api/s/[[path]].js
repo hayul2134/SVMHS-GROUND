@@ -11,7 +11,7 @@ import { BLAST_MAX, seedOf as blastSeed, replay as blastReplay } from '../../../
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
-import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGrade, mstScore } from '../../../public/js/achv.js';
+import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
 import { patchState, patchSave, draftOut } from '../../../lib/patch.js';
@@ -1840,21 +1840,15 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const ach = achGot.length && achF ? achGot : undefined;
     // 게임 숙련도(깃발 mastery, 2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌"): 판 등급(S+~D, 내 최고 기록 대비)별 XP — 업적·최고 기록 보너스와 따로
     // 깃발 켜진 사람만 쌓음 · 모두 Lv.1부터(소급 없음)
-    // 2026-10-30 하율 "점수 구간 비례 + 첫 판 보너스": 이번 판 점수가 그 게임 전체 학생 최고 기록 중 어디인지(achv.js mstGrade) + 그날 첫 판 +30
-    const mstF = ffOn(MST_FF, isAdm(me)), mPlay = mstF && playCounts(game === 'gearn' ? 'gear' : game, v);
-    const mgr = mPlay ? mstGrade(...await mstPos(db, game, v, rx)) : '';
+    // 2026-10-30 하율 "등급은 그냥 점수에 따라서": 다른 학생 기록과 비교하지 않고 게임마다 정한 점수 구간(achv.js MST_BANDS) — DB 조회 없음
+    const mstF = ffOn(MST_FF, isAdm(me)), mPlay = mstF && mstCounts(game, v);
+    const mgr = mPlay ? mstGradeOf(game, v) : '';
     const mFirst = mPlay && parseAch(me.mst)?.[game === 'gearn' ? 'gear' : game]?.[1] !== day;
     const mstR = !mPlay ? null : await mstRun(db, me, game, { play: true, gr: mgr }, day);
     const mst = mstF && mstR ? { g: mstR.g, a: mstR.a, b: mstR.b, gr: mgr, fb: mFirst ? 1 : 0, r: isAdm(me) ? null : mstRank(await achRarity(db), mstR.g, mstR.b) } : undefined;
     const achX = ach ? await achInfo(db, me, ach).catch(() => undefined) : undefined;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
     return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, achX, mst, cheer: !isCas(g) && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
-}
-// 숙련도 등급용: [이 점수보다 최고 기록이 좋은 학생 수, 그 게임 학생 수] (개발자 제외)
-async function mstPos(db, game, v, rx = rxOn(null)) {
-  const r = rx ? await db.prepare(`SELECT SUM(best < ?2) AS a, COUNT(*) AS n FROM bests WHERE game = ?1 AND ${NOT_DEV}`).bind(game, v).first()
-    : await db.prepare(`SELECT SUM(b < ?2) AS a, COUNT(*) AS n FROM (SELECT MIN(best) AS b FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid)`).bind(game, v).first();
-  return [+r?.a || 0, +r?.n || 0];
 }
 async function rankOfC(db, game, best, rx = rxOn(null)) {
   if (rx) return rankOf(db, game, best, rx);   // bests 인덱스(game, best)로 나보다 좋은 사람만 셈 — 캐시 없이도 싸고 정확

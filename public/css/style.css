@@ -6425,6 +6425,12 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .mst-grid small{font-size:11.5px;font-weight:800;color:var(--sub)}.mc-meta{min-height:1em}
 .mst-how{margin:0 0 12px;padding:10px 12px;border:2px dashed var(--line);border-radius:14px;font-size:12.5px}
 .mst-how ul{list-style:none;margin:8px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:5px}
+/* 등급 점수 구간표(2026-10-30 "등급은 그냥 점수에 따라서") */
+.mst-bt{width:100%;margin:6px 0 8px;border-collapse:collapse;font-size:11.5px}
+.mst-bt th,.mst-bt td{padding:4px 5px;border-bottom:1px dashed var(--line);text-align:center;white-space:nowrap}
+.mst-bt tbody th{text-align:left;font-weight:700;display:flex;align-items:center;gap:4px}
+.mst-bt tbody th svg{width:15px;height:15px;flex:none}
+.mst-how:has(.mst-bt){overflow-x:auto}
 .mst-how li{display:flex;align-items:center;gap:8px;font-weight:700}.mst-how li .mgr{margin:0}.mst-how li span{flex:1}.mst-how li em{font:800 12px var(--num);font-style:normal;color:var(--accent)}
 .mst-how small{color:var(--sub);font-weight:700;line-height:1.5}
 .pmst{display:grid;gap:8px;width:100%;margin-top:8px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:color-mix(in srgb,#8fc2ff 20%,var(--card));color:var(--text);font:inherit;font-size:14px;text-align:left;cursor:pointer}
