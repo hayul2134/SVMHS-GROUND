@@ -433,7 +433,7 @@ function profileHtml(d) {
   const actions = self
     ? isDev(u) ? `<a class="btn dv-adm" href="/admin/#monitor">${ic('tool')}관리자 페이지</a><button class="btn lime" data-act-s="edit">${ic('pencil')}꾸미기</button><button class="btn ghost" data-act-s="logout">로그아웃</button>`   // 개발자: 꾸미기(제한 없음) · 계정 설정 없음
       : S.me?.sw ? ''   // 테스트 계정: 학과 바꾸기·개발자로 돌아가기만(아래 swBar)
-      : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button><button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
+      : `<button class="btn" data-act-s="edit">${ic('pencil')}프로필 꾸미기</button>${S.google && !S.me?.google ? '<button class="btn ghost" data-act-s="glink">🔗 구글 연결</button>' : ''}<button class="btn ghost icb" data-act-s="settings" aria-label="계정 설정" data-tip="계정 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg></button>`
     : r.blocked ? `<button class="btn ghost" data-block="${esc(u.handle)}" data-on="0">차단 풀기</button>`
     : `<button class="btn ${r.following ? 'ghost' : ''}" data-follow="${esc(u.handle)}" data-on="${r.following ? 0 : 1}">${r.following ? '팔로잉 ✓' : r.followsMe ? '맞팔로우 하기' : '팔로우'}</button>
        <button class="btn ${(d.canDm ?? mutual) ? 'lime' : 'ghost'}" data-dm="${esc(u.handle)}" ${(d.canDm ?? mutual) ? '' : 'data-locked="1"'}>💬 ${isDev(u) ? '개발자에게 DM' : 'DM'}</button>
@@ -584,7 +584,7 @@ document.addEventListener('click', async e => {
     openPanel(dm.dataset.dm); return;
   }
   const a = e.target.closest('[data-act-s]');
-  if (a) ({ edit: openEdit, settings: openSettings, more: () => openMore(a.dataset.h), logout: doLogout })[a.dataset.actS]?.();
+  if (a) ({ edit: openEdit, settings: openSettings, glink: openGLink, more: () => openMore(a.dataset.h), logout: doLogout })[a.dataset.actS]?.();
 });
 /* 상단 메뉴 '신고': 아이디와 이유를 적어서 보냄 (로그인 필요) */
 function openReport() {
@@ -956,15 +956,19 @@ document.addEventListener('click', async e => {
   } catch (x) { toast(x.message); b.disabled = false; }
 });
 async function doLogout() { try { await call('logout', {}); } catch {} S.me = null; S.unread = 0; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('로그아웃했어요'); }
+function gLinkHtml() { return S.google && !S.me?.sw ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><form class="sform" id="gUnlinkForm"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"><button class="btn ghost" type="submit">연결 해제</button></form>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요. 지금 비밀번호를 적고 구글 버튼을 눌러 주세요.</p><div class="sform"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"></div><div class="gbtn" data-gintent="link"></div>'}` : ''; }
+function openGLink() {   // 프로필 '구글 연결' 버튼: 연결 칸만 따로 띄움
+  sheet(`<h3>🔗 구글 계정 연결</h3>${gLinkHtml()}<div class="row"><button class="btn ghost" data-close>닫기</button></div>`);
+}
 function openSettings() {
-  sheet(`<h3>계정 설정</h3>
+  sheet(`<h3>계정 설정</h3>${S.me?.google ? '' : gLinkHtml()}
     <form class="sform" id="pwForm"><p class="lbl">비밀번호 바꾸기</p>
       <input name="old" type="password" placeholder="지금 비밀번호" required autocomplete="current-password">
       <input name="pw" type="password" placeholder="새 비밀번호 (6자 이상)" minlength="6" maxlength="64" required autocomplete="new-password">
       <button class="btn ghost" type="submit">비밀번호 바꾸기</button></form>
     <p class="lbl">💬 DM 받는 범위</p>
     <div class="segs fbk" id="dmPref">${[['0', '서로 팔로우한 친구만'], ['1', '나를 팔로우한 사람'], ['2', '누구나']].map(([v, t]) => `<label><input type="radio" name="dmp" value="${v}" ${String(S.me?.dmPref || 0) === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
-    ${S.google && !S.me?.sw ? `<p class="lbl">🔗 구글 계정</p>${S.me?.google ? '<p class="note">✅ 구글 계정이 연결돼 있어요. 비밀번호를 잊어도 구글로 로그인할 수 있어요.</p><form class="sform" id="gUnlinkForm"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"><button class="btn ghost" type="submit">연결 해제</button></form>' : '<p class="note">연결해 두면 비밀번호를 잊어도 구글로 로그인할 수 있어요. 지금 비밀번호를 적고 구글 버튼을 눌러 주세요.</p><div class="sform"><input type="password" id="gPw" placeholder="지금 비밀번호 (본인 확인)" maxlength="64" autocomplete="current-password"></div><div class="gbtn" data-gintent="link"></div>'}` : ''}
+    ${S.me?.google ? gLinkHtml() : ''}
     <p class="lbl">🏆 자랑 메시지</p>
     <label class="pdok"><input type="checkbox" id="bragAll"><span>DM으로 오는 기록 자랑 받기</span></label>
     <ul class="plist" id="bragList"></ul>
@@ -3240,7 +3244,7 @@ function mountGoogle() {
 new MutationObserver(mountGoogle).observe(document.body, { childList: true, subtree: true });
 async function onGoogle({ credential }) {
   try {
-    if (gIntent === 'link') { await call('google-link', { credential, pw: $('#gPw')?.value || '' }); S.me.google = true; toast('구글 계정을 연결했어요 🔗'); openSettings(); return; }
+    if (gIntent === 'link') { if (!$('#gPw')?.value) { $('#gPw')?.focus(); return toast('먼저 지금 비밀번호를 적고 구글 버튼을 눌러 주세요'); } await call('google-link', { credential, pw: $('#gPw')?.value || '' }); S.me.google = true; toast('구글 계정을 연결했어요 🔗'); openSettings(); return; }
     if (gIntent === 'withdraw') { await call('withdraw', { credential }); S.me = null; paintBadges(); closeSheet(); renderMe(); ctx.authed?.(null); toast('탈퇴했어요. 그동안 고마웠어요'); return; }
     if (gIntent === 'reset') return googleReset(credential, await call('google-reset', { credential }));
     const r = await call('google', { credential });
@@ -3250,7 +3254,7 @@ async function onGoogle({ credential }) {
 }
 function googleSignup(credential, name) {   // 구글로 처음 왔을 때: 아이디·닉네임·학년·반·동아리만 정하고 가입 (비밀번호 없음)
   const c = ctx.getClass?.() || null;
-  sheet(`<h3>🎉 구글로 가입하기</h3><p class="note">아이디와 닉네임만 정하면 끝! 다음부터는 구글 버튼으로 로그인해요.</p>
+  sheet(`<h3>🎉 구글로 가입하기</h3><p class="note">아이디와 닉네임만 정하면 끝! 다음부터는 구글 버튼으로 로그인해요.</p><p class="note">💡 이미 아이디·비밀번호로 만든 계정이 있다면 새로 가입하지 말고, 그 아이디로 로그인한 뒤 내 프로필의 <b>🔗 구글 연결</b>을 눌러 주세요.</p>
     <form class="sform" id="gForm">
       <label>아이디<input name="handle" required minlength="3" maxlength="16" pattern="[a-zA-Z0-9_.]{3,16}" autocapitalize="off" placeholder="영어 소문자·숫자 3~16자"><small class="hint">🔑 나중에 바꿀 수 없어요.</small></label>
       <label>이름 (닉네임)<input name="name" required maxlength="20" value="${esc(name || '')}"></label>
