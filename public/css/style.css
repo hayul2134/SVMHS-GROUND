@@ -6595,7 +6595,7 @@ html.hw .sk-h:first-of-type::after{content:" · 11/6까지는 할로윈 색으�
 .hl-btns .btn .sic{width:16px;height:16px}
 @media (prefers-reduced-motion:reduce){.hl-card{animation:none}}
 
-#tierBox{scroll-margin-top:84px}   /* 기록실 '티어 보기'로 왔을 때 위 머리줄에 가리지 않게 */
+#tierBox{scroll-margin-top:96px}   /* 기록실 '티어 보기'로 왔을 때 위 머리줄에 가리지 않게 */
 
 /* 기록실 1위 칸 다시(2026-10-30 하율 "1위가 좀 더 튀게, 아래 부분 안 잘리게"): 금빛 판 + '1위' 리본 + 큰 기록. 이름 줄·기록 줄을 나눠 긴 이름·큰 숫자도 줄이 깨지지 않게 */
 .hl-card{container-type:inline-size}

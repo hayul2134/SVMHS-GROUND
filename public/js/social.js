@@ -1777,7 +1777,8 @@ async function loadTier() {
   const m = d.me, t = m && tierOfK(m.tier);
   const byPts = d.mode === 'pts', lbOf = x => byPts || !d.v2 ? (byPts ? x.pl : x.lb) : x.pt ? `${x.lb} · ${x.pl}` : x.lb;   // 티어 2차: 20명+ = 상위 %와 점수 중 높은 쪽 → 둘 다 표시
   const lbSt = x => lbOf(x).split(' · ').map((t, i, a) => `<i class="${a.length > 1 && !i ? 'tl-rk' : 'tl-pt'}">${t}</i>`).join('<i class="tl-dot"> · </i>');   // 계단 라벨: '1등 · 340점+' → 두 줄로 나눌 수 있게   // 2026-10-26 핫픽스: 참가자 TIER_PCT명 미만이면 점수 구간
-  const ladder = TIERS.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
+  const TT = Array.isArray(d.tiers) && d.tiers.length ? d.tiers : TIERS;   // 티어 3차(tier-v3): 서버가 보낸 지금 점수 구간으로 계단 라벨(옛 TIERS 고정이면 255·210점…으로 틀리게 보임)
+  const ladder = TT.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
   // gear-tier 미리보기: 개발자는 티어 밖 → 1위 학생 점수 내역으로 보여 줌
   const pm = m || (d.g && isDev(S.me) ? d.top?.[0] : null);
   const per = pm ? gamesOn().map(([k, g]) => { const x = pm.games[k];
@@ -1797,7 +1798,7 @@ async function loadTier() {
   // 2026-10-25 하율 '티어 더 예쁘게' — 미리보기 깃발 tier-look(개발자 화면 먼저, 월요일 공개)
   if (ffOn('tier-look', isDev(S.me))) {
     const APEX = new Set(['master', 'grandmaster', 'challenger']);
-    const rev = [...TIERS].reverse();
+    const rev = [...TT].reverse();
     const cnt = d.cnt || {};
     const stairs = rev.map(x => `<li class="t-${x.k}${APEX.has(x.k) ? ' apex' : ''}${m && x.k === m.tier ? ' on' : ''}" data-tk="${x.k}" role="button" tabindex="0" aria-expanded="false" aria-label="${x.n} — 지금 ${cnt[x.k] || 0}명, 눌러서 보기">${m && x.k === m.tier ? '<i class="tl-me">나</i>' : ''}<span class="tl-em">${tierIc(x.k)}</span><span class="tl-bar"></span><span class="tl-lab"><b>${x.n}</b><small>${lbSt(x)}</small><span class="tl-cnt${cnt[x.k] ? '' : ' z'}">${cnt[x.k] || 0}명</span></span></li>`).join('');
     const k = t ? t.k : 'iron', rad = !t && radOn(S.me);   // 개발자는 순위에 안 나와 티어가 없음 → 레디언트
