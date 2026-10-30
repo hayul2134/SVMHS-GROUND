@@ -6347,7 +6347,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .gmst{display:flex;align-items:center;gap:8px;width:100%;margin:0;padding:5px 9px;border:2px solid var(--ink);border-radius:12px;background:var(--chip);color:var(--text);font:inherit;text-align:left;cursor:pointer}
 .gmst > span{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .gmst b{font:800 13px var(--num);white-space:nowrap}.gmst b em{font:900 11.5px var(--sans,inherit);font-style:normal;color:var(--sub)}
-.gmst .mem{width:34px;height:36px}
+.gmst .mem{width:46px;height:49px;margin:-6px -2px -6px -4px}
 .gmst.m4{background:#fff6d4}.gmst.m5{background:linear-gradient(120deg,#e8f6ff,#f1eaff,#ffeaf6,#fff8dc)}
 .mst-big{display:flex;align-items:center;gap:16px;margin:4px 0 6px;padding:12px 16px;border:var(--bd);border-radius:18px;background:var(--chip)}
 .mst-big .mem.big{width:68px;height:78px;filter:var(--stk)}
