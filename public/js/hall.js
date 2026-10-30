@@ -27,7 +27,7 @@ const head = () => `<p class="hl-lead"><b>역대 최고 기록만 모아 둔 곳
 function cardHtml(x) {
   const g = D.GAMES[x.g], [nm, md] = NAME[x.g] || [g.name, ''], e = D.esc;
   const [a, ...rest] = x.top;
-  const one = a ? `<a class="hl-one${a.isMe ? ' me' : ''}" href="#u/${e(a.handle)}" data-u="1">${D.av(a, 'lg')}<span class="hl-who"><small>1위 · ${dayN(a.at)}일째</small><b>${e(D.nameOf(a))}${D.devTag(a)}</b></span><em class="hl-v">${e(g.fmt(a.v))}</em></a>`
+  const one = a ? `<a class="hl-one${a.isMe ? ' me' : ''}" href="#u/${e(a.handle)}" data-u="1"><span class="hl-badge">${D.ic('trophy')}1위</span>${D.av(a, 'lg')}<span class="hl-who"><b>${e(D.nameOf(a))}${D.devTag(a)}</b><small>${dayN(a.at)}일째 1위 자리 지키는 중</small></span><em class="hl-v">${e(g.fmt(a.v))}</em></a>`
     : '<p class="hl-none">아직 기록이 없어요 — 첫 기록이 곧 1위!</p>';
   const more = rest.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="hl-rk">${i + 2}</span><a href="#u/${e(u.handle)}" data-u="1">${D.av(u)}<b>${e(D.nameOf(u))}</b></a><em>${e(g.fmt(u.v))}</em></li>`).join('');
   const my = x.me && D.isDev(D.me()) ? `<p class="hl-my">내 기록 <b>${e(g.fmt(x.me.v))}</b> · 개발자는 순위에서 빠져요</p>`

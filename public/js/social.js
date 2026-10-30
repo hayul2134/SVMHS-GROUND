@@ -1497,9 +1497,22 @@ function gtText(t) {
   const x = t.x; if (!x) return '티어엔 타임어택·일반 중 순위가 더 좋은 쪽이 들어가요';
   return `${t.dev ? '미리보기(1위 학생 기준) · 티어엔' : '내 티어엔'} 지금 ${gtMode(x.m)} ${x.r}위(${x.p}점)가 들어가 있어요${x.o ? ` · ${gtMode(x.m === 'n' ? 'r' : 'n')}은 ${x.o.r}위(${x.o.p}점)` : ''}`;
 }
+// 게임 칸 묶음(2026-10-30 하율 "어떤 기준으로 정렬된 건지, 바로바로 분리돼 보이게"): 게임 종류별로 나눠 제목을 붙임 — 묶음 안 순서는 이 목록 순서
+//   목록에 없는 새 게임은 마지막 묶음 뒤 '그 밖의 게임'으로. 열린 게임이 없는 묶음은 안 보임
+const G_GROUPS = [
+  ['puzzle', '퍼즐', '블록·숫자를 놓고 맞추는 게임', ['gear', 'blast', 'film', 'n2048', 'mine']],
+  ['action', '달리기·액션', '피하고 오르며 버티는 게임', ['home', 'stair', 'snake']],
+  ['timing', '순발력·타이밍', '눈과 손이 빠를수록 잘하는 게임', ['reaction', 'cut', 'num25']],
+];
+const gGroups = () => {
+  const on = gamesOn(), used = new Set(G_GROUPS.flatMap(x => x[3]));
+  const out = G_GROUPS.map(([k, n, d, ks]) => [k, n, d, ks.map(x => on.find(([y]) => y === x)).filter(Boolean)]);
+  const rest = on.filter(([k]) => !used.has(k)); if (rest.length) out.push(['etc', '그 밖의 게임', '', rest]);
+  return out.filter(x => x[3].length);
+};
 // 게임 화면 (진짜·뼈대 공용)
 function gameHtml(info) {
-  return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}${S.me ? achBar() + mstBar() : ''}<div class="ggrid">${gamesOn().map(([k, g], i) => {
+  return `${rkBand()}${S.me ? `<section class="card tier-card" id="tierBox">${ghostOr(() => `<div class="tr-head"><div class="tr-me">${tierIc('gold')}<div><small>라운드 티어</small><b>골드</b><span>상위 00% · 000점</span></div></div></div><ol class="tr-stairs">${TIERS.map(x => `<li class="t-${x.k}">${tierIc(x.k)}<b>${x.n}</b><small>000점+</small></li>`).join('')}</ol>`, 1)}</section>` : ''}${S.me ? achBar() + mstBar() : ''}<div class="ggrps">${gGroups().map(([gk, gn, gs, list]) => `<section class="ggrp gg-${gk}"><h3 class="gg-h"><b>${gn}</b><small>${gs}</small><i>${list.length}개</i></h3><div class="ggrid">${list.map(([k, g], i) => {
     const x = info?.[k];
     // 2026-10-28 하율: 서비스 게임 칸처럼 한 줄 5개로 · 한눈에 — 설명은 이름에 마우스를 올리면(title), 기록·순위·1등을 짧게
     return `<article class="card gcard g-${k}"${g.ff ? ` data-ff="${g.ff}"` : ""}>${g.ff ? `<b class="beta new" data-nf="${g.ff}">NEW</b>` : ""}${g.beta ? '<b class="beta">Beta</b>' : ''}
@@ -1508,7 +1521,7 @@ function gameHtml(info) {
         <p class="gtop">${x.top ? `<small>${ic('trophy')}1등</small><a href="#u/${esc(x.top.handle)}">${av(x.top, 'xs')}<span>${esc(x.top.name)}</span></a><b>${esc(g.fmt(x.top.value))}</b>` : `<small>${ic('trophy')}1등</small><i>비어 있어요!</i>`}</p>` : `<p class="gdesc">${g.desc}</p>`}
       ${g.casual ? '' : mstLine(k)}<div class="gbtns"><button class="btn big" data-play="${k}">${ic('play')}플레이</button><button class="btn ghost gbr" data-rank="${k}" aria-label="${esc(g.name)} 순위" title="순위">${ic('trophy')}<span>순위</span></button>${!g.casual && ACH_GAMES.includes(k) ? `<button class="btn ghost gbr gach" data-ach="${k}" data-ff="${ACH_FF}" aria-label="${esc(g.name)} 업적" title="업적">${medal(3, true)}<span>업적</span></button>` : ''}</div>
     </article>`;
-  }).join('')}</div>
+  }).join('')}</div></section>`).join('')}</div>
   ${S.me ? '' : '<p class="note center">로그인하면 기록이 랭킹에 올라가고 반 대항전에 참여해요!</p>'}`;
 }
 /* ===== 게임 업적 (2026-10-28 하율: 스팀처럼 — public/js/achv.js, 미리보기 깃발 achv) ===== */

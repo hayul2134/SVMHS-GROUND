@@ -6596,3 +6596,32 @@ html.hw .sk-h:first-of-type::after{content:" · 11/6까지는 할로윈 색으�
 @media (prefers-reduced-motion:reduce){.hl-card{animation:none}}
 
 #tierBox{scroll-margin-top:84px}   /* 기록실 '티어 보기'로 왔을 때 위 머리줄에 가리지 않게 */
+
+/* 기록실 1위 칸 다시(2026-10-30 하율 "1위가 좀 더 튀게, 아래 부분 안 잘리게"): 금빛 판 + '1위' 리본 + 큰 기록. 이름 줄·기록 줄을 나눠 긴 이름·큰 숫자도 줄이 깨지지 않게 */
+.hl-card{container-type:inline-size}
+.hl-one{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"av who" "av v";align-items:center;column-gap:12px;row-gap:1px;margin-top:8px;padding:16px 14px 11px;border:3px solid var(--ink);border-radius:16px;background:linear-gradient(135deg,#fff6c9 0%,#ffe07a 55%,#ffc845 100%);box-shadow:3px 4px 0 var(--ink),0 0 0 5px rgba(255,196,60,.28);overflow:visible;isolation:isolate}
+.hl-one::after{content:"";position:absolute;inset:0;border-radius:13px;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.65) 48%,transparent 60%) -150% 0/250% 100% no-repeat;animation:hlShine 3.2s ease-in-out infinite;pointer-events:none;z-index:-1}
+@keyframes hlShine{0%,55%{background-position:-150% 0}100%{background-position:150% 0}}
+.hl-badge{position:absolute;top:-13px;left:12px;display:inline-flex;align-items:center;gap:3px;padding:2px 10px 3px 8px;border:2.5px solid var(--ink);border-radius:999px;background:linear-gradient(180deg,#fff3b0,#ffc83d);box-shadow:2px 2px 0 var(--ink);color:#7a3d00;font:400 15px/1.1 var(--disp);white-space:nowrap}
+.hl-badge .sic{width:15px;height:15px}
+.hl-one .av{grid-area:av;width:54px;height:54px;box-shadow:0 0 0 3px #fff,0 0 0 5.5px #e9a400}
+.hl-who{grid-area:who;min-width:0;flex:none}
+.hl-who b{font-size:16px}
+.hl-who small{order:2;font-size:11px;opacity:.75}
+.hl-v{grid-area:v;margin:0;justify-self:start;font:400 clamp(20px,8.6cqi,30px)/1.05 var(--disp);color:#4a2a00;letter-spacing:-.01em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+:root[data-theme="dark"] .hl-one{background:linear-gradient(135deg,#5a4614,#3d300c);box-shadow:3px 4px 0 var(--ink),0 0 0 5px rgba(255,196,60,.18)}
+:root[data-theme="dark"] .hl-v{color:#ffe08a}
+.hl-more{margin-top:2px}
+#v-hall .hl-grid{margin-bottom:96px}   /* 오른쪽 아래 '메시지' 버튼에 마지막 줄 버튼이 가리지 않게 */
+@media (prefers-reduced-motion:reduce){.hl-one::after{animation:none;display:none}}
+
+/* 게임 칸 묶음(2026-10-30 하율 "어떤 기준으로 정렬된 건지, 바로바로 분리돼 보이게"): 퍼즐 / 달리기·액션 / 순발력·타이밍 — 색 알약 제목 + 점선 */
+.ggrps{display:flex;flex-direction:column;gap:28px;margin-top:22px}
+.ggrp{--gc:var(--sky)}.gg-action{--gc:var(--lime)}.gg-timing{--gc:#ffc4dd}.gg-etc{--gc:var(--chip)}
+.gg-h{display:flex;align-items:center;gap:10px;margin:0 0 20px;font:inherit}
+.gg-h b{flex:none;padding:5px 15px 6px;border:2.5px solid var(--ink);border-radius:999px;background:var(--gc);box-shadow:2px 3px 0 var(--ink);font:400 19px/1 var(--disp);color:#173048;white-space:nowrap}
+.gg-h small{min-width:0;font-size:13px;font-weight:800;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gg-h::after{content:"";order:2;flex:1;min-width:16px;border-top:2.5px dashed var(--line)}
+.gg-h i{order:3;flex:none;font-style:normal;font-size:12.5px;font-weight:900;color:var(--sub)}
+.ggrp .ggrid{margin-top:0;grid-template-columns:repeat(auto-fill,minmax(max(138px,calc((100% - 48px)/5)),1fr))}
+@media (max-width:560px){.gg-h small{display:none}}
