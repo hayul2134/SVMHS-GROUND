@@ -6594,3 +6594,5 @@ html.hw .sk-h:first-of-type::after{content:" · 11/6까지는 할로윈 색으�
 .hl-btns .btn{flex:1;justify-content:center;padding:8px 10px;font-size:14px}
 .hl-btns .btn .sic{width:16px;height:16px}
 @media (prefers-reduced-motion:reduce){.hl-card{animation:none}}
+
+#tierBox{scroll-margin-top:84px}   /* 기록실 '티어 보기'로 왔을 때 위 머리줄에 가리지 않게 */

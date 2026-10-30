@@ -339,7 +339,10 @@ $('#svcFab').onclick = () => $('#appsT').scrollIntoView({ behavior: 'smooth', bl
 // 바로가기 아이콘 → 위쪽 버튼과 같은 동작
 const ACT = { share: '#btnShare', theme: '#btnTheme', info: '#btnInfo' };
 document.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) $(ACT[a.dataset.act]).click(); });
-document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) { e.preventDefault(); go(a.dataset.go); } });
+// data-to="요소 id"(2026-10-30 하율 기록실 '티어 보기'): 화면을 옮긴 뒤 그 요소가 그려지면 그 자리로 스크롤
+document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (!a) return; e.preventDefault(); go(a.dataset.go);
+  const to = a.dataset.to; if (!to) return; let n = 0;
+  const t = setInterval(() => { const el = document.getElementById(to); if ((el && !el.hidden && el.offsetParent) || ++n > 40) { clearInterval(t); el?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 100); });
 
 /* ===== 급식 ===== */
 // 메뉴 이름으로 이모지 고르기 (위에서부터 먼저 맞는 것)
