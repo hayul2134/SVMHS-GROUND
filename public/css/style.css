@@ -6445,3 +6445,8 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .mst-pv small{flex-basis:100%;font-weight:900;font-size:11.5px;color:#6a4bd8}
 .mst-pv button{padding:4px 10px;border:2px solid var(--ink);border-radius:999px;background:var(--card);color:var(--text);font:800 12.5px var(--num);cursor:pointer}
 .mst-pv button.on{background:#6a4bd8;color:#fff}
+/* 공동 1등 카드(2026-10-30 하율 "누가 했는지, 뭘로 90만 점 찍은 건지 헷갈려") — 기록을 이름 위 한 줄로, 이름들은 그 아래 */
+.tcc-list li.tcc.tie .tcc-rec{grid-column:1/-1;grid-row:2;justify-self:start;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.tcc-list li.tcc.tie .tcc-rec small{font-family:inherit;font-size:11px;font-weight:800;color:#7a5a12}
+.tcc-list li.tcc.tie .tcc-u{grid-column:1/-1;grid-row:3}
+[data-theme="dark"] .tcc-list li.tcc.tie .tcc-rec small{color:#e8cf8a}
