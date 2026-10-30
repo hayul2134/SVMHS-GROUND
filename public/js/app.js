@@ -2812,9 +2812,9 @@ fitSoon();
 })();
 
 // 서비스 아이콘 등장 (2026-10-28 하율: "게임 4개는 왜 가만히 있어? 기자재 정리만 애니메이션"): 카테고리 칸이 화면에 들어오는 순간
-// 그 칸의 아이콘이 왼쪽부터 차례로 톡톡 나타남. html.svrv일 때만 숨겨 두므로 스크립트가 안 돌아도 아이콘은 보임.
+// 그 칸의 아이콘이 왼쪽부터 차례로 톡톡 나타남. 2026-10-30 하율 "위에서부터 차례대로": 보이는 아이콘 순서(왼→오, 위→아래)대로 0.05초씩 늦춤(숨은 깃발 아이콘은 건너뜀, 6번째부터 같이 나오던 것 수정). html.svrv일 때만 숨겨 두므로 스크립트가 안 돌아도 아이콘은 보임.
 if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
   document.documentElement.classList.add('svrv');
-  const sio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); sio.unobserve(e.target); } }), { threshold: .15 });
+  const sio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { [...e.target.children].filter(a => a.offsetParent).forEach((a, i) => a.style.animationDelay = (i * .05).toFixed(2) + 's'); e.target.classList.add('in'); sio.unobserve(e.target); } }), { threshold: .15 });
   document.querySelectorAll('.apps .catgrid').forEach(g => sio.observe(g));
 }
