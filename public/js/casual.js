@@ -23,7 +23,9 @@ const fmtS = ms => (ms / 1000).toFixed(1) + '초';
 function roomOf(root, extra = 70) {
   const top = (root.closest('.parea') || root).getBoundingClientRect().top, hd = root.querySelector('.cz-hd'), ft = root.querySelector('.cz-ft');
   const pa = root.closest('.parea'), pb = pa ? parseFloat(getComputedStyle(pa).paddingBottom) || 0 : 0;
-  if (hd && ft) return { w: root.clientWidth || 320, h: Math.max(200, innerHeight - top - pb - 2 * Math.max(hd.offsetHeight, ft.offsetHeight) - 44) };   // 판이 가운데라 위·아래 중 큰 쪽을 두 번 뺌
+  // 판이 가운데라 위·아래 중 큰 쪽을 두 번 뺌(h). h2 = 위·아래를 한 번씩만 뺀 높이 — 낮은 화면에서 가운데를 고집하면 판이 넘쳐 아래 버튼이 화면 밖으로 나가므로
+  //   게임이 h로 모자랄 때 h2까지 씀(판이 살짝 아래로 치우치지만 스크롤 없이 한 화면, 2026-10-30 하율 "지뢰찾기 스크롤 안 하고 버튼 뜨게")
+  if (hd && ft) { const H0 = innerHeight - top - pb - 44; return { w: root.clientWidth || 320, h: Math.max(200, H0 - 2 * Math.max(hd.offsetHeight, ft.offsetHeight)), h2: Math.max(160, H0 - hd.offsetHeight - ft.offsetHeight) }; }
   const bar = root.querySelector('.cz-bar')?.offsetHeight || 0;
   return { w: root.clientWidth || 320, h: Math.max(200, innerHeight - top - bar - extra) };
 }
@@ -90,9 +92,13 @@ function mine(el, rk) {
   const bestKey = () => 'cz_mine_' + lv;
   const paintBest = () => { const b = store.get(bestKey(), 0); $b.textContent = b ? '최고 ' + fmtS(b) : '최고 -'; };
   function fit() {
-    const r = roomOf(el, 140);
-    const cs = Math.max(18, Math.min(48, Math.floor((r.w - 12) / W), Math.floor((r.h - 12) / H)));
+    const r = roomOf(el, 140), fw = Math.floor((r.w - 12) / W), fh = Math.floor((r.h - 12) / H), fh2 = Math.floor(((r.h2 ?? r.h) - 12) / H);
+    // 가운데(fh)로 18px 칸이 나오면 그대로, 안 나오면 아래로 치우쳐도(fh2) 한 화면에 — 칸은 최소 13px(고급 30칸도 낮은 노트북에서 스크롤 없이)
+    const cs = Math.max(13, Math.min(48, fw, fh >= 18 ? fh : Math.min(18, fh2)));
     bd.style.setProperty('--cs', cs + 'px'); bd.style.setProperty('--cols', W);
+    // 실제로 그려 본 뒤 게임 칸(.parea)이 화면 아래로 넘치면 넘친 만큼 칸을 줄임(위에 붙는 숙련도 줄 등 계산에 안 든 높이까지 맞춤)
+    const pa = el.closest('.parea');
+    if (pa) { const over = pa.scrollHeight - pa.clientHeight || Math.ceil(pa.getBoundingClientRect().bottom - innerHeight); if (over > 0 && cs > 13) bd.style.setProperty('--cs', Math.max(13, cs - Math.ceil(over / H)) + 'px'); }
   }
   function setup() {
     rkm = rkOn('mine', rk); rec = []; const my = ++runN; say(el, '');
