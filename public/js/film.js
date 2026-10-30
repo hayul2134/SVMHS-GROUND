@@ -72,7 +72,7 @@ export function createFilm(root, opt = {}) {
   function fit() {
     if (dead || !cv.isConnected) return;
     dpr = Math.min(devicePixelRatio || 1, 2);
-    const w = root.clientWidth - 34, top = board.getBoundingClientRect().top, h = Math.max(260, innerHeight - Math.max(top, 0) - 24);
+    const w = root.clientWidth - 34, top = board.getBoundingClientRect().top, h = Math.max(260, innerHeight - Math.max(top, 0) - 48);   // 판 테두리·여백(약 25px)까지 화면 안에(2026-10-30)
     if (state === 'ready' || state === 'over') { const c = innerHeight > innerWidth && w < 640 && h > w * 1.15 ? 8 : 15; if (c !== cols) { cols = c; rows = CELLS / c; } }   // 세로판(8×15)은 세로로 든 폰·패드만 — 가로 화면은 항상 가로판 15×8(2026-10-29 하율 "가로로 보게")
     cell = Math.max(20, Math.min(72, Math.floor(w / cols), Math.floor(h / rows)));
     cv.style.width = cell * cols + 'px'; cv.style.height = cell * rows + 'px';
@@ -228,6 +228,7 @@ export function createFilm(root, opt = {}) {
   addEventListener('blur', blur); document.addEventListener('visibilitychange', vis);
   const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe(root);
   grid = makeGrid(Math.floor(Math.random() * 4294967296)); ready(); fit();
+  if (opt.quick) start();   // 다시 시작(버튼·R)은 안내 화면 없이 바로 판 시작(2026-10-30 하율 "모든 게임")
   return {
     start, pause,
     msg(html) { const m = $('msg'); if (m) m.innerHTML = html; },

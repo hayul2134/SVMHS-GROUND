@@ -20,7 +20,9 @@ const padSide = () => document.documentElement.classList.contains('padin') && PA
 const fmtS = ms => (ms / 1000).toFixed(1) + '초';
 // 화면에 남은 높이(위 제목 줄·아래 다시 시작 줄을 뺀 것) — 스크롤 없이 한 화면(2026-10-28 하율 규칙)
 function roomOf(root, extra = 70) {
-  const top = (root.closest('.parea') || root).getBoundingClientRect().top, bar = root.querySelector('.cz-bar')?.offsetHeight || 0;
+  const top = (root.closest('.parea') || root).getBoundingClientRect().top, hd = root.querySelector('.cz-hd'), ft = root.querySelector('.cz-ft');
+  if (hd && ft) return { w: root.clientWidth || 320, h: Math.max(200, innerHeight - top - 2 * Math.max(hd.offsetHeight, ft.offsetHeight) - 44) };   // 판이 가운데라 위·아래 중 큰 쪽을 두 번 뺌
+  const bar = root.querySelector('.cz-bar')?.offsetHeight || 0;
   return { w: root.clientWidth || 320, h: Math.max(200, innerHeight - top - bar - extra) };
 }
 // 스와이프 → 방향(0~3). 판 위에서 손가락을 떼지 않고 계속 밀어도 이어서 받음(continuous)
@@ -41,9 +43,18 @@ function swipe(el, onDir, continuous = false) {
 }
 
 // rk = { seed(game) → 시작 티켓(없으면 null), done(game, 값, rounds) → 결과 문구 } — 로그인했을 때만(없으면 자유 모드만)
-export function mount(k, el, rk = null) {
+export function mount(k, el, rk = null, quick = false) {   // quick: 다시 시작으로 연 판 = 안내 화면 없이 바로(2026-10-30 하율)
   el.classList.add('cz-' + k);
-  return k === 'mine' ? mine(el, rk) : k === 'snake' ? snake(el, rk) : n2048(el, rk);
+  const ctl = k === 'mine' ? mine(el, rk) : k === 'snake' ? snake(el, rk, quick) : n2048(el, rk);
+  center(el); return ctl;
+}
+// 판을 화면 정가운데에(2026-10-30 하율 "플레이 화면이 정 가운데"): 판(.cz-wrap) 위 = .cz-hd, 아래 = .cz-ft로 묶고 CSS 격자 1fr·auto·1fr로 위아래 같은 몫 → 판 중심 = 칸 중심
+function center(el) {
+  const wrap = el.querySelector(':scope > .cz-wrap'); if (!wrap || el.querySelector(':scope > .cz-hd')) return;
+  const hd = document.createElement('div'), ft = document.createElement('div'); hd.className = 'cz-hd'; ft.className = 'cz-ft';
+  const kids = [...el.children], i = kids.indexOf(wrap);
+  hd.append(...kids.slice(0, i)); ft.append(...kids.slice(i + 1)); el.prepend(hd); wrap.after(ft);
+  el.dispatchEvent(new Event('cz-fit'));
 }
 // 랭크전 / 자유 전환(랭크전 = 모두 같은 규칙 · 서버가 다시 둬 보고 순위·티어에 · 자유 = 지금처럼 이 기기 기록만)
 // 2026-10-30 하율 "일반 모드와 랭크 모드는 플레이할 때 제대로 보고 고를 수 있게": 맨 위 한 줄 크게 + 지금 모드가 무엇에 반영되는지 한 줄 (모든 게임 같은 모양 .md-pick)
@@ -81,14 +92,15 @@ function mine(el, rk) {
   }
   function setup() {
     rkm = rkOn('mine', rk); rec = []; const my = ++runN; say(el, '');
-    el.querySelector('.cz-lv').hidden = rkm;
+    el.querySelector('.cz-lv').classList.toggle('lock', rkm);   // 랭크는 중급 고정 — 숨기지 않고 잠근 채 보여 줌(2026-10-30 하율 '난이도 설정 못 하나?' → 일반 모드에서 고름)
     if (rkm) { rseed = undefined; rk.seed('mine').then(t => { if (my === runN) { rseed = t ? Z.seedOf(t) : null; if (rseed == null) say(el, '이번 판은 서버에 등록되지 않아 기록이 저장되지 않아요'); } }); }
     let [, w, h, m] = MLV[rkm ? 'm' : lv];   // 랭크전은 중급 고정
     if (!rkm && lv === 'h' && el.clientWidth < 640) [w, h] = [h, w];   // 고급은 좁은 화면에서 세로로(16×30)
     W = w; H = h; M = m; cells = Array.from({ length: W * H }, () => ({ m: 0, n: 0, o: 0, f: 0 }));
     opened = flags = 0; started = over = false; t0 = tEnd = 0; ov.hidden = true;
     bd.innerHTML = cells.map((_, i) => `<i data-i="${i}" role="gridcell"></i>`).join(''); els = [...bd.children];
-    el.querySelectorAll('[data-lv]').forEach(b => b.classList.toggle('on', b.dataset.lv === lv));
+    el.querySelectorAll('[data-lv]').forEach(b => { b.classList.toggle('on', b.dataset.lv === (rkm ? 'm' : lv)); b.disabled = rkm; });
+    el.querySelector('.cz-lv').title = rkm ? '랭크는 중급 고정 · 일반 모드에서 난이도를 고를 수 있어요' : '';
     fit(); paintCnt(); paintT(); paintBest();
     if (rkm) $b.textContent = '랭크 · 중급';
   }
@@ -175,7 +187,7 @@ function mine(el, rk) {
   bd.addEventListener('pointerleave', () => { clearTimeout(lp); bd.querySelectorAll('.pr').forEach(x => x.classList.remove('pr')); });
   $f.onclick = () => { fmode = !fmode; $f.classList.toggle('on', fmode); $f.setAttribute('aria-pressed', fmode); };
   el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { lv = b.dataset.lv; store.set('cz_mine_lv', lv); clearInterval(tick); setup(); });
-  const onRs = () => fit(); addEventListener('resize', onRs);
+  const onRs = () => fit(); addEventListener('resize', onRs); el.addEventListener('cz-fit', onRs);
   bindMode(el, 'mine', rk, () => { clearInterval(tick); setup(); });
   setup();
   return { destroy() { runN++; clearInterval(tick); clearTimeout(lp); removeEventListener('resize', onRs); }, restart() { clearInterval(tick); setup(); } };
@@ -183,13 +195,13 @@ function mine(el, rk) {
 
 /* ===================== 뱀 게임 ===================== */
 // 17×15 판, 방향키·WASD·스와이프·화면 버튼. 별(사이트 로고 별)을 먹으면 한 칸 길어지고 조금씩 빨라짐. 창을 벗어나면 멈춤
-function snake(el, rk) {
+function snake(el, rk, quick = false) {
   const W = 17, H = 15;
   el.innerHTML = `${modeBar(rk, 'snake')}<div class="cz-bar"><span class="cz-stat"><b id="snS">0</b><small>점수</small></span><span class="cz-stat"><b id="snB">${store.get('cz_snake', 0)}</b><small>최고</small></span></div>
     <div class="cz-wrap"><div class="cz-in"><canvas class="cz-cv" id="snCv" aria-label="뱀 게임 판"></canvas><div class="cz-ov" id="snOv"></div></div></div>
     <div class="cz-pad" aria-label="방향 버튼"><button type="button" data-d="0" aria-label="위">▲</button><button type="button" data-d="3" aria-label="왼쪽">◀</button><button type="button" data-d="2" aria-label="아래">▼</button><button type="button" data-d="1" aria-label="오른쪽">▶</button></div>${RKMSG}`;
   const cv = el.querySelector('#snCv'), cx = cv.getContext('2d'), ov = el.querySelector('#snOv'), $s = el.querySelector('#snS'), $b = el.querySelector('#snB');
-  let cs = 24, body, prev, dir, q, food, score, step, acc, last, raf = 0, state, dieT = 0, rkm = false, rseed = null, rand = Math.random, tk = 0, rec = [], runN = 0;   // state: wait(랭크전 판 준비) | ready | run | pause | dead
+  let cs = 24, body, prev, dir, q, food, score, step, acc, last, raf = 0, state, dieT = 0, crash = null, rkm = false, rseed = null, rand = Math.random, tk = 0, rec = [], runN = 0;   // state: wait(랭크전 판 준비) | ready | run | pause | dead
   function fit() {
     const side = padSide(), r = roomOf(el, matchMedia('(pointer:fine)').matches || side ? 110 : 220);   // 가로 패드(깃발 pad-ctl): 방향 버튼이 판 오른쪽이라 아래 자리를 비우지 않음
     cs = Math.max(14, Math.min(34, Math.floor(r.w / W), side ? Math.floor((innerWidth - 2 * 250) / W) : 99, Math.floor(r.h / H)));
@@ -198,9 +210,9 @@ function snake(el, rk) {
   }
   function reset() {
     const y = (H / 2) | 0; body = [[5, y], [4, y], [3, y]]; prev = body.map(p => [...p]);
-    dir = 1; q = []; score = 0; step = 135; acc = 0; $s.textContent = 0; tk = 0; rec = []; food = null; say(el, '');
+    dir = 1; q = []; score = 0; step = 135; crash = null; acc = 0; $s.textContent = 0; tk = 0; rec = []; food = null; say(el, '');
     rkm = rkOn('snake', rk); const my = ++runN;
-    const ready = () => { place(); state = 'ready'; showOv(`<b>뱀 게임${rkm ? ' · 랭크' : ''}</b><span>방향키 · 스와이프 · ${padSide() ? '오른쪽' : '아래'} 버튼으로 시작</span>`); draw(1); };
+    const ready = () => { place(); state = 'ready'; if (quick) { quick = false; draw(1); start(); return; } showOv(`<b>뱀 게임${rkm ? ' · 랭크' : ''}</b><span>방향키 · 스와이프 · ${padSide() ? '오른쪽' : '아래'} 버튼으로 시작</span>`); draw(1); };
     if (!rkm) { rand = Math.random; rseed = null; ready(); return; }
     state = 'wait'; showOv('<b>뱀 게임 · 랭크</b><span>판 준비 중…</span>'); draw(1);
     rk.seed('snake').then(t => { if (my !== runN) return; rseed = t ? Z.seedOf(t) : null; rand = rseed != null ? Z.rng(rseed) : Math.random; if (rseed == null) say(el, '이번 판은 서버에 등록되지 않아 기록이 저장되지 않아요'); ready(); });
@@ -223,18 +235,23 @@ function snake(el, rk) {
     const [hx, hy] = body[0], nx = hx + DV[dir][0], ny = hy + DV[dir][1];
     const eat = food && nx === food[0] && ny === food[1];
     const hit = nx < 0 || ny < 0 || nx >= W || ny >= H || body.some(([x, y], i) => x === nx && y === ny && (eat || i < body.length - 1));
-    if (hit) { die(); return; }
+    if (hit) { die(false, true); return; }
     prev = body.map(p => [...p]); body.unshift([nx, ny]);
     if (eat) { score++; $s.textContent = score; step = Math.max(78, step - 2.5); place(); navigator.vibrate?.(8); if (!food) { die(true); return; } } else body.pop();
   }
-  function die(full = false) {
+  function die(full = false, bonk = false) {
     state = 'dead'; dieT = performance.now(); prev = body.map(p => [...p]);
+    crash = bonk ? { at: dieT, d: dir } : null;   // 부딪힘(2026-10-30 하율): 머리가 벽에 쿵 → 살짝 튕겨 나오고 눈이 빙글빙글 + 머리 위 별 띠가 빙빙
     const b = store.get('cz_snake', 0), nb = !rkm && score > b; if (nb) { store.set('cz_snake', score); $b.textContent = score; }
     if (!full) navigator.vibrate?.(50);
     if (rkm && rseed != null) { if (score > 0) { say(el, '기록 저장 중…'); rk.done('snake', Z.SNAKE_MAX - score, [tk, ...rec]).then(h => say(el, h)); } else say(el, '별을 하나 이상 먹어야 기록돼요'); }
     draw(1);
-    showOv(`<b>${full ? '판을 가득 채웠어요!' : '끝!'}</b><span>별 ${score}개${nb ? ' · 최고 기록!' : ''}</span><small>방향키·스와이프로 다시 시작</small>`);
+    const ovH = `<b>${full ? '판을 가득 채웠어요!' : '끝!'}</b><span>별 ${score}개${nb ? ' · 최고 기록!' : ''}</span><small>방향키·스와이프로 다시 시작</small>`;
+    if (!crash) { showOv(ovH); return; }
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(dizzy);
+    const my = runN; setTimeout(() => { if (my === runN && state === 'dead') showOv(ovH); }, 900);   // 쓰러지는 모습을 먼저 보여 주고 결과 창
   }
+  function dizzy() { if (state !== 'dead' || !crash) return; draw(1); raf = requestAnimationFrame(dizzy); }
   function loop(t) {
     if (state !== 'run') return;
     acc += Math.min(100, t - last); last = t;
@@ -242,16 +259,25 @@ function snake(el, rk) {
     draw(state === 'run' ? acc / step : 1);
     if (state === 'run') raf = requestAnimationFrame(loop);
   }
-  function star(x, y, r) {
+  function star(x, y, r, lw = cs * .08) {
     cx.beginPath();
     for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .46 : r; cx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
-    cx.closePath(); cx.fillStyle = '#ffd24a'; cx.fill(); cx.lineWidth = Math.max(1.5, cs * .08); cx.strokeStyle = '#173048'; cx.lineJoin = 'round'; cx.stroke();
+    cx.closePath(); cx.fillStyle = '#ffd24a'; cx.fill(); cx.lineWidth = Math.max(1, lw); cx.strokeStyle = '#173048'; cx.lineJoin = 'round'; cx.stroke();
   }
   function draw(t) {
     if (!body) return;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { cx.fillStyle = (x + y) % 2 ? '#d7ecfb' : '#e6f4fd'; cx.fillRect(x * cs, y * cs, cs, cs); }
     if (food) { const p = .9 + .1 * Math.sin(performance.now() / 180); star((food[0] + .5) * cs, (food[1] + .5) * cs, cs * .46 * p); }
-    const pts = body.map((p, i) => { const a = prev[i] || prev[prev.length - 1]; return [(a[0] + (p[0] - a[0]) * t + .5) * cs, (a[1] + (p[1] - a[1]) * t + .5) * cs]; });
+    // 몸 모양(2026-10-30 하율 "움직임 더 자연스럽게"): 예전엔 마디마다 따로 보간해 꺾이는 곳이 대각선으로 깎였음 →
+    //   머리·꼬리 끝만 미끄러지게 움직이고 가운데 마디는 칸 중심 그대로(꺾인 모양 유지) + 머리는 살짝 감속 곡선
+    const cc = p => [(p[0] + .5) * cs, (p[1] + .5) * cs], lerp = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+    const ease = state === 'run' ? t * (2 - t) * .35 + t * .65 : t;
+    const pts = [lerp(cc(prev[0]), cc(body[0]), ease), ...body.slice(1).map(cc), lerp(cc(prev[prev.length - 1]), cc(body[body.length - 1]), t)];
+    const now = performance.now(), ce = crash ? now - crash.at : 0;
+    if (crash) {   // 쿵 → 튕겨 나옴(감쇠 진동, 결국 0.12칸 뒤로)
+      const off = ce < 110 ? .32 * ce / 110 : -.12 + .44 * Math.exp(-(ce - 110) / 140) * Math.cos((ce - 110) / 70), [ddx, ddy] = DV[crash.d];
+      pts[0] = [pts[0][0] + ddx * off * cs, pts[0][1] + ddy * off * cs];
+    }
     const path = () => { cx.beginPath(); pts.forEach(([x, y], i) => i ? cx.lineTo(x, y) : cx.moveTo(x, y)); };
     cx.lineCap = cx.lineJoin = 'round';
     path(); cx.strokeStyle = '#173048'; cx.lineWidth = cs * .8; cx.stroke();
@@ -260,8 +286,22 @@ function snake(el, rk) {
     const [hx, hy] = pts[0], [ex, ey] = DV[dir], sx = -ey, sy = ex;   // 눈: 보는 방향 양옆
     for (const s of [1, -1]) {
       const x = hx + ex * cs * .12 + sx * s * cs * .17, y = hy + ey * cs * .12 + sy * s * cs * .17;
-      cx.beginPath(); cx.arc(x, y, cs * .13, 0, 7); cx.fillStyle = '#fff'; cx.fill();
+      cx.beginPath(); cx.arc(x, y, cs * (crash ? .16 : .13), 0, 7); cx.fillStyle = '#fff'; cx.fill();
+      if (crash) {   // 빙글빙글 눈: 돌아가는 소용돌이
+        const rot = ce / 110 * s; cx.beginPath();
+        for (let a = 0; a <= Math.PI * 3.2; a += .25) { const r = cs * .135 * a / (Math.PI * 3.2); cx.lineTo(x + Math.cos(a + rot) * r, y + Math.sin(a + rot) * r); }
+        cx.strokeStyle = '#173048'; cx.lineWidth = Math.max(1, cs * .035); cx.stroke();
+        continue;
+      }
       cx.beginPath(); cx.arc(x + ex * cs * .04, y + ey * cs * .04, cs * (state === 'dead' ? .03 : .065), 0, 7); cx.fillStyle = '#173048'; cx.fill();
+    }
+    if (crash) {   // 머리 위 별 띠가 빙빙(쓰러진 느낌) — 맨 윗줄이면 판 안에 보이게 아래로 조금
+      const ry0 = Math.max(hy - cs * .72, cs * .3), rx = cs * .6, ry = cs * .2, sp = ce / 240;
+      cx.beginPath(); cx.ellipse(hx, ry0, rx, ry, 0, 0, 7); cx.strokeStyle = 'rgba(23,48,72,.35)'; cx.lineWidth = Math.max(1, cs * .04); cx.stroke();
+      [0, 1, 2].map(k => sp + k * Math.PI * 2 / 3).sort((a, b) => Math.sin(a) - Math.sin(b)).forEach(a => {
+        const z = (Math.sin(a) + 1) / 2; cx.globalAlpha = .55 + .45 * z;
+        star(hx + Math.cos(a) * rx, ry0 + Math.sin(a) * ry, cs * (.17 + .09 * z), cs * .045); cx.globalAlpha = 1;
+      });
     }
   }
   const onKey = e => {
@@ -274,7 +314,7 @@ function snake(el, rk) {
   const unSw = swipe(el.querySelector('.cz-wrap'), turn, true);
   el.querySelector('.cz-wrap').style.touchAction = 'none';
   el.querySelectorAll('[data-d]').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); turn(+b.dataset.d); }));
-  const onRs = () => fit(); addEventListener('resize', onRs);
+  const onRs = () => fit(); addEventListener('resize', onRs); el.addEventListener('cz-fit', onRs);
   bindMode(el, 'snake', rk, () => { cancelAnimationFrame(raf); reset(); });
   reset(); fit();
   return { restart() { cancelAnimationFrame(raf); reset(); }, destroy() { runN++; state = 'gone'; cancelAnimationFrame(raf); unSw(); document.removeEventListener('keydown', onKey); removeEventListener('blur', onBlur); document.removeEventListener('visibilitychange', onVis); removeEventListener('resize', onRs); } };
@@ -285,7 +325,7 @@ function snake(el, rk) {
 function n2048(el, rk) {
   const N = 4, ANI = 110;
   el.innerHTML = `${modeBar(rk, 'n2048')}<div class="cz-bar"><span class="cz-stat"><b id="tzS">0</b><small>점수</small></span><span class="cz-stat" id="tzTw" hidden><b id="tzT">3:00</b><small>남은 시간</small></span><span class="cz-stat" id="tzBw"><b id="tzB">${store.get('cz_2048', 0).toLocaleString('ko-KR')}</b><small>최고</small></span>
-    <button type="button" class="cz-flag" id="tzU" disabled><span>되돌리기</span></button><button type="button" class="cz-flag" id="tzN"><span>새 게임</span></button></div>
+    <button type="button" class="cz-flag" id="tzU" disabled><span>되돌리기</span></button><button type="button" class="prestart cz-re" id="tzN" aria-label="새 판으로 다시 시작"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-restart"/></svg>다시 시작</button></div>
     <div class="cz-wrap"><div class="cz-tb" id="tzBd"><div class="cz-tbg">${'<i></i>'.repeat(N * N)}</div><div class="cz-tl" id="tzL"></div><div class="cz-ov" id="tzOv" hidden></div></div></div>
     ${RKMSG}<p class="cz-help">방향키 · WASD · 스와이프로 밀어서 같은 숫자를 합쳐요</p>`;
   const bd = el.querySelector('#tzBd'), layer = el.querySelector('#tzL'), ov = el.querySelector('#tzOv'), $s = el.querySelector('#tzS'), $b = el.querySelector('#tzB'), $u = el.querySelector('#tzU');
@@ -323,12 +363,12 @@ function n2048(el, rk) {
   function finish() {
     if (over) return; over = true; clearInterval(tmr);
     const end = Math.min(Z.N2_TIME, Math.round(performance.now() - t0));
-    showOv(`<b>${end >= Z.N2_TIME ? '시간 끝!' : '더 밀 수 없어요'}</b><span>랭크 ${score.toLocaleString('ko-KR')}점</span>`, [['새 게임', newGame]]);
+    showOv(`<b>${end >= Z.N2_TIME ? '시간 끝!' : '더 밀 수 없어요'}</b><span>랭크 ${score.toLocaleString('ko-KR')}점</span>`, [['새 게임', () => newGame(true)]]);
     if (rseed == null) return;
     if (!rec.length) { say(el, '한 번 이상 밀어야 기록돼요'); return; }
     say(el, '기록 저장 중…'); rk.done('n2048', Z.N2_MAX - score, [end, ...rec]).then(h => say(el, h));
   }
-  function newGame() {
+  function newGame(quick) {   // quick === true: 다시 시작 버튼·끝난 뒤 새 게임 = 랭크 안내 창 없이 바로(2026-10-30 하율)
     undo = null; $u.disabled = true; clearInterval(tmr); t0 = 0; over = false; rec = []; say(el, '');
     rkm = rkOn('n2048', rk); $u.hidden = rkm; $tw.hidden = !rkm; $bw.hidden = rkm; const my = ++runN;
     if (!rkm) { rand = Math.random; rseed = null; store.set('cz_2048s', null); load(null); save(); return; }
@@ -337,7 +377,7 @@ function n2048(el, rk) {
     rk.seed('n2048').then(t => {
       if (my !== runN) return; busy = false; rseed = t ? Z.seedOf(t) : null; rand = rseed != null ? Z.rng(rseed) : Math.random;
       if (rseed == null) say(el, '이번 판은 서버에 등록되지 않아 기록이 저장되지 않아요');
-      load(null); showOv('<b>2048 · 랭크</b><span>3분 동안 최고 점수! 처음 밀면 시간이 흘러요 · 되돌리기 없음</span>', [['시작', () => { ov.hidden = true; }]], true);
+      load(null); if (quick === true) return; showOv('<b>2048 · 랭크</b><span>3분 동안 최고 점수! 처음 밀면 시간이 흘러요 · 되돌리기 없음</span>', [['시작', () => { ov.hidden = true; }]], true);
     });
   }
   function canMove() {
@@ -373,8 +413,8 @@ function n2048(el, rk) {
       if (!rkm && score > store.get('cz_2048', 0)) { store.set('cz_2048', score); $b.textContent = score.toLocaleString('ko-KR'); }
       save();
       if (rkm) { if (!canMove()) finish(); return; }   // 랭크전: 2048 축하 창 없이 계속 · 막히면 끝
-      if (!won && [...merged].some(o => o.v >= 2048)) { won = true; save(); showOv('<b>2048!</b><span>해냈어요! 더 큰 숫자에 도전할까요?</span>', [['계속하기', () => { keepGoing = true; ov.hidden = true; save(); }], ['새 게임', newGame]], true); }
-      else if (!canMove()) { store.set('cz_2048s', null); showOv(`<b>더 밀 수 없어요</b><span>점수 ${score.toLocaleString('ko-KR')}</span>`, [['새 게임', newGame]]); }
+      if (!won && [...merged].some(o => o.v >= 2048)) { won = true; save(); showOv('<b>2048!</b><span>해냈어요! 더 큰 숫자에 도전할까요?</span>', [['계속하기', () => { keepGoing = true; ov.hidden = true; save(); }], ['새 게임', () => newGame(true)]], true); }
+      else if (!canMove()) { store.set('cz_2048s', null); showOv(`<b>더 밀 수 없어요</b><span>점수 ${score.toLocaleString('ko-KR')}</span>`, [['새 게임', () => newGame(true)]]); }
     }, ANI);
   }
   function showOv(h, btns, good = false) {
@@ -382,11 +422,11 @@ function n2048(el, rk) {
     ov.querySelectorAll('[data-i]').forEach(x => x.onclick = btns[+x.dataset.i][1]);
   }
   $u.onclick = () => { if (!undo || busy) return; load(undo); undo = null; $u.disabled = true; save(); };
-  el.querySelector('#tzN').onclick = newGame;
+  el.querySelector('#tzN').onclick = () => newGame(true);
   const onKey = e => { if (modalOpen() || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return; const d = DIRS[e.code]; if (d == null) return; e.preventDefault(); move(d); };
   document.addEventListener('keydown', onKey);
   bd.style.touchAction = 'none'; const unSw = swipe(bd, move);
-  const onRs = () => fit(); addEventListener('resize', onRs);
+  const onRs = () => fit(); addEventListener('resize', onRs); el.addEventListener('cz-fit', onRs);
   bindMode(el, 'n2048', rk, newGame);
   fit(); if (rkOn('n2048', rk)) newGame(); else load(store.get('cz_2048s', null)); fit();
   return { destroy() { runN++; clearInterval(tmr); unSw(); document.removeEventListener('keydown', onKey); removeEventListener('resize', onRs); }, restart: newGame };

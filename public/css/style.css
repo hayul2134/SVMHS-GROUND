@@ -6169,6 +6169,24 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .cz-stat{position:relative;display:flex;flex-direction:column;align-items:center;min-width:78px;padding:5px 12px;border:var(--bd);border-radius:14px;background:var(--card);box-shadow:var(--sh-s);line-height:1.15}
 .cz-stat b{font-family:var(--num);font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
 .cz-stat small{font-size:11.5px;font-weight:700;color:var(--sub)}
+/* 2026-10-30 하율 "시간이랑 점수가 잘 안 보여" → 크게 · "플레이 화면이 정 가운데" → 판 위(.cz-hd)·아래(.cz-ft) 같은 몫(casual.js center) */
+.cz-bar .cz-stat{min-width:104px;padding:8px 18px 7px;border-radius:16px}
+.cz-bar .cz-stat b{font-size:32px;line-height:1.05}
+.cz-bar .cz-stat small{font-size:13px}
+.cz-bar .cz-re{min-height:58px}
+.parea:has(> .cz){justify-content:stretch;padding-bottom:clamp(0px,7vh,72px)}
+.cz:has(> .cz-hd){flex:1;display:grid;grid-template-rows:minmax(min-content,1fr) auto minmax(min-content,1fr);justify-items:center;gap:12px}
+.cz-hd,.cz-ft{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.cz-hd{align-self:end}.cz-ft{align-self:start}
+.cz-ft > .prow{width:100%}
+.cz-bar .cz-seg button{padding:12px 16px;font-size:16px}
+.cz-lv.lock button:disabled{cursor:not-allowed}.cz-lv.lock button:not(.on){opacity:.4}
+.cz-lv.lock::after{content:'랭크 고정';align-self:center;padding:0 10px;font-size:12px;font-weight:800;color:var(--sub);white-space:nowrap}
+/* 깃발 버튼(2026-10-30 하율 "더 잘 보이게, 잘 누를 수 있게"): 크게 + 노란 바탕, 켜지면 분홍 + 빨간 테 */
+.cz-bar #mnF{min-height:58px;padding:0 22px 0 18px;gap:8px;border-radius:16px;font-size:19px;background:#fff1bf;color:#173048}
+.cz-bar #mnF svg{width:28px;height:28px}
+.cz-bar #mnF.on{background:#ffc2c5;color:#173048;box-shadow:0 0 0 4px #e5484d,var(--sh-s)}
+@media (max-width:560px){.cz-bar .cz-stat{min-width:84px;padding:6px 12px}.cz-bar .cz-stat b{font-size:26px}.cz-bar #mnF{min-height:52px;font-size:17px}}
 .cz-seg{display:flex;border:var(--bd);border-radius:14px;overflow:hidden;box-shadow:var(--sh-s);background:var(--card)}
 .cz-seg button{padding:8px 13px;font-weight:800;font-size:14px}
 .cz-seg button+button{border-left:2px solid var(--ink)}
@@ -6236,6 +6254,14 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 @media (prefers-reduced-motion:reduce){.cz-tl .t{transition:none}.cz-tl .t b,.cz-mb,.cz-tb,.cz-card,.cz-ov{animation:none!important}}
 /* 카메라 가방 정리!: 판+받침을 화면 가운데로(2026-10-29 하율) — 왼쪽에 오른쪽 '내 기록' 칸과 같은 폭의 빈 칸을 둠 */
 @media (min-width:901px){div.fl{display:grid;grid-template-columns:240px minmax(0,1fr) 240px;gap:14px;align-items:start}div.fl>.ml{grid-column:2}div.fl>.fl-side{grid-column:3;width:auto}}   /* 게퍼 10도 판이 화면 가운데(2026-10-29 하율) */
+/* 게퍼 10(2026-10-30 하율 "화면이 너무 작게 · 점수·최고·남은 시간이 잘 안 보여 · 정 중앙"):
+   양옆 240px 칸이 가로를 먹어 판이 작았음 → 아주 넓은 화면(1500px↑)이 아니면 판을 가로 전체로 크게, 내 기록은 판 아래로 */
+@media (min-width:901px) and (max-width:1499px){div.fl:not(.bl-fl){display:flex;flex-direction:column;align-items:stretch}div.fl:not(.bl-fl)>.fl-side{width:min(560px,100%);align-self:center}}
+.fl:not(.bl-fl) .ml-top{gap:10px}
+.fl:not(.bl-fl) .ml-chip{align-items:center;gap:8px;padding:6px 16px;border-width:2.5px;border-radius:14px;box-shadow:3px 3px 0 var(--ink);font-size:15px}
+.fl:not(.bl-fl) .ml-chip b{font-size:30px;line-height:1.05}
+.fl:not(.bl-fl) .ml-snd{padding:10px 12px}
+@media (max-width:560px){.fl:not(.bl-fl) .ml-chip{padding:5px 11px;font-size:13px}.fl:not(.bl-fl) .ml-chip b{font-size:23px}}
 
 /* 카메라 가방 정리! 타격감: 연속 칩 튀기 */
 .bl-cb.pop{animation:blPop .32s cubic-bezier(.3,1.8,.5,1)}
@@ -6465,6 +6491,14 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .ptop .pmchip.up{transform:scale(1.08);box-shadow:0 0 0 3px var(--accent)}
 @media (max-width:560px){.ptop .pmchip b em,.ptop .pmchip .mgr{display:none}.ptop .pmchip span{min-width:40px}}
 @media (prefers-reduced-motion:reduce){.ptop .pmchip{transition:none}}
+/* 2026-10-30 하율 "숙련도 칩이 훨씬 더 잘 보였으면 — 모든 게임" → 엠블럼·글자·막대를 키우고 그림자로 띄움 */
+.ptop .pmchip{gap:10px;padding:5px 16px 5px 7px;border-width:2.5px;border-radius:16px;box-shadow:var(--sh-s)}
+.ptop .pmchip .mem{width:46px;height:49px;margin:-4px 0}
+.ptop .pmchip span{gap:6px;min-width:120px}
+.ptop .pmchip b{font-size:19px;gap:6px}.ptop .pmchip b em{font-size:15px;color:var(--text)}
+.ptop .pmchip .mgr{height:20px;min-width:26px;font-size:12px}
+.ptop .pmchip .mbar{height:9px;background:color-mix(in srgb,var(--ink) 18%,transparent)}
+@media (max-width:760px){.ptop .pmchip .mem{width:38px;height:41px}.ptop .pmchip b{font-size:16px}.ptop .pmchip span{min-width:80px}}
 :root[data-theme="dark"] .mst-grid li.m4,:root[data-theme="dark"] .mst-grid li.m5,:root[data-theme="dark"] .pmst-l i.m4,:root[data-theme="dark"] .pmst-l i.m5,:root[data-theme="dark"] .ptop .pmchip.m4,:root[data-theme="dark"] .ptop .pmchip.m5{color:#1f1d33}
 @media (max-width:420px){.ptop .pmchip > span{display:none}.ptop .pmchip{padding:3px}}
 

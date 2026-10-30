@@ -2187,6 +2187,7 @@ async function playCz(game) {
   }
   try { quitGame?.(); } catch (e) { console.error(e); }
   quitGame = null; curGame = game; ticket = null;
+  const quick = reQuick; reQuick = false;
   try {
     if (!CZ) CZ = await import('./casual.js');
     const k = game.slice(2), g = CZ.CASUAL[k]; if (!g) { staleReload(); return; }
@@ -2211,7 +2212,8 @@ async function playCz(game) {
         } catch (e) { return esc(e.message); }
       },
     } : null;
-    const ctl = CZ.mount(k, $('#czBox'), rk);
+    const ctl = CZ.mount(k, $('#czBox'), rk, quick);
+    const pr = $('#parea > .prow'), ft = $('#czBox > .cz-ft'); if (pr && ft) { ft.append(pr); $('#czBox').dispatchEvent(new Event('cz-fit')); }   // 다시 시작 줄도 판 아래 묶음에(판이 화면 가운데에 오게)
     quitGame = () => ctl.destroy();
   } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
@@ -2308,6 +2310,7 @@ const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5, RX_ANTI = 50, RX_LOCK = 1000, RX_CAP
 const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 const evT = e => { const n = performance.now(), t = e.timeStamp; return t > 0 && t <= n + 1 && t > n - 1000 ? t : n; };   // 이벤트 시각(같은 시간축이 아니면 지금)
 function playReaction() {
+  const quick = reQuick; reQuick = false;
   stage(ic('bolt') + ' 반응속도', `<button class="rx idle" id="rx"><b>준비되면 탭!</b><small>초록색으로 바뀌면 최대한 빨리 누르세요${matchMedia('(pointer:fine)').matches ? ' · 스페이스바도 돼요' : ''}</small></button>${RE_ROW}<ol class="rxlog" id="rxlog"></ol><p class="rxfoul" id="rxfoul">초록색 전에 누르면 부정출발 · 첫 번은 봐주고, 그다음부터 한 번마다 +${RX_PEN}ms · ${RX_OUT}번이면 실격</p>`);
   const pad = $('#rx'), log = $('#rxlog'), fl = $('#rxfoul');
   const times = []; let state = 'idle', t0 = 0, tG = 0, timer = 0, raf = 0, alive = true, lastD = 0, fouls = 0;
@@ -2387,6 +2390,7 @@ function playReaction() {
   };
   document.addEventListener('keydown', key);
   document.addEventListener('visibilitychange', away);
+  if (quick) arm();   // 다시 시작(버튼·R) = '준비되면 탭!' 없이 바로 기다리기부터(2026-10-30 하율)
   quitGame = () => { alive = false; stop(); document.removeEventListener('keydown', key); document.removeEventListener('visibilitychange', away); };
 }
 
@@ -2625,12 +2629,13 @@ async function playStair() {
    → 서버가 같은 판에 보낸 묶음을 처음부터 다시 둬 보고 점수를 확인. 로그인 안 했거나 티켓을 못 받으면 아무 판(기록 저장 안 됨) */
 let FILM = null;
 async function playFilm() {
+  const quick = reQuick; reQuick = false;
   const area = stage(ic('film') + ' 게퍼 10', '<div class="fl"><div class="ml" id="ml"></div><aside class="sr-side fl-side" id="flRec"></aside></div>', true);
   if (!FILM) { try { FILM = await import('./film.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#ml')) return;
   let runTk = null, run = 0, tkWhy = '';
   const M = FILM.createFilm($('#ml'), {
-    best: store.get('film_best', 0), sound: store.get('film_snd', false),
+    quick, best: store.get('film_best', 0), sound: store.get('film_snd', false),
     onSound: on => store.set('film_snd', on),
     async seed() {   // 판마다 새 티켓 = 새 판
       runTk = null; tkWhy = ''; run++;
@@ -2664,13 +2669,14 @@ async function playFilm() {
 /* 카메라 가방 정리!(2026-10-29, 미리보기 blast-game — 개발자만 → 출시 준비 완료, 공지와 함께 공개): js/blast.js. 판마다 시작 티켓 → 그 씨앗으로 장비 순서가 정해지고 서버가 놓기를 다시 둬 봄(blast-score.js) */
 let BLAST = null;
 async function playBlast() {
+  const quick = reQuick; reQuick = false;
   const area = stage(ic('blast') + ' LED 월 켜기!', '<div class="fl bl-fl"><div class="ml" id="bl"></div><aside class="sr-side fl-side" id="blRec"></aside></div>', true);
   // 2026-10-30: 한 번 불러오기에 실패한 모듈은 같은 화면에서 다시 불러도 실패가 그대로 남음(브라우저 모듈 기억) → 실패하면 주소를 바꿔 한 번 더
   if (!BLAST) { try { BLAST = await import('./blast.js').catch(() => import('./blast.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#bl')) return;
   let runTk = null, run = 0, tkWhy = '';
   const M = BLAST.createBlast($('#bl'), {
-    best: store.get('blast_best', 0), sound: store.get('blast_snd', false),
+    quick, best: store.get('blast_best', 0), sound: store.get('blast_snd', false),
     onSound: on => store.set('blast_snd', on),
     async seed() {
       runTk = null; tkWhy = ''; run++;
@@ -2703,7 +2709,9 @@ async function playBlast() {
 
 /* 5) 기자재 정리!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */
 let GEAR = null;   // gear.js 모듈 (처음 열 때 불러옴)
+let gearLast = 'normal';   // 다시 시작 때 이어 갈 방식(직전 판에 고른 것)
 async function playGear() {
+  const quick = reQuick; reQuick = false;
   const touchy = matchMedia('(pointer:coarse)').matches;
   const area = stage(ic('gear') + ' 기자재 정리!', `<div class="gr" id="gr">
       <div class="gr-main">
@@ -2760,7 +2768,7 @@ async function playGear() {
   const R = GEAR.createGear(cv, {
     sound,
     // 시작 티켓은 판을 시작하는 순간 고른 방식으로 받음(2026-10-28: 일반 모드도 서버에 저장 → 'gearn' 순위, 티어 제외)
-    onStart() { ov.hidden = true; over = false; paintQ(); ticket = S.me ? tkGet(mode === 'rank' ? 'gear' : 'gearn') : null; },
+    onStart() { ov.hidden = true; over = false; gearLast = mode; paintQ(); ticket = S.me ? tkGet(mode === 'rank' ? 'gear' : 'gearn') : null; },
     onQueue: paintQ,
     onScore: floatPt,
     onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
@@ -2810,6 +2818,7 @@ async function playGear() {
   }
   window.__gear = R;   // 테스트용
   ready(); paintHud(); paintQ();
+  if (quick) { setMode(gearLast); R.input('cw', true); R.input('cw', false); }   // 다시 시작 = 방식 고르는 화면 없이 직전 방식으로 바로(2026-10-30 하율)
   const hudT = setInterval(paintHud, 50);
   const restart = () => {
     if (!over || performance.now() - deadAt < 400) return false;
@@ -2992,6 +3001,7 @@ function charDress(box, wrap, btn, onChar) {
 }
 let RUN = null;   // runner.js 모듈 (처음 열 때 불러옴)
 async function playHome() {
+  const quick = reQuick; reQuick = false;
   const area = stage(ic('run') + ' 집에 가고 싶어!', `<div class="hr" id="hr">
       <div class="hr-scr" id="hrScr"><canvas id="hrCv" aria-label="게임 화면"></canvas>
         <div class="hr-ov" id="hrOv"><b>집에 가고 싶어!</b><span>종 쳤다! 장애물을 피해 집까지 달려요</span><small>${matchMedia('(pointer:coarse)').matches ? '화면이나 점프 버튼을 눌러 출발' : '스페이스 · ↑ · 화면 클릭으로 출발'}</small></div></div>
@@ -3146,6 +3156,7 @@ async function playHome() {
 
   paintRk();
   window.__home = R;   // 테스트용 (헤드리스 점검)
+  if (quick) R.jump();   // 다시 시작(버튼·R) = '집에 가고 싶어!' 안내 없이 바로 출발(2026-10-30 하율)
   fit();
   const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
   // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)

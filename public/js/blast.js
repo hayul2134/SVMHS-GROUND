@@ -468,6 +468,7 @@ export function createBlast(root, opt = {}) {
   }
   const ro = new ResizeObserver(() => requestAnimationFrame(fit)); ro.observe(root);
   rand = rng(1); set = nextSet(rand, b, 0); used = [false, false, false]; ready(); fit();
+  if (opt.quick) start();   // 다시 시작(버튼·R)은 안내 화면 없이 바로(2026-10-30 하율)
   return {
     start,
     msg(html) { const m = $('msg'); if (m) m.innerHTML = html; },
