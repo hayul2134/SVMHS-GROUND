@@ -46,7 +46,7 @@ export function html(touchy) {
   </div>`;
 }
 
-// root: html()을 넣은 영역. o: { sound, zoom, onSound(on), onDone(sum, errs, signed) }. zoom = 가까운 컷 확대(깃발 cut-zoom). 반환: 그만두기 함수
+// root: html()을 넣은 영역. o: { sound, zoom, quick(다시 시작 = 안내 화면 없이 바로), onSound(on), onDone(sum, errs, signed) }. zoom = 가까운 컷 확대(깃발 cut-zoom). 반환: 그만두기 함수
 export function run(root, o) {
   const $ = s => root.querySelector(s);
   const ar = $('#ctAr'), hs = $('#ctHs'), mk = $('#ctMk'), clA = $('#ctClA'), clB = $('#ctClB'), wv = $('#ctWv'), ov = $('#ctOv'), msg = $('#ctMsg'), btn = $('#ctBtn'), gp = $('#ctGp'), fl = $('#ctFl'), zm = $('#ctZm');
@@ -227,6 +227,7 @@ export function run(root, o) {
   addEventListener('resize', rs);
 
   intro(); paintTop(); wave(.6); setHead(0); raf = requestAnimationFrame(loop);
+  if (o.quick) go();   // 다시 시작(버튼·R)은 안내 화면 없이 바로 첫 판(2026-10-30 하율)
   window.__cut = { get state() { return state; }, get target() { return target; }, get t0() { return t0; }, get dur() { return dur; }, get fi() { return fi; }, errs, signed };   // 테스트 훅
   return () => { alive = false; cancelAnimationFrame(raf); timers.forEach(clearTimeout); off(); removeEventListener('resize', rs); try { actx?.close(); } catch {} };
 }

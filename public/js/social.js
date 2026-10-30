@@ -2049,10 +2049,10 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-rest
 document.addEventListener('click', e => { if (e.target.closest('.prank')) window.dispatchEvent(new Event('blur')); }, true);
 // 모든 게임 공통 '다시 시작'(2026-10-27 하율 "모든 게임에 재시작 버튼"): 게임 화면 위 나가기 옆 — 하던 판을 버리고 같은 게임을 처음부터
 // (연타로 시작 티켓 한도(10분 60번)를 쓰지 않게 0.8초 안 연타는 무시, 게임 안에서 연 창은 닫음)
-let curGame = '', reAt = 0;
+let curGame = '', reAt = 0, reQuick = false;   // reQuick: 다시 시작으로 연 판 = 안내 화면 건너뜀(편집의 신, 2026-10-30)
 function restartGame() {
   if (!curGame || performance.now() - reAt < 800) return;
-  reAt = performance.now(); closeSheet(); play(curGame);
+  reAt = performance.now(); closeSheet(); reQuick = true; play(curGame); setTimeout(() => { reQuick = false; }, 1500);
 }
 // R 키로 다시 시작(2026-10-27 하율) — 게임 키보다 먼저 받아서(capture) 기자재 정리!의 '아무 키나 누르면 시작'과 겹치지 않게. 한글 입력 상태(ㄱ)도 e.code로 잡힘
 addEventListener('keydown', e => {
@@ -2382,8 +2382,9 @@ async function playCut2() {
   const cb = area.querySelector('.ctm-bar');
   cb?.insertAdjacentHTML('afterend', RE_ROW.replace('class="prow"', 'class="prow re-alt"'));
   cb?.querySelector('.ctm-snd')?.insertAdjacentHTML('beforebegin', RE_BTN.replace('class="prestart"', 'class="prestart re-in"'));
+  const quick = reQuick; reQuick = false;
   const quit = CUT.run(area, {
-    sound: store.get('cut_snd', false), zoom: ffOn('cut-zoom', isDev(S.me)), onSound: on => store.set('cut_snd', on),
+    quick, sound: store.get('cut_snd', false), zoom: ffOn('cut-zoom', isDev(S.me)), onSound: on => store.set('cut_snd', on),
     onDone: (sum, errs, signed, cuts) => { finish('cut', Math.min(sum, 6000), CUT.resultHtml(sum, errs, signed, cuts), errs); CUT.paintReplay($('#parea')); },
   });
   quitGame = quit;
