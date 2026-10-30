@@ -5778,6 +5778,11 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 .ach-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:min(56vh,520px);overflow-y:auto}
 .ach-list li{display:flex;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--line);border-radius:14px;background:var(--card)}
 .ach-list li.got{border-color:var(--ink);background:color-mix(in srgb,#ffd96a 18%,var(--card))}
+/* 2026-10-30 하율 "특이한 조건은 ??? — 달성하면 확실하게 알 수 있게": 깬 숨겨진 업적은 보라 칸 + '숨겨진 업적 발견' 꼬리표, 도전 업적은 '도전' 꼬리표 */
+.ach-list li.hfound{border-color:#6b46a0;background:linear-gradient(110deg,color-mix(in srgb,#b58cff 22%,var(--card)),color-mix(in srgb,#ffd96a 16%,var(--card)))}
+.ach-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-style:normal;font-weight:800;vertical-align:2px;white-space:nowrap}
+.ach-tag.hf{background:#6b46a0;color:#fff}
+.ach-tag.ch{background:var(--ink);color:#ffd96a}
 .ach-list li .amd{width:34px;height:34px}
 .ach-tx{flex:1;min-width:0;display:grid;gap:2px}.ach-tx b{font-weight:900;font-size:15px}.ach-tx small{color:var(--sub);font-weight:700;font-size:12.5px}
 .ach-list li.hid .ach-tx b{letter-spacing:.2em;color:var(--sub)}
@@ -6372,6 +6377,16 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .acx-art{margin:10px 0 2px;animation:chBob 2.2s ease-in-out .7s infinite}
 .acx-art .amd{width:112px;height:112px;filter:drop-shadow(0 0 24px var(--tg))}
 .acx-n{margin:0;font-size:24px;font-weight:900}
+/* 숨겨진 업적 공개: ??? 가 흔들리다 진짜 이름으로 뒤집힘 */
+.acx-flip{display:inline-grid}
+.acx-flip > span{grid-area:1/1}
+.acx-q{animation:acxQ 1.1s ease-in forwards}
+.acx-real{opacity:0;transform:rotateX(90deg);animation:acxR .45s cubic-bezier(.2,1.4,.4,1) 1.05s forwards}
+.hidrev .acx-d,.hidrev .acx-r{opacity:0;animation:acxF .3s ease-out 1.4s forwards}
+@keyframes acxQ{0%,55%{transform:none}15%,35%{transform:translateX(-4px) rotate(-3deg)}25%,45%{transform:translateX(4px) rotate(3deg)}100%{opacity:0;transform:rotateX(90deg)}}
+@keyframes acxR{to{opacity:1;transform:none}}
+@keyframes acxF{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.acx-q{display:none}.acx-real,.hidrev .acx-d,.hidrev .acx-r{opacity:1;transform:none;animation:none}}
 .acx-d{margin:0;font-size:14.5px;opacity:.85}
 .acx-g{margin:2px 0 0;font-size:14px;font-weight:800;opacity:.9}.acx-g .sic{width:20px;height:20px;vertical-align:-5px;color:#fff}
 .acx-r{margin:6px 0 0;padding:6px 14px;border-radius:99px;background:rgba(255,255,255,.12);font-size:15px}

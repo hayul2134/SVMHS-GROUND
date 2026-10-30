@@ -25,6 +25,17 @@ export const ACH = [
   A('a_days', 'all', 2, '쉬는 시간 단골', '서로 다른 10일 동안 게임하기', { t: 'alldays', v: 10 }),
   A('a_top3', 'all', 3, '명예의 전당', '아무 게임에서나 전체 순위 3등 안에 들기', { t: 'live' }),
   A('a_night', 'all', 2, '새벽 게이머', '새벽 2~5시에 기록 남기기', { t: 'live', hid: 1 }),
+  // 2026-10-30 하율 "업적 수 늘리고, 이름은 위트있게, 특이한 조건은 ??? 로" — 공통 추가
+  A('a_d30', 'all', 3, '쉬는 시간 개근상', '서로 다른 30일 동안 게임하기', { t: 'alldays', v: 30 }),
+  A('a_d60', 'all', 4, '이 정도면 출석부', '서로 다른 60일 동안 게임하기', { t: 'alldays', v: 60 }),
+  A('a_lunch', 'all', 2, '밥은 먹고 하는 거지?', '점심시간(12:10~13:00)에 기록 남기기', { t: 'live', hid: 1 }),
+  A('a_mon', 'all', 2, '월요병 응급처치', '월요일 아침 8시 전에 기록 남기기', { t: 'live', hid: 1 }),
+  A('a_fri', 'all', 1, '불금 예열 중', '금요일 오후 4시 넘어서 기록 남기기', { t: 'live', hid: 1 }),
+  A('a_sun', 'all', 1, '주말에도 등교', '일요일에 기록 남기기', { t: 'live', hid: 1 }),
+  A('a_cin', 'all', 3, '신데렐라', '밤 12시 정각(0시 0분)에 기록 남기기', { t: 'live', hid: 1 }),
+  A('a_777', 'all', 3, '럭키 세븐', '기록이 7·77·777처럼 7로만 된 숫자로 끝나기', { t: 'live', hid: 1 }),
+  A('a_arc', 'all', 3, '하루 종일 오락실', '하루에 열려 있는 게임을 전부 하기', { t: 'live', hid: 1 }),
+  A('a_hw', 'all', 2, '트릭 오어 게임', '할로윈(10월 31일)에 기록 남기기', { t: 'live', hid: 1 }),
   // 집에 가고 싶어! (m)
   A('h_1', 'home', 1, '하교 시작', '첫 판 달리기', { t: 'first' }),
   A('h_2', 'home', 1, '교문 통과', '1,000m 달리기', { t: 'hi', v: 1000 }),
@@ -33,6 +44,9 @@ export const ACH = [
   A('h_5', 'home', 4, '현관문 앞', `${GOAL.toLocaleString('en-US')}m — 집에 도착하기`, { t: 'hi', v: GOAL }),
   A('h_6', 'home', 2, '매일매일 하교', '서로 다른 5일 동안 달리기', { t: 'days', v: 5 }),
   A('h_x', 'home', 1, '신발끈이…', '30m도 못 가고 넘어지기', { t: 'live', hid: 1 }),
+  A('h_7', 'home', 2, '편의점 들렀다 가기', '10,000m 달리기', { t: 'hi', v: 10000 }),
+  A('h_y', 'home', 3, '도어락 비번 까먹음', '집 1,000m 앞(49,000m 넘어서)에서 넘어지기', { t: 'live', hid: 1 }),
+  A('h_z', 'home', 2, '100m 국가대표', '딱 100m에서 넘어지기', { t: 'live', hid: 1 }),
   // 필름 10 (컷, 2026-10-29)
   A('f_1', 'film', 1, '첫 컷', '첫 판 자르기', { t: 'first' }),
   A('f_2', 'film', 1, '컷 편집 입문', '한 판에 40컷 자르기', { t: 'hi', v: 40 }),
@@ -41,6 +55,8 @@ export const ACH = [
   A('f_5', 'film', 4, '파이널 컷', '120컷 전부 잘라내기', { t: 'hi', v: 120 }),
   A('f_6', 'film', 2, '매일 편집실', '서로 다른 5일 동안 자르기', { t: 'days', v: 5 }),
   A('f_x', 'film', 1, '가위가 무뎌', '10컷도 못 자르고 끝나기', { t: 'live', hid: 1 }),
+  A('f_y', 'film', 2, '십진법의 수호자', '게퍼 10에서 딱 10컷만 자르기', { t: 'live', hid: 1 }),
+  A('f_z', 'film', 2, '롱테이크 장인', '딱 1컷만 자르고 끝나기 — 컷은 최소한으로', { t: 'live', hid: 1 }),
   // 영상고 계단 오르기 (칸)
   A('s_1', 'stair', 1, '첫 계단', '첫 판 오르기', { t: 'first' }),
   A('s_2', 'stair', 1, '2층 도착', '100칸 오르기', { t: 'hi', v: 100 }),
@@ -49,6 +65,9 @@ export const ACH = [
   A('s_5', 'stair', 4, '구름 위로', '1,100칸 오르기', { t: 'hi', v: 1100 }),
   A('s_6', 'stair', 2, '오늘도 계단', '서로 다른 5일 동안 오르기', { t: 'days', v: 5 }),
   A('s_x', 'stair', 1, '헛디딤', '세 칸도 못 오르고 떨어지기', { t: 'live', hid: 1 }),
+  A('s_7', 'stair', 2, '숨이 턱 끝까지', '500칸 오르기', { t: 'hi', v: 500 }),
+  A('s_y', 'stair', 2, '2층 문 앞에서 돌아섬', '딱 99칸에서 떨어지기', { t: 'live', hid: 1 }),
+  A('s_z', 'stair', 3, '옥상 문이 잠겼다', '딱 699칸 — 옥상 한 칸 앞에서 떨어지기', { t: 'live', hid: 1 }),
   // 컷 타이밍(편집의 신) (오차 합 ms)
   A('c_1', 'cut', 1, '첫 컷', '첫 판 자르기', { t: 'first' }),
   A('c_2', 'cut', 1, '편집 입문', '오차 합 300ms 안으로', { t: 'lo', v: 300 }),
@@ -57,6 +76,9 @@ export const ACH = [
   A('c_5', 'cut', 4, '0프레임', '한 번이라도 오차 0ms로 자르기', { t: 'live' }),
   A('c_6', 'cut', 2, '마감 지옥', '서로 다른 5일 동안 편집하기', { t: 'days', v: 5 }),
   A('c_x', 'cut', 1, '감으로 컷', '5번 모두 0.3초 넘게 빗나가기', { t: 'live', hid: 1 }),
+  A('c_7', 'cut', 4, '프레임 단위 인간', '오차 합 40ms 안으로', { t: 'lo', v: 40, ch: 1 }),
+  A('c_y', 'cut', 3, '데칼코마니', '5번 모두 똑같은 오차(ms)로 자르기', { t: 'live', hid: 1 }),
+  A('c_z', 'cut', 2, '마지막에 손이 미끄러짐', '4번은 10ms 안, 1번은 0.3초 넘게 빗나가기', { t: 'live', hid: 1 }),
   // 반응속도 (평균 ms)
   A('r_1', 'reaction', 1, '준비 완료', '첫 판 하기', { t: 'first' }),
   A('r_2', 'reaction', 1, '눈치 빠름', '평균 300ms 안으로', { t: 'lo', v: 300 }),
@@ -65,6 +87,9 @@ export const ACH = [
   A('r_5', 'reaction', 2, '참을성 만렙', '부정출발 없이 5번 모두 0.3초 안에 누르기', { t: 'live' }),
   A('r_6', 'reaction', 2, '반사신경 훈련', '서로 다른 5일 동안 하기', { t: 'days', v: 5 }),
   A('r_x', 'reaction', 1, '잠깐 졸았어', '5번 모두 시간 초과', { t: 'live', hid: 1 }),
+  A('r_7', 'reaction', 4, '총알 피하는 중', '평균 170ms 안으로', { t: 'lo', v: 170, ch: 1 }),
+  A('r_y', 'reaction', 2, '복붙한 손가락', '한 판에 똑같은 ms가 두 번 나오기', { t: 'live', hid: 1 }),
+  A('r_z', 'reaction', 1, '느긋한 오후', '5번 모두 0.6초~1.5초 사이로 누르기', { t: 'live', hid: 1 }),
   // 1 to 25 (ms)
   A('n_1', 'num25', 1, '1부터 시작', '첫 판 하기', { t: 'first' }),
   A('n_2', 'num25', 1, '숫자 찾기', '20초 안에 25까지', { t: 'lo', v: 20000 }),
@@ -73,6 +98,9 @@ export const ACH = [
   A('n_5', 'num25', 2, '실수 제로', '한 번도 안 틀리고 25까지', { t: 'live' }),
   A('n_6', 'num25', 2, '매일 1부터', '서로 다른 5일 동안 하기', { t: 'days', v: 5 }),
   A('n_x', 'num25', 1, '천천히 꼼꼼히', '1분 넘게 걸려서 25까지', { t: 'live', hid: 1 }),
+  A('n_7', 'num25', 4, '눈에 레이더 달림', '7초 안에 25까지', { t: 'lo', v: 7000, ch: 1 }),
+  A('n_y', 'num25', 2, '숫자랑 안 친함', '한 판에 10번 넘게 틀리기', { t: 'live', hid: 1 }),
+  A('n_z', 'num25', 2, '이름값 하는 중', '딱 25초대(25.0~25.9초)에 끝내기', { t: 'live', hid: 1 }),
   // 기자재 정리! (랭킹전 점수 · 일반 모드도 판·날짜·한 판 업적은 셈)
   A('g_1', 'gear', 1, '정리 시작', '첫 판 하기', { t: 'first' }),
   A('g_2', 'gear', 1, '선반 정리', '타임어택 3,000점', { t: 'hi', v: 3000 }),
@@ -81,6 +109,8 @@ export const ACH = [
   A('g_5', 'gear', 2, '말끔하게', '한 판에 20줄 지우기', { t: 'live' }),
   A('g_6', 'gear', 2, '반납 담당', '서로 다른 5일 동안 정리하기', { t: 'days', v: 5 }),
   A('g_x', 'gear', 1, '일단 쌓고 보자', '블록 20개 넘게 놓고 한 줄도 못 지우기', { t: 'live', hid: 1 }),
+  A('g_7', 'gear', 4, '창고 대방출', '타임어택 50,000점', { t: 'hi', v: 50000, ch: 1 }),
+  A('g_y', 'gear', 2, '딱 한 줄의 기적', '블록 30개 넘게 놓고 딱 한 줄만 지우기', { t: 'live', hid: 1 }),
   // LED 월 켜기! (점수, 2026-10-29 · 2026-10-30 카메라 가방 → LED 월 컨셉, 업적 이름도 변경) — 한 판 업적은 서버가 판을 다시 둬 본 결과(live.x: combo·wipe·n)로
   A('b_1', 'blast', 1, '첫 송출', '첫 판 하기', { t: 'first' }),
   A('b_2', 'blast', 1, 'LED 기사', '1,000점 넘게 정리하기', { t: 'hi', v: 1000 }),
@@ -90,12 +120,15 @@ export const ACH = [
   A('b_7', 'blast', 2, '연속 송출', '한 판에 15번 연속 정리하기', { t: 'live' }),
   A('b_6', 'blast', 2, '매일 점등', '서로 다른 5일 동안 정리하기', { t: 'days', v: 5 }),
   A('b_x', 'blast', 1, '검은 화면', '한 판에 벽을 싹 비우기', { t: 'live', hid: 1 }),
+  A('b_8', 'blast', 3, '조명 감독 호출', '한 판에 25번 연속 정리하기', { t: 'live', ch: 1 }),
+  A('b_y', 'blast', 2, '방송 사고', '패널 6번도 못 놓고 끝나기', { t: 'live', hid: 1 }),
 ];
 export const ACH_BY = Object.fromEntries(ACH.map(a => [a.k, a]));
 // 게임 하나의 일반 업적을 다 모으면 받는 칭호(프로필 꾸미기 칭호 목록)
 export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신', blast: '정리정돈 끝판왕' };
 export const achOf = g => ACH.filter(a => a.g === g);
-export const titleDone = (g, own) => achOf(g).filter(a => !a.hid).every(a => own[a.k]);
+// ch = 도전 업적(최상위 기록) — 칭호 조건에서 뺌(2026-10-30, 칭호가 사실상 불가능해지지 않게)
+export const titleDone = (g, own) => achOf(g).filter(a => !a.hid && !a.ch).every(a => own[a.k]);
 export const achTitles = own => Object.keys(ACH_TITLE).filter(g => titleDone(g, own)).map(g => ACH_TITLE[g]);
 export const ACH_TITLES = Object.values(ACH_TITLE);
 export const parseAch = s => { try { const o = JSON.parse(s || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
@@ -117,10 +150,42 @@ function liveOk(k, g, v, r, x) {
     case 'g_x': return (g === 'gear' || g === 'gearn') && n.length === 4 && n[1] === 0 && n[2] > 20;
     case 'b_7': return g === 'blast' && !x?.err && (x?.combo || 0) >= 15;
     case 'b_x': return g === 'blast' && !x?.err && (x?.wipe || 0) >= 1;
+    // 2026-10-30 추가
+    case 'h_y': return g === 'home' && nat(g, v) >= GOAL - 1000 && nat(g, v) < GOAL;
+    case 'h_z': return g === 'home' && nat(g, v) === 100;
+    case 'f_y': return g === 'film' && nat(g, v) === 10;
+    case 'f_z': return g === 'film' && nat(g, v) === 1;
+    case 's_y': return g === 'stair' && nat(g, v) === 99;
+    case 's_z': return g === 'stair' && nat(g, v) === 699;
+    case 'c_y': return g === 'cut' && n.length === 5 && n[0] > 0 && n.every(x => x === n[0]);
+    case 'c_z': { if (g !== 'cut' || n.length !== 5) return false; const s = [...n].sort((a, b) => a - b); return s.slice(0, 4).every(x => x <= 10) && s[4] > 300; }
+    case 'r_y': { if (g !== 'reaction') return false; const t = n.slice(0, 5).filter(x => x > 0 && x < 1500); return t.length >= 2 && new Set(t).size < t.length; }
+    case 'r_z': return g === 'reaction' && n.slice(0, 5).length === 5 && n.slice(0, 5).every(x => x >= 600 && x < 1500);
+    case 'n_y': return g === 'num25' && n.length === 26 && n[25] >= 10;
+    case 'n_z': return g === 'num25' && v >= 25000 && v < 26000;
+    case 'g_y': return (g === 'gear' || g === 'gearn') && n.length === 4 && n[1] === 1 && n[2] >= 30;
+    case 'b_8': return g === 'blast' && !x?.err && (x?.combo || 0) >= 25;
+    case 'b_y': return g === 'blast' && !x?.err && (x?.n || 0) > 0 && x.n < 6;
   }
   return false;
 }
 const gOf = g => g === 'gearn' ? 'gear' : g;
+// 공통 한 판 업적(2026-10-30): live = { hour, min, dow(0=일), md('MMDD'), game, v } · st.T = 오늘 한 게임 목록
+const sevens = x => x > 0 && /^7+$/.test(String(x));
+function allLive(k, l, st) {
+  const tm = l.hour * 60 + l.min;
+  switch (k) {
+    case 'a_lunch': return l.dow >= 1 && l.dow <= 5 && tm >= 12 * 60 + 10 && tm < 13 * 60;
+    case 'a_mon': return l.dow === 1 && l.hour >= 5 && l.hour < 8;
+    case 'a_fri': return l.dow === 5 && l.hour >= 16;
+    case 'a_sun': return l.dow === 0;
+    case 'a_cin': return l.hour === 0 && l.min === 0;
+    case 'a_777': { const v = nat(l.game, l.v); return sevens(Math.round(v)); }
+    case 'a_arc': return (st.open || []).length > 1 && st.open.every(g => (st.T || []).includes(g));
+    case 'a_hw': return l.md === '1031';
+  }
+  return false;
+}
 
 // 판정. st = { best: {게임: 화면 단위 최고(gear는 랭킹전만)}, days: {게임: 날 수}, D: 전체 게임한 날 수, open: [열려 있는 게임] }
 // live = 방금 저장된 판 { game, v, r, rank, hour } 또는 null(소급). 돌려줌: 새로 달성한 키 목록
@@ -139,6 +204,7 @@ export function achCheck(own, st, live) {
     else if (a.t === 'live' && live) {
       if (a.k === 'a_top3') ok = live.rank != null && live.rank <= 3;
       else if (a.k === 'a_night') ok = live.hour >= 2 && live.hour < 5;
+      else if (a.k.startsWith('a_') && live.dow != null) ok = allLive(a.k, live, st);
       else ok = a.g === gOf(live.game) && liveOk(a.k, live.game, live.v, live.r, live.x);
     }
     if (ok) got.push(a.k);

@@ -290,13 +290,16 @@ const ALL_OPEN = 1e6;
    users.ach = { 키: 달성 시각 }. 판정은 저장된 기록(scores)과 방금 저장된 한 판으로만. 깃발이 꺼져 있어도 조용히 쌓아 둠(공개 때 소급 필요 없게) — 화면·칭호만 깃발 */
 const achOpen = me => ACH_GAMES.filter(g => !GAMES[g]?.ff || ffOn(GAMES[g].ff, isAdm(me)));
 const mstOpen = me => MST_GAMES.filter(g => GAMES[g] && (!GAMES[g].ff || ffOn(GAMES[g].ff, isAdm(me))));   // 숙련도(깃발 mastery): 보는 사람에게 열린 게임만
+// 업적 한 판 판정용 KST 시각(2026-10-30 공통 숨김 업적: 점심·월요일 아침·금요일 오후·일요일·0시 정각·10/31)
+const kstNowParts = () => { const k = new Date(Date.now() + 9 * 3600e3); return { hour: k.getUTCHours(), min: k.getUTCMinutes(), dow: k.getUTCDay(), md: String(k.getUTCMonth() + 1).padStart(2, '0') + String(k.getUTCDate()).padStart(2, '0') }; };
 async function achStats(db, uid, me) {
-  const [b, d, D] = await db.batch([
+  const [b, d, D, T] = await db.batch([
     db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game <> 'gearn' GROUP BY game").bind(uid),
     db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 GROUP BY g").bind(uid),
     db.prepare('SELECT COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1').bind(uid),
+    db.prepare("SELECT DISTINCT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g FROM scores WHERE uid = ?1 AND day = ?2").bind(uid, kstYmd()),   // 오늘 한 게임(하루 종일 오락실)
   ]);
-  return { best: Object.fromEntries(b.results.map(x => [x.game, achNat(x.game, x.b)])), days: Object.fromEntries(d.results.map(x => [x.g, x.n])), D: D.results[0]?.n || 0, open: achOpen(me) };
+  return { best: Object.fromEntries(b.results.map(x => [x.game, achNat(x.game, x.b)])), days: Object.fromEntries(d.results.map(x => [x.g, x.n])), D: D.results[0]?.n || 0, T: T.results.map(x => x.g), open: achOpen(me) };
 }
 // 새로 달성한 키 목록(없으면 []). 두 요청이 겹쳐도 이전 값 조건으로 덮어쓰지 않음
 async function achRun(db, me, live, st) {
@@ -1811,7 +1814,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
     const mis = (!isCas(g) || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
     // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
-    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : null, rank: isCas(g) ? null : rank, hour: new Date(Date.now() + 9 * 3600e3).getUTCHours() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
+    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : null, rank: isCas(g) ? null : rank, ...kstNowParts() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
     const achF = ffOn(ACH_FF, isAdm(me));
     const ach = achGot.length && achF ? achGot : undefined;
     // 게임 숙련도(깃발 mastery, 2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌"): 판 등급(S+~D, 내 최고 기록 대비)별 XP — 업적·최고 기록 보너스와 따로

@@ -16,7 +16,7 @@ import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
 import { TIERS, TIER_PCT, BEST_N, tierOfK, PTS_MIN_N } from './att-rewards.js';
 import { CLUBS, clubOf, clubLogo } from './clubs.js';
-import { ACH, ACH_FF, ACH_GAMES, ACH_TITLE, ACH_TITLES, achOf, achProg, achTitles, mstLv, mstBand, mstXp, MST_XP, MST_MAX, MST_FF, MST_GAMES, MST_GR, mstScore } from './achv.js';   // 게임 업적(2026-10-28, 미리보기 깃발 achv)   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
+import { ACH, ACH_FF, ACH_GAMES, ACH_TITLE, ACH_TITLES, achOf, achProg, achTitles, titleDone, mstLv, mstBand, mstXp, MST_XP, MST_MAX, MST_FF, MST_GAMES, MST_GR, mstScore } from './achv.js';   // 게임 업적(2026-10-28, 미리보기 깃발 achv)   // 새 기능 미리보기 — 개발자만 먼저 (2026-10-25)
 
 /* ===== 서버와 같게 유지하는 목록 ===== */
 const AVATARS = ['k:cat','k:dog','k:bear','k:bunny','k:frog','k:chick','k:hamster','k:penguin','k:fox','k:panda','k:dino','k:ghost','k:slime','k:sheep','k:whale','k:axolotl','k:shark'];   // 2026-10-24: 동물 이모지 → 직접 그린 캐릭터 16종(테마 캐릭터 얼굴). 예전 이모지 값은 lib/db.js v20에서 옮김
@@ -1605,12 +1605,12 @@ function acBody(it) {
   if (it.t === 'mst') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: it.big ? '숙련도 단계 상승!' : '숙련도 레벨 업!', art: mEmb(it.lv, 'big', it.g), n: `Lv.${it.lv} ${b.n}`, d: '', g: `${ic(g?.ic || 'play')} ${esc(g?.name || '')}`, r: it.r ? `<b>전교 숙련도 ${it.r}위</b>` : '', x: [it.gr ? `이번 판 ${it.gr} 등급 +${it.gain} XP${it.fb ? ` (오늘 첫 판 +${MST_XP.first} 포함)` : ''}` : '', it.lv >= MST_MAX ? '최고 레벨 도달!' : ''].filter(Boolean).join(' · ') }; }
   if (it.t === 'mgr') { const b = mstBand(it.lv), g = GAMES[it.g]; return { cls: 'mst ' + b.k, k: `${esc(g?.name || '')} 숙련도`, art: `<span class="mgr-big ${grCls(it.gr)}">${it.gr || '-'}</span>`, n: `${it.gr || ''} 등급 · +${it.gain} XP${it.fb ? ` <i class="mgr gfb">첫 판 +${MST_XP.first}</i>` : ''}`, d: '', g: '', r: '', x: it.lv >= MST_MAX ? `Lv.${it.lv} 최고 레벨` : `Lv.${it.lv} · 다음 레벨까지 ${it.left.toLocaleString('ko-KR')} XP` }; }
   const a = it.a, x = it.x, g = a.g === 'all' ? '공통 업적' : `${ic(GAMES[a.g]?.ic || 'play')} ${esc(GAMES[a.g]?.name || '')}`;
-  return { cls: 'lv' + a.lv + (x.f ? ' first' : ''), k: x.f ? '전교 최초 달성!' : a.hid ? '숨겨진 업적 발견!' : '업적 달성!', art: medal(a.lv, true), n: esc(a.n), d: esc(a.d), g,
+  return { cls: 'lv' + a.lv + (x.f ? ' first' : ''), k: x.f ? '전교 최초 달성!' : a.hid ? '숨겨진 업적 발견!' : '업적 달성!', art: medal(a.lv, true), n: a.hid ? `<span class="acx-flip"><span class="acx-q">???</span><span class="acx-real">${esc(a.n)}</span></span>` : esc(a.n), d: esc(a.d), g,
     r: x.f ? '아직 아무도 못 깬 업적을 <b>처음으로</b> 깼어요' : x.p === 0 ? '아직 이 업적을 가진 학생이 없어요' : x.p != null ? `<b>학생 ${x.p}%</b>만 가진 업적${x.c ? ` · ${x.c}번째` : ''}` : '', x: '' };
 }
 function acBig(it, done) {
   const b = acBody(it), el = document.createElement('div');
-  el.className = 'cheer acx ' + b.cls; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', b.k);
+  el.className = 'cheer acx ' + b.cls + (it.t === 'ach' && it.a.hid ? ' hidrev' : ''); el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', b.k);
   const conf = Array.from({ length: 36 }, (_, i) => `<i class="cf c${i % 6}"></i>`).join('');
   el.innerHTML = `<div class="ch-conf" aria-hidden="true">${conf}</div><div class="ch-box acx-box"><i class="ch-rays" aria-hidden="true"></i>
     <p class="acx-k">${b.k}</p><div class="acx-art">${b.art}</div><p class="acx-n">${b.n}</p>${b.d ? `<p class="acx-d">${b.d}</p>` : ''}
@@ -1643,19 +1643,20 @@ async function openAch(h = '', g = '') {
 function achRow(a) {
   const d = achD, at = d.own[a.k], fst = d.first?.[a.k], hide = a.hid && !at, pr = !at && achProg(a, d.st), pct = d.rare[a.k] ?? 0;
   const fmt = n => n.toLocaleString('ko-KR');
-  return `<li class="${at ? 'got' : ''}${hide ? ' hid' : ''}">${medal(a.lv, !!at)}<div class="ach-tx"><b>${hide ? '???' : esc(a.n)}</b><small>${hide ? '숨겨진 업적 — 직접 찾아보세요' : esc(a.d)}</small>${pr ? `<span class="ach-pg"><i data-w="${Math.round(pr[0] / pr[1] * 20) * 5}"></i><em>${fmt(pr[0])} / ${fmt(pr[1])}</em></span>` : ''}</div>
+  const tag = a.hid && at ? '<em class="ach-tag hf">숨겨진 업적 발견</em>' : a.ch ? '<em class="ach-tag ch">도전</em>' : '';
+  return `<li class="${at ? 'got' : ''}${hide ? ' hid' : ''}${a.hid && at ? ' hfound' : ''}">${medal(a.lv, !!at)}<div class="ach-tx"><b>${hide ? '???' : esc(a.n)}${tag}</b><small>${hide ? '숨겨진 업적 — 직접 찾아보세요' : esc(a.d)}</small>${pr ? `<span class="ach-pg"><i data-w="${Math.round(pr[0] / pr[1] * 20) * 5}"></i><em>${fmt(pr[0])} / ${fmt(pr[1])}</em></span>` : ''}</div>
     <div class="ach-rt"><span class="ach-pc${pct < 5 ? ' rare' : ''}">${d.players ? `학생 ${pct}%` : '-'}</span>${at ? `<small>${new Date(at).getMonth() + 1}/${new Date(at).getDate()} 달성</small>` : ''}${fst && !hide ? `<small class="ach-1st${fst.me ? ' me' : ''}">${fst.me ? '전교 최초!' : `최초 ${esc(fst.n)}`}</small>` : ''}</div></li>`;
 }
 function paintAch() {
   const d = achD, tabs = ['all', ...ACH_GAMES.filter(g => GAMES[g] && gamesOn().some(([k]) => k === g))];
   const cnt = g => { const l = achOf(g); return `${l.filter(a => d.own[a.k]).length}/${l.length}`; };
   const list = achOf(achTab).slice().sort((a, b) => !!d.own[b.k] - !!d.own[a.k]);
-  const ttl = ACH_TITLE[achTab], tDone = ttl && achOf(achTab).filter(a => !a.hid).every(a => d.own[a.k]);
+  const ttl = ACH_TITLE[achTab], tDone = ttl && titleDone(achTab, d.own);
   $('#socSheet').innerHTML = `<div class="ach-sheet">
     <div class="ach-top">${medal(4, true)}<div><h3>${d.me ? '내 업적' : '업적'}</h3><small>${achCnt(d.own)} / ${ACH.length}개 달성 · 달성률은 게임해 본 학생 ${d.players}명 기준</small></div></div>
     <div class="ach-tabs" role="tablist">${tabs.map(g => `<button type="button" role="tab" class="${g === achTab ? 'on' : ''}" data-ach-tab="${g}" aria-selected="${g === achTab}">${g === 'all' ? medal(2, true) : ic(GAMES[g].ic)}<span>${esc(gName(g))}</span><small>${cnt(g)}</small></button>`).join('')}</div>
     <ol class="ach-list">${list.map(achRow).join('')}</ol>
-    ${ttl ? `<p class="ach-note${tDone ? ' done' : ''}">${ui('tag', 'ic')}${tDone ? `칭호 ‘${esc(ttl)}’ 획득! 프로필 꾸미기에서 달 수 있어요` : `숨겨진 업적을 뺀 ${esc(gName(achTab))} 업적을 모두 모으면 칭호 ‘${esc(ttl)}’`}</p>` : '<p class="ach-note">한 판으로만 깨는 업적은 그 기록을 낸 판에서만 달성돼요 · 보류된 기록은 세지 않아요</p>'}
+    ${ttl ? `<p class="ach-note${tDone ? ' done' : ''}">${ui('tag', 'ic')}${tDone ? `칭호 ‘${esc(ttl)}’ 획득! 프로필 꾸미기에서 달 수 있어요` : `숨겨진·도전 업적을 뺀 ${esc(gName(achTab))} 업적을 모두 모으면 칭호 ‘${esc(ttl)}’`}</p>` : '<p class="ach-note">한 판으로만 깨는 업적은 그 기록을 낸 판에서만 달성돼요 · 보류된 기록은 세지 않아요</p>'}
     <div class="row"><button type="button" class="btn ghost" data-close>닫기</button></div>
   </div>`;
   for (const i of $$('#socSheet .ach-pg i')) i.classList.add('w' + i.dataset.w);   // 진행 막대 폭(CSP: style 속성 금지 → 5% 단위 클래스)
