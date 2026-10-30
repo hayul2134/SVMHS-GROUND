@@ -2710,7 +2710,7 @@ const socReady = import('./social.js').then(m => m.init(SOC)).catch(() => { if (
 loadConfig().finally(async () => {
   cfgReady = true; bootHome();
   const h = location.hash.slice(1);
-  if (h && h !== 'home') { if (/^(me|u|dm|game|gacha)\b/.test(h)) await socReady; go(h); }
+  if (h && h !== 'home') { if (/^(me|u|dm|game|gacha|hall)\b/.test(h)) await socReady; go(h); }
   if (!cls && !introOn()) setTimeout(() => { if (!cls) openClass(); }, 1500);   // 소개 화면이면 닫힐 때 띄움 · 로그인 확인(adoptClass)을 기다렸다가 그래도 반이 없을 때만
 });
 
