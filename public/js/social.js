@@ -1534,8 +1534,8 @@ const mMir = x => x + `<g transform="matrix(-1 0 0 1 60 0)">${x}</g>`;
 //   끝이 둥근 깃털(뿌리는 가늘고 끝은 반원) · 뒤 줄 긴 깃털 c장 + 앞 줄 짧고 통통한 덮깃 → 겹친 날개 한 덩어리로 읽힘
 const mPlume = (L, w) => { const r = w, b = w * .42, x = (L - r).toFixed(1); return `M0 ${(-b).toFixed(1)}C${(L * .35).toFixed(1)} ${(-w * 1.02).toFixed(1)} ${x} ${(-r).toFixed(1)} ${x} ${(-r).toFixed(1)}A${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${x} ${r.toFixed(1)}C${x} ${r.toFixed(1)} ${(L * .35).toFixed(1)} ${(w * .9).toFixed(1)} 0 ${b.toFixed(1)}Q-1 0 0 ${(-b).toFixed(1)}z`; };
 const mWing = (k, c) => { const f = (L, w, a, dy, cl = 'me-f') => `<g transform="translate(13.6 ${(27 - dy).toFixed(1)}) rotate(${a.toFixed(0)})"><path class="${cl}" fill="url(#mg-w-${k})" d="${mPlume(L, w)}"/><path class="me-fv" d="M2 0H${(L - w * 1.4).toFixed(1)}"/></g>`;
-  let o = ''; for (let i = 0; i < c; i++) { const t = c === 1 ? .5 : i / (c - 1); o += f(11 + t * 5 + c * .6, 2.8 + (1 - Math.abs(t - .55)) * .5, 164 + t * 58, t * 3); }
-  const cv = Math.max(2, Math.ceil(c / 2)); for (let i = 0; i < cv; i++) { const t = cv === 1 ? .5 : i / (cv - 1); o += f(7 + t * 2 + c * .3, 3.1, 172 + t * 40, .8 + t * 2.4, 'me-f me-fc'); }
+  let o = ''; for (let i = 0; i < c; i++) { const t = c === 1 ? .5 : i / (c - 1); o += f(14 + t * 6 + c * .7, 3.4 + (1 - Math.abs(t - .55)) * .7, 158 + t * 72, t * 4); }
+  const cv = Math.max(2, Math.ceil(c / 2)); for (let i = 0; i < cv; i++) { const t = cv === 1 ? .5 : i / (cv - 1); o += f(9 + t * 3 + c * .4, 3.8, 168 + t * 50, .8 + t * 3, 'me-f me-fc'); }
   return mMir(o); };
 // 월계수: 아래에서 위로 둥글게 잎 4장
 const mLaurel = () => mMir([[18.5, 47, 200], [14.6, 42.6, 215], [11.8, 37.2, 232], [10.6, 31.4, 250]].map(([x, y, a]) => `<path class="me-lf" d="${mLeaf(6.4, 2.6)}" transform="translate(${x} ${y}) rotate(${a})"/>`).join('') + '<path class="me-st" d="M21 48.6Q12 45 10.8 30"/>');
