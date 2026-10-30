@@ -3,7 +3,7 @@ import { cached } from '../../../lib/cache.js';
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { balanceOf, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD, TIER3, TIER3_FROM, TIERS3 } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD, TIER3, TIERS3 } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
@@ -1631,8 +1631,9 @@ const gtFor = me => (me && isAdm(me)) ? 2 : ffOn(GEAR_TIER, false) ? 1 : 0;
 const GEAR_TR = 'gear-tier-r', gtrOn = gt => ffOn(GEAR_TR, gt === 2);
 //   같은 원칙을 다른 게임에도(2026-10-30 하율 "다른 게임들도 같이 적용"): 끝이 없는 구간은 티어에 안 셈 → 집에 가고 싶어!는 집 도착(GOAL 5만 m)까지만.
 //   집에서 '밖으로 나가기' 뒤 끝없이 달린 거리(최고 속도 고정 = 시간 경쟁)는 개인 기록·순위표에만. 나머지 게임은 이미 끝이 정해짐(시간 제한·판 수·난이도 상승)
-// 티어 3차(att-rewards.js TIER3): 점수 구간을 11게임 기준으로 올림 — 개발자 미리보기는 바로, 학생은 깃발 공개 뒤 TIER3_FROM(11/9) 라운드부터(라운드 도중 바뀌지 않게)
-const tier3On = (gt, from) => gt === 2 || (ffOn(TIER3, false) && from >= TIER3_FROM);
+// 티어 3차(att-rewards.js TIER3): 점수 구간을 11게임 기준으로 올림 — 개발자 미리보기는 바로, 학생은 깃발 공개(공지 게시) 순간부터
+// 2026-10-30 20:08 하율 "내일 공지랑 같이 그냥 패치" → 11/9 라운드 대기 없이 공지 게시(10/31 00:00) 순간부터 지금 라운드에도 적용
+const tier3On = (gt, from) => gt === 2 || ffOn(TIER3, false);
 const tierCap = (game, best) => game === 'home' ? Math.max(best, HOME_MAX - GOAL) : best;
 // upTo(YYYYMMDD) = 그날까지의 기록만으로 계산(티어 변화 '어제보다' 비교용, tier-champ 미리보기 — v2 전용)
 async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), upTo = '') {
