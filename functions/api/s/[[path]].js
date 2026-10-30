@@ -1608,6 +1608,9 @@ const gtFor = me => (me && isAdm(me)) ? 2 : ffOn(GEAR_TIER, false) ? 1 : 0;
 // 2026-10-30 하율 "일반 모드를 티어에서 빼자"(미리보기 깃발 gear-tier-r): 끝없는 일반 모드는 오래 할수록 점수가 커져 티어가 시간 경쟁이 됨 → 티어엔 타임어택(gear)만.
 //   개발자 미리보기(gt 2)에서만 켜짐 — 정산·학생 화면(gt 0·1)은 깃발 공개 전까지 그대로
 const GEAR_TR = 'gear-tier-r', gtrOn = gt => ffOn(GEAR_TR, gt === 2);
+//   같은 원칙을 다른 게임에도(2026-10-30 하율 "다른 게임들도 같이 적용"): 끝이 없는 구간은 티어에 안 셈 → 집에 가고 싶어!는 집 도착(GOAL 5만 m)까지만.
+//   집에서 '밖으로 나가기' 뒤 끝없이 달린 거리(최고 속도 고정 = 시간 경쟁)는 개인 기록·순위표에만. 나머지 게임은 이미 끝이 정해짐(시간 제한·판 수·난이도 상승)
+const tierCap = (game, best) => game === 'home' ? Math.max(best, HOME_MAX - GOAL) : best;
 // upTo(YYYYMMDD) = 그날까지의 기록만으로 계산(티어 변화 '어제보다' 비교용, tier-champ 미리보기 — v2 전용)
 async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), upTo = '') {
   const rd = rkOf(kstYmd()), cur = n ?? (rd.n < 0 ? 0 : rd.n), { from, to: end } = rkRange(cur), to = upTo && upTo < end ? upTo : end;
@@ -1651,7 +1654,7 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
     const raw = (rx && to === rkRange(cur).to ? await db.prepare(`SELECT uid, best, at FROM rbests WHERE r = ?1 AND game = ?2 AND ${NOT_DEV}`).bind(cur, game).all()
       : await db.prepare(`SELECT uid, best, at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)}`).bind(game, from, to).all()).results;
     const bu = new Map();
-    for (const r of raw) { if (out.has(r.uid)) continue; const o = bu.get(r.uid); if (!o || r.best < o.b || (r.best === o.b && r.at < o.at)) bu.set(r.uid, { uid: r.uid, b: r.best, at: r.at }); }
+    for (const r0 of raw) { if (out.has(r0.uid)) continue; const r = rOnly ? { ...r0, best: tierCap(game, r0.best) } : r0; const o = bu.get(r.uid); if (!o || r.best < o.b || (r.best === o.b && r.at < o.at)) bu.set(r.uid, { uid: r.uid, b: r.best, at: r.at }); }
     const rows = [...bu.values()].sort((a, b) => a.b - b.b || a.at - b.at);
     let rk = 0;
     rows.forEach((r, i) => { rk = i > 0 && rows[i - 1].b === r.b ? rk : i + 1;
