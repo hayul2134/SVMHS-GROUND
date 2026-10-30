@@ -1605,7 +1605,7 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .pwm[data-lv="3"] i::after{opacity:1;animation:pwShine 1.6s ease-in-out infinite}
 .pwm i.pop{animation:pwPop .38s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pwPop{0%{transform:scaleY(1)}40%{transform:scaleY(1.9)}100%{transform:scaleY(1)}}
-@keyframes pwShine{0%{left:-40%}60%,100%{left:110%}}
+@keyframes pwShine{0%{transform:translateX(0)}60%,100%{transform:translateX(375%)}}   /* 2026-10-30: left → transform(매 프레임 레이아웃 방지) · 폭 40%라 150% 이동 = 자기 폭의 375% */
 @media (prefers-reduced-motion:reduce){.pwm i::before{transition:none}.pwm i.pop,.pwm[data-lv="3"] i::after{animation:none;opacity:0}}
 .pwm em{margin-left:6px;font-style:normal;font-size:12.5px;color:var(--sub)}
 .pwm.short em{color:#d23a30}
@@ -3884,7 +3884,7 @@ html.rk2 .rk-v small{font-size:10.5px;opacity:.8;margin-left:1px}
 html.rk2 .rk-empty{padding:10px 4px;font-size:12.5px;font-weight:800;line-height:1.5;color:rgba(255,255,255,.92)}
 html.rk2 .rk-empty button{margin-left:4px;padding:2px 9px;border-radius:99px;border:1.5px solid var(--ink);background:#fff1c2;color:var(--ink);font-size:11.5px;font-weight:800}
 @keyframes rkIn{from{opacity:0;transform:translateX(14px) scale(.96)}}
-@keyframes rkShine{0%{left:-40%}35%,100%{left:120%}}
+@keyframes rkShine{0%{transform:translateX(0) skewX(-18deg)}35%,100%{transform:translateX(471%) skewX(-18deg)}}   /* 2026-10-30 최적화: left → transform(left는 매 프레임 레이아웃을 다시 계산 — 홈에 1등 칸이 있으면 가만히 있어도 화면 전체 레이아웃이 초당 60번) · 폭 34%라 160% 이동 = 자기 폭의 471% */
 
 @media (prefers-reduced-motion:reduce){html.rk2 .rk,html.rk2 .rk.p1::after{animation:none}}
 @media (max-height:740px){html.rk2 .s-rk{padding:11px 10px 8px}html.rk2 .srk-h{margin-bottom:6px}html.rk2 .rk-list{gap:4px}html.rk2 .rk{padding-top:3px;padding-bottom:3px}html.rk2 .rk.p1{padding-top:5px;padding-bottom:5px}}
@@ -6670,3 +6670,9 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .gg-h i{order:3;flex:none;font-style:normal;font-size:12.5px;font-weight:900;color:var(--sub)}
 .ggrp .ggrid{margin-top:0;grid-template-columns:repeat(auto-fill,minmax(max(138px,calc((100% - 48px)/5)),1fr))}
 @media (max-width:560px){.gg-h small{display:none}}
+/* 2026-10-30 점검: 가로 1000~1239px(서랍 두 개가 열리는 낮은 노트북·가로 태블릿)에선 띠가 급식·시간표 카드(z 40) 밑에 깔려 ✕ 버튼이 가려졌음
+   → 이 구간만 띠를 두 카드 사이 폭으로 줄이고 카드 위로 올림(닫기 버튼이 항상 보이게) */
+@media (min-width:1000px) and (max-width:1239px){body[data-view="home"] .notice{z-index:42;max-width:min(760px,calc(100% - 600px));font-size:13.5px;padding:7px 8px 7px 12px}}
+
+/* 2026-10-30 최적화: 화면에 움직이는 보상 그림이 하나도 없을 땐(att-art.js가 html.art-idle) symbol 안 움직임을 멈춤 — 안 보이는 복제본까지 매 프레임 다시 그리던 것 */
+html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-flag,.an-ring,.an-memo,.an-heart,.an-spin,.shx1,.shx2,.shx3){animation-play-state:paused}

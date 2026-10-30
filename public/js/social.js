@@ -190,7 +190,9 @@ const hwDay = dev => { const t = Date.now(); return t < HW_E && (dev || t >= HW_
 setInterval(() => {
   const h = document.documentElement, t = Date.now();
   if (h.classList.contains('hw') && t >= HW_E) { h.classList.remove('hw'); document.dispatchEvent(new Event('sg:mfx')); }
-  else if (!h.classList.contains('hw') && S.me && t >= HW_S + (S.hwJit ??= Math.random() * 120e3) && t < HW_S + 15 * 60e3 && !S.hwChk) { S.hwChk = 1; refreshMe(); }
+  // 2026-10-30 점검: 23:55~00:00에 공지 목록을 받아 둔 화면은 5분 캐시(loadReleased) 때문에 0시 확인 때 옛 목록을 다시 써서 할로윈이 안 켜졌음
+  //   → 확인할 땐 캐시를 비우고, 아직 공지 게시 전(컨펌이 늦음 등)이면 3분마다 다시(첫 1시간)
+  else if (!h.classList.contains('hw') && S.me && t >= HW_S + (S.hwJit ??= Math.random() * 120e3) && t < HW_S + 60 * 60e3 && t - (S.hwChk || 0) >= 180e3) { S.hwChk = t; relAt = 0; refreshMe(); }
 }, 30e3);
 let meP = null;   // 진행 중인 refreshMe (play가 기다림)
 function refreshMe() { return meP = refreshMe0(); }

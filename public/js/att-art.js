@@ -522,6 +522,25 @@ export function ensureSprite() {
 }
 // 최적화(2026-10-28): 모든 보상 그림의 테두리 실루엣까지 만드는 무거운 작업 → 첫 화면 뒤 한가할 때. 그림을 쓰는 곳(artOf·ui 등)은 그 전에 불리면 그 자리에서 바로 만듦
 if (typeof document !== 'undefined') (window.requestIdleCallback || (f => setTimeout(f, 200)))(ensureSprite, { timeout: 1500 });
+// 최적화(2026-10-30 점검): 보상 그림 symbol 안의 움직임(an-*·shx)은 그 그림을 쓰는 <use>가 화면에 하나도 없어도 매 프레임 돌면서
+//   모든 복제본의 SVG 레이아웃을 다시 계산했음(홈에 가만히 있어도 초당 60번) → 화면에 보이는 움직이는 그림이 없으면 symbol 쪽 움직임을 멈춤(html.art-idle).
+//   보이는 그림이 하나라도 생기면 바로 다시 움직임. 멈춘 그림(-st)·금빛(-gl)은 원래 안 움직이니 셈에서 뺌
+if (typeof document !== 'undefined' && 'IntersectionObserver' in window && 'MutationObserver' in window) {
+  const de = document.documentElement, seenUse = new WeakSet(), live = new Set();
+  const sync = () => de.classList.toggle('art-idle', live.size === 0);
+  const io = new IntersectionObserver(es => { for (const e of es) { if (e.isIntersecting && e.target.isConnected) live.add(e.target); else live.delete(e.target); } sync(); });
+  const isAnim = u => { const h = u.getAttribute('href') || u.getAttribute('xlink:href') || ''; return h.startsWith('#art-') && !/-(st|gl)$/.test(h) && !/-st-ol$/.test(h); };
+  const watch = u => { if (seenUse.has(u) || !isAnim(u)) return; seenUse.add(u); io.observe(u); };
+  const scan = n => { if (n.nodeType !== 1) return; if (n.tagName === 'use') watch(n); else if (n.querySelectorAll && n.firstElementChild) n.querySelectorAll('use').forEach(watch); };
+  let pend = [], raf = 0;   // 추가된 노드는 다음 프레임에 한꺼번에 살핌(innerHTML로 큰 덩어리를 그릴 때 여러 번 훑지 않게)
+  const flush = () => { raf = 0; const a = pend; pend = []; a.forEach(n => n.isConnected && n.closest?.('.att-sprite') === null && scan(n));
+    for (const u of live) if (!u.isConnected) { live.delete(u); io.unobserve(u); }   // 지워진 그림은 셈에서 뺌(innerHTML로 다시 그려진 칸)
+    sync(); };
+  new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) pend.push(n); if (pend.length && !raf) raf = requestAnimationFrame(flush); })
+    .observe(document.body || de, { childList: true, subtree: true });
+  const first = () => { scan(document.body); sync(); };
+  if (document.body) first(); else document.addEventListener('DOMContentLoaded', first, { once: true });
+}
 
 /* ===== 내보내기 ===== */
 // 2026-10-24 보상 그림 교체 전 이름 → 새 그림 (예전에 고른 프로필 사진·스티커·보낸 스티커 메시지가 그대로 새 그림으로 보이게)
