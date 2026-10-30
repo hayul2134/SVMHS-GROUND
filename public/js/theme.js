@@ -12,6 +12,7 @@
   var k = null;
   try { k = JSON.parse(localStorage.getItem('sg_skin')); } catch (e) {}
   if (/^[a-z]{2,12}$/.test(k || '')) document.documentElement.dataset.skin = k;
+  try { if (JSON.parse(localStorage.getItem('sg_hwc')) === 'off') document.documentElement.classList.add('hwx'); } catch (e) {}   // 할로윈 기간에 다른 색을 고름 → 할로윈 색만 끄고 그림은 유지(2026-10-30)
   // 내 캐릭터 그림의 옅은 배경 무늬(app.js가 줄여서 저장한 data URL). 왼쪽 아래 스티커는 app.js가 #mascot으로 붙임
   try {
     var a = localStorage.getItem('sg_myart'), pt = localStorage.getItem('sg_mypat');

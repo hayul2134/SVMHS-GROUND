@@ -1869,7 +1869,8 @@ function applySkin(k) {
   const h = document.documentElement;
   if (k) h.dataset.skin = k; else delete h.dataset.skin;
   syncBarColor();
-  document.querySelectorAll('#mSkin .sk').forEach(b => b.setAttribute('aria-pressed', b.dataset.skin === k));
+  const hwc = h.classList.contains('hw') && !h.classList.contains('hwx');   // 할로윈 색을 쓰는 중이면 '할로윈'만 눌린 상태
+  document.querySelectorAll('#mSkin .sk').forEach(b => b.setAttribute('aria-pressed', b.hasAttribute('data-hwc') ? hwc : !hwc && b.dataset.skin === k));
 }
 // 왼쪽 아래 캐릭터(#mascot): '내 캐릭터' 그림이 있으면 그 그림을 가만히, 없고 캐릭터 테마면 움직이는 마스코트(인라인 SVG, CSS 애니메이션).
 // 마스코트 그림은 js/mascots.js(tools/skins/gen.py가 생성)를 캐릭터 테마일 때만 불러옴. hi=true면 고른 순간 깡충 인사 한 번.
@@ -1952,10 +1953,14 @@ function skinBtns(list, face) {
     + (face ? '<i class="sk-face" aria-hidden="true"></i>' : '<i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i>')
     + `<span>${n}</span></button>`).join('');
 }
-$('#skColors').innerHTML = skinBtns(SKINS.color, false);
+// 할로윈 기간(2026-10-30 하율 "오브젝트만 유지하고 색깔은 바꿀 수 있게"): 색깔 맨 앞 '할로윈'(기본). 다른 색·캐릭터를 고르면 html.hwx → 할로윈 색만 끄고 박쥐·거미줄·모자 같은 그림은 그대로
+$('#skColors').innerHTML = '<button class="sk sk-hwc" type="button" data-hwc aria-pressed="false"><i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i><span>할로윈</span></button>' + skinBtns(SKINS.color, false);
 $('#skChars').innerHTML = skinBtns(SKINS.char, true);
 $('#mSkin').addEventListener('click', e => {
   const b = e.target.closest('.sk'); if (!b) return;
+  const h = document.documentElement;
+  if (b.hasAttribute('data-hwc')) { h.classList.remove('hwx'); store.set('hwc', null); applySkin(h.dataset.skin || ''); syncBarColor(); return; }
+  if (h.classList.contains('hw')) { h.classList.add('hwx'); store.set('hwc', 'off'); }
   const k = b.dataset.skin;
   const go = () => { applySkin(k); store.set('skin', k || null); syncMascot(true); };
   if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();

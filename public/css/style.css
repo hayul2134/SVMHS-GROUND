@@ -6530,22 +6530,24 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 
 /* ===== 할로윈 (2026-10-30 하율 "디자인을 할로윈 컨셉에 맞게") — html.hw: 깃발 halloween + 기간(KST 10/31 00:00 ~ 11/7 00:00, social.js HW_S·HW_E·theme.js)
    색깔 스킨보다 뒤에 둬서 기간 동안 색 토큰을 덮음(캐릭터·밝음/어두움은 그대로). 그림은 /hw/*.svg(스티커: 흰 칼선 + 잉크 외곽) */
-:root.hw{
+:root.hw:not(.hwx){
   --bg:#fff3e6; --dot:rgba(91,58,134,.14);
   --chip:#ffe9d3; --line:#f0cfae;
   --ink:#2a1838; --text:#2a1838; --sub:#6a5578; --on-bg:#2a1838; --onc:#2a1838;
   --accent:#f2771c; --hero:#ff8a2a; --sky:#ffb46b; --next:#ffc58f; --pink:#d7b8ff; --violet:#b58cff; --lime:#b6e86a; --yellow:#ffd34d;
-  --pat:url("/hw/pat.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px); --pat-size:260px 260px,22px 22px;
 }
-:root.hw[data-theme="dark"]{
+:root.hw:not(.hwx)[data-theme="dark"]{
   --bg:#1a1026; --dot:rgba(255,255,255,.06);
   --card:#261838; --chip:#33224a; --line:#4a3466;
   --ink:#000; --text:#fff3e6; --sub:#c7b3dd; --on-bg:#fff3e6;
   --accent:#ff9a3c; --hero:#ff8a2a;
-  --pat:url("/hw/pat-d.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px);
 }
-html.hw .k-meal{--k:#d4600f;--ks:#ffe6cc}
-html.hw[data-theme="dark"] .k-meal{--k:#ffb46b}
+/* 그림(박쥐·달 무늬)은 색을 바꿔도 유지(html.hwx = 할로윈 색만 끔, 2026-10-30 하율) */
+:root.hw{--pat:url("/hw/pat.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px); --pat-size:260px 260px,22px 22px}
+:root.hw[data-theme="dark"]{--pat:url("/hw/pat-d.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px)}
+.sk-hwc{display:none;--p1:#fff3e6;--p2:#f2771c;--p3:#b58cff}html.hw .sk-hwc{display:grid}
+html.hw:not(.hwx) .k-meal{--k:#d4600f;--ks:#ffe6cc}
+html.hw:not(.hwx)[data-theme="dark"] .k-meal{--k:#ffb46b}
 /* 시계 옆 별 스티커 → 호박·박쥐·유령 (자리·크기·반짝 애니메이션은 그대로라 시계를 더 가리지 않음) */
 html.hw .clock .dk.k1,html.hw .clock .dk.k3,html.hw .clock .dk.k4{background:center/contain no-repeat;filter:none}
 html.hw .clock .dk.k1 path,html.hw .clock .dk.k3 path,html.hw .clock .dk.k4 path{display:none}
@@ -6563,12 +6565,12 @@ html.hw[data-theme="dark"]:not(.prelogin) body::after{background-image:url("/hw/
 html.away.hw body::after{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){html.hw body::after{animation:none}}
 /* 파란색을 직접 박아 둔 곳(점검 2026-10-30): 홈 전체 랭킹 카드 · 전광판 → 밤하늘 보라 */
-html.hw.rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.55) 0 1.5px,transparent 2.5px),radial-gradient(circle at 76% 6%,rgba(255,255,255,.4) 0 1px,transparent 2px),radial-gradient(circle at 95% 34%,rgba(255,211,77,.7) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#4e3275 0%,#6b46a0 55%,#9a6fd0 100%)}
-:root.hw[data-theme="dark"].rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.4) 0 1.5px,transparent 2.5px),radial-gradient(circle at 95% 34%,rgba(255,211,77,.5) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#2a1840 0%,#3f2860 55%,#5b3a86 100%)}
-html.hw.rk2 .s-rk::before{background:rgba(255,154,60,.92)}
-html.hw .ticker{background:#3f2860;color:#ffe9d3}
+html.hw:not(.hwx).rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.55) 0 1.5px,transparent 2.5px),radial-gradient(circle at 76% 6%,rgba(255,255,255,.4) 0 1px,transparent 2px),radial-gradient(circle at 95% 34%,rgba(255,211,77,.7) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#4e3275 0%,#6b46a0 55%,#9a6fd0 100%)}
+:root.hw:not(.hwx)[data-theme="dark"].rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.4) 0 1.5px,transparent 2.5px),radial-gradient(circle at 95% 34%,rgba(255,211,77,.5) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#2a1840 0%,#3f2860 55%,#5b3a86 100%)}
+html.hw:not(.hwx).rk2 .s-rk::before{background:rgba(255,154,60,.92)}
+html.hw:not(.hwx) .ticker{background:#3f2860;color:#ffe9d3}
 /* 테마 창: 할로윈 주간엔 색깔을 골라도 할로윈 색이 우선 → 안내 한 줄(캐릭터는 의상 입은 모습으로 미리보기) */
-html.hw .sk-h:first-of-type::after{content:" · 11/6까지는 할로윈 색으로 보여요";font-size:12px;font-weight:600;color:var(--accent)}
+html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · 다른 색을 골라도 할로윈 그림은 그대로";font-size:12px;font-weight:600;color:var(--accent)}
 /* ===== 할로윈 끝 ===== */
 /* 2026-10-30 게임 모드 고르기(랭크 / 일반) — 지뢰찾기·뱀·2048 맨 위 한 줄, 기자재 정리! 시작 화면 버튼에도 같은 꼬리표 */
 .md-pick{display:flex;gap:8px;width:100%;max-width:520px;margin:0 auto 8px}
