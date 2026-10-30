@@ -168,25 +168,24 @@ export function createBlast(root, opt = {}) {
     const src = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain(); src.buffer = bf; fl.type = type; fl.frequency.value = f; g.gain.value = vol;
     src.connect(fl).connect(g).connect(master); src.start(a.currentTime + at);
   }
-  // 필터가 열리며 올라가는 톱니파(전원 켜지는 '위잉') — 송출 소리의 몸통
-  function riser(f1, f2, d, vol, at = 0) {
+  // 도로롱(2026-10-30 하율 "챙 하는 느낌이라 안 어울려 → 도로롱"): 동글동글한 음(사인 + 아주 짧게 아래로 휘는 음정)이 빠르게 굴러 올라감 — 마림바·물방울 느낌
+  function blip(f, at, vol = .09) {
     const a = sound && au(); if (!a) return;
-    const t = a.currentTime + at, g = a.createGain(), fl = a.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 9; fl.frequency.setValueAtTime(300, t); fl.frequency.exponentialRampToValueAtTime(6000, t + d);
-    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + d * .7); g.gain.exponentialRampToValueAtTime(.0001, t + d + .06);
-    [-9, 9].forEach(dt => { const o = a.createOscillator(); o.type = 'sawtooth'; o.detune.value = dt; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + d); o.connect(fl); o.start(t); o.stop(t + d + .08); });
-    fl.connect(g).connect(master);
+    const t = a.currentTime + at, o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o2.type = 'triangle'; o.frequency.setValueAtTime(f * 1.06, t); o.frequency.exponentialRampToValueAtTime(f, t + .03); o2.frequency.setValueAtTime(f * 2, t);
+    const g2 = a.createGain(); g2.gain.value = .18; o2.connect(g2).connect(g);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + .16);
+    o.connect(g).connect(master); o.start(t); o.stop(t + .18); o2.start(t); o2.stop(t + .18);
   }
-  const thump = (vol, at = 0, f = 150) => { tone(f, .32, 'sine', vol, at, 38); noise(.025, vol * .9, 3200, 'bandpass', at); };   // 쿵 + 딱(어택)
-  function sparkle(n, base, at = 0) { for (let j = 0; j < n; j++) tone(base * (1 + Math.random() * 1.6), .07 + Math.random() * .08, 'sine', .035, at + Math.random() * .22); }   // 유리 파편 반짝이
-  function sndClear(n, cb, all) {   // 줄 송출: 위잉(올라감) → 쿵 + 쨍(유리 깨짐) → 반짝이 → 화음(연속일수록 높게)
-    const up = Math.min(cb, 8);
-    riser(160 * 2 ** (up / 12), 1400 * 2 ** (up / 12), .11, .09);
-    thump(.5 + Math.min(n, 4) * .07, .1); noise(.3, .55, 5200, 'highpass', .1); noise(.18, .4, 1800, 'bandpass', .11);
-    sparkle(6 + n * 4, 2200, .12);
-    if (n >= 2) { tone(55, .6, 'sine', .32, .1, 30); noise(.5, .3, 380, 'lowpass', .12); }   // 여러 줄: 바닥 울림
-    const ch = n >= 3 ? [0, 4, 7, 11, 14] : n === 2 ? [0, 4, 7, 12] : [0, 7, 12];
-    ch.forEach((x, j) => { const f = 392 * 2 ** ((x + up) / 12); tone(f, .32, 'triangle', .07, .14 + j * .045); tone(f * 2, .16, 'square', .018, .14 + j * .045); });
-    if (all) { [0, 4, 7, 12, 16, 19, 24].forEach((x, j) => tone(523 * 2 ** (x / 12), .4, 'triangle', .08, .4 + j * .06)); thump(.6, .4, 120); sparkle(18, 3000, .45); }   // 전체 화면 송출 팡파르
+  function sndClear(n, cb, all) {   // 줄 송출: 부드러운 '퉁' → 도로롱(줄이 많을수록 길게, 연속일수록 높게) → 맑은 마무리 음
+    const up = Math.min(cb, 8), PENT = [0, 2, 4, 7, 9];
+    tone(130, .22, 'sine', .3, 0, 60);   // 퉁
+    const cnt = Math.min(6 + n * 3, 16), base = 523 * 2 ** (up / 12);
+    for (let j = 0; j < cnt; j++) { const st2 = PENT[j % 5] + 12 * Math.floor(j / 5); blip(base * 2 ** (st2 / 12), .02 + j * .032, .085); }
+    const end = .02 + cnt * .032;
+    [0, 7, 12].forEach(x => tone(base * 2 * 2 ** (x / 12), .45, 'sine', .045, end));   // 마무리 화음(부드럽게)
+    if (n >= 2) tone(65, .45, 'sine', .22, 0, 40);   // 여러 줄: 낮은 울림
+    if (all) { for (let j = 0; j < 12; j++) blip(base * 2 * 2 ** ((PENT[j % 5] + 12 * Math.floor(j / 5)) / 12), end + .1 + j * .04, .08); }   // 전체 화면 송출: 한 번 더 길게 굴러 올라감
   }
   const ease = k => 1 - (1 - k) ** 3;
   function draw() {
