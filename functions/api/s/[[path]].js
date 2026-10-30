@@ -292,13 +292,13 @@ const achOpen = me => ACH_GAMES.filter(g => !GAMES[g]?.ff || ffOn(GAMES[g].ff, i
 const mstOpen = me => MST_GAMES.filter(g => GAMES[g] && (!GAMES[g].ff || ffOn(GAMES[g].ff, isAdm(me))));   // 숙련도(깃발 mastery): 보는 사람에게 열린 게임만
 // 업적 한 판 판정용 KST 시각(2026-10-30 공통 숨김 업적: 점심·월요일 아침·금요일 오후·일요일·0시 정각·10/31)
 const kstNowParts = () => { const k = new Date(Date.now() + 9 * 3600e3); return { hour: k.getUTCHours(), min: k.getUTCMinutes(), dow: k.getUTCDay(), md: String(k.getUTCMonth() + 1).padStart(2, '0') + String(k.getUTCDate()).padStart(2, '0') }; };
-// 업적 새 출발(2026-10-30 21:11 하율 "업적도 모든 사람들이 처음부터" → 10/31 00:00 KST 패치 때): 그 시각부터 모든 업적을 비우고, 그 날 이후 기록만 셈
-const ACH_FROM = Date.UTC(2026, 9, 30, 15), ACH_DAY = '20261031';
-let achResetOk = false;
+// 업적 새 출발(2026-10-30 21:11 하율 "업적도 모든 사람들이 처음부터"): 업적은 아직 미리보기(깃발 achv)라 학생에겐 안 보이지만 기록은 뒤에서 쌓이고 있었음
+//   → 업적이 공지로 모두에게 공개되는 순간(RELEASED에 achv) 한 번만 모든 업적을 비우고, 그 날(KST)부터의 기록만 셈. 공개 전엔 지금처럼(개발자 미리보기용)
+let achSince = '';
 async function achReset(db, me) {
-  if (achResetOk || Date.now() < ACH_FROM) return;
+  if (achSince || !ffOn(ACH_FF, false)) return;
   try {
-    const first = await db.prepare("INSERT OR IGNORE INTO settings (k, v) VALUES ('ach_reset_1031', '1')").run();
+    const first = await db.prepare("INSERT OR IGNORE INTO settings (k, v) VALUES ('ach_reset', ?1)").bind(kstYmd()).run();
     if (first.meta?.changes) {
       await db.batch([
         db.prepare("UPDATE users SET ach = ''"),
@@ -307,11 +307,12 @@ async function achReset(db, me) {
       if (me) { me.ach = ''; if (ACH_TITLES.includes(me.st_title)) me.st_title = ''; }
       achRare = { at: 0, n: 0, c: {} };
     }
-    achResetOk = true;
+    achSince = (await db.prepare("SELECT v FROM settings WHERE k = 'ach_reset'").first())?.v || kstYmd();
   } catch (e) { console.log('achReset', e?.message); }
 }
 async function achStats(db, uid, me) {
-  const since = Date.now() >= ACH_FROM ? ACH_DAY : '0';   // 새 출발 뒤엔 그 날부터의 기록만(예전 기록으로 다시 채우지 않음)
+  await achReset(db, me && me.id === uid ? me : null);
+  const since = achSince || '0';   // 공개(새 출발) 뒤엔 그 날부터의 기록만(예전 기록으로 다시 채우지 않음)
   const [b, d, D, T] = await db.batch([
     db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game <> 'gearn' AND day >= ?2 GROUP BY game").bind(uid, since),
     db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 AND day >= ?2 GROUP BY g").bind(uid, since),
