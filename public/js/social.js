@@ -38,7 +38,7 @@ const GAMES = {
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 따로 순위만 — 게임 목록·티어엔 안 나옴(casual), 기자재 정리! 랭킹 창의 '일반' 전환으로 봄
   gearn: { ff: 'gear-game', casual: true, name: '기자재 정리! 일반', ic: 'gear', desc: '시간 제한 없이 자유롭게 · 티어·보상과 상관없는 일반 모드 순위', fmt: v => (GEAR_MAX - v).toLocaleString('ko-KR') + '점' },
   // 카메라 가방 정리!(2026-10-29 하율 "블록블라스트 버전도", 미리보기 깃발 blast-game — 개발자만): 8×8 선반에 장비 케이스 끌어 놓기. 높을수록 좋음 → 서버엔 BLAST_MAX - 점수
-  blast: { ff: 'blast-game', name: '카메라 가방 정리!', ic: 'blast', desc: '장비를 끌어다 카메라 가방에! 가로·세로 줄을 채워 쏙 챙겨요 · 시간 제한 없음', fmt: v => (BLAST_MAX - v).toLocaleString('ko-KR') + '점' },
+  blast: { ff: 'blast-game', name: 'LED 월 켜기!', ic: 'blast', desc: 'LED 패널을 벽에 붙여 켜요! 가로·세로 줄을 채우면 송출 · 시간 제한 없음', fmt: v => (BLAST_MAX - v).toLocaleString('ko-KR') + '점' },
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
@@ -2629,7 +2629,7 @@ async function playFilm() {
 /* 카메라 가방 정리!(2026-10-29, 미리보기 blast-game — 개발자만 → 출시 준비 완료, 공지와 함께 공개): js/blast.js. 판마다 시작 티켓 → 그 씨앗으로 장비 순서가 정해지고 서버가 놓기를 다시 둬 봄(blast-score.js) */
 let BLAST = null;
 async function playBlast() {
-  const area = stage(ic('blast') + ' 카메라 가방 정리!', '<div class="fl bl-fl"><div class="ml" id="bl"></div><aside class="sr-side fl-side" id="blRec"></aside></div>', true);
+  const area = stage(ic('blast') + ' LED 월 켜기!', '<div class="fl bl-fl"><div class="ml" id="bl"></div><aside class="sr-side fl-side" id="blRec"></aside></div>', true);
   if (!BLAST) { try { BLAST = await import('./blast.js'); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#bl')) return;
   let runTk = null, run = 0, tkWhy = '';
