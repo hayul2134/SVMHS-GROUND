@@ -10,7 +10,7 @@ export const CHASE_MAX = 99999999;
 export const FPS = 60, DT = 1 / 60;
 export const W = 375, H = 640, ROAD_L = 0, ROAD_R = 375, LANES = 5, LANE_W = 75, PY = 512;
 export const laneX = i => ROAD_L + LANE_W * (i + 0.5);
-export const FAR = -800;   // 차·아이템이 생기는 곳(멀리 앞) — 2026-10-31 차 뒤에서 보는 원근 시점으로 바꾸며 멀리서부터 보이게(예전 -40 근처)
+export const FAR = -1100;   // 차·아이템이 생기는 곳(멀리 앞) — 2026-10-31 차 뒤에서 보는 원근 시점으로 바꾸며 멀리서부터 보이게(예전 -40 근처)
 export const MAX_F = FPS * 60 * 30;   // 30분 — 안전 상한(실제로는 훨씬 전에 끝남)
 export const MAX_EV = 7000;   // 입력 상한(기록 저장 요청 64KB 안 — 10분 판도 보통 2,000개 안팎)
 // 입력 코드: 0 왼쪽 한 차선 · 2 오른쪽 한 차선 · 4 점프 (1·3은 예전 '뗌' — 지금은 무시)
@@ -28,13 +28,13 @@ export const JUMP_F = 40, JUMP_CD = 54;      // 점프 체공 0.67초 · 착지 
 export const BOOST_F = 270, BOX_F = 180, GRACE_F = 70;   // 부스터 4.5초 · 아이템 상자 부스터 3초 · 부스터 끝난 뒤 무적 1.2초
 export const FUEL0 = 100, CAN = 32;
 export const COMBO_F = 180;                  // 아슬아슬 콤보가 이어지는 시간(3초)
-export const LANE_V = 620;                   // 차선 바꾸는 속도 px/s (한 차선 약 0.12초)
+export const LANE_V = 900;                   // 차선 바꾸는 속도 px/s (한 차선 약 0.08초)
 export const SIDE_V = LANE_V;
-const D_M = 5000;                            // 이 거리(m)까지 난이도가 빠르게 오르고, 그 뒤로도 천천히 계속 오름
+const D_M = 8000;                            // 이 거리(m)까지 난이도가 빠르게 오르고, 그 뒤로도 천천히 계속 오름
 export const diffOf = m => Math.min(1, m / D_M);
-export const baseV = m => Math.min(1000, 460 + 400 * diffOf(m) + Math.max(0, m - D_M) * 0.03);   // px/s (10px = 1m → 0.36배 하면 km/h)
+export const baseV = m => Math.min(1600, 720 + 620 * diffOf(m) + Math.max(0, m - D_M) * 0.04);   // 2026-10-31 하율 "훨씬 더 빨라도 돼" (예전 460~860)   // px/s (10px = 1m → 0.36배 하면 km/h)
 export const drainOf = m => 3.3 + 3.6 * diffOf(m) + Math.max(0, m - D_M) * 0.0012;            // 연료 소모 /초
-export const rowGap = m => Math.max(120, 340 - 175 * diffOf(m) - Math.max(0, m - D_M) * 0.012); // 차 줄 사이 거리(px, 내가 달린 거리 기준)
+export const rowGap = m => Math.max(190, 520 - 260 * diffOf(m) - Math.max(0, m - D_M) * 0.018); // 차 줄 사이 거리(px, 내가 달린 거리 기준)
 
 // 차 종류: hw·hh = 판정 반폭·반높이, w = 나오는 비율, from = 이 거리(m)부터
 export const KINDS = [
@@ -116,7 +116,7 @@ function spawnRow(s, m) {
     }
     const K = kindPick(r(), m), y = FAR - K.hh - r() * 40;
     if (!laneFree(s, lane, y, K.hh)) continue;
-    const c = { id: ++s.id, k: K.k, hw: K.hw, hh: K.hh, lane, to: lane, x: laneX(lane), y, spd: s.v * (0.22 + r() * 0.28) + 40, near: 0, done: 0, dead: 0, chg: 0, blink: 0, mv: 0, col: Math.floor(r() * 10) };
+    const c = { id: ++s.id, k: K.k, hw: K.hw, hh: K.hh, lane, to: lane, x: laneX(lane), y, spd: s.v * (0.3 + r() * 0.25) + 60, near: 0, done: 0, dead: 0, chg: 0, blink: 0, mv: 0, col: Math.floor(r() * 10) };
     if (m > 250 && r() < 0.08 + 0.17 * d) c.chg = -200 + r() * 330;   // 이 높이(내 차 앞 약 380~700px)에 오면 깜빡이 켜고 옆 차선으로
     s.cars.push(c);
   }
@@ -151,19 +151,19 @@ export function step(s) {
   if (s.dist >= s.nextFuel) {
     const lane = Math.floor(rnd(s) * LANES);
     s.items.push({ id: ++s.id, t: 'fuel', x: laneX(lane), y: FAR, hw: 13, hh: 15 });
-    s.nextFuel = s.dist + 2500 + 1500 * d + Math.max(0, m - D_M) * 0.4 + rnd(s) * 700;
+    s.nextFuel = s.dist + 4000 + 2400 * d + Math.max(0, m - D_M) * 0.6 + rnd(s) * 1100;
   }
   if (s.dist >= s.nextCoin) {
     const lane = Math.floor(rnd(s) * LANES), n = 4 + Math.floor(rnd(s) * 3);
     for (let i = 0; i < n; i++) s.items.push({ id: ++s.id, t: 'coin', x: laneX(lane), y: FAR - i * 44, hw: 11, hh: 11 });
-    s.nextCoin = s.dist + 900 + rnd(s) * 900;
+    s.nextCoin = s.dist + 1400 + rnd(s) * 1400;
   }
   if (s.dist >= s.nextBox) {
     const lane = Math.floor(rnd(s) * LANES);
     s.items.push({ id: ++s.id, t: 'box', x: laneX(lane), y: FAR, hw: 14, hh: 14 });
-    s.nextBox = s.dist + 6500 + rnd(s) * 3500;
+    s.nextBox = s.dist + 10500 + rnd(s) * 5500;
   }
-  if (m >= 1200 && s.dist >= s.nextWall) {   // 공사 바리케이드(도로 전체) — 점프로만 넘음
+  if (m >= 1900 && s.dist >= s.nextWall) {   // 공사 바리케이드(도로 전체) — 점프로만 넘음
     // 바리케이드는 멈춰 있고 차는 앞으로 달리니 바리케이드가 앞차를 따라잡을 수 있음 → 모든 차가 내 차를 지나간 뒤에야 따라잡히는 먼 곳에 세움
     //   (차 c가 내 차 뒤(PY+60)까지 오는 시간 tc 동안 바리케이드가 c에 못 닿게: Yw ≤ c.y - c.spd·tc - 여유)
     let yw = FAR - 300;
@@ -175,7 +175,7 @@ export function step(s) {
     if (yw > -6000) {   // 너무 멀면 다음 줄에서 다시(그동안 차는 안 생김)
       s.items.push({ id: ++s.id, t: 'wall', x: (ROAD_L + ROAD_R) / 2, y: yw, hw: (ROAD_R - ROAD_L) / 2, hh: 9 });
       s.calm = s.dist + (PY - yw) + 400; s.nextRow = s.calm;   // 바리케이드가 내 차를 지날 때까지 새 차 없음
-      s.nextWall = s.dist + (PY - yw) + 9000 + rnd(s) * 5000 - 2000 * d;
+      s.nextWall = s.dist + (PY - yw) + 14500 + rnd(s) * 8000 - 3200 * d;
     } else { s.calm = s.dist + 1e9; s.nextRow = Math.max(s.nextRow, s.calm); }
   }
   // 차 움직임
