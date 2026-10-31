@@ -6692,32 +6692,42 @@ html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-fla
 .apps .gapp.g-chase .ai{--c:#ffd9c2}.ggrid .g-chase{--c:#ffd9c2}
 .cs{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
 .cs-main{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
-@media (min-width:901px){.cs{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:18px}.cs>.cs-main{grid-column:2;width:auto}.cs>.sr-side{grid-column:3;width:min(300px,100%)}}
-.cs-scr{position:relative;width:min(100%,calc(min(100dvh - 200px,860px) * 9 / 16));min-width:min(100%,260px);border:var(--bd);border-radius:18px;box-shadow:var(--sh);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;container-type:inline-size;background:#4a5066;outline:0;cursor:pointer}
-.cs-scr canvas{display:block;width:100%;height:auto;aspect-ratio:9/16;touch-action:none}
+/* 2026-10-31 하율 "가로로 넓게, 태블릿·폰은 돌려서": 16:9 가로 화면 */
+.cs-scr{position:relative;width:min(100%,calc((100dvh - 190px) * 16 / 9),1180px);min-width:min(100%,300px);border:var(--bd);border-radius:18px;box-shadow:var(--sh);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;container-type:inline-size;background:#4a5066;outline:0;cursor:pointer}
+.cs-scr canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;touch-action:none}
+/* 낮은 가로 화면(폰을 돌린 상태): 위아래 여백을 줄여 판을 최대한 크게 */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:560px){.cs-scr{width:min(100%,calc((100dvh - 84px) * 16 / 9))}.cs-bar{display:none}.parea:has(> .cs){padding-top:4px!important;padding-bottom:4px!important}}
+/* 세로 화면 터치 기기: 돌려 달라는 안내 */
+.cs-rot{display:none;position:absolute;inset:0;z-index:3;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px;text-align:center;background:#2a2846;color:#fff}
+.cs-port .cs-rot{display:flex}
+.cs-rot b{font-family:var(--disp);font-weight:400;font-size:clamp(16px,5.5cqw,26px)}
+.cs-rot span{font-size:clamp(11px,3.4cqw,14px);font-weight:700;opacity:.85}
+.cs-rot i{width:clamp(30px,10cqw,48px);aspect-ratio:3/5;border:3px solid #fff;border-radius:7px;animation:csRot 1.6s ease-in-out infinite}
+@keyframes csRot{0%,25%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}
+.cs-port .cs-scr{width:100%}
 .cs-bar{justify-content:center}
 .cs-bar .hr-keys{flex:0 1 auto}
 @media (pointer:coarse){.cs-bar .cs-keys{display:none}}
 .cs-scr .hr-ov{background:linear-gradient(rgba(42,40,70,.15),rgba(42,40,70,.35))}
-.cs-scr .hr-ov > b{font-size:clamp(24px,12cqw,44px);white-space:nowrap}
-.cs-scr .hr-ov.cs-ready{place-content:start center;padding:18% 6% 0;gap:8px;background:linear-gradient(rgba(42,40,70,.55),rgba(42,40,70,.12) 70%)}
-.cs-scr .hr-ov.cs-ready > span{font-size:clamp(11.5px,4cqw,14px)}
+.cs-scr .hr-ov > b{font-size:clamp(24px,6cqw,52px);white-space:nowrap}
+.cs-scr .hr-ov.cs-ready{place-content:center;padding:3% 6%;gap:8px;background:linear-gradient(rgba(42,40,70,.55),rgba(42,40,70,.25))}
+.cs-scr .hr-ov.cs-ready > span{font-size:clamp(11.5px,1.8cqw,15px)}
 .cs-scr .hr-ov .cs-best{font-style:normal;font-weight:900;font-size:13.5px;color:#2a2846;background:#ffd25e;border:2px solid #2a2846;border-radius:999px;padding:2px 10px;display:inline-flex;align-items:center;gap:4px}
 .cs-scr .hr-ov .cs-best .sic{width:16px;height:16px}
-.cs-how{list-style:none;margin:4px 0 0;padding:9px 12px;display:grid;gap:5px;text-align:left;background:rgba(255,255,255,.94);border:2px solid #2a2846;border-radius:12px;box-shadow:2px 2px 0 #2a2846;color:#2a2846;font-size:clamp(11px,3.6cqw,13.5px);font-weight:700;max-width:100%}
+.cs-how{list-style:none;margin:4px 0 0;padding:9px 12px;display:grid;gap:5px;text-align:left;background:rgba(255,255,255,.94);border:2px solid #2a2846;border-radius:12px;box-shadow:2px 2px 0 #2a2846;color:#2a2846;font-size:clamp(11px,1.7cqw,14px);font-weight:700;max-width:100%}
 .cs-how li{display:block;line-height:1.35;padding-left:19px;text-indent:-19px}
 .cs-scr .hr-ov .cs-how b{all:unset;font-weight:900;color:#2a2846}
 .cs-how i{display:inline-block;width:12px;height:12px;margin-right:7px;vertical-align:-1px;border-radius:50%;border:2px solid #2a2846;box-sizing:border-box}
 .cs-how .cs-i1{background:#ffd25e}.cs-how .cs-i2{background:#5ec8ff}.cs-how .cs-i3{background:#ff6b6b}
 .cs-scr .hr-ov.cs-ready small{background:rgba(255,255,255,.92);border-radius:8px;padding:3px 9px;margin-top:6px}
 .cs-scr .hr-ov.dead{background:rgba(42,40,70,.5);gap:9px;padding:6%}
-.cs-scr .hr-ov.dead > b{transform:rotate(-2deg);font-size:clamp(20px,9cqw,34px)}
+.cs-scr .hr-ov.dead > b{transform:rotate(-2deg);font-size:clamp(20px,4.6cqw,40px)}
 .cs-scr .hr-card{flex-direction:column;align-items:center;gap:6px;padding:12px 14px 10px;max-width:96%}
-.cs-scr .hr-sc em{font-size:clamp(24px,11cqw,38px)}
-.cs-scr .hr-ov .cs-stat{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:clamp(11.5px,3.8cqw,13.5px);font-weight:800;color:#5c574d}
+.cs-scr .hr-sc em{font-size:clamp(22px,5cqw,44px)}
+.cs-scr .hr-ov .cs-stat{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:clamp(11px,1.8cqw,14px);font-weight:800;color:#5c574d}
 .cs-scr .hr-ov .cs-stat span{all:unset;white-space:nowrap}
 .cs-scr .hr-ov .cs-stat b{all:unset;font-weight:900;color:#2a2846}
 .cs-scr .hr-ov .hr-msg{margin:2px 0 0;padding:6px 0 0;border-left:0;border-top:1.5px dashed #d9d3c4;font-size:13px}
 .cs-scr .hr-ov .hr-go{font-size:14px}
-#csRec{width:min(100%,420px)}
+#csRec{width:min(100%,560px)}
 @media (prefers-reduced-motion:reduce){.cs-scr .hr-ov > b{animation:none}}

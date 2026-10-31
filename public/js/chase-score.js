@@ -10,6 +10,7 @@ export const CHASE_MAX = 99999999;
 export const FPS = 60, DT = 1 / 60;
 export const W = 360, H = 640, ROAD_L = 30, ROAD_R = 330, LANES = 4, LANE_W = 75, PY = 512;
 export const laneX = i => ROAD_L + LANE_W * (i + 0.5);
+export const FAR = -800;   // 차·아이템이 생기는 곳(멀리 앞) — 2026-10-31 차 뒤에서 보는 원근 시점으로 바꾸며 멀리서부터 보이게(예전 -40 근처)
 export const MAX_F = FPS * 60 * 30;   // 30분 — 안전 상한(실제로는 훨씬 전에 끝남)
 export const MAX_EV = 7000;   // 입력 상한(기록 저장 요청 64KB 안 — 10분 판도 보통 2,000개 안팎)
 // 입력 코드: 0 왼쪽 누름 · 1 왼쪽 뗌 · 2 오른쪽 누름 · 3 오른쪽 뗌 · 4 점프
@@ -82,13 +83,13 @@ function spawnRow(s, m) {
   for (let i = 0; i < n; i++) {
     const lane = lanes[i];
     if (m > 400 && r() < 0.06 + 0.06 * d) {   // 콘(멈춰 있는 장애물 — 피하거나 뛰어넘기)
-      s.items.push({ id: ++s.id, t: 'cone', x: laneX(lane) + (r() - 0.5) * 20, y: -40, hw: 9, hh: 9 });
+      s.items.push({ id: ++s.id, t: 'cone', x: laneX(lane) + (r() - 0.5) * 20, y: FAR, hw: 9, hh: 9 });
       continue;
     }
-    const K = kindPick(r(), m), y = -40 - K.hh - r() * 40;
+    const K = kindPick(r(), m), y = FAR - K.hh - r() * 40;
     if (!laneFree(s, lane, y, K.hh)) continue;
     const c = { id: ++s.id, k: K.k, hw: K.hw, hh: K.hh, lane, to: lane, x: laneX(lane), y, spd: s.v * (0.22 + r() * 0.28) + 40, near: 0, done: 0, dead: 0, chg: 0, blink: 0, mv: 0, col: Math.floor(r() * 8) };
-    if (m > 250 && r() < 0.08 + 0.17 * d) c.chg = 90 + r() * 230;   // 이 높이에 오면 깜빡이 켜고 옆 차선으로
+    if (m > 250 && r() < 0.08 + 0.17 * d) c.chg = -200 + r() * 330;   // 이 높이(내 차 앞 약 380~700px)에 오면 깜빡이 켜고 옆 차선으로
     s.cars.push(c);
   }
 }
@@ -124,28 +125,33 @@ export function step(s) {
   }
   if (s.dist >= s.nextFuel) {
     const lane = Math.floor(rnd(s) * 4);
-    s.items.push({ id: ++s.id, t: 'fuel', x: laneX(lane), y: -50, hw: 13, hh: 15 });
+    s.items.push({ id: ++s.id, t: 'fuel', x: laneX(lane), y: FAR, hw: 13, hh: 15 });
     s.nextFuel = s.dist + 2500 + 1500 * d + Math.max(0, m - D_M) * 0.4 + rnd(s) * 700;
   }
   if (s.dist >= s.nextCoin) {
     const lane = Math.floor(rnd(s) * 4), n = 4 + Math.floor(rnd(s) * 3);
-    for (let i = 0; i < n; i++) s.items.push({ id: ++s.id, t: 'coin', x: laneX(lane), y: -30 - i * 44, hw: 11, hh: 11 });
+    for (let i = 0; i < n; i++) s.items.push({ id: ++s.id, t: 'coin', x: laneX(lane), y: FAR - i * 44, hw: 11, hh: 11 });
     s.nextCoin = s.dist + 900 + rnd(s) * 900;
   }
   if (s.dist >= s.nextBox) {
     const lane = Math.floor(rnd(s) * 4);
-    s.items.push({ id: ++s.id, t: 'box', x: laneX(lane), y: -50, hw: 14, hh: 14 });
+    s.items.push({ id: ++s.id, t: 'box', x: laneX(lane), y: FAR, hw: 14, hh: 14 });
     s.nextBox = s.dist + 6500 + rnd(s) * 3500;
   }
   if (m >= 1200 && s.dist >= s.nextWall) {   // 공사 바리케이드(도로 전체) — 점프로만 넘음
-    // 먼저 차를 끊고, 화면의 차가 다 지나간 뒤에 세움(바리케이드가 차와 겹쳐 지나가면 피할 수 없는 판이 생김)
-    s.calm = s.dist + 1e9; s.nextRow = Math.max(s.nextRow, s.calm);
-    let busy = false; for (const c of s.cars) if (!c.dead && c.y - c.hh < PY + P_HH + 40) { busy = true; break; }
-    if (!busy) {
-      s.items.push({ id: ++s.id, t: 'wall', x: (ROAD_L + ROAD_R) / 2, y: -320, hw: (ROAD_R - ROAD_L) / 2, hh: 9 });
-      s.calm = s.dist + 1000; s.nextRow = s.calm;
-      s.nextWall = s.dist + 9000 + rnd(s) * 5000 - 2000 * d;
+    // 바리케이드는 멈춰 있고 차는 앞으로 달리니 바리케이드가 앞차를 따라잡을 수 있음 → 모든 차가 내 차를 지나간 뒤에야 따라잡히는 먼 곳에 세움
+    //   (차 c가 내 차 뒤(PY+60)까지 오는 시간 tc 동안 바리케이드가 c에 못 닿게: Yw ≤ c.y - c.spd·tc - 여유)
+    let yw = FAR - 300;
+    for (const c of s.cars) {
+      if (c.dead || c.y - c.hh > PY + P_HH + 40) continue;
+      const rel = Math.max(40, s.v - c.spd), tc = (PY + P_HH + 60 + c.hh - c.y) / rel;
+      yw = Math.min(yw, c.y - c.hh - c.spd * tc - 200);
     }
+    if (yw > -6000) {   // 너무 멀면 다음 줄에서 다시(그동안 차는 안 생김)
+      s.items.push({ id: ++s.id, t: 'wall', x: (ROAD_L + ROAD_R) / 2, y: yw, hw: (ROAD_R - ROAD_L) / 2, hh: 9 });
+      s.calm = s.dist + (PY - yw) + 400; s.nextRow = s.calm;   // 바리케이드가 내 차를 지날 때까지 새 차 없음
+      s.nextWall = s.dist + (PY - yw) + 9000 + rnd(s) * 5000 - 2000 * d;
+    } else { s.calm = s.dist + 1e9; s.nextRow = Math.max(s.nextRow, s.calm); }
   }
   // 차 움직임
   const cars = s.cars;
@@ -218,7 +224,7 @@ export function step(s) {
   }
   // 정리
   if (s.f % 30 === 0) {
-    s.cars = cars.filter(c => c.y - c.hh < H + 140 && c.y + c.hh > -400 && c.dead < 50);
+    s.cars = cars.filter(c => c.y - c.hh < H + 140 && c.y + c.hh > FAR - 7000 && c.dead < 50);
     s.items = s.items.filter(it => it.y - it.hh < H + 60 && !it.got);
   }
   // 타이머
