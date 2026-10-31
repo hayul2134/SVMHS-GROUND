@@ -14,7 +14,7 @@ export const dec = x => ({ f: Math.floor(x / 2), c: x % 2 });
 export function rnd(s) { s.a = (s.a + 0x6d2b79f5) >>> 0; let t = s.a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
 export const seedOf = ticket => /^[0-9a-f]{16}/.test(ticket || '') ? parseInt(ticket.slice(8, 16), 16) : 0;
 
-export const TURN_F = 12;        // 보통 돌아서기 0.2초(이 사이에 멈추면 안 걸림)
+export const TURN_F = 12;        // 다시 칠판으로 돌아서기 0.2초
 export const WHIP_F = 7;         // 휙 돌아서기 0.12초
 export const PEEK_IN = 8;        // 곁눈질: 고개 돌리는 0.13초 뒤부터는 보고 있는 것
 export const CAUGHT_F = 96;      // 걸린 뒤 1.6초 혼남
@@ -45,7 +45,7 @@ function caught(s, why = 'caught') {
 }
 
 // 선생님 움직임(2026-10-31 하율 "엄청 변칙적이고 예상하지 못하게"): 판서가 끝날 때마다 패턴 하나를 골라 단계(plan)를 차례로 진행.
-//   단계: write(판서) · warn('흠…' 멈춤) · pause(말없이 펜만 멈춤) · peek(어깨 너머 곁눈질 — 보는 것과 같음) · turn(돌아서기, 보통 0.2초 / 휙 0.12초)
+//   단계: write(판서) · warn('흠…' 멈춤 — 낚시) · pause(말없이 펜만 멈춤) · peek(어깨 너머 곁눈질 — 보는 것과 같음) · turn(휙 돌아서기 0.2→0.12초)
 function setT(s, st, f) {
   const prev = s.st; s.st = st; s.tm = s.dur = Math.max(1, f);
   if (prev === 'write' && (st === 'warn' || st === 'pause' || st === 'peek')) s.warnStart = s.f;   // 신호가 시작된 때(세이프 판정)
@@ -54,34 +54,35 @@ function setT(s, st, f) {
   else ev(s, st, { w: s.dur, pat: s.pat });
 }
 const humF = s => Math.max(16, Math.round(FPS * lerp(1.1, 0.45, dk(s)) * (0.9 + 0.2 * rnd(s)) - 10 * late(s)));
-const whipCue = s => Math.max(9, Math.round(lerp(26, 12, dk(s)) - 3 * late(s) + rnd(s) * 4));
-const whipF = s => Math.round(lerp(10, WHIP_F, dk(s)));   // 휙 돌아서기: 처음엔 0.17초 → 60초쯤 0.12초
+const whipCue = s => Math.max(9, Math.round(lerp(28, 12, dk(s)) - 3 * late(s) + rnd(s) * 5));   // 휙 직전 펜이 멈추는 짧은 틈(유일한 신호)
+const whipF = s => Math.round(lerp(12, WHIP_F, dk(s)));   // 휙 돌아서기: 처음 0.2초 → 60초쯤 0.12초
 const longF = s => Math.round(FPS * (1.4 + 2.2 * rnd(s)));
-const pauseF = s => Math.round(FPS * (0.45 + 1.1 * rnd(s)));
+const pauseF = s => Math.round(FPS * (0.35 + 1.1 * rnd(s)));
+const shortW = s => 12 + Math.floor(rnd(s) * 30);
 const writeF = s => Math.max(30, Math.round(FPS * (lerp(2.6, 1, dk(s)) + rnd(s) * lerp(2.4, 1.4, dk(s))) / (1 + 0.5 * late(s))));
+// 2026-10-31 23:02 하율 "돌아볼 때 흠이 나와서 긴박함이 없어 — 돌 때는 무조건 그냥 휙": 돌아보는 건 전부 휙(펜만 잠깐 멈춘 뒤).
+//   '흠…'·한참 멈춤은 이제 전부 낚시(그 뒤엔 다시 판서) — 단, 낚시로 안심시킨 직후 휙도 섞음
 function pickPlan(s) {
   const k = dk(s), L = late(s), W = [
-    ['normal', lerp(0.4, 0.2, k)],            // 흠… → 돌아봄
-    ['humResume', 0.13],                       // 흠… → 그냥 다시 판서
-    ['pauseResume', lerp(0.12, 0.14, k)],      // 말없이 멈췄다가 자연스럽게 다시 판서
-    ['whip', lerp(0.05, 0.16, k) + 0.05 * L],  // 펜만 살짝 멈추고 휙
-    ['longWhip', lerp(0.06, 0.12, k)],         // 흠… 하고 한참 멈춰 있다가 휙
-    ['longResume', 0.08],                      // 흠… 하고 한참 멈춰 있다가 다시 판서
-    ['peek', lerp(0.08, 0.12, k)],             // 어깨 너머 곁눈질(→ 다시 판서 또는 휙)
-    ['pauseHum', 0.06],                        // 말없이 멈춤 → 흠… → 돌아봄
+    ['pauseResume', 0.2],                      // 말없이 펜만 멈췄다 다시 판서
+    ['humResume', 0.14],                       // 흠… → 그냥 다시 판서
+    ['whip', lerp(0.3, 0.28, k) + 0.05 * L],   // 펜만 살짝 멈추고 휙
+    ['longResume', 0.1],                       // 흐음… 한참 멈췄다가 다시 판서
+    ['peek', 0.12],                            // 어깨 너머 곁눈질(→ 다시 판서 또는 휙)
+    ['humWhip', lerp(0.08, 0.14, k)],          // 흠… 낚시 → 다시 판서하는 척 → 휙
+    ['doubleFake', 0.08],                      // 멈춤 → 판서 → 또 멈춤 → 판서
   ];
-  if (s.f < FPS * 10) W.length = 3;   // 처음 10초는 '흠… → 돌아봄 / 다시 판서'만(익숙해질 시간)
+  if (s.f < FPS * 10) W.length = 3;   // 처음 10초는 쉬운 3개만(익숙해질 시간)
   let sum = 0; for (const w of W) sum += w[1];
   let r = rnd(s) * sum, pat = W[0][0]; for (const w of W) { if (r < w[1]) { pat = w[0]; break; } r -= w[1]; }
   s.pat = pat;
-  s.plan = pat === 'normal' ? [['warn', humF(s)], ['turn', TURN_F]]
-    : pat === 'humResume' ? [['warn', humF(s) + 6]]
-    : pat === 'pauseResume' ? [['pause', pauseF(s)]]
+  s.plan = pat === 'pauseResume' ? [['pause', pauseF(s)]]
+    : pat === 'humResume' ? [['warn', Math.round(FPS * (0.6 + 0.8 * rnd(s)))]]
     : pat === 'whip' ? [['pause', whipCue(s)], ['turn', whipF(s)]]
-    : pat === 'longWhip' ? [['warn', longF(s)], ['turn', whipF(s)]]
     : pat === 'longResume' ? [['warn', longF(s)]]
-    : pat === 'peek' ? [['pause', Math.round(lerp(26, 13, dk(s)))], ['peek', PEEK_IN + 18 + Math.floor(rnd(s) * 30)], ...(rnd(s) < 0.4 ? [['pause', 8], ['turn', whipF(s)]] : [])]
-    : [['pause', pauseF(s)], ['warn', Math.round(humF(s) * 0.7)], ['turn', TURN_F]];
+    : pat === 'peek' ? [['pause', Math.round(lerp(26, 13, dk(s)))], ['peek', PEEK_IN + 18 + Math.floor(rnd(s) * 30)], ...(rnd(s) < 0.4 ? [['pause', whipCue(s)], ['turn', whipF(s)]] : [])]
+    : pat === 'humWhip' ? [['warn', Math.round(FPS * (0.6 + 1.4 * rnd(s)))], ['write', shortW(s)], ['pause', whipCue(s)], ['turn', whipF(s)]]
+    : [['pause', pauseF(s)], ['write', shortW(s) + 20], ['pause', pauseF(s)]];
 }
 function nextT(s) {
   if (!s.plan.length) { if (s.st === 'write') pickPlan(s); else { s.pat = ''; setT(s, 'write', writeF(s)); return; } }

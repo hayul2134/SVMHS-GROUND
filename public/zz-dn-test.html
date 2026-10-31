@@ -1,0 +1,4 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/style.css"></head>
+<body><main style="padding:16px"><div class="dn"><div class="dn-main" id="dnMain"></div></div></main>
+<script type="module">import {createDance} from '/js/dance.js';import * as D from '/js/dance-score.js';
+window.D=D;window.M=createDance(document.getElementById('dnMain'),{best:1234,keys:e=>e.code==='Space'?'dance':'',seed:async()=>777,saveLine:()=>'기록 저장 중…',onOver:r=>{window.res=r}});</script></body></html>
