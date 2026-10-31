@@ -7,7 +7,7 @@ import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
-import { BLAST_MAX, seedOf as blastSeed, replay as blastReplay } from '../../../public/js/blast-score.js';
+import { BLAST_MAX, SCALE as BLAST_SCALE, seedOf as blastSeed, replay as blastReplay } from '../../../public/js/blast-score.js';
 import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim } from '../../../public/js/chase-score.js';
 import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim } from '../../../public/js/dance-score.js';
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
@@ -1814,6 +1814,8 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - ttlOf(game));   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
+    // 2026-10-31 LED 월 켜기! 점수 ×10(blast-score.js SCALE): 새로 고침 전 예전 화면은 1배 점수를 보냄 → 다시 둬 본 점수의 1/10과 같으면 10배로 고쳐 받음
+    if (game === 'blast') { const x = blastReplay(blastSeed(ticket), body.rounds.map(y => Math.round(+y))); if (!x.err && x.score % BLAST_SCALE === 0 && BLAST_MAX - v === x.score / BLAST_SCALE) v = BLAST_MAX - x.score; }
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
     const fv = { dance: x => (DANCE_MAX - x).toLocaleString('ko-KR') + '점', chase: x => (CHASE_MAX - x).toLocaleString('ko-KR') + '점', mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '개' }[gk];
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)

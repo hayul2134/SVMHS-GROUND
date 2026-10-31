@@ -2684,6 +2684,8 @@ async function playBlast() {
   // 2026-10-30: 한 번 불러오기에 실패한 모듈은 같은 화면에서 다시 불러도 실패가 그대로 남음(브라우저 모듈 기억) → 실패하면 주소를 바꿔 한 번 더
   if (!BLAST) { try { BLAST = await import('./blast.js').catch(() => import('./blast.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#bl')) return;
+  // 2026-10-31 점수 ×10: 이 기기에 남은 예전 최고 기록도 한 번만 10배로
+  if (!store.get('blast_x10', false)) { const ob = store.get('blast_best', 0); if (ob) store.set('blast_best', ob * 10); store.set('blast_x10', true); }
   let runTk = null, run = 0, tkWhy = '';
   const M = BLAST.createBlast($('#bl'), {
     quick, best: store.get('blast_best', 0), sound: store.get('blast_snd', false),

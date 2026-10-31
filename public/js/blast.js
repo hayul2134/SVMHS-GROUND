@@ -384,8 +384,8 @@ export function createBlast(root, opt = {}) {
     const sc = $('sc'), g = $('gain');
     rollFrom = shown; rollAt = performance.now();
     if (!rollRaf) rollRaf = requestAnimationFrame(roll);
-    sc.classList.remove('bump', 'big'); void sc.offsetWidth; sc.classList.add(pts >= 100 ? 'big' : 'bump');
-    g.textContent = '+' + pts.toLocaleString('ko-KR'); g.className = 'bl-gain'; void g.offsetWidth; g.className = 'bl-gain on' + (pts >= 100 ? ' hot' : '');
+    sc.classList.remove('bump', 'big'); void sc.offsetWidth; sc.classList.add(pts >= 1000 ? 'big' : 'bump');
+    g.textContent = '+' + pts.toLocaleString('ko-KR'); g.className = 'bl-gain'; void g.offsetWidth; g.className = 'bl-gain on' + (pts >= 1000 ? ' hot' : '');
   }
   function roll() {
     const k = Math.min(1, (performance.now() - rollAt) / 450), e = 1 - (1 - k) ** 3;

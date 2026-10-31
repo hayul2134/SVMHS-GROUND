@@ -55,7 +55,7 @@ const PLAY = {
     let set = B.nextSet(rand, b, 0), used = [0, 0, 0];
     out: while (mv.length < 40) {
       for (let s = 0; s < 3; s++) { if (used[s]) continue; const sh = B.PIECES[set[s]].s;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (B.fits(b, sh, r, c)) { B.place(b, st, sh, r, c); mv.push(B.enc((mv.length + 1) * 400, s, r, c)); used[s] = 1; if (used.every(Boolean)) { set = B.nextSet(rand, b, mv.length); used = [0, 0, 0]; } continue out; } }
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (B.fits(b, sh, r, c)) { B.place(b, st, sh, r, c, B.kindV(set[s])); mv.push(B.enc((mv.length + 1) * 400, s, r, c)); used[s] = 1; if (used.every(Boolean)) { set = B.nextSet(rand, b, mv.length); used = [0, 0, 0]; } continue out; } }
       break;
     }
     return { value: B.BLAST_MAX - st.score, rounds: [(mv.length + 1) * 400, ...mv] };
@@ -129,6 +129,16 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
   const ok = sq.prepare("SELECT COUNT(*) AS n FROM scores s JOIN users u ON u.id = s.uid WHERE u.handle = 'smoke_r1' AND s.game = 'reaction'").get().n;
   if (h?.st !== 4 || !ok) fails.push(`보관 검사: 게임 시작 때 자동 반영 안 됨 (st ${h?.st}, 기록 ${ok})`);
   sq.prepare("DELETE FROM errs WHERE msg LIKE '연기검사:%'").run();
+}
+// LED 월 점수 ×10 검사(2026-10-31): 새로 고침 전 예전 화면이 보낸 1배 점수도 보류 없이 10배로 저장돼야 함
+{
+  cookie = '';
+  await call('POST', 'signup', { handle: 'smoke_x1', name: '연기검사x1', pw: 'zq8!kd02xa', grade: 2, cls: 3, club: '' });
+  const st = await call('POST', 'start', { game: 'blast' }); skew += 20000;
+  const body = PLAY.blast(400, st.j?.ticket), sc = BL.BLAST_MAX - body.value;
+  const r = await call('POST', 'score', { game: 'blast', ticket: st.j?.ticket, rounds: body.rounds, value: BL.BLAST_MAX - sc / BL.SCALE });
+  const got = sq.prepare("SELECT s.best FROM scores s JOIN users u ON u.id = s.uid WHERE u.handle = 'smoke_x1' AND s.game = 'blast'").get()?.best;
+  if (!r.j?.ok || r.j?.held || got !== body.value) fails.push(`LED 월 1배 점수 검사: ${sc / BL.SCALE}점(예전 화면) → 저장 ${got != null ? BL.BLAST_MAX - got : '없음'} (기대 ${sc}) ${JSON.stringify(r.j).slice(0, 200)}`);
 }
 // 오래 한 판 검사(2026-10-29 기자재 정리! 일반 100만 점 유실): 티켓이 만료된 뒤(2시간 뒤)에 끝난 판도 저장돼야 함
 {
