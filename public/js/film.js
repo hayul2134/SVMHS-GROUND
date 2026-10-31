@@ -224,7 +224,7 @@ export function createFilm(root, opt = {}) {
     const nb = score > best; if (nb) { best = score; $('best').textContent = best; }
     tone(nb ? 784 : 523, .14, 'triangle', .07); tone(nb ? 1047 : 392, .22, 'triangle', .07, .14);
     ov.hidden = false; ov.className = 'ml-ov end';
-    ov.innerHTML = `${sb('시간 끝!')}<p class="ml-sc">${score}<small>컷</small></p><span>${boards > 1 ? `${boards}번째 판까지 · ` : ''}${nb ? '최고 기록 경신!' : `내 최고 ${best}컷`}</span>
+    ov.innerHTML = `${sb('시간 끝!')}<p class="ml-sc">${score}<small>개</small></p><span>${boards > 1 ? `${boards}번째 판까지 · ` : ''}${nb ? '최고 기록 경신!' : `내 최고 ${best}개`}</span>
       <small class="ml-msg" data-m="msg"></small><button type="button" class="btn big" data-m="go">한 번 더</button>`;
     $('go').onclick = start;
     opt.onOver?.({ n: score, ms, why, nb, rounds: [cols, ms, ...moves] });

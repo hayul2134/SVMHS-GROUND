@@ -43,7 +43,7 @@ const GAMES = {
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
-  film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 막히면 새 판, 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '컷' },
+  film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 막히면 새 판, 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '개' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
@@ -1741,7 +1741,7 @@ function chUpLine(c) {   // 내 티어 칸 아래: 어제보다 · 지난 라운
 function chBlock(c) {
   const gs = gamesOn().filter(([k]) => GAMES[k]);
   const byG = new Map((c.games || []).map(x => [x.g, x]));
-  const GAP = { blast: v => v.toLocaleString('ko-KR') + '점', film: v => v.toLocaleString('ko-KR') + '컷', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
+  const GAP = { blast: v => v.toLocaleString('ko-KR') + '점', film: v => v.toLocaleString('ko-KR') + '개', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
   const champs = gs.map(([k, g]) => { const x = byG.get(k);
     if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">1등 자리 비어 있음</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
     // 공동 1등(2026-10-30 하율 "누가 했는지, 뭘로 90만 점 찍은 건지 헷갈려"): 메달을 '공동 1등'으로, 기록을 이름 위 한 줄로 올리고 'N명 같은 기록' — 합친 점수로 안 읽히게
@@ -2653,7 +2653,7 @@ async function playFilm() {
       if (!S.me) { if (res.n > store.get('film_best', 0)) store.set('film_best', res.n);   // 로그인 중엔 서버가 인정한 기록만 최고로(보류·저장 실패 판 제외)
  M.msg('로그인하면 랭킹에 올라가요'); return; }
       if (!tk) { M.msg('이번 판은 서버에 등록되지 않아 저장 못 했어요'); return; }
-      if (res.n < 1) { M.msg('0컷은 기록하지 않아요'); return; }
+      if (res.n < 1) { M.msg('0개는 기록하지 않아요'); return; }
       M.msg('기록 저장 중…');
       ticket = tk;   // 이 판의 티켓으로만 저장
       saveScore('film', FILM_MAX - res.n, res.rounds).then(r => {
