@@ -10,12 +10,13 @@ import { GEAR_MAX } from './gear-score.js';
 import { STAIR_MAX } from './stair-score.js';
 import { FILM_MAX } from './film-score.js';
 import { BLAST_MAX } from './blast-score.js';
+import { CHASE_MAX } from './chase-score.js';
 import { SNAKE_MAX, N2_MAX } from './cz-score.js';
 
 export const ACH_FF = 'achv';
-export const ACH_GAMES = ['film', 'home', 'stair', 'cut', 'reaction', 'num25', 'gear', 'blast'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
+export const ACH_GAMES = ['chase', 'film', 'home', 'stair', 'cut', 'reaction', 'num25', 'gear', 'blast'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
 // 저장값(작을수록 좋음) → 화면 단위
-export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : g === 'film' ? FILM_MAX - v : g === 'blast' ? BLAST_MAX - v : g === 'snake' ? SNAKE_MAX - v : g === 'n2048' ? N2_MAX - v : v;
+export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : g === 'film' ? FILM_MAX - v : g === 'blast' ? BLAST_MAX - v : g === 'chase' ? CHASE_MAX - v : g === 'snake' ? SNAKE_MAX - v : g === 'n2048' ? N2_MAX - v : v;
 
 const A = (k, g, lv, n, d, x = {}) => ({ k, g, lv, n, d, ...x });
 // lv: 1 브론즈 · 2 실버 · 3 골드 · 4 무지개(최상)
@@ -122,10 +123,22 @@ export const ACH = [
   A('b_x', 'blast', 1, '검은 화면', '한 판에 벽을 싹 비우기', { t: 'live', hid: 1 }),
   A('b_8', 'blast', 3, '조명 감독 호출', '한 판에 25번 연속 정리하기', { t: 'live', ch: 1 }),
   A('b_y', 'blast', 2, '방송 사고', '패널 6번도 못 놓고 끝나기', { t: 'live', hid: 1 }),
+  // 카체이싱! (점수) — 2026-10-31. 키는 저장값이라 바꾸지 말 것
+  A('ch_1', 'chase', 1, '시동 걸기', '첫 판 달리기', { t: 'first' }),
+  A('ch_2', 'chase', 1, '리허설 통과', '3,000점 넘게 달리기', { t: 'hi', v: 3000 }),
+  A('ch_3', 'chase', 2, '본 촬영 OK', '10,000점 넘게 달리기', { t: 'hi', v: 10000 }),
+  A('ch_4', 'chase', 3, '스턴트 감독', '20,000점 넘게 달리기', { t: 'hi', v: 20000 }),
+  A('ch_5', 'chase', 4, '할리우드 데뷔', '35,000점 넘게 달리기', { t: 'hi', v: 35000 }),
+  A('ch_6', 'chase', 2, '매일 출근하는 스턴트맨', '서로 다른 5일 동안 달리기', { t: 'days', v: 5 }),
+  A('ch_7', 'chase', 2, '아슬아슬 장인', '한 판에 아슬아슬 콤보 x10 만들기', { t: 'live' }),
+  A('ch_8', 'chase', 3, '컷 없이 원테이크', '한 판에 아슬아슬 콤보 x15 만들기', { t: 'live', ch: 1 }),
+  A('ch_x', 'chase', 1, '출발하자마자 컷!', '100m도 못 가고 부딪히기', { t: 'live', hid: 1 }),
+  A('ch_y', 'chase', 2, '주유 경고등 무시', '기름이 떨어져서 멈추기', { t: 'live', hid: 1 }),
+  A('ch_z', 'chase', 2, '도로 위 볼링', '한 판에 부스터로 차 10대 날려 버리기', { t: 'live', hid: 1 }),
 ];
 export const ACH_BY = Object.fromEntries(ACH.map(a => [a.k, a]));
 // 게임 하나의 일반 업적을 다 모으면 받는 칭호(프로필 꾸미기 칭호 목록)
-export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신', blast: '정리정돈 끝판왕' };
+export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신', blast: '정리정돈 끝판왕', chase: '카체이싱 스턴트맨' };
 export const achOf = g => ACH.filter(a => a.g === g);
 // ch = 도전 업적(최상위 기록) — 칭호 조건에서 뺌(2026-10-30, 칭호가 사실상 불가능해지지 않게)
 export const titleDone = (g, own) => achOf(g).filter(a => !a.hid && !a.ch).every(a => own[a.k]);
@@ -166,6 +179,11 @@ function liveOk(k, g, v, r, x) {
     case 'g_y': return (g === 'gear' || g === 'gearn') && n.length === 4 && n[1] === 1 && n[2] >= 30;
     case 'b_8': return g === 'blast' && !x?.err && (x?.combo || 0) >= 25;
     case 'b_y': return g === 'blast' && !x?.err && (x?.n || 0) > 0 && x.n < 6;
+    case 'ch_7': return g === 'chase' && !x?.err && (x?.maxCombo || 0) >= 10;
+    case 'ch_8': return g === 'chase' && !x?.err && (x?.maxCombo || 0) >= 15;
+    case 'ch_x': return g === 'chase' && !x?.err && x?.why !== 'fuel' && (x?.m ?? 999) < 100;
+    case 'ch_y': return g === 'chase' && !x?.err && x?.why === 'fuel';
+    case 'ch_z': return g === 'chase' && !x?.err && (x?.smash || 0) >= 10;
   }
   return false;
 }
@@ -244,6 +262,7 @@ export const MST_BANDS = {
   num25: { lo: 1, b: [8500, 11000, 14500, 20000], u: '초', s: 1000 },
   gear: { b: [30000, 15000, 8000, 4000], u: '점', min: 1000 },
   blast: { b: [6000, 3500, 2000, 1000], u: '점', min: 300 },
+  chase: { b: [25000, 15000, 8000, 3000], u: '점', min: 500 },   // 카체이싱!(2026-10-31, 봇 시뮬레이션 기준 — 공개 뒤 실제 기록 분포로 다시 맞출 것)
   mine: { lo: 1, b: [60000, 90000, 150000, 240000], u: '초', s: 1000 },
   snake: { b: [60, 40, 25, 12], u: '개' },
   n2048: { b: [6000, 4000, 2500, 1200], u: '점' },

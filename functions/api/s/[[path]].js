@@ -8,6 +8,7 @@ import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
 import { BLAST_MAX, seedOf as blastSeed, replay as blastReplay } from '../../../public/js/blast-score.js';
+import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim } from '../../../public/js/chase-score.js';
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
@@ -36,6 +37,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   film: { min: FILM_MAX - FILM_CELLS * 12, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷. 2026-10-30 막히면 새 판 → 2분 동안 여러 판(상한 120×12). 티어는 공개되는 순간부터(계단 오르기와 같게)
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },
   blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game', tierOn: true },
+  chase: { min: 1, max: CHASE_MAX - 1, play: 0, ff: 'chase-game', tierOn: true },   // 카체이싱!(2026-10-31 미리보기): CHASE_MAX - 점수. 서버가 입력 기록으로 판을 처음부터 다시 돌려 점수 확인(chase-score.js). 티어는 공개되는 순간부터
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에 — 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 시작 티켓 씨앗으로 판이 정해지고 서버가 다시 둬 봄(cz-score.js)
   mine: { min: 5000, max: 3600000, play: 0, ff: 'casual-games', tierOn: true },   // 중급 클리어 시간(ms) — 작을수록 1등
   snake: { min: SNAKE_MAX - 252, max: SNAKE_MAX - 1, play: 0, ff: 'casual-games', tierOn: true },   // SNAKE_MAX - 별 수
@@ -48,7 +50,14 @@ const RX_FREE = 1, RX_PEN = 50, RX_OUT = 5, RX_ANTI = 50;   // 반응속도 부�
 const rxPen = f => Math.max(0, f - RX_FREE) * RX_PEN;
 const sec = ms => (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + '초';
 // 보류·보관 기록의 판 기록: 다시 둬 보는 게임(필름 10·카메라 가방 정리!)은 놓기 전부가 있어야 나중에 다시 검사(rescueReplay)할 수 있음 → 2,600칸까지(예전: 30칸·500자에서 잘려 다시 검사가 늘 실패)
-const heldR = r => JSON.stringify(r.slice(0, 2600).map(x => Math.round(+x) || 0));
+const heldR = r => JSON.stringify(r.slice(0, 7000).map(x => Math.round(+x) || 0));
+// 카체이싱! 다시 돌리기는 판 길이만큼 CPU를 씀(2분 판 약 5~10ms) → 같은 요청 안에서 검사·업적이 한 번만 돌게 마지막 결과를 기억
+let chaseLast = null;
+function chaseRun(ticket, n) {
+  const key = ticket + ':' + n.length + ':' + n[0] + ':' + n[n.length - 1];
+  if (chaseLast?.key !== key) chaseLast = { key, x: chaseSim(chaseSeed(ticket), n) };
+  return chaseLast.x;
+}
 function checkRounds(game, v, r, elapsed, ticket = '') {
   if (!Array.isArray(r)) return H('판 기록 없음(예전 화면)', '판마다의 기록이 같이 오지 않았어요.');
   const n = r.map(x => Math.round(+x));
@@ -124,6 +133,12 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (x.err) return x.fast ? H(`놓기 간격이 너무 짧음(${x.k + 1}번째) — 매크로 의심`, x.err) : H(`다시 둬 보니 안 맞음: ${x.err}`, `${x.err}. 판과 놓은 기록이 서로 맞지 않아요.`);
     if (BLAST_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${BLAST_MAX - v})이 다름`, `놓은 기록을 다시 둬 보면 ${x.score.toLocaleString('ko-KR')}점인데 ${(BLAST_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
     if (n[0] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
+  } else if (game === 'chase') {   // [끝난 프레임, ...입력] — 차 배치는 이 시작 티켓 씨앗으로 정해짐(chase-score.js) → 입력대로 판을 처음부터 다시 돌려 점수 계산
+    const x = chaseRun(ticket, n);
+    if (x.err) return H(`다시 돌려 보니 안 맞음: ${x.err}`, `${x.err}. 판과 조작 기록이 서로 맞지 않아요.`);
+    if (CHASE_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${CHASE_MAX - v})이 다름`, `조작 기록대로 다시 달려 보면 ${x.score.toLocaleString('ko-KR')}점인데 ${(CHASE_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
+    const ms = Math.round(x.f * 1000 / CHASE_FPS);
+    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
   } else if (game === 'mine') {   // [첫 칸, ...(연 시각×1000 + 칸)] — 지뢰 배치는 이 티켓 씨앗 + 첫 칸으로 정해짐 → 연 칸을 다시 열어 봄
     const x = mineReplay(czSeed(ticket), n);
     if (x.err) return x.fast ? H(`칸을 너무 빠르게 엶 — 매크로 의심`, x.err) : H(`다시 열어 보니 안 맞음: ${x.err}`, `${x.err}. 판과 연 기록이 서로 맞지 않아요.`);
@@ -1785,7 +1800,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
-    const fv = { mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '개' }[gk];
+    const fv = { chase: x => (CHASE_MAX - x).toLocaleString('ko-KR') + '점', mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '개' }[gk];
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
@@ -1855,7 +1870,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
     const mis = (!isCas(g) || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
     // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
-    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : null, rank: isCas(g) ? null : rank, ...kstNowParts() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
+    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : game === 'chase' ? chaseRun(ticket, body.rounds.map(x => Math.round(+x))) : null, rank: isCas(g) ? null : rank, ...kstNowParts() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
     const achF = ffOn(ACH_FF, isAdm(me));
     const ach = achGot.length && achF ? achGot : undefined;
     // 게임 숙련도(깃발 mastery, 2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌"): 판 등급(S+~D, 내 최고 기록 대비)별 XP — 업적·최고 기록 보너스와 따로
