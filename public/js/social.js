@@ -2350,7 +2350,7 @@ function playReaction() {
       if (!alive || state !== 'wait') return;
       raf = requestAnimationFrame(tg => {   // 이 프레임에 초록으로 바꾸고
         if (!alive || state !== 'wait') return;
-        tG = tg; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>'; sfx.tone(1046, .12, 'square', .05);
+        tG = tg; state = 'go'; pad.className = 'rx go'; pad.innerHTML = '<b>지금!</b>'; sfx.tone(1046, .12, 'square', .0623);
         raf = requestAnimationFrame(ts => { if (alive && state === 'go') t0 = ts; });   // 다음 프레임 시작 = 초록이 화면에 나온 시각
       });
     }, rxDelay());
@@ -2359,7 +2359,7 @@ function playReaction() {
      → 탓하는 말 대신 무슨 일이 있었는지(잰 시간·기준)를 그대로 보여 줌. 판정 기준은 2026-10-29에 0.1초 → 0.05초로 완화. */
   const foul = (why, note = '') => {
     stop(); fouls++;
-    const pen = rxPen(fouls); sfx.tone(180, .22, 'sawtooth', .06, 0, 110);
+    const pen = rxPen(fouls); sfx.tone(180, .22, 'sawtooth', .0934, 0, 110);
     fl.className = 'rxfoul on' + (fouls >= RX_OUT - 1 ? ' hot' : '');
     fl.innerHTML = `부정출발 <b>${fouls} / ${RX_OUT}</b>` + (pen ? ` · 벌점 <b>+${pen}ms</b>` : ' · 이번 한 번은 봐줄게요');
     if (fouls >= RX_OUT) {
@@ -2375,14 +2375,14 @@ function playReaction() {
   };
   const press = at => {
     if (state === 'lock' || state === 'done') return;   // 부정출발 뒤 1초는 연타해도 안 넘어감
-    if (state === 'idle' || state === 'shown') { sfx.tone(440, .05, 'triangle', .035); return arm(); }
+    if (state === 'idle' || state === 'shown') { sfx.tone(440, .05, 'triangle', .0909); return arm(); }
     if (state === 'wait') return foul('앗, 너무 빨라요!', '초록색으로 바뀌기 전에 눌렀어요');
     if (state !== 'go') return;
     // 초록으로 바꾼 뒤 다음 프레임 전에 눌림: 예전엔 무조건 부정출발 → 느린 기기(디벗)에서 프레임이 밀리면 초록을 보고 누른 학생도 걸림(2026-10-29 하율 "억울하다")
     //   → 초록 프레임 + 1프레임(16.7ms)을 화면에 나온 시각으로 보고 같은 기준(RX_ANTI)으로 판정
     const ms = Math.round(at - (t0 || tG + 16.7));
     if (ms < RX_ANTI) return foul('너무 빨랐어요!', `${ms}ms · 0.05초 안은 사람이 보고 누를 수 없는 속도라 이번 판은 다시 해요`);   // 초록이 보이고 0.05초 안 = 봇·오토클릭 수준(2026-10-29 하율 "정말 봇이나 오토클릭만 잡게" — 예전 0.1초는 순발력 좋은 학생이 억울하게 걸림)
-    stop(); times.push(ms); sfx.tone(ms < 200 ? 1318 : ms < 280 ? 988 : 784, .08, 'triangle', .05); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
+    stop(); times.push(ms); sfx.tone(ms < 200 ? 1318 : ms < 280 ? 988 : 784, .08, 'triangle', .121); log.insertAdjacentHTML('beforeend', `<li>${ms}ms</li>`);
     if (times.length >= 5) {
       state = 'done';
       const cap = times.map(t => Math.min(t, RX_CAP)), avg = Math.round(cap.reduce((a, b) => a + b, 0) / 5), pen = rxPen(fouls);

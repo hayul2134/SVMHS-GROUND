@@ -251,7 +251,7 @@ export function createGear(canvas, opt = {}) {
       if (!noiseBuf) { noiseBuf = actx.createBuffer(1, actx.sampleRate * .4, actx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
       const src = actx.createBufferSource(), f = actx.createBiquadFilter(), v = actx.createGain(), t = actx.currentTime + delay;
       src.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.setValueAtTime(cut, t); f.frequency.exponentialRampToValueAtTime(200, t + dur);
-      v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      v.gain.value = 0; v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);   // 시작 전 0: 늦게 시작하는 잡음의 첫 샘플이 기본값 1로 나가 '틱' 튀던 것 막음(2026-11-01)
       src.connect(f).connect(v).connect(actx.destination); src.start(t); src.stop(t + dur + .02);
     } catch {}
   }
@@ -264,20 +264,20 @@ export function createGear(canvas, opt = {}) {
       if (!noiseBuf) { noiseBuf = actx.createBuffer(1, actx.sampleRate * .4, actx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
       const src = actx.createBufferSource(), f = actx.createBiquadFilter(), v = actx.createGain(), t = actx.currentTime + delay;
       src.buffer = noiseBuf; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(from, t); f.frequency.exponentialRampToValueAtTime(to, t + dur);
-      v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      v.gain.value = 0; v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);   // 시작 전 0: 늦게 시작하는 잡음의 첫 샘플이 기본값 1로 나가 '틱' 튀던 것 막음(2026-11-01)
       src.connect(f).connect(v).connect(actx.destination); src.start(t, Math.random() * .2); src.stop(t + dur + .02);
     } catch {}
   }
   // 슬레이트 '딱!' 소리는 2026-10-27 하율 요청으로 전부 뺌(시작·4줄·게임 오버·슬레이트 놓기)
   const clap = (vol = .14, delay = 0) => { hiss(vol, .05, 3800, 2000, 'highpass', .7, delay); beep(1900, 1200, .03, 'square', vol * .25, delay); };   // 슬레이트 '딱!'
   const PLACE = {   // 장비별로 놓는 소리 (모양 → 장비: KIND 참고)
-    O() { hiss(.07, .025, 5200, 4000, 'highpass', .8); hiss(.06, .03, 4200, 3000, 'highpass', .8, .07); },          // 카메라: 셔터 '찰칵'
-    Z() { beep(260, 180, .07, 'triangle', .04); },                                                                  // 슬레이트: 나무판 '툭' (2026-10-27 하율: '탁' 소리 제거)
-    I() { beep(1200, 1180, .12, 'sine', .025); beep(60, 60, .12, 'sawtooth', .015); },                              // LED 조명: '지잉' 켜지는 소리
-    T() { beep(880, 870, .09, 'triangle', .035); beep(1320, 1300, .06, 'triangle', .02, .01); },                  // 삼각대: 금속 '챙'
-    L() { beep(620, 600, .08, 'square', .025); hiss(.05, .05, 2400, 1200, 'bandpass', 3); },                       // C스탠드: 쇠 '철컥'
-    J() { beep(220, 160, .1, 'sine', .06); hiss(.03, .08, 900, 400); },                                            // 붐 마이크: 속 빈 '퐁'
-    S() { hiss(.05, .12, 1400, 500, 'bandpass', .8); },                                                            // 케이블: '스르륵'
+    O() { hiss(.1, .025, 5200, 4000, 'highpass', .8); hiss(.086, .03, 4200, 3000, 'highpass', .8, .07); },          // 카메라: 셔터 '찰칵'
+    Z() { beep(260, 180, .07, 'triangle', .133); },                                                                  // 슬레이트: 나무판 '툭' (2026-10-27 하율: '탁' 소리 제거)
+    I() { beep(1200, 1180, .12, 'sine', .0689); beep(60, 60, .12, 'sawtooth', .0414); },                              // LED 조명: '지잉' 켜지는 소리
+    T() { beep(880, 870, .09, 'triangle', .0945); beep(1320, 1300, .06, 'triangle', .054, .01); },                  // 삼각대: 금속 '챙'
+    L() { beep(620, 600, .08, 'square', .0719); hiss(.143, .05, 2400, 1200, 'bandpass', 3); },                       // C스탠드: 쇠 '철컥'
+    J() { beep(220, 160, .1, 'sine', .0854); hiss(.0427, .08, 900, 400); },                                            // 붐 마이크: 속 빈 '퐁'
+    S() { hiss(.24, .12, 1400, 500, 'bandpass', .8); },                                                            // 케이블: '스르륵'
   };
   const fxAt = (cs, p) => { const xs = cs.map(c => (p.x + c[0]) * C + C / 2), ys = cs.map(c => (p.y + c[1] - HID) * C + C / 2); return [xs.reduce((a, b) => a + b) / xs.length, ys.reduce((a, b) => a + b) / ys.length]; };
 
@@ -294,7 +294,7 @@ export function createGear(canvas, opt = {}) {
   function start() { if (st.scene !== 'ready') return; st.scene = 'play'; newPiece(); opt.onStart?.(); beep(880, 1320, .08, 'triangle', .03, .06); }   // 시작: '액션!' 슬레이트
   function move(dx) {
     const p = st.cur; if (!p || !fits(p.k, p.r, p.x + dx, p.y)) return false;
-    p.x += dx; resetLock(); beep(330 + Math.random() * 20, 300, .03, 'square', .02); return true;
+    p.x += dx; resetLock(); beep(330 + Math.random() * 20, 300, .03, 'square', .0736); return true;
   }
   function rotate(dir) {
     const p = st.cur; if (!p) return false;
@@ -317,14 +317,14 @@ export function createGear(canvas, opt = {}) {
     // 내리꽂은 자취(위에서 떨어진 빛줄기)
     if (n > 1) for (const [cx, cy] of cs) st.trails.push({ x: (p.x + cx) * C, y0: (p.y + cy - n - HID) * C, y1: (p.y + cy - HID) * C, t: .18 });
     if (n) { const [fx, fy] = fxAt(cs, p); opt.onScore?.(n * HARD_PT, fx, fy, 0); }
-    thump(.07); if (n > 2) hiss(.05, .12, 2600, 400, 'bandpass', .8);   // 내리꽂기 '쉭-쿵'
+    thump(.0838); if (n > 2) hiss(.0599, .12, 2600, 400, 'bandpass', .8);   // 내리꽂기 '쉭-쿵'
     lockPiece();
   }
   function hold() {
     if (st.scene !== 'play' || st.held || !st.cur || st.clearT) return;
     const k = st.cur.k;
     if (st.hold) { const h = st.hold; st.hold = k; spawn(h); } else { st.hold = k; newPiece(); }
-    st.held = true; beep(440, 330, .06, 'triangle', .03); hiss(.04, .14, 800, 3000, 'bandpass', 1.5);   // 가방에 넣는 '지익'
+    st.held = true; beep(440, 330, .06, 'triangle', .155); hiss(.206, .14, 800, 3000, 'bandpass', 1.5);   // 가방에 넣는 '지익'
     opt.onQueue?.();
   }
   function lockPiece() {
@@ -348,11 +348,12 @@ export function createGear(canvas, opt = {}) {
       // 깨지기(2026-10-27 2차 하율 "깔끔한 느낌이 안 남"): 칸이 통째로 하얗게 번쩍 → 작아지며 사라짐, 가운데 → 바깥 순서로 차례차례. 흩날리는 조각은 없앰
       for (const y of full) for (let x = 0; x < COLS; x++) { const c = st.board[y][x]; st.pops.push({ k: c.k, r: c.r, sx: c.sx, sy: c.sy, x: x * C, y: (y - HID) * C, d: Math.abs(x - 4.5) * .016, t: 0 }); }
       st.rings.push({ y: ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, t: .45, n });
-      crunch(tet ? .2 : .13, tet ? .32 : .2, tet ? 3200 : 2400); thump(tet ? .16 : .11);
+      const lk = tet ? .36 : [0, .65, .59, .53][n];   // 효과음 크기 맞춤(2026-11-01 tools/sfx) — 줄이 많을수록 소리가 겹쳐 커지니 그만큼 줄여 다른 소리와 같은 크기로
+      crunch((tet ? .2 : .13) * lk, tet ? .32 : .2, tet ? 3200 : 2400); thump((tet ? .16 : .11) * lk);
       st.combo = (st.combo || 0) + 1; const up = Math.pow(2, Math.min(st.combo - 1, 8) / 12);   // 연속으로 깰수록 반음씩 올라감
-      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f * up, f * up, .12, 'square', .045, .06 + i * .07)); crunch(.12, .25, 1800, .12); }   // 4줄: 팡파레 + 슬레이트 '딱!'
-      else [660, 784, 880].slice(0, n).forEach((f, i) => beep(f * up, f * up * 1.5, .1 + n * .02, 'square', .04, .04 + i * .06));   // 1·2·3줄: 줄 수만큼 음이 이어짐
-      if (st.level > lv) [523, 784, 1047, 1568].forEach((f, i) => beep(f, f, .1, 'triangle', .04, .45 + i * .08));   // 레벨 업
+      if (tet) { [523, 659, 784, 1047].forEach((f, i) => beep(f * up, f * up, .12, 'square', .045 * lk, .06 + i * .07)); crunch(.12 * lk, .25, 1800, .12); }   // 4줄: 팡파레 + 슬레이트 '딱!'
+      else [660, 784, 880].slice(0, n).forEach((f, i) => beep(f * up, f * up * 1.5, .1 + n * .02, 'square', .04 * lk, .04 + i * .06));   // 1·2·3줄: 줄 수만큼 음이 이어짐
+      if (st.level > lv) [523, 784, 1047, 1568].forEach((f, i) => beep(f, f, .1, 'triangle', .052, .45 + i * .08));   // 레벨 업
       opt.onScore?.(Math.round(pts), BW / 2, ((full[0] + full[full.length - 1]) / 2 - HID) * C + C / 2, n);
       // 4줄 연달아: 2번째 '기자재! 연속!' → 3번째 '울트라 기자재!' → 4번째부터 '울트라 기자재! X2·X3…' (2026-10-27 하율)
       const tn = st.tetN, nm = !tet ? CLEAR_NAME[n] : tn <= 1 ? '기자재!' : tn === 2 ? '기자재! 연속!' : tn === 3 ? '울트라 기자재!' : '울트라 기자재! X' + (tn - 2);
@@ -360,7 +361,7 @@ export function createGear(canvas, opt = {}) {
     } else {
       st.combo = 0; newPiece();
       // 선반이 거의 찼으면(보이는 위 4줄 안에 장비) 경고음 — 소리로도 위험을 알림
-      if (st.scene === 'play' && st.board.slice(HID, HID + 4).some(r => r.some(Boolean))) { beep(196, 185, .12, 'square', .03); beep(196, 185, .12, 'square', .03, .16); }
+      if (st.scene === 'play' && st.board.slice(HID, HID + 4).some(r => r.some(Boolean))) { beep(196, 185, .12, 'square', .0498); beep(196, 185, .12, 'square', .0498, .16); }
     }
   }
   function finishClear() {

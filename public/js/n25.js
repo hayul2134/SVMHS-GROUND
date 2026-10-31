@@ -51,10 +51,10 @@ export function run(root, o) {
     os.type = type; os.frequency.setValueAtTime(f, t); if (f2) os.frequency.exponentialRampToValueAtTime(f2, t + len);
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .008); g.gain.exponentialRampToValueAtTime(.0001, t + len); os.connect(g).connect(c.destination); os.start(t); os.stop(t + len + .02); };
   const sfx = (k, i = 0) => { if (!sound) return;
-    if (k === 'ok') tone(hz(i), 0, .16, 'sine', .055);
+    if (k === 'ok') tone(hz(i), 0, .16, 'sine', .0398);
     else if (k === 'bad') tone(200, 0, .22, 'triangle', .07, 110);
     else if (k === 'cp') { tone(hz(i), 0, .12, 'sine', .05); tone(hz(i) * 1.5, .06, .18, 'sine', .045); }
-    else if (k === 'end') [0, 4, 7, 12].forEach((s, j) => tone(523 * 2 ** (s / 12), j * .07, .35, 'sine', .05)); };
+    else if (k === 'end') [0, 4, 7, 12].forEach((s, j) => tone(523 * 2 ** (s / 12), j * .07, .35, 'sine', .0239)); };
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; sndBtn.classList.toggle('on', sound); };
   sndBtn.onclick = () => { sound = !sound; o.onSound?.(sound); if (sound) ac(); paintSnd(); sndBtn.blur(); };
   paintSnd();

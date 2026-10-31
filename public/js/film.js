@@ -33,7 +33,8 @@ export function createFilm(root, opt = {}) {
   }
   function snip(n) {   // 10 맞춰 깰 때 '도로롱'(2026-11-01 하율) = 올라가는 맑은 음 여러 개(많이 지울수록 길고 높게), 마지막 음은 길게
     const P = [1047, 1175, 1319, 1568, 1760, 2093, 2349, 2637, 3136], k = Math.min(Math.max(n + 1, 3), 6), s0 = Math.min(Math.max(n - 2, 0), 3);
-    for (let i = 0; i < k; i++) { const last = i === k - 1; bell(P[s0 + i], i * .045, last ? .32 : .09, last ? .09 : .06); }
+    const lk = [1, 1, 1, 1, .82, .705, .645][k];   // 효과음 크기 맞춤(2026-11-01 tools/sfx) — 음이 많을수록 커지니 그만큼 줄임
+    for (let i = 0; i < k; i++) { const last = i === k - 1; bell(P[s0 + i], i * .045, last ? .32 : .09, (last ? .0419 : .0279) * lk); }
   }
   const paintSnd = () => { const t = sound ? '소리 끄기' : '소리 켜기'; sndBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-snd-${sound ? 'on' : 'off'}"/></svg>`; sndBtn.setAttribute('aria-pressed', sound); sndBtn.setAttribute('aria-label', t); sndBtn.dataset.tip = t; };
   sndBtn.onclick = () => { sound = !sound; if (sound) au(); paintSnd(); opt.onSound?.(sound); sndBtn.blur(); };
@@ -140,7 +141,7 @@ export function createFilm(root, opt = {}) {
       ctx.strokeStyle = ok ? '#2f9a3a' : '#3a6fd0'; ctx.fillStyle = ok ? 'rgba(76,175,80,.1)' : 'rgba(80,140,230,.07)';
       ctx.beginPath(); ctx.rect(R.x0, R.y0, R.x1 - R.x0, R.y1 - R.y0); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
       // 합 숫자 표시는 없앰(2026-10-29 하율) — 딱 10이면 상자·클립이 초록으로 바뀌는 것만으로 알려 줌
-      if (sum !== lastSum) { if (sel.size && lastSum !== -1) tone(ok ? 990 : 520 + Math.min(sum, 12) * 25, .035, 'square', .025); lastSum = sum; }
+      if (sum !== lastSum) { if (sel.size && lastSum !== -1) tone(ok ? 990 : 520 + Math.min(sum, 12) * 25, .035, 'square', .065); lastSum = sum; }
     } else lastSum = -1;
   }
 
@@ -153,7 +154,7 @@ export function createFilm(root, opt = {}) {
     const R = range(), sel = selOf(R); let sum = 0; sel.forEach(i => sum += grid[i]);
     drag = null;
     if (state !== 'play' || !sel.length) { kick(); return; }
-    if (sum !== 10) { tone(180, .09, 'triangle', .05); kick(); return; }
+    if (sum !== 10) { tone(180, .09, 'triangle', .131); kick(); return; }
     // 실제로 묶인 컷들의 범위로 저장(서버가 같은 범위로 다시 둬 봄)
     let r0 = 99, r1 = -1, c0 = 99, c1 = -1;
     sel.forEach(i => { const r = Math.floor(i / cols), c = i % cols; r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c); });
@@ -176,14 +177,14 @@ export function createFilm(root, opt = {}) {
     ({ g: grid, k: bk } = gridAt(seed0, bk + 1, cols)); boards++;
     const now = performance.now(); floats.push({ n: 0, txt: all ? '전부 싹둑! 새 판' : '새 판!', x: cols * cell / 2, y: rows * cell / 2, t: now, big: 1 });
     board.classList.remove('nb'); void board.offsetWidth; board.classList.add('nb');
-    tone(660, .08, 'triangle', .06); tone(990, .12, 'triangle', .06, .07);
+    tone(660, .08, 'triangle', .0796); tone(990, .12, 'triangle', .0796, .07);
   }
   function kick() { if (!raf && !dead) raf = requestAnimationFrame(loop); }
   function loop() {
     raf = 0; if (dead) return;
     if (state === 'play') {
       const left = Math.max(0, TIME_MS - clock()), s = Math.ceil(left / 1000);
-      if (s !== lastTm) { lastTm = s; $('tm').textContent = s; root.classList.toggle('low', left <= 20000); if (s <= 10 && s > 0) tone(s <= 3 ? 1200 : 900, .05, 'sine', .05); }
+      if (s !== lastTm) { lastTm = s; $('tm').textContent = s; root.classList.toggle('low', left <= 20000); if (s <= 10 && s > 0) tone(s <= 3 ? 1200 : 900, .05, 'sine', .0723); }
       tf.style.setProperty('--t', (left / TIME_MS).toFixed(4));   // CSP: style 속성 대신 CSSOM
       if (left <= 0) end('time');
     }
@@ -206,7 +207,7 @@ export function createFilm(root, opt = {}) {
     if (state === 'over') fit();   // 화면 방향이 바뀌었으면 판 모양도 새로(판 번호 계산이 가로 칸 수에 따라 달라서 판 만들기 전에)
     seed0 = seed == null ? Math.floor(Math.random() * 4294967296) : seed; ({ g: grid, k: bk } = gridAt(seed0, 0, cols)); boards = 1;
     score = 0; $('sc').textContent = 0; drag = null; pops = []; floats = []; moves = []; used = 0; lastTm = -1; root.classList.remove('low');
-    state = 'play'; lastAt = performance.now(); ov.hidden = true; tone(523, .08, 'triangle', .06); tone(784, .12, 'triangle', .06, .08);
+    state = 'play'; lastAt = performance.now(); ov.hidden = true; tone(523, .08, 'triangle', .0819); tone(784, .12, 'triangle', .0819, .08);
     kick();
   }
   function pause() {

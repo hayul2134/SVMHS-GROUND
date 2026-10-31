@@ -394,19 +394,19 @@ function makeSfx() {
     get on() { return on; },
     set(x) { on = !!x; if (on) ctx(); },
     unlock() { if (on) ctx(); },
-    beep(go) { tone(go ? 880 : 520, go ? 0.25 : 0.12, 'square', 0.05); },
-    tap() { tone(300, 0.05, 'triangle', 0.1); tone(300, 0.05, 'triangle', 0.09, 0, 0.14); },   // 막대기로 교탁 톡톡
+    beep(go) { tone(go ? 880 : 520, go ? 0.25 : 0.12, 'square', go ? 0.05 : 0.0675); },
+    tap() { tone(300, 0.05, 'triangle', .132); tone(300, 0.05, 'triangle', .119, 0, 0.14); },   // 막대기로 교탁 톡톡
     whoosh() { tone(500, 0.15, 'sine', 0.04, 200); },
-    whip() { tone(1400, 0.09, 'sawtooth', 0.04, 300); },
-    peek() { tone(420, 0.06, 'sine', 0.03, 520); },
+    whip() { tone(1400, 0.09, 'sawtooth', .111, 300); },
+    peek() { tone(420, 0.06, 'sine', .119, 520); },
     safe() { tone(880, 0.1, 'sine', 0.07, 1320); tone(1320, 0.12, 'sine', 0.05, 0, 0.08); },
     caught() { tone(220, 0.4, 'sawtooth', 0.08, 90); },
-    mult(m2) { tone(500 + m2 * 60, 0.09, 'square', 0.045, 800 + m2 * 80); },
+    mult(m2) { tone(500 + m2 * 60, 0.09, 'square', .0745, 800 + m2 * 80); },
     beat(dancing, t, m2) {   // 춤추는 동안 작은 쿵짝(배율 오르면 빨라짐)
       if (!on || !dancing) { nextBeat = 0; return; }
       const a = ctx(); if (!a) return;
       const gap = 0.5 - Math.min(0.2, (m2 - 2) * 0.035);
-      if (!nextBeat || a.currentTime >= nextBeat) { tone(90, 0.12, 'sine', 0.09, 50); tone(1800, 0.03, 'square', 0.015, 0, gap / 2); nextBeat = a.currentTime + gap; }
+      if (!nextBeat || a.currentTime >= nextBeat) { tone(90, 0.12, 'sine', .0637, 50); tone(1800, 0.03, 'square', .0106, 0, gap / 2); nextBeat = a.currentTime + gap; }
     },
   };
 }

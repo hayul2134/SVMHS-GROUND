@@ -88,7 +88,7 @@ function makeSfx() {
     }
     const f = 38 + v * 0.085 + boost * 30, t = a.currentTime;
     eng.o.frequency.setTargetAtTime(f, t, 0.08); eng.o2.frequency.setTargetAtTime(f * 0.502, t, 0.08); eng.o3.frequency.setTargetAtTime(f * 2.01, t, 0.08);
-    eng.fl.frequency.setTargetAtTime(380 + v * 0.35 + boost * 900, t, 0.1); eng.g.gain.setTargetAtTime(0.022 + boost * 0.012, t, 0.1);
+    eng.fl.frequency.setTargetAtTime(380 + v * 0.35 + boost * 900, t, 0.1); eng.g.gain.setTargetAtTime(0.0026 - boost * 0.0004, t, 0.1);   // 크기 맞춤(2026-11-01 tools/sfx): 계속 깔리는 소리라 다른 효과음보다 8dB 작게
   };
   const stopEngine = () => { if (eng) { try { eng.o.stop(); eng.o2.stop(); eng.o3.stop(); } catch {} eng = null; } };
   const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
@@ -97,42 +97,42 @@ function makeSfx() {
     engine, stopEngine,
     // 칼치기: 휙(바람) + 콤보마다 높아지는 반짝 두 음
     near: (c, close) => {
-      noise(0.28, close ? 0.2 : 0.14, 700, 4200, 'bandpass', 0, 1.6, 0.2);
+      noise(0.28, close ? .0531 : .0783, 700, 4200, 'bandpass', 0, 1.6, 0.2);
       const st = PENTA[Math.min(c - 1, PENTA.length - 3)], b = 784 * Math.pow(2, st / 12);
-      tone(b, 0.12, 'triangle', 0.07, 0, 0.02, 0.5); tone(b * 1.5, 0.18, 'triangle', 0.06, 0, 0.08, 0.6);
-      if (close) { tone(b * 2, 0.22, 'sine', 0.05, 0, 0.13, 0.7); noise(0.12, 0.08, 6000, 0, 'highpass', 0.1, 0.7, 0.5); }
+      tone(b, 0.12, 'triangle', .0392, 0, 0.02, 0.5); tone(b * 1.5, 0.18, 'triangle', .0336, 0, 0.08, 0.6);
+      if (close) { tone(b * 2, 0.22, 'sine', .00476, 0, 0.13, 0.7); noise(0.12, .00713, 6000, 0, 'highpass', 0.1, 0.7, 0.5); }
     },
-    combo: c => { [0, 4, 7, 12, 16].forEach((st, i) => tone(523 * Math.pow(2, st / 12), 0.16, i % 2 ? 'square' : 'triangle', 0.05, 0, i * 0.06, 0.5)); tone(523 * 4, 0.5, 'sine', 0.05, 0, 0.32, 0.8); boom(110, 0.3, 0.12); },
+    combo: c => { [0, 4, 7, 12, 16].forEach((st, i) => tone(523 * Math.pow(2, st / 12), 0.16, i % 2 ? 'square' : 'triangle', .0127, 0, i * 0.06, 0.5)); tone(523 * 4, 0.5, 'sine', .0127, 0, 0.32, 0.8); boom(110, 0.3, .0305); },
     coin: () => { tone(1568, 0.07, 'square', 0.035, 0, 0, 0.4); tone(2093, 0.16, 'triangle', 0.05, 0, 0.05, 0.6); },
-    fuel: () => { [0, 0.07, 0.14].forEach((d, i) => tone(260 + i * 90, 0.09, 'sine', 0.09, 160 + i * 60, d, 0.3)); tone(660, 0.18, 'triangle', 0.06, 1320, 0.2, 0.5); },
-    box: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.12, i % 2 ? 'square' : 'triangle', 0.045, 0, i * 0.045, 0.6)); noise(0.4, 0.06, 3000, 9000, 'highpass', 0.1, 0.7, 0.6); },
+    fuel: () => { [0, 0.07, 0.14].forEach((d, i) => tone(260 + i * 90, 0.09, 'sine', .0382, 160 + i * 60, d, 0.3)); tone(660, 0.18, 'triangle', .0255, 1320, 0.2, 0.5); },
+    box: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.12, i % 2 ? 'square' : 'triangle', .00867, 0, i * 0.045, 0.6)); noise(0.4, .0116, 3000, 9000, 'highpass', 0.1, 0.7, 0.6); },
     // 부스터: 쿵 + 터보 휘이잉(잡음 훑기) + 올라가는 톱니
-    boost: () => { boom(70, 0.6, 0.28); noise(1.1, 0.2, 300, 6500, 'bandpass', 0, 1.2, 0.3); tone(110, 0.9, 'sawtooth', 0.05, 880, 0.02, 0.3); tone(220, 0.7, 'square', 0.03, 1320, 0.1, 0.4); },
-    ramp: () => { metal(0.03); boom(120, 0.25, 0.22); noise(0.9, 0.16, 400, 5000, 'bandpass', 0.05, 1.3, 0.35); tone(196, 0.8, 'sawtooth', 0.04, 784, 0.05, 0.4); tone(392, 0.6, 'triangle', 0.04, 1568, 0.15, 0.6); },
-    slip: () => { noise(0.7, 0.13, 350, 2600, 'bandpass', 0, 1.4, 0.3); tone(330, 0.5, 'sine', 0.03, 660, 0.05, 0.5); },
-    boostEnd: () => { noise(0.5, 0.08, 3000, 300, 'bandpass', 0, 1.2, 0.3); tone(600, 0.4, 'sawtooth', 0.03, 150, 0, 0.3); },
-    jump: () => { tone(260, 0.2, 'square', 0.04, 760, 0, 0.3); noise(0.15, 0.06, 1500, 4000, 'bandpass', 0, 1.2, 0.1); },
-    lane: () => noise(0.11, 0.07, 1800, 600, 'bandpass', 0, 2, 0.05),
+    boost: () => { boom(70, 0.6, .0521); noise(1.1, .0372, 300, 6500, 'bandpass', 0, 1.2, 0.3); tone(110, 0.9, 'sawtooth', .00931, 880, 0.02, 0.3); tone(220, 0.7, 'square', .00559, 1320, 0.1, 0.4); },
+    ramp: () => { metal(.00847); boom(120, 0.25, .0621); noise(0.9, .0452, 400, 5000, 'bandpass', 0.05, 1.3, 0.35); tone(196, 0.8, 'sawtooth', .0113, 784, 0.05, 0.4); tone(392, 0.6, 'triangle', .0113, 1568, 0.15, 0.6); },
+    slip: () => { noise(0.7, .0774, 350, 2600, 'bandpass', 0, 1.4, 0.3); tone(330, 0.5, 'sine', .0179, 660, 0.05, 0.5); },
+    boostEnd: () => { noise(0.5, .054, 3000, 300, 'bandpass', 0, 1.2, 0.3); tone(600, 0.4, 'sawtooth', .0203, 150, 0, 0.3); },
+    jump: () => { tone(260, 0.2, 'square', .063, 760, 0, 0.3); noise(0.15, .0945, 1500, 4000, 'bandpass', 0, 1.2, 0.1); },
+    lane: () => noise(0.11, .206, 1800, 600, 'bandpass', 0, 2, 0.05),
     land: () => { boom(130, 0.16, 0.18); noise(0.12, 0.1, 700, 200, 'lowpass', 0, 0.8, 0.1); },
     // 부스터로 차 날리기: 쿵 + 금속 + 유리 몇 조각
     smash: wall => {
-      boom(150, 0.3, 0.32); metal(wall ? 0.035 : 0.05);
-      if (wall) { noise(0.3, 0.2, 1400, 300, 'bandpass', 0, 3, 0.3); [0, 0.05, 0.11].forEach(d => noise(0.06, 0.16, 2500, 0, 'bandpass', d, 4, 0.2)); }
-      else glass(5, 0.04, 0.2, 0.04);
+      boom(150, 0.3, .0574); metal(wall ? .0088 : .00897);
+      if (wall) { noise(0.3, .0448, 1400, 300, 'bandpass', 0, 3, 0.3); [0, 0.05, 0.11].forEach(d => noise(0.06, .0362, 2500, 0, 'bandpass', d, 4, 0.2)); }
+      else glass(5, .00718, 0.2, 0.04);
     },
     thud: v => { boom(100, 0.18, 0.14 * v); noise(0.1, 0.12 * v, 1200, 300, 'lowpass', 0, 1, 0.2); metal(0.015 * v); },
     // 충돌: 와장창 — 깊은 쿵 + 폭발 잡음 + 금속 + 유리 산산조각 + 떨어지는 파편
     crash: () => {
-      boom(95, 1.1, 0.45); boom(55, 1.4, 0.35, 0.02);
-      noise(1.3, 0.34, 3800, 90, 'lowpass', 0, 0.9, 0.35);
-      metal(0.07); metal(0.045, 0.09);
-      glass(18, 0.05, 0.55, 0.03);
-      for (let i = 0; i < 9; i++) noise(0.05 + Math.random() * 0.05, 0.05 + Math.random() * 0.06, 1500 + Math.random() * 3000, 0, 'bandpass', 0.35 + Math.random() * 0.9, 3, 0.3);
+      boom(95, 1.1, .0167); boom(55, 1.4, .013, 0.02);
+      noise(1.3, .0127, 3800, 90, 'lowpass', 0, 0.9, 0.35);
+      metal(.0026); metal(.00167, 0.09);
+      glass(18, .00186, 0.55, 0.03);
+      for (let i = 0; i < 9; i++) noise(0.05 + Math.random() * 0.05, 0.05 + Math.random() * .00223, 1500 + Math.random() * 3000, 0, 'bandpass', 0.35 + Math.random() * 0.9, 3, 0.3);
     },
-    beep: hi => tone(hi ? 880 : 440, hi ? 0.35 : 0.14, 'square', 0.06, 0, 0, 0.3),
+    beep: hi => tone(hi ? 880 : 440, hi ? 0.35 : 0.14, 'square', hi ? .0466 : .116, 0, 0, 0.3),
     warn: () => { tone(740, 0.08, 'square', 0.04); tone(740, 0.08, 'square', 0.04, 0, 0.14); },
     empty: () => tone(200, 0.5, 'triangle', 0.07, 90),
-    stop: () => noise(0.5, 0.05, 600, 100),
+    stop: () => noise(0.5, .149, 600, 100),
   };
 }
 

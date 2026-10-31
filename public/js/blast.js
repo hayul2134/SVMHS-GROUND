@@ -183,13 +183,14 @@ export function createBlast(root, opt = {}) {
   }
   function sndClear(n, cb, all) {   // 줄 송출: 부드러운 '퉁' → 도로롱(줄이 많을수록 길게, 연속일수록 높게) → 맑은 마무리 음
     const up = Math.min(cb, 8), PENT = [0, 2, 4, 7, 9];
-    tone(130, .22, 'sine', .3, 0, 60);   // 퉁
+    const lk = .125 * [1, 1, .8, .68, .67][Math.min(n, 4)] * (all ? .9 : 1);   // 효과음 크기 맞춤(2026-11-01 tools/sfx) — 줄이 많을수록 음이 겹쳐 커지니 그만큼 줄여 다른 소리와 같은 크기로
+    tone(130, .22, 'sine', .3 * lk, 0, 60);   // 퉁
     const cnt = Math.min(6 + n * 3, 16), base = 523 * 2 ** (up / 12);
-    for (let j = 0; j < cnt; j++) { const st2 = PENT[j % 5] + 12 * Math.floor(j / 5); blip(base * 2 ** (st2 / 12), .02 + j * .032, .085); }
+    for (let j = 0; j < cnt; j++) { const st2 = PENT[j % 5] + 12 * Math.floor(j / 5); blip(base * 2 ** (st2 / 12), .02 + j * .032, .085 * lk); }
     const end = .02 + cnt * .032;
-    [0, 7, 12].forEach(x => tone(base * 2 * 2 ** (x / 12), .45, 'sine', .045, end));   // 마무리 화음(부드럽게)
-    if (n >= 2) tone(65, .45, 'sine', .22, 0, 40);   // 여러 줄: 낮은 울림
-    if (all) { for (let j = 0; j < 12; j++) blip(base * 2 * 2 ** ((PENT[j % 5] + 12 * Math.floor(j / 5)) / 12), end + .1 + j * .04, .08); }   // 전체 화면 송출: 한 번 더 길게 굴러 올라감
+    [0, 7, 12].forEach(x => tone(base * 2 * 2 ** (x / 12), .45, 'sine', .045 * lk, end));   // 마무리 화음(부드럽게)
+    if (n >= 2) tone(65, .45, 'sine', .22 * lk, 0, 40);   // 여러 줄: 낮은 울림
+    if (all) { for (let j = 0; j < 12; j++) blip(base * 2 * 2 ** ((PENT[j % 5] + 12 * Math.floor(j / 5)) / 12), end + .1 + j * .04, .08 * lk); }   // 전체 화면 송출: 한 번 더 길게 굴러 올라감
   }
   const ease = k => 1 - (1 - k) ** 3;
   function draw() {
@@ -334,7 +335,7 @@ export function createBlast(root, opt = {}) {
   const cur = on => { cv.style.cursor = on ? 'none' : ''; };
   const tryPut = d => {   // 놓기 시도 → 놓았으면 true
     const sn = snapOf(d), t = Math.round(performance.now() - t0);
-    if (!sn) { tone(180, .08, 'triangle', .04); return false; }
+    if (!sn) { tone(180, .08, 'triangle', .488); return false; }
     if (moves.length && t - Math.floor(moves[moves.length - 1] / 1024) < MIN_GAP) return false;
     put(d.slot, sn.r, sn.c, t); return true;
   };
@@ -352,7 +353,7 @@ export function createBlast(root, opt = {}) {
     try { cv.setPointerCapture(e.pointerId); } catch {}
     drag = { slot: i, x: p.x, y: p.y, x0: p.x, y0: p.y, at: performance.now(), id: e.pointerId, moved: false, lift: touch ? cs * 1.6 : 0, mouse: e.pointerType === 'mouse' };
     if (drag.mouse) cur(true);
-    tone(440, .04, 'triangle', .04); kick();
+    tone(440, .04, 'triangle', .403); kick();
   };
   const move = e => {
     if (!drag) return;
@@ -414,7 +415,7 @@ export function createBlast(root, opt = {}) {
       punch = { t: now, a: Math.min(.06, .018 + .012 * res.n + cb * .003) };
       waves.push({ x: ox, y: oy, t: now, r: 3 + res.n * 1.6 + cb * .25, c: KINDS[k][1] }); if (res.n >= 2) waves.push({ x: ox, y: oy, t: now + 90, r: 5 + res.n * 1.8, c: '#ffffff' });
       if (res.n >= 2 || res.clear) glitch = { t: now + 40, a: Math.min(1.6, .7 + res.n * .25) };
-      if (res.same) { floats.push({ s: `같은 장면 ×${res.same > 1 ? 3 : 2}!`, x: ox, y: oy - cs * 1.3, t: now + 140, big: true, rb: true, sc: 1.25 }); waves.push({ x: ox, y: oy, t: now + 140, r: 9, c: '#ffe27a' }); for (let j = 0; j < 10; j++) blip(1046 * 2 ** ([0, 4, 7, 12, 16][j % 5] / 12 + Math.floor(j / 5)), .5 + j * .035, .07); }   // 2026-10-30 디벨롭 1번
+      if (res.same) { floats.push({ s: `같은 장면 ×${res.same > 1 ? 3 : 2}!`, x: ox, y: oy - cs * 1.3, t: now + 140, big: true, rb: true, sc: 1.25 }); waves.push({ x: ox, y: oy, t: now + 140, r: 9, c: '#ffe27a' }); for (let j = 0; j < 10; j++) blip(1046 * 2 ** ([0, 4, 7, 12, 16][j % 5] / 12 + Math.floor(j / 5)), .5 + j * .035, .00832); }   // 2026-10-30 디벨롭 1번
       floats.push({ s: res.clear ? '전체 화면 송출!' : CLEAR_NAME[Math.min(res.n, 4) - 1], x: ox, y: oy - cs * .45, t: now, big: true, c: '#ffe27a', sc: 1 + Math.min(res.n - 1, 3) * .18, rb: res.clear || res.n >= 3 });
       if (st.combo > 1) floats.push({ s: `콤보 ×${cb}`, x: bx + cs * 4, y: by + cs * 1.2, t: now + 90, big: true, rb: true, sc: 1 + cb * .05 });
       floats.push({ s: '+' + res.pts.toLocaleString('ko-KR') + (st.combo > 1 ? `  연속 ×${Math.min(st.combo, 10)}` : ''), x: ox, y: oy + cs * .35, t: now + 60, c: '#9ff0a8' });
@@ -428,7 +429,7 @@ export function createBlast(root, opt = {}) {
     rings.push({ x: cx, y: cy, w: w * cs, h: h * cs, t: now });
     showScore(res.pts);
     $('cb').textContent = st.combo; $('cbw').classList.toggle('on', st.combo > 1); if (res.n && st.combo > 1) { $('cbw').classList.remove('pop'); void $('cbw').offsetWidth; $('cbw').classList.add('pop'); }
-    if (used.every(Boolean)) { set = nextSet(rand, b, moves.length); used = [false, false, false]; setAt = now + 120; tone(660, .05, 'sine', .035, .1); }
+    if (used.every(Boolean)) { set = nextSet(rand, b, moves.length); used = [false, false, false]; setAt = now + 120; tone(660, .05, 'sine', .0843, .1); }
     if (moves.length >= MAX_MOVES) end('max');
     else if (!set.some((pi2, i) => !used[i] && canPlace(b, PIECES[pi2].s))) { state = 'ending'; endT = setTimeout(() => end('stuck'), 650); }
     kick();
@@ -460,7 +461,7 @@ export function createBlast(root, opt = {}) {
     if (state !== 'play' && state !== 'ending') return;
     const ms = Math.round(performance.now() - t0); state = 'over'; drag = null; held = -1; cur(false); stopBtn.hidden = true; clearTimeout(stopT); stopBtn.classList.remove('ask'); stopBtn.textContent = '그만하기';
     const nb = st.score > best; if (nb) { best = st.score; $('best').textContent = best.toLocaleString('ko-KR'); }
-    tone(nb ? 784 : 392, .14, 'triangle', .07); tone(nb ? 1047 : 330, .22, 'triangle', .07, .14);
+    tone(nb ? 784 : 392, .14, 'triangle', .0466); tone(nb ? 1047 : 330, .22, 'triangle', .0466, .14);
     ov.hidden = false; ov.className = 'ml-ov end';
     ov.innerHTML = `<b>${why === 'max' ? '오늘 정리는 여기까지!' : why === 'quit' ? '여기까지 정리!' : '벽이 꽉 찼어요!'}</b><p class="ml-sc">${st.score.toLocaleString('ko-KR')}<small>점</small></p><span>${lines}줄 정리 · 장비 ${moves.length}개${nb ? ' · 최고 기록 경신!' : ''}</span>
       <small class="ml-msg" data-m="msg"></small><button type="button" class="btn big" data-m="go">한 번 더</button>`;

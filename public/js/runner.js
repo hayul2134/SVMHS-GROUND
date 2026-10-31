@@ -578,19 +578,19 @@ export function createRunner(canvas, char, opt = {}) {
   }
   const seq = (notes, gap = 110, type = 'square', vol = .045) => notes.forEach((n, i) => setTimeout(() => n && beep(n[0], n[1] ?? n[0], n[2] ?? .1, type, vol), i * gap));
   const SFX = {
-    jump() { const p = 1 + (Math.random() - .5) * .08; beep(500 * p, 860 * p, .09); },                       // 높낮이 살짝씩 달라 덜 질림
-    boost() { beep(880, 1320, .06, 'triangle', .03); },                                               // 길게 눌러 더 높이 뜰 때 '슝'
-    land() { noise(.06, 260, .8, .035, 120, 'lowpass'); },                                            // 착지 '툭'
-    duck() { noise(.12, 1800, .7, .03, 500); },                                                       // 숙이기 '슥'
-    dive() { beep(700, 180, .12, 'triangle', .04); noise(.1, 1400, .6, .02, 400); },                  // 공중에서 ↓ 빨리 내려오기
-    close() { seq([[1320, 1320, .05], [1760, 1760, .07]], 55, 'triangle', .03); },                    // 아슬아슬하게 넘음 '띠링'
-    pigeon() { seq([[620, 520, .07], [560, 470, .09]], 120, 'triangle', .03); },                      // 비둘기 등장 '구구'
-    plane() { beep(140, 110, .5, 'sawtooth', .018); noise(.5, 600, .5, .02, 300); },                  // 종이비행기 '부웅'
-    hundred(m) { m % 1000 === 0 ? seq([[784], [988], [1175, 1568, .18]], 90) : beep(780, 1180, .12, 'square', .04); },
+    jump() { const p = 1 + (Math.random() - .5) * .08; beep(500 * p, 860 * p, .09, 'square', .0778); },                       // 높낮이 살짝씩 달라 덜 질림
+    boost() { beep(880, 1320, .06, 'triangle', .136); },                                               // 길게 눌러 더 높이 뜰 때 '슝'
+    land() { noise(.06, 260, .8, 1, 120, 'lowpass'); },                                            // 착지 '툭'
+    duck() { noise(.12, 1800, .7, .113, 500); },                                                       // 숙이기 '슥'
+    dive() { beep(700, 180, .12, 'triangle', .101); noise(.1, 1400, .6, .0506, 400); },                  // 공중에서 ↓ 빨리 내려오기
+    close() { seq([[1320, 1320, .05], [1760, 1760, .07]], 55, 'triangle', .0814); },                    // 아슬아슬하게 넘음 '띠링'
+    pigeon() { seq([[620, 520, .07], [560, 470, .09]], 120, 'triangle', .0877); },                      // 비둘기 등장 '구구'
+    plane() { beep(140, 110, .5, 'sawtooth', .0518); noise(.5, 600, .5, .0575, 300); },                  // 종이비행기 '부웅'
+    hundred(m) { m % 1000 === 0 ? seq([[784], [988], [1175, 1568, .18]], 90, 'square', .0349) : beep(780, 1180, .12, 'square', .0635); },
     best() { seq([[1047, 1047, .07], [1319, 1319, .07], [1568, 1568, .07], [2093, 2093, .16]], 70, 'triangle', .04); },   // 최고 기록 넘는 순간
-    hit() { noise(.16, 900, .6, .07, 150, 'lowpass'); beep(300, 70, .3, 'sawtooth', .05); setTimeout(() => seq([[392, 370, .16], [370, 349, .16], [349, 262, .4]], 190, 'triangle', .04), 280); },   // '퍽' + 빠밤빠~
-    arrive() { seq([[523], [659], [784], [1047, 1047, .14], 0, [784, 784, .08], [1047, 1568, .35]], 110); setTimeout(() => noise(.08, 220, 1, .06, 120, 'lowpass'), 1150); },   // 팡파레 + 문 닫힘 '쿵'
-    door() { noise(.25, 500, 4, .03, 900); beep(784, 523, .1); },                                     // 문 열고 나감 '끼익'
+    hit() { noise(.16, 900, .6, .0854, 150, 'lowpass'); beep(300, 70, .3, 'sawtooth', .061); setTimeout(() => seq([[392, 370, .16], [370, 349, .16], [349, 262, .4]], 190, 'triangle', .0488), 280); },   // '퍽' + 빠밤빠~
+    arrive() { seq([[523], [659], [784], [1047, 1047, .14], 0, [784, 784, .08], [1047, 1568, .35]], 110, 'square', .0294); setTimeout(() => noise(.08, 220, 1, .0391, 120, 'lowpass'), 1150); },   // 팡파레 + 문 닫힘 '쿵'
+    door() { noise(.25, 500, 4, .0425, 900); beep(784, 523, .1, 'square', .0708); },                                     // 문 열고 나감 '끼익'
   };
   /* --- 판 --- */
   const JUMP_V = 270, G_HOLD = 820, G_FALL = 1500, G_FAST = 3200, HOLD_MAX = .2;
@@ -599,7 +599,7 @@ export function createRunner(canvas, char, opt = {}) {
     if (first) { if (st.scene === 'again') again(); st.scene = 'play'; opt.onStart?.(); }
     if (st.scene !== 'play' || !st.onGround) return false;
     st.vy = -JUMP_V; st.onGround = false; st.jumpHeld = 0; st.ducking = false;
-    if (!first) fx ? SFX.jump() : beep(520, 880, .09); return true;
+    if (!first) fx ? SFX.jump() : beep(520, 880, .09, 'square', .0777); return true;
   }
   /* 간격 설계 (2026-10-25): 일정한 간격 대신 '리듬' — 보통 · 짧게 · 숨 돌리기 · 연타(2~3개 바짝) 를 섞어 긴장감을 준다.
      못 피하는 배치는 만들지 않는다: 모든 간격은 FAIR 이상.
@@ -692,7 +692,7 @@ export function createRunner(canvas, char, opt = {}) {
     if (Math.floor(s / 100) > st.lastHundred) {
       st.lastHundred = Math.floor(s / 100); st.flash = 1;
       const m = st.lastHundred * 100, step = m >= 5000 ? 1000 : m >= 1000 ? 500 : 100;
-      if (m % step === 0) fx ? SFX.hundred(m) : beep(780, 1180, .12, 'square', .04);
+      if (m % step === 0) fx ? SFX.hundred(m) : beep(780, 1180, .12, 'square', .0635);
     }
     if (fx && !st.bestRung && (opt.best?.() || 0) > 0 && s > opt.best()) { st.bestRung = true; SFX.best(); }
     st.score = s;
@@ -734,11 +734,11 @@ export function createRunner(canvas, char, opt = {}) {
   }
   function arrive() {
     st.scene = 'home'; st.score = GOAL; st.flash = 0; st.lastHundred = GOAL / 100; st.homeT = 0; st.homeDone = false; st.obs = []; st.ducking = false;
-    if (fx) SFX.arrive(); else { beep(523, 523, .12); setTimeout(() => beep(659, 659, .12), 130); setTimeout(() => beep(784, 1046, .3), 260); }
+    if (fx) SFX.arrive(); else { beep(523, 523, .12, 'square', .031); setTimeout(() => beep(659, 659, .12, 'square', .031), 130); setTimeout(() => beep(784, 1046, .3, 'square', .031), 260); }
   }
   function goOut() {   // '밖으로 나가기'
     if (st.scene !== 'home' || !st.homeDone) return false;
-    st.scene = 'out'; st.outT = 0; fx ? SFX.door() : beep(784, 523, .1); return true;
+    st.scene = 'out'; st.outT = 0; fx ? SFX.door() : beep(784, 523, .1, 'square', .0713); return true;
   }
   function again() {   // 다시 출발: 끝없이 달리기 (최고 속도 그대로)
     st.past = true; st.grace = 1.2; st.obs = []; st.nextGap = 0; st.y = 0; st.vy = 0; st.onGround = true;

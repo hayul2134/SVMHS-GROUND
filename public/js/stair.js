@@ -232,7 +232,7 @@ export function createStair(cv, o = {}) {
     fromX = fromX + (px - fromX) * moveT; fromY = fromY + (py - fromY) * moveT;
     if (nx - xs[i] !== st.face) {   // 계단이 없는 쪽 → 헛디딤
       fall = { x: xs[i] + st.face * .9, y: i, vx: st.face * .9, vy: -1.6, r: 0 };
-      shake = 4; beep(300, .35, 'sawtooth', .05, 70); end('miss'); return;
+      shake = 4; beep(300, .35, 'sawtooth', .07, 70); end('miss'); return;
     }
     st.steps++; px = nx; py = st.steps; moveT = 0; stepN++; lastStepAt = performance.now();
     const now = performance.now(); recent.push(now); if (recent.length > 8) recent.shift();
@@ -245,7 +245,7 @@ export function createStair(cv, o = {}) {
       const z = zoneOf(f) !== zoneOf(st.floor); st.floor = f; flash = 1; tune(z);
       for (let k = 0; k < 10; k++) parts.push({ x: px * DX + (k - 5) * 3, y: -py * DY - 4, vx: (k - 5) * 9, vy: -30 - (k % 3) * 12, t: 0, c: ['#ffd25e', '#ff8fb0', '#7cc4ff', '#ffffff'][k % 4], g: 1 });
       o.onFloor?.(f, f <= ROOF ? floorName(f) + ' 도착!' : z ? zoneOf(f) + ' 도착!' : floorName(f, true) + ' 돌파!', z || f <= ROOF, FLOOR_MSG[f] || '');
-    } else beep(392 + (st.steps % 8) * 28, .045, 'square', .035);
+    } else beep(392 + (st.steps % 8) * 28, .045, 'square', .0609);
     o.onStep?.(st.steps);
   }
   function end(why) {
@@ -641,7 +641,7 @@ export function createStair(cv, o = {}) {
     st, input, reset, pause, refont,
     text: () => [...TEXTS, ...FLOOR_MSG].join('') + Array.from({ length: 16 }, (_, f) => floorName(f) + floorName(f, true) + zoneOf(f)).join('') + ' 도착! 돌파!',   // 판에서 쓰는 글자(글꼴 미리 받기용)
     setChar(c) { o.char = c; loadSpr(); },
-    setSound(v) { sound = !!v; if (v) beep(660, .05); },
+    setSound(v) { sound = !!v; if (v) beep(660, .05, 'square', .103); },
     destroy() { alive = false; document.fonts?.removeEventListener?.('loadingdone', fontDone); clearTimeout(overT); cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', vis); window.removeEventListener('blur', blur); try { ac?.close(); } catch {} },
     get xs() { return xs; },   // 테스트용(정답 방향 확인)
   };
