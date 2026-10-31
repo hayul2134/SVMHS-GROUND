@@ -4,8 +4,9 @@
 import * as D from './dance-score.js';
 
 const W = 360, H = 640;
-const K = '#2b2433';
+const K = '#173048';   // 사이트 잉크색(--ink)과 같게 — 2026-10-31 하율 '교실·소품·UI까지 통일감'
 const FONT = '"Jua", "Pretendard Variable", system-ui, sans-serif';
+const NUMF = '"Outfit", "Pretendard Variable", system-ui, sans-serif';   // 사이트 숫자 글꼴(--num)
 const fmt = n => Math.floor(n).toLocaleString('ko-KR');
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const RM = () => matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -232,12 +233,12 @@ export function createDance(root, opts = {}) {
     const sc = k * dpr; if (bg && bg.sc === sc) return bg.c;
     const c = document.createElement('canvas'); c.width = Math.ceil(W * sc); c.height = Math.ceil(H * sc);
     const keep = ctx, x = c.getContext('2d'); x.scale(sc, sc); ctx = x;   // 그리기 도우미(rr·fs…)를 잠깐 이 캔버스로
-    let gr = x.createLinearGradient(0, 0, 0, 236); gr.addColorStop(0, '#fbf4e6'); gr.addColorStop(1, '#efe2c8'); x.fillStyle = gr; x.fillRect(0, 0, W, 236);
-    x.strokeStyle = 'rgba(160,130,90,.10)'; x.lineWidth = 1; for (let i = 12; i < W; i += 24) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 236); x.stroke(); }
+    let gr = x.createLinearGradient(0, 0, 0, 236); gr.addColorStop(0, '#f5fbff'); gr.addColorStop(1, '#e3f1fb'); x.fillStyle = gr; x.fillRect(0, 0, W, 236);
+    x.strokeStyle = 'rgba(30,110,180,.07)'; x.lineWidth = 1; for (let i = 12; i < W; i += 24) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 236); x.stroke(); }
     // 아래 벽 판자(초록)
-    gr = x.createLinearGradient(0, 236, 0, 300); gr.addColorStop(0, '#b4d6ba'); gr.addColorStop(1, '#94bf9d'); x.fillStyle = gr; x.fillRect(0, 236, W, 64);
-    x.fillStyle = '#7fae89'; x.fillRect(0, 236, W, 5); x.fillStyle = 'rgba(255,255,255,.45)'; x.fillRect(0, 236, W, 1.5);
-    x.strokeStyle = 'rgba(40,80,50,.22)'; x.lineWidth = 1.5; for (let i = 6; i < W; i += 44) { x.strokeRect(i, 247, 36, 44); }
+    gr = x.createLinearGradient(0, 236, 0, 300); gr.addColorStop(0, '#bfe0f5'); gr.addColorStop(1, '#9fcdee'); x.fillStyle = gr; x.fillRect(0, 236, W, 64);
+    x.fillStyle = '#86bde4'; x.fillRect(0, 236, W, 5); x.fillStyle = 'rgba(255,255,255,.45)'; x.fillRect(0, 236, W, 1.5);
+    x.strokeStyle = 'rgba(23,48,72,.16)'; x.lineWidth = 1.5; for (let i = 6; i < W; i += 44) { x.strokeRect(i, 247, 36, 44); }
     // 바닥: 원근 판자
     gr = x.createLinearGradient(0, 300, 0, H); gr.addColorStop(0, '#c99a63'); gr.addColorStop(0.5, '#bb8a55'); gr.addColorStop(1, '#a3733f'); x.fillStyle = gr; x.fillRect(0, 300, W, 340);
     x.strokeStyle = 'rgba(80,45,15,.22)'; x.lineWidth = 1.2;
@@ -249,11 +250,11 @@ export function createDance(root, opts = {}) {
     x.fillStyle = '#6d4e31'; x.fillRect(0, 298, W, 5); x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(0, 298, W, 1);
     // 전자칠판 틀(두께·받침)
     rr(19, 50, 328, 150, 12); x.fillStyle = 'rgba(0,0,0,.12)'; x.fill();
-    rr(16, 46, 328, 150, 12); fs('#3a404c', 3);
-    gr = x.createLinearGradient(0, 46, 0, 196); gr.addColorStop(0, '#525a68'); gr.addColorStop(1, '#2e333d'); rr(18, 48, 324, 146, 11); x.fillStyle = gr; x.fill();
+    rr(16, 46, 328, 150, 12); fs('#2a3f56', 3);
+    gr = x.createLinearGradient(0, 46, 0, 196); gr.addColorStop(0, '#3d5874'); gr.addColorStop(1, '#22364c'); rr(18, 48, 324, 146, 11); x.fillStyle = gr; x.fill();
     rr(128, 194, 104, 8, 3); fs('#4b525f', 2); rr(150, 192, 22, 4, 2); fs('#ff6b6b', 1.4); rr(178, 192, 18, 4, 2); fs('#7dd3ff', 1.4);
     // 급훈 액자
-    rr(222, 204, 82, 24, 4); fs('#fffaf0', 2); x.fillStyle = '#7c5b3f'; x.font = `11px ${FONT}`; x.textAlign = 'center'; x.fillText('급훈 · 정직과 성실', 263, 220);
+    rr(225, 207, 82, 24, 6); x.fillStyle = K; x.fill(); rr(222, 204, 82, 24, 6); fs('#ffffff', 2.2); x.fillStyle = K; x.font = `11px ${FONT}`; x.textAlign = 'center'; x.fillText('급훈 · 정직과 성실', 263, 220);
     // 교탁(책·머그컵)
     rr(-10, 250, 74, 56, 6); fs('#b9875a', 2.6); x.fillStyle = '#a3754b'; x.fillRect(-8, 262, 70, 4); x.fillStyle = 'rgba(255,255,255,.15)'; x.fillRect(-6, 268, 66, 2);
     rr(-14, 244, 82, 10, 4); fs('#8f6340', 2.4);
@@ -302,6 +303,7 @@ export function createDance(root, opts = {}) {
     }
     ctx.strokeStyle = tone2(col, -0.2); ctx.lineWidth = w2 * 0.35; ctx.beginPath(); ctx.moveTo(bx + 1.5, by + 1.5); ctx.lineTo(cx + 1.5, cy + 1); ctx.stroke();
     ctx.strokeStyle = tone2(col, 0.28); ctx.lineWidth = Math.max(1, w1 * 0.22); ctx.beginPath(); ctx.moveTo(ax - 1.5, ay - 1); ctx.lineTo(bx - 1.5, by - 1.5); ctx.stroke();
+    if (w1 > 8) { const a1 = Math.atan2(by - ay, bx - ax), a2 = Math.atan2(cy - by, cx - bx); if (Math.abs(Math.sin(a2 - a1)) > 0.25) { ctx.strokeStyle = tone2(col, -0.35); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(bx, by, w1 * 0.32, a1 + 1.2, a1 + 2.2); ctx.stroke(); } }   // 팔꿈치 주름
   }
   // 손: 손바닥 + 엄지(팔 방향으로 살짝 길쭉)
   function hand2(x, y, ang, r = 5, cuff) {
@@ -360,7 +362,9 @@ export function createDance(root, opts = {}) {
       ctx.quadraticCurveTo(22 + o, -139, 16 + o, -136); ctx.quadraticCurveTo(12 + o, -133, 8 + o, -136); ctx.quadraticCurveTo(4 + o, -132, 0 + o, -135); ctx.quadraticCurveTo(-4 + o, -132, -8 + o, -136); ctx.quadraticCurveTo(-12 + o, -133, -16 + o, -136); ctx.quadraticCurveTo(-22 + o, -139, -21 + o, -146); ctx.closePath(); };
     part2(hp, HAIR, () => { ctx.beginPath(); ctx.ellipse(12 + o, -150, 14, 26, 0, 0, 7); ctx.fill(); }, 2.4, () => { ctx.beginPath(); ctx.ellipse(-8 + o, -176, 12, 6, -0.3, 0, 7); ctx.fill(); });
     ctx.save(); hp(); ctx.clip(); ctx.strokeStyle = HAIR2; ctx.lineWidth = 1.2;
-    for (const [a, b] of [[-15, -172], [-9, -180], [-2, -183], [5, -182], [12, -177], [17, -168]]) { ctx.beginPath(); ctx.moveTo(a + o, b); ctx.bezierCurveTo(a + o - 5, b + 12, a + o + 4, b + 22, a + o - 2, b + 38); ctx.stroke(); }
+    ctx.strokeStyle = tone2(HAIR, -0.32); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+    for (const x of [-12, -4, 4, 12]) { ctx.beginPath(); ctx.moveTo(x + o, -136); ctx.quadraticCurveTo(x * 0.9 + o + 2, -146, x * 0.7 + o, -156); ctx.stroke(); }   // 뒷머리 다발 사이 그늘
+    ctx.strokeStyle = tone2(HAIR, 0.35); ctx.lineWidth = 1.2; for (const [x, y] of [[-12, -176], [-4, -181], [6, -180]]) { ctx.beginPath(); ctx.moveTo(x + o, y); ctx.quadraticCurveTo(x + o + 6, y + 6, x + o + 4, y + 14); ctx.stroke(); }   // 물결 결
     ctx.restore();
   }
   function teacherBack(tv) {
@@ -439,10 +443,13 @@ export function createDance(root, opts = {}) {
 
   // ===== 학생들(뒷모습) — 춤출 때는 모두 일어나 광란의 파티 =====
   // o: { hc 머리색, hs 머리 모양(short·long·pony·bun·twin·buzz·wave), cl 옷, sk 치마, acc 장식, ds 춤 종류, ph 박자 어긋남, tp 빠르기 }
-  function desk() {   // 책상(먼 쪽 · 나무 상판 두께 + 쇠 다리)
+  function desk(pr) {   // 책상(먼 쪽 · 나무 상판 두께 + 쇠 다리) + 책상 위 소품
     ctx.strokeStyle = '#6f7790'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-40, -76); ctx.lineTo(-40, -58); ctx.moveTo(40, -76); ctx.lineTo(40, -58); ctx.stroke();
     part2(() => { ctx.beginPath(); ctx.moveTo(-42, -88); ctx.lineTo(42, -88); ctx.lineTo(47, -80); ctx.lineTo(-47, -80); ctx.closePath(); }, '#e2bb86', null, 2, () => ctx.fillRect(-47, -88, 94, 2.5));
     rr(-47, -80, 94, 5, 2); fs('#b98d5a', 2);
+    if (pr === 1) { rr(-36, -95, 22, 8, 2); fs('#6fc6f4', 1.6); rr(-34, -101, 18, 6, 2); fs('#ffe08a', 1.6); }   // 교과서
+    else if (pr === 2) { rr(22, -94, 22, 7, 3.5); fs('#ff8f8f', 1.6); ctx.strokeStyle = K; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(26, -90.5); ctx.lineTo(40, -90.5); ctx.stroke(); }   // 필통
+    else if (pr === 3) { rr(30, -104, 8, 16, 3); fs('#8fe8cf', 1.6); rr(31, -107, 6, 4, 1.5); fs('#38a5ea', 1.4); }   // 물병
   }
   function chair() {   // 의자 등받이(카메라 쪽 · 쇠 틀 + 합판)
     ctx.strokeStyle = '#59607a'; ctx.lineWidth = 3.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-25, -38); ctx.lineTo(-25, 6); ctx.moveTo(25, -38); ctx.lineTo(25, 6); ctx.stroke();
@@ -452,6 +459,7 @@ export function createDance(root, opts = {}) {
   }
   // 몸통(교복 재킷·후드·체육복·가디건): T = 목 밑 높이
   function torso2(dx, T, B, cl) {
+    part2(() => { ctx.beginPath(); ctx.moveTo(-5 + dx, T - 12); ctx.lineTo(5 + dx, T - 12); ctx.lineTo(5.5 + dx, T + 2); ctx.lineTo(-5.5 + dx, T + 2); ctx.closePath(); }, SKIN, () => ctx.fillRect(1 + dx, T - 13, 6, 16), 1.8);   // 목(깃 뒤로 들어감)
     const pf = () => { ctx.beginPath(); ctx.moveTo(-7 + dx, T); ctx.quadraticCurveTo(-19 + dx, T, -23 + dx, T + 8); ctx.quadraticCurveTo(-27 + dx, T + 22, -22 + dx, T + 34); ctx.lineTo(-20 + dx, B); ctx.quadraticCurveTo(dx, B + 4, 20 + dx, B); ctx.lineTo(22 + dx, T + 34); ctx.quadraticCurveTo(27 + dx, T + 22, 23 + dx, T + 8); ctx.quadraticCurveTo(19 + dx, T, 7 + dx, T); ctx.closePath(); };
     part2(pf, cl.c, () => { ctx.fillRect(9 + dx, T - 2, 20, B - T + 8); ctx.fillRect(-30 + dx, B - 5, 60, 8); }, 2.3, () => { ctx.beginPath(); ctx.ellipse(-13 + dx, T + 6, 9, 4, -0.4, 0, 7); ctx.fill(); });
     ctx.save(); pf(); ctx.clip(); ctx.strokeStyle = cl.d; ctx.lineWidth = 1.4; ctx.beginPath();
@@ -460,25 +468,32 @@ export function createDance(root, opts = {}) {
     else { ctx.moveTo(dx, T + 5); ctx.lineTo(dx, B - 8); ctx.moveTo(dx, B - 8); ctx.lineTo(dx, B + 2); ctx.stroke(); ctx.fillStyle = tone2(cl.c, -0.25); ctx.fillRect(-1 + dx, B - 9, 2, 10);   // 등 솔기·트임
       ctx.fillStyle = tone2(cl.c, -0.15); ctx.beginPath(); ctx.moveTo(-10 + dx, T); ctx.quadraticCurveTo(dx, T + 7, 10 + dx, T); ctx.lineTo(8 + dx, T - 1); ctx.closePath(); ctx.fill(); }   // 깃
     ctx.restore();
+    ctx.strokeStyle = tone2(cl.c, -0.3); ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-17 + dx, T + 2); ctx.quadraticCurveTo(-19 + dx, T + 12, -22 + dx, T + 22); ctx.moveTo(17 + dx, T + 2); ctx.quadraticCurveTo(19 + dx, T + 12, 22 + dx, T + 22); ctx.stroke();   // 어깨 솔기
     if (cl.k !== 'hood' && cl.k !== 'pe') { part2(() => { ctx.beginPath(); ctx.moveTo(-7 + dx, T - 1); ctx.quadraticCurveTo(dx, T + 3, 7 + dx, T - 1); ctx.lineTo(6 + dx, T - 4); ctx.quadraticCurveTo(dx, T - 1, -6 + dx, T - 4); ctx.closePath(); }, '#fff', null, 1.5); }   // 흰 셔츠 깃
   }
   // 머리 뒷모습: 머리 모양마다 실루엣·결·윤기
   function head(x, y, o, tilt) {
     ctx.save(); ctx.translate(x, y); ctx.rotate(tilt || 0);
     const hc = o.hc, hs = o.hs, sw = Math.sin(V.t * 11 + o.ph) * (o.dancing ? 0.6 : 0.04);
-    part2(() => { ctx.beginPath(); ctx.moveTo(-6, 12); ctx.lineTo(6, 12); ctx.lineTo(6, 22); ctx.lineTo(-6, 22); ctx.closePath(); }, SKIN, () => ctx.fillRect(1, 10, 6, 14), 1.8);   // 목
     if (hs === 'long' || hs === 'wave') { const pf = () => { ctx.beginPath(); ctx.moveTo(-17, -2); ctx.quadraticCurveTo(-21 + sw * 6, 18, -18 + sw * 8, 34); ctx.quadraticCurveTo(-9, 30, -4, 36); ctx.quadraticCurveTo(2, 31, 7, 36); ctx.quadraticCurveTo(13, 31, 18 + sw * 8, 34); ctx.quadraticCurveTo(21 + sw * 6, 18, 17, -2); ctx.closePath(); }; part2(pf, hc, () => ctx.fillRect(6, -4, 18, 44), 2.2); ctx.save(); pf(); ctx.clip(); ctx.strokeStyle = tone2(hc, 0.18); ctx.lineWidth = 1.1; for (const a of [-11, -4, 3, 10]) { ctx.beginPath(); ctx.moveTo(a, 2); ctx.quadraticCurveTo(a + (hs === 'wave' ? 5 : 2), 18, a + sw * 6, 34); ctx.stroke(); } ctx.restore(); }
     if (hs === 'pony') { ctx.save(); ctx.translate(0, 2); ctx.rotate(sw * 1.4); part2(() => { ctx.beginPath(); ctx.moveTo(-5, 0); ctx.quadraticCurveTo(-9, 16, -2, 32); ctx.quadraticCurveTo(1, 26, 3, 32); ctx.quadraticCurveTo(9, 16, 5, 0); ctx.closePath(); }, hc, () => ctx.fillRect(1, 0, 8, 34), 2); ctx.restore(); }
     if (hs === 'twin') for (const dd of [-1, 1]) { ctx.save(); ctx.translate(dd * 14, -4); ctx.rotate(dd * (0.35 + sw)); part2(() => { ctx.beginPath(); ctx.moveTo(-4, 0); ctx.quadraticCurveTo(-7, 14, -1, 26); ctx.quadraticCurveTo(7, 14, 4, 0); ctx.closePath(); }, hc, null, 2); ctx.restore(); }
     for (const d of [-1, 1]) part2(() => { ctx.beginPath(); ctx.ellipse(d * 16.5, 1, 3.6, 5.4, 0, 0, 7); }, SKIN, null, 1.8);   // 귀
-    // 뒤통수: 위는 둥글고 뒷목 쪽은 머리카락 끝이 삐죽
-    const ry = hs === 'buzz' ? 16 : 18, pf = () => { ctx.beginPath(); ctx.moveTo(-16.5, 4); ctx.bezierCurveTo(-19, -16, -9, -ry - 3, 0, -ry - 3); ctx.bezierCurveTo(9, -ry - 3, 19, -16, 16.5, 4);
-      if (hs === 'buzz') { ctx.quadraticCurveTo(0, 12, -16.5, 4); } else { ctx.lineTo(13, 10); ctx.lineTo(9, 7); ctx.lineTo(5, 12); ctx.lineTo(1, 8); ctx.lineTo(-4, 12); ctx.lineTo(-8, 7); ctx.lineTo(-12, 10); } ctx.closePath(); };
-    part2(pf, hc, () => { ctx.beginPath(); ctx.ellipse(10, 0, 12, 20, 0, 0, 7); ctx.fill(); }, 2.3);
+    // 뒤통수: 둥근 머리 + 뒷목 쪽은 머리 다발이 둥글게 갈라져 내려옴(줄무늬 대신 다발·윤기)
+    const ry = hs === 'buzz' ? 16 : 18, LOCK = [-16.5, -11, -5.5, 0, 5.5, 11, 16.5];
+    const pf = () => { ctx.beginPath(); ctx.moveTo(-16.5, 4); ctx.bezierCurveTo(-19.5, -16, -9, -ry - 3, 0, -ry - 3); ctx.bezierCurveTo(9, -ry - 3, 19.5, -16, 16.5, 4);
+      if (hs === 'buzz') ctx.quadraticCurveTo(0, 12, -16.5, 4);
+      else for (let i = LOCK.length - 1; i > 0; i--) { const x1 = LOCK[i], x0 = LOCK[i - 1], dip = 9 + ((i * 7) % 3) * 1.5 - Math.abs(x0 + x1) * 0.12; ctx.quadraticCurveTo((x0 + x1) / 2 + 1, dip + 3, x0, i === 1 ? 4 : 5 + Math.abs(x0) * 0.05); }
+      ctx.closePath(); };
+    part2(pf, hc, () => { ctx.beginPath(); ctx.ellipse(11, 2, 11, 20, 0, 0, 7); ctx.fill(); }, 2.3);
     ctx.save(); pf(); ctx.clip();
-    if (hs === 'buzz') { ctx.fillStyle = tone2(hc, 0.25); for (let i = 0; i < 26; i++) ctx.fillRect(-14 + (i * 37) % 28, -16 + (i * 23) % 26, 1.2, 1.2); }
-    else { ctx.strokeStyle = tone2(hc, 0.2); ctx.lineWidth = 1.1; for (const a of [-12, -6, 0, 6, 12]) { ctx.beginPath(); ctx.moveTo(a * 0.4, -ry); ctx.quadraticCurveTo(a, -6, a * 1.05, 8); ctx.stroke(); } ctx.beginPath(); ctx.arc(2, -12, 3, 0, 5); ctx.stroke(); }   // 가마
-    ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.arc(0, -2, 13, 3.7, 4.7); ctx.stroke();   // 천사 링
+    if (hs === 'buzz') { ctx.fillStyle = tone2(hc, 0.22); for (let i = 0; i < 30; i++) ctx.fillRect(-14 + (i * 37) % 28, -16 + (i * 23) % 26, 1.1, 1.1); }
+    else {
+      ctx.strokeStyle = tone2(hc, -0.35); ctx.lineWidth = 1.3; ctx.lineCap = 'round';   // 다발 사이 그늘
+      for (let i = 1; i < LOCK.length - 1; i++) { const x = LOCK[i]; ctx.beginPath(); ctx.moveTo(x, 7); ctx.quadraticCurveTo(x * 0.92 + (x > 0 ? 1 : -1), -2, x * 0.75, -8 - (i % 2) * 3); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(3, -16); ctx.quadraticCurveTo(6, -12, 4, -8); ctx.moveTo(1, -15); ctx.quadraticCurveTo(-3, -11, -2, -6); ctx.stroke();   // 가마
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.moveTo(-14, -6); ctx.quadraticCurveTo(-10, -17, 1, -18); ctx.quadraticCurveTo(-7, -13, -10, -3); ctx.closePath(); ctx.fill();   // 윤기
     ctx.restore();
     if (hs === 'bun') { part2(() => { ctx.beginPath(); ctx.ellipse(0, -22, 8, 7, 0, 0, 7); }, hc, () => ctx.fillRect(2, -30, 8, 16), 2.2); ctx.strokeStyle = tone2(hc, 0.25); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, -22, 4, 0.5, 5); ctx.stroke(); rr(-5, -16.5, 10, 3, 1.5); fs('#ff6fa8', 1.4); }
     if (hs === 'pony') { rr(-4.5, 0, 9, 4, 2); fs('#ffd84a', 1.4); }
@@ -511,7 +526,7 @@ export function createDance(root, opts = {}) {
   function pose(ds, b) {
     const S = Math.sin(b), A = Math.abs(S);
     switch (ds) {
-      case 0: { const f = S > 0; return { dx: f ? 4 : -4, dy: -A * 4, tilt: f ? 0.12 : -0.12, L: f ? [-48, -150] : [-34, -62], R: f ? [34, -62] : [48, -150] }; }   // 디스코 찌르기
+      case 0: { const f = clamp(S * 2.5, -1, 1), u = (f + 1) / 2; return { dx: f * 4, dy: -A * 4, tilt: f * 0.12, L: lerpP([-34, -62], [-48, -150], u), R: lerpP([48, -150], [34, -62], u) }; }   // 디스코 찌르기(부드럽게 넘어감)
       case 1: return { dx: S * 6, dy: -A * 3, tilt: S * 0.15, L: [-30 + S * 14, -142], R: [30 + S * 14, -142] };   // 두 팔 흔들기
       case 2: { const up = Math.sin(b * 2) > 0; return { dx: 0, dy: up ? -6 : 0, tilt: up ? -0.08 : 0.04, L: [-30, -74], R: up ? [24, -154] : [32, -112] }; }   // 주먹 위로
       case 3: { const n = Math.floor((b / 1.5708) % 4 + 4) % 4, P = [[[-48, -92], [48, -92]], [[-42, -134], [48, -92]], [[-48, -92], [42, -134]], [[-26, -62], [26, -62]]]; return { dx: [0, -3, 3, 0][n], dy: 0, tilt: 0, L: P[n][0], R: P[n][1] }; }   // 로봇
@@ -523,15 +538,17 @@ export function createDance(root, opts = {}) {
   }
   function kid(x, y, sc, o, party, me) {
     ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
-    desk();
-    if (!party) {   // 앉아서 공부하는 척(또는 졸기)
+    desk(o.pr || 0);
+    if (!party) {   // 앉아서 공부하는 척(또는 졸기) — 숨쉬기·고개 갸웃·필기 같은 작은 움직임
       if (o.sleep) {   // 책상에 엎드려 잠: 머리가 어깨 뒤로 숨고 팔은 베개
         limb2(-21, -60, -30, -70, -14, -80, 9, 8, o.cl.c); limb2(21, -60, 30, -70, 14, -80, 9, 8, o.cl.c);
         head(0, -72, o, 0); torso2(0, -66, -10, o.cl);
       } else {
-        torso2(0, -72, -10, o.cl);
-        if (me) { limb2(-21, -66, -28, -68, -9, -80, 9, 8, o.cl.c); limb2(21, -66, 28, -68, 12, -82, 9, 8, o.cl.c); }
-        head(0, -90 + (o.nod || 0), o, o.tilt || 0);
+        const br = RM() ? 0 : Math.sin(V.t * 1.6 + o.ph) * 0.8, look = RM() || me ? 0 : Math.max(0, Math.sin(V.t * 0.35 + o.ph * 2) - 0.85) * 1.6 * (o.ph > 1.5 ? 1 : -1);
+        const wr = !me && o.wr && !RM() ? Math.sin(V.t * 9 + o.ph) * 1.6 : 0;
+        limb2(-21, -66 + br, -29, -70, -10, -81, 9, 8, o.cl.c); limb2(21, -66 + br, 29, -70, 11 + wr, -82, 9, 8, o.cl.c);
+        torso2(0, -72 + br, -10, o.cl);
+        head(0, -90 + br + (o.nod || 0), o, (o.tilt || 0) + look * 0.25);
       }
       chair(); ctx.restore();
       if (o.sleep || o.zz) { const big = me ? 1.6 : 1; for (let i = 0; i < (me ? 2 : 1); i++) { const a = (V.t * 0.8 + o.ph + i * 0.5) % 1; ctx.globalAlpha = 1 - a; outlined(i ? 'Z' : 'z', x + 12 * sc + a * 10, y - 88 * sc - a * 18, (11 + a * 4) * big, '#e9e4ff'); } ctx.globalAlpha = 1; }
@@ -567,16 +584,16 @@ export function createDance(root, opts = {}) {
   const CL = { blz: { c: '#2f3f63', d: '#22304e', p: '#3a3f52' }, hoodG: { c: '#9aa3b5', d: '#7c8496', p: '#3a3f52', k: 'hood' }, hoodP: { c: '#ff9ec4', d: '#e07fa6', p: '#3a3f52', k: 'hood' },
     hoodN: { c: '#7fd49a', d: '#5eb27a', p: '#3a3f52', k: 'hood' }, pe: { c: '#e0464e', d: '#fff', p: '#e0464e', k: 'pe' }, card: { c: '#e8d3a8', d: '#c9b07f', p: '#3a3f52' } };
   const KIDS = [
-    { x: 62, y: 400, sc: 0.6, hc: '#2a2228', hs: 'short', cl: CL.blz, acc: '', ds: 3, ph: 0.4, tp: 1.1 },
-    { x: 140, y: 400, sc: 0.6, hc: '#3b2a20', hs: 'bun', cl: CL.card, sk: '#3a4566', acc: 'ribbon', ds: 5, ph: 1.7, tp: 0.9, sleep: true },
-    { x: 220, y: 400, sc: 0.6, hc: '#1f1f26', hs: 'buzz', cl: CL.pe, acc: '', ds: 7, ph: 2.6, tp: 1.2 },
-    { x: 298, y: 400, sc: 0.6, hc: '#6b4a2e', hs: 'wave', cl: CL.hoodP, sk: '#3a4566', acc: 'band', ds: 1, ph: 0.9, tp: 0.85 },
-    { x: 78, y: 486, sc: 0.82, hc: '#26222e', hs: 'twin', cl: CL.blz, sk: '#3a4566', acc: '', ds: 6, ph: 3.1, tp: 1 },
-    { x: 282, y: 486, sc: 0.82, hc: '#2a2228', hs: 'short', cl: CL.hoodG, acc: 'phones', ds: 4, ph: 1.2, tp: 1.05 },
-    { x: 22, y: 604, sc: 1.12, hc: '#4a3324', hs: 'pony', cl: CL.hoodN, sk: '#3a4566', acc: '', ds: 2, ph: 2.2, tp: 1.15 },
-    { x: 338, y: 604, sc: 1.12, hc: '#1f1f26', hs: 'short', cl: CL.blz, acc: 'cap', ds: 0, ph: 0.2, tp: 0.95 },
+    { x: 62, y: 400, sc: 0.6, hc: '#2a2228', hs: 'short', cl: CL.blz, acc: '', ds: 3, ph: 0.4, tp: 1.1, pr: 1, wr: 1 },
+    { x: 140, y: 400, sc: 0.6, hc: '#3b2a20', hs: 'bun', cl: CL.card, sk: '#3a4566', acc: 'ribbon', ds: 5, ph: 1.7, tp: 0.9, sleep: true, pr: 0, wr: 0 },
+    { x: 220, y: 400, sc: 0.6, hc: '#1f1f26', hs: 'buzz', cl: CL.pe, acc: '', ds: 7, ph: 2.6, tp: 1.2, pr: 2, wr: 0 },
+    { x: 298, y: 400, sc: 0.6, hc: '#6b4a2e', hs: 'wave', cl: CL.hoodP, sk: '#3a4566', acc: 'band', ds: 1, ph: 0.9, tp: 0.85, pr: 3, wr: 1 },
+    { x: 78, y: 486, sc: 0.82, hc: '#26222e', hs: 'twin', cl: CL.blz, sk: '#3a4566', acc: '', ds: 6, ph: 3.1, tp: 1, pr: 1, wr: 0 },
+    { x: 282, y: 486, sc: 0.82, hc: '#2a2228', hs: 'short', cl: CL.hoodG, acc: 'phones', ds: 4, ph: 1.2, tp: 1.05, pr: 2, wr: 1 },
+    { x: 22, y: 604, sc: 1.12, hc: '#4a3324', hs: 'pony', cl: CL.hoodN, sk: '#3a4566', acc: '', ds: 2, ph: 2.2, tp: 1.15, pr: 3, wr: 0 },
+    { x: 338, y: 604, sc: 1.12, hc: '#1f1f26', hs: 'short', cl: CL.blz, acc: 'cap', ds: 0, ph: 0.2, tp: 0.95, pr: 1, wr: 0 },
   ];
-  const ME = { hc: '#2a2228', hs: 'short', cl: CL.blz, acc: '', ph: 0, tp: 1 };
+  const ME = { hc: '#2a2228', hs: 'short', cl: CL.blz, acc: '', ph: 0, tp: 1, pr: 2 };
   function drawKids(party) {
     const m = s ? s.m2 / 2 : 1, lv = m >= 3.5 ? 6 : m >= 2.5 ? 0 : m >= 1.5 ? 1 : 2, amp = 1.25 + (m - 1) * 0.12;
     KIDS.forEach((o, i) => kid(o.x, o.y, o.sc, { ...o, amp, ci: i % PARTY_C.length, sleep: party ? false : o.sleep }, party, false));
@@ -587,12 +604,12 @@ export function createDance(root, opts = {}) {
     ctx.beginPath(); ctx.moveTo(172, ay); ctx.lineTo(188, ay); ctx.lineTo(180, ay + 9); ctx.closePath(); fs('#ffd84a', 2); text('나', 180, ay - 4, 12, 'center', K);
   }
   // 파티 조명: 천장에서 쏘는 색 빔 + 바닥 빛 웅덩이 + 교실 전체가 색색으로 번쩍(선생님 신호는 가리지 않게 학생 쪽 위주)
-  const PARTY_C = ['#ff3ea5', '#3ec9ff', '#ffe03e', '#7dff6a', '#b26bff', '#ff8a3d'];
+  const PARTY_C = ['#6fc6f4', '#ffe08a', '#8fe8cf', '#a9c4ff', '#ff8f8f', '#38a5ea'];   // 사이트 색(하늘·노랑·라임·연보라·빨강·파랑)
   // 파티 조명(2026-10-31 23:02 하율 "디자인 디벨롭"): 교실이 어두워지고 칠판 양옆에서 미러볼이 내려와 레이저·빔·반짝이
   function drawDark() {   // 선생님보다 먼저 그림 → 선생님 신호는 그대로 보임
     const a = V.pv; if (a <= 0) return;
-    ctx.fillStyle = `rgba(18,10,40,${0.5 * a})`; ctx.fillRect(0, 196, W, H - 196);
-    ctx.fillStyle = `rgba(18,10,40,${0.22 * a})`; ctx.fillRect(0, 0, W, 196);
+    ctx.fillStyle = `rgba(23,48,72,${0.5 * a})`; ctx.fillRect(0, 196, W, H - 196);
+    ctx.fillStyle = `rgba(23,48,72,${0.22 * a})`; ctx.fillRect(0, 0, W, 196);
   }
   const BALLS = [[46, 1], [314, -1]];
   function drawBeams(lv) {
@@ -659,22 +676,22 @@ export function createDance(root, opts = {}) {
     }
   }
   // 화면 위 표시(사이트 스티커 느낌: 잉크 테두리 + 오른쪽 아래 그림자)
-  const chip = (x, y, w, h, fill) => { rr(x + 2.5, y + 3, w, h, h / 2); ctx.fillStyle = K; ctx.fill(); rr(x, y, w, h, h / 2); fs(fill, 2.4); };
+  const chip = (x, y, w, h, fill) => { rr(x + 3, y + 3, w, h, h / 2); ctx.fillStyle = K; ctx.fill(); rr(x, y, w, h, h / 2); fs(fill, 2.5); };
   function drawHud() {
     const sc = s ? D.scoreOf(s) : 0, m = s ? s.m2 / 2 : 1, sec = s ? Math.floor(s.f / D.FPS) : 0;
     chip(8, 8, 118, 30, '#fffdf7');
     ctx.save(); ctx.translate(26, 23); ctx.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.6 : 8, a = -Math.PI / 2 + i * Math.PI / 5; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); fs('#ffd84a', 1.8); ctx.restore();
-    text(fmt(sc), 78, 30, 18, 'center', K);
-    const mc = m >= 3.5 ? '#ff4fa0' : m >= 2.5 ? '#ff9a1f' : m >= 1.5 ? '#3b6cf6' : '#8a8496';
+    ctx.font = `800 17px ${NUMF}`; ctx.textAlign = 'center'; ctx.fillStyle = K; ctx.fillText(fmt(sc), 78, 29.5);
+    const mc = m >= 3.5 ? '#ff8f8f' : m >= 2.5 ? '#ffc83d' : m >= 1.5 ? '#38a5ea' : '#9fb3c6';
     const pulse = s && s.dancing && m > 1 && !RM() ? 1 + Math.abs(Math.sin(V.t * 8)) * 0.06 : 1;
     ctx.save(); ctx.translate(165, 23); ctx.scale(pulse, pulse); ctx.translate(-165, -23);
     chip(134, 8, 62, 30, mc);
     ctx.beginPath(); ctx.moveTo(149, 33); ctx.bezierCurveTo(141, 31, 141, 22, 146, 14); ctx.bezierCurveTo(146, 19, 148, 21, 150, 19); ctx.bezierCurveTo(151, 15, 150, 13, 149, 11); ctx.bezierCurveTo(155, 15, 158, 22, 156, 28); ctx.bezierCurveTo(155, 31, 152, 33, 149, 33); fs(m > 1 ? '#ffd84a' : '#d9d4e2', 1.6);
     if (m > 1) { ctx.beginPath(); ctx.moveTo(149, 31); ctx.bezierCurveTo(146, 29, 147, 25, 149, 23); ctx.bezierCurveTo(151, 26, 153, 28, 149, 31); ctx.fillStyle = '#ff6b3d'; ctx.fill(); }
-    text('x' + m, 174, 30, 17, 'center', '#fff'); ctx.restore();
+    ctx.font = `800 16px ${NUMF}`; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeStyle = K; ctx.strokeText('x' + m, 174, 29.5); ctx.fillText('x' + m, 174, 29.5); ctx.restore();
     chip(268, 8, 84, 30, '#fffdf7');
     ell(285, 23, 8, 8); fs('#e9f3ff', 1.8); ctx.strokeStyle = K; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(285, 23); ctx.lineTo(285, 18); ctx.moveTo(285, 23); ctx.lineTo(289, 24); ctx.stroke();
-    text(Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'), 318, 30, 17, 'center', K);
+    ctx.font = `800 16px ${NUMF}`; ctx.textAlign = 'center'; ctx.fillStyle = K; ctx.fillText(Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'), 318, 29.5);
     // 졸음 게이지(춤 안 추면 차고, 다 차면 졸다 걸림)
     const zv = s ? s.sleep / D.SLEEP_FULL : 0, sh = zv > 0.75 && !RM() ? Math.sin(V.t * 40) * 1.2 : 0;
     ctx.save(); ctx.translate(sh, 0);
