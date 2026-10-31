@@ -12,6 +12,7 @@ import { STAIR_MAX, floorName as stairFloor } from './stair-score.js';
 import { FILM_MAX, seedOf } from './film-score.js';
 import { BLAST_MAX, seedOf as blastSeed } from './blast-score.js';
 import { CHASE_MAX, seedOf as chaseSeed } from './chase-score.js';
+import { DANCE_MAX, seedOf as danceSeed } from './dance-score.js';
 import { SNAKE_MAX, N2_MAX } from './cz-score.js';
 import { ffOn, RELEASED } from './flags.js';
 import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
@@ -34,6 +35,8 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 // 직접 그린 스티커 아이콘(index.html 스프라이트 #sj-*) — 이모지 대신 (2026-10-24)
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
+  // 선생님 몰래 춤추기(2026-10-31 하율, 미리보기 깃발 dance-game — 개발자만): 판서하는 선생님 몰래 꾹 눌러 춤추기, 돌아보면 멈추기. 높을수록 좋음 → 서버엔 DANCE_MAX - 점수
+  dance: { ff: 'dance-game', name: '선생님 몰래 춤추기', ic: 'dance', desc: '선생님이 판서하는 동안 몰래 춤춰요! 돌아보면 바로 멈추기', fmt: v => (DANCE_MAX - v).toLocaleString('ko-KR') + '점' },
   // 카체이싱!(2026-10-31 하율 "다함께 차차차처럼 — 플레이 방식까지", 미리보기 깃발 chase-game — 개발자만): 위에서 본 도로 칼치기·점프·연료·부스터. 높을수록 좋음 → 서버엔 CHASE_MAX - 점수
   chase: { ff: 'chase-game', name: '카체이싱!', ic: 'chase', desc: '차 사이를 아슬아슬하게 누비며 부스터를 모아요! 연료가 떨어지기 전에 멀리', fmt: v => (CHASE_MAX - v).toLocaleString('ko-KR') + '점' },
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
@@ -1508,7 +1511,7 @@ function gtText(t) {
 const G_GROUPS = [
   ['puzzle', '퍼즐', '블록·숫자를 놓고 맞추는 게임', ['gear', 'blast', 'film', 'n2048', 'mine']],
   ['action', '달리기·액션', '피하고 오르며 버티는 게임', ['chase', 'home', 'stair', 'snake']],
-  ['timing', '순발력·타이밍', '눈과 손이 빠를수록 잘하는 게임', ['reaction', 'cut', 'num25']],
+  ['timing', '순발력·타이밍', '눈과 손이 빠를수록 잘하는 게임', ['dance', 'reaction', 'cut', 'num25']],
 ];
 const gGroups = () => {
   const on = gamesOn(), used = new Set(G_GROUPS.flatMap(x => x[3]));
@@ -1744,7 +1747,7 @@ function chUpLine(c) {   // 내 티어 칸 아래: 어제보다 · 지난 라운
 function chBlock(c) {
   const gs = gamesOn().filter(([k]) => GAMES[k]);
   const byG = new Map((c.games || []).map(x => [x.g, x]));
-  const GAP = { chase: v => v.toLocaleString('ko-KR') + '점', blast: v => v.toLocaleString('ko-KR') + '점', film: v => v.toLocaleString('ko-KR') + '개', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
+  const GAP = { dance: v => v.toLocaleString('ko-KR') + '점', chase: v => v.toLocaleString('ko-KR') + '점', blast: v => v.toLocaleString('ko-KR') + '점', film: v => v.toLocaleString('ko-KR') + '개', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
   const champs = gs.map(([k, g]) => { const x = byG.get(k);
     if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">1등 자리 비어 있음</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
     // 공동 1등(2026-10-30 하율 "누가 했는지, 뭘로 90만 점 찍은 건지 헷갈려"): 메달을 '공동 1등'으로, 기록을 이름 위 한 줄로 올리고 'N명 같은 기록' — 합친 점수로 안 읽히게
@@ -2150,7 +2153,7 @@ function playTicket(game) {
    ② 하던 게임 정리(quitGame)가 오류를 내면 다음 게임이 영영 안 열렸음 → 오류를 삼키고 계속
    ③ 학교 와이파이가 느려 서비스 워커가 옛 social.js를 준 경우(버튼은 새 index.html, 게임 목록은 옛 파일) → 옛 파일을 지우고 새로 고침
    ④ 게임을 여는 중 오류 → 빈 화면 대신 안내 + 새로 고침 버튼 */
-const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm, blast: playBlast, chase: playChase };
+const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm, blast: playBlast, chase: playChase, dance: playDance };
 function staleReload() {
   try { if (Date.now() - (+sessionStorage.getItem('sg_rl') || 0) < 60e3) { toast('게임을 불러오지 못했어요. 앱을 완전히 닫았다가 다시 열어 주세요'); return; } sessionStorage.setItem('sg_rl', Date.now()); } catch {}
   toast('새 버전을 받는 중이에요…');
@@ -2178,7 +2181,7 @@ async function play(game) {
   }
   try { quitGame?.(); } catch (e) { console.error(e); }
   quitGame = null; curGame = game;
-  ticket = S.me && game !== 'gear' && game !== 'stair' && game !== 'film' && game !== 'blast' && game !== 'chase' ? playTicket(game) : null;
+  ticket = S.me && game !== 'gear' && game !== 'stair' && game !== 'film' && game !== 'blast' && game !== 'chase' && game !== 'dance' ? playTicket(game) : null;
   try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
 
@@ -2763,6 +2766,57 @@ async function playChase() {
   window.__chase = M;   // 테스트용
   myRecInto($('#csRec'), 'chase', best ? CHASE_MAX - best : null, { open: true });
   quitGame = () => { run++; M.destroy(); if (window.__chase === M) window.__chase = null; };
+}
+
+/* 선생님 몰래 춤추기(2026-10-31 하율 "선생님은 전자칠판 앞에서 수업, 나무 막대기를 한 손에, 네모난 안경, 머리숱 많은 60대 남자 선생님", 미리보기 dance-game — 개발자만)
+   js/dance.js(그리기·입력) + dance-score.js(규칙 — 서버와 같음). 카체이싱!과 같은 흐름: 시작 카운트다운(3초) 동안 티켓 → 그 씨앗으로 선생님이 돌아보는 때가 정해지고,
+   누름/뗌 기록으로 서버가 판을 처음부터 다시 돌려 점수를 확인. 못 받으면 연습 판(저장 안 됨). 끝나면 아무 키·화면으로 바로 다음 판 */
+let DANCE = null;
+async function playDance() {
+  const quick = reQuick; reQuick = false;
+  const area = stage(ic('dance') + ' 선생님 몰래 춤추기', '<div class="dn" id="dn"><div class="dn-main" id="dnMain"></div><aside class="sr-side" id="dnRec"></aside></div>', true);
+  if (!DANCE) { try { DANCE = await import('./dance.js').catch(() => import('./dance.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!area.isConnected || !$('#dnMain')) return;
+  let runTk = null, run = 0, tkWhy = '', best = store.get('dance_best', 0);
+  const M = DANCE.createDance($('#dnMain'), {
+    quick, best, sound: store.get('dance_snd', false), trophy: ic('trophy'),
+    keys: e => KM.actOf('dance', e),
+    keyText: () => { const k = KM.keysOf('dance'); return `${esc(KM.keyName(k.dance?.[0] || ''))} 꾹 누르기`; },
+    onSound: on => store.set('dance_snd', on),
+    async seed() {
+      runTk = null; tkWhy = ''; const my = ++run;
+      if (!S.me) return null;
+      try { runTk = (await call('start', { game: 'dance' }).catch(() => wait(1500).then(() => call('start', { game: 'dance' })))).ticket || null; } catch (e) { tkWhy = e.message; }
+      if (my !== run) return null;
+      if (!runTk) toast('지금 판은 기록이 저장되지 않아요' + (tkWhy ? ' · ' + tkWhy : ''));
+      return runTk ? danceSeed(runTk) : null;
+    },
+    saveLine: res => !S.me ? '로그인하면 랭킹에 올라가요' : !res.saved ? '이번 판은 서버에 등록되지 않아 저장 못 했어요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…',
+    onOver(res) {
+      const no = run, tk = runTk; runTk = null;
+      if (res.score > best) { best = res.score; if (!S.me || !res.saved) store.set('dance_best', best); }
+      if (!S.me || !res.saved || !tk || res.score < 1) return;
+      ticket = tk;   // 이 판의 티켓으로만 저장
+      saveScore('dance', DANCE_MAX - res.score, res.rounds).then(r => {
+        if (no !== run) return;
+        if (r.held) { M.msg(heldLine(r)); return; }
+        const b = r.best != null ? DANCE_MAX - r.best : res.score; M.setBest(b); best = Math.max(best, b); store.set('dance_best', best);
+        M.msg(r.newBest ? `<b>최고 기록 경신!</b> 전체 ${r.rank}등` : `내 최고 ${b.toLocaleString('ko-KR')}점 · 전체 ${r.rank}등`);
+        myRecInto($('#dnRec'), 'dance', null, { open: true });
+      }).catch(e => {
+        // 서버가 바쁘거나(5xx) 연결이 끊겨 실패하면 이 기기에 맡겨 두고 다음에 열 때 다시 보냄(티켓은 서버에서 24시간 유예)
+        if (!e.status || (e.status >= 500 && e.status !== 503)) { try { store.set('dance_pend', { v: DANCE_MAX - res.score, r: res.rounds, tk, at: Date.now() }); } catch {} if (no === run) M.msg('지금 저장이 안 돼서 이 기기에 맡겨 뒀어요 · 다음에 열 때 다시 보내요'); return; }
+        if (no === run) M.msg(esc(e.message));
+      });
+    },
+  });
+  { const pd = store.get('dance_pend', null);   // 맡겨 둔 기록 다시 보내기
+    if (pd && S.me && Date.now() - pd.at < 20 * 3600e3) { store.set('dance_pend', null); call('score', { game: 'dance', value: pd.v, rounds: pd.r, ticket: pd.tk }).then(r => { toast(r.held ? '맡겨 둔 선생님 몰래 춤추기 기록을 보냈어요(확인 대기)' : '맡겨 둔 선생님 몰래 춤추기 기록을 저장했어요'); myRecInto($('#dnRec'), 'dance', null, { open: true }); }).catch(e => { if (!e.status || e.status >= 500) store.set('dance_pend', pd); }); }
+    else if (pd) store.set('dance_pend', null); }
+  $('#dnMain .dn-snd')?.insertAdjacentHTML('beforebegin', RE_BTN);   // 다시 시작(R)
+  window.__dance = M;   // 테스트용
+  myRecInto($('#dnRec'), 'dance', best ? DANCE_MAX - best : null, { open: true });
+  quitGame = () => { run++; M.destroy(); if (window.__dance === M) window.__dance = null; };
 }
 
 /* 5) 기자재 정리!: 촬영 장비 블록으로 기자재실 정리 (js/gear.js, 테트리스 방식) — 2026-10-27 하율, 미리보기(개발자만) */

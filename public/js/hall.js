@@ -5,7 +5,7 @@ let D = null;   // social.js가 넘겨줌: { call, GAMES, ic, av, nameOf, devTag
 
 // 기록실에서 쓰는 이름(모드가 둘인 게임은 모드까지)
 const NAME = { gear: ['기자재 정리!', '타임어택'], gearn: ['기자재 정리!', '일반 · 오래 버티기'], home: ['집에 가고 싶어!', '끝까지 달린 거리'], mine: ['지뢰찾기', '랭크 · 중급'], snake: ['뱀 게임', '랭크'], n2048: ['2048', '랭크 · 3분'] };
-const ORDER = ['chase', 'home', 'cut', 'film', 'stair', 'gear', 'gearn', 'blast', 'reaction', 'num25', 'mine', 'snake', 'n2048'];
+const ORDER = ['dance', 'chase', 'home', 'cut', 'film', 'stair', 'gear', 'gearn', 'blast', 'reaction', 'num25', 'mine', 'snake', 'n2048'];
 const CZ = ['mine', 'snake', 'n2048'];   // 게임 칸에서 c_ 로 여는 게임
 const dayN = at => Math.max(1, Math.floor((Date.now() - at) / 864e5) + 1);
 

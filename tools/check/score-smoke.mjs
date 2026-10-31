@@ -71,10 +71,20 @@ PLAY.chase = (v, tk) => {
   return { value: CH.CHASE_MAX - CH.scoreOf(s), rounds: [s.overF, ...ev] };
 };
 
+// 선생님 몰래 춤추기(2026-10-31): 티켓 씨앗으로 진짜 판을 돌림 — 처음부터 계속 누르고 있다가 세 번 걸려 끝날 때까지(약 15초)(입력 기록 = 서버가 다시 돌릴 것). v = 1이면 하한 밑 그대로
+const DC = await import(pathToFileURL(resolve('public/js/dance-score.js')).href);
+PLAY.dance = (v, tk) => {
+  if (v === 1) return { value: 1, rounds: [] };
+  const s = DC.newSim(DC.seedOf(tk)), ev = [];
+  ev.push(DC.enc(0, 0)); DC.input(s, 0);
+  while (!s.over) DC.step(s);
+  return { value: DC.DANCE_MAX - DC.scoreOf(s), rounds: [s.overF, ...ev] };
+};
+
 // 두 번 돈다: ① 지금 학생 화면(미리보기 깃발 꺼짐) ② 미리보기 깃발이 전부 공개된 뒤의 학생 화면
 //   (2026-10-29 버그는 깃발 rx-season이 공개된 뒤에만 타는 길이라 ①만으로는 못 잡았음)
 const { PREVIEW, RELEASED } = await import(pathToFileURL(resolve('public/js/flags.js')).href);
-const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'blast', 'chase', 'mine', 'snake', 'n2048'];
+const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'blast', 'chase', 'dance', 'mine', 'snake', 'n2048'];
 let opened = 0;
 for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공개', 'smoke_b1']]) {
   if (mode === '깃발 전부 공개') for (const f of PREVIEW) RELEASED.add(f);

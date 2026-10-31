@@ -8,6 +8,7 @@ export const KEYDEF = {
     ['down', '내리기', ['ArrowDown', 'KeyS']], ['drop', '바로 놓기', ['Space']], ['hold', '보관', ['KeyC', 'ShiftLeft', 'ShiftRight']], ['pause', '멈춤', ['KeyP']]],
   cut: [['cut', '컷', ['KeyC', 'Space']]],
   reaction: [['tap', '누르기', ['Space']]],
+  dance: [['dance', '춤추기(누르고 있기)', ['Space', 'ArrowUp', 'KeyW']]],   // 선생님 몰래 춤추기(2026-10-31)
   chase: [['left', '왼쪽', ['ArrowLeft', 'KeyA']], ['right', '오른쪽', ['ArrowRight', 'KeyD']], ['jump', '점프', ['Space', 'ArrowUp', 'KeyW']]],   // 카체이싱!(2026-10-31)
 };
 const RESTART = ['restart', '다시 시작', ['KeyR']];   // 다시 시작 버튼이 있는 게임 공통(계단 오르기는 없음)
