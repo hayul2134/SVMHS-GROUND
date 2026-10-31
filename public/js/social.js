@@ -437,6 +437,9 @@ function profileHtml(d) {
   const ttl = u.title ? `<p class="ptitle${isDev(u) ? ' dev' : ''}${u.title === HOME_TITLE ? ' first' : ''}"><span>${ui('tag', 'ic')}${ttlHtml(u.title)}</span></p>` : '';
   const tch = tierChips(d.tier);
   const crowns = (d.crowns || []).map(crownHtml).join('');
+  // 프로필 정리(2026-10-31 하율 "안 예뻐"): 티어 명판·역대 1등 패를 이름 아래 한 줄(.ptop)로 모으고, 업적·숙련도는 왼쪽 아래(.pext)로 — 넓은 화면 왼쪽 빈칸 제거
+  const plate = ffOn('tier-profile', isDev(S.me)) || radOn(u) ? tierPlate(d.tier, u) : tch ? `<p class="ptier">${tch}</p>` : '';
+  const ext = achProf(d, u) + mstProf(d, u);
   const r = d.rel || {};
   const mutual = r.following && r.followsMe;
   const actions = self
@@ -462,7 +465,7 @@ function profileHtml(d) {
         ${av(u, 'big', avWear(u.mfx) + (isDev(u) ? pdBurst() : ''))}
         <div class="pid">
           ${u.mood ? `<p class="pmood"><span>${esc(u.mood)}</span></p>` : ''}
-          <div class="pnrow"><h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2><p class="pstats ig"><button type="button" data-people="followers" data-h="${esc(u.handle)}">팔로워 <b>${d.counts.followers}</b></button><button type="button" data-people="following" data-h="${esc(u.handle)}">팔로잉 <b>${d.counts.following}</b></button></p></div>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}${ffOn('tier-profile', isDev(S.me)) || radOn(u) ? tierPlate(d.tier, u) : tch ? `<p class="ptier">${tch}</p>` : ''}
+          <div class="pnrow"><h2 class="pname">${esc(nameOf(u))}${repTag(u)}</h2><p class="pstats ig"><button type="button" data-people="followers" data-h="${esc(u.handle)}">팔로워 <b>${d.counts.followers}</b></button><button type="button" data-people="following" data-h="${esc(u.handle)}">팔로잉 <b>${d.counts.following}</b></button></p></div>${ttl}${chips ? `<p class="pinfo">${chips}</p>` : ''}
           <p class="phandle">${[isDev(u) ? `<span class="pdevtag">${ic('tool')}SVMHS GROUND 개발자</span>` : esc(atOf(u)), u.online && !self ? '<b class="onl">접속 중</b>' : '', !self && r.followsMe ? '<span class="fm">나를 팔로우함</span>' : ''].filter(Boolean).join(' · ')}</p>
         </div>
         ${actions ? `<div class="pact">${actions}</div>` : ''}
@@ -472,14 +475,14 @@ function profileHtml(d) {
         <div class="pmain">
           ${isDev(u) ? '<button class="pdev" type="button" data-fb><svg class="sic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg><span>궁금한 점·원하는 기능은 DM으로 편하게 보내 주세요! <span class="nw">팔로우 안 해도 돼요</span></span></button>' : ''}
           ${isDev(u) ? '' : u.bio ? `<p class="pbio">${esc(u.bio)}</p>` : self ? '<p class="pbio muted">아직 소개가 없어요. 프로필 꾸미기에서 적어 보세요!</p>' : ''}
-          ${crowns ? `<p class="pcrowns">${crowns}</p>` : ''}
+          ${plate || crowns ? `<div class="ptop${plate ? '' : ' np'}${crowns ? '' : ' nc'}">${plate ? `<div class="ptop-t">${plate}</div>` : ''}${crowns ? `<div class="pcrowns">${crowns}</div>` : ''}</div>` : ''}
           ${u.insta ? `<a class="pinsta" href="https://www.instagram.com/${encodeURIComponent(u.insta)}/" target="_blank" rel="noopener noreferrer" aria-label="인스타그램 @${esc(u.insta)} 열기 (새 창)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>@${esc(u.insta)}<span aria-hidden="true">↗</span></a>` : ''}
         </div>
         <aside class="pside">
           ${streak}
           ${isDev(u) ? '' : ffOn('pbest-v2', isDev(S.me)) ? bests2 : `<ul class="pbest" aria-label="게임 최고 기록">${bests}</ul>`}
-          ${achProf(d, u)}${mstProf(d, u)}
         </aside>
+        ${ext ? `<div class="pext">${ext}</div>` : ''}
       </div>
       ${self ? swBar() : ''}
     </div>

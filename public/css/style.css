@@ -6765,3 +6765,31 @@ html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-fla
 .dn-scr .hr-ov .hr-go{font-size:14px}
 #dnRec{width:min(100%,420px)}
 @media (prefers-reduced-motion:reduce){.dn-scr .hr-ov > b{animation:none}}
+
+/* ===== 프로필 정리 (2026-10-31 하율 "이렇게 보이니까 안 예뻐") =====
+   기울기 제거(반듯한 글자·격자와 섞이면 비뚤어져 보임 — 스티커 느낌은 칼선·그림자로만),
+   티어 명판 + 역대 1등 패를 이름 아래 한 줄(.ptop), 업적·숙련도는 왼쪽(.pext)으로 옮겨 넓은 화면 왼쪽 빈칸 제거.
+   오른쪽 기록 칸은 넓혀서 3열. 높이가 넘치면 프로필은 그냥 스크롤 */
+.pcard,.pside,.pcols.slim .pside{transform:none}
+.pi-c:nth-child(odd),.pi-c:nth-child(even){rotate:none}
+.ptop{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;width:100%}   /* 자리가 모자라면 1등 패가 명판 아래로 내려감 */
+.ptop-t{flex:0 1 auto;display:grid;align-content:center;gap:6px;min-width:0}
+.ptop .pcrowns{flex:1 1 260px;min-width:0}
+.ptop-t .ptier2{margin:0}
+.ptop-t .pch{margin-top:0}
+.ptop .pcrowns{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;width:100%}
+.ptop .crown2{height:100%;box-sizing:border-box}
+.pext{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;align-items:start;min-width:0}
+.pext .pach,.pext .pmst{margin-top:0}
+@media (min-width:721px){
+  .pbody{grid-template-columns:auto minmax(0,1fr) 330px;grid-template-rows:auto auto auto 1fr auto;grid-template-areas:"av id act" "main main side" "ext ext side" ". . side" "sw sw sw"}
+  .pcols > .pside,.pbody:not(:has(> .phead > .pact)) > .pcols > .pside{grid-area:side;margin-top:0}
+  .pcols > .pext{grid-area:ext}
+  .pside .pg-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .pside .pg-grid li:last-child:nth-child(odd){grid-column:auto}
+}
+@media (min-width:721px) and (max-width:900px){
+  .pbody{grid-template-columns:auto minmax(0,1fr) 270px}
+  .pside .pg-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (min-width:1200px){#v-me > .vhead,#v-u > .vhead,#v-me .soc,#v-u .soc{max-width:1060px}}   /* 2026-10-31: 오른쪽 기록 칸 3열 + 왼쪽 명판·1등 패 한 줄이 들어갈 폭 */
