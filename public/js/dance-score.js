@@ -17,7 +17,7 @@ export const seedOf = ticket => /^[0-9a-f]{16}/.test(ticket || '') ? parseInt(ti
 export const TURN_F = 12;        // 다시 칠판으로 돌아서기 0.2초
 export const WHIP_F = 7;         // 휙 돌아서기 0.12초
 export const PEEK_IN = 8;        // 곁눈질: 고개 돌리는 0.13초
-export const GRACE_F = 12;       // 2026-10-31 23:16 하율 "판정 약간 널널하게 — 돌아보는 걸 보고 피할 수 있게": 다 돌아본 뒤 0.2초까지는 멈추면 안 걸림(반응 빠르면 산다)
+export const GRACE_F = 9;        // 2026-10-31 23:16 하율 "판정 약간 널널하게 — 돌아보는 걸 보고 피할 수 있게" → 23:48 "너무 널널, 아주 조금만 줄여": 0.2초 → 0.15초. 다 돌아본 뒤 이 안에 멈추면 안 걸림
 export const CAUGHT_F = 96;      // 걸린 뒤 1.6초 혼남
 export const SAFE_F = 27;        // 멈추고 0.45초 안에 선생님이 돌아보면 '세이프'
 const COMBO_UP = 10, COMBO_DN = 7, COMBO_STEP = 10 * FPS * 3;   // 콤보(1/10프레임 단위): 춤 +10 · 쉼 -7 · 3초마다 배율 +0.5
