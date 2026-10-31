@@ -564,7 +564,7 @@ export function createChase(root, opts = {}) {
     s = C.newSim(sd, true); evs = []; lq.length = 0; acc = 0; st.scene = 'play'; tStart = performance.now(); topV = 0;
     opts.onStart?.(saved);
   }
-  function resetFx() { lastSP = 0; topK = 0; parts = []; pops = []; streaks = []; shake = 0; flash = 0; warnShown = -1; hs = 0; slowT = 0; punch = 0; flies = []; crack = null; rflash = 0; wz = 0; wvz = 0; wroll = 0; }
+  function resetFx() { nbShown = false; lastSP = 0; topK = 0; parts = []; pops = []; streaks = []; shake = 0; flash = 0; warnShown = -1; hs = 0; slowT = 0; punch = 0; flies = []; crack = null; rflash = 0; wz = 0; wvz = 0; wroll = 0; }
   function again() {
     if (st.scene !== 'over' || performance.now() - st.shownAt < 500) return;
     st.scene = 'ready'; s = null; resetFx(); opts.onReady?.(); start();
@@ -1106,7 +1106,7 @@ export function createChase(root, opts = {}) {
   }
   const pumpIcon = (x, y) => { g.fillStyle = '#ff7a6b'; rr(g, x - 8, y - 9, 11, 18, 2); g.fill(); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(x - 6, y - 7, 7, 5); g.strokeStyle = '#ff7a6b'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 3, y - 5); g.lineTo(x + 7, y - 2); g.lineTo(x + 7, y + 6); g.stroke(); };
   const boltIcon = (x, y) => { g.fillStyle = '#7fd4ff'; g.beginPath(); g.moveTo(x + 2, y - 10); g.lineTo(x - 6, y + 2); g.lineTo(x - 1, y + 2); g.lineTo(x - 3, y + 10); g.lineTo(x + 6, y - 2); g.lineTo(x + 1, y - 2); g.closePath(); g.fill(); };
-  let topK = 0, lastSP = 0, scoreTxt = '', scoreV = -1, mTxt = '', mV = -1, kmh = 0;
+  let nbShown = false, topK = 0, lastSP = 0, scoreTxt = '', scoreV = -1, mTxt = '', mV = -1, kmh = 0;
   function drawHud() {
     const scv = C.scoreOf(s), m = C.metersOf(s);
     if (scv !== scoreV) { scoreV = scv; scoreTxt = fmt(scv); }
@@ -1114,12 +1114,27 @@ export function createChase(root, opts = {}) {
     kmh = lerp(kmh, kmhOf(s.v) * (1 + 0.6 * bI), 0.2); if (st.scene === 'play') topK = Math.max(topK, kmh);   // 부스터 중엔 600km/h 안팎으로 보이게(2026-11-01 하율)
     // 점수(가운데 위)
     panel(VW / 2 - 110, 10, 220, 64, 16);
-    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `38px ${FONT}`; g.fillStyle = '#fff'; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 6; g.fillText(scoreTxt, VW / 2, 36); g.shadowBlur = 0;
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `38px ${FONT}`; g.fillStyle = best > 0 && scv > best ? '#ffe36b' : '#fff'; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 6; g.fillText(scoreTxt, VW / 2, 36); g.shadowBlur = 0;
     g.font = `14px ${FONT}`; g.fillStyle = '#ffd25e'; g.fillText(mTxt, VW / 2 - 44, 61); g.fillStyle = s.slip > 0.05 ? '#7ff0ff' : '#9fe0ff'; g.fillText(Math.round(kmh) + ' km/h', VW / 2 + 44, 61);
     if (s.slip > 0.05) {   // 슬립스트림 띠(점수판 아래)
       panel(VW / 2 - 110, 80, 220, 28, 14); g.font = `15px ${FONT}`; g.fillStyle = s.slip > 0.7 ? '#ffe36b' : '#7ff0ff'; g.fillText('슬립스트림 +' + Math.round(C.SLIP_K * s.slip * 100) + '% · 점수 x' + (1 + s.slip).toFixed(1), VW / 2, 93);
       g.fillStyle = s.slip > 0.7 ? 'rgba(255,227,107,.9)' : 'rgba(127,240,255,.85)'; g.fillRect(VW / 2 - 98, 103, 196 * s.slip, 2.5);
       if (s.f % 30 === 0 && s.slipPts > lastSP) { pW(s.p.x, C.PY + C.P_HH, 52, '+' + (s.slipPts - lastSP), s.slip > 0.7 ? '#ffe36b' : '#7ff0ff'); lastSP = s.slipPts; }
+    }
+    // 내 최고 기록(2026-11-01 하율 "최고 점수가 플레이할 때 잘 보이게"): 연료 아래 띠 + 넘으면 금색 '신기록!'
+    if (best > 0) {
+      const over = scv > best, x0 = 14, y0 = 58, w0 = 220, pu = over ? 0.5 + 0.5 * Math.sin(performance.now() / 120) : 0;
+      if (over) { const gg = g.createLinearGradient(x0, 0, x0 + w0, 0); gg.addColorStop(0, `rgba(255,190,40,${(0.75 + 0.2 * pu).toFixed(2)})`); gg.addColorStop(1, `rgba(255,120,60,${(0.75 + 0.2 * pu).toFixed(2)})`); g.fillStyle = gg; rr(g, x0, y0, w0, 38, 12); g.fill(); g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = 1.5; g.stroke(); }
+      else panel(x0, y0, w0, 38, 12);
+      star(g, x0 + 20, y0 + 19, 9, over ? '#fff6c8' : '#ffd25e');
+      g.textAlign = 'left'; g.textBaseline = 'middle';
+      if (over) { g.font = `19px ${FONT}`; g.fillStyle = '#2a1a00'; g.fillText('신기록! +' + fmt(scv - best), x0 + 36, y0 + 20); }
+      else {
+        g.font = `12px ${FONT}`; g.fillStyle = 'rgba(255,255,255,.8)'; g.fillText('내 최고', x0 + 36, y0 + 12);
+        g.font = `17px ${FONT}`; g.fillStyle = '#ffd25e'; g.fillText(fmt(best), x0 + 84, y0 + 13);
+        g.fillStyle = 'rgba(255,255,255,.14)'; rr(g, x0 + 36, y0 + 25, w0 - 48, 6, 3); g.fill(); g.fillStyle = '#ffd25e'; rr(g, x0 + 36, y0 + 25, Math.max(6, (w0 - 48) * clamp(scv / best, 0, 1)), 6, 3); g.fill();
+      }
+      if (over && !nbShown && st.scene === 'play') { nbShown = true; pop(VW / 2, 160, '최고 기록 돌파!!', '#ffd25e', 2); sfx.combo(10); rings.push({ t: 0, c: '255,215,90' }); flash = Math.max(flash, 0.2); }
     }
     const low = s.fuel < 25 && s.fuel > 0, blink = low && (s.f >> 4) % 2 === 0;
     gauge(14, 12, 220, s.fuel / C.FUEL0, blink ? ['#ff3b3b', '#ff7a6b'] : ['#ff6b5e', '#ffb36b'], low ? '연료 부족!' : '연료', pumpIcon, low);
