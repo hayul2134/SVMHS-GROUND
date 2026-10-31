@@ -30,9 +30,15 @@ export const FUEL0 = 100, CAN = 32;
 export const COMBO_F = 180;                  // 아슬아슬 콤보가 이어지는 시간(3초)
 export const LANE_V = 900;                   // 차선 바꾸는 속도 px/s (한 차선 약 0.08초)
 export const SIDE_V = LANE_V;
-const D_M = 8000;                            // 이 거리(m)까지 난이도가 빠르게 오르고, 그 뒤로도 천천히 계속 오름
+const D_M = 8000;
+// 슬립스트림(2026-11-01 하율 "차 뒤로 가면 올린 속도에서 더 빨라지게"): 같은 차선 앞차 꽁무니 SLIP_D px 안이면 슬립(0→1, 약 0.6초) 차오름 → 목표 속도 ×(1 + SLIP_K·슬립)
+//   빠지면 약 1.4초에 걸쳐 줄어듦(옆으로 빠져도 잠깐 빠른 채로 = 새총 추월). 붙어 있는 동안 부스터 게이지도 조금씩 참
+export const SLIP_D = 320, SLIP_K = 0.45;
+// 차가 화면에서 그려지는 앞쪽 길이(판정 hh보다 김 — chase.js buildCar의 L) → 차끼리 그림이 안 겹치게 간격을 이걸로 잼(2026-11-01 하율 "차끼리 안 겹치게")
+const VF = c => c.hh * (c.k === 'bus' || c.k === 'truck' ? 1.25 : 1.62);
+const needGap = (a, b) => a.hh + 1 + VF(b) + 18;   // a(앞) 꽁무니 ~ b(뒤) 앞머리                            // 이 거리(m)까지 난이도가 빠르게 오르고, 그 뒤로도 천천히 계속 오름
 export const diffOf = m => Math.min(1, m / D_M);
-export const baseV = m => Math.min(1600, 720 + 620 * diffOf(m) + Math.max(0, m - D_M) * 0.04);   // 2026-10-31 하율 "훨씬 더 빨라도 돼" (예전 460~860)   // px/s (10px = 1m → 0.36배 하면 km/h)
+export const baseV = m => Math.min(2000, 840 + 760 * diffOf(m) + Math.max(0, m - D_M) * 0.05);   // 2026-11-01 하율 "좀 더 빨라도" (예전 720~1600)   // 2026-10-31 하율 "훨씬 더 빨라도 돼" (예전 460~860)   // px/s (10px = 1m → 0.36배 하면 km/h)
 export const drainOf = m => 3.3 + 3.6 * diffOf(m) + Math.max(0, m - D_M) * 0.0012;            // 연료 소모 /초
 export const rowGap = m => Math.max(190, 520 - 260 * diffOf(m) - Math.max(0, m - D_M) * 0.018); // 차 줄 사이 거리(px, 내가 달린 거리 기준)
 
@@ -60,7 +66,7 @@ const LQ = [null, null, null, null, null];   // 차선별 바로 위 차(판마�
 export function newSim(seed, fx = false) {
   return {
     a: seed >>> 0, fx, evs: [], f: 0, over: '', overF: -1,
-    dist: 0, v: 0, fuel: FUEL0, fever: 0, boost: 0, grace: 0, combo: 0, lastNear: -9999, maxCombo: 0,
+    dist: 0, v: 0, slip: 0, slipF: 0, fuel: FUEL0, fever: 0, boost: 0, grace: 0, combo: 0, lastNear: -9999, maxCombo: 0,
     bonus: 0, near: 0, boosts: 0, smash: 0, coins: 0, cans: 0, jumps: 0, boxes: 0,
     p: { lane: 2, x: laneX(2), vx: 0, air: 0, cd: 0, buf: 0 },
     cars: [], items: [], id: 0,
@@ -98,8 +104,9 @@ export function input(s, c) {
   } else if (c === 4) p.buf = 8;
 }
 
-function laneFree(s, lane, y, hh, skip) {
-  for (const c of s.cars) if (c !== skip && !c.dead && (c.lane === lane || c.to === lane) && Math.abs(c.y - y) < c.hh + hh + 46) return false;
+function laneFree(s, lane, y, hh, skip, k = '') {
+  const me = { hh, k };
+  for (const c of s.cars) if (c !== skip && !c.dead && (c.lane === lane || c.to === lane) && (c.y <= y ? y - c.y < needGap(c, me) + 40 : c.y - y < needGap(me, c) + 40)) return false;
   return true;
 }
 function spawnRow(s, m) {
@@ -115,7 +122,7 @@ function spawnRow(s, m) {
       continue;
     }
     const K = kindPick(r(), m), y = FAR - K.hh - r() * 40;
-    if (!laneFree(s, lane, y, K.hh)) continue;
+    if (!laneFree(s, lane, y, K.hh, null, K.k)) continue;
     const c = { id: ++s.id, k: K.k, hw: K.hw, hh: K.hh, lane, to: lane, x: laneX(lane), y, spd: s.v * (0.3 + r() * 0.25) + 60, near: 0, done: 0, dead: 0, chg: 0, blink: 0, mv: 0, col: Math.floor(r() * 10) };
     if (m > 250 && r() < 0.08 + 0.17 * d) c.chg = -200 + r() * 330;   // 이 높이(내 차 앞 약 380~700px)에 오면 깜빡이 켜고 옆 차선으로
     s.cars.push(c);
@@ -130,8 +137,18 @@ export function step(s) {
   s.f++;
   const dt = DT, p = s.p, m = s.dist / 10, d = diffOf(m);
   // 속도
-  let tv = s.fuel > 0 ? baseV(m) : 0; if (s.boost > 0) tv *= 1.6;
-  if (s.v < tv) s.v = Math.min(tv, s.v + (s.boost > 0 ? 1100 : 300) * dt); else s.v = Math.max(tv, s.v - (s.fuel > 0 ? 700 : 260) * dt);
+  // 슬립스트림: 땅에서·부스터 아닐 때 같은 차선 앞차 꽁무니 가까이
+  let sl = 0;
+  if (p.air === 0 && s.boost <= 0 && s.fuel > 0) for (const c of s.cars) {
+    if (c.dead || Math.abs(c.x - p.x) > LANE_W * 0.45) continue;
+    const g = (PY - P_HH) - (c.y + c.hh); if (g > -4 && g < SLIP_D) sl = Math.max(sl, 1 - 0.4 * g / SLIP_D);
+  }
+  const was = s.slip > 0.05;
+  s.slip = sl ? Math.min(1, s.slip + 1.7 * sl * dt) : Math.max(0, s.slip - 0.7 * dt);
+  if (sl) { s.slipF++; s.fever = Math.min(99.5, s.fever + 7 * sl * dt); }
+  if (!was && s.slip > 0.05) ev(s, 'slip', {}); else if (was && s.slip <= 0.05) ev(s, 'slipEnd', {});
+  let tv = s.fuel > 0 ? baseV(m) * (1 + SLIP_K * s.slip) : 0; if (s.boost > 0) tv *= 1.6;
+  if (s.v < tv) s.v = Math.min(tv, s.v + (s.boost > 0 ? 1100 : s.slip > 0.05 ? 520 : 300) * dt); else s.v = Math.max(tv, s.v - (s.fuel > 0 ? 700 : 260) * dt);
   s.dist += s.v * dt;
   // 연료(부스터 중엔 안 닳음)
   if (s.boost <= 0 && s.fuel > 0) { s.fuel -= drainOf(m) * dt; if (s.fuel <= 0) { s.fuel = 0; ev(s, 'empty', {}); } }
@@ -186,9 +203,9 @@ export function step(s) {
     if (c.chg && !c.mv && !c.blink && c.y >= c.chg - 300) {
       const opts = [c.lane - 1, c.lane + 1].filter(l => l >= 0 && l < LANES);
       const to = opts[Math.floor(rnd(s) * opts.length)];
-      if (laneFree(s, to, c.y, c.hh, c)) { c.to = to; c.blink = 40; } else c.chg = 0;
+      if (laneFree(s, to, c.y, c.hh, c, c.k)) { c.to = to; c.blink = 40; } else c.chg = 0;
     }
-    if (c.blink) { c.blink--; if (!c.blink) c.mv = 1; }
+    if (c.blink) { c.blink--; if (!c.blink) { if (laneFree(s, c.to, c.y, c.hh, c, c.k)) c.mv = 1; else { c.to = c.lane; c.chg = 0; } } }   // 옮기기 직전에 다시 확인(그사이 차가 들어왔으면 그만둠)
     else if (c.mv) {
       const tx = laneX(c.to), sp = 95 * dt;
       if (Math.abs(tx - c.x) <= sp) { c.x = tx; c.lane = c.to; c.mv = 0; c.chg = 0; } else c.x += tx > c.x ? sp : -sp;
@@ -201,12 +218,20 @@ export function step(s) {
     while (j >= 0 && (cars[j].y > c.y || (cars[j].y === c.y && cars[j].id > c.id))) { cars[j + 1] = cars[j]; j--; }
     cars[j + 1] = c;
   }
+  //   차선을 옮기는 중인 차는 두 차선 모두에 있는 것으로 봄. 그림 길이로 간격을 재고, 그래도 겹치면 앞차를 앞으로 밀어 냄(내 차 쪽으로는 안 밂)
   LQ[0] = LQ[1] = LQ[2] = LQ[3] = LQ[4] = null;
   for (let i = 0; i < cars.length; i++) {
     const b = cars[i]; if (b.dead) continue;
-    const a = LQ[b.lane];
-    if (a && a.y < b.y && b.y - a.y < a.hh + b.hh + 14 && b.spd > a.spd) b.spd = a.spd;
-    LQ[b.lane] = b;
+    for (let q = 0; q < 2; q++) {
+      const L = q ? b.to : b.lane; if (q && (L === b.lane || !b.mv)) continue;
+      const a = LQ[L];
+      if (a && a.y <= b.y) {
+        const need = needGap(a, b);
+        if (b.y - a.y < need + 50 && b.spd > a.spd) b.spd = a.spd;
+        if (b.y - a.y < need) a.y = b.y - need;
+      }
+      LQ[L] = b;
+    }
   }
   for (const it of s.items) it.y += s.v * dt;
   // 판정

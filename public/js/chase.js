@@ -106,6 +106,7 @@ function makeSfx() {
     box: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.12, i % 2 ? 'square' : 'triangle', 0.045, 0, i * 0.045, 0.6)); noise(0.4, 0.06, 3000, 9000, 'highpass', 0.1, 0.7, 0.6); },
     // 부스터: 쿵 + 터보 휘이잉(잡음 훑기) + 올라가는 톱니
     boost: () => { boom(70, 0.6, 0.28); noise(1.1, 0.2, 300, 6500, 'bandpass', 0, 1.2, 0.3); tone(110, 0.9, 'sawtooth', 0.05, 880, 0.02, 0.3); tone(220, 0.7, 'square', 0.03, 1320, 0.1, 0.4); },
+    slip: () => { noise(0.7, 0.13, 350, 2600, 'bandpass', 0, 1.4, 0.3); tone(330, 0.5, 'sine', 0.03, 660, 0.05, 0.5); },
     boostEnd: () => { noise(0.5, 0.08, 3000, 300, 'bandpass', 0, 1.2, 0.3); tone(600, 0.4, 'sawtooth', 0.03, 150, 0, 0.3); },
     jump: () => { tone(260, 0.2, 'square', 0.04, 760, 0, 0.3); noise(0.15, 0.06, 1500, 4000, 'bandpass', 0, 1.2, 0.1); },
     lane: () => noise(0.11, 0.07, 1800, 600, 'bandpass', 0, 2, 0.05),
@@ -293,9 +294,11 @@ export function createChase(root, opts = {}) {
   let hs = 0, slowT = 0, punch = 0, punchAt = [CX, 440], flies = [], crack = null, rflash = 0, avgDt = 16, lowFx = false, wz = 0, wvz = 0, wroll = 0;
 
   /* --- 크기: 논리 960×540을 화면 픽셀에 맞춰 선명하게 --- */
+  let resQ = 1, lagT = 0;
   const fit = () => {
     const w = cv.clientWidth; if (!w) return;
-    dpr = Math.min(2.5, window.devicePixelRatio || 1); k = w / VW;
+    // 2026-11-01 최적화(하율 "랙이 좀 걸린다"): 느려지는 건 거의 다 픽셀 칠하기 → 그림판 가로를 1440px(× resQ)까지만. 렉이 이어지면 resQ를 더 낮춤
+    dpr = Math.min(2.5, window.devicePixelRatio || 1, 1440 * resQ / w); k = w / VW;
     const pw = Math.round(w * dpr), ph = Math.round(w * VH / VW * dpr);
     if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; art.clear(); }
   };
@@ -598,6 +601,7 @@ export function createChase(root, opts = {}) {
       case 'box': bW(e.x, py, 16, 26, ['#ff8fd0', '#a98bff', '#5ec8ff', '#fff'], 260, 0.7, 6, 'st'); sfx.box(); punch = Math.max(punch, 0.03); break;
       case 'boost': flash = 0.5; shake = Math.max(shake, 0.4); hs = Math.max(hs, 0.06); rings.push({ t: 0 }, { t: -0.12 }, { t: -0.24 }); pop(VW / 2, 200, '부스터!', '#7fd4ff', 2); sfx.boost(); break;
       case 'boostEnd': sfx.boostEnd(); break;
+      case 'slip': sfx.slip(); pW(s.p.x, C.PY + C.P_HH, 70, '슬립스트림!', '#7ff0ff'); punch = Math.max(punch, 0.02); break;
       case 'smash': {
         const c = e.id && s.cars.find(x => x.id === e.id), [sx, sy, q] = scrOf(e.x, e.y + 20, 14);
         if (c) { launch(c, 1, c.x < s.p.x ? -1 : c.x > s.p.x ? 1 : (Math.random() < 0.5 ? -1 : 1)); blast(sx, sy, q, { k: 0.45, fire: false, cols: [carModel(c.k, c.col, c.hw, c.hh).col || '#c8322f'] }); }
@@ -644,7 +648,8 @@ export function createChase(root, opts = {}) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
     const dt = Math.min(100, now - (last || now)); last = now;
-    avgDt = avgDt * 0.97 + dt * 0.03; lowFx = avgDt > 26;   // 저사양(약 38fps 밑)이면 입자 줄임
+    avgDt = avgDt * 0.97 + dt * 0.03; lowFx = avgDt > 22;   // 저사양(약 45fps 밑)이면 입자·빛 효과 줄임
+    if (st.scene === 'play' && avgDt > 21 && resQ > 0.56) { lagT += dt; if (lagT > 1500) { lagT = 0; resQ *= 0.8; fit(); avgDt = 16; } } else lagT = 0;   // 계속 느리면 해상도 한 단계 낮춤
     if (st.scene === 'count' || st.scene === 'resume') {
       countT += dt;
       const total = st.scene === 'resume' ? 1000 : 3000, prevN = Math.ceil((total - (countT - dt)) / 1000), n = Math.ceil((total - countT) / 1000);
@@ -739,9 +744,15 @@ export function createChase(root, opts = {}) {
       const n = Math.min(16, (v - 600) / 50) | 0; g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 1.8;
       for (let i = 0; i < n; i++) { const t = ((s.f * v / 16000 + i * 0.37) % 1), sd = i % 2 ? 1 : -1, x0 = CX + sd * (VW * (0.36 + t * 0.2)), y0 = HZ + 140 + t * 330, len = 30 + t * 70; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + sd * len * 0.45, y0 + len); g.stroke(); }
     }
+    if (s && s.slip > 0.05 && !RM() && st.scene === 'play') {   // 슬립스트림: 앞차가 가른 바람이 내 차 양옆으로 흘러감
+      const [cx0, cy0] = pScr, k3 = s.slip, n = lowFx ? 6 : 12; g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+      for (let i = 0; i < n; i++) { const t = (s.f * 0.06 + i * 0.37) % 1, sd = i % 2 ? 1 : -1, w0 = 34 + (i % 3) * 16, x0 = cx0 + sd * (w0 + t * 30), y0 = cy0 - 150 + t * 230, len = 40 + t * 60;
+        g.strokeStyle = `rgba(150,240,255,${(0.55 * k3 * (1 - Math.abs(t - 0.5) * 1.6)).toFixed(3)})`; g.lineWidth = 2 + t * 2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + sd * len * 0.12, y0 + len); g.stroke(); }
+      g.globalCompositeOperation = 'source-over';
+    }
     if (bI > 0.02 && !RM() && s) {   // 부스터 속도선: 소실점에서 화면 밖으로 터져 나감
       g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
-      for (let i = 0; i < 46; i++) {
+      for (let i = 0, n = lowFx ? 16 : 30; i < n; i++) {
         const an = (i * 2.399) % 6.283, sp = 0.6 + ((i * 37) % 10) / 12, t = (s.f * 0.035 * sp + i * 0.137) % 1, r1 = 40 + t * t * 780, r2 = r1 + 30 + t * 260, ca = Math.cos(an), sa = Math.sin(an) * 0.62;
         g.strokeStyle = i % 3 ? `rgba(255,255,255,${(0.55 * t * bI).toFixed(3)})` : `hsla(${(s.f * 6 + i * 40) % 360},100%,70%,${(0.6 * t * bI).toFixed(3)})`; g.lineWidth = 1 + t * 3.5;
         g.beginPath(); g.moveTo(CX + ca * r1, HZ + 90 + sa * r1); g.lineTo(CX + ca * r2, HZ + 90 + sa * r2); g.stroke();
@@ -764,8 +775,8 @@ export function createChase(root, opts = {}) {
     }
     g.globalAlpha = 1;
     g.restore();
-    g.drawImage(vignette().c, 0, 0, VW, VH);
-    if (bI > 0.02) { const hu = s ? (s.f * 5) % 360 : 200, pu = 0.22 + 0.1 * Math.sin((s?.f || 0) * 0.3), bg = g.createRadialGradient(CX, VH * 0.55, VH * 0.28, CX, VH * 0.55, VW * 0.68); bg.addColorStop(0, `hsla(${hu},100%,65%,0)`); bg.addColorStop(0.7, `hsla(${hu},100%,62%,${(pu * 0.5 * bI).toFixed(3)})`); bg.addColorStop(1, `hsla(${(hu + 60) % 360},100%,60%,${(pu * bI * 1.4).toFixed(3)})`); g.fillStyle = bg; g.fillRect(0, 0, VW, VH); }
+    if (!lowFx) g.drawImage(vignette().c, 0, 0, VW, VH);
+    if (bI > 0.02 && !lowFx) { const hu = s ? (s.f * 5) % 360 : 200, pu = 0.22 + 0.1 * Math.sin((s?.f || 0) * 0.3), bg = g.createRadialGradient(CX, VH * 0.55, VH * 0.28, CX, VH * 0.55, VW * 0.68); bg.addColorStop(0, `hsla(${hu},100%,65%,0)`); bg.addColorStop(0.7, `hsla(${hu},100%,62%,${(pu * 0.5 * bI).toFixed(3)})`); bg.addColorStop(1, `hsla(${(hu + 60) % 360},100%,60%,${(pu * bI * 1.4).toFixed(3)})`); g.fillStyle = bg; g.fillRect(0, 0, VW, VH); }
     if (crack) drawCrack();
     if (rflash > 0) { const rg = g.createRadialGradient(CX, VH / 2, VH * 0.2, CX, VH / 2, VW * 0.7); rg.addColorStop(0, 'rgba(255,40,30,0)'); rg.addColorStop(1, `rgba(255,40,30,${(rflash * 0.55).toFixed(3)})`); g.fillStyle = rg; g.fillRect(0, 0, VW, VH); }
     if (flash > 0) { g.fillStyle = `rgba(255,255,255,${Math.min(0.9, flash * 1.4).toFixed(3)})`; g.fillRect(0, 0, VW, VH); }
@@ -773,6 +784,13 @@ export function createChase(root, opts = {}) {
     if (st.scene === 'count' || st.scene === 'resume') drawCount();
     if (touchSeen && (st.scene === 'play' || st.scene === 'count' || st.scene === 'resume')) drawPads();
   }
+  // 둥근 빛·연기·불 그림을 한 번만 만들어 두고 찍음(매 프레임 그라데이션 만들기 → drawImage, 최적화)
+  const blobs = new Map();
+  const blob = (key, stops) => { let c = blobs.get(key); if (!c) { c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); stops.forEach(([o, col]) => gr.addColorStop(o, col)); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); blobs.set(key, c); } return c; };
+  const FIRE = [[0, 'rgba(255,250,210,.95)'], [0.35, 'rgba(255,170,50,.8)'], [0.7, 'rgba(230,60,20,.35)'], [1, 'rgba(120,20,10,0)']];
+  const SMOKE = [[0, 'rgba(70,72,86,.55)'], [1, 'rgba(70,72,86,0)']];
+  const TAIL = [[0, 'rgba(255,235,225,1)'], [0.25, 'rgba(255,50,40,.85)'], [1, 'rgba(255,30,20,0)']];
+  const stamp = (c, x, y, r) => g.drawImage(c, x - r, y - r, r * 2, r * 2);
   function drawParts() {
     let lit = false;
     for (let pass = 0; pass < 2; pass++) {
@@ -781,9 +799,9 @@ export function createChase(root, opts = {}) {
         const glow = p.k === 'sp' || p.k === 'fi' || p.k === 'st'; if (glow !== !!pass) continue;
         const a = clamp(p.life / p.max, 0, 1); g.globalAlpha = p.k === 'sh' || p.k === 'db' ? Math.min(1, a * 3) : a;
         if (p.k === 'sp') { g.strokeStyle = p.c; g.lineWidth = p.sz; g.lineCap = 'round'; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - p.vx * 0.035, p.y - p.vy * 0.035); g.stroke(); }
-        else if (p.k === 'fi') { const r = Math.max(1, p.sz), fg = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, r); fg.addColorStop(0, 'rgba(255,250,210,.95)'); fg.addColorStop(0.35, 'rgba(255,170,50,.8)'); fg.addColorStop(0.7, 'rgba(230,60,20,.35)'); fg.addColorStop(1, 'rgba(120,20,10,0)'); g.fillStyle = fg; g.beginPath(); g.arc(p.x, p.y, r, 0, 7); g.fill(); }
+        else if (p.k === 'fi') stamp(blob('fi', FIRE), p.x, p.y, Math.max(1, p.sz));
         else if (p.k === 'st') { const r = p.sz * (0.6 + 0.4 * Math.sin(p.r * 2)); g.fillStyle = p.c; g.beginPath(); g.moveTo(p.x, p.y - r * 1.6); g.lineTo(p.x + r * 0.4, p.y - r * 0.4); g.lineTo(p.x + r * 1.6, p.y); g.lineTo(p.x + r * 0.4, p.y + r * 0.4); g.lineTo(p.x, p.y + r * 1.6); g.lineTo(p.x - r * 0.4, p.y + r * 0.4); g.lineTo(p.x - r * 1.6, p.y); g.lineTo(p.x - r * 0.4, p.y - r * 0.4); g.closePath(); g.fill(); }
-        else if (p.k === 'sm') { const r = Math.max(1, p.sz), sg = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, r); sg.addColorStop(0, 'rgba(70,72,86,.55)'); sg.addColorStop(1, 'rgba(70,72,86,0)'); g.fillStyle = sg; g.beginPath(); g.arc(p.x, p.y, r, 0, 7); g.fill(); }
+        else if (p.k === 'sm') stamp(blob('sm', SMOKE), p.x, p.y, Math.max(1, p.sz));
         else if (p.k === 'sh') { const r = p.sz, c2 = Math.cos(p.r), s2 = Math.sin(p.r), tw = Math.abs(Math.sin(p.r * 1.7));   // 유리: 돌면서 납작해졌다 넓어짐 + 반짝
           g.beginPath(); g.moveTo(p.x + c2 * r, p.y + s2 * r * tw); g.lineTo(p.x - s2 * r * 0.7, p.y + c2 * r * 0.7 * tw); g.lineTo(p.x - c2 * r * 0.8, p.y - s2 * r * 0.4 * tw); g.closePath();
           g.fillStyle = tw > 0.85 ? '#fff' : p.c; g.fill(); g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 0.8; g.stroke(); }
@@ -969,13 +987,10 @@ export function createChase(root, opts = {}) {
   }
   // 미등: 멀리서도 차가 보이게(어두운 색 차·어두운 도로) — 내 차선 앞이면 더 크고 밝게(위험 표시)
   function tails(M, x, yc, yaw, danger) {
-    const q = ps(yc), r0 = Math.max(3.2, 7 * q * PK) * (1 + danger * 0.9), on2 = danger > 0 ? 0.75 + 0.25 * Math.sin(performance.now() / 70) : 0.75;
-    g.globalCompositeOperation = 'lighter';
-    for (const sd of [-1, 1]) {
-      const [bx, by] = projPt(M, x, yc, yaw, 0, sd * M.W * 0.36, M.y1 + 0.6, M.W * 0.42), gl = g.createRadialGradient(bx, by, 0, bx, by, r0 * 1.8);
-      gl.addColorStop(0, `rgba(255,235,225,${on2})`); gl.addColorStop(0.25, `rgba(255,50,40,${0.85 * on2})`); gl.addColorStop(1, 'rgba(255,30,20,0)'); g.fillStyle = gl; g.beginPath(); g.arc(bx, by, r0 * 1.8, 0, 7); g.fill();
-    }
-    g.globalCompositeOperation = 'source-over';
+    const q = ps(yc), r0 = Math.max(3.2, 7 * q * PK) * (1 + danger * 0.9), on2 = danger > 0 ? 0.75 + 0.25 * Math.sin(performance.now() / 70) : 0.75, tb = blob('tail', TAIL);
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = on2;
+    for (const sd of [-1, 1]) { const [bx, by] = projPt(M, x, yc, yaw, 0, sd * M.W * 0.36, M.y1 + 0.6, M.W * 0.42); stamp(tb, bx, by, r0 * 1.8); }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
   }
   function drawFly(f) {
     const q = ps(f.y), sx = sxOf(f.x, q), sy = syOf(q) - f.z * q * PK * ZK;
@@ -1074,7 +1089,11 @@ export function createChase(root, opts = {}) {
     // 점수(가운데 위)
     panel(VW / 2 - 110, 10, 220, 64, 16);
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `38px ${FONT}`; g.fillStyle = '#fff'; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 6; g.fillText(scoreTxt, VW / 2, 36); g.shadowBlur = 0;
-    g.font = `14px ${FONT}`; g.fillStyle = '#ffd25e'; g.fillText(mTxt, VW / 2 - 44, 61); g.fillStyle = '#9fe0ff'; g.fillText(Math.round(kmh) + ' km/h', VW / 2 + 44, 61);
+    g.font = `14px ${FONT}`; g.fillStyle = '#ffd25e'; g.fillText(mTxt, VW / 2 - 44, 61); g.fillStyle = s.slip > 0.05 ? '#7ff0ff' : '#9fe0ff'; g.fillText(Math.round(kmh) + ' km/h', VW / 2 + 44, 61);
+    if (s.slip > 0.05) {   // 슬립스트림 띠(점수판 아래)
+      panel(VW / 2 - 78, 80, 156, 26, 13); g.font = `14px ${FONT}`; g.fillStyle = '#7ff0ff'; g.fillText('슬립스트림 +' + Math.round(C.SLIP_K * s.slip * 100) + '%', VW / 2, 92);
+      g.fillStyle = 'rgba(127,240,255,.85)'; g.fillRect(VW / 2 - 66, 101, 132 * s.slip, 2.5);
+    }
     const low = s.fuel < 25 && s.fuel > 0, blink = low && (s.f >> 4) % 2 === 0;
     gauge(14, 12, 220, s.fuel / C.FUEL0, blink ? ['#ff3b3b', '#ff7a6b'] : ['#ff6b5e', '#ffb36b'], low ? '연료 부족!' : '연료', pumpIcon, low);
     const bv = s.boost > 0 ? s.boost / C.BOOST_F : s.fever / 100;
