@@ -26,7 +26,7 @@ export const P_HW = 12, P_HH = 24;          // 내 차 판정 반폭·반높이(
 export const NEAR = 110, NEAR2 = 50;         // 아슬아슬(칼치기): 앞차 꽁무니와 내 차 앞 사이가 이 px 안일 때 옆 차선으로 빠지면 · NEAR2 안이면 두 배
 export const JUMP_F = 40, JUMP_CD = 54;      // 점프 체공 0.67초 · 착지 뒤 다시 뛰기까지 0.9초
 export const BOOST_F = 270, BOX_F = 180, GRACE_F = 70;   // 부스터 4.5초 · 아이템 상자 부스터 3초 · 부스터 끝난 뒤 무적 1.2초
-export const FUEL0 = 100, CAN = 32;
+export const FUEL0 = 100, CAN = 34;
 export const COMBO_F = 180;                  // 아슬아슬 콤보가 이어지는 시간(3초)
 export const LANE_V = 900;                   // 차선 바꾸는 속도 px/s (한 차선 약 0.08초)
 export const SIDE_V = LANE_V;
@@ -39,7 +39,7 @@ const VF = c => c.hh * (c.k === 'bus' || c.k === 'truck' ? 1.25 : 1.62);
 const needGap = (a, b) => a.hh + 1 + VF(b) + 18;   // a(앞) 꽁무니 ~ b(뒤) 앞머리                            // 이 거리(m)까지 난이도가 빠르게 오르고, 그 뒤로도 천천히 계속 오름
 export const diffOf = m => Math.min(1, m / D_M);
 export const baseV = m => Math.min(2000, 840 + 760 * diffOf(m) + Math.max(0, m - D_M) * 0.05);   // 2026-11-01 하율 "좀 더 빨라도" (예전 720~1600)   // 2026-10-31 하율 "훨씬 더 빨라도 돼" (예전 460~860)   // px/s (10px = 1m → 0.36배 하면 km/h)
-export const drainOf = m => 3.3 + 3.6 * diffOf(m) + Math.max(0, m - D_M) * 0.0012;            // 연료 소모 /초
+export const drainOf = m => 4 + 4.4 * diffOf(m) + Math.max(0, m - D_M) * 0.0012;   // 2026-11-01 하율 "연료가 널널" (예전 3.3+3.6d)            // 연료 소모 /초
 export const rowGap = m => Math.max(190, 520 - 260 * diffOf(m) - Math.max(0, m - D_M) * 0.018); // 차 줄 사이 거리(px, 내가 달린 거리 기준)
 
 // 차 종류: hw·hh = 판정 반폭·반높이, w = 나오는 비율, from = 이 거리(m)부터
@@ -168,7 +168,7 @@ export function step(s) {
   if (s.dist >= s.nextFuel) {
     const lane = Math.floor(rnd(s) * LANES);
     s.items.push({ id: ++s.id, t: 'fuel', x: laneX(lane), y: FAR, hw: 13, hh: 15 });
-    s.nextFuel = s.dist + 4000 + 2400 * d + Math.max(0, m - D_M) * 0.6 + rnd(s) * 1100;
+    s.nextFuel = s.dist + baseV(m) * (6.6 + rnd(s) * 1.4);   // 2026-11-01: 기본 속도로 약 7~8초마다(슬립·부스터로 빨리 달리면 더 자주 만남) — 예전 4,000~6,400px(약 4~6초)
   }
   if (s.dist >= s.nextCoin) {
     const lane = Math.floor(rnd(s) * LANES), n = 4 + Math.floor(rnd(s) * 3);
