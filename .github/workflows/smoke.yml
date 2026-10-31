@@ -14,3 +14,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: node --no-warnings tools/check/score-smoke.mjs
+  # 게임 열기 검사(2026-11-01 게퍼 10 코드 통째 삭제 사고 재발 방지) — 실제 브라우저에서 게임마다 열고 입력해 봄
+  game-open:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save playwright && npx playwright install --with-deps chromium
+      - run: node --no-warnings tools/check/game-open.mjs
