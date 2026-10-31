@@ -2102,6 +2102,11 @@ document.addEventListener('click', e => { if (e.target.closest('[data-go]') && d
 // 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
 function endPlay() { try { unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
+// 2026-11-01 하율 "카체이싱에서 엔터 눌렀는데 계단 오르기가 켜졌다": 게임 화면이 떠 있어도 뒤의 게임 목록 버튼에 포커스가 남아 있어
+//   엔터·스페이스가 그 버튼(다른 게임)을 눌렀음 → 게임 중엔 게임 화면 밖 요소로 가는 엔터·스페이스의 기본 동작을 막고, 게임을 열 때 포커스를 뺌
+['keydown', 'keyup'].forEach(t => document.addEventListener(t, e => {
+  if ((e.key === 'Enter' || e.key === ' ') && !$('#gamePlay').hidden && !document.querySelector('.modal.open') && e.target instanceof Element && e.target !== document.body && !e.target.closest('#gamePlay')) e.preventDefault();
+}, true));
 
 // 다시 시작 버튼(2026-10-27 하율 "게임 화면 바로 아래, 원래 버튼이 있으면 그 아래") — 게임마다 넣는 자리가 달라 HTML로 줌. 누르면 restartGame (아래 click 위임)
 // 패드 조작 버튼을 게임 화면 안으로(2026-10-29 하율 "패드로 하면 조작키들을 다 화면 아래에 배치해서 보기 안 좋다 → 화면 안에", 깃발 pad-ctl)
@@ -2184,6 +2189,7 @@ async function play(game) {
   }
   try { quitGame?.(); } catch (e) { console.error(e); }
   quitGame = null; curGame = game;
+  if (document.activeElement && document.activeElement !== document.body && !document.activeElement.closest?.('#gamePlay')) document.activeElement.blur?.();   // 목록 버튼 포커스 빼기(엔터로 다른 게임이 켜지던 버그)
   ticket = S.me && game !== 'gear' && game !== 'stair' && game !== 'film' && game !== 'blast' && game !== 'chase' && game !== 'dance' ? playTicket(game) : null;
   try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
@@ -2199,7 +2205,7 @@ async function playCz(game) {
     if (!gate()) { toast('아직 열리지 않은 게임이에요'); return; }
   }
   try { quitGame?.(); } catch (e) { console.error(e); }
-  quitGame = null; curGame = game; ticket = null;
+  quitGame = null; curGame = game; ticket = null; document.activeElement?.closest?.('#gamePlay') || document.activeElement?.blur?.();
   const quick = reQuick; reQuick = false;
   try {
     if (!CZ) CZ = await import('./casual.js');

@@ -252,14 +252,15 @@ function buildCar(kind, col, hw, hh) {
   } else if (kind === 'ramp') {   // 사다리차(점프대): 노란 운전석 + 낮은 짐칸 + 뒤로 땅까지 내려온 사다리 경사판(노랑·검정 줄무늬 끝)
     const cab = solid({ p: oct(W * 0.96, at(0), at(0.22), W * 0.12, W * 0.02), z0: W * 0.16, zf: W * 1.24, zr: W * 1.28, ix: W * 0.06, iyf: L * 0.03, c: col });
     const bed = solid({ p: oct(W * 1.0, at(0.23), at(0.5), W * 0.02, W * 0.02), z0: W * 0.26, zf: W * 0.78, zr: W * 0.78, ix: W * 0.01, c: '#5d6573', tc: '#7d8696' });
-    const rp = solid({ p: oct(W * 0.94, at(0.48), at(1), 0.5, 0.5), z0: W * 0.02, zf: W * 0.8, zr: W * 0.05, c: '#8c95a3', tc: '#b9c1cc' });
+    const rp = solid({ p: oct(W * 0.94, at(0.48), at(1), 0.5, 0.5), z0: W * 0.02, zf: W * 0.8, zr: W * 0.05, c: '#d99a00', tc: '#ffd23f' });   // 2026-11-01 하율 "점프대차 더 확실하게": 경사판을 노랗게
     wheel(0.12, true, 1.15); wheel(0.4, false, 1.15);
     S.push(cab, bed, rp); mirrors(0.02, W * 0.9);
     for (const sd of [-1, 1]) S.push(solid({ p: oct(W * 0.09, at(0.46), at(0.99), 0.3, 0.3).map(([x, y]) => [x + sd * W * 0.43, y]), z0: W * 0.04, zf: W * 0.96, zr: W * 0.12, c: '#f2b705', tc: '#ffd34d' }));   // 사다리 양옆 난간
     D.push(...sides(cab, 0.15, 0.7, 0.6, 0.88, GLASS));
-    for (let i = 0; i < 11; i++) { const f = 0.52 + i * 0.043; D.push(topQuad(rp, -W * 0.38, W * 0.38, at(f), at(f) + 1.1, '#3a3f4a', 0.35)); }   // 사다리 칸
+    for (let i = 0; i < 11; i++) { const f = 0.52 + i * 0.043; D.push(topQuad(rp, -W * 0.38, W * 0.38, at(f), at(f) + 1.4, '#1c1d22', 0.35)); }   // 사다리 칸
     for (let i = 0; i < 4; i++) D.push(topQuad(rp, -W * 0.38 + i * W * 0.19, -W * 0.38 + i * W * 0.19 + W * 0.1, at(0.95), at(1) - 0.3, i % 2 ? '#1c1d22' : '#ffd34d', 0.4));   // 끝 줄무늬
-    D.push(topQuad(rp, -W * 0.08, W * 0.08, at(0.64), at(0.84), 'rgba(255,255,255,.75)', 0.45));   // 가운데 화살표 띠
+    D.push(topQuad(rp, -W * 0.08, W * 0.08, at(0.64), at(0.84), 'rgba(255,255,255,.85)', 0.45));   // 가운데 화살표 띠
+    M.glow.push([-W * 0.3, at(0.1), W * 1.36, 0, '255,160,20'], [W * 0.3, at(0.1), W * 1.36, 1, '255,160,20']);   // 운전석 위 경광등(번갈아 깜빡)
   } else if (kind === 'truck') {
     const box = ['#eef0f3', '#d5dbe3', '#2f6fcf', '#e8e2d4', '#c8322f'][Math.abs(Math.round(hh * 7 + col.charCodeAt(2))) % 5];
     const cab = solid({ p: oct(W * 0.96, at(0), at(0.24), W * 0.12, W * 0.02), z0: W * 0.16, zf: W * 1.3, zr: W * 1.34, ix: W * 0.06, iyf: L * 0.03, c: col });
@@ -982,7 +983,9 @@ export function createChase(root, opts = {}) {
         const want = o.mv ? clamp((C.laneX(o.to) - x) / C.LANE_W, -1, 1) * 0.3 : 0;
         o._yaw = lerp(o._yaw || 0, want, 0.25);
         if (al < 1) g.globalAlpha = al;
+        if (o.k === 'ramp') rampGlow(M, x, yc, o._yaw, false);
         drawCar(M, x, yc, o._yaw, o._yaw * 1.4, 0, !far, s.f);
+        if (o.k === 'ramp') rampGlow(M, x, yc, o._yaw, true);
         tails(M, x, yc, o._yaw, Math.abs(x - px) < C.LANE_W * 0.7 && yc < C.PY && C.PY - yc < 800 ? 1 - (C.PY - yc) / 800 : 0);
         if ((o.blink || o.mv) && (s.f >> 3) % 2 === 0 && !far) {   // 깜빡이(뒤 모서리)
           const sd = o.to > o.lane ? 1 : -1, [bx, by] = projPt(M, x, yc, o._yaw, 0, sd * M.W * 0.45, M.y1 + 0.5, M.W * 0.38), r = 10 * ps(yc) * PK;
@@ -1006,6 +1009,21 @@ export function createChase(root, opts = {}) {
         g.restore();
       }
     }
+  }
+  // 사다리차 표시(2026-11-01 하율 "점프대차 더 확실하게"): 뒤 바닥에 깜빡이는 노란 빛 + 차 위에 떠서 통통 튀는 '점프대 ▲' 표지(멀어도 최소 크기)
+  function rampGlow(M, x, yc, yaw, top) {
+    const q = ps(yc), pu = 0.6 + 0.4 * Math.sin(performance.now() / 110);
+    if (!top) {
+      const [bx, by] = projPt(M, x, yc, yaw, 0, 0, M.y1 + 8, 0), r = Math.max(18, 60 * q * PK);
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.55 * pu; g.save(); g.translate(bx, by); g.scale(1.3, 0.45); stamp(blob('rampG', [[0, 'rgba(255,220,60,1)'], [0.5, 'rgba(255,170,20,.5)'], [1, 'rgba(255,150,0,0)']]), 0, 0, r); g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+      return;
+    }
+    const [tx, ty] = projPt(M, x, yc, yaw, 0, 0, M.y0 + M.L * 0.4, M.W * 1.5), sc2 = Math.max(1, q * PK * 1.1), bob = Math.sin(performance.now() / 160) * 4 * sc2, w2 = 64 * sc2, h2 = 24 * sc2, yy = ty - 20 * sc2 + bob;
+    g.save(); g.translate(tx, yy);
+    g.fillStyle = '#ffd23f'; rr(g, -w2 / 2, -h2 / 2, w2, h2, h2 / 2); g.fill(); g.lineWidth = 2.5 * sc2; g.strokeStyle = '#1c1d22'; g.stroke();
+    g.beginPath(); g.moveTo(-6 * sc2, h2 / 2); g.lineTo(6 * sc2, h2 / 2); g.lineTo(0, h2 / 2 + 8 * sc2); g.closePath(); g.fillStyle = '#ffd23f'; g.fill(); g.stroke();
+    g.font = `${(15 * sc2).toFixed(1)}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#1c1d22'; g.fillText('점프대 ▲', 0, 1 * sc2);
+    g.restore();
   }
   // 미등: 멀리서도 차가 보이게(어두운 색 차·어두운 도로) — 내 차선 앞이면 더 크고 밝게(위험 표시)
   function tails(M, x, yc, yaw, danger) {
