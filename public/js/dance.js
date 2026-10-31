@@ -22,10 +22,12 @@ const CAUGHT_LINES = ['거기 너!! 뭐 하냐!', '지금 춤추냐?!', '앞으�
 const SLEEP_LINES = ['거기 자는 학생!!', '수업 시간에 졸아?!', '일어나! 뒤로 나가!'];
 
 export function createDance(root, opts = {}) {
-  root.innerHTML = `<div class="dn-scr" tabindex="-1"><canvas aria-label="선생님 몰래 춤추기 게임 화면"></canvas><div class="hr-ov dn-ov" hidden></div></div>
+  root.innerHTML = `<div class="dn-scr" tabindex="-1"><canvas class="dn-3d" aria-hidden="true"></canvas><canvas class="dn-ui" aria-label="선생님 몰래 춤추기 게임 화면"></canvas><div class="hr-ov dn-ov" hidden></div></div>
     <div class="hr-bar dn-bar"><p class="hr-keys dn-keys"><span class="hk"><span data-ka="dance"></span> 누르고 있으면 춤 · 떼면 공부하는 척</span></p><button type="button" class="btn ghost hr-snd dn-snd" aria-pressed="false"></button></div>`;
-  const scr = root.querySelector('.dn-scr'), cv = scr.querySelector('canvas'), ov = scr.querySelector('.dn-ov'), sndBtn = root.querySelector('.dn-snd');
-  const ctx = cv.getContext('2d', { alpha: false });
+  const scr = root.querySelector('.dn-scr'), cv = scr.querySelector('.dn-ui'), cv3 = scr.querySelector('.dn-3d'), ov = scr.querySelector('.dn-ov'), sndBtn = root.querySelector('.dn-snd');
+  const ctx = cv.getContext('2d');   // 화면 위 UI(말풍선·점수 칩) — 3D 무대(cv3) 위에 투명하게 겹침
+  let stage = null, stageErr = false;
+  import('./dance3d.js').then(m => { if (!alive) return; stage = m.createStage(cv3); fit(); draw(); }).catch(e => { console.error(e); stageErr = true; draw(); });
   const sfx = makeSfx(); sfx.set(!!opts.sound);
   let best = opts.best || 0, dpr = 1, k = 1, alive = true, raf = 0;
   const st = { scene: 'ready', shownAt: 0 };
@@ -39,6 +41,7 @@ export function createDance(root, opts = {}) {
     dpr = Math.min(3, window.devicePixelRatio || 1); k = w / W;
     const pw = Math.round(w * dpr), ph = Math.round(w * H / W * dpr);
     if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+    stage?.resize(w, Math.round(w * H / W));
   };
   const ro = new ResizeObserver(() => { fit(); draw(); }); ro.observe(cv);
 
@@ -158,11 +161,7 @@ export function createDance(root, opts = {}) {
     b.acc += dt * 6;
     while (b.acc >= 1) { b.acc--; b.ch++; if (b.ch > L[b.line].length) { b.line++; b.ch = 0; if (b.line >= L.length) { b.line = L.length - 1; b.ch = L[b.line].length; b.hold = 1.2; return; } } }
   }
-  function writeStep(dt) {
-    boardStep(dt); const c = cursorPos();
-    const handX = T_H * RECT.t[0][2] / RECT.t[0][3] * (T_HAND - 0.5);   // 펜 든 손이 칠판 글씨 끝에 오게
-    V.tx += clamp(clamp(c.x - handX, 64, 300) - V.tx, -46 * dt, 46 * dt);
-  }
+  function writeStep(dt) { boardStep(dt); }   // 선생님이 글씨 끝으로 걸어가는 건 3D 무대(dance3d.js)가 함
 
   /* --- 루프 --- */
   const STEP = 1000 / D.FPS;
@@ -203,87 +202,17 @@ export function createDance(root, opts = {}) {
     draw();
   }
 
-  /* ===== 그리기: 2D 일러스트 — 2026-11-01 00:05 하율 "2D 그림 느낌으로"(도트 대신) =====
-     교실 배경·선생님(뒤·멈춤·곁눈질·의심·화남)·친구 9명(앉음·춤 2프레임)·빈 책상은 그림 파일(public/dance/*.webp, Higgsfield로 그린 웹툰풍 일러스트)을 잘라 둔 것.
-     여기서는 위치·크기·움직임(숨쉬기·통통·흔들림·휙 돌아서기)만 붙임. 글자·말풍선·점수 칩은 사이트 스티커 UI. */
-  const RECT = {"sit": [[0, 0, 166, 192], [168, 0, 173, 164], [343, 0, 172, 190], [517, 0, 164, 190], [683, 0, 169, 191], [854, 0, 172, 197], [1028, 0, 166, 193], [1196, 0, 169, 194], [1367, 0, 172, 197]], "d1": [[0, 0, 130, 203], [132, 0, 122, 210], [256, 0, 122, 194], [380, 0, 119, 193], [501, 0, 141, 192], [644, 0, 139, 192], [785, 0, 114, 201], [901, 0, 126, 207], [1029, 0, 155, 213]], "d2": [[0, 0, 126, 200], [128, 0, 128, 195], [258, 0, 123, 191], [383, 0, 110, 189], [495, 0, 135, 189], [632, 0, 131, 191], [765, 0, 108, 198], [875, 0, 124, 200], [1001, 0, 128, 192]], "t": [[0, 0, 140, 321], [142, 0, 122, 321], [266, 0, 110, 319], [378, 0, 120, 322], [500, 0, 127, 332]], "desk": [[0, 0, 342, 350]]};
-  const IMG = {}; let imgReady = false;
-  { const names = ['bg', 't', 'sit', 'd1', 'd2', 'desk']; let left = names.length;
-    for (const n of names) { const im = new Image(); im.decoding = 'async'; im.onload = im.onerror = () => { if (--left === 0) { imgReady = true; draw(); } }; im.src = '/dance/' + n + '.webp?v=1'; IMG[n] = im; } }
-  // 아틀라스의 i번째 그림을 바닥 가운데(x, y) 기준으로 높이 h에 맞춰 그림(sx: 가로 배율 — 휙 돌 때 납작해짐)
-  function sprite(sheet, i, x, y, h, sx = 1, rot = 0) {
-    const r = RECT[sheet][i], w = h * r[2] / r[3];
-    ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot); ctx.scale(sx, 1);
-    ctx.drawImage(IMG[sheet], r[0], r[1], r[2], r[3], -w / 2, -h, w, h); ctx.restore(); return w;
+  /* ===== 그리기: 3D 무대 — 2026-11-01 00:25 하율 "AI 그림 느낌 말고 네가 직접, 도형 느낌 없이 — 안 되면 3D" =====
+     교실·선생님·친구들은 dance3d.js(three.js 툰 셰이딩 + 잉크 외곽선)가 그리고, 여기서는 상태만 넘김. 글자·말풍선·점수 칩은 위 투명 캔버스에 사이트 스티커 UI로. */
+  function boardLines() {
+    const b = V.board, L = PAGES[b.page % PAGES.length], out = [];
+    for (let i = 0; i <= Math.min(b.line, L.length - 1); i++) out.push({ text: i < b.line ? L[i] : L[i].slice(0, b.ch), full: L[i], under: i === 0 && b.line > 0 });
+    return out;
   }
-  // 칠판(배경 그림의 화면 영역: 가로 44~296, 세로 70~191)
-  const LINE_Y = [96, 122, 148, 172], LINE_X = 58;
-  const boardFont = i => i === 0 ? `18px ${FONT}` : `15px ${FONT}`;
-  function boardInk() {
-    const b = V.board, L = PAGES[b.page % PAGES.length];
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    for (let i = 0; i <= Math.min(b.line, L.length - 1); i++) {
-      const str = i < b.line ? L[i] : L[i].slice(0, b.ch); ctx.font = boardFont(i); ctx.fillStyle = i === 0 ? '#ffe08a' : i === 3 ? '#ff9b9b' : '#f2f6ff'; ctx.fillText(str, LINE_X, LINE_Y[i]);
-      if (i === 0 && b.line > 0) { ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(LINE_X, LINE_Y[0] + 5); ctx.lineTo(LINE_X + ctx.measureText(L[0]).width, LINE_Y[0] + 5); ctx.stroke(); }
-    }
-    ctx.strokeStyle = 'rgba(125,211,255,.75)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(236, 170); ctx.lineTo(288, 170); ctx.moveTo(262, 180); ctx.lineTo(262, 116); ctx.stroke();
-    if (b.line >= 2) { ctx.strokeStyle = '#8fe8cf'; ctx.lineWidth = 2; ctx.beginPath(); for (let x = -22; x <= 22; x += 2) { const y = 152 - ((x + 3) * (x + 3)) * 0.07; x === -22 ? ctx.moveTo(262 + x, y) : ctx.lineTo(262 + x, y); } ctx.stroke(); }
-  }
-  function cursorPos() {
-    const b = V.board, L = PAGES[b.page % PAGES.length], li = Math.min(b.line, L.length - 1);
-    ctx.font = boardFont(li); return { x: LINE_X + ctx.measureText(L[li].slice(0, b.ch)).width, y: LINE_Y[li] - 6 };
-  }
-  const T_H = 236, T_FEET = 348, T_HAND = 0.37;   // 선생님 키·발 높이 · 펜 든 손의 가로 위치(그림 폭 대비)
-
-  // ----- 선생님 -----
-  function drawTeacher() {
-    const tst = s ? s.st : 'write', tm = s ? s.tm : 99;
-    // 그림: 0 뒤(판서) · 1 뒤(멈춤·흠) · 2 곁눈질 · 3 앞(의심) · 4 앞(화남)
-    let fr = tst === 'write' ? 0 : tst === 'warn' || tst === 'pause' ? 1 : tst === 'peek' ? 2 : tst === 'caught' ? 4 : 3, sx = 1;
-    if (tst === 'turn') { const p = 1 - tm / (s.tf || D.TURN_F); if (p < 0.5) { fr = 2; sx = 1 - p * 1.6; } else { fr = 3; sx = 0.2 + (p - 0.5) * 1.6; } }
-    else if (tst === 'turnback') { const p = 1 - tm / D.TURN_F; if (p < 0.5) { fr = 3; sx = 1 - p * 1.6; } else { fr = 1; sx = 0.2 + (p - 0.5) * 1.6; } }
-    const wr = tst === 'write' && !RM() ? Math.sin(V.t * 18) * 0.6 : 0, tw = V.twitch > 0 && !RM() ? Math.sin(V.twitch * 60) * 1.2 : 0;
-    const shake = tst === 'caught' && !RM() ? Math.sin(V.t * 40) * 1.2 : 0;
-    ctx.fillStyle = 'rgba(23,48,72,.18)'; ctx.beginPath(); ctx.ellipse(V.tx, T_FEET - 2, 40, 7, 0, 0, 7); ctx.fill();
-    sprite('t', fr, V.tx + wr + tw + shake, T_FEET, fr === 4 ? T_H * 1.03 : T_H, Math.max(0.08, sx));
-  }
-
-  // ----- 반 친구들(앉음 ↔ 일어나 춤) -----
-  // 자리: [그림 번호, x, 바닥 y, 높이] — 뒷줄 작게 · 앞줄 크게(멀고 가까움). 8번 = 나(맨 앞 가운데)
-  const SEATS = [[0, 72, 432, 78], [1, 180, 432, 78], [2, 288, 432, 78], [3, 58, 532, 98], [4, 180, 532, 98], [5, 302, 532, 98], [6, 44, 662, 132], [7, 316, 662, 132], [8, 180, 662, 132]];
-  const PH = [0.4, 1.7, 2.6, 0.9, 3.1, 1.2, 2.2, 0.2, 0], TP = [1.1, 0.9, 1.2, 0.85, 1, 1.05, 1.15, 0.95, 1];
-  function drawKids(party) {
-    const m = s ? s.m2 / 2 : 1, amp = 1 + (m - 1) * 0.25, zzz = s ? s.sleep / D.SLEEP_FULL : 0, slept = !!(s && s.st === 'caught' && s.why === 'sleep');
-    for (const [i, x, y, h] of SEATS) {
-      const me = i === 8;
-      if (!party) {
-        let dy = RM() ? 0 : Math.sin(V.t * 1.6 + PH[i]) * 0.8, rot = 0;
-        if (me && (slept || zzz > 0.6)) { const nod = slept ? 1 : Math.max(0, Math.sin(V.t * (2 + zzz * 3))) * (zzz - 0.6) * 2.5; dy += nod * 10; rot = nod * 0.05; }
-        sprite('sit', i, x, y + dy, h, 1, rot);
-        continue;
-      }
-      // 일어나서 춤: 빈 책상·의자 + 2장 번갈아(박자) + 통통·좌우 흔들림, 배율이 오를수록 빠르고 크게
-      sprite('desk', 0, x, y, h * 0.92);
-      const t = V.t * (2.2 + (m - 1) * 0.7) * TP[i] + PH[i], f = Math.floor(t * 2) % 2 ? 'd2' : 'd1';
-      const bounce = RM() ? 0 : Math.abs(Math.sin(t * Math.PI)) * 7 * amp * h / 100, sway = RM() ? 0 : Math.sin(t * Math.PI) * 0.06 * amp;
-      const fy = y + h * 0.1;   // 의자 밖 통로로 나와서(책상 앞이 아니라 카메라 쪽) 춤
-      ctx.fillStyle = 'rgba(23,48,72,.22)'; ctx.beginPath(); ctx.ellipse(x, fy, h * 0.3, h * 0.06, 0, 0, 7); ctx.fill();
-      sprite(f, i, x, fy - bounce, h * 1.18, 1, sway);
-    }
-    // '나' 표시
-    const ay = (party ? 500 : 520) + (RM() ? 0 : Math.sin(V.t * 4) * 3);
-    ctx.beginPath(); ctx.moveTo(171, ay); ctx.lineTo(189, ay); ctx.lineTo(180, ay + 10); ctx.closePath(); ctx.fillStyle = '#ffe08a'; ctx.fill(); ctx.lineWidth = 2.2; ctx.strokeStyle = K; ctx.stroke();
-    ctx.font = `13px ${FONT}`; ctx.textAlign = 'center'; ctx.fillStyle = K; ctx.fillText('나', 180, ay - 4);
-    return { zzz, slept };
-  }
-  // 파티: 교실이 살짝 어두워지고 친구들 발밑에 색 조명(번쩍임 없이 은은하게)
-  const GLOW = ['#6fc6f4', '#ffe08a', '#8fe8cf', '#a9c4ff', '#ff8f8f'];
-  function drawPartyLight() {
-    const a = V.pv; if (a <= 0) return;
-    ctx.fillStyle = `rgba(23,48,72,${0.28 * a})`; ctx.fillRect(0, 300, W, H - 300);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    SEATS.forEach(([i, x, y, h], n) => { const c = GLOW[(n + Math.floor(V.t * 2)) % GLOW.length], gr = ctx.createRadialGradient(x, y + h * 0.1, 2, x, y + h * 0.1, h * 0.55); gr.addColorStop(0, c + '66'); gr.addColorStop(1, c + '00'); ctx.globalAlpha = a; ctx.fillStyle = gr; ctx.fillRect(x - h * 0.6, y + h * 0.1 - h * 0.6, h * 1.2, h * 1.2); });
-    ctx.restore();
+  function view() {
+    const m = s ? s.m2 / 2 : 1;
+    return { t: V.t, tst: s ? s.st : 'idle', tm: s ? s.tm : 99, dur: s ? s.dur : 99, tf: s ? (s.tf || D.TURN_F) : D.TURN_F, party: !!(s && s.dancing && st.scene === 'play'), pv: V.pv, m,
+      zzz: s ? s.sleep / D.SLEEP_FULL : 0, slept: !!(s && s.st === 'caught' && s.why === 'sleep'), twitch: V.twitch > 0, board: { lines: boardLines(), font: '"Jua", "Pretendard Variable", sans-serif' } };
   }
 
   // ----- 화면 위(또렷한 UI): 말풍선·점수 팝업·경고·도장·HUD -----
@@ -334,21 +263,21 @@ export function createDance(root, opts = {}) {
   }
   function draw() {
     if (!cv.width) return;
-    const sc = k * dpr; ctx.setTransform(sc, 0, 0, sc, 0, 0); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    if (!imgReady) { ctx.fillStyle = '#eaf5fd'; ctx.fillRect(0, 0, W, H); text('그림 불러오는 중…', W / 2, H / 2, 16, 'center', K); return; }
-    const party = !!(s && s.dancing && st.scene === 'play');
-    ctx.save();
-    if (V.shake > 0 && !RM()) ctx.translate((Math.random() - 0.5) * 8 * V.shake / 0.45, (Math.random() - 0.5) * 6 * V.shake / 0.45);
-    ctx.drawImage(IMG.bg, 0, 0, W, H);
-    boardInk();
-    drawTeacher();
-    drawPartyLight();
-    const kd2 = drawKids(party);
+    const sc = k * dpr; ctx.setTransform(sc, 0, 0, sc, 0, 0); ctx.clearRect(0, 0, W, H);
+    if (!stage) { ctx.fillStyle = '#eaf5fd'; ctx.fillRect(0, 0, W, H); text(stageErr ? '이 기기에선 3D 화면을 열 수 없어요' : '교실 불러오는 중…', W / 2, H / 2, 16, 'center', K); return; }
+    const v = view();
+    stage.render(v);
+    const th = stage.teacherHead(); V.tx = th.x * W;
+    const party = v.party;
+    if (V.shake > 0 && !RM()) { cv3.style.transform = `translate(${((Math.random() - 0.5) * 8 * V.shake / 0.45).toFixed(1)}px,${((Math.random() - 0.5) * 6 * V.shake / 0.45).toFixed(1)}px)`; } else if (cv3.style.transform) cv3.style.transform = '';
     for (const q of V.parts) { ctx.globalAlpha = Math.min(1, q.life * 1.5); if (q.kind === 'note') outlined('♪', q.x, q.y, 18, q.c); else { ctx.fillStyle = q.c; ctx.fillRect(q.x - 2.5, q.y - 2.5, 5, 5); } } ctx.globalAlpha = 1;
-    ctx.restore();
-    if (kd2.slept || (!party && kd2.zzz > 0.75)) for (let i = 0; i < 2; i++) { const a = (V.t * 0.8 + i * 0.5) % 1; ctx.globalAlpha = 1 - a; outlined(i ? 'Z' : 'z', 206 + a * 10, 540 - a * 22, 16 + a * 6, '#e9e4ff'); } ctx.globalAlpha = 1;
+    // '나' 표시 · 졸음 Zz
+    const me = stage.meHead(), ax = me.x * W, ay = me.y * H - 10 + (RM() ? 0 : Math.sin(V.t * 4) * 3);
+    ctx.beginPath(); ctx.moveTo(ax - 9, ay); ctx.lineTo(ax + 9, ay); ctx.lineTo(ax, ay + 10); ctx.closePath(); ctx.fillStyle = '#ffe08a'; ctx.fill(); ctx.lineWidth = 2.2; ctx.strokeStyle = K; ctx.stroke();
+    ctx.font = `13px ${FONT}`; ctx.textAlign = 'center'; ctx.fillStyle = K; ctx.fillText('나', ax, ay - 4);
+    if (v.slept || (!party && v.zzz > 0.75)) for (let i = 0; i < 2; i++) { const a = (V.t * 0.8 + i * 0.5) % 1; ctx.globalAlpha = 1 - a; outlined(i ? 'Z' : 'z', ax + 24 + a * 10, ay + 10 - a * 22, 16 + a * 6, '#e9e4ff'); } ctx.globalAlpha = 1;
     for (const q of V.pops) { ctx.globalAlpha = Math.min(1, q.life * 2); outlined(q.t, q.x, q.y, q.size, q.c); } ctx.globalAlpha = 1;
-    if (V.bubT > 0 && V.bub) bubble(V.tx + 10, s && s.st === 'caught' ? 104 : 116, V.bub, V.bubAngry && s && s.st === 'caught');
+    if (V.bubT > 0 && V.bub) bubble(V.tx, th.y * H - 6, V.bub, V.bubAngry && s && s.st === 'caught');
     if (V.flash > 0) { ctx.fillStyle = `rgba(255,95,110,${V.flash * 0.35})`; ctx.fillRect(0, 0, W, H); }
     drawAlert();
     if (st.scene !== 'ready') drawHud();
@@ -372,7 +301,7 @@ export function createDance(root, opts = {}) {
     start, pause, resume, again: () => again(),
     _hold(on) { kHeld = on ? 1 : 0; sync(); },   // 테스트용
     destroy() {
-      alive = false; cancelAnimationFrame(raf); ro.disconnect(); sfx.beat(false); sfx.set(false); evRun++;
+      alive = false; cancelAnimationFrame(raf); ro.disconnect(); stage?.dispose(); sfx.beat(false); sfx.set(false); evRun++;
       document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku);
       window.removeEventListener('blur', blur); document.removeEventListener('visibilitychange', vis);
     },
