@@ -9,6 +9,8 @@ const INK = '#2a2846';
 const TRAFFIC = ['#eef0f3', '#2a2d36', '#a7afba', '#646d7a', '#c8322f', '#2d5bb0', '#3b6e52', '#d9c9a3', '#7c2a36', '#e2e5ea'];   // 실제 도로에 많은 색(흰색·검정·은색·회색 많이)
 const FONT = '"Jua", "Pretendard Variable", system-ui, sans-serif';
 const fmt = n => Math.floor(n).toLocaleString('ko-KR');
+// 속도 표시(2026-11-01 하율 "300km 즈음"): 화면 숫자만 — 기본 속도 약 245~335, 슬립·부스터면 400대(예전 v×0.36 = 330~790)
+const kmhOf = v => v > 0 ? 180 + v * 0.07 : 0;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const TOUCHY = () => matchMedia('(pointer:coarse)').matches;
@@ -714,7 +716,7 @@ export function createChase(root, opts = {}) {
   }
   let lastRes = null;
   function finish() {
-    const r = { score: C.scoreOf(s), m: C.metersOf(s), f: s.overF, why: s.over, near: s.near, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, top: Math.round(topV * 0.36), rounds: [s.overF, ...evs], saved, realMs: performance.now() - tStart };
+    const r = { score: C.scoreOf(s), m: C.metersOf(s), f: s.overF, why: s.over, near: s.near, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, top: Math.round(kmhOf(topV)), rounds: [s.overF, ...evs], saved, realMs: performance.now() - tStart };
     lastRes = r; msgNow = null;
     opts.onOver?.(r);
   }
@@ -1085,7 +1087,7 @@ export function createChase(root, opts = {}) {
     const scv = C.scoreOf(s), m = C.metersOf(s);
     if (scv !== scoreV) { scoreV = scv; scoreTxt = fmt(scv); }
     if (m !== mV) { mV = m; mTxt = fmt(m) + ' m'; }
-    kmh = lerp(kmh, s.v * 0.36, 0.2);
+    kmh = lerp(kmh, kmhOf(s.v), 0.2);
     // 점수(가운데 위)
     panel(VW / 2 - 110, 10, 220, 64, 16);
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `38px ${FONT}`; g.fillStyle = '#fff'; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 6; g.fillText(scoreTxt, VW / 2, 36); g.shadowBlur = 0;
