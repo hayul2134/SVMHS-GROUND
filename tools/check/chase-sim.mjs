@@ -9,31 +9,25 @@ const N = +process.argv[2] || 30;
 // react = 판단 주기(프레임) · hz = 미리 보는 프레임 · err = 판단을 망칠 확률(그 사이 가만히)
 export function bot(seed, skill) {
   const s = C.newSim(seed), evs = [];
-  let L = 0, R = 0, t = 0, plan = [0, 0, 0, 1];
-  const set = (l, r) => {
-    if (l !== L) { evs.push(C.enc(s.f, l ? 0 : 1)); C.input(s, l ? 0 : 1); L = l; }
-    if (r !== R) { evs.push(C.enc(s.f, r ? 2 : 3)); C.input(s, r ? 2 : 3); R = r; }
+  let t = 0;
+  const A = [[0, 0], [-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1], [-2, 0], [2, 0]];   // [차선 이동, 점프]
+  const act = (c, a, rec) => {
+    for (let i = 0; i < Math.abs(a[0]); i++) { const code = a[0] < 0 ? 0 : 2; if (rec) evs.push(C.enc(c.f, code)); C.input(c, code); }
+    if (a[1]) { if (rec) evs.push(C.enc(c.f, 4)); C.input(c, 4); }
   };
-  const A = []; for (const d of [-1, 0, 1]) for (const du of [1, 2, 3]) for (const j of [0, 1]) if (!(d === 0 && du > 1)) A.push([d < 0 ? 1 : 0, d > 0 ? 1 : 0, j, du]);
-  const val = (a, j2 = -1) => {   // j2 = 나중에 점프할 프레임(바리케이드가 있을 때 '지금 말고 조금 뒤 점프'도 따져 봄)
-    const c = structuredClone(s); c.fx = false;
-    if (c.L !== a[0]) C.input(c, a[0] ? 0 : 1); if (c.R !== a[1]) C.input(c, a[1] ? 2 : 3); if (a[2]) C.input(c, 4);
+  const val = (a, j2 = -1) => {
+    const c = structuredClone(s); c.fx = false; act(c, a, false);
     let k = 0;
-    for (; k < skill.hz && !c.over; k++) { if (k === skill.react * a[3]) { C.input(c, 1); C.input(c, 3); } if (k === j2) C.input(c, 4); C.step(c); }
-    const mid = Math.abs(c.p.x - 180) * 0.6;
-    return (c.over ? k * 100 : skill.hz * 100 + 1000) + C.scoreOf(c) * 0.5 + c.fuel * (s.fuel < 45 ? 3 : 0.3) - (a[2] ? 30 : 0) - mid - (c.p.cd > 0 && !c.over ? 5 : 0);
+    for (; k < skill.hz && !c.over; k++) { if (k === j2) C.input(c, 4); C.step(c); }
+    return (c.over ? k * 100 : skill.hz * 100 + 1000) + C.scoreOf(c) * 0.5 + c.fuel * (s.fuel < 45 ? 3 : 0.3) - (a[1] ? 30 : 0) - Math.abs(a[0]) * 4 - Math.abs(c.p.lane - 2) * 3;
   };
-  const valW = a => { let v = val(a); if (!a[2] && s.items.some(it => it.t === 'wall' && !it.got)) for (let j = skill.react; j < skill.hz; j += skill.react) v = Math.max(v, val(a, j) - 30); return v; };
-  let left = 0;
+  const valW = a => { let v = val(a); if (!a[1] && s.items.some(it => it.t === 'wall' && !it.got)) for (let j = skill.react; j < skill.hz; j += skill.react) v = Math.max(v, val(a, j) - 30); return v; };
   while (!s.over && s.f < C.MAX_F) {
     if (t <= 0) {
       t = skill.react;
-      if (Math.random() > skill.err) { let bv = -Infinity; for (const a of A) { const v = valW(a); if (v > bv) { bv = v; plan = a; } } }
-      else plan = [0, 0, 0, 1];
-      set(plan[0], plan[1]); left = skill.react * plan[3];
-      if (plan[2]) { evs.push(C.enc(s.f, 4)); C.input(s, 4); plan = [plan[0], plan[1], 0]; }
+      if (Math.random() > skill.err) { let bv = -Infinity, best = A[0]; for (const a of A) { const v = valW(a); if (v > bv) { bv = v; best = a; } } act(s, best, true); }
     }
-    t--; if (--left === 0) set(0, 0);
+    t--;
     C.step(s);
   }
   return { s, rounds: [s.overF, ...evs] };
