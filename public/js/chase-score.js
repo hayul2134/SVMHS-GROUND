@@ -24,7 +24,10 @@ export const seedOf = ticket => /^[0-9a-f]{16}/.test(ticket || '') ? parseInt(ti
 // ===== 수치 (바꾸면 이미 쌓인 기록을 다시 검사할 때 결과가 달라짐 — 신중히) =====
 export const P_HW = 12, P_HH = 24;          // 내 차 판정 반폭·반높이(그림은 조금 더 큼)
 export const NEAR = 110, NEAR2 = 50;         // 아슬아슬(칼치기): 앞차 꽁무니와 내 차 앞 사이가 이 px 안일 때 옆 차선으로 빠지면 · NEAR2 안이면 두 배
-export const JUMP_F = 40, JUMP_CD = 54;      // 점프 체공 0.67초 · 착지 뒤 다시 뛰기까지 0.9초
+export const JUMP_F = 40, JUMP_CD = 54;
+// 사다리차 점프대(2026-11-01 하율 "사다리차 같은 거 만들어서 점프대로"): 뒤로 내려온 사다리(경사판)에 같은 차선 뒤에서 올라타면 RAMP_F 동안 크게 뜀 + 100점.
+//   옆에서 들이받으면(꽁무니보다 RAMP_IN px 넘게 겹친 채 닿으면) 보통 차처럼 충돌. 공중에서도 ←→로 차선을 바꿀 수 있음(원래 규칙) — 착지 자리에 차가 있으면 충돌
+export const RAMP_F = 84, RAMP_IN = 40, RAMP_PTS = 100;      // 점프 체공 0.67초 · 착지 뒤 다시 뛰기까지 0.9초
 export const BOOST_F = 270, BOX_F = 180, GRACE_F = 70;   // 부스터 4.5초 · 아이템 상자 부스터 3초 · 부스터 끝난 뒤 무적 1.2초
 export const FUEL0 = 100, CAN = 34;
 export const COMBO_F = 180;                  // 아슬아슬 콤보가 이어지는 시간(3초)
@@ -33,9 +36,9 @@ export const SIDE_V = LANE_V;
 const D_M = 8000;
 // 슬립스트림(2026-11-01 하율 "차 뒤로 가면 올린 속도에서 더 빨라지게"): 같은 차선 앞차 꽁무니 SLIP_D px 안이면 슬립(0→1, 약 0.6초) 차오름 → 목표 속도 ×(1 + SLIP_K·슬립)
 //   빠지면 약 1.4초에 걸쳐 줄어듦(옆으로 빠져도 잠깐 빠른 채로 = 새총 추월). 붙어 있는 동안 부스터 게이지도 조금씩 참
-export const SLIP_D = 512 - 24 + 1100, SLIP_K = 0.45;   // 2026-11-01 하율 "차선에 있고 앞차가 화면에 보이면 인정" → 차가 생기는 곳(FAR)부터 다 인정(320 → 600 → 화면 끝). 가까울수록 세짐(먼 끝 0.6배)
+export const SLIP_D = 512 - 24 + 1100, SLIP_K = 0.6;   // 2026-11-01 하율 "가까이 갈수록 퍼센트 늘고 그만큼 점수도": 슬립 크기 = 가까운 정도(화면 끝 0.12 ~ 바짝 1) → 속도 최대 +60%, 거리 점수도 ×(1+슬립)   // 2026-11-01 하율 "차선에 있고 앞차가 화면에 보이면 인정" → 차가 생기는 곳(FAR)부터 다 인정(320 → 600 → 화면 끝). 가까울수록 세짐(먼 끝 0.6배)
 // 차가 화면에서 그려지는 앞쪽 길이(판정 hh보다 김 — chase.js buildCar의 L) → 차끼리 그림이 안 겹치게 간격을 이걸로 잼(2026-11-01 하율 "차끼리 안 겹치게")
-const VF = c => c.hh * (c.k === 'bus' || c.k === 'truck' ? 1.25 : 1.62);
+const VF = c => c.hh * (c.k === 'bus' || c.k === 'truck' || c.k === 'ramp' ? 1.25 : 1.62);
 const needGap = (a, b) => a.hh + 1 + VF(b) + 18;   // a(앞) 꽁무니 ~ b(뒤) 앞머리                            // 이 거리(m)까지 난이도가 빠르게 오르고, 그 뒤로도 천천히 계속 오름
 export const diffOf = m => Math.min(1, m / D_M);
 export const baseV = m => Math.min(2200, 920 + 840 * diffOf(m) + Math.max(0, m - D_M) * 0.05);   // 2026-11-01 하율 "조금만 더 빠르게" (예전 840~2000)
@@ -55,6 +58,7 @@ export const KINDS = [
   { k: 'truck', hw: 16, hh: 42, w: 1.3, from: 700 },
   { k: 'police', hw: 14, hh: 23, w: 0.35, from: 900 },
   { k: 'bus', hw: 17, hh: 56, w: 0.9, from: 1500 },
+  { k: 'ramp', hw: 16, hh: 46, w: 0.55, from: 250 },   // 사다리차(점프대)
 ];
 const kindPick = (r, m) => {
   const ks = KINDS.filter(k => !k.from || m >= k.from), T = ks.reduce((a, k) => a + k.w, 0);
@@ -66,9 +70,9 @@ const LQ = [null, null, null, null, null];   // 차선별 바로 위 차(판마�
 export function newSim(seed, fx = false) {
   return {
     a: seed >>> 0, fx, evs: [], f: 0, over: '', overF: -1,
-    dist: 0, v: 0, slip: 0, slipF: 0, fuel: FUEL0, fever: 0, boost: 0, grace: 0, combo: 0, lastNear: -9999, maxCombo: 0,
-    bonus: 0, near: 0, boosts: 0, smash: 0, coins: 0, cans: 0, jumps: 0, boxes: 0,
-    p: { lane: 2, x: laneX(2), vx: 0, air: 0, cd: 0, buf: 0 },
+    dist: 0, v: 0, slip: 0, slipF: 0, sacc: 0, slipPts: 0, fuel: FUEL0, fever: 0, boost: 0, grace: 0, combo: 0, lastNear: -9999, maxCombo: 0,
+    bonus: 0, near: 0, ramps: 0, boosts: 0, smash: 0, coins: 0, cans: 0, jumps: 0, boxes: 0,
+    p: { lane: 2, x: laneX(2), vx: 0, air: 0, am: JUMP_F, cd: 0, buf: 0 },
     cars: [], items: [], id: 0,
     nextRow: 520, nextFuel: 2200, nextCoin: 900, nextBox: 5200, nextWall: 14000, calm: 0,
   };
@@ -141,15 +145,16 @@ export function step(s) {
   let sl = 0;
   if (p.air === 0 && s.boost <= 0 && s.fuel > 0) for (const c of s.cars) {
     if (c.dead || Math.abs(c.x - p.x) > LANE_W * 0.45) continue;
-    const g = (PY - P_HH) - (c.y + c.hh); if (g > -4 && g < SLIP_D) sl = Math.max(sl, 1 - 0.4 * g / SLIP_D);
+    const g = (PY - P_HH) - (c.y + c.hh); if (g > -4 && g < SLIP_D) sl = Math.max(sl, Math.min(1, Math.max(0.12, 1 - g / SLIP_D)));
   }
   const was = s.slip > 0.05;
-  s.slip = sl ? Math.min(1, s.slip + 1.7 * sl * dt) : Math.max(0, s.slip - 0.7 * dt);
+  s.slip = s.slip < sl ? Math.min(sl, s.slip + 1.8 * dt) : Math.max(sl, s.slip - 0.7 * dt);   // 가까워지면 빨리 오르고, 멀어지거나 빠지면 천천히 내려감
   if (sl) { s.slipF++; s.fever = Math.min(99.5, s.fever + 7 * sl * dt); }
   if (!was && s.slip > 0.05) ev(s, 'slip', {}); else if (was && s.slip <= 0.05) ev(s, 'slipEnd', {});
   let tv = s.fuel > 0 ? baseV(m) * (1 + SLIP_K * s.slip) : 0; if (s.boost > 0) tv *= 1.6;
   if (s.v < tv) s.v = Math.min(tv, s.v + (s.boost > 0 ? 1100 : s.slip > 0.05 ? 520 : 300) * dt); else s.v = Math.max(tv, s.v - (s.fuel > 0 ? 700 : 260) * dt);
   s.dist += s.v * dt;
+  if (s.slip > 0) { s.sacc += s.v * dt / 10 * s.slip; if (s.sacc >= 1) { const k = Math.floor(s.sacc); s.bonus += k; s.slipPts += k; s.sacc -= k; } }   // 슬립 점수: 달린 거리 점수 × 슬립만큼 더
   // 연료(부스터 중엔 안 닳음)
   if (s.boost <= 0 && s.fuel > 0) { s.fuel -= drainOf(m) * dt; if (s.fuel <= 0) { s.fuel = 0; ev(s, 'empty', {}); } }
   // 내 차: 정한 차선 가운데로(한 차선씩)
@@ -159,7 +164,7 @@ export function step(s) {
   let landed = false;
   if (p.air > 0) { p.air--; if (!p.air) { landed = true; p.cd = JUMP_CD; ev(s, 'land', {}); } }
   else if (p.cd > 0) p.cd--;
-  if (p.buf > 0) { if (!p.air && !p.cd && s.fuel > 0) { p.air = JUMP_F; p.buf = 0; s.jumps++; ev(s, 'jump', {}); } else p.buf--; }
+  if (p.buf > 0) { if (!p.air && !p.cd && s.fuel > 0) { p.air = p.am = JUMP_F; p.buf = 0; s.jumps++; ev(s, 'jump', {}); } else p.buf--; }
   // 생성(내가 달린 거리 기준)
   if (s.dist >= s.nextRow) {
     if (s.dist >= s.calm) spawnRow(s, m);
@@ -239,6 +244,9 @@ export function step(s) {
   for (const c of cars) {
     if (c.dead) continue;
     const dx = Math.abs(c.x - p.x), dy = Math.abs(c.y - PY), hit = dx < c.hw + P_HW && dy < c.hh + P_HH;
+    if (hit && (ground || landed) && c.k === 'ramp' && (PY - P_HH) - (c.y + c.hh) > -RAMP_IN && dx < c.hw + P_HW * 0.5) {   // 사다리 타고 날아오름(부스터 중에도)
+      p.air = p.am = RAMP_F; p.cd = 0; p.buf = 0; s.ramps++; s.bonus += RAMP_PTS; ev(s, 'ramp', { x: c.x, y: c.y }); continue;
+    }
     if (hit && (ground || landed)) {
       if (s.boost > 0) { c.dead = 1; s.smash++; s.bonus += 50; ev(s, 'smash', { id: c.id, x: c.x, y: c.y }); continue; }
       if (!ghost) { crash(s, 'crash', (c.x + p.x) / 2, (c.y + PY) / 2); return; }
@@ -289,5 +297,5 @@ export function simulate(seed, rounds) {
   }
   if (!s.over) return { err: '판이 끝나지 않았어요' };
   if (s.overF !== end) return { err: `판이 끝난 시각이 달라요(${end} → ${s.overF})` };
-  return { score: scoreOf(s), m: metersOf(s), f: s.overF, why: s.over, near: s.near, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, jumps: s.jumps, boxes: s.boxes };
+  return { score: scoreOf(s), m: metersOf(s), f: s.overF, why: s.over, near: s.near, ramps: s.ramps, slipPts: s.slipPts, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, jumps: s.jumps, boxes: s.boxes };
 }

@@ -108,6 +108,7 @@ function makeSfx() {
     box: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.12, i % 2 ? 'square' : 'triangle', 0.045, 0, i * 0.045, 0.6)); noise(0.4, 0.06, 3000, 9000, 'highpass', 0.1, 0.7, 0.6); },
     // 부스터: 쿵 + 터보 휘이잉(잡음 훑기) + 올라가는 톱니
     boost: () => { boom(70, 0.6, 0.28); noise(1.1, 0.2, 300, 6500, 'bandpass', 0, 1.2, 0.3); tone(110, 0.9, 'sawtooth', 0.05, 880, 0.02, 0.3); tone(220, 0.7, 'square', 0.03, 1320, 0.1, 0.4); },
+    ramp: () => { metal(0.03); boom(120, 0.25, 0.22); noise(0.9, 0.16, 400, 5000, 'bandpass', 0.05, 1.3, 0.35); tone(196, 0.8, 'sawtooth', 0.04, 784, 0.05, 0.4); tone(392, 0.6, 'triangle', 0.04, 1568, 0.15, 0.6); },
     slip: () => { noise(0.7, 0.13, 350, 2600, 'bandpass', 0, 1.4, 0.3); tone(330, 0.5, 'sine', 0.03, 660, 0.05, 0.5); },
     boostEnd: () => { noise(0.5, 0.08, 3000, 300, 'bandpass', 0, 1.2, 0.3); tone(600, 0.4, 'sawtooth', 0.03, 150, 0, 0.3); },
     jump: () => { tone(260, 0.2, 'square', 0.04, 760, 0, 0.3); noise(0.15, 0.06, 1500, 4000, 'bandpass', 0, 1.2, 0.1); },
@@ -182,13 +183,13 @@ const topQuad = (S, x0, x1, y0, y1, c, up = 0.25) => ({ p: [[x0, y0, S.zAt(y0) +
 // oct 면 번호: 0 앞 · 2 오른쪽(앞→뒤) · 4 뒤(오른쪽→왼쪽) · 6 왼쪽(뒤→앞)
 const sides = (S, f0, f1, v0, v1, c, extra) => [faceQuad(S, 2, f0, f1, v0, v1, c, extra), faceQuad(S, 6, 1 - f1, 1 - f0, v0, v1, c, extra)];
 
-const CAR_COL = { taxi: '#f2a516', police: '#f4f6f8', bus: '#2f9e5b', player: '#2f7df6' };
+const CAR_COL = { taxi: '#f2a516', police: '#f4f6f8', bus: '#2f9e5b', player: '#2f7df6', ramp: '#f2b705' };
 function buildCar(kind, col, hw, hh) {
   if (CAR_COL[kind]) col = CAR_COL[kind];
-  const W = hw * 2 + 2, L = hh * 2 * (kind === 'bus' || kind === 'truck' ? 1.12 : 1.3), y1 = hh + 1, y0 = y1 - L, at = f => y0 + L * f;
+  const W = hw * 2 + 2, L = hh * 2 * (kind === 'bus' || kind === 'truck' || kind === 'ramp' ? 1.12 : 1.3), y1 = hh + 1, y0 = y1 - L, at = f => y0 + L * f;
   const S = [], D = [], WH = [], M = { W, L, y0, y1, S, D, WH, kind, glow: [], col };
   const wheel = (f, front, big = 1) => {
-    const ww = W * 0.17 * big, wl = L * (kind === 'bus' || kind === 'truck' ? 0.1 : 0.16), h = W * 0.36 * big;
+    const ww = W * 0.17 * big, wl = L * (kind === 'bus' || kind === 'truck' || kind === 'ramp' ? 0.1 : 0.16), h = W * 0.36 * big;
     for (const sd of [-1, 1]) { const cx = sd * (W / 2 - ww * 0.3), cy = at(f); WH.push({ front, cx, cy, s: solid({ p: oct(ww, cy - wl / 2, cy + wl / 2, ww * 0.25, ww * 0.25), z0: 0, zf: h, zr: h, iyf: wl * 0.18, iyr: wl * 0.18, c: '#1b1c22', tc: '#2c2d34' }) }); }
   };
   const tail = (B, v0, v1, w = 0.26, c = '#d32a2f') => { D.push(faceQuad(B, 4, 0.03, w, v0, v1, c), faceQuad(B, 4, 1 - w, 0.97, v0, v1, c), faceQuad(B, 4, 0.06, w * 0.6, v0 + (v1 - v0) * 0.55, v1 - (v1 - v0) * 0.1, '#ff8d8d'), faceQuad(B, 4, 1 - w * 0.6, 0.94, v0 + (v1 - v0) * 0.55, v1 - (v1 - v0) * 0.1, '#ff8d8d')); };
@@ -248,6 +249,17 @@ function buildCar(kind, col, hw, hh) {
     wheel(0.15, true, 1.08); wheel(0.82, false, 1.08); S.push(B, C2); mirrors(0.12, W * 0.55);
     D.push(...sides(C2, 0.04, 0.3, 0.42, 0.85, GLASS), ...sides(C2, 0.36, 0.7, 0.42, 0.85, GLASS), faceQuad(C2, 4, 0.08, 0.47, 0.4, 0.86, GLASS), faceQuad(C2, 4, 0.53, 0.92, 0.4, 0.86, GLASS), faceQuad(C2, 4, 0.49, 0.51, 0, 1, 'rgba(0,0,0,.3)'));
     glassHi(C2); tail(B, 0.45, 0.95, 0.1); plate(B, 0.22, 0.42); bumper(B, 0.2);
+  } else if (kind === 'ramp') {   // 사다리차(점프대): 노란 운전석 + 낮은 짐칸 + 뒤로 땅까지 내려온 사다리 경사판(노랑·검정 줄무늬 끝)
+    const cab = solid({ p: oct(W * 0.96, at(0), at(0.22), W * 0.12, W * 0.02), z0: W * 0.16, zf: W * 1.24, zr: W * 1.28, ix: W * 0.06, iyf: L * 0.03, c: col });
+    const bed = solid({ p: oct(W * 1.0, at(0.23), at(0.5), W * 0.02, W * 0.02), z0: W * 0.26, zf: W * 0.78, zr: W * 0.78, ix: W * 0.01, c: '#5d6573', tc: '#7d8696' });
+    const rp = solid({ p: oct(W * 0.94, at(0.48), at(1), 0.5, 0.5), z0: W * 0.02, zf: W * 0.8, zr: W * 0.05, c: '#8c95a3', tc: '#b9c1cc' });
+    wheel(0.12, true, 1.15); wheel(0.4, false, 1.15);
+    S.push(cab, bed, rp); mirrors(0.02, W * 0.9);
+    for (const sd of [-1, 1]) S.push(solid({ p: oct(W * 0.09, at(0.46), at(0.99), 0.3, 0.3).map(([x, y]) => [x + sd * W * 0.43, y]), z0: W * 0.04, zf: W * 0.96, zr: W * 0.12, c: '#f2b705', tc: '#ffd34d' }));   // 사다리 양옆 난간
+    D.push(...sides(cab, 0.15, 0.7, 0.6, 0.88, GLASS));
+    for (let i = 0; i < 11; i++) { const f = 0.52 + i * 0.043; D.push(topQuad(rp, -W * 0.38, W * 0.38, at(f), at(f) + 1.1, '#3a3f4a', 0.35)); }   // 사다리 칸
+    for (let i = 0; i < 4; i++) D.push(topQuad(rp, -W * 0.38 + i * W * 0.19, -W * 0.38 + i * W * 0.19 + W * 0.1, at(0.95), at(1) - 0.3, i % 2 ? '#1c1d22' : '#ffd34d', 0.4));   // 끝 줄무늬
+    D.push(topQuad(rp, -W * 0.08, W * 0.08, at(0.64), at(0.84), 'rgba(255,255,255,.75)', 0.45));   // 가운데 화살표 띠
   } else if (kind === 'truck') {
     const box = ['#eef0f3', '#d5dbe3', '#2f6fcf', '#e8e2d4', '#c8322f'][Math.abs(Math.round(hh * 7 + col.charCodeAt(2))) % 5];
     const cab = solid({ p: oct(W * 0.96, at(0), at(0.24), W * 0.12, W * 0.02), z0: W * 0.16, zf: W * 1.3, zr: W * 1.34, ix: W * 0.06, iyf: L * 0.03, c: col });
@@ -532,7 +544,7 @@ export function createChase(root, opts = {}) {
     const nb = res.score > best && res.score > 0; if (nb) best = res.score;
     ov.hidden = false; ov.className = 'hr-ov dead cs-over';
     ov.innerHTML = `<b>${WHY[res.why] || '끝!'}</b><div class="hr-card"><p class="hr-sc"><em>${fmt(res.score)}점</em>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
-      <p class="cs-stat"><span><b>${fmt(res.m)}</b>m</span><span>최고 <b>${res.top}</b>km/h</span><span>아슬아슬 <b>${res.near}</b>번</span><span>최대 콤보 <b>x${res.maxCombo}</b></span><span>부스터 <b>${res.boosts}</b>번</span>${res.smash ? `<span>날려 버린 차 <b>${res.smash}</b>대</span>` : ''}</p>
+      <p class="cs-stat"><span><b>${fmt(res.m)}</b>m</span><span>최고 <b>${res.top}</b>km/h</span><span>아슬아슬 <b>${res.near}</b>번</span>${res.slipPts ? `<span>슬립 점수 <b>${fmt(res.slipPts)}</b></span>` : ''}${res.ramps ? `<span>점프대 <b>${res.ramps}</b>번</span>` : ''}<span>최대 콤보 <b>x${res.maxCombo}</b></span><span>부스터 <b>${res.boosts}</b>번</span>${res.smash ? `<span>날려 버린 차 <b>${res.smash}</b>대</span>` : ''}</p>
       <small class="hr-msg cs-msg">${msgNow ?? (opts.saveLine ? opts.saveLine(res) : '')}</small></div><small class="hr-go">${touchSeen ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
   };
   const showPause = () => { ov.hidden = false; ov.className = 'hr-ov cs-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>차도 연료도 같이 멈췄어요</span><small>${touchSeen ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; };
@@ -552,7 +564,7 @@ export function createChase(root, opts = {}) {
     s = C.newSim(sd, true); evs = []; lq.length = 0; acc = 0; st.scene = 'play'; tStart = performance.now(); topV = 0;
     opts.onStart?.(saved);
   }
-  function resetFx() { parts = []; pops = []; streaks = []; shake = 0; flash = 0; warnShown = -1; hs = 0; slowT = 0; punch = 0; flies = []; crack = null; rflash = 0; wz = 0; wvz = 0; wroll = 0; }
+  function resetFx() { lastSP = 0; topK = 0; parts = []; pops = []; streaks = []; shake = 0; flash = 0; warnShown = -1; hs = 0; slowT = 0; punch = 0; flies = []; crack = null; rflash = 0; wz = 0; wvz = 0; wroll = 0; }
   function again() {
     if (st.scene !== 'over' || performance.now() - st.shownAt < 500) return;
     st.scene = 'ready'; s = null; resetFx(); opts.onReady?.(); start();
@@ -603,6 +615,14 @@ export function createChase(root, opts = {}) {
       case 'box': bW(e.x, py, 16, 26, ['#ff8fd0', '#a98bff', '#5ec8ff', '#fff'], 260, 0.7, 6, 'st'); sfx.box(); punch = Math.max(punch, 0.03); break;
       case 'boost': flash = 0.5; shake = Math.max(shake, 0.4); hs = Math.max(hs, 0.06); rings.push({ t: 0 }, { t: -0.12 }, { t: -0.24 }); pop(VW / 2, 200, '부스터!', '#7fd4ff', 2); sfx.boost(); break;
       case 'boostEnd': sfx.boostEnd(); break;
+      case 'ramp': {
+        const [sx, sy, q] = scrOf(e.x, e.y, 6);
+        burst(sx, sy, 26, ['#ffd34d', '#fff6d8', '#ff9a3d'], 420 * q, 0.5, 2.6, 'sp'); burst(sx, sy, 12, ['#cfd4df', '#fff'], 200 * q, 0.6, 6 * q);
+        pW(s.p.x, C.PY + C.P_HH, 80, '점프대!! +' + C.RAMP_PTS, '#ffd34d', 2, -0.08);
+        if (s.ramps === 1) pop(VW / 2, 250, '공중에서 ←→로 착지 자리 고르기!', '#fff');
+        flash = Math.max(flash, 0.3); shake = Math.max(shake, 0.35); punch = Math.max(punch, 0.06); punchAt = pScr.slice(); hs = Math.max(hs, 0.05);
+        rings.push({ t: 0, c: '255,210,90' }); sfx.ramp(); break;
+      }
       case 'slip': sfx.slip(); pW(s.p.x, C.PY + C.P_HH, 70, '슬립스트림!', '#7ff0ff'); punch = Math.max(punch, 0.02); break;
       case 'smash': {
         const c = e.id && s.cars.find(x => x.id === e.id), [sx, sy, q] = scrOf(e.x, e.y + 20, 14);
@@ -613,7 +633,7 @@ export function createChase(root, opts = {}) {
         pW(e.x, e.y + 20, 60, e.wall ? '와지끈! +20' : '쾅! +50', '#fff', 1, (Math.random() - 0.5) * 0.4); sfx.smash(e.wall); break;
       }
       case 'jump': sfx.jump(); bW(s.p.x, py, 2, 10, ['#cfd4df', '#fff'], 120, 0.35, 4); break;
-      case 'land': bW(s.p.x, py, 2, 14, ['#cfd4df', '#fff'], 140, 0.4, 4); sfx.land(); shake = Math.max(shake, 0.12); punch = Math.max(punch, 0.015); break;
+      case 'land': if (s.p.am > C.JUMP_F) { const [sx, sy, q] = scrOf(s.p.x, py, 2); burst(sx, sy, 30, ['#ffe28a', '#fff6d8'], 520 * q, 0.45, 2.6, 'sp'); burst(sx, sy, 22, ['#cfd4df', '#fff', '#9aa3b5'], 260 * q, 0.6, 7 * q); rings.push({ t: 0, x: sx, y: sy, c: '255,255,255' }); sfx.thud(1); sfx.land(); shake = Math.max(shake, 0.5); punch = Math.max(punch, 0.05); punchAt = [sx, sy]; } else { bW(s.p.x, py, 2, 14, ['#cfd4df', '#fff'], 140, 0.4, 4); sfx.land(); shake = Math.max(shake, 0.12); punch = Math.max(punch, 0.015); } break;
       case 'crash': {
         const [sx, sy, q] = scrOf(e.x, e.y + 10, 16);
         const hit = s.cars.filter(c => !c.dead && !c._fly && Math.abs(c.x - s.p.x) < c.hw + C.P_HW + 6 && Math.abs(c.y - C.PY) < c.hh + C.P_HH + 10)[0];
@@ -716,7 +736,7 @@ export function createChase(root, opts = {}) {
   }
   let lastRes = null;
   function finish() {
-    const r = { score: C.scoreOf(s), m: C.metersOf(s), f: s.overF, why: s.over, near: s.near, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, top: Math.round(kmhOf(topV)), rounds: [s.overF, ...evs], saved, realMs: performance.now() - tStart };
+    const r = { score: C.scoreOf(s), m: C.metersOf(s), f: s.overF, why: s.over, near: s.near, ramps: s.ramps, slipPts: s.slipPts, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, top: Math.round(topK), rounds: [s.overF, ...evs], saved, realMs: performance.now() - tStart };
     lastRes = r; msgNow = null;
     opts.onOver?.(r);
   }
@@ -1021,10 +1041,14 @@ export function createChase(root, opts = {}) {
   let lay = null;
   const layer = () => { if (!lay) lay = document.createElement('canvas').getContext('2d'); if (lay.canvas.width !== cv.width || lay.canvas.height !== cv.height) { lay.canvas.width = cv.width; lay.canvas.height = cv.height; } lay.setTransform(1, 0, 0, 1, 0, 0); lay.clearRect(0, 0, cv.width, cv.height); return lay; };
   function drawPlayer(px, a) {
-    const P = s.p, air = P.air > 0 ? Math.sin((1 - (P.air - a) / C.JUMP_F) * Math.PI) : 0, M = carModel('player', 0, C.P_HW + 1, C.P_HH), q = ps(C.PY), s2 = q * PK;
+    const P = s.p, am = P.am || C.JUMP_F, air = P.air > 0 ? Math.sin((1 - (P.air - a) / am) * Math.PI) * (am > C.JUMP_F ? 2.7 : 1) : 0, M = carModel('player', 0, C.P_HW + 1, C.P_HH), q = ps(C.PY), s2 = q * PK;
     const wreck = (st.scene === 'crash' || st.scene === 'over') && (s.over === 'crash' || s.over === 'wall' || s.over === 'cone');
     const blinkOff = (s.grace > 0 || (s.boost > 0 && s.boost < 50)) && (s.f >> 2) % 2 === 0;
     const lift = wreck ? wz : air * 46, cx = sxOf(px, q), cy = syOf(q) - lift * s2 * ZK;
+    if (!wreck && am > C.JUMP_F && air > 0.05 && !RM()) {   // 사다리 점프 중: 차 아래 바닥 표시(착지 자리) + 반짝 꼬리
+      const gq = syOf(q), mk = 1 - air / 2.7 * 0.5; g.strokeStyle = `rgba(255,220,120,${(0.35 + 0.4 * (air / 2.7)).toFixed(2)})`; g.lineWidth = 2.5; g.beginPath(); g.ellipse(cx, gq + 4, 26 * s2 * mk, 9 * s2 * mk, 0, 0, 7); g.stroke();
+      if (!lowFx && Math.random() < 0.8) addP({ k: 'st', x: cx + (Math.random() - 0.5) * 40 * s2, y: cy + 10 * s2, vx: (Math.random() - 0.5) * 60, vy: 80 + Math.random() * 80, gv: 100, life: 0.45, max: 0.45, c: Math.random() < 0.5 ? '#ffd34d' : '#fff', sz: 3 + Math.random() * 3, r: Math.random() * 6 });
+    }
     if (wreck && wroll) { g.save(); g.translate(cx, cy - 14 * s2); g.rotate(wroll * 0.35); g.translate(-cx, -(cy - 14 * s2)); }
     pScr = [cx, cy];
     if (!wreck) yawP = lerp(yawP, clamp((C.laneX(P.lane) - px) / C.LANE_W, -1, 1) * 0.34, 0.35);
@@ -1082,19 +1106,20 @@ export function createChase(root, opts = {}) {
   }
   const pumpIcon = (x, y) => { g.fillStyle = '#ff7a6b'; rr(g, x - 8, y - 9, 11, 18, 2); g.fill(); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(x - 6, y - 7, 7, 5); g.strokeStyle = '#ff7a6b'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 3, y - 5); g.lineTo(x + 7, y - 2); g.lineTo(x + 7, y + 6); g.stroke(); };
   const boltIcon = (x, y) => { g.fillStyle = '#7fd4ff'; g.beginPath(); g.moveTo(x + 2, y - 10); g.lineTo(x - 6, y + 2); g.lineTo(x - 1, y + 2); g.lineTo(x - 3, y + 10); g.lineTo(x + 6, y - 2); g.lineTo(x + 1, y - 2); g.closePath(); g.fill(); };
-  let scoreTxt = '', scoreV = -1, mTxt = '', mV = -1, kmh = 0;
+  let topK = 0, lastSP = 0, scoreTxt = '', scoreV = -1, mTxt = '', mV = -1, kmh = 0;
   function drawHud() {
     const scv = C.scoreOf(s), m = C.metersOf(s);
     if (scv !== scoreV) { scoreV = scv; scoreTxt = fmt(scv); }
     if (m !== mV) { mV = m; mTxt = fmt(m) + ' m'; }
-    kmh = lerp(kmh, kmhOf(s.v), 0.2);
+    kmh = lerp(kmh, kmhOf(s.v) * (1 + 0.6 * bI), 0.2); if (st.scene === 'play') topK = Math.max(topK, kmh);   // 부스터 중엔 600km/h 안팎으로 보이게(2026-11-01 하율)
     // 점수(가운데 위)
     panel(VW / 2 - 110, 10, 220, 64, 16);
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `38px ${FONT}`; g.fillStyle = '#fff'; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 6; g.fillText(scoreTxt, VW / 2, 36); g.shadowBlur = 0;
     g.font = `14px ${FONT}`; g.fillStyle = '#ffd25e'; g.fillText(mTxt, VW / 2 - 44, 61); g.fillStyle = s.slip > 0.05 ? '#7ff0ff' : '#9fe0ff'; g.fillText(Math.round(kmh) + ' km/h', VW / 2 + 44, 61);
     if (s.slip > 0.05) {   // 슬립스트림 띠(점수판 아래)
-      panel(VW / 2 - 78, 80, 156, 26, 13); g.font = `14px ${FONT}`; g.fillStyle = '#7ff0ff'; g.fillText('슬립스트림 +' + Math.round(C.SLIP_K * s.slip * 100) + '%', VW / 2, 92);
-      g.fillStyle = 'rgba(127,240,255,.85)'; g.fillRect(VW / 2 - 66, 101, 132 * s.slip, 2.5);
+      panel(VW / 2 - 110, 80, 220, 28, 14); g.font = `15px ${FONT}`; g.fillStyle = s.slip > 0.7 ? '#ffe36b' : '#7ff0ff'; g.fillText('슬립스트림 +' + Math.round(C.SLIP_K * s.slip * 100) + '% · 점수 x' + (1 + s.slip).toFixed(1), VW / 2, 93);
+      g.fillStyle = s.slip > 0.7 ? 'rgba(255,227,107,.9)' : 'rgba(127,240,255,.85)'; g.fillRect(VW / 2 - 98, 103, 196 * s.slip, 2.5);
+      if (s.f % 30 === 0 && s.slipPts > lastSP) { pW(s.p.x, C.PY + C.P_HH, 52, '+' + (s.slipPts - lastSP), s.slip > 0.7 ? '#ffe36b' : '#7ff0ff'); lastSP = s.slipPts; }
     }
     const low = s.fuel < 25 && s.fuel > 0, blink = low && (s.f >> 4) % 2 === 0;
     gauge(14, 12, 220, s.fuel / C.FUEL0, blink ? ['#ff3b3b', '#ff7a6b'] : ['#ff6b5e', '#ffb36b'], low ? '연료 부족!' : '연료', pumpIcon, low);
