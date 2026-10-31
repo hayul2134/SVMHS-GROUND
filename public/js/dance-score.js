@@ -16,7 +16,8 @@ export const seedOf = ticket => /^[0-9a-f]{16}/.test(ticket || '') ? parseInt(ti
 
 export const TURN_F = 12;        // 다시 칠판으로 돌아서기 0.2초
 export const WHIP_F = 7;         // 휙 돌아서기 0.12초
-export const PEEK_IN = 8;        // 곁눈질: 고개 돌리는 0.13초 뒤부터는 보고 있는 것
+export const PEEK_IN = 8;        // 곁눈질: 고개 돌리는 0.13초
+export const GRACE_F = 12;       // 2026-10-31 23:16 하율 "판정 약간 널널하게 — 돌아보는 걸 보고 피할 수 있게": 다 돌아본 뒤 0.2초까지는 멈추면 안 걸림(반응 빠르면 산다)
 export const CAUGHT_F = 96;      // 걸린 뒤 1.6초 혼남
 export const SAFE_F = 27;        // 멈추고 0.45초 안에 선생님이 돌아보면 '세이프'
 const COMBO_UP = 10, COMBO_DN = 7, COMBO_STEP = 10 * FPS * 3;   // 콤보(1/10프레임 단위): 춤 +10 · 쉼 -7 · 3초마다 배율 +0.5
@@ -109,17 +110,18 @@ export function step(s) {
   // --- 선생님 ---
   s.tm--;
   if (s.st === 'look') {
-    if (s.dancing) { caught(s); s.f++; return; }
+    const seen = s.dur - s.tm;   // 다 돌아본 뒤 지난 프레임
+    if (seen === GRACE_F && !s.dancing && s.lastStop >= s.warnStart && s.f - s.lastStop < SAFE_F + GRACE_F) { const b = Math.round(25 * s.lastM2 / 2); s.bonus += b; s.safes++; ev(s, 'safe', { b }); }   // 세이프: 신호 뒤 아슬아슬하게 멈춤
+    if (seen >= GRACE_F && s.dancing) { caught(s); s.f++; return; }
     if (s.tm <= 0) setT(s, 'turnback', TURN_F);
   } else if (s.st === 'peek') {
-    if (s.dur - s.tm >= PEEK_IN && s.dancing) { caught(s); s.f++; return; }
+    if (s.dur - s.tm >= PEEK_IN + GRACE_F && s.dancing) { caught(s); s.f++; return; }
     if (s.tm <= 0) nextT(s);
   } else if (s.st === 'turn') {
     if (s.tm <= 0) {
       const k = dk(s), L = late(s);
-      setT(s, 'look', Math.round(FPS * (0.9 + rnd(s) * lerp(1, 1.7, k))) + Math.round(30 * Math.min(L, 2)) - (rnd(s) < 0.2 ? 30 : 0));   // 가끔 짧게 보고 마는 것도
+      setT(s, 'look', GRACE_F + Math.round(FPS * (0.9 + rnd(s) * lerp(1, 1.7, k))) + Math.round(30 * Math.min(L, 2)) - (rnd(s) < 0.2 ? 30 : 0));   // 가끔 짧게 보고 마는 것도
       s.looks++;
-      if (!s.dancing && s.lastStop >= s.warnStart && s.f - s.lastStop < SAFE_F) { const b = Math.round(25 * s.lastM2 / 2); s.bonus += b; s.safes++; ev(s, 'safe', { b }); }
     }
   } else if (s.st === 'caught') {
     if (s.tm <= 0) {

@@ -15,7 +15,7 @@ const GAMES = {
   mine: { name: '지뢰찾기', em: '💣', fmt: v => (v / 1000).toFixed(2) + '초', sus: 5000 },   // 랭크전 중급(서버가 연 칸을 다시 열어 봄)
   snake: { name: '뱀 게임', em: '🐍', fmt: v => '별 ' + (9999 - v) + '개', sus: 9999 - 252 },
   n2048: { name: '2048', em: '🔢', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 1 },
-  dance: { name: '선생님 몰래 춤추기', em: '💃', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 8000 },   // 서버가 누름/뗌 기록으로 판을 다시 돌려 검사
+  dance: { name: '선생님 몰래 춤추기', em: '💃', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 15000 },   // 서버가 누름/뗌 기록으로 판을 다시 돌려 검사
   chase: { name: '카체이싱!', em: '🚗', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 200000 },   // 서버가 입력 기록으로 판을 다시 돌려 검사
   blast: { name: 'LED 월 켜기!', em: '📺', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 3000000 },   // 서버가 놓기를 다시 둬 보고 검사
   film: { name: '게퍼 10', em: '🎞️', fmt: v => (9999999 - v) + '개', sus: 9999999 - 165 },   // 저장값 = 9999999 - 지운 컷(최대 170). 165컷 넘으면 의심 — 서버가 판을 다시 둬 보고 검사함

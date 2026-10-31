@@ -2779,20 +2779,22 @@ async function playDance() {
   const area = stage(ic('dance') + ' 선생님 몰래 춤추기', '<div class="dn" id="dn"><div class="dn-main" id="dnMain"></div><aside class="sr-side" id="dnRec"></aside></div>', true);
   if (!DANCE) { try { DANCE = await import('./dance.js').catch(() => import('./dance.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#dnMain')) return;
-  let runTk = null, run = 0, tkWhy = '', best = store.get('dance_best', 0);
+  let runTk = null, run = 0, tkSeq = 0, tkWhy = '', best = store.get('dance_best', 0);   // run = 판 번호(저장 응답이 다음 판 화면을 덮지 않게) · tkSeq = 미리 받는 티켓 순번
   const M = DANCE.createDance($('#dnMain'), {
     quick, best, sound: store.get('dance_snd', false), trophy: ic('trophy'),
     keys: e => KM.actOf('dance', e),
     keyText: () => { const k = KM.keysOf('dance'); return `${esc(KM.keyName(k.dance?.[0] || ''))} 꾹 누르기`; },
     onSound: on => store.set('dance_snd', on),
-    async seed() {
-      runTk = null; tkWhy = ''; const my = ++run;
+    async seed() {   // dance.js가 미리(화면을 열 때·판이 끝난 뒤) 부름 → 카운트다운 없이 바로 시작
+      let tk = null; tkWhy = ''; const my = ++tkSeq;
       if (!S.me) return null;
-      try { runTk = (await call('start', { game: 'dance' }).catch(() => wait(1500).then(() => call('start', { game: 'dance' })))).ticket || null; } catch (e) { tkWhy = e.message; }
-      if (my !== run) return null;
-      if (!runTk) toast('지금 판은 기록이 저장되지 않아요' + (tkWhy ? ' · ' + tkWhy : ''));
-      return runTk ? danceSeed(runTk) : null;
+      try { tk = (await call('start', { game: 'dance' }).catch(() => wait(1500).then(() => call('start', { game: 'dance' })))).ticket || null; } catch (e) { tkWhy = e.message; }
+      if (my !== tkSeq) return null;
+      runTk = tk;
+      if (!tk) toast('다음 판은 기록이 저장되지 않아요' + (tkWhy ? ' · ' + tkWhy : ''));
+      return tk ? danceSeed(tk) : null;
     },
+    onStart() { run++; },
     saveLine: res => !S.me ? '로그인하면 랭킹에 올라가요' : !res.saved ? '이번 판은 서버에 등록되지 않아 저장 못 했어요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…',
     onOver(res) {
       const no = run, tk = runTk; runTk = null;
