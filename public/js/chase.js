@@ -614,7 +614,7 @@ export function createChase(root, opts = {}) {
       case 'coin': bW(e.x, py, 16, 9, ['#ffd25e', '#fff', '#ffe9a8'], 140, 0.45, 5, 'st'); pW(e.x, py, 44, '+10', '#ffd25e'); sfx.coin(); break;
       case 'fuel': bW(e.x, py, 14, 16, ['#ff5a5a', '#fff', '#ffd25e'], 170, 0.6, 5, 'st'); pW(e.x, py, 52, '연료 +' + C.CAN, '#ff8a8a', 1); sfx.fuel(); punch = Math.max(punch, 0.02); break;
       case 'box': bW(e.x, py, 16, 26, ['#ff8fd0', '#a98bff', '#5ec8ff', '#fff'], 260, 0.7, 6, 'st'); sfx.box(); punch = Math.max(punch, 0.03); break;
-      case 'boost': flash = 0.6; shake = Math.max(shake, 0.9); hs = Math.max(hs, 0.08); punch = Math.max(punch, 0.08); punchAt = pScr.slice(); rings.push({ t: 0 }, { t: -0.12 }, { t: -0.24 }); pop(VW / 2, 200, '부스터!', '#7fd4ff', 2); sfx.boost(); break;
+      case 'boost': flash = 0.6; shake = Math.max(shake, 0.6); hs = Math.max(hs, 0.08); punch = Math.max(punch, 0.08); punchAt = pScr.slice(); rings.push({ t: 0 }, { t: -0.12 }, { t: -0.24 }); pop(VW / 2, 200, '부스터!', '#7fd4ff', 2); sfx.boost(); break;
       case 'boostEnd': sfx.boostEnd(); break;
       case 'ramp': {
         const [sx, sy, q] = scrOf(e.x, e.y, 6);
@@ -757,14 +757,14 @@ export function createChase(root, opts = {}) {
     // 부스터 중 계속 흔들림(2026-11-01 하율 "진짜 부스터처럼 화면도 계속 흔들리고 난리 부르스"): 잔떨림 + 느린 출렁임 + 기울기 + 0.18초마다 쿵 펀치
     const tn = performance.now();
     if (!RM() && bI > 0.05) {
-      jx += ((Math.random() - 0.5) * 14 + Math.sin(tn / 45) * 6) * bI; jy += ((Math.random() - 0.5) * 11 + Math.sin(tn / 61) * 4) * bI;
-      if (tn - kickAt > 180 && st.scene === 'play') { kickAt = tn; punch = Math.max(punch, 0.022 + Math.random() * 0.018); punchAt = pScr.slice(); }
+      jx += ((Math.random() - 0.5) * 9 + Math.sin(tn / 45) * 4) * bI; jy += ((Math.random() - 0.5) * 7 + Math.sin(tn / 61) * 2.5) * bI;   // 11/1 14:28 "약간만 줄여" (예전 14·6 / 11·4)
+      if (tn - kickAt > 180 && st.scene === 'play') { kickAt = tn; punch = Math.max(punch, 0.015 + Math.random() * 0.012); punchAt = pScr.slice(); }
     }
     if (jx || jy) g.translate(jx, jy);
     // 부스터: 화면이 내 차 쪽으로 살짝 당겨짐(시야 펀치)
     bI = lerp(bI, s && s.boost > 0 && st.scene === 'play' ? 1 : 0, 0.1);
     const zm = RM() ? 0 : bI * 0.07;
-    if (zm > 0.001) { g.translate(CX, 470); g.scale(1 + zm, 1 + zm); g.rotate((Math.sin(tn / 37) * 0.012 + (Math.random() - 0.5) * 0.008) * bI); g.translate(-CX, -470); }
+    if (zm > 0.001) { g.translate(CX, 470); g.scale(1 + zm, 1 + zm); g.rotate((Math.sin(tn / 37) * 0.008 + (Math.random() - 0.5) * 0.005) * bI); g.translate(-CX, -470); }
     if (punch > 0.001 && !RM()) { const z2 = punch * (1 + Math.sin(performance.now() / 18) * 0.15); g.translate(punchAt[0], punchAt[1]); g.scale(1 + z2, 1 + z2); g.translate(-punchAt[0], -punchAt[1]); }
     drawGround(dist); drawRoadside(dist);
     if (s) drawWorld(a, px); else drawIdle();
