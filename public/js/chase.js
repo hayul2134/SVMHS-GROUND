@@ -306,7 +306,7 @@ export function createChase(root, opts = {}) {
   const rings = [];
   let parts = [], pops = [], streaks = [], shake = 0, flash = 0, warnShown = -1, evRun = 0, tStart = 0;
   // 2026-10-31 하율 "타격감·와장창": 멈칫(hs)·느린 화면(slowT)·줌 펀치·날아가는 차(flies)·화면 금(crack)·붉은 번쩍(rflash)·저사양 감지(lowFx)
-  let kickAt = 0, hs = 0, slowT = 0, punch = 0, punchAt = [CX, 440], flies = [], crack = null, rflash = 0, avgDt = 16, lowFx = false, wz = 0, wvz = 0, wroll = 0;
+  let pAero = null, kickAt = 0, hs = 0, slowT = 0, punch = 0, punchAt = [CX, 440], flies = [], crack = null, rflash = 0, avgDt = 16, lowFx = false, wz = 0, wvz = 0, wroll = 0;
 
   /* --- 크기: 논리 960×540을 화면 픽셀에 맞춰 선명하게 --- */
   let resQ = 1, lagT = 0;
@@ -768,22 +768,10 @@ export function createChase(root, opts = {}) {
     if (punch > 0.001 && !RM()) { const z2 = punch * (1 + Math.sin(performance.now() / 18) * 0.15); g.translate(punchAt[0], punchAt[1]); g.scale(1 + z2, 1 + z2); g.translate(-punchAt[0], -punchAt[1]); }
     drawGround(dist); drawRoadside(dist);
     if (s) drawWorld(a, px); else drawIdle();
-    // 바람 가르기(2026-11-01 하율 "차 앞에 바람을 엄청 빠르게 갈라서 생기는 그거"): 빠를수록 차 코 앞에 하얀 원뿔(공기 장벽) + 양옆으로 흘러가는 바람 줄
+    // 바람 가르기(2026-11-01 하율 "차 앞에 바람을 엄청 빠르게 갈라서 생기는 그거" → 14:33 "훨씬 자연스럽게, 실제같이, 하지만 과장되게"):
+    //   차 코 앞에 둥글게 휜 충격파 막(3겹, 가운데 진하고 끝으로 흐려짐) + 코 앞 흰 안개 + 차 몸을 따라 휘어 돌아 뒤로 빠지는 공기 흐름 줄(움직이는 결) + 가끔 떨어져 나가는 수증기
     const vk = s && st.scene === 'play' && !RM() ? Math.max(clamp((v - 1100) / 1100, 0, 1), bI, s.slip * 0.6) : 0;
-    if (vk > 0.03) {
-      const q0 = ps(C.PY) * PK, cx = pScr[0], fy = pScr[1] - 34 * q0, tn2 = performance.now(), wob = Math.sin(tn2 / 40) * 2;
-      const W2 = (46 + 12 * vk) * q0, Hh = (70 + 30 * vk) * q0, cone = () => { g.beginPath(); g.moveTo(cx - W2, fy + Hh); g.quadraticCurveTo(cx - W2 * 0.35, fy - 14 * q0 + wob, cx, fy - 16 * q0 + wob); g.quadraticCurveTo(cx + W2 * 0.35, fy - 14 * q0 + wob, cx + W2, fy + Hh); };
-      g.globalCompositeOperation = 'lighter';
-      cone(); g.lineTo(cx, fy + 10 * q0); g.closePath();
-      const cg = g.createLinearGradient(cx, fy - 16 * q0, cx, fy + Hh); cg.addColorStop(0, `rgba(230,250,255,${(0.32 * vk).toFixed(3)})`); cg.addColorStop(1, 'rgba(180,230,255,0)'); g.fillStyle = cg; g.fill();
-      cone(); g.strokeStyle = `rgba(240,252,255,${(0.75 * vk).toFixed(3)})`; g.lineWidth = 2.6 * q0; g.lineCap = 'round'; g.stroke();
-      g.save(); g.translate(cx, fy); g.scale(1.12, 1.15); g.translate(-cx, -fy); cone(); g.restore(); g.strokeStyle = `rgba(160,225,255,${(0.35 * vk).toFixed(3)})`; g.lineWidth = 1.4 * q0; g.stroke();
-      for (let i = 0, n = lowFx ? 6 : 12; i < n; i++) {   // 원뿔 꼭대기에서 양옆 뒤로 흘러가는 바람 줄
-        const t = ((tn2 / (260 - 120 * vk)) + i * 0.29) % 1, sd = i % 2 ? 1 : -1, sp2 = 0.55 + (i % 3) * 0.25, x0 = cx + sd * W2 * (0.15 + t * 1.1 * sp2), y0 = fy - 12 * q0 + t * t * Hh * 1.3, ln = (14 + 26 * t) * q0;
-        g.strokeStyle = `rgba(235,250,255,${(vk * 0.8 * Math.sin(t * Math.PI)).toFixed(3)})`; g.lineWidth = (1.2 + t * 1.6) * q0; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + sd * ln * 0.55, y0 + ln); g.stroke();
-      }
-      g.globalCompositeOperation = 'source-over';
-    }
+    if (vk > 0.03 && pAero) aero(vk);
     if (s && bI > 0.2 && !RM() && st.scene === 'play') {   // 부스터 전기 불꽃: 내 차 둘레로 번쩍이는 번개 줄(매 프레임 새로)
       g.globalCompositeOperation = 'lighter'; g.lineJoin = 'round'; g.lineCap = 'round';
       for (let i = 0, n = lowFx ? 1 : 3; i < n; i++) {
@@ -850,11 +838,12 @@ export function createChase(root, opts = {}) {
     for (let pass = 0; pass < 2; pass++) {
       if (pass) { g.globalCompositeOperation = 'lighter'; lit = true; }
       for (const p of parts) {
-        const glow = p.k === 'sp' || p.k === 'fi' || p.k === 'st'; if (glow !== !!pass) continue;
+        const glow = p.k === 'sp' || p.k === 'fi' || p.k === 'st' || p.k === 'vp'; if (glow !== !!pass) continue;
         const a = clamp(p.life / p.max, 0, 1); g.globalAlpha = p.k === 'sh' || p.k === 'db' ? Math.min(1, a * 3) : a;
         if (p.k === 'sp') { g.strokeStyle = p.c; g.lineWidth = p.sz; g.lineCap = 'round'; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - p.vx * 0.035, p.y - p.vy * 0.035); g.stroke(); }
         else if (p.k === 'fi') stamp(blob('fi', FIRE), p.x, p.y, Math.max(1, p.sz));
         else if (p.k === 'st') { const r = p.sz * (0.6 + 0.4 * Math.sin(p.r * 2)); g.fillStyle = p.c; g.beginPath(); g.moveTo(p.x, p.y - r * 1.6); g.lineTo(p.x + r * 0.4, p.y - r * 0.4); g.lineTo(p.x + r * 1.6, p.y); g.lineTo(p.x + r * 0.4, p.y + r * 0.4); g.lineTo(p.x, p.y + r * 1.6); g.lineTo(p.x - r * 0.4, p.y + r * 0.4); g.lineTo(p.x - r * 1.6, p.y); g.lineTo(p.x - r * 0.4, p.y - r * 0.4); g.closePath(); g.fill(); }
+        else if (p.k === 'vp') stamp(blob('vp', [[0, 'rgba(240,250,255,.7)'], [0.6, 'rgba(220,240,255,.18)'], [1, 'rgba(220,240,255,0)']]), p.x, p.y, Math.max(1, p.sz));
         else if (p.k === 'sm') stamp(blob('sm', SMOKE), p.x, p.y, Math.max(1, p.sz));
         else if (p.k === 'sh') { const r = p.sz, c2 = Math.cos(p.r), s2 = Math.sin(p.r), tw = Math.abs(Math.sin(p.r * 1.7));   // 유리: 돌면서 납작해졌다 넓어짐 + 반짝
           g.beginPath(); g.moveTo(p.x + c2 * r, p.y + s2 * r * tw); g.lineTo(p.x - s2 * r * 0.7, p.y + c2 * r * 0.7 * tw); g.lineTo(p.x - c2 * r * 0.8, p.y - s2 * r * 0.4 * tw); g.closePath();
@@ -1041,6 +1030,38 @@ export function createChase(root, opts = {}) {
       }
     }
   }
+  function aero(vk) {
+    const A = pAero, tn = performance.now(); let fx = A.nx - A.rx, fy = A.ny - A.ry; const Lc = Math.hypot(fx, fy) || 1; fx /= Lc; fy /= Lc;
+    const sx = -fy, sy = fx, W = A.hw, sm = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+    const P = (t, d) => [A.nx - fx * Lc * t + sx * d, A.ny - fy * Lc * t + sy * d];   // t: 0 = 코, 1 = 꽁무니, 음수 = 앞 · d: 옆(+/-)
+    g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+    // 코 앞 안개(압축된 공기)
+    const [mx, my] = P(-0.16 - 0.08 * vk, 0), fl = 0.85 + 0.15 * Math.sin(tn / 29);
+    g.globalAlpha = 0.5 * vk * fl; stamp(blob('vp', [[0, 'rgba(240,250,255,.7)'], [0.6, 'rgba(220,240,255,.18)'], [1, 'rgba(220,240,255,0)']]), mx, my, W * (1.5 + 0.8 * vk)); g.globalAlpha = 1;
+    // 충격파 막 3겹: 가운데(코 앞)가 진하고 양 끝으로 흐려짐, 바깥 겹일수록 넓고 옅음
+    for (let k = 0; k < 3; k++) {
+      const ahead = W * (0.55 + k * 0.5) * (1 + 0.4 * vk) / Lc, spread = W * (1.35 + k * 0.6) * (1 + 0.5 * vk), back = W * (1.9 + k * 0.7) / Lc, al = vk * (0.85 - k * 0.25) * (0.8 + 0.2 * Math.sin(tn / (19 + k * 7) + k));
+      g.lineWidth = (2.6 - k * 0.6) * (W / 18);
+      let p0 = P(-ahead + back, -spread);
+      for (let j = 1; j <= 20; j++) { const u = -1 + j / 10, um = u - 0.05, pt = P(-ahead + back * u * u, spread * u), a2 = al * Math.pow(1 - Math.abs(um), 1.4); g.strokeStyle = `rgba(${k ? '190,232,255' : '245,252,255'},${a2.toFixed(3)})`; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(pt[0], pt[1]); g.stroke(); p0 = pt; }
+    }
+    // 공기 흐름 줄: 앞에서 오다 코에서 옆으로 밀려나 차 몸을 따라 흐르고, 뒤에서 살짝 모이며 흩어짐(결이 뒤로 흘러감)
+    const N = lowFx ? 8 : 16, spd = 0.0016 + 0.0022 * vk;
+    for (let i = 0; i < N; i++) {
+      const sd = i % 2 ? 1 : -1, lv = (i >> 1) / (N / 2), b0 = W * (0.15 + 1.1 * lv), push = W * (1.0 - 0.35 * lv) * (1 + 0.6 * vk);
+      const dOf = t => sd * (b0 + push * sm(-W * 1.6 / Lc, 0.12, t) * (1 - 0.4 * sm(1.1, 2.3, t)));
+      const u0 = (((tn * spd * (1 + lv * 0.4)) + i * 0.618) % 1) * 3.6 - 1.2, seg = 0.8 + 0.4 * vk, al = vk * (0.8 - 0.35 * lv) * (1 - sm(1.4, 2.3, u0 + seg / 2));
+      if (al < 0.02) continue;
+      const q1 = P(u0, dOf(u0)), q2 = P(u0 + seg, dOf(u0 + seg)), gr = g.createLinearGradient(q1[0], q1[1], q2[0], q2[1]);   // 한 줄을 한 번에(양 끝 투명) — 끊긴 점선처럼 보이지 않게
+      gr.addColorStop(0, 'rgba(232,248,255,0)'); gr.addColorStop(0.45, `rgba(240,250,255,${al.toFixed(3)})`); gr.addColorStop(1, 'rgba(232,248,255,0)');
+      g.strokeStyle = gr; g.lineWidth = (1.2 + 1.8 * (1 - lv)) * (W / 18); g.beginPath(); g.moveTo(q1[0], q1[1]);
+      for (let j = 1; j <= 6; j++) { const t = u0 + seg * j / 6, q3 = P(t, dOf(t)); g.lineTo(q3[0], q3[1]); }
+      g.stroke();
+    }
+    g.globalCompositeOperation = 'source-over';
+    // 떨어져 나가는 수증기: 충격파 끝에서 뒤로 빠르게
+    if (!lowFx && Math.random() < 0.55 * vk) { const sd = Math.random() < 0.5 ? -1 : 1, [vx0, vy0] = P(0.25 + Math.random() * 0.3, sd * W * (1.5 + Math.random() * 0.6) * (1 + 0.4 * vk)), sp3 = Lc * (6 + 6 * vk); addP({ k: 'vp', x: vx0, y: vy0, vx: -fx * sp3 + sx * sd * 60, vy: -fy * sp3 + sy * sd * 60, gv: 0, dr: 0.3, life: 0.35, max: 0.35, c: '', sz: W * 0.5, gr: W * 2.2 }); }
+  }
   // 사다리차 표시(2026-11-01 하율 "점프대차 더 확실하게"): 뒤 바닥에 깜빡이는 노란 빛 + 차 위에 떠서 통통 튀는 '점프대 ▲' 표지(멀어도 최소 크기)
   function rampGlow(M, x, yc, yaw, top) {
     const q = ps(yc), pu = 0.6 + 0.4 * Math.sin(performance.now() / 110);
@@ -1100,6 +1121,7 @@ export function createChase(root, opts = {}) {
     }
     if (wreck && wroll) { g.save(); g.translate(cx, cy - 14 * s2); g.rotate(wroll * 0.35); g.translate(-cx, -(cy - 14 * s2)); }
     pScr = [cx, cy];
+    if (!wreck) { const [nx, ny] = projPt(M, px, C.PY, yawP, lift, 0, M.y0, M.W * 0.3), [rx2, ry2] = projPt(M, px, C.PY, yawP, lift, 0, M.y1, M.W * 0.3); pAero = { nx, ny, rx: rx2, ry: ry2, hw: M.W * 0.5 * s2 }; } else pAero = null;
     if (!wreck) yawP = lerp(yawP, clamp((C.laneX(P.lane) - px) / C.LANE_W, -1, 1) * 0.34, 0.35);
     const yaw = wreck ? (0.5 + Math.min(crashT / 600, 1) * 0.6) * (px < RX ? -1 : 1) : yawP;
     const boost = s.boost > 0 && !wreck;
