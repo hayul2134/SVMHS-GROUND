@@ -1040,7 +1040,7 @@ export function createChase(root, opts = {}) {
     g.globalAlpha = 0.5 * vk * fl; stamp(blob('vp', [[0, 'rgba(240,250,255,.7)'], [0.6, 'rgba(220,240,255,.18)'], [1, 'rgba(220,240,255,0)']]), mx, my, W * (1.5 + 0.8 * vk)); g.globalAlpha = 1;
     // 충격파 막 3겹: 가운데(코 앞)가 진하고 양 끝으로 흐려짐, 바깥 겹일수록 넓고 옅음
     for (let k = 0; k < 3; k++) {
-      const ahead = W * (0.55 + k * 0.5) * (1 + 0.4 * vk) / Lc, spread = W * (1.35 + k * 0.6) * (1 + 0.5 * vk), back = W * (1.9 + k * 0.7) / Lc, al = vk * (0.85 - k * 0.25) * (0.8 + 0.2 * Math.sin(tn / (19 + k * 7) + k));
+      const ahead = W * (0.55 + k * 0.5) * (1 + 0.4 * vk) / Lc, spread = W * (2.3 + k * 1.0) * (1 + 0.55 * vk), back = W * (1.1 + k * 0.45) / Lc,   /* 11/1 14:39 "옆으로 쭉 뻗어나가게": 넓고 납작한 V */ al = vk * (0.85 - k * 0.25) * (0.8 + 0.2 * Math.sin(tn / (19 + k * 7) + k));
       g.lineWidth = (2.6 - k * 0.6) * (W / 18);
       let p0 = P(-ahead + back, -spread);
       for (let j = 1; j <= 20; j++) { const u = -1 + j / 10, um = u - 0.05, pt = P(-ahead + back * u * u, spread * u), a2 = al * Math.pow(1 - Math.abs(um), 1.4); g.strokeStyle = `rgba(${k ? '190,232,255' : '245,252,255'},${a2.toFixed(3)})`; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(pt[0], pt[1]); g.stroke(); p0 = pt; }
@@ -1048,9 +1048,9 @@ export function createChase(root, opts = {}) {
     // 공기 흐름 줄: 앞에서 오다 코에서 옆으로 밀려나 차 몸을 따라 흐르고, 뒤에서 살짝 모이며 흩어짐(결이 뒤로 흘러감)
     const N = lowFx ? 8 : 16, spd = 0.0016 + 0.0022 * vk;
     for (let i = 0; i < N; i++) {
-      const sd = i % 2 ? 1 : -1, lv = (i >> 1) / (N / 2), b0 = W * (0.15 + 1.1 * lv), push = W * (1.0 - 0.35 * lv) * (1 + 0.6 * vk);
-      const dOf = t => sd * (b0 + push * sm(-W * 1.6 / Lc, 0.12, t) * (1 - 0.4 * sm(1.1, 2.3, t)));
-      const u0 = (((tn * spd * (1 + lv * 0.4)) + i * 0.618) % 1) * 3.6 - 1.2, seg = 0.8 + 0.4 * vk, al = vk * (0.8 - 0.35 * lv) * (1 - sm(1.4, 2.3, u0 + seg / 2));
+      const sd = i % 2 ? 1 : -1, lv = (i >> 1) / (N / 2), b0 = W * (0.1 + 0.5 * lv), a0 = -W * (0.9 + 0.5 * lv) / Lc, slope = (0.75 + 1.1 * lv) * (1 + 0.5 * vk);
+      const dOf = t => sd * (b0 + Math.max(0, t - a0) * Lc * slope);   // 코 앞에서 시작해 옆·뒤로 비스듬히 계속 뻗어 나감(차 옆면을 타지 않음)
+      const u0 = a0 + (((tn * spd * (1 + lv * 0.4)) + i * 0.618) % 1) * 3.2, seg = 0.9 + 0.5 * vk, al = vk * (0.85 - 0.3 * lv) * (1 - sm(1.6, 3.0, u0 - a0 + seg / 2));
       if (al < 0.02) continue;
       const q1 = P(u0, dOf(u0)), q2 = P(u0 + seg, dOf(u0 + seg)), gr = g.createLinearGradient(q1[0], q1[1], q2[0], q2[1]);   // 한 줄을 한 번에(양 끝 투명) — 끊긴 점선처럼 보이지 않게
       gr.addColorStop(0, 'rgba(232,248,255,0)'); gr.addColorStop(0.45, `rgba(240,250,255,${al.toFixed(3)})`); gr.addColorStop(1, 'rgba(232,248,255,0)');
