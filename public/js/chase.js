@@ -768,6 +768,22 @@ export function createChase(root, opts = {}) {
     if (punch > 0.001 && !RM()) { const z2 = punch * (1 + Math.sin(performance.now() / 18) * 0.15); g.translate(punchAt[0], punchAt[1]); g.scale(1 + z2, 1 + z2); g.translate(-punchAt[0], -punchAt[1]); }
     drawGround(dist); drawRoadside(dist);
     if (s) drawWorld(a, px); else drawIdle();
+    // 바람 가르기(2026-11-01 하율 "차 앞에 바람을 엄청 빠르게 갈라서 생기는 그거"): 빠를수록 차 코 앞에 하얀 원뿔(공기 장벽) + 양옆으로 흘러가는 바람 줄
+    const vk = s && st.scene === 'play' && !RM() ? Math.max(clamp((v - 1100) / 1100, 0, 1), bI, s.slip * 0.6) : 0;
+    if (vk > 0.03) {
+      const q0 = ps(C.PY) * PK, cx = pScr[0], fy = pScr[1] - 34 * q0, tn2 = performance.now(), wob = Math.sin(tn2 / 40) * 2;
+      const W2 = (46 + 12 * vk) * q0, Hh = (70 + 30 * vk) * q0, cone = () => { g.beginPath(); g.moveTo(cx - W2, fy + Hh); g.quadraticCurveTo(cx - W2 * 0.35, fy - 14 * q0 + wob, cx, fy - 16 * q0 + wob); g.quadraticCurveTo(cx + W2 * 0.35, fy - 14 * q0 + wob, cx + W2, fy + Hh); };
+      g.globalCompositeOperation = 'lighter';
+      cone(); g.lineTo(cx, fy + 10 * q0); g.closePath();
+      const cg = g.createLinearGradient(cx, fy - 16 * q0, cx, fy + Hh); cg.addColorStop(0, `rgba(230,250,255,${(0.32 * vk).toFixed(3)})`); cg.addColorStop(1, 'rgba(180,230,255,0)'); g.fillStyle = cg; g.fill();
+      cone(); g.strokeStyle = `rgba(240,252,255,${(0.75 * vk).toFixed(3)})`; g.lineWidth = 2.6 * q0; g.lineCap = 'round'; g.stroke();
+      g.save(); g.translate(cx, fy); g.scale(1.12, 1.15); g.translate(-cx, -fy); cone(); g.restore(); g.strokeStyle = `rgba(160,225,255,${(0.35 * vk).toFixed(3)})`; g.lineWidth = 1.4 * q0; g.stroke();
+      for (let i = 0, n = lowFx ? 6 : 12; i < n; i++) {   // 원뿔 꼭대기에서 양옆 뒤로 흘러가는 바람 줄
+        const t = ((tn2 / (260 - 120 * vk)) + i * 0.29) % 1, sd = i % 2 ? 1 : -1, sp2 = 0.55 + (i % 3) * 0.25, x0 = cx + sd * W2 * (0.15 + t * 1.1 * sp2), y0 = fy - 12 * q0 + t * t * Hh * 1.3, ln = (14 + 26 * t) * q0;
+        g.strokeStyle = `rgba(235,250,255,${(vk * 0.8 * Math.sin(t * Math.PI)).toFixed(3)})`; g.lineWidth = (1.2 + t * 1.6) * q0; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + sd * ln * 0.55, y0 + ln); g.stroke();
+      }
+      g.globalCompositeOperation = 'source-over';
+    }
     if (s && bI > 0.2 && !RM() && st.scene === 'play') {   // 부스터 전기 불꽃: 내 차 둘레로 번쩍이는 번개 줄(매 프레임 새로)
       g.globalCompositeOperation = 'lighter'; g.lineJoin = 'round'; g.lineCap = 'round';
       for (let i = 0, n = lowFx ? 1 : 3; i < n; i++) {
