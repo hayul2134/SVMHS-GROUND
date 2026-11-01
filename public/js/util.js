@@ -102,8 +102,10 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
   const blank = n => n.nodeType === 8 || (n.nodeType === 3 && !n.data.trim());
   const sig = ns => [...ns].map(n => n.textContent || '').join('').replace(/\s+/g, '');   // 글자로 비교(그림이 나중에 그려진 건 무시)
   const SKIP = '#intro,.gfx,.sh-stage,.gstage,.gplay,#hr,canvas,.ctm,.nsvg,#bigTime,#tip,.tip,.ptzoom,[data-noreveal]';
+  let batch = null;   // 이번 프레임에 등장시키기로 한 요소(아직 animate 전) — 조상이 들어 있으면 겹치지 않게
   const busy = el => {   // 자기·조상이 이미 움직이는 중이면 겹치지 않게
     for (let e = el, k = 0; e && e !== document.body && k < 8; e = e.parentElement, k++) {
+      if (batch?.has(e)) return true;
       for (const a of e.getAnimations()) {   // 0.2초 넘게 더 움직일 등장류(투명도·위치) 애니메이션만 — 거의 끝난 것·배경색·무한 반복은 무시
         if (a.playState !== 'running' && a.playState !== 'pending') continue;
         const t = a.effect?.getComputedTiming?.(); if (!t || !isFinite(t.endTime)) continue;
@@ -115,14 +117,12 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
     return false;
   };
   const shown = el => el.isConnected && !el.closest(SKIP) && el.getClientRects().length;   // closest 먼저(싸다) — getClientRects는 레이아웃을 강제함
-  const rise = (els) => {
-    let i = 0;
-    for (const el of els) {
-      if (!shown(el)) continue;
-      el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
-        { duration: 340, delay: Math.min(i++, 8) * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' });
-    }
-  };
+  // 2026-11-02 최적화(하율 "사이트 랙"): '재기(shown) → animate'를 요소마다 번갈아 하면 animate가 스타일을 무효로 만들어
+  // 다음 재기 때마다 스타일·레이아웃을 처음부터 다시 계산했음(뽑기 화면 열 때 CPU 4배 느림 기준 약 0.8초) → 전부 잰 뒤 한꺼번에 animate
+  const RISE_KF = [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }];
+  const riseList = els => els.filter(shown);
+  const riseRun = list => list.forEach((el, i) => el.animate(RISE_KF, { duration: 340, delay: Math.min(i, 8) * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }));
+  const rise = els => riseRun(riseList([...els]));
   // 사진 다 왔으면 .ok (CSS img:not(.ok)의 깜빡이는 자리 표시를 끔) — 캐시에서 바로 뜬 사진은 load 이벤트를 window에서 못 받는 경우가 있어서 직접 확인 (2026-10-28 공지 사진 계속 깜빡이던 버그)
   const imgOk = im => { if (im.classList.contains('ok')) return; if (im.complete) im.classList.add('ok'); else { const f = () => im.classList.add('ok'); im.addEventListener('load', f, { once: true }); im.addEventListener('error', f, { once: true }); } };
   const imgScan = n => { if (n.nodeType !== 1) return; if (n.tagName === 'IMG') imgOk(n); else n.querySelectorAll?.('img:not(.ok)').forEach(imgOk); };
@@ -138,11 +138,12 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
   const judge = () => {
     praf = 0; const ms = pend; pend = [];
     if (document.documentElement.classList.contains('prelogin')) return;
+    const pops = [], rises = []; batch = new Set();   // 재기만 먼저(쓰기 없음) → 끝에서 한꺼번에 animate
     for (const m of ms) {
       const tg = m.target;
       if (m.type === 'attributes') {
         if (m.oldValue === null || tg.hidden || !shown(tg) || busy(tg)) continue;
-        tg.animate([{ opacity: 0, transform: 'translateY(6px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,1.3,.4,1)' });
+        pops.push(tg); batch.add(tg);
         continue;
       }
       const add = [...m.addedNodes].filter(n => n.nodeType === 1 && !isLoad(n));
@@ -154,8 +155,12 @@ if (typeof document !== 'undefined' && typeof MutationObserver === 'function' &&
       const swapped = !fromLoad && !fromEmpty && tg.hasAttribute('data-swap') && rm.some(n => n.nodeType === 1) && sig(rm) !== sig(m.addedNodes);
       if (!fromLoad && !fromEmpty && !swapped) continue;
       if (!shown(tg) || busy(tg)) continue;
-      rise(add);
+      const list = riseList(add);
+      list.forEach(el => batch.add(el)); rises.push(list);
     }
+    batch = null;
+    pops.forEach(tg => tg.animate([{ opacity: 0, transform: 'translateY(6px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,1.3,.4,1)' }));
+    rises.forEach(riseRun);
   };
   riseIn = els => { if (!RM.matches) rise(els); };
   const go = () => { imgScan(document.body); mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true }); };

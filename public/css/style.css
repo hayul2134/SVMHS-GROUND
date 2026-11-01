@@ -4774,7 +4774,7 @@ img.sic-club{box-sizing:border-box;width:1.3em;height:1.3em;padding:2px;border-r
 .week td .si img.sic-club{width:1.25em;height:1.25em}
 /* 2026-10-26 게임 중 휠을 굴리면 뒤에 깔린 페이지만 스크롤돼 스크롤바가 왔다갔다하던 문제
    html에 overflow-x:clip이 있어 body의 overflow:hidden이 화면 스크롤까지 막지 못했음 → html도 잠그고,게임 화면이 창보다 길 때는 게임 화면 자체가 스크롤되게 */
-html:has(body.playing){overflow:hidden}
+html:has(> body.playing){overflow:hidden}
 .play{overflow-y:auto;overscroll-behavior:contain}
 
 /* 프로필 소개 없는(slim) 카드 오른쪽이 비던 문제 (2026-10-26): 팔로워 칸이 이름 옆으로 옮겨 가 .pside에 2개만 남았는데 3칸 틀이 그대로라
@@ -6675,8 +6675,8 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
    → 이 구간만 띠를 두 카드 사이 폭으로 줄이고 카드 위로 올림(닫기 버튼이 항상 보이게) */
 @media (min-width:1000px) and (max-width:1239px){body[data-view="home"] .notice{z-index:42;max-width:min(760px,calc(100% - 600px));font-size:13.5px;padding:7px 8px 7px 12px}}
 
-/* 2026-10-30 최적화: 화면에 움직이는 보상 그림이 하나도 없을 땐(att-art.js가 html.art-idle) symbol 안 움직임을 멈춤 — 안 보이는 복제본까지 매 프레임 다시 그리던 것 */
-html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-flag,.an-ring,.an-memo,.an-heart,.an-spin,.shx1,.shx2,.shx3){animation-play-state:paused}
+/* 보상 그림 움직임(2026-11-02 최적화): 화면에 보이는 복제본이 있는 symbol만(att-art.js가 symbol.on) 움직임 — 나머지는 멈춤(안 보이는 복제본까지 매 프레임 다시 그리던 것) */
+.att-sprite symbol:not(.on) .an-rec,.att-sprite symbol:not(.on) .an-reel,.att-sprite symbol:not(.on) .an-wave,.att-sprite symbol:not(.on) .an-pop,.att-sprite symbol:not(.on) .an-tail,.att-sprite symbol:not(.on) .an-flag,.att-sprite symbol:not(.on) .an-ring,.att-sprite symbol:not(.on) .an-memo,.att-sprite symbol:not(.on) .an-heart,.att-sprite symbol:not(.on) .an-spin,.att-sprite symbol:not(.on) .shx1,.att-sprite symbol:not(.on) .shx2,.att-sprite symbol:not(.on) .shx3{animation-play-state:paused}
 
 /* 2026-10-30 하율 "지뢰찾기 스크롤 안 하고 버튼 뜨게": 위 줄(난이도·남은 지뢰·시간·깃발·소리)이 640px 칸에 안 들어가 소리 버튼이 두 번째 줄로 내려가며 위 칸이 커졌음
    → 지뢰찾기 칸만 넓게, 낮은 화면(세로 820px 이하)에선 위 줄·아래 설명을 한 줄로 촘촘하게 */
@@ -6853,3 +6853,6 @@ html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-fla
   .cg-side{grid-column:1/-1;grid-template-columns:72px 1fr;align-items:center;justify-items:stretch}
   .cg-side small{display:none}.cg-now{border-radius:14px}
 }
+/* 2026-11-02 최적화(하율 "사이트 랙"): 뽑기 화면 아래쪽 조각 상점·도감은 스티커 복제본(<use>)이 수천 개 노드라 화면을 열 때 스타일 계산이 가장 무거웠음
+   → 화면 밖에 있는 동안은 브라우저가 계산을 건너뜀(보이면 그때 계산). 자리 높이는 한 번 그려진 실제 높이를 기억(auto) */
+#gcBox > .gc-shop,#gcBox > .gc-col{content-visibility:auto;contain-intrinsic-size:auto 900px}

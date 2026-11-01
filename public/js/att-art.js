@@ -510,35 +510,62 @@ const olSym = (k, v, vb) => `<symbol id="art-${k}-ol" overflow="visible" viewBox
   + `<symbol id="art-${k}-gl" overflow="visible" viewBox="${vb}"><g opacity=".3">${sil(still(v), '#ffd34a', 4.4)}</g><g opacity=".55">${sil(still(v), '#ffd34a', 2.8)}</g></symbol>`
   + (ANIM(v) ? `<symbol id="art-${k}-st" overflow="visible" viewBox="${vb}">${still(v)}</symbol>` + olSym(k + '-st', still(v), vb).split('<symbol id="art-' + k + '-st-gl"')[0] : '');
 
-/* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) ===== */
-let done = false;
+/* ===== 스프라이트: 문서에 한 번만 (그라디언트 + 보상 그림 symbol) =====
+   최적화(2026-11-02 하율 "사이트 랙"): 예전엔 보상 그림 전부(약 200 symbol·6,500 노드 — 문서 노드의 2/3)를 한꺼번에 넣어서
+   스타일 다시 계산할 때마다 같이 훑었음. 이제 그라디언트·반짝이 별만 먼저 넣고, 그림 symbol은 artOf 등이 그 그림을 처음 쓸 때 넣음(need). */
+let sprite = null;
+const have = new Set(), tmpl = typeof document !== 'undefined' ? document.createElement('div') : null;
+const symOf = k => { const v = ART[k], vb = SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'; return `<symbol id="art-${k}" overflow="visible" viewBox="${vb}">${v}</symbol>` + olSym(k, v, vb); };
 export function ensureSprite() {
-  if (done || typeof document === 'undefined' || !document.body) return;
-  done = true;
+  if (sprite || typeof document === 'undefined' || !document.body) return;
   const box = document.createElement('div');
   box.className = 'att-sprite'; box.setAttribute('aria-hidden', 'true');
-  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs>${Object.entries(ART).map(([k, v]) => { const vb = SCENES.has(k) ? '0 0 48 48' : VB[k] || '-3 -3 54 54'; return `<symbol id="art-${k}" overflow="visible" viewBox="${vb}">${v}</symbol>` + olSym(k, v, vb); }).join('')}<symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol><symbol id="art-shnx-st" overflow="visible" viewBox="0 0 48 48">${still(SHNX)}</symbol></svg>`;
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg"><defs>${DEFS}</defs><symbol id="art-shnx" overflow="visible" viewBox="0 0 48 48">${SHNX}</symbol><symbol id="art-shnx-st" overflow="visible" viewBox="0 0 48 48">${still(SHNX)}</symbol></svg>`;
   document.body.appendChild(box);
+  sprite = box.firstElementChild;
 }
-// 최적화(2026-10-28): 모든 보상 그림의 테두리 실루엣까지 만드는 무거운 작업 → 첫 화면 뒤 한가할 때. 그림을 쓰는 곳(artOf·ui 등)은 그 전에 불리면 그 자리에서 바로 만듦
+// 그림 k의 symbol(본그림·테두리·금빛·멈춘 그림)을 아직 없으면 넣음
+function need(k) {
+  if (have.has(k) || !ART[k] || typeof document === 'undefined') return;
+  ensureSprite(); if (!sprite) return;
+  have.add(k);
+  tmpl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg">${symOf(k)}</svg>`;
+  const f = tmpl.firstElementChild, add = [...f.children];
+  for (const n of add) sprite.appendChild(n);
+  for (const n of add) liveSync(n.id);
+}
+let liveSync = () => {};
+// 그림 symbol 없이 그라디언트만 필요한 곳(medal·ui)도 첫 화면 뒤 한가할 때 미리 준비
 if (typeof document !== 'undefined') (window.requestIdleCallback || (f => setTimeout(f, 200)))(ensureSprite, { timeout: 1500 });
-// 최적화(2026-10-30 점검): 보상 그림 symbol 안의 움직임(an-*·shx)은 그 그림을 쓰는 <use>가 화면에 하나도 없어도 매 프레임 돌면서
-//   모든 복제본의 SVG 레이아웃을 다시 계산했음(홈에 가만히 있어도 초당 60번) → 화면에 보이는 움직이는 그림이 없으면 symbol 쪽 움직임을 멈춤(html.art-idle).
-//   보이는 그림이 하나라도 생기면 바로 다시 움직임. 멈춘 그림(-st)·금빛(-gl)은 원래 안 움직이니 셈에서 뺌
+// 최적화: 보상 그림 symbol 안의 움직임(an-*·shx)은 그 그림을 쓰는 <use>가 화면에 없어도 매 프레임 돌면서 그 symbol을 쓰는 모든 복제본의
+//   SVG 레이아웃을 다시 계산함(2026-10-30: 홈 대기 중 초당 60번). 2026-11-02: 예전엔 '보이는 움직이는 그림이 하나라도 있으면 모든 symbol이 움직임'이라
+//   출석 창의 종 하나 때문에 그림 전부가 돌았음(CPU 4배 느림 기준 초당 약 640ms) → 화면에 보이는 복제본이 있는 symbol만 움직임(symbol.on).
+//   style.css '보상 그림 움직임' 규칙이 .on 없는 symbol 안 움직임을 멈춤.
 if (typeof document !== 'undefined' && 'IntersectionObserver' in window && 'MutationObserver' in window) {
-  const de = document.documentElement, seenUse = new WeakSet(), live = new Set();
-  const sync = () => de.classList.toggle('art-idle', live.size === 0);
-  const io = new IntersectionObserver(es => { for (const e of es) { if (e.isIntersecting && e.target.isConnected) live.add(e.target); else live.delete(e.target); } sync(); });
-  const isAnim = u => { const h = u.getAttribute('href') || u.getAttribute('xlink:href') || ''; return h.startsWith('#art-') && !/-(st|gl)$/.test(h) && !/-st-ol$/.test(h); };
-  const watch = u => { if (seenUse.has(u) || !isAnim(u)) return; seenUse.add(u); io.observe(u); };
+  const seenUse = new WeakSet(), live = new Map();   // symbol id → 화면에 보이는 <use> 모음
+  const idOf = u => (u.getAttribute('href') || u.getAttribute('xlink:href') || '').slice(1);
+  liveSync = id => { const sy = document.getElementById(id); if (sy && sy.tagName === 'symbol') { const on = (live.get(id)?.size || 0) > 0; if (sy.classList.contains('on') !== on) sy.classList.toggle('on', on); } };
+  const drop = (u, id) => { const s = live.get(id); if (s && s.delete(u)) { if (!s.size) live.delete(id); liveSync(id); } };
+  const io = new IntersectionObserver(es => { for (const e of es) {
+    const u = e.target, id = idOf(u);
+    // href가 바뀐 경우(뽑기 화면의 멈춘 그림 교체) 예전 id 쪽에서 빼기
+    if (u.__sid && u.__sid !== id) drop(u, u.__sid);
+    u.__sid = id;
+    if (e.isIntersecting && u.isConnected) { let s = live.get(id); if (!s) live.set(id, s = new Set()); if (!s.has(u)) { s.add(u); liveSync(id); } }
+    else drop(u, id);
+  } });
+  const isArtUse = u => idOf(u).startsWith('art-');
+  const watch = u => { if (seenUse.has(u) || !isArtUse(u)) return; seenUse.add(u); io.observe(u); };
   const scan = n => { if (n.nodeType !== 1) return; if (n.tagName === 'use') watch(n); else if (n.querySelectorAll && n.firstElementChild) n.querySelectorAll('use').forEach(watch); };
   let pend = [], raf = 0;   // 추가된 노드는 다음 프레임에 한꺼번에 살핌(innerHTML로 큰 덩어리를 그릴 때 여러 번 훑지 않게)
   const flush = () => { raf = 0; const a = pend; pend = []; a.forEach(n => n.isConnected && n.closest?.('.att-sprite') === null && scan(n));
-    for (const u of live) if (!u.isConnected) { live.delete(u); io.unobserve(u); }   // 지워진 그림은 셈에서 뺌(innerHTML로 다시 그려진 칸)
-    sync(); };
+    for (const [id, s] of live) for (const u of s) if (!u.isConnected) { io.unobserve(u); seenUse.delete(u); drop(u, id); } };   // 지워진 그림은 셈에서 뺌(innerHTML로 다시 그려진 칸)
   new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) pend.push(n); if (pend.length && !raf) raf = requestAnimationFrame(flush); })
-    .observe(document.body || de, { childList: true, subtree: true });
-  const first = () => { scan(document.body); sync(); };
+    .observe(document.body || document.documentElement, { childList: true, subtree: true });
+  // 뽑기 화면이 href를 멈춘 그림으로 바꾸면 다시 셈
+  new MutationObserver(ms => { for (const m of ms) { const u = m.target; if (seenUse.has(u)) { io.unobserve(u); io.observe(u); } } })
+    .observe(document.body || document.documentElement, { attributes: true, attributeFilter: ['href'], subtree: true });
+  const first = () => scan(document.body);
   if (document.body) first(); else document.addEventListener('DOMContentLoaded', first, { once: true });
 }
 
@@ -549,11 +576,11 @@ export const ART_KEYS = Object.keys(ART);
 export const isArt = v => typeof v === 'string' && v.startsWith('r:') && !!ART[keyOf(v)];
 // 반짝이 버전(값 끝 '_s', 조각 강화 2026-10-25): 금빛 테두리 빛 + 위에 반짝이 별 3개(#art-shnx, 하나씩 깜빡임 — style.css .shn)
 // 화면 밖 스티커는 멈춘 그림으로 바꿔 둠(뽑기 페이지 IntersectionObserver) — <use> 복제본은 화면 밖이어도 매 프레임 스타일을 다시 계산해서
-export const stillHref = h => { const m = /^#art-(.+?)(-ol)?$/.exec(h || ''); if (!m || /-(gl|st)$/.test(m[1]) || m[1].endsWith('-st')) return h; const id = m[1] === 'shnx' ? 'art-shnx-st' : `art-${m[1]}-st${m[2] || ''}`; return document.getElementById(id) ? '#' + id : h; };
+export const stillHref = h => { const m = /^#art-(.+?)(-ol)?$/.exec(h || ''); if (!m || /-(gl|st)$/.test(m[1]) || m[1].endsWith('-st')) return h; need(m[1]); const id = m[1] === 'shnx' ? 'art-shnx-st' : `art-${m[1]}-st${m[2] || ''}`; return document.getElementById(id) ? '#' + id : h; };
 // cls에 'still'이 있으면 움직임 없는 그림(한 화면에 많이 늘어놓는 곳 — 렉 방지, 2026-10-25)
 export const artOf = (v, cls = '') => {
-  if (!isArt(v)) return ''; ensureSprite();
-  const sh = /_s$/.test(v), k = keyOf(v), st = /(^|\s)still(\s|$)/.test(cls), id = st && ANIM(ART[k]) ? k + '-st' : k;
+  if (!isArt(v)) return '';
+  const sh = /_s$/.test(v), k = keyOf(v); need(k); const st = /(^|\s)still(\s|$)/.test(cls), id = st && ANIM(ART[k]) ? k + '-st' : k;
   return `<svg class="art ${cls}${SCENES.has(k) ? ' sc' : ''}${sh ? ' shn' : ''}" aria-hidden="true">${sh ? `<use href="#art-${k}-gl" class="glx" width="100%" height="100%"/>` : ''}<use href="#art-${id}-ol" class="olx" width="100%" height="100%"/><use href="#art-${id}" width="100%" height="100%"/>${sh ? `<use href="#art-shnx${st ? '-st' : ''}" class="shnx" width="100%" height="100%"/>` : ''}</svg>`;
 };
 // 프로필 사진·스티커 값 → 그림(직접 그린 것) 또는 글자(예전 이모지)

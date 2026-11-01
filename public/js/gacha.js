@@ -140,7 +140,9 @@ function lazyAnim() {
     const base = u.dataset.h || (u.dataset.h = u.getAttribute('href')), want = e.isIntersecting ? base : stillHref(base);
     if (u.getAttribute('href') !== want) u.setAttribute('href', want);
   })), { rootMargin: '80px 0px' });
-  document.querySelectorAll('#gcBox svg.art:not(.still)').forEach(s => io.observe(s));
+  // 2026-11-02 최적화: 처음엔 전부 멈춘 그림으로 그리고(복제본을 한 번만 만듦) 화면에 보이는 것만 움직이는 그림으로 바꿈
+  //   — 예전엔 움직이는 그림으로 다 만든 뒤 화면 밖 것을 다시 멈춘 그림으로 바꿔 복제본을 두 번 만들었음
+  document.querySelectorAll('#gcBox svg.art:not(.still)').forEach(s => { s.querySelectorAll('use').forEach(u => { const b = u.dataset.h || (u.dataset.h = u.getAttribute('href')), w = stillHref(b); if (w !== b) u.setAttribute('href', w); }); io.observe(s); });
 }
 const TIER = { 1: '스티커', 2: '움직이는 스티커', 3: '효과', 4: '도감엔 ?로만 보여요' };
 const isSecHidden = (x, n) => x.rar === 4 && !n;

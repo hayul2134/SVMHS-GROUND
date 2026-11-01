@@ -317,8 +317,8 @@ $('#hList').addEventListener('click', e => { if (e.target.closest('button')) men
 document.addEventListener('click', e => { if (!e.target.closest('#hMenu')) menu(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu').classList.contains('open')) { menu(false); $('#btnMenu').focus(); } });
 // 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
-function onScroll() { $('#hdr').classList.toggle('away', !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5); }
-addEventListener('scroll', onScroll, { passive: true });
+function onScroll() { const a = !$('#v-home').classList.contains('on') || scrollY > innerHeight * .5, h = $('#hdr'); if (h.classList.contains('away') !== a) h.classList.toggle('away', a); }
+{ let q = 0; addEventListener('scroll', () => { if (!q) q = requestAnimationFrame(() => { q = 0; onScroll(); }); }, { passive: true }); }   // 스크롤 이벤트마다 말고 프레임마다 한 번(2026-11-02 최적화)
 // 맨 위·맨 아래로 (2026-10-23): 첫 화면 아래 화살표 = 페이지 맨 아래로, 맨 아래 화살표 = 맨 위로
 // ▼ → 바로 아래 '한눈에 보기' (2026-10-24 2차, 하율 요청): '한눈에 보기' 제목이 화면 맨 위 헤더 줄 바로 아래(48px)에 오는 자리까지 올림
 const BOARD_TOP = 48;
@@ -2778,15 +2778,17 @@ addEventListener('resize', hideFieldTip);
    급식판 메뉴 이름표(예: '치즈돈가스&소스'), 밸런스 선택지('주 4일, 대신 하루 10시간'), 주간 시간표 과목 이름.
    줄 수·칸 크기는 그대로 두고(시계 묶음 위치 계산이 바뀌지 않게) 넘칠 때만 글자 크기를 그 칸에 맞게 줄임 — 최소 크기 아래로는 안 줄임 */
 const FIT_TXT = [['.tray .lbl,.drink .lbl', 8.5], ['.bt-opts .bo-t', 11], ['table.week .sj', 10.5]];
+// 2026-11-02 최적화: 칸마다 '글자 크기 지우기 → 너비 재기'를 번갈아 하면 칸마다 레이아웃을 다시 계산했음(급식 화면 열 때 CPU 4배 느림 기준 약 0.16초)
+// → 전부 지우기 → 전부 재기 → 넘친 칸만 고치기, 를 단계별로(레이아웃은 단계마다 한 번)
 function fitTexts() {
-  for (const [sel, min] of FIT_TXT) for (const el of document.querySelectorAll(sel)) {
-    el.style.fontSize = '';
-    if (!el.clientWidth || el.scrollWidth <= el.clientWidth + 1) continue;
-    for (let i = 0; i < 3 && el.scrollWidth > el.clientWidth + 1; i++) {
-      const fs = parseFloat(getComputedStyle(el).fontSize);
-      if (fs <= min) break;
-      el.style.fontSize = Math.max(min, Math.floor(fs * el.clientWidth / el.scrollWidth * 4) / 4 - (i ? .25 : 0)) + 'px';
-    }
+  const items = [];
+  for (const [sel, min] of FIT_TXT) for (const el of document.querySelectorAll(sel)) { if (el.style.fontSize) el.style.fontSize = ''; items.push([el, min]); }
+  let todo = items.filter(([el]) => el.clientWidth && el.scrollWidth > el.clientWidth + 1);
+  for (let i = 0; i < 3 && todo.length; i++) {
+    const w = todo.map(([el, min]) => { const fs = parseFloat(getComputedStyle(el).fontSize); return fs <= min ? null : [el, Math.max(min, Math.floor(fs * el.clientWidth / el.scrollWidth * 4) / 4 - (i ? .25 : 0))]; }).filter(Boolean);
+    w.forEach(([el, fs]) => { el.style.fontSize = fs + 'px'; });
+    const set = new Set(w.map(x => x[0]));
+    todo = todo.filter(([el]) => set.has(el) && el.scrollWidth > el.clientWidth + 1);
   }
 }
 let fitRaf = 0;
