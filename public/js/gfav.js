@@ -21,6 +21,8 @@ if (grid) {
 
   const paint = anim => {
     const first = anim ? new Map(apps.map(b => [b, b.getBoundingClientRect()])) : null;
+    // 노드를 옮기면 처음 나타날 때 쓰는 popIn 애니메이션이 전부 다시 돌아 '새로 고침'처럼 보임(08:52 하율) → 별을 한 번 누른 뒤엔 그 애니메이션 끔
+    if (anim) grid.classList.add('gfav-calm');
     const on = new Set(fav);
     const order = [...fav.map(k => apps.find(b => b.dataset.play === k)), ...apps.filter(b => !on.has(b.dataset.play))];
     order.forEach(b => {
@@ -35,7 +37,7 @@ if (grid) {
     apps.forEach(b => {   // 자리 바뀐 아이콘은 원래 자리에서 미끄러져 옴
       const a = first.get(b), z = b.getBoundingClientRect();
       const dx = a.left - z.left, dy = a.top - z.top;
-      if (dx || dy) b.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.3,1)' });
+      if (dx || dy) b.animate([{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }], { duration: 420, easing: 'cubic-bezier(.25,.9,.3,1)' });   // transform(스티커 기울기)과 따로 도는 translate
     });
   };
   paint(false);

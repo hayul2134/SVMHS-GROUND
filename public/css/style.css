@@ -6803,6 +6803,8 @@ html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-fla
 @keyframes gfavPop{0%{transform:scale(.5) rotate(-30deg)}100%{transform:scale(1)}}
 @media (max-width:560px){.gfav{top:-10px;right:-9px;width:34px;height:34px}.gfav svg{width:27px;height:27px;stroke-width:2.4}}
 @media (prefers-reduced-motion:reduce){.gfav.pop svg{animation:none}}
+.apps .catgrid.gfav-calm > .app{animation:none!important}
+.apps .catgrid > .gapp.faved{z-index:1}
 
 /* ===== 색감의 신(2026-11-02, js/color.js — 미리보기 color-game) ===== */
 .apps .gapp.g-color .ai{--c:#ffe3f0}.ggrid .g-color{--c:#ffe3f0}
