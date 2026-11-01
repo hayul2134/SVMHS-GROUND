@@ -306,7 +306,7 @@ export function createChase(root, opts = {}) {
   const rings = [];
   let parts = [], pops = [], streaks = [], shake = 0, flash = 0, warnShown = -1, evRun = 0, tStart = 0;
   // 2026-10-31 하율 "타격감·와장창": 멈칫(hs)·느린 화면(slowT)·줌 펀치·날아가는 차(flies)·화면 금(crack)·붉은 번쩍(rflash)·저사양 감지(lowFx)
-  let hs = 0, slowT = 0, punch = 0, punchAt = [CX, 440], flies = [], crack = null, rflash = 0, avgDt = 16, lowFx = false, wz = 0, wvz = 0, wroll = 0;
+  let kickAt = 0, hs = 0, slowT = 0, punch = 0, punchAt = [CX, 440], flies = [], crack = null, rflash = 0, avgDt = 16, lowFx = false, wz = 0, wvz = 0, wroll = 0;
 
   /* --- 크기: 논리 960×540을 화면 픽셀에 맞춰 선명하게 --- */
   let resQ = 1, lagT = 0;
@@ -614,7 +614,7 @@ export function createChase(root, opts = {}) {
       case 'coin': bW(e.x, py, 16, 9, ['#ffd25e', '#fff', '#ffe9a8'], 140, 0.45, 5, 'st'); pW(e.x, py, 44, '+10', '#ffd25e'); sfx.coin(); break;
       case 'fuel': bW(e.x, py, 14, 16, ['#ff5a5a', '#fff', '#ffd25e'], 170, 0.6, 5, 'st'); pW(e.x, py, 52, '연료 +' + C.CAN, '#ff8a8a', 1); sfx.fuel(); punch = Math.max(punch, 0.02); break;
       case 'box': bW(e.x, py, 16, 26, ['#ff8fd0', '#a98bff', '#5ec8ff', '#fff'], 260, 0.7, 6, 'st'); sfx.box(); punch = Math.max(punch, 0.03); break;
-      case 'boost': flash = 0.5; shake = Math.max(shake, 0.4); hs = Math.max(hs, 0.06); rings.push({ t: 0 }, { t: -0.12 }, { t: -0.24 }); pop(VW / 2, 200, '부스터!', '#7fd4ff', 2); sfx.boost(); break;
+      case 'boost': flash = 0.6; shake = Math.max(shake, 0.9); hs = Math.max(hs, 0.08); punch = Math.max(punch, 0.08); punchAt = pScr.slice(); rings.push({ t: 0 }, { t: -0.12 }, { t: -0.24 }); pop(VW / 2, 200, '부스터!', '#7fd4ff', 2); sfx.boost(); break;
       case 'boostEnd': sfx.boostEnd(); break;
       case 'ramp': {
         const [sx, sy, q] = scrOf(e.x, e.y, 6);
@@ -754,14 +754,29 @@ export function createChase(root, opts = {}) {
     g.save();
     let jx = 0, jy = 0;
     if (!RM()) { if (shake > 0) { jx = (Math.random() - 0.5) * 16 * shake; jy = (Math.random() - 0.5) * 12 * shake; } if (v > 650 && st.scene === 'play') { jy += (Math.random() - 0.5) * (v - 650) / 260; } }
+    // 부스터 중 계속 흔들림(2026-11-01 하율 "진짜 부스터처럼 화면도 계속 흔들리고 난리 부르스"): 잔떨림 + 느린 출렁임 + 기울기 + 0.18초마다 쿵 펀치
+    const tn = performance.now();
+    if (!RM() && bI > 0.05) {
+      jx += ((Math.random() - 0.5) * 14 + Math.sin(tn / 45) * 6) * bI; jy += ((Math.random() - 0.5) * 11 + Math.sin(tn / 61) * 4) * bI;
+      if (tn - kickAt > 180 && st.scene === 'play') { kickAt = tn; punch = Math.max(punch, 0.022 + Math.random() * 0.018); punchAt = pScr.slice(); }
+    }
     if (jx || jy) g.translate(jx, jy);
     // 부스터: 화면이 내 차 쪽으로 살짝 당겨짐(시야 펀치)
     bI = lerp(bI, s && s.boost > 0 && st.scene === 'play' ? 1 : 0, 0.1);
-    const zm = RM() ? 0 : bI * 0.06;
-    if (zm > 0.001) { g.translate(CX, 470); g.scale(1 + zm, 1 + zm); g.translate(-CX, -470); }
+    const zm = RM() ? 0 : bI * 0.07;
+    if (zm > 0.001) { g.translate(CX, 470); g.scale(1 + zm, 1 + zm); g.rotate((Math.sin(tn / 37) * 0.012 + (Math.random() - 0.5) * 0.008) * bI); g.translate(-CX, -470); }
     if (punch > 0.001 && !RM()) { const z2 = punch * (1 + Math.sin(performance.now() / 18) * 0.15); g.translate(punchAt[0], punchAt[1]); g.scale(1 + z2, 1 + z2); g.translate(-punchAt[0], -punchAt[1]); }
     drawGround(dist); drawRoadside(dist);
     if (s) drawWorld(a, px); else drawIdle();
+    if (s && bI > 0.2 && !RM() && st.scene === 'play') {   // 부스터 전기 불꽃: 내 차 둘레로 번쩍이는 번개 줄(매 프레임 새로)
+      g.globalCompositeOperation = 'lighter'; g.lineJoin = 'round'; g.lineCap = 'round';
+      for (let i = 0, n = lowFx ? 1 : 3; i < n; i++) {
+        let a0 = Math.random() * 6.283, x = pScr[0] + Math.cos(a0) * 30, y = pScr[1] - 10 + Math.sin(a0) * 18; g.beginPath(); g.moveTo(x, y);
+        for (let j = 0; j < 5; j++) { a0 += (Math.random() - 0.5) * 1.6; x += Math.cos(a0) * (10 + Math.random() * 14); y += Math.sin(a0) * (8 + Math.random() * 10); g.lineTo(x, y); }
+        g.strokeStyle = `hsla(${(s.f * 9 + i * 120) % 360},100%,72%,${(0.85 * bI).toFixed(2)})`; g.lineWidth = 3.2; g.stroke(); g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1.2; g.stroke();
+      }
+      g.globalCompositeOperation = 'source-over';
+    }
     // 바람(속도선): 빠를수록 많이 — 길가 양쪽 아래
     if (s && st.scene === 'play' && !RM() && v > 600) {
       const n = Math.min(16, (v - 600) / 50) | 0; g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 1.8;
