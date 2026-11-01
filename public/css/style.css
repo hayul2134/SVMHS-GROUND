@@ -6793,3 +6793,13 @@ html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-fla
   .pside .pg-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (min-width:1200px){#v-me > .vhead,#v-u > .vhead,#v-me .soc,#v-u .soc{max-width:1060px}}   /* 2026-10-31: 오른쪽 기록 칸 3열 + 왼쪽 명판·1등 패 한 줄이 들어갈 폭 */
+/* 게임 즐겨찾기 별(2026-11-02, js/gfav.js) — 게임 아이콘 오른쪽 위. 빈 별 → 누르면 노란 별 + 앞으로 */
+.apps .gapp{position:relative}
+.gfav{position:absolute;top:6px;right:6px;z-index:3;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gfav svg{width:19px;height:19px;fill:none;stroke:color-mix(in srgb,var(--text) 45%,transparent);stroke-width:2;stroke-linejoin:round;transition:fill .15s,stroke .15s}
+@media (hover:hover){.gfav:hover svg{stroke:var(--text)}}
+.gapp.faved .gfav svg{fill:#ffd23f;stroke:var(--ink,#173048);filter:drop-shadow(1px 1px 0 rgba(23,48,72,.35))}
+.gfav.pop svg{animation:gfavPop .32s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gfavPop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+@media (max-width:560px){.gfav{top:3px;right:3px;width:22px;height:22px}.gfav svg{width:16px;height:16px}}
+@media (prefers-reduced-motion:reduce){.gfav.pop svg{animation:none}}

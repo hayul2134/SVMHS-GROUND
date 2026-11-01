@@ -5,6 +5,7 @@ import { foodSvg, arBucket, drinkSvg, isDrink, foodImg } from './food.js';
 import { emo, ui, stkMsg, repTag } from './att-art.js';
 import './tip.js';
 import './kao.js';   // 글자 이모티콘 줄바꿈 금지 (2026-10-25)
+import './gfav.js';   // 게임 즐겨찾기 별 (2026-11-02)
 import './seg.js';   // 전환 버튼 묶음 → 스위치처럼 미끄러지는 알약 (2026-10-25)
 import { initInstall } from './install.js';
 import { clubLogo } from './clubs.js';
