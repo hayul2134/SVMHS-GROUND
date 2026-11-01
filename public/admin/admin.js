@@ -22,6 +22,7 @@ const GAMES = {
   stair: { name: '영상고 계단 오르기', em: '🪜', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '칸', sus: 9999999 - 3000 },   // 저장값 = 9999999 - 오른 칸. 3천 칸 넘으면 의심
   reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 160 },
   num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 7000 },
+  color: { name: '색감의 신', em: '🎨', fmt: v => ((5000 - v) / 50).toFixed(1) + '%', sus: 100 },   // 저장값 = 5판 놓친 %(0.1%) 합. 평균 98% 넘으면 의심
   cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 20 },   // 2026-10-26 하율: 학생들이 잘해서 40 → 20 (한 판 평균 4ms 이하만 의심)
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
@@ -444,6 +445,7 @@ const heldRounds = (game, raw) => {
   let r = []; try { r = JSON.parse(raw || '[]'); } catch {}
   if (!Array.isArray(r) || !r.length) return '-';
   if (game === 'reaction') return r.map(x => x + 'ms').join(' · ');
+  if (game === 'color') return Array.from({ length: Math.floor(r.length / 2) }, (_, i) => `#${(+r[i * 2]).toString(16).padStart(6, '0')}→#${(+r[i * 2 + 1]).toString(16).padStart(6, '0')}`).join(' · ');
   if (game === 'cut') return r.map(x => x + 'ms').join(' · ') + ` (합 ${r.reduce((a, b) => a + b, 0)})`;
   if (game === 'home') return `${(+r[0]).toLocaleString('ko-KR')}m · ${((+r[1] || 0) / 1000).toFixed(1)}초`;
   if (game === 'gear' || game === 'gearn') return `${(+r[0]).toLocaleString('ko-KR')}점 · ${r[1]}줄 · 블록 ${r[2]}개 · ${mmss(+r[3])}${r[4] != null ? ` (실제 ${mmss(+r[4])})` : ''}`;

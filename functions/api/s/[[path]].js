@@ -12,6 +12,7 @@ import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim 
 import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim } from '../../../public/js/dance-score.js';
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
+import { COLOR_MAX, scoreOf as colorScore } from '../../../public/js/color-score.js';   // 색감의 신(2026-11-02)
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
 import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, ACH_TITLES, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
@@ -29,7 +30,8 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   // 판마다의 기록(rounds)을 같이 받아 서버가 다시 계산·검사(checkRounds). 하한을 바꾸면 lib/db.js v19 정리 쿼리도 같이
   reaction: { min: 80, max: 1500, play: 4000 },      // 반응속도 5번 평균 (5판 대기 합 최소 약 3.65초 — social.js rxDelay, 2026-10-28 5000→4000) · 하한 140 → 120 (2026-10-26) → 100 (2026-10-27 하율) → 80 (2026-10-29 하율 "봇·오토클릭만 잡게 널널하게")
   num25: { min: 4000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기 · 하한 5000 → 4000 (2026-10-27 하율: 모바일은 훨씬 쉬움)
-  cut: { min: 15, max: 6000, play: 5000 },            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
+  cut: { min: 15, max: 6000, play: 5000 },
+  color: { min: 0, max: COLOR_MAX, play: 20000, ff: 'color-game', tierOn: true },   // 색감의 신(2026-11-02 미리보기): 5판 '놓친 %' 합(0.1% 단위, 0~5000) — 판마다 5초 보기라 25초보다 빨리 끝날 수 없음(여유 두고 20초). 서버가 [목표, 고른 색]×5로 다시 계산(color-score.js)            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
   home: { min: 1, max: HOME_MAX - 1, play: 0 },   // (2026-10-29 '11/9부터 캐주얼'은 같은 날 하율 "모두 랭크에"로 취소)        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
   gear: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
@@ -169,6 +171,12 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (x.err) return x.fast ? H(`너무 빠르게 밂 — 매크로 의심`, x.err) : H(`다시 밀어 보니 안 맞음: ${x.err}`, `${x.err}. 판과 민 기록이 서로 맞지 않아요.`);
     if (N2_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${N2_MAX - v})이 다름`, `민 기록으로는 ${x.score.toLocaleString('ko-KR')}점인데 ${(N2_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
     if (n[0] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
+  } else if (game === 'color') {   // [목표, 고른 색]×5(0xRRGGBB) → 정확도를 다시 계산해 놓친 합 = v
+    const x = colorScore(n);
+    if (x.err) return H('판 기록 형식이 다름', x.err + '.');
+    if (x.v !== v) return H(`다시 계산한 값(${x.v})과 기록(${v})이 다름`, `고른 색으로 다시 계산하면 평균 ${((COLOR_MAX - x.v) / 50).toFixed(1)}%인데 ${((COLOR_MAX - v) / 50).toFixed(1)}%로 기록됐어요.`);
+    const same = [0, 1, 2, 3, 4].filter(i => n[i * 2] === n[i * 2 + 1]).length;
+    if (same >= 3) return H(`5판 중 ${same}판이 정답 색과 완전히 같음(1,600만 색 중) — 조작 의심`, `5판 중 ${same}판에서 정답과 완전히 같은 색을 골랐어요. 팔레트로는 거의 나올 수 없는 일이라 확인이 필요해요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
     const off = idx(x => x < 0 || x > 1000);

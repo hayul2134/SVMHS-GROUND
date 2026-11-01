@@ -14,6 +14,7 @@ import { BLAST_MAX, seedOf as blastSeed } from './blast-score.js';
 import { CHASE_MAX, seedOf as chaseSeed } from './chase-score.js';
 import { DANCE_MAX, seedOf as danceSeed } from './dance-score.js';
 import { SNAKE_MAX, N2_MAX } from './cz-score.js';
+import { pctOf as colorPct } from './color-score.js';   // 색감의 신(2026-11-02)
 import { ffOn, RELEASED } from './flags.js';
 import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
@@ -51,6 +52,8 @@ const GAMES = {
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
   film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 막히면 새 판, 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '개' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
+  // 색감의 신(2026-11-02 하율 "5초 동안 색을 보여 주고 팔레트에서 골라 얼마나 가까운지 %로", 미리보기 깃발 color-game — 개발자만): 서버엔 5판 놓친 %(0.1%) 합 → 작을수록 1등
+  color: { ff: 'color-game', name: '색감의 신', ic: 'color', desc: '5초 동안 본 색을 팔레트에서 똑같이! 5번 평균 정확도(%)', fmt: v => '평균 ' + colorPct(v) },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에, 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 게임 안 '랭크전'만 순위·티어 · '자유'는 이 기기 기록
@@ -405,7 +408,7 @@ const tierPlate = (tr, u) => {
 };
 
 /* ===== 역대 1등 왕관 패 (2026-10-25 하율: 더 자세하고 화려하게) — 기록 · 며칠째 1위 · 2등과 차이 · 참가 인원 ===== */
-const CROWN_GAP = { home: v => v.toLocaleString('ko-KR') + 'm', reaction: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초', cut: v => v + 'ms' };
+const CROWN_GAP = { color: v => (v / 50).toFixed(1) + '%p', home: v => v.toLocaleString('ko-KR') + 'm', reaction: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초', cut: v => v + 'ms' };
 function crownHtml(c) {
   if (typeof c === 'string') c = { g: c };   // 옛 응답 형식(게임 이름만)
   const g = GAMES[c.g]; if (!g) return '';
@@ -1515,6 +1518,7 @@ const G_GROUPS = [
   ['puzzle', '퍼즐', '블록·숫자를 놓고 맞추는 게임', ['gear', 'blast', 'film', 'n2048', 'mine']],
   ['action', '달리기·액션', '피하고 오르며 버티는 게임', ['chase', 'home', 'stair', 'snake']],
   ['timing', '순발력·타이밍', '눈과 손이 빠를수록 잘하는 게임', ['dance', 'reaction', 'cut', 'num25']],
+  ['sense', '감각', '눈썰미로 맞히는 게임', ['color']],
 ];
 const gGroups = () => {
   const on = gamesOn(), used = new Set(G_GROUPS.flatMap(x => x[3]));
@@ -1750,7 +1754,7 @@ function chUpLine(c) {   // 내 티어 칸 아래: 어제보다 · 지난 라운
 function chBlock(c) {
   const gs = gamesOn().filter(([k]) => GAMES[k]);
   const byG = new Map((c.games || []).map(x => [x.g, x]));
-  const GAP = { dance: v => v.toLocaleString('ko-KR') + '점', chase: v => v.toLocaleString('ko-KR') + '점', blast: v => v.toLocaleString('ko-KR') + '점', film: v => v.toLocaleString('ko-KR') + '개', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초' };
+  const GAP = { dance: v => v.toLocaleString('ko-KR') + '점', chase: v => v.toLocaleString('ko-KR') + '점', blast: v => v.toLocaleString('ko-KR') + '점', film: v => v.toLocaleString('ko-KR') + '개', home: v => v.toLocaleString('ko-KR') + 'm', stair: v => v.toLocaleString('ko-KR') + '칸', gear: v => v.toLocaleString('ko-KR') + '점', reaction: v => v + 'ms', cut: v => v + 'ms', num25: v => (v / 1000).toFixed(2) + '초', color: v => (v / 50).toFixed(1) + '%p' };
   const champs = gs.map(([k, g]) => { const x = byG.get(k);
     if (!x) return `<li class="tcc none"><span class="tcc-g">${ic(g.ic)}<b>${g.name}</b></span><span class="tcc-md e">1등 자리 비어 있음</span><p class="tcc-empty">아직 1등이 없어요<small>지금 한 판 하면 바로 1등!</small></p></li>`;
     // 공동 1등(2026-10-30 하율 "누가 했는지, 뭘로 90만 점 찍은 건지 헷갈려"): 메달을 '공동 1등'으로, 기록을 이름 위 한 줄로 올리고 'N명 같은 기록' — 합친 점수로 안 읽히게
@@ -2161,7 +2165,7 @@ function playTicket(game) {
    ② 하던 게임 정리(quitGame)가 오류를 내면 다음 게임이 영영 안 열렸음 → 오류를 삼키고 계속
    ③ 학교 와이파이가 느려 서비스 워커가 옛 social.js를 준 경우(버튼은 새 index.html, 게임 목록은 옛 파일) → 옛 파일을 지우고 새로 고침
    ④ 게임을 여는 중 오류 → 빈 화면 대신 안내 + 새로 고침 버튼 */
-const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm, blast: playBlast, chase: playChase, dance: playDance };
+const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm, blast: playBlast, chase: playChase, dance: playDance, color: playColor };
 function staleReload() {
   try { if (Date.now() - (+sessionStorage.getItem('sg_rl') || 0) < 60e3) { toast('게임을 불러오지 못했어요. 앱을 완전히 닫았다가 다시 열어 주세요'); return; } sessionStorage.setItem('sg_rl', Date.now()); } catch {}
   toast('새 버전을 받는 중이에요…');
@@ -2252,6 +2256,7 @@ async function finish(game, value, detail = '', rounds = []) {   // rounds: 판�
     <div class="row"><button class="btn big" id="again">다시 하기</button><button class="btn ghost" data-rank="${game}" id="toRank">${ic('trophy')}랭킹</button></div></div>`;
   $('#again').onclick = () => play(game);
   if (game === 'num25' && N25 && area.querySelector('.n2-res')) N25.layout(area.querySelector('.result'));   // 1 to 25 2: 결과를 한 화면에(3칸)
+  if (game === 'color') COLOR?.paintDet(area);   // 색감의 신: 결과 색 칸 칠하기(CSP — data-c → CSSOM)
   if (game === 'cut' && area.querySelector('.ctm-rp')) cutLayout(area.querySelector('.result'));   // 편집의 신: 결과를 한 화면에(2칸, 2026-10-28 하율)
   homeRO?.disconnect(); homeRO = null; requestAnimationFrame(fitHome);   // 제목 줄을 결과 칸 폭에 다시 맞춤(게임 칸 기준으로 남아 제목이 두 줄로 꺾이던 것)
   $('#toRank').addEventListener('click', endPlay);
@@ -2731,6 +2736,19 @@ async function playBlast() {
 /* 카체이싱!(2026-10-31 하율 "다함께 차차차처럼 — 플레이 방식까지 최대한 비슷하게, 바로 출시해도 될 정도로", 미리보기 chase-game — 개발자만)
    js/chase.js(그리기·입력) + chase-score.js(규칙 — 서버와 같음). 판마다 시작 티켓 → 그 씨앗으로 차·연료통 배치가 정해지고, 입력 기록으로 서버가 판을 처음부터 다시 돌려 점수를 확인.
    출발 카운트다운(3초) 동안 티켓을 받음. 못 받으면 연습 판(저장 안 됨)으로 달리고 바로 알림. 끝나면 아무 키·화면으로 바로 다음 판(카운트다운) */
+/* 색감의 신(2026-11-02 하율 "5초 동안 색깔 하나를 보여 준 다음 컬러 팔레트에서 골라 그 색에 얼마나 가까운지 퍼센트로", 미리보기 color-game — 개발자만)
+   js/color.js(화면) + color-score.js(점수 — 서버와 같음). 5판 끝나면 finish('color', 놓친 합, …, [목표, 고른 색]×5) → 서버가 다시 계산 */
+let COLOR = null;
+async function playColor() {
+  const quick = reQuick; reQuick = false;
+  const area = stage(ic('color') + ' 색감의 신', '<p class="empty">불러오는 중…</p>');
+  if (!COLOR) { try { COLOR = await import('./color.js').catch(() => import('./color.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!area.isConnected || curGame !== 'color') return;
+  area.innerHTML = '<div id="cgBox"></div>' + RE_ROW;
+  const M = COLOR.createColor($('#cgBox'), { quick, onDone: (v, det, rounds) => { M.destroy(); finish('color', v, det, rounds); } });
+  M.start();
+  quitGame = () => M.destroy();
+}
 let CHASE = null;
 async function playChase() {
   const quick = reQuick; reQuick = false;

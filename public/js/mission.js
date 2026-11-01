@@ -29,13 +29,14 @@ export function playCounts(game, v) {
   if (game === 'dance') return DANCE_MAX - v >= PLAY_MIN.dance;
   return true;
 }
-export const MS_NAME = { home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '기자재 정리!', stair: '영상고 계단 오르기', film: '게퍼 10', blast: 'LED 월 켜기!', chase: '카체이싱!', dance: '선생님 몰래 춤추기', mine: '지뢰찾기', snake: '뱀 게임', n2048: '2048' };
+export const MS_NAME = { color: '색감의 신', home: '집에 가고 싶어!', reaction: '반응속도', num25: '1 to 25', cut: '컷 타이밍', gear: '기자재 정리!', stair: '영상고 계단 오르기', film: '게퍼 10', blast: 'LED 월 켜기!', chase: '카체이싱!', dance: '선생님 몰래 춤추기', mine: '지뢰찾기', snake: '뱀 게임', n2048: '2048' };
 // 목표 기록: v = 서버에 저장되는 값(작을수록 좋음)
 const GOAL = {
   home: { t: '8,000m 넘게 달리기', ok: v => HOME_MAX - v >= 8000 },
   reaction: { t: '평균 280ms 안에 반응하기', ok: v => v <= 280 },
   num25: { t: '15초 안에 25까지 누르기', ok: v => v <= 15000 },
   cut: { t: '오차 합 150ms 안으로 자르기', ok: v => v <= 150 },
+  color: { t: '평균 85% 넘게 맞히기', ok: v => v <= 750 },
   gear: { t: '3,000점 넘게 정리하기', ok: v => GEAR_MAX - v >= 3000 },
   stair: { t: '150칸 넘게 오르기', ok: v => STAIR_MAX - v >= 150 },
   film: { t: '한 판에 65개 넘게 자르기', ok: v => FILM_MAX - v >= 65 },
@@ -56,6 +57,7 @@ const SUM = {
   reaction: { amt: v => v <= 300 ? 1 : 0, n: [5], u: '번', t: n => `평균 300ms 안에 든 판 ${n}번 모으기` },
   num25: { amt: v => v <= 20000 ? 1 : 0, n: [5], u: '번', t: n => `20초 안에 끝낸 판 ${n}번 모으기` },
   cut: { amt: v => v <= 200 ? 1 : 0, n: [5], u: '번', t: n => `오차 합 200ms 안에 든 판 ${n}번 모으기` },
+  color: { amt: v => v <= 1000 ? 1 : 0, n: [5], u: '번', t: n => `평균 80% 넘은 판 ${n}번 모으기` },
 };
 // 미션 종류 → 진행을 올리는 행동(ev) · 화면 '하러 가기' 목적지(go, 없으면 그 게임)
 export const KIND = {
