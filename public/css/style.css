@@ -6793,15 +6793,15 @@ html.art-idle .att-sprite :is(.an-rec,.an-reel,.an-wave,.an-pop,.an-tail,.an-fla
   .pside .pg-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (min-width:1200px){#v-me > .vhead,#v-u > .vhead,#v-me .soc,#v-u .soc{max-width:1060px}}   /* 2026-10-31: 오른쪽 기록 칸 3열 + 왼쪽 명판·1등 패 한 줄이 들어갈 폭 */
-/* 게임 즐겨찾기 별(2026-11-02, js/gfav.js) — 게임 아이콘 오른쪽 위. 빈 별 → 누르면 노란 별 + 앞으로 */
+/* 게임 즐겨찾기 별(2026-11-02, js/gfav.js) — 게임 아이콘 오른쪽 위 모서리에 걸친 큰 별(08:47 하율 "더 크게, 모서리에서 잘 보이게"). 빈 별 → 누르면 노란 별 + 앞으로 */
 .apps .gapp{position:relative}
-.gfav{position:absolute;top:6px;right:6px;z-index:3;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.gfav svg{width:19px;height:19px;fill:none;stroke:color-mix(in srgb,var(--text) 45%,transparent);stroke-width:2;stroke-linejoin:round;transition:fill .15s,stroke .15s}
-@media (hover:hover){.gfav:hover svg{stroke:var(--text)}}
-.gapp.faved .gfav svg{fill:#ffd23f;stroke:var(--ink,#173048);filter:drop-shadow(1px 1px 0 rgba(23,48,72,.35))}
-.gfav.pop svg{animation:gfavPop .32s cubic-bezier(.3,1.6,.5,1)}
-@keyframes gfavPop{0%{transform:scale(.6)}100%{transform:scale(1)}}
-@media (max-width:560px){.gfav{top:3px;right:3px;width:22px;height:22px}.gfav svg{width:16px;height:16px}}
+.gfav{position:absolute;top:-13px;right:-13px;z-index:3;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gfav svg{width:34px;height:34px;overflow:visible;fill:var(--card,#fff);stroke:var(--ink,#173048);stroke-width:2.2;stroke-linejoin:round;paint-order:stroke;filter:drop-shadow(2px 2px 0 rgba(23,48,72,.35));transition:fill .15s,transform .15s}
+@media (hover:hover){.gfav:hover svg{transform:scale(1.1) rotate(-8deg)}}
+.gapp.faved .gfav svg{fill:#ffd23f}
+.gfav.pop svg{animation:gfavPop .34s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gfavPop{0%{transform:scale(.5) rotate(-30deg)}100%{transform:scale(1)}}
+@media (max-width:560px){.gfav{top:-10px;right:-9px;width:34px;height:34px}.gfav svg{width:27px;height:27px;stroke-width:2.4}}
 @media (prefers-reduced-motion:reduce){.gfav.pop svg{animation:none}}
 
 /* ===== 색감의 신(2026-11-02, js/color.js — 미리보기 color-game) ===== */
