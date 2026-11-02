@@ -2194,7 +2194,8 @@ let playSeq = 0;
 async function play(game) {
   if (game.startsWith('c_')) return playCz(game);
   if (game === 'mine' || game === 'snake' || game === 'n2048') return playCz('c_' + game);   // 랭크전 순위 창 '도전하기'   // 캐주얼 게임(2026-10-29, 깃발 casual-games) — GAMES·랭킹·티켓과 따로
-  if (game === 'ball') return playBall();   // 체육 창고 정리!(2026-11-02 시험판, 깃발 ball-game) — GAMES·랭킹·티켓과 따로
+  if (game === 'ball') return playBall();
+  if (game === 'rhythm') return playRhythm();   // 방송실 리듬 배틀(2026-11-02 시험판, 깃발 rhythm-game) — GAMES·랭킹·티켓과 따로   // 체육 창고 정리!(2026-11-02 시험판, 깃발 ball-game) — GAMES·랭킹·티켓과 따로
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
   const fn = PLAYERS[game];
   if (!fn || !GAMES[game]) { staleReload(); return; }
@@ -2232,6 +2233,27 @@ async function playBall() {
     const M = BALL.createBall($('#blBox'), {}); M.start();
     quitGame = () => M.destroy();
   } catch (e) { if (seq === playSeq && curGame === 'ball') gameFail(e); else console.error(e); }
+}
+/* 방송실 리듬 배틀(2026-11-02 하율 "프라이데이 나이트 펌킨 방식 — 내 화면에만", 미리보기 깃발 rhythm-game)
+   js/rhythm.js가 판·노래·판정을 다 함. 시험판이라 서버·랭킹 없이 이 기기 최고 정확도만 */
+let RHY = null;
+async function playRhythm() {
+  const seq = ++playSeq, gate = () => ffOn('rhythm-game', isDev(S.me));
+  if (!gate()) {
+    await Promise.all([meP, loadReleased()]).catch(() => {});
+    if (seq !== playSeq) return;
+    if (!gate()) { toast('아직 열리지 않은 게임이에요'); return; }
+  }
+  try { quitGame?.(); } catch (e) { console.error(e); }
+  quitGame = null; curGame = 'rhythm'; ticket = null; reQuick = false;
+  const area = stage(ic('rhythm') + ' 방송실 리듬 배틀', '<p class="empty">불러오는 중…</p>');
+  try {
+    if (!RHY) RHY = await import('./rhythm.js').catch(() => import('./rhythm.js?r=' + Date.now()));
+    if (seq !== playSeq || !area.isConnected) return;
+    area.innerHTML = '<div id="rbBox"></div>';
+    const M = RHY.createRhythm($('#rbBox'), {}); M.start();
+    quitGame = () => M.destroy();
+  } catch (e) { if (seq === playSeq && curGame === 'rhythm') gameFail(e); else console.error(e); }
 }
 /* 캐주얼 게임(2026-10-29 하율 "구글 플레이 게임즈 미니 게임처럼 캐주얼로 — 내 화면에만"): js/casual.js가 판을 그림
    랭킹·티어·뽑기권·업적·미션 없음(서버 안 거침) → 위 줄엔 나가기만. 2048은 판이 이어지는 게임이라 R/다시 시작 대신 판 안 '새 게임' */
