@@ -1,4 +1,4 @@
-// SVMHS GROUND — 선생님 몰래 춤추기 화면 (2026-10-31 하율: "선생님은 전자칠판 앞에서 수업, 나무 막대기를 한 손에, 네모난 안경, 머리숱 많은 60대 남자 선생님", 미리보기 깃발 dance-game)
+// SVMHS GROUND — 선생님 몰래 춤추기 화면 (2026-10-31 하율: "선생님은 전자칠판 앞에서 수업, 나무 막대기를 한 손에, 네모난 안경, 머리숱 많은 60대 남자 선생님 → 2026-11-02 사회 선생님·약간 곱슬", 미리보기 깃발 dance-game)
 // 규칙·판 진행은 dance-score.js(서버와 같음) — 여기는 그리기·입력·소리만. 판에 영향을 주는 값은 전부 시뮬레이션(s)에서 읽음.
 // 판서 글씨·선생님 걷기·친구들 반응·말풍선은 그림일 뿐(판과 무관). 입력(누름/뗌)은 1/60초 프레임 번호로 기록(rounds) → 서버가 같은 판을 다시 돌려 점수를 확인.
 import * as D from './dance-score.js';
@@ -12,12 +12,12 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const RM = () => matchMedia('(prefers-reduced-motion:reduce)').matches;
 const TOUCHY = () => matchMedia('(pointer:coarse)').matches;
 
-// 칠판 내용(그림만) — 수학 시간
+// 칠판 내용(그림만) — 사회 시간(2026-11-02 하율 "사회 선생님으로", 전엔 수학). 오른쪽 그래프 자리를 피해 줄당 14자 안팎
 const PAGES = [
-  ['이차함수의 그래프', 'y = ax² + bx + c', 'a > 0 → 아래로 볼록', '꼭짓점에서 최솟값'],
-  ['판별식', 'D = b² − 4ac', 'D > 0 : 서로 다른 두 실근', 'D = 0 : 중근'],
-  ['삼각비', 'sin θ = 높이 / 빗변', 'cos θ = 밑변 / 빗변', 'tan θ = 높이 / 밑변'],
-  ['등차수열', 'an = a + (n − 1)d', 'Sn = n(a + l) / 2', '시험에 꼭 나온다!!']];
+  ['수요와 공급', '가격↑ → 수요량↓', '가격↑ → 공급량↑', '만나는 점 = 균형 가격'],
+  ['인권의 의미', '모든 사람의 기본 권리', '천부성·보편성·불가침성', '시험에 꼭 나온다!!'],
+  ['민주 정치의 원리', '국민 주권 · 입헌주의', '입법·행정·사법 분립', '삼권 분립 꼭 외우기'],
+  ['기후와 생활', '열대 : 고상 가옥', '건조 : 흙벽돌집', '한대 : 이글루']];
 const CAUGHT_LINES = ['거기 너!! 뭐 하냐!', '지금 춤추냐?!', '앞으로 나와!', '수업 시간에 무슨 짓이야!'];
 const SLEEP_LINES = ['거기 자는 학생!!', '수업 시간에 졸아?!', '일어나! 뒤로 나가!'];
 
@@ -290,7 +290,10 @@ export function createDance(root, opts = {}) {
       if (i === 0 && b.line > 0) { ctx.fillStyle = '#ffe08a'; ctx.fillRect(LINE_X, LINE_Y[0] + 5, ctx.measureText(L[0]).width, 2); }
     }
     ctx.strokeStyle = 'rgba(125,211,255,.75)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(262, 172); ctx.lineTo(326, 172); ctx.moveTo(294, 182); ctx.lineTo(294, 116); ctx.stroke();
-    if (b.line >= 2) { ctx.strokeStyle = '#8fe8cf'; ctx.lineWidth = 2.2; ctx.beginPath(); for (let x = -26; x <= 26; x += 2) { const y = 152 - ((x + 4) * (x + 4)) * 0.06; x === -26 ? ctx.moveTo(294 + x, y) : ctx.lineTo(294 + x, y); } ctx.stroke(); }
+    // 수요·공급 곡선(사회): 수요 ↘ 하늘색, 공급 ↗ 분홍, 만나는 점
+    if (b.line >= 1) { ctx.strokeStyle = '#8fd8ff'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(268, 124); ctx.quadraticCurveTo(288, 152, 322, 166); ctx.stroke(); }
+    if (b.line >= 2) { ctx.strokeStyle = '#ff9bb0'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(268, 166); ctx.quadraticCurveTo(300, 150, 322, 122); ctx.stroke(); }
+    if (b.line >= 3) { ell(294, 151, 3.2, 3.2); ctx.fillStyle = '#ffe08a'; ctx.fill(); }
   }
   function cursorPos() { const b = V.board, L = PAGES[b.page % PAGES.length], li = Math.min(b.line, L.length - 1); ctx.font = boardFont(li); return { x: LINE_X + ctx.measureText(L[li].slice(0, b.ch)).width, y: LINE_Y[li] - 6 }; }
 
@@ -304,6 +307,9 @@ export function createDance(root, opts = {}) {
     ctx.beginPath(); for (const [px, py, pr] of puffs) { ctx.moveTo(px * r + pr * r, py * r); ctx.arc(px * r, py * r, pr * r, 0, Math.PI * 2); }
     ctx.lineWidth = LW * 2; ctx.strokeStyle = K; ctx.stroke(); ctx.fillStyle = '#e3e6ec'; ctx.fill();
     ctx.fillStyle = '#c3c8d2'; for (const [px, py, pr] of puffs) { ell(px * r + pr * r * 0.25, py * r + pr * r * 0.3, pr * r * 0.55, pr * r * 0.4); ctx.fill(); }
+    // 약간 곱슬(2026-11-02 하율): 덩어리마다 작은 말린 고리 2개
+    ctx.strokeStyle = '#9ea4b1'; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
+    puffs.forEach(([px, py, pr], i) => { for (let j = 0; j < 2; j++) { const a = i * 2.4 + j * 2.9, cx = px * r + Math.cos(a) * pr * r * 0.45, cy = py * r + Math.sin(a) * pr * r * 0.4, cr = pr * r * 0.26; ctx.beginPath(); ctx.arc(cx, cy, cr, a, a + 4.4); ctx.stroke(); } });
     ctx.fillStyle = '#ffffff'; ell(-r * 0.35, -r * 0.75, r * 0.28, r * 0.12, -0.4); ctx.fill();
     ctx.restore();
   }
@@ -339,13 +345,16 @@ export function createDance(root, opts = {}) {
     const shL = [-28, top + 16], shR = [28, top + 16];
     const stick = (hx, hy, a, len = 120) => { ctx.beginPath(); ctx.moveTo(hx - Math.cos(a) * 14, hy - Math.sin(a) * 14); ctx.lineTo(hx + Math.cos(a) * len, hy + Math.sin(a) * len); ctx.lineWidth = 9; ctx.strokeStyle = K; ctx.stroke(); ctx.lineWidth = 5; ctx.strokeStyle = '#c98f45'; ctx.stroke(); ell(hx + Math.cos(a) * len, hy + Math.sin(a) * len, 4, 4); fillInk('#6a4520', 2); };
     if (face === 'back') {
-      stick(-34, -62 - bob, 1.9, 70); hose(shL[0], shL[1], -34, -64 - bob, 12, '#f3f5fa', 6); glove(-34, -62 - bob, 9, Math.PI);
       // 판서 손: 칠판 커서까지 고무줄처럼 쭉(멈추면 살짝 떼고, 흠·곁눈질이면 내림)
       let hx, hy;
       if (tst === 'idle' || tst === 'write') { hx = (V.cx - x) / TS + Math.sin(t * 22) * 1.5; hy = (V.cy - TF) / TS + Math.cos(t * 19) * 1; }
       else if (tst === 'pause') { hx = (V.cx - x) / TS + 6; hy = (V.cy - TF) / TS + 10; }
       else { hx = 34; hy = -64 - bob; }
-      hose(shR[0], shR[1], hx, hy, 12, '#f3f5fa', -10); glove(hx, hy, 9, Math.atan2(hy - shR[1], hx - shR[0]) - Math.PI / 2);
+      // 커서가 몸 가운데보다 왼쪽이면 왼손으로 판서·막대기는 오른손(팔이 목을 가로지르지 않게, 2026-11-02 하율)
+      const lw = hx < 4, sh = lw ? shL : shR, sd = lw ? 1 : -1;
+      if (lw) { stick(34, -62 - bob, Math.PI - 1.9, 70); hose(shR[0], shR[1], 34, -64 - bob, 12, '#f3f5fa', -6); glove(34, -62 - bob, 9, Math.PI); }
+      else { stick(-34, -62 - bob, 1.9, 70); hose(shL[0], shL[1], -34, -64 - bob, 12, '#f3f5fa', 6); glove(-34, -62 - bob, 9, Math.PI); }
+      hose(sh[0], sh[1], hx, hy, 12, '#f3f5fa', 10 * sd); glove(hx, hy, 9, Math.atan2(hy - sh[1], hx - sh[0]) - Math.PI / 2);
       if (tst === 'write' || tst === 'idle') { ctx.beginPath(); ctx.moveTo(hx, hy - 4); ctx.lineTo(hx - 4, hy - 16); ctx.lineWidth = 4; ctx.strokeStyle = K; ctx.stroke(); }
     } else if (ang) {
       const w = RM() ? 0 : Math.sin(t * 28) * 0.15;
@@ -443,7 +452,7 @@ export function createDance(root, opts = {}) {
   // 춤 동작(박자 b): 몸 이동·점프·찌그러짐·기울기, 손·발 위치(서 있는 자세 기준), 팔 휘는 정도
   function hosePose(ds, b) {
     const S = Math.sin(b), C = Math.cos(b), A = Math.abs(S), S2 = Math.sin(b * 2), A2 = Math.abs(S2);
-    switch (ds % 9) {
+    switch (ds) {
       case 0: { const f = Math.tanh(S * 3); return { dx: f * 8, up: A2 * 10, tilt: f * 0.18, L: f > 0 ? [-58, -160, -14] : [-36, -48, 10], R: f > 0 ? [38, -46, -10] : [58, -160, 14], fL: [-14 - f * 6, 0], fR: [14 - f * 6, 0] }; }   // 디스코 찌르기
       case 1: return { dx: S * 10, up: A2 * 8, tilt: S * 0.2, L: [-34 + S * 26, -160, 18 * C], R: [34 + S * 26, -160, -18 * C], fL: [-16, 0], fR: [16, -A * 10] };   // 두 팔 크게 흔들기
       case 2: { const up = S2 > 0; return { dx: 0, up: up ? 14 : 0, tilt: up ? -0.12 : 0.08, L: [-46, -70, 16], R: up ? [26, -172, -8] : [44, -112, -20], fL: [-18, 0], fR: [18, up ? -14 : 0] }; }   // 주먹 위로 쾅
@@ -452,14 +461,21 @@ export function createDance(root, opts = {}) {
       case 5: { const c = A; return { dx: 0, up: c * 8, tilt: 0, L: [-6 - c * 20, -176, 14], R: [6 + c * 20, -176, -14], fL: [-14, 0], fR: [14, 0] }; }   // 머리 위 박수
       case 6: { const a = b * 1.6; return { dx: S * 8, up: A2 * 8, tilt: S * 0.25, L: [-30 + Math.cos(a) * 40, -110 + Math.sin(a) * 40, 20], R: [30 - Math.cos(a) * 40, -110 - Math.sin(a) * 40, -20], fL: [-16, 0], fR: [16, 0] }; }   // 풍차
       case 7: { const j = A; return { dx: 0, up: j * 34, tilt: 0, L: [-52, -168 - j * 8, -10], R: [52, -168 - j * 8, 10], fL: [-22 + j * 8, -j * 14], fR: [22 - j * 8, -j * 14] }; }   // 개구리 점프
+      // 2026-11-02 하율 "책상 위에 올라가는 놈, 책상 짚고 머리 흔드는 애처럼 다양하게" — lift: 몸 전체를 위로(책상 위), fixH: 손을 그 자리 그대로(책상 짚기), hy: 머리 위아래
+      case 9: { const f = Math.tanh(S * 3); return { dx: f * 6, up: A2 * 6, tilt: f * 0.15, lift: -100, L: [-30, -60 - Math.max(0, f) * 110, 10], R: [30, -60 - Math.max(0, -f) * 110, -10], fL: [-14, 0], fR: [14, -A * 6] }; }   // 책상 위로 올라가 번갈아 주먹 쾅
+      case 10: return { dx: 0, up: A2 * 4, tilt: S2 * 0.55, hy: A2 * 12, fixH: 1, L: [-36, -98, 8], R: [36, -98, -8], fL: [-22, 0], fR: [22, 0] };   // 책상 짚고 헤드뱅
+      case 11: { const k3 = A2; return { dx: -10, up: 0, tilt: -0.25 + k3 * 0.1, lift: 0, L: [-50, -150 - k3 * 20, -12], R: [40, -60, -10], fL: [-24, 0], fR: [26, -46], legUp: 1 }; }   // 의자에 한 발 올리고 손가락 하늘로
       default: { const f = Math.tanh(S * 2.5); return { dx: f * 12, up: A2 * 16, tilt: f * 0.3, L: [-48 - Math.max(0, f) * 14, -110 - Math.max(0, f) * 60, 20], R: [48 + Math.max(0, -f) * 14, -110 - Math.max(0, -f) * 60, -20], fL: [-18 + f * 8, -Math.max(0, f) * 16], fR: [18 + f * 8, -Math.max(0, -f) * 16] }; }   // 나: 미친 듯이 흔들기
     }
   }
   const mixP = (A, B, w) => { if (w <= 0) return A; if (w >= 1) return B; const o = { robot: w < 0.5 ? A.robot : B.robot };
     for (const k2 of ['dx', 'up', 'tilt']) o[k2] = A[k2] + (B[k2] - A[k2]) * w;
+    for (const k2 of ['lift', 'hy', 'fixH']) o[k2] = (A[k2] || 0) + ((B[k2] || 0) - (A[k2] || 0)) * w;
+    o.lift -= Math.sin(w * Math.PI) * 30;   // 자세가 바뀔 때 폴짝(책상 위로 뛰어오르기·내려오기)
     for (const k2 of ['L', 'R', 'fL', 'fR']) o[k2] = A[k2].map((v, i) => v + (B[k2][i] - v) * w); return o; };
   // 친구들은 4박마다 다른 춤으로 바뀜(0.6박 동안 부드럽게 섞어서 — 팔다리가 툭 끊기지 않게), '나'는 미친 듯이 흔들기 그대로
-  function kidPose(o, T, b) { if (o.me) return hosePose(o.ds, b); const seg = Math.floor(T / 4), fr = T / 4 - seg, w = clamp((fr - 0.85) / 0.15, 0, 1), d0 = (o.ds + seg * 3) % 8, d1 = (o.ds + seg * 3 + 3) % 8; return mixP(hosePose(d0, b), hosePose(d1, b), w); }
+  function kidPose(o, T, b) { if (o.me) return hosePose(o.ds, b); const seg = Math.floor(T / 4), fr = T / 4 - seg, w = clamp((fr - 0.85) / 0.15, 0, 1), d0 = DANCES[(o.ds + seg * 3) % DANCES.length], d1 = DANCES[(o.ds + seg * 3 + 3) % DANCES.length]; return mixP(hosePose(d0, b), hosePose(d1, b), w); }
+  const DANCES = [0, 1, 9, 2, 3, 10, 4, 5, 11, 6, 7];   // 친구들이 돌아가며 추는 춤(8 = '나' 전용)
   function drawKid(o, x, y, sc, party, extra) {
     ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
     if (party && !RM()) { const bt = V.t * extra.tempo * o.tp * Math.PI + o.ph; ctx.save(); ctx.translate(0, -Math.abs(Math.sin(bt)) * 6 * Math.min(extra.amp, 1.6)); ctx.rotate(Math.sin(bt * 0.5) * 0.06); deskArt(); ctx.restore(); }   // 책상도 들썩
@@ -486,13 +502,13 @@ export function createDance(root, opts = {}) {
     // 발밑 색 조명
     ctx.save(); ctx.globalAlpha = 0.35 * V.pv; ell(0, fy, 52, 13); ctx.fillStyle = GLOW[o.ci % GLOW.length]; ctx.fill(); ctx.restore();
     chairArt();
-    ctx.save(); ctx.translate(0, fy);
+    ctx.save(); ctx.translate(0, fy + (P.lift || 0));
     { const sp = (T + o.ph * 3) % 14; if (sp < 1 && !RM()) { const c = Math.cos(sp * Math.PI * 2); ctx.scale(Math.sign(c || 1) * Math.max(0.45, Math.abs(c)), 1); } }   // 가끔 제자리 한 바퀴(친구마다 다른 때)
     const hipY = -46 - up, top = hipY - 54 * sy2, cx = dx;
     // 다리(고무호스) · 큰 신발
     const legC = o.sk ? SKIN0 : o.p, sockC = '#ffffff';
     for (const [hx, f, side] of [[-10, P.fL, -1], [10, P.fR, 1]]) {
-      const fx = f[0] * amp * 0.9 + dx * 0.3, fyy = f[1] * amp - up * 0.15;
+      const fx = f[0] * amp * 0.9 + dx * 0.3, fyy = P.legUp && side > 0 ? f[1] : f[1] * amp - up * 0.15;
       hose(cx + hx, hipY + 6, fx, fyy - 6, 13, legC, side * (8 + up * 0.3));
       if (o.sk) hose((cx + hx + fx) / 2 + side * 3, (hipY + fyy) / 2 + 8, fx, fyy - 6, 13, sockC, side * 3);
       shoeH(fx, fyy + 2, 10, '#2f2a33', side);
@@ -508,9 +524,9 @@ export function createDance(root, opts = {}) {
     if (!RM() && !P.robot) { ctx.globalAlpha = 0.22; for (const [sh, p] of [[shL, P0.L], [shR, P0.R]]) { const ea = Math.min(amp, 1.2), hx = cx + p[0] * ea * 0.9, hy = p[1] * ea * 0.9 - up * 0.9 + 8; hose(sh[0], sh[1], hx, hy, 11, o.c, p[2]); } ctx.globalAlpha = 1; }
     // 팔(고무호스) + 장갑
     const hands = [];
-    for (const [sh, p] of [[shL, P.L], [shR, P.R]]) { const ea = Math.min(amp, 1.2), hx = cx + p[0] * ea * 0.9, hy = p[1] * ea * 0.9 - up * 0.9 + 8; hose(sh[0], sh[1], hx, hy, 12, o.c, p[2] * Math.min(amp, 1.4)); hands.push([hx, hy, Math.atan2(hy - sh[1], hx - sh[0]) - Math.PI / 2]); }
+    for (const [sh, p] of [[shL, P.L], [shR, P.R]]) { const ea = Math.min(amp, 1.2), fh = P.fixH || 0, hx = (cx + p[0] * ea * 0.9) * (1 - fh) + p[0] * fh, hy = (p[1] * ea * 0.9 - up * 0.9 + 8) * (1 - fh) + (p[1] - (P.lift || 0)) * fh; hose(sh[0], sh[1], hx, hy, 12, o.c, p[2] * Math.min(amp, 1.4)); hands.push([hx, hy, Math.atan2(hy - sh[1], hx - sh[0]) - Math.PI / 2]); }
     // 머리(휘날림)
-    kidHead(o, cx + P.tilt * 10, shY - 30, 27, Math.sin(b * 2 + 1) * amp, P.tilt * amp);
+    kidHead(o, cx + P.tilt * 10, shY - 30 + (P.hy || 0), 27, Math.sin(b * 2 + 1) * amp, P.tilt * amp);
     for (const [hx, hy, a] of hands) glove(hx, hy, 10, a, 1.1);
     // 속도선 · 땀방울
     if (!RM() && amp > 1.2) { ctx.strokeStyle = K; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; for (const d of [-1, 1]) { const sx = cx + d * 48, sy = shY - 10 + Math.sin(b * 3 + d) * 8; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + d * 10, sy - 4); ctx.moveTo(sx + d * 2, sy + 10); ctx.lineTo(sx + d * 12, sy + 8); ctx.stroke(); } }
