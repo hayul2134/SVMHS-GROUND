@@ -54,7 +54,7 @@ const GAMES = {
   film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 막히면 새 판, 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '개' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   // 색감의 신(2026-11-02 하율 "5초 동안 색을 보여 주고 팔레트에서 골라 얼마나 가까운지 %로", 미리보기 깃발 color-game — 개발자만): 서버엔 5판 놓친 %(0.1%) 합 → 작을수록 1등
-  color: { ff: 'color-game', name: '색감의 신', ic: 'color', desc: '5초 동안 본 색을 팔레트에서 똑같이! 5번 평균 정확도(%)', fmt: v => '평균 ' + colorPct(v) },
+  color: { ff: 'color-game', noTier: true, name: '색감의 신', ic: 'color', desc: '5초 동안 본 색을 팔레트에서 똑같이! 5번 평균 정확도(%)', fmt: v => '평균 ' + colorPct(v) },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에, 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 게임 안 '랭크전'만 순위·티어 · '자유'는 이 기기 기록
@@ -1985,10 +1985,10 @@ async function openRank(game, scope = 'week') {
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.casual ? (gt ? `일반 모드 점수 순위예요${scope === 'week' ? ' (이번 주 기록)' : scope === 'round' ? ' (이번 라운드 기록)' : ''}` : `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}`) : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요' : '각자 최고 기록으로 순위를 매겨요';
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.casual ? (gt ? `일반 모드 점수 순위예요${scope === 'week' ? ' (이번 주 기록)' : scope === 'round' ? ' (이번 라운드 기록)' : ''}` : `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}`) : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? (g.noTier ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 재미용 순위라 티어와는 상관없어요' : '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요') : '각자 최고 기록으로 순위를 매겨요';
       if (!g.casual && (scope === 'week' || scope === 'round')) {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
         const wk = scope === 'week', k = rkInfo(wk);
-        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
+        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${g.noTier ? (wk ? '이번 주 기록 순위 (재미용 · 티어 X)' : '이번 라운드 기록 순위 (재미용 · 티어 X)') : wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
         if (!r.list.length) $('#rankList').innerHTML = `<li class="empty">${wk ? '이번 주' : '이번 라운드'} 기록이 아직 없어요. 지금 하면 1등!</li>`;
       }
       // 내 자리(2026-10-28 하율 "랭킹 누르면 자신이 어디 위치에 있는지 바로"): 50등 밖이면 목록 끝에 ⋯ + 내 줄, 기록이 없으면 '기록 없음' 줄

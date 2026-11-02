@@ -31,7 +31,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   reaction: { min: 80, max: 1500, play: 4000 },      // 반응속도 5번 평균 (5판 대기 합 최소 약 3.65초 — social.js rxDelay, 2026-10-28 5000→4000) · 하한 140 → 120 (2026-10-26) → 100 (2026-10-27 하율) → 80 (2026-10-29 하율 "봇·오토클릭만 잡게 널널하게")
   num25: { min: 4000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기 · 하한 5000 → 4000 (2026-10-27 하율: 모바일은 훨씬 쉬움)
   cut: { min: 15, max: 6000, play: 5000 },
-  color: { min: 0, max: COLOR_MAX, play: 20000, ff: 'color-game', tierOn: true },   // 색감의 신(2026-11-02 미리보기): 5판 '놓친 %' 합(0.1% 단위, 0~5000) — 판마다 5초 보기라 25초보다 빨리 끝날 수 없음(여유 두고 20초). 서버가 [목표, 고른 색]×5로 다시 계산(color-score.js)            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
+  color: { min: 0, max: COLOR_MAX, play: 20000, ff: 'color-game', noTier: true },   // 색감의 신(2026-11-02 미리보기, 11/2 22:37 하율 "티어 빼고 기록실은 그냥 냅둬" — 재미용: 랭킹·기록실 O, 티어 X — 정답 색을 캡처·도구로 알 수 있어 상위 조작을 못 가림): 5판 '놓친 %' 합(0.1% 단위, 0~5000) — 판마다 5초 보기라 25초보다 빨리 끝날 수 없음(여유 두고 20초). 서버가 [목표, 고른 색]×5로 다시 계산(color-score.js)            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
   home: { min: 1, max: HOME_MAX - 1, play: 0 },   // (2026-10-29 '11/9부터 캐주얼'은 같은 날 하율 "모두 랭크에"로 취소)        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
   gear: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
@@ -1762,7 +1762,7 @@ async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   const startMs = Date.UTC(+from.slice(0, 4), +from.slice(4, 6) - 1, +from.slice(6, 8)) - 9 * 36e5;   // 라운드 첫날 0시(KST)
   const bans = (await db.prepare('SELECT uid, reason FROM bans WHERE until = 0 OR until > ?1').bind(startMs).all()).results;
   const out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '')).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 = 제외
-  const games = Object.entries(GAMES).filter(([, g]) => !isCas(g, from)).filter(([, g]) => !g.ff || (ffOn(g.ff, gt === 2) && (g.tierOn || (g.tierFrom && from >= g.tierFrom.replace(/-/g, '')))));   // gt 2 = 개발자 미리보기: 아직 안 연 게임도 같이 계산
+  const games = Object.entries(GAMES).filter(([, g]) => !isCas(g, from) && !g.noTier).filter(([, g]) => !g.ff || (ffOn(g.ff, gt === 2) && (g.tierOn || (g.tierFrom && from >= g.tierFrom.replace(/-/g, '')))));   // gt 2 = 개발자 미리보기: 아직 안 연 게임도 같이 계산
   const gOn = gt === 2 || (gt === 1 && (from >= GEAR_TIER_FROM || to >= GEAR_TIER_FROM && kstYmd() >= GEAR_TIER_FROM));
   const rOnly = gtrOn(gt);   // 일반(gearn) 빼고 타임어택만
   if (gOn) for (const k of rOnly ? ['gear'] : ['gear', 'gearn']) if (!games.some(([x]) => x === k)) games.push([k, GAMES[k]]);
