@@ -144,6 +144,32 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
   if (h?.st !== 4 || !ok) fails.push(`보관 검사: 게임 시작 때 자동 반영 안 됨 (st ${h?.st}, 기록 ${ok})`);
   sq.prepare("DELETE FROM errs WHERE msg LIKE '연기검사:%'").run();
 }
+// 카체이싱! 긴 판 나눠 다시 돌리기 검사(2026-11-02): 긴 판은 chasechk로 나눠 돌린 뒤 저장 → 바로 반영 · 미리 안 돌린 긴 판은 보류(5xx 아님) · 규칙 판 번호 다르면 보류
+{
+  RELEASED.add('chase-game');
+  cookie = '';
+  await call('POST', 'signup', { handle: 'smoke_c1', name: '연기검사c1', pw: 'zq8!kd02xa', grade: 2, cls: 3, club: '' });
+  const { bot } = await import(pathToFileURL(resolve('tools/check/chase-bot.mjs')).href);
+  const longRun = tk => { const { s, rounds } = bot(CH.seedOf(tk), { react: 8, hz: 75, err: 0 }); return s.overF > CH.CHUNK_F * 2 ? { value: CH.CHASE_MAX - CH.scoreOf(s), rounds } : null; };
+  const go = async (pre, rv) => {
+    let tk = null, b = null;
+    for (let i = 0; i < 8 && !b; i++) { const st = await call('POST', 'start', { game: 'chase' }); tk = st.j?.ticket; if (!tk) return { err: 'no ticket ' + JSON.stringify(st.j) }; b = longRun(tk); }   // 씨앗마다 봇 결과가 정해져 있어 짧게 끝나면 새 판
+    if (!b) return { err: 'long run 못 만듦' };
+    skew += b.rounds[0] * 1000 / 60 + 5000;
+    let calls = 0;
+    if (pre) for (;;) { const r = await call('POST', 'chasechk', { ticket: tk, rounds: b.rounds }); calls++; if (r.s !== 200) return { err: 'chasechk ' + r.s + JSON.stringify(r.j) }; if (r.j.done) break; if (calls > 400) return { err: 'chasechk 안 끝남' }; }
+    const r = await call('POST', 'score', { game: 'chase', ticket: tk, ...b, rv });
+    return { r, calls, f: b.rounds[0] };
+  };
+  const a = await go(true, CH.RULE_V);
+  if (a.err || a.r.s !== 200 || a.r.j?.held) fails.push(`카체이싱! 긴 판(나눠 돌림) 저장 실패 → ${a.err || a.r.s + ' ' + JSON.stringify(a.r.j).slice(0, 200)}`);
+  else if (sq.prepare("SELECT COUNT(*) AS n FROM replay_chk").get().n) fails.push('카체이싱! 저장 뒤 replay_chk가 안 지워짐');
+  const b2 = await go(false, CH.RULE_V);
+  if (b2.err || b2.r.s !== 200 || !b2.r.j?.held) fails.push(`카체이싱! 미리 안 돌린 긴 판이 보류 안 됨 → ${b2.err || b2.r.s + ' ' + JSON.stringify(b2.r.j).slice(0, 200)}`);
+  const c3 = await go(true, CH.RULE_V + 1);
+  if (c3.err || c3.r.s !== 200 || !c3.r.j?.held) fails.push(`카체이싱! 규칙 판 번호 다른 판이 보류 안 됨 → ${c3.err || c3.r.s + ' ' + JSON.stringify(c3.r.j).slice(0, 200)}`);
+  if (!a.err) console.log(`카체이싱! 긴 판 ${(a.f / 60).toFixed(0)}초 → chasechk ${a.calls}번 나눠 확인 후 저장`);
+}
 // LED 월 점수 ×10 검사(2026-10-31): 새로 고침 전 예전 화면이 보낸 1배 점수도 보류 없이 10배로 저장돼야 함
 {
   cookie = '';

@@ -135,7 +135,15 @@ export const ACH = [
   A('ch_8', 'chase', 3, '컷 없이 원테이크', '한 판에 아슬아슬 콤보 x15 만들기', { t: 'live', ch: 1 }),
   A('ch_x', 'chase', 1, '출발하자마자 컷!', '100m도 못 가고 부딪히기', { t: 'live', hid: 1 }),
   A('ch_y', 'chase', 2, '주유 경고등 무시', '기름이 떨어져서 멈추기', { t: 'live', hid: 1 }),
-  A('ch_z', 'chase', 2, '도로 위 볼링', '한 판에 부스터로 차 10대 날려 버리기', { t: 'live', hid: 1 }),
+  A('ch_z', 'chase', 2, '도로 위 볼링', '한 판에 부스터로 차 30대 날려 버리기', { t: 'live', hid: 1 }),   // 2026-11-02 10 → 30(봇 판 절반이 16대 넘게 날림)
+  // 2026-11-02 출시 전 추가(슬립스트림·점프대·연료 — 봇 42판 분포로 기준: 슬립 점수 중앙 1,484·90% 2,150 / 점프대 중앙 1·최대 4 / 연료통 90% 4 / 거리 90% 8,058m)
+  A('ch_r', 'chase', 1, '스턴트 데뷔', '사다리차 점프대로 날아오르기', { t: 'live' }),
+  A('ch_9', 'chase', 2, '바람 타는 법', '한 판에 슬립스트림으로 2,000점 더 얻기', { t: 'live' }),
+  A('ch_f', 'chase', 2, '주유소 VIP', '한 판에 연료통 5개 먹기', { t: 'live' }),
+  A('ch_m', 'chase', 3, '고속도로 완주', '한 판에 10,000m 넘게 달리기', { t: 'live' }),
+  A('ch_r2', 'chase', 3, '하늘길 개통', '한 판에 점프대 4번 타기', { t: 'live', ch: 1 }),
+  A('ch_w', 'chase', 1, '직진 본능', '차선을 한 번도 안 바꾸고 500m 넘게 달리기', { t: 'live', hid: 1 }),
+  A('ch_v', 'chase', 2, '부스터 중독', '한 판에 부스터 8번 켜기', { t: 'live', hid: 1 }),
   // 선생님 몰래 춤추기 (점수) — 2026-10-31. 키는 저장값이라 바꾸지 말 것
   A('dc_1', 'dance', 1, '첫 스텝', '첫 판 춤추기', { t: 'first' }),
   A('dc_2', 'dance', 1, '뒷자리 댄서', '500점 넘게 춤추기', { t: 'hi', v: 500 }),
@@ -201,7 +209,14 @@ function liveOk(k, g, v, r, x) {
     case 'ch_8': return g === 'chase' && !x?.err && (x?.maxCombo || 0) >= 15;
     case 'ch_x': return g === 'chase' && !x?.err && x?.why !== 'fuel' && (x?.m ?? 999) < 100;
     case 'ch_y': return g === 'chase' && !x?.err && x?.why === 'fuel';
-    case 'ch_z': return g === 'chase' && !x?.err && (x?.smash || 0) >= 10;
+    case 'ch_z': return g === 'chase' && !x?.err && (x?.smash || 0) >= 30;
+    case 'ch_r': return g === 'chase' && !x?.err && (x?.ramps || 0) >= 1;
+    case 'ch_9': return g === 'chase' && !x?.err && (x?.slipPts || 0) >= 2000;
+    case 'ch_f': return g === 'chase' && !x?.err && (x?.cans || 0) >= 5;
+    case 'ch_m': return g === 'chase' && !x?.err && (x?.m || 0) >= 10000;
+    case 'ch_r2': return g === 'chase' && !x?.err && (x?.ramps || 0) >= 4;
+    case 'ch_w': return g === 'chase' && !x?.err && (x?.m || 0) >= 500 && n.slice(1).every(e => e % 8 === 4);
+    case 'ch_v': return g === 'chase' && !x?.err && (x?.boosts || 0) >= 8;
   }
   return false;
 }

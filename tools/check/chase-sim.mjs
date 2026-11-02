@@ -5,35 +5,7 @@ import { resolve } from 'node:path';
 const C = await import(pathToFileURL(resolve('public/js/chase-score.js')).href);
 const N = +process.argv[2] || 30;
 
-// 봇: 판단할 때마다 판을 복사해 몇 가지 행동(왼쪽·가만히·오른쪽 × 점프 여부)을 미리 돌려 보고 가장 오래 버티는 쪽을 고름.
-// react = 판단 주기(프레임) · hz = 미리 보는 프레임 · err = 판단을 망칠 확률(그 사이 가만히)
-export function bot(seed, skill) {
-  const s = C.newSim(seed), evs = [];
-  let t = 0;
-  const A = [[0, 0], [-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1], [-2, 0], [2, 0]];   // [차선 이동, 점프]
-  const act = (c, a, rec) => {
-    for (let i = 0; i < Math.abs(a[0]); i++) { const code = a[0] < 0 ? 0 : 2; if (rec) evs.push(C.enc(c.f, code)); C.input(c, code); }
-    if (a[1]) { if (rec) evs.push(C.enc(c.f, 4)); C.input(c, 4); }
-  };
-  const val = (a, j2 = -1) => {
-    const c = structuredClone(s); c.fx = false; act(c, a, false);
-    let k = 0;
-    for (; k < skill.hz && !c.over; k++) { if (k === j2) C.input(c, 4); C.step(c); }
-    return (c.over ? k * 100 : skill.hz * 100 + 1000) + C.scoreOf(c) * 0.5 + c.fuel * (s.fuel < 45 ? 3 : 0.3) - (a[1] ? 30 : 0) - Math.abs(a[0]) * 4 - Math.abs(c.p.lane - 2) * 3;
-  };
-  const valW = a => { let v = val(a); if (!a[1] && s.items.some(it => it.t === 'wall' && !it.got)) for (let j = skill.react; j < skill.hz; j += skill.react) v = Math.max(v, val(a, j) - 30); return v; };
-  while (!s.over && s.f < C.MAX_F) {
-    if (t <= 0) {
-      t = skill.react;
-      if (Math.random() > skill.err) { let bv = -Infinity, best = A[0]; for (const a of A) { const v = valW(a); if (v > bv) { bv = v; best = a; } } act(s, best, true); }
-    }
-    t--;
-    C.step(s);
-  }
-  return { s, rounds: [s.overF, ...evs] };
-}
-
-const SK = { 잘함: { react: 8, hz: 75, err: 0.01 }, 보통: { react: 12, hz: 60, err: 0.04 }, 처음: { react: 16, hz: 50, err: 0.08 } };
+import { bot, SK } from './chase-bot.mjs';
 for (const [nm, sk] of Object.entries(SK)) {
   const out = [];
   for (let i = 0; i < N; i++) {
@@ -55,4 +27,16 @@ for (const [nm, sk] of Object.entries(SK)) {
   for (let i = 0; i < N2; i++) { const t0 = performance.now(); C.simulate(best.seed, rounds); t += performance.now() - t0; }
   if (process.env.SAVE) (await import('node:fs')).writeFileSync('/tmp/long.json', JSON.stringify({ seed: best.seed, rounds }));
   console.log(`긴 판 ${(rounds[0] / 60).toFixed(0)}초: 다시 돌리기 평균 ${(t / N2).toFixed(1)}ms · 프레임당 ${(t / N2 * 1000 / rounds[0]).toFixed(2)}µs`);
+}
+// 나눠 다시 돌리기(서버 chasechk): CHUNK_F씩 돌리고 판 상태를 JSON으로 저장했다 다시 읽어 이어 돌려도 한 번에 돌린 것과 같은지
+{
+  let bad = 0, maxMs = 0;
+  for (let i = 0; i < 8; i++) {
+    const seed = 4242 + i, { rounds } = bot(seed, SK.잘함), full = C.simulate(seed, rounds);
+    let ctx = JSON.parse(JSON.stringify(C.simBegin(seed))), x = null, calls = 0;
+    while (!x) { const t0 = performance.now(); x = C.simRun(ctx, rounds, C.CHUNK_F); maxMs = Math.max(maxMs, performance.now() - t0); ctx = JSON.parse(JSON.stringify(ctx)); calls++; }
+    if (JSON.stringify(x) !== JSON.stringify(full)) { bad++; console.log('나눠 돌리기 불일치!', seed, x, full); }
+  }
+  console.log(bad ? '❌ 나눠 돌리기 불일치 ' + bad : `✅ 나눠 돌리기 8판 일치 · 한 번(${C.CHUNK_F}프레임) 최대 ${maxMs.toFixed(1)}ms`);
+  if (bad) process.exit(1);
 }

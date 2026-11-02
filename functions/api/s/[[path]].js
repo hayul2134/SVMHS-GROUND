@@ -8,7 +8,7 @@ import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
 import { BLAST_MAX, SCALE as BLAST_SCALE, seedOf as blastSeed, replay as blastReplay } from '../../../public/js/blast-score.js';
-import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim } from '../../../public/js/chase-score.js';
+import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim, simCheck as chaseCheck, simBegin as chaseBegin, simRun as chaseStep, CHUNK_F as CHASE_CHUNK, RULE_V as CHASE_RV } from '../../../public/js/chase-score.js';
 import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim } from '../../../public/js/dance-score.js';
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
@@ -59,10 +59,22 @@ const sec = ms => (ms / 1000).toFixed(ms < 10000 ? 2 : 1) + '초';
 const heldR = r => JSON.stringify(r.slice(0, 7000).map(x => Math.round(+x) || 0));
 // 카체이싱! 다시 돌리기는 판 길이만큼 CPU를 씀(2분 판 약 5~10ms) → 같은 요청 안에서 검사·업적이 한 번만 돌게 마지막 결과를 기억
 let chaseLast = null;
+const chaseKey = (ticket, n) => ticket + ':' + n.length + ':' + n[0] + ':' + n[n.length - 1];
+// 2026-11-02: 긴 판(CHASE_CHUNK 프레임 넘게)은 한 요청에서 처음부터 다시 돌리면 무료 CPU 한도(10ms)를 넘어 요청이 통째로 죽음(기록·보관 다 안 됨)
+//   → 화면이 저장 전에 'POST chasechk'를 여러 번 불러 나눠 돌려 둠(replay_chk) → 저장 때 그 결과를 이 캐시에 넣어 씀(chasePre).
+//   미리 돌린 결과가 없는 긴 판은 다시 돌리지 않고 보류(관리자 확인) — 요청이 죽는 것보다 나음
 function chaseRun(ticket, n) {
-  const key = ticket + ':' + n.length + ':' + n[0] + ':' + n[n.length - 1];
-  if (chaseLast?.key !== key) chaseLast = { key, x: chaseSim(chaseSeed(ticket), n) };
+  const key = chaseKey(ticket, n);
+  if (chaseLast?.key !== key) chaseLast = { key, x: n[0] > CHASE_CHUNK ? (chaseCheck(n) || { err: '긴 판인데 미리 확인한 결과가 없어요(새로 고침 후 다시 저장하면 확인돼요)' }) : chaseSim(chaseSeed(ticket), n) };
   return chaseLast.x;
+}
+// 판 기록 지문(FNV-1a) — 나눠 돌리는 중에 기록이 바뀌면 처음부터
+const roundsHash = n => { let h = 0x811c9dc5; for (const x of n) { let v = x | 0; for (let i = 0; i < 4; i++) { h ^= v & 255; h = Math.imul(h, 0x01000193); v >>>= 8; } h ^= (x / 4294967296) | 0; } return (h >>> 0).toString(36) + ':' + n.length; };
+async function chasePre(db, me, ticket, n) {
+  if (!(n[0] > CHASE_CHUNK)) return;
+  const row = await db.prepare('SELECT v FROM replay_chk WHERE k = ?1').bind(`chase:${me.id}:${ticket}`).first().catch(() => null);
+  let o = null; try { o = JSON.parse(row?.v || 'null'); } catch {}
+  if (o?.x && o.h === roundsHash(n)) chaseLast = { key: chaseKey(ticket, n), x: o.x };
 }
 // 선생님 몰래 춤추기도 같은 방식(판 길이만큼 다시 돌림)
 let danceLast = null;
@@ -565,7 +577,7 @@ export async function onRequest({ request: req, env, params }) {
     const origin = req.headers.get('origin');
     if (origin && origin !== new URL(req.url).origin) return err('forbidden', 403);
     if (req.headers.get('sec-fetch-site') === 'cross-site') return err('forbidden', 403);
-    const cap = path === 'feedback' ? 4 << 20 : path === 'score' ? 65536 : 32768;   // 의견(사진 5장까지)만 4MB · 기록 저장은 64KB(카메라 가방 정리! 판 기록이 놓기마다 한 칸 — 긴 판은 30KB 가까이) · 나머지 API는 32KB 넘는 요청이 없음
+    const cap = path === 'feedback' ? 4 << 20 : path === 'score' || path === 'chasechk' ? 65536 : 32768;   // 의견(사진 5장까지)만 4MB · 기록 저장은 64KB(카메라 가방 정리! 판 기록이 놓기마다 한 칸 — 긴 판은 30KB 가까이) · 나머지 API는 32KB 넘는 요청이 없음
     if (+(req.headers.get('content-length') || 0) > cap) return err(path === 'feedback' ? '사진 용량이 너무 커요' : 'too large', 413);
     if (!(req.headers.get('content-type') || '').includes('application/json')) return err('bad content type', 415);
     try { body = await req.json(); } catch { return err('bad body'); }
@@ -1239,6 +1251,24 @@ const ROUTES = {
     return json({ ticket });
   }),
 
+  // 카체이싱! 긴 판 나눠 다시 돌리기(2026-11-02): 한 번에 CHASE_CHUNK 프레임만 돌리고 판 상태를 replay_chk에 저장 → 끝나면 { done }. 티켓은 쓰지 않고 있는지만 봄
+  'POST chasechk': needMe(async ({ db, me, body }) => {
+    const ticket = String(body.ticket || ''), n = Array.isArray(body.rounds) ? body.rounds.map(x => Math.round(+x) || 0) : null;
+    if (!ffOn(GAMES.chase.ff, isAdm(me)) || !TICKET_RE.test(ticket) || !n?.length) return err('기록이 이상해요');
+    if (!(n[0] > CHASE_CHUNK) || chaseCheck(n)) return json({ ok: true, done: true });   // 짧은 판·형식이 틀린 판은 저장 때 바로 검사
+    if (!(await db.prepare('SELECT 1 AS o FROM rl WHERE k = ?1 AND reset > ?2').bind(`tk:${me.id}:chase:${ticket}`, Date.now() - TK_GRACE).first())) return err('게임을 다시 시작해 주세요');
+    const k = `chase:${me.id}:${ticket}`, h = roundsHash(n), row = await db.prepare('SELECT v FROM replay_chk WHERE k = ?1').bind(k).first();
+    let o = null; try { o = JSON.parse(row?.v || 'null'); } catch {}
+    if (o?.h !== h) o = { h, ctx: chaseBegin(chaseSeed(ticket)), x: null };
+    if (!o.x) {
+      o.x = chaseStep(o.ctx, n, CHASE_CHUNK);
+      if (o.x) o.ctx = null;
+      await db.prepare('INSERT INTO replay_chk (k, v, at) VALUES (?1, ?2, ?3) ON CONFLICT (k) DO UPDATE SET v = excluded.v, at = excluded.at').bind(k, JSON.stringify(o), Date.now()).run();
+      if (!row) await db.prepare('DELETE FROM replay_chk WHERE at < ?1').bind(Date.now() - 2 * 86400e3).run().catch(() => {});   // 이틀 지난 것 정리(판마다 한 번)
+    }
+    return json({ ok: true, done: !!o.x, p: o.x ? 1 : Math.min(0.99, (o.ctx?.s?.f || 0) / n[0]) });
+  }),
+
   'POST score': needMe(async ({ db, me, body }) => {
     let game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
@@ -1249,7 +1279,8 @@ const ROUTES = {
     if (!tk) return err('게임을 다시 시작해 주세요');
     // 티켓을 쓴 뒤 서버 오류가 나면 기록이 사라지고 다시 보내도 '게임을 다시 시작해 주세요'가 됐음(2026-10-29 bests null.b로 약 150판 유실)
     // → 오류가 나면 티켓을 되돌려 놓고 던짐 → 화면이 같은 티켓으로 한 번 더 보냄(saveScore)
-    try { return await scoreIn(db, me, body, game, v, ticket, g, tk); }
+    if (game === 'chase' && Array.isArray(body.rounds)) await chasePre(db, me, ticket, body.rounds.map(x => Math.round(+x) || 0));
+    try { const out = await scoreIn(db, me, body, game, v, ticket, g, tk); if (game === 'chase') await db.prepare('DELETE FROM replay_chk WHERE k = ?1').bind(`chase:${me.id}:${ticket}`).run().catch(() => {}); return out; }
     catch (e) {
       // 그래도 서버 오류면 기록을 버리지 않고 '서버 오류 보관'(held_scores st 3)으로 맡겨 둠 → 고쳐진 뒤 그 학생이 아무 게임이나 시작할 때 원래 검사를 그대로 거쳐 자동 반영(rescueReplay)
       // (2026-10-29 하율 "이런 일 다시는 없게": 같은 버그면 다시 보내도 또 실패해서 약 150판이 사라졌음). 보관마저 실패하면(DB 한도 등) 예전처럼 티켓 되돌리고 던짐
@@ -1836,6 +1867,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
+      : game === 'chase' && body.rv != null && +body.rv !== CHASE_RV ? H(`규칙이 바뀌기 전 판(판 ${body.rv} → 지금 ${CHASE_RV})`, '게임 규칙이 바뀌기 전에 한 판이라 개발자가 확인한 뒤 반영돼요.')
       : checkRounds(game, v, body.rounds, elapsed, ticket);
     if (why) {
       const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();

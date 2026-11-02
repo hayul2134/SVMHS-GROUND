@@ -283,19 +283,34 @@ export function step(s) {
 }
 
 // 서버·검사용: 판 기록 [끝난 프레임, ...입력]을 처음부터 다시 돌림 → { score, m, f, why, near, maxCombo, boosts, smash, coins, cans, jumps, boxes } 또는 { err }
-export function simulate(seed, rounds) {
+// 규칙 판 번호(2026-11-02): 규칙(이 파일의 수치·계산)을 바꾸면 1 올릴 것 → 서버는 다른 판 번호로 둔 기록을 '규칙이 바뀌기 전 판'으로 보류(관리자 확인)
+export const RULE_V = 1;
+// 나눠 다시 돌리기(2026-11-02): 서버 요청 하나의 CPU 한도(무료 10ms) 안에 들게 긴 판은 CHUNK_F 프레임씩 여러 요청에 나눠 돌림
+//   simBegin → simRun(ctx, rounds, 최대 프레임)을 끝날 때까지 반복. ctx는 JSON으로 저장했다 이어 돌려도 결과가 같음(판 상태가 숫자·문자·배열뿐)
+export const CHUNK_F = 600;   // 10초 분량 — 처음 도는 서버(JIT 전)에서 1200프레임이 약 20ms 걸려서 반으로
+export function simCheck(rounds) {
   const end = rounds[0], evs = rounds.slice(1);
   if (!(end >= 1 && end <= MAX_F)) return { err: '끝난 시각이 이상해요' };
   if (evs.length > MAX_EV) return { err: '입력이 너무 많아요' };
-  const s = newSim(seed);
   let k = 0, prev = 0;
   for (const x of evs) { const e = dec(x); if (!(e.f >= 0) || e.f < prev || e.c > 4 || e.f > end) return { err: `${k + 1}번째 입력이 맞지 않아요`, k }; prev = e.f; k++; }
-  k = 0;
-  while (!s.over && s.f < end + 2) {
-    while (k < evs.length && dec(evs[k]).f <= s.f) input(s, dec(evs[k++]).c);
-    step(s);
+  return null;
+}
+export const simBegin = seed => ({ s: newSim(seed), k: 0 });
+export function simRun(ctx, rounds, maxF = Infinity) {
+  const end = rounds[0], s = ctx.s;
+  let k = ctx.k, n = 0;
+  while (!s.over && s.f < end + 2 && n < maxF) {
+    while (k + 1 < rounds.length && dec(rounds[k + 1]).f <= s.f) input(s, dec(rounds[1 + k++]).c);
+    step(s); n++;
   }
+  ctx.k = k;
+  if (!s.over && s.f < end + 2) return null;   // 아직 덜 돌림
   if (!s.over) return { err: '판이 끝나지 않았어요' };
   if (s.overF !== end) return { err: `판이 끝난 시각이 달라요(${end} → ${s.overF})` };
   return { score: scoreOf(s), m: metersOf(s), f: s.overF, why: s.over, near: s.near, ramps: s.ramps, slipPts: s.slipPts, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, jumps: s.jumps, boxes: s.boxes };
+}
+export function simulate(seed, rounds) {
+  const bad = simCheck(rounds); if (bad) return bad;
+  return simRun(simBegin(seed), rounds);
 }

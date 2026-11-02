@@ -11,7 +11,7 @@ import { GEAR_MAX, GEAR_TIME } from './gear-score.js';
 import { STAIR_MAX, floorName as stairFloor } from './stair-score.js';
 import { FILM_MAX, seedOf } from './film-score.js';
 import { BLAST_MAX, seedOf as blastSeed } from './blast-score.js';
-import { CHASE_MAX, seedOf as chaseSeed } from './chase-score.js';
+import { CHASE_MAX, seedOf as chaseSeed, CHUNK_F as CHASE_CHUNK, RULE_V as CHASE_RV } from './chase-score.js';
 import { DANCE_MAX, seedOf as danceSeed } from './dance-score.js';
 import { SNAKE_MAX, N2_MAX } from './cz-score.js';
 import { pctOf as colorPct } from './color-score.js';   // 색감의 신(2026-11-02)
@@ -2309,13 +2309,13 @@ async function myRecInto(el, game, local = null, fold = null) {
   requestAnimationFrame(() => requestAnimationFrame(() => bars.forEach(b => b.style.setProperty('--w', b.dataset.w + '%'))));
   return r;
 }
-async function saveScore(game, value, rounds) {
+async function saveScore(game, value, rounds, extra) {
   const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
   if (tkKeep?.p === t) tkKeep = null;   // 이 티켓은 이제 씀 → 다음 판은 새로 받기
   const tk = await t;
   if (t && !tk) throw new Error(`게임을 시작할 때 서버에 등록되지 않아 이번 기록은 저장 못 했어요${tkErr ? ` (${tkErr})` : ''}. 다시 하기를 눌러 주세요`);
   // 서버 오류(5xx)·연결 끊김이면 같은 티켓으로 한 번 더 — 서버가 오류 때 티켓을 되돌려 둠(2026-10-29 첫 기록 null.b로 기록이 사라지던 일 재발 방지)
-  const send = () => call('score', { game, value, rounds, ticket: tk });
+  const send = () => call('score', { ...extra, game, value, rounds, ticket: tk });
   let r;
   try { r = await send(); }
   catch (e) { if (e.status && (e.status < 500 || e.status === 503)) throw e; await wait(1500); r = await send(); }
@@ -2737,6 +2737,37 @@ async function playBlast() {
   quitGame = () => { run++; M.destroy(); if (window.__blast === M) window.__blast = null; };
 }
 
+// 카체이싱! 저장 보조(2026-11-02)
+// · chasePrep: 긴 판은 저장 전에 서버가 나눠 다시 돌려 둠(POST chasechk 여러 번 — 한 요청 CPU 한도 안). 각 요청은 한 번 다시 시도
+// · chasePend/chaseResend: 저장이 안 되면 이 기기에 최대 5판 맡겨 두고(예전엔 1칸이라 새 판이 덮어씀) 카체이싱!을 열 때 다시 보냄(티켓 유예 24시간 → 20시간 안)
+async function chasePrep(tk, rounds, onP) {
+  if (!(rounds[0] > CHASE_CHUNK)) return;
+  const once = () => call('chasechk', { ticket: tk, rounds }).catch(e => { if (e.status && e.status < 500) throw e; return wait(1200).then(() => call('chasechk', { ticket: tk, rounds })); });
+  for (let i = 0, n = Math.ceil(rounds[0] / CHASE_CHUNK) + 4; i < n; i++) { const r = await once(); if (r.done) return; onP?.(r.p || 0); }
+}
+function chasePend(x) {
+  let a = store.get('chase_pend2', []); if (!Array.isArray(a)) a = [];
+  const old = store.get('chase_pend', null); if (old) { a.push(old); store.set('chase_pend', null); }   // 예전 1칸 저장값 옮김
+  a = a.filter(p => p.tk !== x.tk && Date.now() - p.at < 20 * 3600e3); a.push(x); a.sort((p, q) => p.v - q.v);   // 좋은 기록(작은 값)부터 5개
+  try { store.set('chase_pend2', a.slice(0, 5)); } catch {}
+}
+let chaseResending = false;
+async function chaseResend() {
+  if (chaseResending || !S.me) return; chaseResending = true;
+  try {
+    let a = store.get('chase_pend2', []); if (!Array.isArray(a)) a = [];
+    const old = store.get('chase_pend', null); if (old) { a.push(old); store.set('chase_pend', null); }
+    a = a.filter(p => p && Date.now() - p.at < 20 * 3600e3); store.set('chase_pend2', []);
+    const left = [];
+    for (const p of a) {
+      try { await chasePrep(p.tk, p.r); const r = await call('score', { game: 'chase', value: p.v, rounds: p.r, ticket: p.tk, rv: CHASE_RV }); toast(r.held ? '맡겨 둔 카체이싱! 기록을 보냈어요(확인 대기)' : '맡겨 둔 카체이싱! 기록을 저장했어요'); }
+      catch (e) { if (!e.status || e.status >= 500 || e.status === 401) left.push(p); }   // 4xx(티켓 만료 등)는 다시 보내도 안 됨 → 버림
+    }
+    if (left.length) for (const p of left) chasePend(p);
+    if (a.length) { const el = $('#csRec'); if (el) myRecInto(el, 'chase', null, { open: true }); }
+  } finally { chaseResending = false; }
+}
+
 /* 카체이싱!(2026-10-31 하율 "다함께 차차차처럼 — 플레이 방식까지 최대한 비슷하게, 바로 출시해도 될 정도로", 미리보기 chase-game — 개발자만)
    js/chase.js(그리기·입력) + chase-score.js(규칙 — 서버와 같음). 판마다 시작 티켓 → 그 씨앗으로 차·연료통 배치가 정해지고, 입력 기록으로 서버가 판을 처음부터 다시 돌려 점수를 확인.
    출발 카운트다운(3초) 동안 티켓을 받음. 못 받으면 연습 판(저장 안 됨)으로 달리고 바로 알림. 끝나면 아무 키·화면으로 바로 다음 판(카운트다운) */
@@ -2792,7 +2823,8 @@ async function playChase() {
       if (res.score > best) { best = res.score; if (!S.me || !res.saved) store.set('chase_best', best); }
       if (!S.me || !res.saved || !tk || res.score < 1) return;
       ticket = tk;   // 이 판의 티켓으로만 저장
-      saveScore('chase', CHASE_MAX - res.score, res.rounds).then(r => {
+      const v = CHASE_MAX - res.score;
+      chasePrep(tk, res.rounds, p => { if (no === run) M.msg(`기록 확인 중… ${Math.round(p * 100)}%`); }).then(() => saveScore('chase', v, res.rounds, { rv: CHASE_RV })).then(r => {
         if (no !== run) return;
         if (r.held) { M.msg(heldLine(r)); return; }
         const b = r.best != null ? CHASE_MAX - r.best : res.score; M.setBest(b); best = Math.max(best, b); store.set('chase_best', best);
@@ -2800,14 +2832,13 @@ async function playChase() {
         myRecInto($('#csRec'), 'chase', null, { open: true });
       }).catch(e => {
         // 서버가 바쁘거나(5xx) 연결이 끊겨 두 번 다 실패하면 이 기기에 맡겨 두고 다음에 카체이싱!을 열 때 다시 보냄(티켓은 서버에서 24시간 유예)
-        if (!e.status || (e.status >= 500 && e.status !== 503)) { try { store.set('chase_pend', { v: CHASE_MAX - res.score, r: res.rounds, tk, at: Date.now() }); } catch {} if (no === run) M.msg('지금 저장이 안 돼서 이 기기에 맡겨 뒀어요 · 다음에 열 때 다시 보내요'); return; }
+        // 2026-11-02: 503(DB 하루 한도·서버 처리 한도 초과)도 맡겨 둠 · 맡겨 두는 칸 여러 개(chasePend)
+        if (!e.status || e.status >= 500 || e.status === 401) { chasePend({ v, r: res.rounds, tk, at: Date.now() }); if (no === run) M.msg(e.status === 401 ? '로그인이 풀려서 이 기기에 맡겨 뒀어요 · 다시 로그인하고 카체이싱!을 열면 저장돼요' : '지금 저장이 안 돼서 이 기기에 맡겨 뒀어요 · 다음에 열 때 다시 보내요'); return; }
         if (no === run) M.msg(esc(e.message));
       });
     },
   });
-  { const pd = store.get('chase_pend', null);   // 맡겨 둔 기록 다시 보내기
-    if (pd && S.me && Date.now() - pd.at < 20 * 3600e3) { store.set('chase_pend', null); call('score', { game: 'chase', value: pd.v, rounds: pd.r, ticket: pd.tk }).then(r => { toast(r.held ? '맡겨 둔 카체이싱! 기록을 보냈어요(확인 대기)' : '맡겨 둔 카체이싱! 기록을 저장했어요'); myRecInto($('#csRec'), 'chase', null, { open: true }); }).catch(e => { if (!e.status || e.status >= 500) store.set('chase_pend', pd); }); }
-    else if (pd) store.set('chase_pend', null); }
+  chaseResend();
   $('#csMain .cs-snd')?.insertAdjacentHTML('beforebegin', RE_BTN);   // 다시 시작(R)
   window.__chase = M;   // 테스트용
   myRecInto($('#csRec'), 'chase', best ? CHASE_MAX - best : null, { open: true });

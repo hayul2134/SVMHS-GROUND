@@ -335,7 +335,8 @@ export function createChase(root, opts = {}) {
     }
     return a;
   };
-  const put = (a, x, y, sc, alpha = 1) => { if (alpha <= 0.01) return; if (alpha < 1) g.globalAlpha = alpha; g.drawImage(a.c, x - a.W / 2 * sc, y - (a.h + a.pad) * sc, a.W * sc, a.H * sc); if (alpha < 1) g.globalAlpha = 1; };
+  const put = (a, x, y, sc, alpha = 1) => { if (alpha <= 0.01 || a.H * sc < (lowFx ? 4 : 2.5)) return;   // 지평선 근처 몇 px짜리는 안 그림(2026-11-02 저사양 최적화)
+    if (alpha < 1) g.globalAlpha = alpha; g.drawImage(a.c, x - a.W / 2 * sc, y - (a.h + a.pad) * sc, a.W * sc, a.H * sc); if (alpha < 1) g.globalAlpha = 1; };
   // 3D 차 그리기 — 모델은 종류·크기·색마다 한 번 만들고, 매 프레임 꼭짓점만 원근 변환
   const models = new Map();
   const carModel = (kind, col, hw, hh) => {
@@ -343,6 +344,7 @@ export function createChase(root, opts = {}) {
     let M = models.get(key); if (!M) { M = buildCar(kind, c2, hw, hh); models.set(key, M); }
     return M;
   };
+  let edgeOn = true; const SH3 = [[1.22, 0.07], [1.1, 0.1], [0.98, 0.16]], SH1 = [[1.1, 0.26]];
   const PX = new Float64Array(16), PYs = new Float64Array(16), QX = new Float64Array(16), QY = new Float64Array(16);
   let pcx = 0, pcy = 0, pco = 1, psi = 0, plift = 0;
   const proj = (x, y, z, ox, oy, i) => { const wx = pcx + x * pco - y * psi, wy = pcy + x * psi + y * pco, q = ps(wy); ox[i] = sxOf(wx, q); oy[i] = syOf(q) - (z + plift) * q * PK * ZK; };
@@ -357,17 +359,19 @@ export function createChase(root, opts = {}) {
     const FX = [0, 0, 0, 0], FY = [0, 0, 0, 0];
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n; FX[0] = PX[i]; FY[0] = PYs[i]; FX[1] = PX[j]; FY[1] = PYs[j]; FX[2] = QX[j]; FY[2] = QY[j]; FX[3] = QX[i]; FY[3] = QY[i];
-      if (polyArea(FX, FY, 4) > 0.05) fillN(FX, FY, 4, S.fc[i], true);
+      if (polyArea(FX, FY, 4) > 0.05) fillN(FX, FY, 4, S.fc[i], edgeOn);
     }
-    if (polyArea(QX, QY, n) > 0) fillN(QX, QY, n, S.top, true);
+    if (polyArea(QX, QY, n) > 0) fillN(QX, QY, n, S.top, edgeOn);
   }
   // 차 하나: (cx, cy) 판 좌표 가운데 · yaw 앞이 오른쪽(+) · steer 앞바퀴 · lift 점프 높이 · detail false면 먼 차(간단히)
   function drawCar(M, cx, cy, yaw, steer = 0, lift = 0, detail = true, t = 0) {
     pcx = cx; pcy = cy; pco = Math.cos(yaw); psi = Math.sin(yaw); plift = 0;
+    // 2026-11-02 저사양 최적화: 면 테두리(이음새 가림)는 화면에서 차 폭 40px 이상일 때만, 저사양이면 안 그림 · 그림자는 작거나 저사양이면 한 겹
+    const sw = ps(cy) * PK * M.W; edgeOn = !lowFx && sw >= 40;
     // 그림자(땅) — 점프하면 작고 옅게
     const sh = 1 - Math.min(lift / 60, 0.5), W2 = M.W / 2 * 1.08 * sh, ya = M.y0 * sh - 1, yb = M.y1 * sh + 4;
     g.lineJoin = 'round'; g.lineWidth = 0.7;
-    for (const [e, al2] of [[1.22, 0.07], [1.1, 0.1], [0.98, 0.16]]) {   // 부드러운 그림자(세 겹)
+    for (const [e, al2] of (lowFx || sw < 40 ? SH1 : SH3)) {   // 부드러운 그림자(세 겹)
       const so = oct(W2 * 2 * e, ya * e - 1, yb * e + 2, W2 * 0.5, W2 * 0.4);
       for (let i = 0; i < 8; i++) proj(so[i][0] + 2, so[i][1] + 2, 0, PX, PYs, i);
       fillN(PX, PYs, 8, `rgba(8,10,22,${(al2 * sh).toFixed(3)})`);
@@ -875,7 +879,8 @@ export function createChase(root, opts = {}) {
     g.beginPath(); g.moveTo(xa, ta - h2 * a * PK); g.lineTo(xb, tb - h2 * b * PK); g.lineTo(xb, tb - h1 * b * PK); g.lineTo(xa, ta - h1 * a * PK); g.closePath(); g.fillStyle = fill; g.fill();
   };
   const NEARY = C.PY + 30;   // 달린 거리 w인 바닥의 판 y = NEARY - (w - dist)
-  const bands = (dist, period, len, from, fn) => { for (let n = Math.floor((dist + NEARY - Y_BOT) / period); n * period < dist + NEARY - from; n++) { const y2 = NEARY - (n * period - dist); fn(Math.max(y2 - len, Y_FAR), Math.min(y2, Y_BOT), n); } };
+  // minPx: 한 주기가 화면에서 이 높이(px)보다 작아지면(지평선 근처) 거기서 멈추고 그 판 y를 돌려줌 — 2026-11-02 저사양 최적화(차선 점선이 한 프레임 800번 넘게 칠해지던 것)
+  const bands = (dist, period, len, from, fn, minPx = 0) => { for (let n = Math.floor((dist + NEARY - Y_BOT) / period); n * period < dist + NEARY - from; n++) { const y2 = NEARY - (n * period - dist); if (minPx && y2 < Y_BOT && syOf(ps(y2)) - syOf(ps(y2 - period)) < minPx) return y2; fn(Math.max(y2 - len, Y_FAR), Math.min(y2, Y_BOT), n); } return null; };
   /* --- 길 종류(2026-10-31 하율 "도로도 여러 가지"): 1,600m마다 들판 → 도시 → 해안 → 다리 → 단풍 숲 → 다시 들판 …
      바닥·난간·길가 물건을 '그 땅의 달린 거리'로 고르므로 다음 길이 멀리서부터 다가옴 --- */
   const ZL = 16000;
@@ -917,7 +922,8 @@ export function createChase(root, opts = {}) {
     bands(dist, 150, 26, -9000, (y1, y2, n) => { const x = ((n * 131) % 330 + 330) % 330; trap(x, x + 40 + (n % 3) * 20, y1, y2, n % 2 ? 'rgba(0,0,0,.09)' : 'rgba(255,255,255,.05)'); });
     for (let l = 0; l < C.LANES; l++) { const cx = C.laneX(l); trap(cx - 22, cx - 13, Y_FAR, Y_BOT, 'rgba(0,0,0,.09)'); trap(cx + 13, cx + 22, Y_FAR, Y_BOT, 'rgba(0,0,0,.09)'); }
     trap(C.ROAD_L + 3, C.ROAD_L + 6.5, Y_FAR, Y_BOT, '#f2f2ec'); trap(C.ROAD_R - 6.5, C.ROAD_R - 3, Y_FAR, Y_BOT, '#f2f2ec');
-    bands(dist, 80, 40, -16000, (y1, y2) => { for (let l = 1; l < C.LANES; l++) { const x = C.ROAD_L + l * C.LANE_W; trap(x - 1.8, x + 1.8, y1, y2, 'rgba(245,245,238,.94)'); } });
+    const dashEnd = bands(dist, 80, 40, -16000, (y1, y2) => { for (let l = 1; l < C.LANES; l++) { const x = C.ROAD_L + l * C.LANE_W; trap(x - 1.8, x + 1.8, y1, y2, 'rgba(245,245,238,.94)'); } }, 2.5);
+    if (dashEnd != null) for (let l = 1; l < C.LANES; l++) { const x = C.ROAD_L + l * C.LANE_W; trap(x - 1.8, x + 1.8, Math.max(-16000, Y_FAR), dashEnd, 'rgba(245,245,238,.47)'); }   // 먼 점선은 한 줄로(점선 반 길이라 반투명)
     bands(dist, 100, 5, -6000, (y1, y2) => { trap(C.ROAD_L + 1, C.ROAD_L + 3, y1, y2, '#ffd34d'); trap(C.ROAD_R - 3, C.ROAD_R - 1, y1, y2, '#ffd34d'); });
     const y0 = NEARY + dist;   // 출발선
     if (y0 > -9000 && y0 - 18 < Y_BOT) for (let i = 0; i < 25; i++) for (let j = 0; j < 2; j++) trap(C.ROAD_L + i * 15, C.ROAD_L + i * 15 + 15, y0 - 18 + j * 9, y0 - 9 + j * 9, (i + j) % 2 ? '#f4f4f4' : '#22242c');
@@ -952,7 +958,7 @@ export function createChase(root, opts = {}) {
       }
     }
     for (let i = Math.floor(wn / 300); i * 300 < wf; i++) { const w = i * 300; if (!zoneAt(w).lamp) continue; side.push([yOfW(w, dist), LG - 6, 'lamp', 0]); side.push([yOfW(w, dist), RG + 6, 'lamp', 1]); }
-    for (let i = Math.floor(wn / 40); i * 40 < wOfY(-3200, dist); i++) { const w = i * 40; if (zoneAt(w).rail !== 'guard') continue; side.push([yOfW(w, dist), LG + 2, 'post', 0]); side.push([yOfW(w, dist), RG - 2, 'post', 0]); }
+    for (let i = Math.floor(wn / 40); i * 40 < wOfY(-3200, dist); i++) { const w = i * 40; if (lowFx && i % 2) continue; if (zoneAt(w).rail !== 'guard') continue; side.push([yOfW(w, dist), LG + 2, 'post', 0]); side.push([yOfW(w, dist), RG - 2, 'post', 0]); }
     for (let i = Math.floor(wn / 500); i * 500 < wf; i++) { const w = i * 500; if (zoneAt(w).k !== 'bridge') continue; side.push([yOfW(w, dist), LG + 2, 'bpost', 0]); side.push([yOfW(w, dist), RG - 2, 'bpost', 0]); }
     side.sort((p, q) => p[0] - q[0]);
     for (const [y, x, t, h] of side) {
@@ -997,7 +1003,7 @@ export function createChase(root, opts = {}) {
         else if (o.t === 'coin') { const sp = Math.abs(Math.cos((s.f + o.id * 9) * 0.09)); g.save(); g.translate(sxOf(o.x, q), sy); g.scale(0.25 + sp * 0.75, 1); put(itemArt('coin'), 0, 0, sc * 0.9, al); g.restore(); }
         else put(itemArt(o.t), sxOf(o.x, q), sy, sc * (o.t === 'cone' ? 1.05 : 0.9), al);
       } else if (t === 1) {
-        const x = lerp(o._px ?? o.x, o.x, a), yc = y - o.hh, M = carModel(o.k, o.col, o.hw, o.hh), far = ps(yc) * PK * M.W < 26;
+        const x = lerp(o._px ?? o.x, o.x, a), yc = y - o.hh, M = carModel(o.k, o.col, o.hw, o.hh), far = ps(yc) * PK * M.W < (lowFx ? 44 : 26);
         if (o.dead) continue;   // 부스터로 날린 차는 flies가 그림
         // 차선 바꿀 때 앞이 가는 쪽으로 돌았다가 도착하면 펴짐
         const want = o.mv ? clamp((C.laneX(o.to) - x) / C.LANE_W, -1, 1) * 0.3 : 0;
