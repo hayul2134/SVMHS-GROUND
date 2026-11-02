@@ -6901,3 +6901,6 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .tr-gmore .tgm-c,.tr-gmore[open] .tgm-o{display:none}
 .tr-gmore[open] .tgm-c{display:inline}
 .tr-gmore>.tr-games{margin-top:8px}
+/* 2026-11-02 하율: 먼저 보이는 잘한 3개는 한 줄에 3칸 */
+.tr-games.tr-g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:620px){.tr-games.tr-g3{grid-template-columns:1fr}}

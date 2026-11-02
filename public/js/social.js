@@ -1814,7 +1814,7 @@ async function loadTier() {
   // 순서: 합산된 것(점수 높은 순) → 기록 있는 나머지(점수 높은 순) → 기록 없음(게임 순)
   perL.sort((a, b) => (b.inn - a.inn) || (b.rec - a.rec) || (b.p - a.p) || (a.i - b.i));
   const perHd = perL.slice(BEST_N);
-  const per = perL.length ? `<ul class="tr-games">${perL.slice(0, BEST_N).map(o => o.h).join('')}</ul>${perHd.length ? `<details class="tr-gmore"><summary><span class="tgm-o">나머지 ${perHd.length}개 게임 펼치기</span><span class="tgm-c">접기</span><i aria-hidden="true"></i></summary><ul class="tr-games">${perHd.map(o => o.h).join('')}</ul></details>` : ''}` : '';
+  const per = perL.length ? `<ul class="tr-games tr-g3">${perL.slice(0, BEST_N).map(o => o.h).join('')}</ul>${perHd.length ? `<details class="tr-gmore"><summary><span class="tgm-o">나머지 ${perHd.length}개 게임 펼치기</span><span class="tgm-c">접기</span><i aria-hidden="true"></i></summary><ul class="tr-games">${perHd.map(o => o.h).join('')}</ul></details>` : ''}` : '';
   const perPv = !m && pm ? '<p class="tr-pv">미리보기 · 1위 학생 기준 점수 내역(개발자는 티어 밖)</p>' : '';
   // 총점(2026-10-28 하율 "총 몇점인지 보이게"): 점수 내역 아래 합산 = 잘한 BEST_N개 점수 더하기
   const sumIn = pm ? Object.values(pm.games || {}).filter(x => !x.x).map(x => x.p).sort((a, b) => b - a) : [];
