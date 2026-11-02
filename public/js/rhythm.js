@@ -15,14 +15,20 @@ const KEY_DEF = [['KeyD', 'ArrowLeft'], ['KeyF', 'ArrowDown'], ['KeyJ', 'ArrowUp
 const KEY_BAN = new Set(['Escape', 'Enter', 'NumpadEnter', 'KeyP', 'Tab', 'MetaLeft', 'MetaRight', 'AltLeft', 'AltRight', 'ControlLeft', 'ControlRight', 'CapsLock']);
 const keyName = c => !c ? '없음' : c.startsWith('Key') ? c.slice(3) : c.startsWith('Digit') ? c.slice(5) : ({ ArrowLeft: '←', ArrowDown: '↓', ArrowUp: '↑', ArrowRight: '→', Space: '스페이스', ShiftLeft: '왼 Shift', ShiftRight: '오른 Shift', Semicolon: ';', Comma: ',', Period: '.', Slash: '/', Quote: "'", BracketLeft: '[', BracketRight: ']', Backspace: '←지우기' })[c] || c.replace('Numpad', '키패드 ');
 const ARW = ['←', '↓', '↑', '→'];
-const DIFFS = [{ n: '쉬움', sp: 1.05, miss: .016 }, { n: '보통', sp: 1.3, miss: .021 }, { n: '어려움', sp: 1.55, miss: .025 }];
+const DIFFS = [{ n: '쉬움', sp: 1.05 }, { n: '보통', sp: 1.3 }, { n: '어려움', sp: 1.55 }];
 // 판정(FNF 창: 45/90/135/166ms)
+// 판정·점수·체력 = FNF 원작(V-Slice, PBOT1) 기준(22:27 하율 "원작이랑 조작감·판정 똑같이"):
+//   판정 창 sick 45 · good 90 · bad 135 · shit 160ms(Scoring.hx), 점수 = 500 × (1 − 1/(1+e^(−0.08×(ms−54.99)))) + 9(5ms 이내 500), 놓침 −100, 길게 누르기 초당 250
+//   체력(0~1, 원작 0~2의 절반 단위): 완벽 +1.5% · 좋아 +0.75% · 아쉬워 0 · 별로 −1% · 놓침 −4% · 헛누름 −2% · 길게 누르는 동안 초당 +7.5%(체력 값은 원작 기억 기준 — 판정·점수는 원작 소스 확인)
+const HIT_WIN = 0.16;
 const RATE = [
-  { n: '완벽!', ms: 45, sc: 350, hp: .0115, w: 1, c: '#ffd84a' },
-  { n: '좋아', ms: 90, sc: 200, hp: .0115, w: .7, c: '#7ee0ff' },
-  { n: '아쉬워', ms: 135, sc: 100, hp: .004, w: .4, c: '#b9f27c' },
-  { n: '별로', ms: 166, sc: 50, hp: 0, w: .15, c: '#ffb27a' },
+  { n: '완벽!', ms: 45, hp: .015, w: 1, c: '#ffd84a' },
+  { n: '좋아', ms: 90, hp: .0075, w: .7, c: '#7ee0ff' },
+  { n: '아쉬워', ms: 135, hp: 0, w: .4, c: '#b9f27c' },
+  { n: '별로', ms: 160, hp: -.01, w: .15, c: '#ffb27a' },
 ];
+const pbot = ms => ms < 5 ? 500 : Math.floor(500 * (1 - 1 / (1 + Math.exp(-0.08 * (ms - 54.99)))) + 9);
+const MISS_HP = .04, GHOST_HP = .02, HOLD_HP = .075;
 const MAJ = [0, 2, 4, 5, 7, 9, 11], MINS = [0, 2, 3, 5, 7, 8, 10];
 const CH = {
   me: { name: '나', body: '#3d7bff', body2: '#2b5fd6', pants: '#2a2f55', hair: '#1d1d2b', skin: '#ffdcbc', hs: 'short', acc: 'cap', capC: '#ffd84a', wave: 'triangle', lp: 3400 },
@@ -34,7 +40,7 @@ const CH = {
   stu: { name: '전교 1등', body: '#f4f4f8', body2: '#c8ccd8', pants: '#3a4270', hair: '#222230', skin: '#ffdcbc', hs: 'short', acc: 'glasses', capC: '#fff', wave: 'square', lp: 2000 },
   ed: { name: '편집부 선배', body: '#4a4e6e', body2: '#363a56', pants: '#22263e', hair: '#7a5cff', skin: '#f7d2b0', hs: 'spike', acc: 'headset', capC: '#3a3d5c', wave: 'sawtooth', lp: 1800 },
   dc: { name: '댄스부 에이스', body: '#ff4fa0', body2: '#d93583', pants: '#2a2846', hair: '#ffd84a', skin: '#ffdcbc', hs: 'bob', acc: 'cap', capC: '#2a2846', wave: 'square', lp: 2400 },
-  lee: { name: 'MR.LEE', body: '#24242e', body2: '#3a3a48', pants: '#1c1c26', hair: '#141418', skin: '#f2c9a4', hs: 'wavy', acc: 'shades', capC: '#141418', jaw: 1, tall: 80, torso: 70, chain: 1, wave: 'sawtooth', lp: 1300, oct: -12 },
+  lee: { name: 'MR.LEE', body: '#24242e', body2: '#3a3a48', pants: '#1c1c26', hair: '#141418', skin: '#f2c9a4', hs: 'wavy', acc: 'shades', capC: '#141418', jaw: 1, tall: 110, torso: 70, chain: 1, wave: 'sawtooth', lp: 1300, oct: -12 },
   fr: { name: '친구', body: '#ffb84d', body2: '#e8962a', pants: '#33406e', hair: '#5a3a2a', skin: '#ffdcbc', hs: 'bob', acc: 'none', capC: '#fff' },
 };
 const GREY = { body: '#6d7fbd', body2: '#56669f', pants: '#3a4270', hair: '#2d3460', skin: '#c7cfee', capC: '#8d9ad0' };
@@ -68,7 +74,7 @@ const SONGS = [
   { id: 's6', name: '옥상 달빛', opp: 'art', stage: 'roof', bpm: 104, root: 67, sc: MINS, prog: [0, -4, -7, -2], q: [0, 1, 0, 1], drum: 'basic', pad: 1, arp: 1, rhy: 'funk', sec: 'I Oa Pa Ob Pb Oc Pc Od Pd E' },
   { id: 's7', name: '기말고사 D-1', opp: 'stu', stage: 'class', bpm: 158, root: 60, sc: MINS, prog: [0, 3, -2, -5], q: [0, 1, 1, 1], drum: 'drive', pad: 1, arp: 0, rhy: 'rush', sec: 'I Oa Pa Ob Pb Xc Oc Pc Od Pd E' },
   { id: 's8', name: '편집실 야근', opp: 'ed', stage: 'studio', bpm: 126, root: 65, sc: MINS, prog: [0, -4, 3, -2], q: [0, 1, 1, 1], drum: 'basic', pad: 1, arp: 1, rhy: 'pop', sec: 'I Oa Pa Ob Pb Oc Pc Xd Od Pd E' },
-  { id: 's9', name: '축제 리허설', opp: 'dc', stage: 'hall', bpm: 145, root: 66, sc: MAJ, prog: [0, 5, -3, 7], q: [1, 1, 0, 1], drum: 'synco', pad: 1, arp: 1, rhy: 'funk', sec: 'I Oa Pa Ob Pb Xc Oc Pc Od Pd Xa E' },
+  { id: 's9', name: '축제 리허설', opp: 'dc', stage: 'gym', bpm: 145, root: 66, sc: MAJ, prog: [0, 5, -3, 7], q: [1, 1, 0, 1], drum: 'synco', pad: 1, arp: 1, rhy: 'funk', sec: 'I Oa Pa Ob Pb Xc Oc Pc Od Pd Xa E' },
 ];
 // 자유 플레이 순서 = 난이도 순(22:21 하율) — 어려움 기준 내 화살표 수 ÷ 곡 길이로 줄 세움, 보스는 맨 끝. 별 1~5 = 그 사이 비율. 스토리는 SONGS 0·1·2
 let FREE = null, STARS = null;
@@ -253,11 +259,11 @@ export function createRhythm(el, O = {}) {
   }
   function voice(at, m, dur, wave, lp = 1800) {   // 노래하는 목소리: 살짝 아래에서 올라가는 음 + 비브라토
     const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain(), fr = mf(m);
-    o.type = wave; o.frequency.setValueAtTime(fr * 0.94, at); o.frequency.linearRampToValueAtTime(fr, at + 0.04);
+    o.type = wave; o.frequency.setValueAtTime(fr * 0.97, at); o.frequency.linearRampToValueAtTime(fr, at + 0.02);
     lfo.frequency.value = 5.6; lg.gain.value = fr * 0.013; lfo.connect(lg).connect(o.frequency);
     f.type = 'lowpass'; f.frequency.value = lp;
     const len = Math.max(dur, 0.17), pk = wave === 'triangle' ? 0.34 : wave === 'square' ? 0.14 : 0.12;
-    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(pk, at + 0.015); g.gain.setValueAtTime(pk * 0.8, at + len - 0.04); g.gain.exponentialRampToValueAtTime(0.0001, at + len + 0.07);
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(pk, at + 0.004); g.gain.setValueAtTime(pk * 0.8, at + len - 0.04); g.gain.exponentialRampToValueAtTime(0.0001, at + len + 0.07);
     o.connect(f).connect(g).connect(dst()); o.start(at); lfo.start(at); o.stop(at + len + 0.09); lfo.stop(at + len + 0.09); return g;
   }
   function missSnd() { if (!AC) return; const at = AC.currentTime; const o = osc('sawtooth', 160, at, 0.13, 0.2); o.frequency.exponentialRampToValueAtTime(70, at + 0.18); noise(at, 'lowpass', 600, 0.15, 0.1); }
@@ -361,8 +367,8 @@ export function createRhythm(el, O = {}) {
     G.t0 = AC.currentTime + 0.35 + 4 * G.spb;
     state = 'play'; closeMenu(); pz.hidden = false; reb.hidden = false; mnb.hidden = false; cam.x = 640; setBgm(null); bgC = null;
   }
-  function judgeHit(n, i, T) {
-    const R = RATE[i]; G.cnt[i]++; G.score += R.sc; G.wSum += R.w; G.wN++; G.combo++; if (G.combo > G.maxCombo) G.maxCombo = G.combo;
+  function judgeHit(n, i, T, ms) {
+    const R = RATE[i]; G.cnt[i]++; G.score += pbot(ms); G.wSum += R.w; G.wN++; G.combo++; if (G.combo > G.maxCombo) G.maxCombo = G.combo;
     G.pbus.gain.setTargetAtTime(1, AC.currentTime, 0.004);
     if (G.combo % 50 === 0) G.fan = { m: 1, until: T + 1.3 };
     G.hp = Math.min(1, G.hp + R.hp); G.conf[n.lane] = T; G.pose[1] = { l: n.lane, end: T + Math.max(n.d, 0.35), miss: 0 };
@@ -371,24 +377,26 @@ export function createRhythm(el, O = {}) {
     hitSnd();
   }
   function judgeMiss(T, lane, wrong) {
-    if (G.combo >= 10) G.fan = { m: 2, until: T + 1.5 };
     G.pbus.gain.setTargetAtTime(0, AC.currentTime, 0.006);
-    G.cnt[4]++; G.score -= 10; G.wN++; G.combo = 0; G.hp -= DIFFS[G.d].miss;
+    if (wrong) { G.score -= 10; G.hp -= GHOST_HP; }   // 원작 헛누름: 점수 −10·체력 −2%·목소리 끊김(놓침 수·콤보는 그대로)
+    else { if (G.combo >= 10) G.fan = { m: 2, until: T + 1.5 }; G.cnt[4]++; G.score -= 100; G.wN++; G.combo = 0; G.hp -= MISS_HP; }
     G.pose[1] = { l: lane, end: T + 0.4, miss: T + 0.4 }; missSnd();
     G.pops.push({ i: wrong ? 5 : 4, t: performance.now(), vy: -120, y: 0, c: 0 }); if (G.pops.length > 4) G.pops.shift();
     if (G.hp <= 0) { G.hp = 0; gameOver(); }
   }
-  function down(l) {
-    if (state !== 'play') return; G.held[l] = 1; const T = songT();
-    let best = null; for (const n of G.byLane[l]) { if (n.st !== 0) continue; if (n.t - T > 0.166) break; if (Math.abs(T - n.t) <= 0.166) { best = n; break; } }
-    if (!best) { if (!opt.ghost && T > -0.2) judgeMiss(T, l, true); return; }   // 헛누름 = 놓침과 같은 벌점(점수 −10·체력 깎임·콤보 끊김)
+  // 키를 누른 '그 순간'의 노래 시각(이벤트 timeStamp로 처리 지연만큼 되돌림 — 프레임에 묶이지 않게)
+  const tAt = e => { const lag = e && e.timeStamp ? Math.min(0.1, Math.max(0, (performance.now() - e.timeStamp) / 1000)) : 0; return songT() - lag; };
+  function down(l, e) {
+    if (state !== 'play') return; G.held[l] = 1; const T = tAt(e);
+    let best = null; for (const n of G.byLane[l]) { if (n.st !== 0) continue; if (n.t - T > HIT_WIN) break; if (Math.abs(T - n.t) <= HIT_WIN) { best = n; break; } }
+    if (!best) { if (!opt.ghost && G.PN.some(n => n.st === 0 && Math.abs(n.t - T) <= HIT_WIN)) judgeMiss(T, l, true); return; }   // 원작: 다른 칸에 맞힐 화살표가 있을 때 막 누르면 헛누름
     const ms = Math.abs(T - best.t) * 1000; let i = 0; while (ms > RATE[i].ms) i++;
-    judgeHit(best, i, T); if (state !== 'play') return;
+    judgeHit(best, i, T, ms); if (state !== 'play') return;
     if (best.d > 0) { best.st = 1; G.holdN[l] = best; } else best.st = 2;
   }
   function up(l) {
     if (!G) return; G.held[l] = 0; const n = G.holdN[l]; if (!n) return; G.holdN[l] = null; if (state !== 'play') return; const T = songT();
-    if (T >= n.t + n.d - 0.15) { n.st = 2; G.wSum += 1; G.wN++; G.score += 50; }
+    if (T >= n.t + n.d - 0.15) { n.st = 2; G.wSum += 1; G.wN++; }
     else { n.st = 3; judgeMiss(T, l); }
   }
   function update(T, dt) {
@@ -398,9 +406,9 @@ export function createRhythm(el, O = {}) {
     for (const n of G.ON) { if (n.t > T) break; if (n.st === 1 && T >= n.t + n.d) n.st = 2; }
     for (const n of G.PN) {
       if (n.t - T > 0.2) break;
-      if (n.st === 0 && T - n.t > 0.166) { n.st = 3; judgeMiss(T, n.lane); if (n.d > 0) G.wN++; if (state !== 'play') return; }
+      if (n.st === 0 && T - n.t > HIT_WIN) { n.st = 3; judgeMiss(T, n.lane); if (n.d > 0) G.wN++; if (state !== 'play') return; }
     }
-    for (let l = 0; l < 4; l++) { const n = G.holdN[l]; if (!n) continue; G.score += 120 * dt; G.hp = Math.min(1, G.hp + 0.04 * dt); G.conf[l] = T; if (T >= n.t + n.d) { n.st = 2; G.holdN[l] = null; G.wSum += 1; G.wN++; G.score += 50; } }
+    for (let l = 0; l < 4; l++) { const n = G.holdN[l]; if (!n) continue; G.score += 250 * dt; G.hp = Math.min(1, G.hp + HOLD_HP * dt); G.conf[l] = T; if (T >= n.t + n.d) { n.st = 2; G.holdN[l] = null; G.wSum += 1; G.wN++; } }
     const bar = Math.floor(T / G.spb / 4); if (bar !== G.lastBar && T >= 0) { G.lastBar = bar; if (bar >= 2) { cam.z = 0.03; cam.hz = 0.03; } }
     if (T > G.end + 0.6) finish();
   }
@@ -448,7 +456,7 @@ export function createRhythm(el, O = {}) {
   const mOpt = () => ({ title: '설정', items: [
     { lbl: '아래로 스크롤 ' + onOff(opt.down), sub: '화살표가 위에서 내려와요', go: () => setOpt('down') },
     { lbl: '가운데 보기 ' + onOff(opt.mid), sub: '내 화살표 줄만 가운데에(세로 화면은 항상)', go: () => setOpt('mid') },
-    { lbl: '빈 누르기 허용 ' + onOff(opt.ghost), sub: '켜면 화살표 없을 때 눌러도 벌점 없음(기본 꺼짐)', go: () => setOpt('ghost') },
+    { lbl: '빈 누르기 허용 ' + onOff(opt.ghost), sub: '끄면 원작처럼 화살표가 올 때 막 누르면 헛누름(기본 꺼짐)', go: () => setOpt('ghost') },
     { lbl: '타격음 ' + onOff(opt.hits), sub: '맞힐 때마다 딸깍', go: () => setOpt('hits') },
     { lbl: '메뉴 음악 ' + onOff(opt.music), sub: '첫 화면·게임 오버 배경 음악', go: () => setOpt('music') },
     { lbl: '키 바꾸기', sub: opt.keys.map((a, l) => ARW[l] + ' ' + a.filter(Boolean).map(keyName).join('/')).join('  '), go: () => pushMenu(mKeys) },
@@ -547,7 +555,7 @@ export function createRhythm(el, O = {}) {
   const ptr = new Map();
   const pDown = e => {
     if (state !== 'play') return; e.preventDefault(); if (e.pointerType === 'touch') touchUI = true;
-    const r = cv.getBoundingClientRect(), l = Math.max(0, Math.min(3, Math.floor((e.clientX - r.left) / (r.width / 4)))); ptr.set(e.pointerId, l); down(l);
+    const r = cv.getBoundingClientRect(), l = Math.max(0, Math.min(3, Math.floor((e.clientX - r.left) / (r.width / 4)))); ptr.set(e.pointerId, l); down(l, e);
   };
   const pEnd = e => { const l = ptr.get(e.pointerId); if (l === undefined) return; ptr.delete(e.pointerId); for (const v of ptr.values()) if (v === l) return; up(l); };
   const NAV = { ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, Enter: 1, Space: 1, Escape: 1, Backspace: 1, KeyW: 1, KeyS: 1 };
@@ -558,7 +566,7 @@ export function createRhythm(el, O = {}) {
     if (e.code === 'KeyR' && !KEYS.KeyR && G && (state === 'play' || state === 'over' || state === 'result') && !e.repeat) { e.preventDefault(); e.stopPropagation(); initAudio(); restart(); return; }   // 사이트 공통 R = 이 곡 처음부터
     if (state === 'play') {
       if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyP') { e.preventDefault(); e.stopPropagation(); pause(); return; }
-      const l = KEYS[e.code]; if (l === undefined) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) down(l); return;
+      const l = KEYS[e.code]; if (l === undefined) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) down(l, e); return;
     }
     if (state === 'calib' && e.code === 'Space') { e.preventDefault(); e.stopPropagation(); if (!e.repeat) calTap(); return; }
     if (!M || !NAV[e.code]) return;
@@ -939,12 +947,14 @@ export function createRhythm(el, O = {}) {
       for (let l = 0; l < 4; l++) { const x = l * W / 4; cx.fillStyle = G.held[l] ? COL[l] + '30' : 'rgba(255,255,255,.025)'; cx.fillRect(x + 1, 0, W / 4 - 2, H); cx.fillStyle = COL[l] + (G.held[l] ? 'cc' : '55'); cx.fillRect(x + 6, opt.down ? 0 : H - 5, W / 4 - 12, 5); }
     }
   }
+  let vDt = 0.016;
   function frame(ts) {
     if (!alive) return; raf = requestAnimationFrame(frame);
     const dt = Math.min(0.05, lastF ? (ts - lastF) / 1000 : 0.016); lastF = ts;
     let T = null;
     if (G && AC) { T = songT(); if (state === 'play') { update(T, dt); if (G) T = songT(); } }
-    render(G ? T : null, dt);
+    vDt += (Math.min(0.034, Math.max(0.008, dt)) - vDt) * 0.1;
+    render(G ? (T === null ? null : T + (state === 'play' ? vDt : 0)) : null, dt);   // 그린 화면은 다음 화면 갱신 때 보임 → 그만큼 앞 시각으로 그려 화살표·소리 일치
     if (AC) {
       const want = !opt.music ? null : state === 'over' && M ? 'over' : state === 'title' ? 'menu' : state === 'result' && G && G.resAt && performance.now() - G.resAt > 3200 ? 'menu' : null;
       if (want !== bgm.kind) setBgm(want); bgmTick();
