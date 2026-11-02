@@ -260,7 +260,7 @@ export function createJudge(el, O = {}) {
       case 'SineBones': {
         const n = num(a[0]), sp = num(a[1]), spd = num(a[2]), h = num(a[3]);
         for (let i = 0; i < n; i++) {
-          const x = sp < 0 ? zone.r + sp * i : zone.l + sp * i, dir = sp < 0 ? 2 : 0, sine = Math.floor(Math.sin(i / 3) * 28);
+          const x = sp > 0 ? zone.r + sp * i : zone.l + sp * i, dir = sp > 0 ? 2 : 0, sine = Math.floor(Math.sin(i / 3) * 28);
           let y = zone.t + 6; boneV(x, y, h + sine, dir, spd, 0);
           y = zone.t + 6 + h + sine + 39; boneV(x, y, zone.b - 5 - y, dir, spd, 0);
         }
