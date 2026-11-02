@@ -6955,3 +6955,10 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .cm-intro:has(.cm-rts){padding:16px;gap:8px}.cm-intro:has(.cm-rts)>b{font-size:clamp(26px,5vw,36px)}
 /* 등교하기!: 위 버튼 줄(랭킹·키 설정·나가기)과 소리 버튼이 붙어 보이지 않게(2026-11-02 하율 "아이콘 안 겹치게") */
 .parea.wide:has(> .cm){padding-top:clamp(16px,3vh,28px)}
+/* 서비스 칸(2026-11-02 하율: 게임 아래 '서비스' — 등교하기! + 옛 학교생활) — 게임 칸과 같은 5열·같은 아이콘 크기, 색은 순서(nth-child) 대신 기능별 고정 */
+.appgrid.catgrid.sv5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.apps .sv5 .app .ai{width:64px;height:64px;border-radius:18px}
+.apps .sv5 .app .ai svg:not(.sic){width:30px;height:30px}
+.sv5 [data-go="meal"] .ai{--c:var(--sky)}.sv5 [data-go="tt"] .ai{--c:var(--lime)}.sv5 [data-go="cal"] .ai{--c:var(--yellow)}.sv5 [data-go="dday"] .ai{--c:var(--pink)}
+@media (max-width:560px){.appgrid.catgrid.sv5{gap:12px 6px}.catgrid.sv5 .app{padding-left:0;padding-right:0;font-size:11.5px}.apps .sv5 .app .ai{width:46px;height:46px;border-radius:13px}.apps .sv5 .app .ai svg:not(.sic){width:22px;height:22px}.apps .sv5 .gapp .ai .sic{width:28px;height:28px}}
+@media (max-width:380px){.appgrid.catgrid.sv5{gap:10px 4px}.catgrid.sv5 .app{font-size:10.5px}.apps .sv5 .app .ai{width:40px;height:40px;border-radius:12px}.apps .sv5 .gapp .ai .sic{width:25px;height:25px}}
