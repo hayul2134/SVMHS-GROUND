@@ -29,6 +29,7 @@ const CH = {
   sb: { name: '방송부 선배', body: '#9a6cff', body2: '#7a4fe0', pants: '#33285a', hair: '#3b2a7a', skin: '#ffdcbc', hs: 'bob', acc: 'headset', capC: '#3a3d5c', wave: 'square', lp: 1800 },
   gd: { name: '급식 당번', body: '#3ec28f', body2: '#2a9a6e', pants: '#2f3a5c', hair: '#4a2f22', skin: '#ffd9b8', hs: 'short', acc: 'chef', capC: '#ffffff', apron: 1, wave: 'square', lp: 2600 },
   bj: { name: '방송부장', body: '#e0465a', body2: '#b8323f', pants: '#2a2238', hair: '#2a1a1a', skin: '#f7d2b0', hs: 'spike', acc: 'glasses', capC: '#2a2238', wave: 'sawtooth', lp: 1500 },
+  lee: { name: 'MR.LEE', body: '#24242e', body2: '#3a3a48', pants: '#1c1c26', hair: '#141418', skin: '#f2c9a4', hs: 'flat', acc: 'shades', capC: '#141418', jaw: 1, tall: 130, chain: 1, wave: 'sawtooth', lp: 1300, oct: -12 },
   fr: { name: '친구', body: '#ffb84d', body2: '#e8962a', pants: '#33406e', hair: '#5a3a2a', skin: '#ffdcbc', hs: 'bob', acc: 'none', capC: '#fff' },
 };
 const GREY = { body: '#6d7fbd', body2: '#56669f', pants: '#3a4270', hair: '#2d3460', skin: '#c7cfee', capC: '#8d9ad0' };
@@ -51,7 +52,7 @@ const SONGS = [
       '0,5 0.5,4 1,2 1.5,4 2,5 3,7,1 4.5,5 5,4 5.5,2 6,0 7,2 8,4 8.75,5 9.5,4 10,2 10.75,1 11.5,0 12,2 12.5,3 13,4,2',
       '0,0 0,3 1,1 1.5,2 2,3 2.5,2 3,1 4,4 4,1 5,5 5.5,4 6,3 6.5,4 7,5 8,7 8.5,6 9,5 9.5,4 10,3 10.5,2 11,1 11.5,0 12,4,1 13.5,2 14,0,1.5',
       '0,2 0.5,2 1,4 1.5,4 2,5 2.75,4 3.5,2 4,0,1 6,4 6.5,5 7,7 8,6 8.5,5 9,4 9.5,3 10,2 10.5,3 11,4 11.5,5 12,7,2 15,0'] },
-  { id: 's3', name: '종례 전 마지막 곡', opp: 'bj', stage: 'class', bpm: 165, root: 62, sc: MINS, prog: [0, -4, -2, -5], q: [0, 1, 1, 1], drum: 'drive', pad: 1, arp: 1,
+  { id: 's3', name: '영상고 2짱 래퍼', opp: 'lee', stage: 'hall', boss: 1, bpm: 165, root: 62, sc: MINS, prog: [0, -4, -2, -5], q: [0, 1, 1, 1], drum: 'drive', pad: 1, arp: 1,
     sec: 'I Oa Pa Ob Pb Xc Oc Pc Od Pd Xd E',
     ph: ['0,0 0.5,0 1,2 1.5,0 2,3 2.5,0 3,4 3.5,3 4,2 4.5,0 5,2 5.5,4 6,7,1 7.5,6 8,4 8.5,4 9,5 9.5,4 10,3 10.5,2 11,1 11.5,2 12,0,2 14,4 14.5,5 15,6 15.5,7',
       '0,7 0.5,6 1,5 1.5,4 2,3 2.5,4 3,5 3.5,6 4,7,1 5.5,4 6,2 6.5,4 7,7 8,5 8.25,6 8.5,5 9,4 9.5,2 10,0 10.5,2 11,4 11.5,5 12,4 12.5,2 13,0 13.5,1 14,2,1.5',
@@ -217,7 +218,7 @@ export function createRhythm(el, O = {}) {
     }
     const oc = CH[S.opp], pb = B.pbus;   // 내 목소리는 따로 버스 → 놓치면 끊기고 다음에 맞히면 다시(FNF 보컬 트랙처럼)
     for (const n of B.notes) {
-      if (n.who === 0) ev.push({ t: n.t, f: at => voice(at, n.m, n.d, oc.wave, oc.lp) });
+      if (n.who === 0) ev.push({ t: n.t, f: at => voice(at, n.m + (oc.oct || 0), n.d, oc.wave, oc.lp) });
       else ev.push({ t: n.t, f: at => useOut(pb, () => voice(at, n.m, n.d, 'triangle', 3400)) });
     }
     return ev.sort((a, b) => a.t - b.t);
@@ -371,7 +372,7 @@ export function createRhythm(el, O = {}) {
     { lbl: '자유 플레이', sub: '곡 하나 골라서', go: () => pushMenu(mFree) },
     { lbl: '설정', sub: '스크롤 방향·박자 보정 등', go: () => pushMenu(mOpt) },
   ], foot: '↑↓ 고르기 · Enter 선택 · Esc 뒤로' });
-  const mStory = () => ({ title: '영상고의 하루', sub: '쉬는 시간 → 급식실 → 종례 전 교실, 3곡 연속!', diff: 1,
+  const mStory = () => ({ title: '영상고의 하루', sub: '방송실 → 급식실 → 대강당 보스전 MR.LEE, 3곡 연속!', diff: 1,
     extra: `<ol class="rb-wk">${SONGS.map(s => `<li><b>${s.name}</b><small>${CH[s.opp].name} · ${STAGE_N[s.stage]}</small></li>`).join('')}</ol><p class="rb-ms">${week[diff] ? '이 난이도 최고 ' + fmt(week[diff]) + '점' : '아직 완주 기록 없음'}</p>`,
     items: [{ lbl: '시작', go: () => { story = { i: 0, d: diff, score: 0, wSum: 0, wN: 0, miss: 0 }; loadSong(0, diff); } }, { lbl: '뒤로', go: popMenu }], back: popMenu });
   const mFree = () => ({ title: '자유 플레이', diff: 1, cls: 'free',
@@ -522,11 +523,15 @@ export function createRhythm(el, O = {}) {
   function dot(x, y, r, c, w = 4) { cx.beginPath(); cx.arc(x, y, r, 0, 7); inkFill(c, w); }
   function arrow(x, y, s, l, fill, alpha = 1, outline = true) {
     cx.save(); cx.globalAlpha = alpha; cx.translate(x, y); cx.rotate(ROT[l]); cx.beginPath();
-    cx.moveTo(0, -s); cx.lineTo(s * 0.92, -s * 0.04); cx.lineTo(s * 0.4, -s * 0.04); cx.lineTo(s * 0.4, s * 0.86); cx.lineTo(-s * 0.4, s * 0.86); cx.lineTo(-s * 0.4, -s * 0.04); cx.lineTo(-s * 0.92, -s * 0.04); cx.closePath();
+    // 2026-11-02 하율 "화살표 더 둥글게": 꼭짓점마다 arcTo로 둥글린 통통한 화살표
+    const P = [[0, -s], [s * 0.95, -s * 0.02], [s * 0.44, -s * 0.02], [s * 0.44, s * 0.88], [-s * 0.44, s * 0.88], [-s * 0.44, -s * 0.02], [-s * 0.95, -s * 0.02]], RD = [s * 0.2, s * 0.13, s * 0.1, s * 0.18, s * 0.18, s * 0.1, s * 0.13];
+    cx.moveTo((P[6][0] + P[0][0]) / 2, (P[6][1] + P[0][1]) / 2);
+    for (let i = 0; i < 7; i++) { const a = P[i], b = P[(i + 1) % 7]; cx.arcTo(a[0], a[1], b[0], b[1], RD[i]); }
+    cx.closePath();
     cx.lineJoin = 'round'; const w = Math.max(2, s * 0.13);
     if (outline) { cx.strokeStyle = '#fff'; cx.lineWidth = w * 2.5; cx.stroke(); }
     cx.strokeStyle = INK; cx.lineWidth = w; cx.stroke(); cx.fillStyle = fill; cx.fill();
-    if (outline) { cx.beginPath(); cx.moveTo(-s * 0.5, -s * 0.2); cx.lineTo(0, -s * 0.7); cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = w * 0.9; cx.stroke(); }
+    if (outline) { cx.beginPath(); cx.moveTo(-s * 0.48, -s * 0.22); cx.quadraticCurveTo(-s * 0.3, -s * 0.5, -s * 0.05, -s * 0.66); cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = w * 0.9; cx.stroke(); }
     cx.restore();
   }
   function txt(t, x, y, size, fill, al = 'center') {
@@ -537,9 +542,10 @@ export function createRhythm(el, O = {}) {
   /* ── 캐릭터(머리 = 체력 아이콘과 공용) ── */
   function head(c, pal, face, lx, ly, mood) {
     if (c.hs === 'bob') { rr(-78, -60, 156, 112, 46); inkFill(pal.hair); }
-    cx.beginPath(); cx.arc(0, 0, 66, 0, 7); inkFill(pal.skin);
+    cx.beginPath(); if (c.jaw && cx.roundRect) cx.roundRect(-70, -66, 140, 146, [66, 66, 26, 26]); else cx.arc(0, 0, 66, 0, 7); inkFill(pal.skin);
     cx.beginPath();
-    if (c.hs === 'spike') {
+    if (c.hs === 'flat') { if (cx.roundRect) cx.roundRect(-72, -96, 144, 66, [18, 18, 6, 6]); else cx.rect(-72, -96, 144, 66); }
+    else if (c.hs === 'spike') {
       cx.moveTo(-67, -2); for (let i = 1; i < 8; i++) { const a = Math.PI + i * Math.PI / 8, r = i % 2 ? 90 : 62; cx.lineTo(Math.cos(a) * r, Math.sin(a) * r - 4); }
       cx.lineTo(67, -2); cx.lineTo(50, -18); cx.quadraticCurveTo(0, -36, -50, -18); cx.closePath();
     } else { const a0 = Math.PI * 1.04, a1 = Math.PI * 1.96; cx.arc(0, -2, 69, a0, a1); cx.quadraticCurveTo(face * 14, -42, Math.cos(a0) * 69, Math.sin(a0) * 69 - 2); cx.closePath(); }
@@ -547,9 +553,13 @@ export function createRhythm(el, O = {}) {
     const ex = face * 12 + lx, ey = 2 + ly;
     if (mood === 3) { cx.strokeStyle = INK; cx.lineWidth = 5; for (const s of [-1, 1]) { const x = ex + s * 22; cx.beginPath(); cx.moveTo(x - 7, ey - 7); cx.lineTo(x + 7, ey + 7); cx.moveTo(x + 7, ey - 7); cx.lineTo(x - 7, ey + 7); cx.stroke(); } }
     else for (const s of [-1, 1]) { cx.beginPath(); cx.ellipse(ex + s * 22, ey, 7.5, mood === 2 ? 5 : 10, 0, 0, 7); cx.fillStyle = INK; cx.fill(); cx.beginPath(); cx.arc(ex + s * 22 + 2.5, ey - 3.5, 2.6, 0, 7); cx.fillStyle = '#fff'; cx.fill(); }
+    if (c.acc === 'shades' && mood !== 3) {   // 선글라스: 눈 대신 검은 알 + 반짝
+      for (const s2 of [-1, 1]) { rr(ex + s2 * 27 - 25, ey - 16, 50, 30, 10); inkFill('#15151f', 4.5); cx.beginPath(); cx.moveTo(ex + s2 * 27 - 14, ey - 8); cx.lineTo(ex + s2 * 27 - 4, ey - 8); cx.strokeStyle = 'rgba(255,255,255,.7)'; cx.lineWidth = 4; cx.stroke(); }
+      cx.beginPath(); cx.moveTo(ex - 4, ey - 6); cx.lineTo(ex + 4, ey - 6); cx.strokeStyle = INK; cx.lineWidth = 5; cx.stroke();
+    }
     if (c.acc === 'glasses') { for (const s of [-1, 1]) { rr(ex + s * 22 - 18, ey - 14, 36, 28, 9); cx.fillStyle = 'rgba(255,255,255,.18)'; cx.fill(); cx.strokeStyle = INK; cx.lineWidth = 4.5; cx.stroke(); } cx.beginPath(); cx.moveTo(ex - 4, ey - 3); cx.lineTo(ex + 4, ey - 3); cx.stroke(); }
     cx.fillStyle = 'rgba(255,120,140,.35)'; for (const s of [-1, 1]) { cx.beginPath(); cx.ellipse(ex + s * 38, ey + 22, 10, 6, 0, 0, 7); cx.fill(); }
-    const mx = ex * 0.8, my = 32 + ly * 0.5;
+    const mx = ex * 0.8, my = (c.jaw ? 42 : 32) + ly * 0.5;
     cx.strokeStyle = INK; cx.lineWidth = 4.5;
     if (mood === 1) { cx.beginPath(); cx.ellipse(mx, my, 14, 12, 0, 0, 7); inkFill('#7a1f35', 4.5); cx.beginPath(); cx.ellipse(mx, my + 6, 7, 4, 0, 0, 7); cx.fillStyle = '#ff8fa3'; cx.fill(); }
     else if (mood === 2) { cx.beginPath(); cx.ellipse(mx, my + 2, 6, 7, 0, 0, 7); inkFill('#7a1f35', 4); cx.beginPath(); cx.moveTo(-face * 62, -24); cx.quadraticCurveTo(-face * 70, -6, -face * 62, -2); cx.quadraticCurveTo(-face * 54, -6, -face * 62, -24); inkFill('#9fd8ff', 3); }
@@ -573,16 +583,18 @@ export function createRhythm(el, O = {}) {
     const sq = dead ? 0.93 : 1 - bop * 0.04 + (l === 2 ? 0.04 : l === 1 ? -0.04 : 0);
     cx.save(); cx.translate(x, fy);
     cx.fillStyle = 'rgba(0,0,0,.3)'; cx.beginPath(); cx.ellipse(0, 2, 100, 17, 0, 0, 7); cx.fill();
-    lim(-26, -100, -30, -16, 30, pal.pants); lim(26, -100, 30, -16, 30, pal.pants);
-    for (const s of [-1, 1]) { rr(s * 30 - 28, -24, 56, 24, 12); inkFill('#f3f3f7', 4); }
-    cx.scale(1, sq); cx.translate(lx * 0.6, ly * 0.5);
+    const tl = c.tall || 0;   // 큰 키: 다리를 길게 하고 윗몸 전체를 그만큼 올림
+    lim(-26, -100 - tl, -30, -16, 30, pal.pants); lim(26, -100 - tl, 30, -16, 30, pal.pants);
+    for (const s of [-1, 1]) { rr(s * 30 - 28, -24, 56, 24, 12); inkFill(c.chain ? '#e8e8f0' : '#f3f3f7', 4); }
+    cx.scale(1, sq); cx.translate(lx * 0.6, ly * 0.5 - tl);
     const bs = [-face * 50, -188];
     const hb = dead ? [-face * 84, -96] : l === 0 ? [-150, -225] : l === 3 ? [150, -225] : l === 2 ? [-face * 55, -345] : l === 1 ? [-face * 105, -112] : [-face * 72, -108 + bop * 5];
     lim(bs[0], bs[1], hb[0], hb[1], 24, pal.body2); dot(hb[0], hb[1], 13, pal.skin);
     rr(-64, -212, 128, 128, 42); inkFill(pal.body);
     rr(-58, -110, 116, 20, 10); cx.fillStyle = pal.body2; cx.fill();
     if (c.apron) { rr(-46, -192, 92, 108, 18); inkFill(pal === GREY ? '#c9d0ea' : '#ffffff', 4); rr(-24, -140, 48, 26, 8); inkFill(pal === GREY ? '#b8c0e0' : '#e8f6ef', 3); }
-    cx.save(); cx.translate(face * 26, -168); cx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 6 : 14; cx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } cx.closePath(); inkFill('#ffd84a', 3); cx.restore();
+    if (c.chain) { cx.beginPath(); cx.moveTo(-40, -206); cx.quadraticCurveTo(0, -130, 40, -206); cx.strokeStyle = INK; cx.lineWidth = 11; cx.stroke(); cx.strokeStyle = pal === GREY ? '#b8c0e0' : '#ffd23a'; cx.lineWidth = 6; cx.stroke(); dot(0, -160, 12, pal === GREY ? '#b8c0e0' : '#ffd23a', 4); }
+    else { cx.save(); cx.translate(face * 26, -168); cx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 6 : 14; cx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } cx.closePath(); inkFill('#ffd84a', 3); cx.restore(); }
     cx.save(); cx.translate(lx * 0.4, -276 + ly * 0.3); head(c, pal, face, lx * 0.5, ly * 0.4, dead ? 3 : miss ? 2 : sing ? 1 : 0); cx.restore();
     const fsh = [face * 50, -188], hf = dead ? [face * 84, -96] : sing ? [face * 52 + lx * 0.4, -236] : [face * 72, -150];
     lim(fsh[0], fsh[1], hf[0], hf[1], 24, pal.body);
@@ -593,11 +605,11 @@ export function createRhythm(el, O = {}) {
 
   /* ── 방송실 배경(한 번 그려 캐시) ── */
   const BX = -260, BY = -360, BW = 1800, BH = 1360;
-  const STAGE_N = { studio: '방송실', cafe: '급식실', class: '노을 진 교실' };
-  const STAGE_C = { studio: ['#141a3e', '#2a2240'], cafe: ['#b9d8c4', '#5d6a7e'], class: ['#6e4a3a', '#5a3a2a'] };
+  const STAGE_N = { studio: '방송실', cafe: '급식실', hall: '대강당 무대' };
+  const STAGE_C = { studio: ['#141a3e', '#2a2240'], cafe: ['#b9d8c4', '#5d6a7e'], hall: ['#2a0a14', '#0c0a12'] };
   function buildBg(k, st) {
     if (st === 'cafe') return buildCafe(k);
-    if (st === 'class') return buildClass(k);
+    if (st === 'hall') return buildHall(k);
     const c = document.createElement('canvas'); c.width = Math.ceil(BW * k); c.height = Math.ceil(BH * k);
     const g = c.getContext('2d'), sv = cx; g.scale(k, k); g.translate(-BX, -BY);
     const gr = g.createLinearGradient(0, -360, 0, 560); gr.addColorStop(0, '#141a3e'); gr.addColorStop(1, '#27306a'); g.fillStyle = gr; g.fillRect(BX, BY, BW, 920);
@@ -636,26 +648,20 @@ export function createRhythm(el, O = {}) {
     g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.ellipse(640, 640, 560, 70, 0, 0, 7); g.fill();
     return c;
   }
-  function buildClass(k) {   // 노을 진 교실: 창밖 노을·칠판·나무 바닥
+  function buildHall(k) {   // 대강당 무대: 빨간 막·현수막·나무 무대 바닥·앞쪽 관객 머리
     const [c, g] = bgCanvas(k);
-    g.fillStyle = '#f0d6b4'; g.fillRect(BX, BY, BW, 920);
-    g.fillStyle = '#c99b6e'; g.fillRect(BX, 440, BW, 110);   // 허리 판넬
-    for (const x of [-230, 1110]) {
-      const sk = g.createLinearGradient(0, 30, 0, 380); sk.addColorStop(0, '#ff8a5c'); sk.addColorStop(0.6, '#ffb36b'); sk.addColorStop(1, '#ffd9a0');
-      g.fillStyle = '#8a5a3a'; g.fillRect(x, 20, 400, 380); g.fillStyle = sk; g.fillRect(x + 12, 32, 376, 356);
-      g.fillStyle = 'rgba(255,240,200,.9)'; g.beginPath(); g.arc(x + 200, 300, 46, 0, 7); g.fill();
-      g.fillStyle = '#6a4a5a'; for (let i = 0; i < 6; i++) g.fillRect(x + 12 + i * 64, 330 - (i % 3) * 30, 50, 60 + (i % 3) * 30);
-      g.fillStyle = '#8a5a3a'; g.fillRect(x + 194, 32, 12, 356); g.fillRect(x + 12, 200, 376, 10);
-    }
-    g.fillStyle = '#6b4a2e'; g.fillRect(400, 40, 480, 270); g.fillStyle = '#2f5a45'; g.fillRect(412, 52, 456, 246);   // 칠판
-    g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '40px ' + FONT; g.textAlign = 'center'; g.fillText('종례 5분 전', 640, 130);
-    g.font = '24px ' + FONT; g.fillText('내일 준비물: 노트북 · 충전기', 640, 190); g.fillText('청소 당번: 1분단', 640, 230);
-    g.fillStyle = '#e8c48a'; g.fillRect(420, 300, 440, 10);
-    for (let x = 240; x < 1100; x += 210) { g.fillStyle = '#b07a48'; g.fillRect(x, 470, 150, 22); g.fillStyle = '#7a5434'; g.fillRect(x + 10, 492, 12, 56); g.fillRect(x + 128, 492, 12, 56); }
-    const fg = g.createLinearGradient(0, 560, 0, 1000); fg.addColorStop(0, '#a8744a'); fg.addColorStop(1, '#6e4a2e'); g.fillStyle = fg; g.fillRect(BX, 560, BW, BH);
-    g.strokeStyle = 'rgba(60,30,10,.25)'; g.lineWidth = 3; for (let y = 580; y < 1000; y += 34) { g.beginPath(); g.moveTo(BX, y); g.lineTo(BX + BW, y); g.stroke(); }
-    g.fillStyle = 'rgba(255,170,90,.18)'; g.fillRect(BX, BY, BW, BH);
-    g.fillStyle = 'rgba(255,220,160,.2)'; g.beginPath(); g.ellipse(640, 640, 560, 70, 0, 0, 7); g.fill();
+    g.fillStyle = '#2a0a14'; g.fillRect(BX, BY, BW, 920);
+    for (let x = BX; x < BX + BW; x += 60) { const gr = g.createLinearGradient(x, 0, x + 60, 0); gr.addColorStop(0, '#5a0f22'); gr.addColorStop(0.5, '#9a1c38'); gr.addColorStop(1, '#4a0c1c'); g.fillStyle = gr; g.fillRect(x, -360, 60, 920); }
+    g.fillStyle = '#6a1226'; g.fillRect(BX, -360, BW, 140); g.fillStyle = '#b8243f';
+    for (let x = BX; x < BX + BW; x += 80) { g.beginPath(); g.arc(x + 40, -220, 40, 0, Math.PI); g.fill(); }
+    g.fillStyle = '#e8b84a'; g.fillRect(BX, -226, BW, 8);
+    g.fillStyle = '#14141c'; g.fillRect(350, 0, 580, 110); g.fillStyle = '#ffd23a'; g.fillRect(358, 8, 564, 94);   // 현수막
+    g.fillStyle = '#14141c'; g.font = '50px ' + FONT; g.textAlign = 'center'; g.fillText('영상고 랩 배틀', 640, 72);
+    const fg = g.createLinearGradient(0, 560, 0, 1000); fg.addColorStop(0, '#9a6a3e'); fg.addColorStop(1, '#5a3a22'); g.fillStyle = fg; g.fillRect(BX, 548, BW, 360);
+    g.strokeStyle = 'rgba(40,20,5,.3)'; g.lineWidth = 3; for (let y = 570; y < 900; y += 30) { g.beginPath(); g.moveTo(BX, y); g.lineTo(BX + BW, y); g.stroke(); }
+    g.fillStyle = '#2a1a10'; g.fillRect(BX, 900, BW, 24); g.fillStyle = '#0c0a12'; g.fillRect(BX, 924, BW, BH);
+    for (let x = BX + 20; x < BX + BW; x += 70) { const y = 960 + ((x / 70) % 2) * 18; g.fillStyle = '#16131f'; g.beginPath(); g.arc(x, y, 34, 0, 7); g.fill(); g.fillRect(x - 46, y + 20, 92, 80); }
+    g.fillStyle = 'rgba(255,220,150,.12)'; g.beginPath(); g.ellipse(640, 650, 560, 70, 0, 0, 7); g.fill();
     return c;
   }
   function fan(x, y, bop, mood, T) {   // 스피커 위에 앉은 친구: 박자마다 끄덕, 콤보 50마다 환호, 콤보 끊기면 시무룩
@@ -712,8 +718,13 @@ export function createRhythm(el, O = {}) {
       const tm = now / 1000; cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = 6; cx.lineCap = 'round';
       for (let i = 0; i < 8; i++) { const x = 115 + i * 150, ph = tm * 1.4 + i; cx.globalAlpha = 0.25 + 0.25 * Math.sin(ph); cx.beginPath(); cx.moveTo(x, 355); cx.quadraticCurveTo(x + 14 * Math.sin(ph * 2), 320, x, 285 - 10 * Math.sin(ph)); cx.stroke(); }
       cx.globalAlpha = 1;
-    } else {   // 노을 빛줄기
-      cx.fillStyle = `rgba(255,190,110,${0.08 + beatPulse * 0.04})`; for (const x of [-30, 1310]) { cx.beginPath(); cx.moveTo(x - 160, 40); cx.lineTo(x + 160, 40); cx.lineTo(640 + (x - 640) * 0.2 + 220, 620); cx.lineTo(640 + (x - 640) * 0.2 - 220, 620); cx.closePath(); cx.fill(); }
+    } else {   // 대강당: 박자 따라 흔들리는 색 조명
+      const tm = now / 1000; cx.globalCompositeOperation = 'lighter';
+      [['255,80,140', -200, 1.1], ['80,160,255', 1480, 0.9], ['255,220,90', 640, 1.4]].forEach(([c, x0, sp], i) => {
+        const a = Math.sin(tm * sp + i) * 0.5, tx = 640 + Math.sin(tm * sp * 0.7 + i * 2) * 420;
+        cx.fillStyle = `rgba(${c},${0.1 + beatPulse * 0.08})`; cx.beginPath(); cx.moveTo(x0 - 30, -360); cx.lineTo(x0 + 30, -360); cx.lineTo(tx + 150 + a * 40, 640); cx.lineTo(tx - 150 + a * 40, 640); cx.closePath(); cx.fill();
+      });
+      cx.globalCompositeOperation = 'source-over';
     }
     speaker(640, 600, playing && T >= 0 ? beatPulse : 0);
     const bop = Math.pow(beatPulse, 2), dead = state === 'over';
