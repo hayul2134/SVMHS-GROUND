@@ -42,12 +42,12 @@ const GOAL = {
   film: { t: '한 판에 65개 넘게 자르기', ok: v => FILM_MAX - v >= 65 },
   blast: { t: '한 판에 30,000점 넘게 송출하기', ok: v => BLAST_MAX - v >= 30000 },
   chase: { t: '한 판에 8,000점 넘게 달리기', ok: v => CHASE_MAX - v >= 8000 },
-  dance: { t: '한 판에 2,500점 넘게 춤추기', ok: v => DANCE_MAX - v >= 2500 },
+  dance: { t: '한 판에 1,000점 넘게 춤추기', ok: v => DANCE_MAX - v >= 1000 },   // 2026-11-02 사람 기록 기준(전 2,500)
 };
 // 누적 미션(2026-10-27 하율: "주간 미션에 누적 점수 추가, 다른 게임들도"): 이번 주에 1판으로 친 판들을 더함
 //   점수·거리가 있는 게임 = 점수·거리 합 · 시간 기록 게임(작을수록 좋음) = 기준 안에 든 '좋은 판' 횟수
 const SUM = {
-  dance: { amt: v => DANCE_MAX - v, n: [8000, 12000], u: '점', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}점 춤추기` },
+  dance: { amt: v => DANCE_MAX - v, n: [3000, 5000], u: '점', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}점 춤추기` },
   chase: { amt: v => CHASE_MAX - v, n: [20000, 30000], u: '점', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}점 달리기` },
   blast: { amt: v => BLAST_MAX - v, n: [80000, 120000], u: '점', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}점 송출하기` },   // 2026-10-31 점수 ×10
   film: { amt: v => FILM_MAX - v, n: [280, 420], u: '개', t: n => `이번 주 누적 ${n.toLocaleString('ko-KR')}개 자르기` },
