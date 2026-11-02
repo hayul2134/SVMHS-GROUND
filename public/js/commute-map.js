@@ -221,7 +221,9 @@ export function createMap(stops) {
     stops.forEach((st, i) => {
       const [x, y] = pts[i], past = i < cur && !(done && i === stops.length - 1), tgt = i === cur && !done;
       c.globalAlpha = past ? .55 : 1;
-      label(c, st.n, x, y * T - 22, tgt ? 17 : 13, tgt ? '#1d5fd6' : '#2a2846', tgt ? 900 : 800);
+      // 2026-11-02 하율 "아이콘 안 겹치게": 열차가 역 가까이 오면 이름을 열차 지붕 위로 올림(가까울수록 더, 부드럽게)
+      const lift = Math.max(0, 1 - Math.hypot(x - tx, (y - ty) * T) / 70) * 30;
+      label(c, st.n, x, y * T - 22 - lift, tgt ? 17 : 13, tgt ? '#1d5fd6' : '#2a2846', tgt ? 900 : 800);
     });
     c.globalAlpha = 1;
     c.restore();

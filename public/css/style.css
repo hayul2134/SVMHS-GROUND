@@ -6932,3 +6932,5 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .cm-box.bad{border-color:#e5484d;background:#fff0f0}
 .cm-box.bad .cm-tg b{color:#e5484d}
 .cm-intro:has(.cm-rts){padding:16px;gap:8px}.cm-intro:has(.cm-rts)>b{font-size:clamp(26px,5vw,36px)}
+/* 등교하기!: 위 버튼 줄(랭킹·키 설정·나가기)과 소리 버튼이 붙어 보이지 않게(2026-11-02 하율 "아이콘 안 겹치게") */
+.parea.wide:has(> .cm){padding-top:clamp(16px,3vh,28px)}
