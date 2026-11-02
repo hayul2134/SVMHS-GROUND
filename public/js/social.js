@@ -1783,9 +1783,10 @@ function chBlock(c) {
       <span class="tcc-meta"><span>${ic('flag')}${x.n}명 중${tie ? '' : ' 1등'}</span>${gap ? `<span>${ic('ruler')}${gap}</span>` : ''}${x.me ? '<span class="tcc-mine">나!</span>' : ''}</span></li>`; }).join('');
   const mine = (c.games || []).filter(x => x.me).length;
   const rise = c.rise?.length ? c.rise.map(u => `<li class="${u.isMe ? 'me' : ''}"><a href="#u/${esc(u.handle)}" data-u="${esc(u.handle)}">${av(u, 'xs', avWear(u.mfx))}<b><span>${esc(nameOf(u))}</span>${devTag(u)}</b></a><span class="tch-mv">${u.d > 0 ? `${tierBadge(u.from)}<i>→</i>${tierBadge(u.to)}` : tierBadge(u.to)}</span><em>${u.d > 0 ? `▲${u.d}` : ''}${u.dp > 0 ? ` +${u.dp}점` : ''}</em></li>`).join('') : '';
+  const noCh = ffOn('champ-off', isDev(S.me));   // 2026-11-02 하율 '없애' — 기록실과 겹쳐서 게임별 1등 카드 묶음 숨김
   return `<section class="tch">
-    <div class="tch-h">${ic('trophy')}<b>이번 라운드 게임별 1등</b>${mine ? `<span class="tch-mine">나도 ${mine}개 게임 1등!</span>` : '<small>티어와 따로, 게임마다 1등이 있어요</small>'}</div>
-    <ul class="tch-list tcc-list">${champs}</ul>
+    ${noCh ? '' : `<div class="tch-h">${ic('trophy')}<b>이번 라운드 게임별 1등</b>${mine ? `<span class="tch-mine">나도 ${mine}개 게임 1등!</span>` : '<small>티어와 따로, 게임마다 1등이 있어요</small>'}</div>
+    <ul class="tch-list tcc-list">${champs}</ul>`}
     ${c.since ? `<div class="tch-h">${ic('fire')}<b>어제보다 많이 오른 학생</b><small>${md(c.since)}까지 기록과 비교</small></div>${rise ? `<ol class="tch-rise">${rise}</ol>` : '<p class="tch-none">아직 오른 학생이 없어요 — 첫 주인공이 되어 볼까요?</p>'}` : '<p class="tch-none">라운드 첫날이라 내일부터 \'어제보다 오른 학생\'이 보여요</p>'}
   </section>`;
 }
