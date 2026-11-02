@@ -2248,8 +2248,10 @@ async function playRhythm() {
     if (!RHY) RHY = await import('./rhythm.js').catch(() => import('./rhythm.js?r=' + Date.now()));
     if (seq !== playSeq || !area.isConnected) return;
     area.innerHTML = '<div id="rbBox"></div>';
+    const wide = on => { area.classList.toggle('wide', on); $('#gamePlay .ptop')?.classList.toggle('wide', on); };
+    wide(true);   // 2026-11-02 하율 "화면 더 키워줘" — 넓은 칸(1240px)
     const M = RHY.createRhythm($('#rbBox'), {}); M.start();
-    quitGame = () => M.destroy();
+    quitGame = () => { M.destroy(); wide(false); };
   } catch (e) { if (seq === playSeq && curGame === 'rhythm') gameFail(e); else console.error(e); }
 }
 /* 캐주얼 게임(2026-10-29 하율 "구글 플레이 게임즈 미니 게임처럼 캐주얼로 — 내 화면에만"): js/casual.js가 판을 그림

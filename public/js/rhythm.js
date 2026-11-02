@@ -11,7 +11,10 @@ import { store } from './util.js';
 const FONT = 'Jua, system-ui, sans-serif', INK = '#2a2846';
 const COL = ['#b07cff', '#3fc4f2', '#3ed27a', '#ff5d72'];
 const ROT = [-Math.PI / 2, Math.PI, 0, Math.PI / 2];
-const KEYS = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 2, ArrowRight: 3, KeyA: 0, KeyS: 1, KeyW: 2 };
+const KEY_DEF = [['KeyD', 'ArrowLeft'], ['KeyF', 'ArrowDown'], ['KeyJ', 'ArrowUp'], ['KeyK', 'ArrowRight']];
+const KEY_BAN = new Set(['Escape', 'Enter', 'NumpadEnter', 'KeyP', 'Tab', 'MetaLeft', 'MetaRight', 'AltLeft', 'AltRight', 'ControlLeft', 'ControlRight', 'CapsLock']);
+const keyName = c => !c ? '없음' : c.startsWith('Key') ? c.slice(3) : c.startsWith('Digit') ? c.slice(5) : ({ ArrowLeft: '←', ArrowDown: '↓', ArrowUp: '↑', ArrowRight: '→', Space: '스페이스', ShiftLeft: '왼 Shift', ShiftRight: '오른 Shift', Semicolon: ';', Comma: ',', Period: '.', Slash: '/', Quote: "'", BracketLeft: '[', BracketRight: ']', Backspace: '←지우기' })[c] || c.replace('Numpad', '키패드 ');
+const ARW = ['←', '↓', '↑', '→'];
 const DIFFS = [{ n: '쉬움', sp: 1.0, miss: .016 }, { n: '보통', sp: 1.2, miss: .021 }, { n: '어려움', sp: 1.45, miss: .025 }];
 // 판정(FNF 창: 45/90/135/166ms)
 const RATE = [
@@ -22,9 +25,11 @@ const RATE = [
 ];
 const MAJ = [0, 2, 4, 5, 7, 9, 11], MINS = [0, 2, 3, 5, 7, 8, 10];
 const CH = {
-  me: { name: '나', body: '#3d7bff', body2: '#2b5fd6', pants: '#2a2f55', hair: '#1d1d2b', skin: '#ffdcbc', hs: 'short', acc: 'cap', capC: '#ffd84a', wave: 'triangle' },
-  sb: { name: '방송부 선배', body: '#9a6cff', body2: '#7a4fe0', pants: '#33285a', hair: '#3b2a7a', skin: '#ffdcbc', hs: 'bob', acc: 'headset', capC: '#3a3d5c', wave: 'square' },
-  bj: { name: '방송부장', body: '#e0465a', body2: '#b8323f', pants: '#2a2238', hair: '#2a1a1a', skin: '#f7d2b0', hs: 'spike', acc: 'glasses', capC: '#2a2238', wave: 'sawtooth' },
+  me: { name: '나', body: '#3d7bff', body2: '#2b5fd6', pants: '#2a2f55', hair: '#1d1d2b', skin: '#ffdcbc', hs: 'short', acc: 'cap', capC: '#ffd84a', wave: 'triangle', lp: 3400 },
+  sb: { name: '방송부 선배', body: '#9a6cff', body2: '#7a4fe0', pants: '#33285a', hair: '#3b2a7a', skin: '#ffdcbc', hs: 'bob', acc: 'headset', capC: '#3a3d5c', wave: 'square', lp: 1800 },
+  gd: { name: '급식 당번', body: '#3ec28f', body2: '#2a9a6e', pants: '#2f3a5c', hair: '#4a2f22', skin: '#ffd9b8', hs: 'short', acc: 'chef', capC: '#ffffff', apron: 1, wave: 'square', lp: 2600 },
+  bj: { name: '방송부장', body: '#e0465a', body2: '#b8323f', pants: '#2a2238', hair: '#2a1a1a', skin: '#f7d2b0', hs: 'spike', acc: 'glasses', capC: '#2a2238', wave: 'sawtooth', lp: 1500 },
+  fr: { name: '친구', body: '#ffb84d', body2: '#e8962a', pants: '#33406e', hair: '#5a3a2a', skin: '#ffdcbc', hs: 'bob', acc: 'none', capC: '#fff' },
 };
 const GREY = { body: '#6d7fbd', body2: '#56669f', pants: '#3a4270', hair: '#2d3460', skin: '#c7cfee', capC: '#8d9ad0' };
 const DRUMS = {
@@ -34,19 +39,19 @@ const DRUMS = {
 };
 // 곡: sec = I(전주 2마디) · O/P(선배/나 4마디) · X(1마디씩 주고받기) · E(마무리 1마디), 글자 = 프레이즈. 프레이즈 = '박,음 단계[,길게 누르는 박]'
 const SONGS = [
-  { id: 's1', name: '쉬는 시간 10분 전', opp: 'sb', bpm: 120, root: 69, sc: MINS, prog: [0, -4, 3, -2], q: [0, 1, 1, 1], drum: 'basic', pad: 1, arp: 0,
+  { id: 's1', name: '쉬는 시간 10분 전', opp: 'sb', stage: 'studio', bpm: 120, root: 69, sc: MINS, prog: [0, -4, 3, -2], q: [0, 1, 1, 1], drum: 'basic', pad: 1, arp: 0,
     sec: 'I Oa Pa Ob Pb Oc Pc Xd Od Pd E',
     ph: ['0,0 1,2 2,4 3,2 4,3 5,2 6,1 8,0 9,2 10,4 11,5 12,4,2 14,2 15,1',
       '0,4 0.5,3 1,2 2,4 2.5,5 3,4 4,2,1.5 6,0 6.5,1 7,2 8,4 9,5 10,6,1 12,5 12.5,4 13,3 14,2,1.5',
       '0,0 0.5,1 1,2 1.5,3 2,4 3,2 4,5 5,4 5.5,3 6,2 7,1 8,0 8.5,2 9,4 9.5,6 10,7,1 12,6 12.5,5 13,4 13.5,3 14,4,1.5',
       '0,7 1,6 1.5,5 2,4 3,4 3.5,5 4,6,1 6,4 6.5,2 7,0 8,1 8.5,2 9,3 10,4 10.5,5 11,6 12,7,1 14,4 15,0'] },
-  { id: 's2', name: '급식 줄 서기', opp: 'sb', bpm: 140, root: 65, sc: MAJ, prog: [0, 5, -3, -5], q: [1, 1, 0, 1], drum: 'synco', pad: 1, arp: 0,
+  { id: 's2', name: '급식 줄 서기', opp: 'gd', stage: 'cafe', bpm: 140, root: 65, sc: MAJ, prog: [0, 5, -3, -5], q: [1, 1, 0, 1], drum: 'synco', pad: 1, arp: 0,
     sec: 'I Oa Pa Ob Pb Oc Pc Od Pd Xb E',
     ph: ['0,0 0.75,2 1.5,4 2.5,2 3,1 4,0 4.75,2 5.5,4 6,5,1 8,4 8.5,3 9,2 9.75,1 10.5,0 11,1 12,2,2 15,4',
       '0,5 0.5,4 1,2 1.5,4 2,5 3,7,1 4.5,5 5,4 5.5,2 6,0 7,2 8,4 8.75,5 9.5,4 10,2 10.75,1 11.5,0 12,2 12.5,3 13,4,2',
       '0,0 0,3 1,1 1.5,2 2,3 2.5,2 3,1 4,4 4,1 5,5 5.5,4 6,3 6.5,4 7,5 8,7 8.5,6 9,5 9.5,4 10,3 10.5,2 11,1 11.5,0 12,4,1 13.5,2 14,0,1.5',
       '0,2 0.5,2 1,4 1.5,4 2,5 2.75,4 3.5,2 4,0,1 6,4 6.5,5 7,7 8,6 8.5,5 9,4 9.5,3 10,2 10.5,3 11,4 11.5,5 12,7,2 15,0'] },
-  { id: 's3', name: '종례 전 마지막 곡', opp: 'bj', bpm: 165, root: 62, sc: MINS, prog: [0, -4, -2, -5], q: [0, 1, 1, 1], drum: 'drive', pad: 1, arp: 1,
+  { id: 's3', name: '종례 전 마지막 곡', opp: 'bj', stage: 'class', bpm: 165, root: 62, sc: MINS, prog: [0, -4, -2, -5], q: [0, 1, 1, 1], drum: 'drive', pad: 1, arp: 1,
     sec: 'I Oa Pa Ob Pb Xc Oc Pc Od Pd Xd E',
     ph: ['0,0 0.5,0 1,2 1.5,0 2,3 2.5,0 3,4 3.5,3 4,2 4.5,0 5,2 5.5,4 6,7,1 7.5,6 8,4 8.5,4 9,5 9.5,4 10,3 10.5,2 11,1 11.5,2 12,0,2 14,4 14.5,5 15,6 15.5,7',
       '0,7 0.5,6 1,5 1.5,4 2,3 2.5,4 3,5 3.5,6 4,7,1 5.5,4 6,2 6.5,4 7,7 8,5 8.25,6 8.5,5 9,4 9.5,2 10,0 10.5,2 11,4 11.5,5 12,4 12.5,2 13,0 13.5,1 14,2,1.5',
@@ -98,11 +103,18 @@ export function createRhythm(el, O = {}) {
   const svgF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   el.innerHTML = `<div class="rb"><div class="rb-wrap"><canvas class="rb-cv"></canvas><div class="rb-ov" hidden></div>
     <button type="button" class="rb-ib rb-pz" hidden aria-label="일시정지">${svgP}</button><button type="button" class="rb-ib rb-fs" aria-label="전체 화면">${svgF}</button></div>
-    <div class="rb-bar">키보드 D F J K / ← ↓ ↑ → · 터치는 화면을 세로 4칸으로 나눠 누르기 · Enter·Esc 멈춤</div></div>`;
+    <div class="rb-bot"><button type="button" class="btn rb-re" hidden>다시 하기</button><span class="rb-bar"></span></div></div>`;
   const wrap = el.querySelector('.rb-wrap'), cv = el.querySelector('.rb-cv'), cx = cv.getContext('2d'), ov = el.querySelector('.rb-ov');
-  const pz = el.querySelector('.rb-pz'), fsb = el.querySelector('.rb-fs');
+  const pz = el.querySelector('.rb-pz'), fsb = el.querySelector('.rb-fs'), reb = el.querySelector('.rb-re'), barT = el.querySelector('.rb-bar');
   let W = 0, H = 0, DPR = 1, alive = true, raf = 0, lastF = 0, touchUI = false, bgC = null, bgK = 0;
-  const opt = Object.assign({ down: false, mid: false, ghost: true, hits: false }, store.get('rb_opt', {}) || {});
+  const opt = Object.assign({ down: false, mid: false, ghost: true, hits: false, music: true }, store.get('rb_opt', {}) || {});
+  if (!Array.isArray(opt.keys) || opt.keys.length !== 4) opt.keys = KEY_DEF.map(a => a.slice());
+  let KEYS = {}, waitKey = null;
+  function rebuildKeys() {
+    KEYS = {}; opt.keys.forEach((a, l) => a.forEach(c => { if (c) KEYS[c] = l; }));
+    barT.textContent = `키 ${opt.keys.map(a => a.filter(Boolean).map(keyName).join('/')).join(' · ')} · 터치는 화면을 세로 4칸으로 나눠 누르기 · Enter·Esc 멈춤`;
+  }
+  rebuildKeys();
   let off = +store.get('rb_off', 0) || 0, diff = +store.get('rb_diff', 1);
   if (!(diff >= 0 && diff <= 2)) diff = 1;
   const rec = store.get('rb_rec', {}) || {}, week = store.get('rb_week', {}) || {};
@@ -113,9 +125,9 @@ export function createRhythm(el, O = {}) {
     let w, h;
     if (isFs()) { w = innerWidth; h = innerHeight; }
     else {
-      w = Math.min(el.clientWidth || 360, 1400); const top = Math.max(8, wrap.getBoundingClientRect().top);
-      h = Math.max(360, Math.min(1000, innerHeight - top - 34));
-      if (w >= h * 1.05) { if (w / h > 16 / 9) w = h * 16 / 9; else h = Math.min(h, w * 10 / 16 > 360 ? w * 10 / 16 : h); }
+      w = Math.min(el.clientWidth || 360, 1600); const top = Math.max(8, wrap.getBoundingClientRect().top);
+      h = Math.max(380, Math.min(1100, innerHeight - top - 64));
+      if (w >= h * 1.05) { if (w / h > 2.1) w = h * 2.1; }   // 화면에 남은 높이를 다 씀(가로가 아주 넓을 때만 폭 줄임)
       else h = Math.min(h, w * 1.75);
     }
     DPR = Math.min(2, devicePixelRatio || 1); W = Math.round(w); H = Math.round(h);
@@ -128,10 +140,12 @@ export function createRhythm(el, O = {}) {
       else (wrap.requestFullscreen || wrap.webkitRequestFullscreen).call(wrap)?.catch?.(() => {});
     } catch {}
   };
-  const onFs = () => setTimeout(fit, 60);
+  const onFs = () => { requestAnimationFrame(() => requestAnimationFrame(fit)); setTimeout(fit, 350); setTimeout(fit, 900); };   // 전체 화면 해제 직후엔 크기가 아직 전체 화면 값 → 몇 번 다시 맞춤
 
   /* ── 소리(직접 합성) ── */
-  let AC = null, NB = null, master = null, auto = 0;
+  let AC = null, NB = null, master = null, auto = 0, OUT = null;
+  const dst = () => OUT || master;
+  const useOut = (bus, fn) => { const o = OUT; OUT = bus; try { fn(); } finally { OUT = o; } };
   function initAudio() {
     if (!AC) {
       AC = new (window.AudioContext || window.webkitAudioContext)();
@@ -147,8 +161,8 @@ export function createRhythm(el, O = {}) {
   }
   const env = (g, at, pk, dec) => { g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(pk, at + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, at + dec); };
   const mf = m => 440 * Math.pow(2, (m - 69) / 12);
-  function osc(type, f, at, pk, dec) { const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.value = f; env(g, at, pk, dec); o.connect(g).connect(master); o.start(at); o.stop(at + dec + 0.03); return o; }
-  function noise(at, type, f, pk, dec) { const s = AC.createBufferSource(); s.buffer = NB; const fl = AC.createBiquadFilter(); fl.type = type; fl.frequency.value = f; const g = AC.createGain(); env(g, at, pk, dec); s.connect(fl).connect(g).connect(master); s.start(at, Math.random() * 0.5); s.stop(at + dec + 0.03); }
+  function osc(type, f, at, pk, dec) { const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.value = f; env(g, at, pk, dec); o.connect(g).connect(dst()); o.start(at); o.stop(at + dec + 0.03); return o; }
+  function noise(at, type, f, pk, dec) { const s = AC.createBufferSource(); s.buffer = NB; const fl = AC.createBiquadFilter(); fl.type = type; fl.frequency.value = f; const g = AC.createGain(); env(g, at, pk, dec); s.connect(fl).connect(g).connect(dst()); s.start(at, Math.random() * 0.5); s.stop(at + dec + 0.03); }
   const kick = at => { const o = osc('sine', 150, at, 0.95, 0.26); o.frequency.setValueAtTime(155, at); o.frequency.exponentialRampToValueAtTime(42, at + 0.12); };
   const snare = (at, v = .55) => { noise(at, 'bandpass', 1900, v, 0.16); osc('triangle', 190, at, v * .45, 0.08); };
   const hat = (at, v) => noise(at, 'highpass', 7600, v, 0.04);
@@ -157,26 +171,26 @@ export function createRhythm(el, O = {}) {
   function bassN(at, m, dur) {
     const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(); o.type = 'sawtooth'; o.frequency.value = mf(m); f.type = 'lowpass'; f.frequency.value = 480;
     g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.3, at + 0.01); g.gain.setValueAtTime(0.3, at + dur * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    o.connect(f).connect(g).connect(master); o.start(at); o.stop(at + dur + 0.02);
+    o.connect(f).connect(g).connect(dst()); o.start(at); o.stop(at + dur + 0.02);
   }
   function pad(at, r, q, dur) {
     const f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'lowpass'; f.frequency.value = 1100;
     g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.06, at + 0.12); g.gain.setValueAtTime(0.06, at + dur * 0.8); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    f.connect(g).connect(master);
+    f.connect(g).connect(dst());
     for (const s of [0, q ? 4 : 3, 7]) { const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = mf(r + s); o.connect(f); o.start(at); o.stop(at + dur + 0.02); }
   }
   function pluck(at, m, dur) {
     const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(); o.type = 'square'; o.frequency.value = mf(m); f.type = 'lowpass'; f.frequency.setValueAtTime(2600, at); f.frequency.exponentialRampToValueAtTime(500, at + dur);
-    env(g, at, 0.045, dur); o.connect(f).connect(g).connect(master); o.start(at); o.stop(at + dur + 0.03);
+    env(g, at, 0.045, dur); o.connect(f).connect(g).connect(dst()); o.start(at); o.stop(at + dur + 0.03);
   }
-  function voice(at, m, dur, wave) {   // 노래하는 목소리: 살짝 아래에서 올라가는 음 + 비브라토
+  function voice(at, m, dur, wave, lp = 1800) {   // 노래하는 목소리: 살짝 아래에서 올라가는 음 + 비브라토
     const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain(), fr = mf(m);
     o.type = wave; o.frequency.setValueAtTime(fr * 0.94, at); o.frequency.linearRampToValueAtTime(fr, at + 0.04);
     lfo.frequency.value = 5.6; lg.gain.value = fr * 0.013; lfo.connect(lg).connect(o.frequency);
-    f.type = 'lowpass'; f.frequency.value = wave === 'triangle' ? 3400 : wave === 'square' ? 1800 : 1500;
+    f.type = 'lowpass'; f.frequency.value = lp;
     const len = Math.max(dur, 0.17), pk = wave === 'triangle' ? 0.34 : wave === 'square' ? 0.14 : 0.12;
     g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(pk, at + 0.015); g.gain.setValueAtTime(pk * 0.8, at + len - 0.04); g.gain.exponentialRampToValueAtTime(0.0001, at + len + 0.07);
-    o.connect(f).connect(g).connect(master); o.start(at); lfo.start(at); o.stop(at + len + 0.09); lfo.stop(at + len + 0.09); return g;
+    o.connect(f).connect(g).connect(dst()); o.start(at); lfo.start(at); o.stop(at + len + 0.09); lfo.stop(at + len + 0.09); return g;
   }
   function missSnd() { if (!AC) return; const at = AC.currentTime; const o = osc('sawtooth', 160, at, 0.13, 0.2); o.frequency.exponentialRampToValueAtTime(70, at + 0.18); noise(at, 'lowpass', 600, 0.15, 0.1); }
   const hitSnd = () => { if (AC && opt.hits) osc('sine', 1800, AC.currentTime, 0.12, 0.05); };
@@ -200,21 +214,73 @@ export function createRhythm(el, O = {}) {
       }
       if (S.pad) ev.push({ t: b0, f: at => pad(at, r, q, spb * 4) });
     }
-    const wave = CH[S.opp].wave;
-    for (const n of B.notes) if (n.who === 0) ev.push({ t: n.t, f: at => voice(at, n.m, n.d, wave) });
+    const oc = CH[S.opp], pb = B.pbus;   // 내 목소리는 따로 버스 → 놓치면 끊기고 다음에 맞히면 다시(FNF 보컬 트랙처럼)
+    for (const n of B.notes) {
+      if (n.who === 0) ev.push({ t: n.t, f: at => voice(at, n.m, n.d, oc.wave, oc.lp) });
+      else ev.push({ t: n.t, f: at => useOut(pb, () => voice(at, n.m, n.d, 'triangle', 3400)) });
+    }
     return ev.sort((a, b) => a.t - b.t);
+  }
+
+  /* ── 배경 음악: 메뉴(밝게)·게임 오버(느리게) — 마디 단위로 미리 깔기 ── */
+  const bgm = { kind: null, next: 0, bar: 0, bus: null };
+  function setBgm(kind) {
+    if (!AC || bgm.kind === kind) return;
+    if (bgm.bus) { const b = bgm.bus; b.gain.setTargetAtTime(0.0001, AC.currentTime, 0.15); setTimeout(() => { try { b.disconnect(); } catch {} }, 900); }
+    bgm.kind = kind; bgm.bus = null; if (!kind) return;
+    const b = AC.createGain(); b.gain.value = 0.0001; b.gain.setTargetAtTime(kind === 'menu' ? 0.45 : 0.5, AC.currentTime, 0.5); b.connect(AC.destination);
+    bgm.bus = b; bgm.next = AC.currentTime + 0.15; bgm.bar = 0;
+  }
+  function bgmTick() {
+    if (!bgm.kind || !AC || AC.state !== 'running') return;
+    while (bgm.next < AC.currentTime + 0.5) {
+      const at = bgm.next, k = bgm.bar++;
+      useOut(bgm.bus, () => {
+        if (bgm.kind === 'menu') {   // 104BPM, C-Am-F-G
+          const sp = 60 / 104, r = [48, 45, 41, 43][k % 4], q = k % 4 !== 1;
+          pad(at, r + 12, q, sp * 4);
+          for (let s = 0; s < 8; s++) { const t = at + s * sp / 2; if (s % 4 === 0) kick(t); if (s % 4 === 2 && k % 2) snare(t, 0.25); hat(t, s % 2 ? 0.03 : 0.05); }
+          for (let s = 0; s < 8; s++) bassN(at + s * sp / 2, r - 12 + (s % 2 ? 12 : 0), sp * 0.4);
+          const mel = [[0, 7], [1, 9], [1.5, 7], [2, 4], [3, 2], [3.5, 4]];
+          if (k % 4 !== 3) for (const [b, d] of mel) pluck(at + b * sp, r + 12 + MAJ[(d + (k % 4) * 2) % 7], sp * 0.6);
+          bgm.next += sp * 4;
+        } else {   // 72BPM, Am-F-Dm-E 느린 화음 + 심장 박동
+          const sp = 60 / 72, r = [57, 53, 50, 52][k % 4], q = k % 4 === 3;
+          pad(at, r - 12, q, sp * 4); kick(at); kick(at + sp * 0.35);
+          for (let s = 0; s < 4; s++) pluck(at + s * sp, r + [0, q ? 4 : 3, 7, 12][s], sp * 0.9);
+          bgm.next += sp * 4;
+        }
+      });
+    }
+  }
+  function jingle(good) {
+    const at = AC.currentTime + 0.05, notes = good ? [60, 64, 67, 72, 76, 79, 84] : [64, 62, 60, 59, 55];
+    useOut(null, () => notes.forEach((m, i) => { osc('square', mf(m), at + i * 0.09, 0.08, 0.25); osc('triangle', mf(m - 12), at + i * 0.09, 0.12, 0.3); }));
+    if (good) noise(at + notes.length * 0.09, 'highpass', 4800, 0.2, 1.0);
   }
 
   /* ── 상태 ── */
   let state = 'title', G = null, story = null, M = null, menuStack = [];
   const cam = { x: 640, z: 0, hz: 0 };
-  const songT = () => AC.currentTime - G.t0 - auto - off / 1000;
+  // 지금 스피커에서 나오는 소리의 시각(오디오 시계): getOutputTimestamp로 출력 지연까지 반영하고 performance.now로 프레임 사이를 부드럽게 이음
+  // (AC.currentTime은 오디오 블록 단위로 뚝뚝 올라가고 출력 지연이 빠져 있어 화살표가 박자보다 앞서거나 떨림). 멈춤 중엔 멈춘 값 그대로, 뒤로 가지 않음
+  let aLast = 0;
+  function audioNow() {
+    if (!AC) return 0;
+    if (AC.state !== 'running') return aLast;
+    let t = AC.currentTime - auto;
+    try { const ts = AC.getOutputTimestamp?.(); if (ts && ts.contextTime > 0 && ts.performanceTime > 0) { const e = ts.contextTime + (performance.now() - ts.performanceTime) / 1000; if (Math.abs(e - t) < 0.5) t = e; } } catch {}
+    if (t < aLast && aLast - t < 0.05) t = aLast;   // 미세한 되감김 방지
+    return (aLast = t);
+  }
+  const songT = () => audioNow() - G.t0 - off / 1000;
   const accP = g => g.wN ? g.wSum / g.wN * 100 : 100;
   const rk = (s, d) => s.id + '_' + d;
 
   function loadSong(idx, d) {
     initAudio(); newMaster();
     const S = SONGS[idx], B = buildSong(S, d);
+    B.pbus = AC.createGain(); B.pbus.connect(master);
     const PN = B.notes.filter(n => n.who === 1), ON = B.notes.filter(n => n.who === 0);
     for (const n of B.notes) { n.st = 0; n.vo = null; }
     G = {
@@ -222,19 +288,23 @@ export function createRhythm(el, O = {}) {
       EV: arrange(S, B), evI: 0, oI: 0, appr: 1.55 / DIFFS[d].sp, opp: CH[S.opp],
       hp: .5, score: 0, combo: 0, maxCombo: 0, cnt: [0, 0, 0, 0, 0], wSum: 0, wN: 0, pops: [], spl: [],
       pose: [{ l: -1, end: 0, miss: 0 }, { l: -1, end: 0, miss: 0 }], held: [0, 0, 0, 0], holdN: [null, null, null, null],
-      conf: [-9, -9, -9, -9], oconf: [-9, -9, -9, -9], lastBar: -1, failed: false, firstP: PN.length ? PN[0].t : 0,
+      conf: [-9, -9, -9, -9], oconf: [-9, -9, -9, -9], lastBar: -1, failed: false, firstP: PN.length ? PN[0].t : 0, pbus: B.pbus, fan: { m: 0, until: 0 }, add: null, conf2: [],
     };
     G.t0 = AC.currentTime + 0.35 + 4 * G.spb;
-    state = 'play'; closeMenu(); pz.hidden = false; cam.x = 640;
+    state = 'play'; closeMenu(); pz.hidden = false; reb.hidden = false; cam.x = 640; setBgm(null); bgC = null;
   }
   function judgeHit(n, i, T) {
     const R = RATE[i]; G.cnt[i]++; G.score += R.sc; G.wSum += R.w; G.wN++; G.combo++; if (G.combo > G.maxCombo) G.maxCombo = G.combo;
+    G.pbus.gain.setTargetAtTime(1, AC.currentTime, 0.004);
+    if (G.combo % 50 === 0) G.fan = { m: 1, until: T + 1.3 };
     G.hp = Math.min(1, G.hp + R.hp); G.conf[n.lane] = T; G.pose[1] = { l: n.lane, end: T + Math.max(n.d, 0.35), miss: 0 };
     G.pops.push({ i, t: performance.now(), vy: -170, y: 0, c: G.combo }); if (G.pops.length > 4) G.pops.shift();
     if (i === 0) G.spl.push({ l: n.lane, t: performance.now() });
     hitSnd();
   }
   function judgeMiss(T, lane) {
+    if (G.combo >= 10) G.fan = { m: 2, until: T + 1.5 };
+    G.pbus.gain.setTargetAtTime(0, AC.currentTime, 0.006);
     G.cnt[4]++; G.score -= 10; G.wN++; G.combo = 0; G.hp -= DIFFS[G.d].miss;
     G.pose[1] = { l: lane, end: T + 0.4, miss: T + 0.4 }; missSnd();
     G.pops.push({ i: 4, t: performance.now(), vy: -120, y: 0, c: 0 }); if (G.pops.length > 4) G.pops.shift();
@@ -246,13 +316,12 @@ export function createRhythm(el, O = {}) {
     if (!best) { if (!opt.ghost && T > -0.2) judgeMiss(T, l); return; }
     const ms = Math.abs(T - best.t) * 1000; let i = 0; while (ms > RATE[i].ms) i++;
     judgeHit(best, i, T); if (state !== 'play') return;
-    best.vo = voice(AC.currentTime, best.m, best.d > 0 ? best.t + best.d - T : 0.2, 'triangle');
     if (best.d > 0) { best.st = 1; G.holdN[l] = best; } else best.st = 2;
   }
   function up(l) {
     if (!G) return; G.held[l] = 0; const n = G.holdN[l]; if (!n) return; G.holdN[l] = null; if (state !== 'play') return; const T = songT();
     if (T >= n.t + n.d - 0.15) { n.st = 2; G.wSum += 1; G.wN++; G.score += 50; }
-    else { n.st = 3; if (n.vo) { const now = AC.currentTime; n.vo.gain.cancelScheduledValues(now); n.vo.gain.setTargetAtTime(0.0001, now, 0.03); } judgeMiss(T, l); }
+    else { n.st = 3; judgeMiss(T, l); }
   }
   function update(T, dt) {
     const now = AC.currentTime;
@@ -297,15 +366,15 @@ export function createRhythm(el, O = {}) {
   const bestTxt = (S, d) => { const r = rec[rk(S, d)]; return r ? `최고 ${fmt(r.s)}점 · ${r.a.toFixed(2)}%${r.fc ? ' · 풀 콤보' : ''}` : '아직 기록 없음'; };
 
   const mTitle = () => ({ logo: 1, items: [
-    { lbl: '스토리 모드', sub: '방송부 주간 · 3곡 연속', go: () => pushMenu(mStory) },
+    { lbl: '스토리 모드', sub: '영상고의 하루 · 3곡 연속', go: () => pushMenu(mStory) },
     { lbl: '자유 플레이', sub: '곡 하나 골라서', go: () => pushMenu(mFree) },
     { lbl: '설정', sub: '스크롤 방향·박자 보정 등', go: () => pushMenu(mOpt) },
   ], foot: '↑↓ 고르기 · Enter 선택 · Esc 뒤로' });
-  const mStory = () => ({ title: '방송부 주간', sub: '방송부 선배와 방송부장에게 차례로 도전!', diff: 1,
-    extra: `<ol class="rb-wk">${SONGS.map(s => `<li><b>${s.name}</b><small>${CH[s.opp].name}</small></li>`).join('')}</ol><p class="rb-ms">${week[diff] ? '이 난이도 최고 ' + fmt(week[diff]) + '점' : '아직 완주 기록 없음'}</p>`,
+  const mStory = () => ({ title: '영상고의 하루', sub: '쉬는 시간 → 급식실 → 종례 전 교실, 3곡 연속!', diff: 1,
+    extra: `<ol class="rb-wk">${SONGS.map(s => `<li><b>${s.name}</b><small>${CH[s.opp].name} · ${STAGE_N[s.stage]}</small></li>`).join('')}</ol><p class="rb-ms">${week[diff] ? '이 난이도 최고 ' + fmt(week[diff]) + '점' : '아직 완주 기록 없음'}</p>`,
     items: [{ lbl: '시작', go: () => { story = { i: 0, d: diff, score: 0, wSum: 0, wN: 0, miss: 0 }; loadSong(0, diff); } }, { lbl: '뒤로', go: popMenu }], back: popMenu });
   const mFree = () => ({ title: '자유 플레이', diff: 1, cls: 'free',
-    items: SONGS.map((s, i) => ({ lbl: s.name, sub: `${CH[s.opp].name} · BPM ${s.bpm} · ${bestTxt(s, diff)}`, go: () => { story = null; loadSong(i, diff); } })).concat([{ lbl: '뒤로', go: popMenu }]), back: popMenu });
+    items: SONGS.map((s, i) => ({ lbl: s.name, sub: `${CH[s.opp].name} · ${STAGE_N[s.stage]} · BPM ${s.bpm} · ${bestTxt(s, diff)}`, go: () => { story = null; loadSong(i, diff); } })).concat([{ lbl: '뒤로', go: popMenu }]), back: popMenu });
   const onOff = v => v ? '<em>켬</em>' : '끔';
   const setOpt = k => { opt[k] = !opt[k]; store.set('rb_opt', opt); paintMenu(); };
   const mOpt = () => ({ title: '설정', items: [
@@ -313,15 +382,28 @@ export function createRhythm(el, O = {}) {
     { lbl: '가운데 보기 ' + onOff(opt.mid), sub: '내 화살표 줄만 가운데에(세로 화면은 항상)', go: () => setOpt('mid') },
     { lbl: '빈 누르기 허용 ' + onOff(opt.ghost), sub: '끄면 화살표 없을 때 눌러도 놓침', go: () => setOpt('ghost') },
     { lbl: '타격음 ' + onOff(opt.hits), sub: '맞힐 때마다 딸깍', go: () => setOpt('hits') },
+    { lbl: '메뉴 음악 ' + onOff(opt.music), sub: '첫 화면·게임 오버 배경 음악', go: () => setOpt('music') },
+    { lbl: '키 바꾸기', sub: opt.keys.map((a, l) => ARW[l] + ' ' + a.filter(Boolean).map(keyName).join('/')).join('  '), go: () => pushMenu(mKeys) },
     ...(state === 'pause' ? [] : [{ lbl: `박자 보정 (${off > 0 ? '+' : ''}${off}ms)`, sub: '소리와 화살표가 어긋날 때 · 블루투스 이어폰은 꼭', go: openCal }]),
     { lbl: '뒤로', go: popMenu },
   ], back: popMenu });
+  const mKeys = () => ({ title: '키 바꾸기', sub: waitKey ? '바꿀 키를 누르세요 · Esc 취소' : '칸을 고르고 새 키를 누르세요 · 같은 키는 한 곳에만', cls: 'keys',
+    items: [0, 1, 2, 3].flatMap(l => [0, 1].map(k => ({ lbl: `${ARW[l]} ${k ? '보조' : '기본'} : <em>${waitKey && waitKey.l === l && waitKey.k === k ? '…입력 대기' : keyName(opt.keys[l][k])}</em>`, go: () => { waitKey = { l, k }; paintMenu(); } })))
+      .concat([{ lbl: '기본값으로', sub: 'D F J K / ← ↓ ↑ →', go: () => { opt.keys = KEY_DEF.map(a => a.slice()); store.set('rb_opt', opt); rebuildKeys(); paintMenu(); } }, { lbl: '뒤로', go: popMenu }]), back: popMenu });
+  function setKey(code) {
+    const { l, k } = waitKey; waitKey = null;
+    if (KEY_BAN.has(code)) { paintMenu(); return; }
+    opt.keys.forEach(a => { for (let i = 0; i < 2; i++) if (a[i] === code) a[i] = ''; });
+    opt.keys[l][k] = code; store.set('rb_opt', opt); rebuildKeys(); paintMenu();
+  }
   const quitTxt = () => story ? '주간 그만두기' : '곡 고르기';
-  const toSelect = () => { const s = story; story = null; G = null; state = 'title'; pz.hidden = true; menuStack = []; M = null; showMenu(mTitle); if (s) pushMenu(mStory); else pushMenu(mFree); };
+  const toSelect = () => { const s = story; story = null; G = null; state = 'title'; pz.hidden = true; reb.hidden = true; bgC = null; AC?.resume?.(); menuStack = []; M = null; showMenu(mTitle); if (s) pushMenu(mStory); else pushMenu(mFree); };
   const mPause = () => ({ title: '잠깐 멈춤', sub: G.S.name + ' · ' + DIFFS[G.d].n, items: [
-    { lbl: '계속하기', go: resume }, { lbl: '처음부터', go: () => loadSong(G.idx, G.d) }, { lbl: '설정', go: () => pushMenu(mOpt) }, { lbl: quitTxt(), go: toSelect },
+    { lbl: '계속하기', go: resume }, { lbl: '처음부터', go: restart }, { lbl: '설정', go: () => pushMenu(mOpt) }, { lbl: quitTxt(), go: toSelect },
   ], back: resume });
-  const mOver = () => ({ title: '체력이 바닥났어요', sub: G.S.name + ' · ' + DIFFS[G.d].n, cls: 'over', items: [{ lbl: '다시 하기', go: () => loadSong(G.idx, G.d) }, { lbl: quitTxt(), go: toSelect }] });
+  const mOver = () => ({ title: '체력이 바닥났어요', sub: G.S.name + ' · ' + DIFFS[G.d].n + ' · ' + CH[G.S.opp].name + '에게 졌어요', cls: 'over', items: [{ lbl: '다시 하기', go: restart }, { lbl: quitTxt(), go: toSelect }] });
+  function restart() { if (!G) return; if (G.add && story) { story.score -= G.add.score; story.wSum -= G.add.wSum; story.wN -= G.add.wN; story.miss -= G.add.miss; } loadSong(G.idx, G.d); }
+  reb.onclick = () => { reb.blur(); initAudio(); restart(); };
 
   function pause() {
     if (state !== 'play') return; state = 'pause'; for (let l = 0; l < 4; l++) { const n = G.holdN[l]; if (n) { n.st = 2; G.holdN[l] = null; } } G.held.fill(0); ptr.clear(); AC.suspend(); showMenu(mPause);
@@ -330,8 +412,7 @@ export function createRhythm(el, O = {}) {
   function gameOver() {
     state = 'over'; G.failed = true; pz.hidden = true; for (let l = 0; l < 4; l++) G.holdN[l] = null;
     const now = AC.currentTime; master.gain.cancelScheduledValues(now); master.gain.setTargetAtTime(0.0001, now, 0.08);
-    const g2 = AC.createGain(); g2.gain.value = 0.7; g2.connect(AC.destination);
-    [392, 330, 262, 196].forEach((f, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'triangle'; o.frequency.value = f; env(g, now + i * 0.18, 0.25, 0.3); o.connect(g).connect(g2); o.start(now + i * 0.18); o.stop(now + i * 0.18 + 0.35); });
+    G.fan = { m: 2, until: 1e9 }; useOut(null, () => { const o = osc('sawtooth', 220, now, 0.2, 0.6); o.frequency.exponentialRampToValueAtTime(55, now + 0.6); });
     setTimeout(() => { if (state === 'over' && alive) showMenu(mOver); }, 900);
   }
   function grade(a, miss, allSick) {
@@ -345,23 +426,35 @@ export function createRhythm(el, O = {}) {
     if (!old || g.score > old.s) { rec[key] = { s: Math.round(g.score), a: Math.max(a, old?.a || 0), fc: !miss || !!old?.fc }; newB = true; }
     else { old.a = Math.max(old.a, a); old.fc = old.fc || !miss; }
     store.set('rb_rec', rec);
-    if (story) { story.score += g.score; story.wSum += g.wSum; story.wN += g.wN; story.miss += miss; }
+    if (story) { story.score += g.score; story.wSum += g.wSum; story.wN += g.wN; story.miss += miss; g.add = { score: g.score, wSum: g.wSum, wN: g.wN, miss }; }
+    const good = gc >= 'g3', T = songT(); g.fan = { m: good ? 1 : 2, until: 1e9 }; g.pose[1] = good ? { l: 2, end: 1e9, miss: 0 } : { l: 1, end: 0, miss: 1e9 };
+    g.resAt = performance.now(); g.conf2 = gc >= 'g4' ? confetti() : []; void T;
     const tag = allSick ? '올 퍼펙트' : !miss ? '풀 콤보' : '';
-    const extra = `<div class="rb-gr ${gc}">${gn}</div>${tag ? `<p class="rb-tag">${tag}</p>` : ''}
-      <p class="rb-sc">${fmt(g.score)}점${newB ? ' <em>최고 기록!</em>' : ''}</p><p class="rb-ms">정확도 ${a.toFixed(2)}% · 최대 콤보 ${g.maxCombo}</p>
-      <div class="rb-res">${['완벽', '좋아', '아쉬워', '별로', '놓침'].map((n, i) => `<span class="j${i}"><b>${n}</b>${g.cnt[i]}</span>`).join('')}</div>`;
+    const extra = `<div class="rb-res">${['완벽', '좋아', '아쉬워', '별로', '놓침'].map((n, i) => `<span class="j${i}"><b>${n}</b><i data-n="${g.cnt[i]}">0</i></span>`).join('')}</div>
+      <p class="rb-sc"><i data-n="${Math.round(g.score)}">0</i>점${newB ? ' <em>최고 기록!</em>' : ''}</p><p class="rb-ms rb-late">정확도 ${a.toFixed(2)}% · 최대 콤보 ${g.maxCombo}</p>
+      <div class="rb-gr ${gc}">${gn}</div>${tag ? `<p class="rb-tag">${tag}</p>` : ''}`;
     let items;
     if (story && story.i < SONGS.length - 1) items = [{ lbl: '다음 곡 ▶', sub: SONGS[story.i + 1].name, go: () => { story.i++; loadSong(story.i, story.d); } }, { lbl: '이 곡 다시', go: () => { story.score -= g.score; story.wSum -= g.wSum; story.wN -= g.wN; story.miss -= miss; loadSong(g.idx, g.d); } }, { lbl: '주간 그만두기', go: toSelect }];
     else if (story) items = [{ lbl: '주간 결과 보기', go: weekDone }];
-    else items = [{ lbl: '다시 하기', go: () => loadSong(g.idx, g.d) }, { lbl: '곡 고르기', go: toSelect }];
-    setTimeout(() => { if (state === 'result' && alive) showMenu(() => ({ title: g.S.name, sub: DIFFS[g.d].n, cls: 'res', extra, items })); }, 700);
+    else items = [{ lbl: '다시 하기', go: restart }, { lbl: '곡 고르기', go: toSelect }];
+    setTimeout(() => {
+      if (state !== 'result' || !alive) return;
+      showMenu(() => ({ title: g.S.name, sub: DIFFS[g.d].n, cls: 'res', extra, items })); countUp();
+      setTimeout(() => { if (state === 'result' && alive) jingle(good); }, 1250);
+    }, 700);
   }
+  function countUp() {   // 결과 숫자 차르륵(한 번만 — 다시 그리면 바로 최종값)
+    const els = [...ov.querySelectorAll('i[data-n]')], t0 = performance.now();
+    const step = () => { const a = Math.min(1, (performance.now() - t0) / 1100); els.forEach((e, i) => { const d = Math.min(1, Math.max(0, a * 1.6 - i * 0.12)); e.textContent = fmt(+e.dataset.n * (1 - Math.pow(1 - d, 3))); }); if (a < 1 && alive && state === 'result') requestAnimationFrame(step); else els.forEach(e => { e.textContent = fmt(+e.dataset.n); }); };
+    requestAnimationFrame(step);
+  }
+  function confetti() { const c = []; for (let i = 0; i < 90; i++) c.push({ x: Math.random(), y: -Math.random() * 0.4, vx: (Math.random() - .5) * 0.15, vy: 0.25 + Math.random() * 0.35, r: Math.random() * 6, c: COL[i % 4] }); return c; }
   function weekDone() {
     const s = story, a = s.wN ? s.wSum / s.wN * 100 : 100, nb = !week[s.d] || s.score > week[s.d];
     if (nb) { week[s.d] = Math.round(s.score); store.set('rb_week', week); }
     const extra = `<p class="rb-sc">${fmt(s.score)}점${nb ? ' <em>최고 기록!</em>' : ''}</p><p class="rb-ms">${DIFFS[s.d].n} · 평균 정확도 ${a.toFixed(2)}% · 놓침 ${s.miss}</p>`;
-    story = null; G = null; state = 'title';
-    showMenu(() => ({ title: '방송부 주간 완주!', cls: 'res', extra, items: [{ lbl: '처음 화면', go: () => { menuStack = []; showMenu(mTitle); } }] }));
+    story = null; G = null; state = 'title'; reb.hidden = true; bgC = null; jingle(true);
+    showMenu(() => ({ title: '영상고의 하루 완주!', cls: 'res', extra, items: [{ lbl: '처음 화면', go: () => { menuStack = []; showMenu(mTitle); } }] }));
   }
 
   /* ── 박자 보정 ── */
@@ -374,7 +467,7 @@ export function createRhythm(el, O = {}) {
     calInfo();
   }
   function calTap() {
-    if (state !== 'calib') return; const now = AC.currentTime - auto, k = Math.round((now - cal.c0) / 0.5); if (k < 0 || k > 23) return;
+    if (state !== 'calib') return; const now = audioNow(), k = Math.round((now - cal.c0) / 0.5); if (k < 0 || k > 23) return;
     cal.taps.push(now - (cal.c0 + k * 0.5)); const c = ov.querySelector('.rb-tap'); c?.classList.add('hit'); setTimeout(() => c?.classList.remove('hit'), 90); calInfo();
   }
   function calInfo() {
@@ -394,12 +487,14 @@ export function createRhythm(el, O = {}) {
   const kDown = e => {
     if (!alive || !el.isConnected) return; const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
+    if (waitKey) { e.preventDefault(); e.stopPropagation(); if (e.code === 'Escape') { waitKey = null; paintMenu(); } else setKey(e.code); return; }
     if (state === 'play') {
       if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyP') { e.preventDefault(); e.stopPropagation(); pause(); return; }
       const l = KEYS[e.code]; if (l === undefined) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) down(l); return;
     }
     if (state === 'calib' && e.code === 'Space') { e.preventDefault(); e.stopPropagation(); if (!e.repeat) calTap(); return; }
     if (!M || !NAV[e.code]) return;
+    initAudio();
     const m = M.cfg; if ((e.code === 'Escape' || e.code === 'Backspace') && !m.back) return;   // 첫 화면 Esc는 사이트(나가기)에 넘김
     e.preventDefault(); e.stopPropagation(); if (e.repeat && (e.code === 'Enter' || e.code === 'Space')) return;
     const n = m.items.length;
@@ -414,6 +509,7 @@ export function createRhythm(el, O = {}) {
   const blur = () => pause();
   cv.addEventListener('pointerdown', pDown); cv.addEventListener('pointerup', pEnd); cv.addEventListener('pointercancel', pEnd);
   pz.onclick = pause;
+  wrap.addEventListener('pointerdown', () => initAudio());   // 첫 터치에 소리 깨우기(메뉴 음악)
   document.addEventListener('keydown', kDown, true); document.addEventListener('keyup', kUp, true);
   document.addEventListener('visibilitychange', vis); addEventListener('blur', blur); addEventListener('resize', fit);
   document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
@@ -461,6 +557,8 @@ export function createRhythm(el, O = {}) {
     if (c.acc === 'cap') {
       cx.beginPath(); cx.arc(0, -8, 70, Math.PI * 1.03, Math.PI * 1.97); cx.closePath(); inkFill(pal.capC);
       cx.beginPath(); cx.ellipse(face * 62, -14, 42, 11, 0, 0, 7); inkFill(pal.capC); dot(0, -76, 6, pal.capC, 3.5);
+    } else if (c.acc === 'chef') {
+      rr(-54, -138, 108, 86, 40); inkFill('#ffffff', 4.5); rr(-66, -66, 132, 26, 12); inkFill('#f2f4fa', 4.5);
     } else if (c.acc === 'headset') {
       cx.beginPath(); cx.arc(0, -4, 77, Math.PI * 1.08, Math.PI * 1.92); cx.strokeStyle = INK; cx.lineWidth = 15; cx.stroke(); cx.strokeStyle = '#4a4e6e'; cx.lineWidth = 8; cx.stroke();
       for (const s of [-1, 1]) { rr(s * 72 - 12, -24, 24, 46, 10); inkFill('#4a4e6e', 4); }
@@ -482,6 +580,7 @@ export function createRhythm(el, O = {}) {
     lim(bs[0], bs[1], hb[0], hb[1], 24, pal.body2); dot(hb[0], hb[1], 13, pal.skin);
     rr(-64, -212, 128, 128, 42); inkFill(pal.body);
     rr(-58, -110, 116, 20, 10); cx.fillStyle = pal.body2; cx.fill();
+    if (c.apron) { rr(-46, -192, 92, 108, 18); inkFill(pal === GREY ? '#c9d0ea' : '#ffffff', 4); rr(-24, -140, 48, 26, 8); inkFill(pal === GREY ? '#b8c0e0' : '#e8f6ef', 3); }
     cx.save(); cx.translate(face * 26, -168); cx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 6 : 14; cx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } cx.closePath(); inkFill('#ffd84a', 3); cx.restore();
     cx.save(); cx.translate(lx * 0.4, -276 + ly * 0.3); head(c, pal, face, lx * 0.5, ly * 0.4, dead ? 3 : miss ? 2 : sing ? 1 : 0); cx.restore();
     const fsh = [face * 50, -188], hf = dead ? [face * 84, -96] : sing ? [face * 52 + lx * 0.4, -236] : [face * 72, -150];
@@ -493,7 +592,11 @@ export function createRhythm(el, O = {}) {
 
   /* ── 방송실 배경(한 번 그려 캐시) ── */
   const BX = -260, BY = -360, BW = 1800, BH = 1360;
-  function buildBg(k) {
+  const STAGE_N = { studio: '방송실', cafe: '급식실', class: '노을 진 교실' };
+  const STAGE_C = { studio: ['#141a3e', '#2a2240'], cafe: ['#b9d8c4', '#5d6a7e'], class: ['#6e4a3a', '#5a3a2a'] };
+  function buildBg(k, st) {
+    if (st === 'cafe') return buildCafe(k);
+    if (st === 'class') return buildClass(k);
     const c = document.createElement('canvas'); c.width = Math.ceil(BW * k); c.height = Math.ceil(BH * k);
     const g = c.getContext('2d'), sv = cx; g.scale(k, k); g.translate(-BX, -BY);
     const gr = g.createLinearGradient(0, -360, 0, 560); gr.addColorStop(0, '#141a3e'); gr.addColorStop(1, '#27306a'); g.fillStyle = gr; g.fillRect(BX, BY, BW, 920);
@@ -514,6 +617,57 @@ export function createRhythm(el, O = {}) {
     g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 2; for (let x = -200; x < 1600; x += 90) { g.beginPath(); g.moveTo(x, 560); g.lineTo(640 + (x - 640) * 1.8, 1000); g.stroke(); }
     g.fillStyle = 'rgba(160,140,255,.12)'; g.beginPath(); g.ellipse(640, 640, 560, 70, 0, 0, 7); g.fill();
     void sv; return c;
+  }
+  function bgCanvas(k) { const c = document.createElement('canvas'); c.width = Math.ceil(BW * k); c.height = Math.ceil(BH * k); const g = c.getContext('2d'); g.scale(k, k); g.translate(-BX, -BY); return [c, g]; }
+  function buildCafe(k) {   // 급식실: 연두 타일 벽·배식대·메뉴판·회색 바둑판 바닥
+    const [c, g] = bgCanvas(k);
+    g.fillStyle = '#e4f1e8'; g.fillRect(BX, BY, BW, 920);
+    g.fillStyle = '#cfe6d6'; for (let y = 300; y < 560; y += 32) for (let x = BX + ((y / 32) % 2) * 20; x < BX + BW; x += 40) g.fillRect(x, y, 38, 30);
+    g.fillStyle = '#9cc7ab'; g.fillRect(BX, 292, BW, 10);
+    for (const x of [-120, 1180]) { g.fillStyle = '#8ab0c8'; g.fillRect(x, 40, 220, 200); g.fillStyle = '#cfe9ff'; g.fillRect(x + 10, 50, 200, 180); g.fillStyle = '#ffffff'; g.fillRect(x + 105, 50, 10, 180); g.fillRect(x + 10, 135, 200, 10); }
+    g.fillStyle = '#2f5a45'; g.fillRect(420, 30, 440, 200); g.fillStyle = '#3c7258'; g.fillRect(432, 42, 416, 176);   // 메뉴판
+    g.fillStyle = '#fff'; g.font = '34px ' + FONT; g.textAlign = 'center'; g.fillText('오늘의 급식', 640, 92);
+    g.font = '24px ' + FONT; g.fillStyle = '#e8ffe8'; ['카레라이스 · 계란국', '돈가스 · 깍두기', '우유 · 요구르트'].forEach((t, i) => g.fillText(t, 640, 136 + i * 34));
+    g.fillStyle = '#9aa6b8'; g.fillRect(BX, 410, BW, 130); g.fillStyle = '#c4ccd8'; g.fillRect(BX, 400, BW, 18); g.fillStyle = '#7d889c'; g.fillRect(BX, 530, BW, 12);   // 배식대
+    for (let x = 60; x < 1260; x += 150) { g.fillStyle = '#dfe5ee'; g.fillRect(x, 360, 110, 46); g.fillStyle = '#b4bccb'; g.fillRect(x, 360, 110, 8); g.fillStyle = ['#f0b04a', '#e8573f', '#f7f0d0', '#7ac36a'][(x / 150 | 0) % 4]; g.fillRect(x + 8, 368, 94, 14); }
+    g.fillStyle = '#7a8496'; g.fillRect(BX, 560, BW, BH);
+    for (let y = 560; y < 1000; y += 60) for (let x = BX; x < BX + BW; x += 60) { if (((x - BX) / 60 + (y - 560) / 60) % 2 < 1) { g.fillStyle = '#6a7486'; g.fillRect(x, y, 60, 60); } }
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.ellipse(640, 640, 560, 70, 0, 0, 7); g.fill();
+    return c;
+  }
+  function buildClass(k) {   // 노을 진 교실: 창밖 노을·칠판·나무 바닥
+    const [c, g] = bgCanvas(k);
+    g.fillStyle = '#f0d6b4'; g.fillRect(BX, BY, BW, 920);
+    g.fillStyle = '#c99b6e'; g.fillRect(BX, 440, BW, 110);   // 허리 판넬
+    for (const x of [-230, 1110]) {
+      const sk = g.createLinearGradient(0, 30, 0, 380); sk.addColorStop(0, '#ff8a5c'); sk.addColorStop(0.6, '#ffb36b'); sk.addColorStop(1, '#ffd9a0');
+      g.fillStyle = '#8a5a3a'; g.fillRect(x, 20, 400, 380); g.fillStyle = sk; g.fillRect(x + 12, 32, 376, 356);
+      g.fillStyle = 'rgba(255,240,200,.9)'; g.beginPath(); g.arc(x + 200, 300, 46, 0, 7); g.fill();
+      g.fillStyle = '#6a4a5a'; for (let i = 0; i < 6; i++) g.fillRect(x + 12 + i * 64, 330 - (i % 3) * 30, 50, 60 + (i % 3) * 30);
+      g.fillStyle = '#8a5a3a'; g.fillRect(x + 194, 32, 12, 356); g.fillRect(x + 12, 200, 376, 10);
+    }
+    g.fillStyle = '#6b4a2e'; g.fillRect(400, 40, 480, 270); g.fillStyle = '#2f5a45'; g.fillRect(412, 52, 456, 246);   // 칠판
+    g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '40px ' + FONT; g.textAlign = 'center'; g.fillText('종례 5분 전', 640, 130);
+    g.font = '24px ' + FONT; g.fillText('내일 준비물: 노트북 · 충전기', 640, 190); g.fillText('청소 당번: 1분단', 640, 230);
+    g.fillStyle = '#e8c48a'; g.fillRect(420, 300, 440, 10);
+    for (let x = 240; x < 1100; x += 210) { g.fillStyle = '#b07a48'; g.fillRect(x, 470, 150, 22); g.fillStyle = '#7a5434'; g.fillRect(x + 10, 492, 12, 56); g.fillRect(x + 128, 492, 12, 56); }
+    const fg = g.createLinearGradient(0, 560, 0, 1000); fg.addColorStop(0, '#a8744a'); fg.addColorStop(1, '#6e4a2e'); g.fillStyle = fg; g.fillRect(BX, 560, BW, BH);
+    g.strokeStyle = 'rgba(60,30,10,.25)'; g.lineWidth = 3; for (let y = 580; y < 1000; y += 34) { g.beginPath(); g.moveTo(BX, y); g.lineTo(BX + BW, y); g.stroke(); }
+    g.fillStyle = 'rgba(255,170,90,.18)'; g.fillRect(BX, BY, BW, BH);
+    g.fillStyle = 'rgba(255,220,160,.2)'; g.beginPath(); g.ellipse(640, 640, 560, 70, 0, 0, 7); g.fill();
+    return c;
+  }
+  function fan(x, y, bop, mood, T) {   // 스피커 위에 앉은 친구: 박자마다 끄덕, 콤보 50마다 환호, 콤보 끊기면 시무룩
+    const c = CH.fr, cheer = mood === 1, sad = mood === 2, sw = Math.sin(T * 6) * (cheer ? 12 : 5);
+    cx.save(); cx.translate(x, y); cx.scale(0.62, 0.62);
+    lim(-28, -6, -34 + sw, 78, 26, c.pants); lim(28, -6, 34 - sw, 78, 26, c.pants);
+    for (const s of [-1, 1]) { rr(s * 34 - 24 + (s < 0 ? sw : -sw), 70, 48, 22, 11); inkFill('#f3f3f7', 4); }
+    cx.translate(0, (sad ? 8 : 0) + bop * 6);
+    const hs = cheer ? [[-104, -240 + Math.sin(T * 14) * 12], [104, -240 - Math.sin(T * 14) * 12]] : sad ? [[-50, -40], [50, -40]] : [[-62, -12], [62, -12]];
+    for (const [i, h] of hs.entries()) { const sx = i ? 52 : -52; lim(sx, -96, h[0], h[1], 22, c.body2); dot(h[0], h[1], 12, c.skin); }
+    rr(-60, -128, 120, 124, 40); inkFill(c.body);
+    cx.save(); cx.translate(0, -190 - bop * 4); cx.rotate(sad ? 0.08 : Math.sin(T * 3.3) * 0.05); head(c, c, 0, 0, sad ? 8 : 0, cheer ? 1 : sad ? 2 : 0); cx.restore();
+    cx.restore();
   }
   function speaker(x, fy, pulse) {
     rr(x - 88, fy - 262, 176, 262, 18); inkFill('#20223a', 6);
@@ -536,14 +690,16 @@ export function createRhythm(el, O = {}) {
     if (!L.land) tx = Math.max(580, Math.min(700, tx));
     cam.x += (tx - cam.x) * Math.min(1, dt * 3); cam.z *= Math.exp(-dt * 5); cam.hz *= Math.exp(-dt * 6);
     const s = (L.land ? Math.max(W / 1280, H / 720) : W / 980) * (1 + cam.z);
-    const k = Math.min(1.5, Math.max(0.6, s * DPR)); if (!bgC || Math.abs(k - bgK) > 0.25) { bgK = k; bgC = buildBg(k); }
+    const st = G ? G.S.stage : 'studio', [cW, cF] = STAGE_C[st];
+    const k = Math.min(1.5, Math.max(0.6, s * DPR)); if (!bgC || bgC.st !== st || Math.abs(k - bgK) > 0.25) { bgK = k; bgC = buildBg(k, st); bgC.st = st; }
     cx.setTransform(DPR, 0, 0, DPR, 0, 0);
     cx.fillStyle = '#1a2150'; cx.fillRect(0, 0, W, H);
     cx.save(); cx.translate(W / 2, L.land ? H * 0.5 : H * 0.47); cx.scale(s, s); cx.translate(-cam.x, -380);
-    cx.fillStyle = '#141a3e'; cx.fillRect(BX - 3000, BY - 3000, BW + 6000, 3000); cx.fillStyle = '#2a2240'; cx.fillRect(BX - 3000, BY + BH - 2, BW + 6000, 3000);
-    cx.fillStyle = '#1a2150'; cx.fillRect(BX - 3000, BY, 3000, 920); cx.fillRect(BX + BW, BY, 3000, 920); cx.fillStyle = '#2a2240'; cx.fillRect(BX - 3000, 560, 3000, BH); cx.fillRect(BX + BW, 560, 3000, BH);
+    cx.fillStyle = cW; cx.fillRect(BX - 3000, BY - 3000, BW + 6000, 3000); cx.fillRect(BX - 3000, BY, 3000, 920); cx.fillRect(BX + BW, BY, 3000, 920);
+    cx.fillStyle = cF; cx.fillRect(BX - 3000, BY + BH - 2, BW + 6000, 3000); cx.fillRect(BX - 3000, 560, 3000, BH); cx.fillRect(BX + BW, 560, 3000, BH);
     cx.drawImage(bgC, BX, BY, BW, BH);
     const singing = playing && (T < G.pose[0].end || T < G.pose[1].end);
+    if (st === 'studio') {
     rr(560, 30, 160, 46, 12); inkFill(singing ? '#e0293f' : '#4a2030', 5);   // ON AIR
     if (singing) { cx.save(); cx.globalAlpha = 0.25; cx.fillStyle = '#ff3a50'; cx.beginPath(); cx.ellipse(640, 53, 130, 50, 0, 0, 7); cx.fill(); cx.restore(); }
     cx.font = '30px ' + FONT; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = singing ? '#fff' : '#a07080'; cx.fillText('ON AIR', 640, 55); cx.textBaseline = 'alphabetic';
@@ -551,12 +707,23 @@ export function createRhythm(el, O = {}) {
       const on = playing && T < G.pose[who].end; cx.fillStyle = `rgba(255,240,180,${on ? 0.1 : 0.035})`;
       cx.beginPath(); cx.moveTo(x - 30, -360); cx.lineTo(x + 30, -360); cx.lineTo(x + 170, 610); cx.lineTo(x - 170, 610); cx.closePath(); cx.fill();
     }
+    } else if (st === 'cafe') {   // 국통 김
+      const tm = now / 1000; cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = 6; cx.lineCap = 'round';
+      for (let i = 0; i < 8; i++) { const x = 115 + i * 150, ph = tm * 1.4 + i; cx.globalAlpha = 0.25 + 0.25 * Math.sin(ph); cx.beginPath(); cx.moveTo(x, 355); cx.quadraticCurveTo(x + 14 * Math.sin(ph * 2), 320, x, 285 - 10 * Math.sin(ph)); cx.stroke(); }
+      cx.globalAlpha = 1;
+    } else {   // 노을 빛줄기
+      cx.fillStyle = `rgba(255,190,110,${0.08 + beatPulse * 0.04})`; for (const x of [-30, 1310]) { cx.beginPath(); cx.moveTo(x - 160, 40); cx.lineTo(x + 160, 40); cx.lineTo(640 + (x - 640) * 0.2 + 220, 620); cx.lineTo(640 + (x - 640) * 0.2 - 220, 620); cx.closePath(); cx.fill(); }
+    }
     speaker(640, 600, playing && T >= 0 ? beatPulse : 0);
     const bop = Math.pow(beatPulse, 2), dead = state === 'over';
+    fan(640, 340, bop, G && (G.fan.until > (T ?? 0)) ? G.fan.m : 0, now / 1000);
     const tt = playing ? T : 0, opp = G ? G.opp : CH.sb;
     drawChar(opp, 300, 610, 1, G ? G.pose[0] : { l: -1, end: 0, miss: 0 }, tt, bop, false);
     drawChar(CH.me, 980, 610, -1, G ? G.pose[1] : { l: -1, end: 0, miss: 0 }, tt, bop, dead);
     cx.restore();
+    if (G && G.conf2 && G.conf2.length) {
+      for (const p of G.conf2) { p.x += p.vx * dt; p.y += p.vy * dt; p.r += dt * 6; if (p.y > 1.1) { p.y = -0.05; p.x = Math.random(); } cx.save(); cx.translate(p.x * W, p.y * H); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-5, -3, 10, 6); cx.restore(); }
+    }
     if (!playing || state === 'over' || state === 'result') return;
     // HUD(마디마다 쿵)
     const hz = 1 + cam.hz; cx.save(); cx.translate(W / 2, H / 2); cx.scale(hz, hz); cx.translate(-W / 2, -H / 2);
@@ -619,6 +786,10 @@ export function createRhythm(el, O = {}) {
     let T = null;
     if (G && AC) { T = songT(); if (state === 'play') { update(T, dt); if (G) T = songT(); } }
     render(G ? T : null, dt);
+    if (AC) {
+      const want = !opt.music ? null : state === 'over' && M ? 'over' : state === 'title' ? 'menu' : state === 'result' && G && G.resAt && performance.now() - G.resAt > 3200 ? 'menu' : null;
+      if (want !== bgm.kind) setBgm(want); bgmTick();
+    }
   }
 
   return {
@@ -631,6 +802,7 @@ export function createRhythm(el, O = {}) {
       document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs);
       if (isFs()) try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch {}
       if (AC) AC.close().catch(() => {});
+      O.onQuit?.();
     },
   };
 }
