@@ -38,6 +38,7 @@ const STALL = [['헉… 헉…', 'tired2', 2], ['…', 'tired2', 1.5], ['그래.
 const DEATH = ['…아. 결국 이렇게 됐네.', '벌점은… 내일 줄게.', '…매점 갈 거면, 빵 하나만 남겨 둬.'];
 
 const josa = w => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c < 11172 && c % 28 ? '을' : '를'; };
+const cleanName = v => String(v || '').replace(/[<>\n\r\t]/g, '').trim().slice(0, 6);
 const rnd = n => Math.floor(Math.random() * n);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const D2R = Math.PI / 180;
@@ -46,10 +47,10 @@ export function createJudge(el, O = {}) {
   el.innerHTML = `<div class="jd"><div class="jd-wrap"><canvas class="jd-cv"></canvas>
     <div class="jd-pad" hidden><div class="jd-dp"><button type="button" data-k="U">▲</button><button type="button" data-k="L">◀</button><button type="button" data-k="R">▶</button><button type="button" data-k="D">▼</button></div>
     <div class="jd-ab"><button type="button" data-k="X">X</button><button type="button" data-k="Z">Z</button></div></div>
-    <button type="button" class="jd-ib jd-snd" aria-label="소리"></button><button type="button" class="jd-ib jd-fs" aria-label="전체 화면"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    <input class="jd-name" type="text" maxlength="6" autocomplete="off" spellcheck="false" aria-label="이름" hidden><button type="button" class="jd-ib jd-snd" aria-label="소리"></button><button type="button" class="jd-ib jd-fs" aria-label="전체 화면"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <p class="jd-bar">방향키 이동 · Z/Enter 확인 · X/Shift 취소(누르고 있으면 천천히) · Esc 멈춤 · 파란 별: ↑ 점프 · 파란 자: 가만히 있으면 안 아픔</p></div>`;
   const wrap = el.querySelector('.jd-wrap'), cv = el.querySelector('.jd-cv'), X = cv.getContext('2d'), pad = el.querySelector('.jd-pad');
-  const sndB = el.querySelector('.jd-snd'), fsB = el.querySelector('.jd-fs');
+  const sndB = el.querySelector('.jd-snd'), fsB = el.querySelector('.jd-fs'), nameIn = el.querySelector('.jd-name');
   const ART = buildArt();
   let S = 1, alive = true, raf = 0, last = 0, acc = 0, paused = false;
   const rec = Object.assign({ best: 0, clear: 0, deaths: 0, fast: 0 }, store.get('jd_rec', {}) || {});
@@ -157,20 +158,36 @@ export function createJudge(el, O = {}) {
   const press = k => { if (!held[k]) pr.add(k); held[k] = 1; ac(); };
   const release = k => { if (held[k]) rel.add(k); held[k] = 0; };
   function kd(e) {
+    if (alive && e.target === nameIn) {   // 이름 칸: Enter 확정 · Esc 돌아가기(사이트의 'Esc = 게임 닫기'보다 먼저)
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); e.stopImmediatePropagation(); nameDone(); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nameClose(); G.mode = 'title'; }
+      return;
+    }
     if (!alive || e.target?.closest?.('input,textarea')) return;
     if (!el.isConnected) return;
     if (e.code === 'Escape' || e.code === 'KeyP') {   // 결투 중 Esc = 멈춤(사이트의 'Esc = 게임 닫기'보다 먼저 받음) · 처음 화면에선 사이트에 넘김
-      if (['title', 'help', 'win', 'dead'].includes(G.mode) && !paused) return;
+      if (['title', 'help', 'win', 'dead', 'nameok'].includes(G.mode) && !paused) return;
       e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) togglePause(); return;
     }
-    const k = KM[e.code]; if (!k) return; e.preventDefault(); if (e.repeat) return; press(k);
+    syncMods(e);
+    if (e.metaKey || e.ctrlKey || e.altKey) return;   // 단축키(화면 캡처 등)는 게임 입력 아님
+    const k = KM[e.code]; if (!k) return; e.preventDefault(); if (e.repeat) return; if (k === 'X') xSrc.add(e.code); press(k);
   }
-  function ku(e) { const k = KM[e.code]; if (k) { e.preventDefault(); release(k); } }
+  function ku(e) {
+    const k = KM[e.code]; if (k) e.preventDefault();
+    if (k === 'X') { xSrc.delete(e.code); if (!xSrc.size) release('X'); } else if (k) release(k);
+    syncMods(e);
+  }
+  // X(느리게) = KeyX·Shift 중 하나라도 눌려 있을 때. 키를 뗀 알림을 놓쳐도 다음 키·마우스 입력 때 실제 상태로 바로잡음
+  const xSrc = new Set();
+  function syncMods(e) { if (!e.shiftKey && (xSrc.has('ShiftLeft') || xSrc.has('ShiftRight'))) { xSrc.delete('ShiftLeft'); xSrc.delete('ShiftRight'); if (!xSrc.size) release('X'); } }
+  const clearKeys = () => { xSrc.clear(); for (const k in held) held[k] = 0; };
+  addEventListener('focus', clearKeys); addEventListener('pointermove', syncMods, true);
   addEventListener('keydown', kd, true); addEventListener('keyup', ku, true);
   pad.querySelectorAll('button').forEach(b => {
     const k = b.dataset.k;
-    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); press(k); b.classList.add('on'); });
-    const up = () => { release(k); b.classList.remove('on'); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); if (k === 'X') xSrc.add('pad'); press(k); b.classList.add('on'); });
+    const up = () => { if (k === 'X') { xSrc.delete('pad'); if (xSrc.size) { b.classList.remove('on'); return; } } release(k); b.classList.remove('on'); };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
   });
   cv.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') pad.hidden = false; ac(); if (paused) togglePause(); else if (['title', 'over', 'win', 'help'].includes(G.mode)) { press('Z'); setTimeout(() => release('Z'), 50); } });
@@ -509,7 +526,7 @@ export function createJudge(el, O = {}) {
     heart.vis = true; heart.on = false; resetVars(); musSetPause(false);
     if (hits >= 23) return startStall();
     sans.pose = null; sans.anim = 'Idle'; sans.head = 'default'; sans.torso = 'default';
-    let t = kr >= 20 ? '* 벌점이 온몸을 짓누른다.' : kr >= 10 ? '* 쌓인 벌점에 어깨가 무겁다.' : '* 등 뒤가 서늘하다.';
+    let t = kr >= 20 ? '* 온몸이 천근만근 무겁다.' : kr >= 10 ? '* 어깨가 점점 무거워진다.' : '* 등 뒤가 서늘하다.';
     if (hits === 0) t = '* 오늘은 긴 하루가 될 것 같다.';
     if (hits === 13) { t = '* 선도부장이 숨을 고르고 있다.'; musSetPause(true); }
     if (hits === 15) t = '* 이제부터가 진짜다.';
@@ -574,7 +591,7 @@ export function createJudge(el, O = {}) {
     } else if (m.what === 'item') {
       const idx = m.page * 4 + m.sel, it = items.splice(idx, 1)[0]; menu = null;
       const before = hp; hp = Math.min(MAXHP, hp + it[1]); play('Heal');
-      showText(`* ${it[2]}${josa(it[2])} 먹었다.\n* ${hp >= MAXHP ? 'HP가 가득 찼다.' : `HP가 ${hp - before} 회복됐다.`}`, () => enemyTurn(false));
+      showText(`* ${it[2]}${josa(it[2])} 먹었다.\n* ${hp >= MAXHP ? '상점이 가득 찼다.' : `상점이 ${hp - before}점 회복됐다.`}`, () => enemyTurn(false));
     } else if (m.what === 'mercy') {
       menu = null;
       if (hits === 13) { trapped = true; talk(TRAP, () => trapAttack(), 'noeyes'); }
@@ -677,8 +694,14 @@ export function createJudge(el, O = {}) {
     const m = G.mode;
     if (m === 'title') {
       const o = titleOpts(); if (pr.has('U')) { G.sel = (G.sel + o.length - 1) % o.length; play('move'); } if (pr.has('D')) { G.sel = (G.sel + 1) % o.length; play('move'); }
-      if (pr.has('Z')) { play('select'); const id = o[G.sel].id; if (id === 'new') newRun(false); else if (id === 'ck') newRun(true); else G.mode = 'help'; }
+      if (pr.has('Z')) { play('select'); const id = o[G.sel].id; if (id === 'new') { if (pname(true)) newRun(false); else nameOpen(() => newRun(false)); } else if (id === 'ck') newRun(true); else if (id === 'name') nameOpen(() => { G.mode = 'title'; }); else G.mode = 'help'; }
     } else if (m === 'help') { if (pr.has('Z') || pr.has('X')) { G.mode = 'title'; play('move'); } }
+    else if (m === 'nameok') {
+      G.nameT += dt;
+      if (pr.has('L') || pr.has('R')) { G.nameSel = 1 - G.nameSel; play('move'); }
+      if (pr.has('X')) { play('move'); nameOpen(G.nameAfter); }
+      else if (pr.has('Z') && G.nameT > .3) { play('select'); if (G.nameSel) { store.set('jd_name', G.nameVal); const a = G.nameAfter; G.nameAfter = null; a?.(); } else nameOpen(G.nameAfter); }
+    }
     else if (m === 'talk' || m === 'endtalk') {
       krTick(dt);
       if (bubble && (pr.has('Z') || pr.has('X'))) { if (bubble.n < bubble.text.length) { bubble.n = bubble.text.length; } else if (bubble.auto == null) { const cb = bubble.cb; bubble = null; cb?.(); } }
@@ -732,10 +755,19 @@ export function createJudge(el, O = {}) {
     heart.x = hx; heart.y = hy; heart.vis = true; heart.vx = heart.vy = 0;
     checkHits();
   }
+  /* ── 이름 정하기(원작의 이름 짓기 화면처럼: 입력 → '이 이름이 맞나요?' → 아니요/예) ── */
+  function pname(raw) { const n = cleanName(store.get('jd_name', '')); return raw ? n : n || '나'; }
+  function nameOpen(after) {
+    G.mode = 'name'; G.nameAfter = after; nameIn.value = pname(true); nameIn.hidden = false; placeName();
+    setTimeout(() => { try { nameIn.focus(); nameIn.select(); } catch {} }, 0);
+  }
+  function placeName() { const k = cv.clientWidth / VW || 1; nameIn.style.fontSize = Math.round(30 * k) + 'px'; nameIn.style.top = Math.round(214 * k) + 'px'; }
+  function nameClose() { nameIn.hidden = true; nameIn.blur(); }
+  function nameDone() { const v = cleanName(nameIn.value); if (!v) { play('move'); return; } G.nameVal = v; G.nameT = 0; G.nameSel = 1; nameClose(); G.mode = 'nameok'; play('select'); }
   function titleOpts() {
     const o = [{ id: 'new', n: '처음부터 결투' }];
     if (store.get('jd_ck', 0)) o.push({ id: 'ck', n: '중간 지점부터' });
-    o.push({ id: 'help', n: '조작법' });
+    o.push({ id: 'name', n: '이름 바꾸기' }, { id: 'help', n: '조작법' });
     if (G.sel >= o.length) G.sel = 0;
     return o;
   }
@@ -802,14 +834,13 @@ export function createJudge(el, O = {}) {
     X.fillRect(zone.l, zone.t, w, 5); X.fillRect(zone.l, zone.b - 5, w, 5); X.fillRect(zone.l, zone.t, 5, h); X.fillRect(zone.r - 5, zone.t, 5, h);
   }
   function drawHud() {
-    txt('나', 32, 402, 22); txt('LV 19', 98, 402, 22);
-    txt('HP', 224, 406, 18, '#fff', 'left', F9);
+    txt(`${pname()}   3학년`, 32, 402, 22);
+    txt('상점', 250, 406, 18, '#fff', 'right', F9);
     const bw = Math.floor(MAXHP * 1.2);
     X.fillStyle = '#c00000'; X.fillRect(256, 400, bw, 21);
     X.fillStyle = '#ff00ff'; X.fillRect(256, 400, bw * Math.max(0, hp) / MAXHP, 21);
     X.fillStyle = '#ffff00'; X.fillRect(256, 400, bw * Math.max(0, hp - kr) / MAXHP, 21);
-    txt('벌점', 256 + bw + 8, 406, 18, kr > 0 ? '#ff00ff' : '#fff', 'left', F9);
-    txt(`${String(Math.max(0, hp)).padStart(2, '0')} / ${MAXHP}`, 434, 402, 22, kr > 0 ? '#ff00ff' : '#fff');
+    txt(`${String(Math.max(0, hp)).padStart(2, '0')} / ${MAXHP}`, 256 + bw + 18, 402, 22, kr > 0 ? '#ff00ff' : '#fff');
     for (let i = 0; i < 4; i++) {
       const b = BTNS[i], on = menu?.kind === 'main' ? menu.sel === i : (menu && G.lastBtn === i), col = on ? YELLOW : ORANGE;
       X.fillStyle = col; X.fillRect(b.x, 432, 110, 3); X.fillRect(b.x, 471, 110, 3); X.fillRect(b.x, 432, 3, 42); X.fillRect(b.x + 107, 432, 3, 42);
@@ -882,6 +913,14 @@ export function createJudge(el, O = {}) {
     X.fillStyle = '#000'; X.fillRect(0, 0, VW, VH);
     const m = G.mode;
     if (m === 'title' || m === 'help') return renderTitle();
+    if (m === 'name') { txt('이름을 정해 주세요.', 320, 130, 30, '#fff', 'center'); X.fillStyle = '#fff'; X.fillRect(200, 262, 240, 3); txt('최대 6글자 · Enter 확정 · Esc 돌아가기', 320, 300, 18, '#c8c8c8', 'center', F9); return; }
+    if (m === 'nameok') {
+      const k = Math.min(1, G.nameT / 2.4), sz = 30 + k * 60, j = () => (Math.random() - .5) * 2 * k;
+      X.save(); X.translate(320 + j(), 200 + j()); txt(G.nameVal, 0, -sz / 2, sz, '#fff', 'center'); X.restore();
+      txt('이 이름이 맞나요?', 320, 70, 22, '#fff', 'center');
+      ['아니요', '예'].forEach((t, i) => { const x = i ? 420 : 220, on = G.nameSel === i; txt(t, x, 400, 26, on ? YELLOW : '#fff', 'center'); if (on) { X.font = `26px ${F11}`; img(ART.star.red, x - X.measureText(t).width / 2 - 26, 405, 1); } });
+      return;
+    }
     if (m === 'win') return renderWin();
     if (m === 'dead') return renderDead();
     X.translate(shX, shY);
@@ -921,12 +960,12 @@ export function createJudge(el, O = {}) {
     txt('복도의 심판', 320, 258, 44, '#fff', 'center');
     if (G.mode === 'help') {
       ['방향키·화면 패드: 별 움직이기 (X 누르고 있으면 천천히)', 'Z/Enter 확인 · X 취소 · Esc 멈춤', '빨간 별: 자유롭게 · 파란 별: 중력! 점프는 ↑(길게 누르면 높이)',
-        '흰 자: 무조건 피하기 · 파란 자: 가만히 있으면 안 아픔', "'공격'을 해야 결투가 진행됨 · 벌점은 HP를 천천히 깎음"].forEach((l, i) => txt(l, 320, 318 + i * 26, 18, '#c8c8c8', 'center', F9));
+        '흰 자: 무조건 피하기 · 파란 자: 가만히 있으면 안 아픔', "'공격'을 해야 결투가 진행됨 · 맞은 뒤에도 상점이 천천히 더 깎임"].forEach((l, i) => txt(l, 320, 318 + i * 26, 18, '#c8c8c8', 'center', F9));
       txt('Z: 돌아가기', 320, 454, 18, '#808080', 'center', F9); return;
     }
-    titleOpts().forEach((o, i) => { const on = i === G.sel; txt(o.n, 320, 322 + i * 34, 22, on ? YELLOW : '#fff', 'center'); if (on) { X.font = `22px ${F11}`; img(ART.star.red, 320 - X.measureText(o.n).width / 2 - 26, 325 + i * 34, 1); } });
+    titleOpts().forEach((o, i) => { const on = i === G.sel; txt(o.n, 320, 312 + i * 32, 22, on ? YELLOW : '#fff', 'center'); if (on) { X.font = `22px ${F11}`; img(ART.star.red, 320 - X.measureText(o.n).width / 2 - 26, 315 + i * 32, 1); } });
     const best = rec.clear ? `승리 ${rec.clear}번 · 가장 빠른 승리 ${fmtT(rec.fast)}` : `가장 멀리 간 곳 ${rec.best ? (rec.best >= 23 ? '필살기' : rec.best >= 14 ? `2막 ${rec.best - 13}턴` : `1막 ${rec.best}턴`) : '—'}`;
-    txt(`${best} · 쓰러진 횟수 ${rec.deaths}`, 320, 446, 18, '#808080', 'center', F9);
+    txt(`${pname(true) ? pname() + ' · ' : ''}${best} · 쓰러진 횟수 ${rec.deaths}`, 320, 452, 18, '#808080', 'center', F9);
   }
   const fmtT = ms => ms ? `${Math.floor(ms / 60000)}분 ${Math.floor(ms / 1000) % 60}초` : '—';
   function renderDead() {
@@ -938,16 +977,16 @@ export function createJudge(el, O = {}) {
     if (o.t > 3.6) txt('Z · 화면 탭: 처음 화면', 320, 440, 18, '#808080', 'center', F9);
   }
   function renderWin() {
-    txt('* 이겼다!', 120, 150, 22); txt('* 상점 0점, 벌점 0점을 얻었다.', 120, 190, 22); txt('* LV이 20이 되었다.', 120, 230, 22);
+    txt('* 이겼다!', 120, 150, 22); txt('* 상점 0점, 벌점 0점을 얻었다.', 120, 190, 22); txt(`* ${pname()}${pname().length ? '은(는)' : ''} 졸업장을 받았다.`, 120, 230, 22);
     txt(`걸린 시간 ${fmtT(G.winMs)}${ck ? ' (중간 지점부터)' : ''} · 지금까지 쓰러진 횟수 ${rec.deaths}`, 320, 320, 18, '#c8c8c8', 'center', F9);
     if (winT > 1.5) txt('Z · 화면 탭: 처음 화면', 320, 440, 18, '#808080', 'center', F9);
   }
 
   /* ── 루프 ── */
-  function togglePause() { if (['title', 'help', 'win', 'dead'].includes(G.mode)) return; paused = !paused; for (const k in held) held[k] = 0; if (AC) { paused ? AC.suspend?.() : AC.resume?.(); } }
+  function togglePause() { if (['title', 'help', 'win', 'dead', 'name', 'nameok'].includes(G.mode)) return; paused = !paused; for (const k in held) held[k] = 0; if (AC) { paused ? AC.suspend?.() : AC.resume?.(); } }
   const vis = () => { if (document.hidden && !paused) togglePause(); };
-  const blur = () => { if (!paused && ['attack', 'stall'].includes(G.mode)) togglePause(); };
-  document.addEventListener('visibilitychange', vis); addEventListener('blur', blur); addEventListener('resize', fit);
+  const blur = () => { clearKeys(); if (!paused && ['attack', 'stall'].includes(G.mode)) togglePause(); };
+  document.addEventListener('visibilitychange', vis); addEventListener('blur', blur); addEventListener('resize', fit); addEventListener('resize', placeName);
   function loop(ts) {
     if (!alive) return; raf = requestAnimationFrame(loop);
     const dt = Math.min(.1, (ts - last) / 1000 || 0); last = ts;
@@ -960,7 +999,7 @@ export function createJudge(el, O = {}) {
     destroy() {
       alive = false; cancelAnimationFrame(raf); musOn = false;
       removeEventListener('keydown', kd, true); removeEventListener('keyup', ku, true);
-      document.removeEventListener('visibilitychange', vis); removeEventListener('blur', blur); removeEventListener('resize', fit);
+      document.removeEventListener('visibilitychange', vis); removeEventListener('focus', clearKeys); removeEventListener('pointermove', syncMods, true); removeEventListener('blur', blur); removeEventListener('resize', fit); removeEventListener('resize', placeName);
       document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs);
       try { AC?.close(); } catch {}
     },
