@@ -58,7 +58,7 @@ export const PREVIEW = new Set(PREVIEW_LIST.map(x => x[0]));
 // stair-center: 2026-10-29 17:42 하율 "이대로 전체 패치해" → 모두에게 바로, 공지는 10/29 패치로
 // prof-find: 2026-10-31 19:15 하율 "그거 적용하고 31패치에 넣어놔" → 모두에게 바로, 공지는 이미 게시된 10/31 패치에 줄 추가(PUB_EDIT add)
 // chase-game: 2026-11-02 09:32 하율 "오늘 바로 출시" → 모두에게 바로, 공지는 11/2 패치로(티어는 11/9 라운드부터 — 서버 GAMES.chase.tierFrom)
-export const RELEASED = new Set(['chase-game', 'prof-find', 'stair-center', 'cut-zoom', 'pad-ctl', 'login-keep', 'tier-profile', 'tier-fancy', 'rank-tier', 'story-share', 'tier-pad', 'club-tt', 'tier-v2']);   // tier-v2: 2026-10-27 14:02 하율 "지금 패치 진행하자"   // tier-pad: 2026-10-26 10:10 하율 "패치 적용해" · club-tt: 13:30 "바로 패치 진행해"
+export const RELEASED = new Set(['color-game', 'chase-game','prof-find', 'stair-center', 'cut-zoom', 'pad-ctl', 'login-keep', 'tier-profile', 'tier-fancy', 'rank-tier', 'story-share', 'tier-pad', 'club-tt', 'tier-v2']);   // tier-v2: 2026-10-27 14:02 하율 "지금 패치 진행하자"   // tier-pad: 2026-10-26 10:10 하율 "패치 적용해" · club-tt: 13:30 "바로 패치 진행해"
 // 회수(HOLD): 공지로 잘못 공개된 기능을 다시 개발자 전용으로 — 게시본에 ff가 남아 있어도 RELEASED보다 우선
 // cut-v2: 2026-10-28 00:16 하율 "내꺼에만 적용 시키라고 했잖아 싹 거둬" (대기열에서 주석 처리하기 전 초안에 들어간 줄이 10/27 패치로 게시돼 열렸던 것)
 export const HOLD = new Set([]);   // 2026-10-28 00:23 하율: 편집의 신 '정식 출시'로 10/28 패치(10/29 0시 공지) 첫 줄 → 회수 풀고 공지 게시 때 공개
