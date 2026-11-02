@@ -307,9 +307,9 @@ export function createDance(root, opts = {}) {
     ctx.beginPath(); for (const [px, py, pr] of puffs) { ctx.moveTo(px * r + pr * r, py * r); ctx.arc(px * r, py * r, pr * r, 0, Math.PI * 2); }
     ctx.lineWidth = LW * 2; ctx.strokeStyle = K; ctx.stroke(); ctx.fillStyle = '#e3e6ec'; ctx.fill();
     ctx.fillStyle = '#c3c8d2'; for (const [px, py, pr] of puffs) { ell(px * r + pr * r * 0.25, py * r + pr * r * 0.3, pr * r * 0.55, pr * r * 0.4); ctx.fill(); }
-    // 약간 곱슬(2026-11-02 하율): 덩어리마다 작은 말린 고리 2개
-    ctx.strokeStyle = '#9ea4b1'; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
-    puffs.forEach(([px, py, pr], i) => { for (let j = 0; j < 2; j++) { const a = i * 2.4 + j * 2.9, cx = px * r + Math.cos(a) * pr * r * 0.45, cy = py * r + Math.sin(a) * pr * r * 0.4, cr = pr * r * 0.26; ctx.beginPath(); ctx.arc(cx, cy, cr, a, a + 4.4); ctx.stroke(); } });
+    // 반곱슬(2026-11-02 하율 "약간 곱슬" → "너무 뽀글, 약간 반곱슬"): 덩어리마다 부드러운 물결 한 줄
+    ctx.strokeStyle = '#b3b9c5'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    puffs.forEach(([px, py, pr], i) => { const cx = px * r, cy = py * r + pr * r * 0.05, w = pr * r * 0.55, d = (i % 2 ? 1 : -1) * pr * r * 0.18; ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.quadraticCurveTo(cx - w / 2, cy - d, cx, cy); ctx.quadraticCurveTo(cx + w / 2, cy + d, cx + w, cy); ctx.stroke(); });
     ctx.fillStyle = '#ffffff'; ell(-r * 0.35, -r * 0.75, r * 0.28, r * 0.12, -0.4); ctx.fill();
     ctx.restore();
   }
