@@ -40,7 +40,8 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   film: { min: FILM_MAX - FILM_CELLS * 12, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷. 2026-10-30 막히면 새 판 → 2분 동안 여러 판(상한 120×12). 티어는 공개되는 순간부터(계단 오르기와 같게)
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },
   blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game', tierOn: true },
-  dance: { min: 1, max: DANCE_MAX - 1, play: 0, ff: 'dance-game', tierOn: true },   // 선생님 몰래 춤추기(2026-10-31 미리보기): DANCE_MAX - 점수. 서버가 누름/뗌 기록으로 판을 다시 돌려 점수 확인(dance-score.js). 난이도가 계속 올라 판이 끝남 → 티어
+  dance: { min: 1, max: DANCE_MAX - 1, play: 0, ff: 'dance-game', tierOn: true, noTier: true },   // 11/2 22:54 하율 "티어에 포함시키지 마" — 개인 기록·랭킹·기록실만(점수 기준이 사람 기록과 안 맞음)
+  // 선생님 몰래 춤추기(2026-10-31 미리보기): DANCE_MAX - 점수. 서버가 누름/뗌 기록으로 판을 다시 돌려 점수 확인(dance-score.js). 난이도가 계속 올라 판이 끝남 → 티어
   chase: { min: 1, max: CHASE_MAX - 1, play: 0, ff: 'chase-game', tierFrom: '2026-11-09' },   // 카체이싱!(2026-10-31 미리보기 → 2026-11-02 하율 "오늘 바로 출시"): CHASE_MAX - 점수. 서버가 입력 기록으로 판을 처음부터 다시 돌려 점수 확인(chase-score.js). 티어는 11/9 라운드부터(같은 날 하율 — 라운드 절반 지나 출시라 먼저 한 사람 유리·판마다 도로가 달라 운 비중 큼), 순위표·업적·숙련도·주간 미션은 바로
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에 — 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 시작 티켓 씨앗으로 판이 정해지고 서버가 다시 둬 봄(cz-score.js)
   mine: { min: 5000, max: 3600000, play: 0, ff: 'casual-games', tierOn: true },   // 중급 클리어 시간(ms) — 작을수록 1등

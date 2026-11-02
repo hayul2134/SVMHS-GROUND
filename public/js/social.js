@@ -38,7 +38,7 @@ const ADMIN_HANDLE = 'developer';   // 서버 lib/db.js와 같게 (버튼 표시
 const ic = (k, cls = '') => `<svg class="sic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#sj-${k}"/></svg>`;
 const GAMES = {
   // 선생님 몰래 춤추기(2026-10-31 하율, 미리보기 깃발 dance-game — 개발자만): 판서하는 선생님 몰래 꾹 눌러 춤추기, 돌아보면 멈추기. 높을수록 좋음 → 서버엔 DANCE_MAX - 점수
-  dance: { ff: 'dance-game', name: '선생님 몰래 춤추기', ic: 'dance', desc: '선생님이 판서하는 동안 몰래 춤춰요! 돌아보면 바로 멈추기', fmt: v => (DANCE_MAX - v).toLocaleString('ko-KR') + '점' },
+  dance: { ff: 'dance-game', noTier: true, name: '선생님 몰래 춤추기', ic: 'dance', desc: '선생님이 판서하는 동안 몰래 춤춰요! 돌아보면 바로 멈추기', fmt: v => (DANCE_MAX - v).toLocaleString('ko-KR') + '점' },
   // 카체이싱!(2026-10-31 하율 "다함께 차차차처럼 — 플레이 방식까지", 미리보기 깃발 chase-game — 개발자만): 위에서 본 도로 칼치기·점프·연료·부스터. 높을수록 좋음 → 서버엔 CHASE_MAX - 점수
   chase: { ff: 'chase-game', name: '카체이싱!', ic: 'chase', desc: '차 사이를 아슬아슬하게 누비며 부스터를 모아요! 연료가 떨어지기 전에 멀리', fmt: v => (CHASE_MAX - v).toLocaleString('ko-KR') + '점' },
   // 집에 가고 싶어!: 멀리 갈수록 좋음 → 서버엔 HOME_MAX - 거리로 저장(다른 게임처럼 작을수록 1등)
