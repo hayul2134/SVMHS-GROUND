@@ -591,7 +591,7 @@ export function createJudge(el, O = {}) {
     } else if (m.what === 'item') {
       const idx = m.page * 4 + m.sel, it = items.splice(idx, 1)[0]; menu = null;
       const before = hp; hp = Math.min(MAXHP, hp + it[1]); play('Heal');
-      showText(`* ${it[2]}${josa(it[2])} 먹었다.\n* ${hp >= MAXHP ? '상점이 가득 찼다.' : `상점이 ${hp - before}점 회복됐다.`}`, () => enemyTurn(false));
+      showText(`* ${it[2]}${josa(it[2])} 먹었다.\n* ${hp >= MAXHP ? '체력이 가득 찼다.' : `체력이 ${hp - before} 회복됐다.`}`, () => enemyTurn(false));
     } else if (m.what === 'mercy') {
       menu = null;
       if (hits === 13) { trapped = true; talk(TRAP, () => trapAttack(), 'noeyes'); }
@@ -835,7 +835,7 @@ export function createJudge(el, O = {}) {
   }
   function drawHud() {
     txt(`${pname()}   3학년`, 32, 402, 22);
-    txt('상점', 250, 406, 18, '#fff', 'right', F9);
+    txt('체력', 250, 406, 18, '#fff', 'right', F9);
     const bw = Math.floor(MAXHP * 1.2);
     X.fillStyle = '#c00000'; X.fillRect(256, 400, bw, 21);
     X.fillStyle = '#ff00ff'; X.fillRect(256, 400, bw * Math.max(0, hp) / MAXHP, 21);
@@ -960,7 +960,7 @@ export function createJudge(el, O = {}) {
     txt('복도의 심판', 320, 258, 44, '#fff', 'center');
     if (G.mode === 'help') {
       ['방향키·화면 패드: 별 움직이기 (X 누르고 있으면 천천히)', 'Z/Enter 확인 · X 취소 · Esc 멈춤', '빨간 별: 자유롭게 · 파란 별: 중력! 점프는 ↑(길게 누르면 높이)',
-        '흰 자: 무조건 피하기 · 파란 자: 가만히 있으면 안 아픔', "'공격'을 해야 결투가 진행됨 · 맞은 뒤에도 상점이 천천히 더 깎임"].forEach((l, i) => txt(l, 320, 318 + i * 26, 18, '#c8c8c8', 'center', F9));
+        '흰 자: 무조건 피하기 · 파란 자: 가만히 있으면 안 아픔', "'공격'을 해야 결투가 진행됨 · 맞은 뒤에도 체력이 천천히 더 깎임"].forEach((l, i) => txt(l, 320, 318 + i * 26, 18, '#c8c8c8', 'center', F9));
       txt('Z: 돌아가기', 320, 454, 18, '#808080', 'center', F9); return;
     }
     titleOpts().forEach((o, i) => { const on = i === G.sel; txt(o.n, 320, 312 + i * 32, 22, on ? YELLOW : '#fff', 'center'); if (on) { X.font = `22px ${F11}`; img(ART.star.red, 320 - X.measureText(o.n).width / 2 - 26, 315 + i * 32, 1); } });
