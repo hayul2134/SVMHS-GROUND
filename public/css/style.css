@@ -6932,6 +6932,21 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 /* 체육 창고 정리!(2026-11-02, 깃발 ball-game · js/ball.js) */
 .apps .gapp.g-ball .ai{--c:#ffe2c6}
 .apps .gapp.g-rhythm .ai{--c:#e6ddff}
+.apps .gapp.g-judge .ai{--c:#ffd9de}
+/* 복도의 심판(judge.js) */
+.jd{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.jd-wrap{position:relative;line-height:0;border:2.5px solid var(--ink,#2a2846);border-radius:14px;overflow:hidden;box-shadow:4px 5px 0 var(--ink,#2a2846);background:#000}
+.jd-cv{display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.jd-bar{margin:0;font-size:12px;color:var(--muted,#6b6f8e);text-align:center}
+.jd-ib{position:absolute;top:8px;right:8px;padding:5px 9px;border:1.5px solid #fff;border-radius:9px;background:rgba(0,0,0,.55);color:#fff;font:400 13px Jua,var(--font,sans-serif);line-height:1.2;cursor:pointer}
+.jd-pad{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;align-items:flex-end;padding:10px;pointer-events:none;line-height:1}
+.jd-pad[hidden]{display:none}
+.jd-pad button{pointer-events:auto;width:52px;height:52px;border:2px solid rgba(255,255,255,.6);border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font:400 18px Jua,var(--font,sans-serif);touch-action:none;user-select:none;-webkit-user-select:none}
+.jd-pad button.on{background:rgba(255,225,74,.55)}
+.jd-dp{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:2px}
+.jd-dp [data-k=U]{grid-area:1/2}.jd-dp [data-k=L]{grid-area:2/1}.jd-dp [data-k=R]{grid-area:2/3}.jd-dp [data-k=D]{grid-area:3/2}
+.jd-ab{display:flex;gap:8px}
+.jd-ab [data-k=Z]{width:64px;height:64px;border-radius:50%}
 .bl{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
 .bl-wrap{position:relative;line-height:0}
 .bl-cv{display:block;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}

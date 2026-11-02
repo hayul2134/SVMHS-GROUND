@@ -2192,6 +2192,7 @@ async function play(game) {
   if (game === 'mine' || game === 'snake' || game === 'n2048') return playCz('c_' + game);   // 랭크전 순위 창 '도전하기'   // 캐주얼 게임(2026-10-29, 깃발 casual-games) — GAMES·랭킹·티켓과 따로
   if (game === 'ball') return playBall();
   if (game === 'commute') return playCommute();   // 등교하기!(2026-11-02 하율 "랭킹에서 제외, 게임이 아니라 서비스로") — GAMES·랭킹·티켓·키 설정과 따로
+  if (game === 'judge') return playJudge();   // 복도의 심판(2026-11-02 시험판, 깃발 judge-game) — GAMES·랭킹·티켓과 따로
   if (game === 'rhythm') return playRhythm();   // 방송실 리듬 배틀(2026-11-02 시험판, 깃발 rhythm-game) — GAMES·랭킹·티켓과 따로   // 체육 창고 정리!(2026-11-02 시험판, 깃발 ball-game) — GAMES·랭킹·티켓과 따로
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
   const fn = PLAYERS[game];
@@ -2254,6 +2255,29 @@ async function playRhythm() {
     area.querySelector('[data-restart]')?.addEventListener('click', e => { if (M.restart()) { e.stopPropagation(); e.currentTarget.blur(); } }, true);   // 다시 시작 = 지금 곡 처음부터
     quitGame = () => { M.destroy(); wide(false); };
   } catch (e) { if (seq === playSeq && curGame === 'rhythm') gameFail(e); else console.error(e); }
+}
+/* 복도의 심판(2026-11-02 하율 "언더테일 몰살 루트 샌즈전을 똑같이 — 저작권 문제 되는 것만 바꿔서, 내 화면에", 미리보기 깃발 judge-game)
+   js/judge.js가 전투 전부. 시험판이라 서버·랭킹 없이 이 기기 기록만 */
+let JDG = null;
+async function playJudge() {
+  const seq = ++playSeq, gate = () => ffOn('judge-game', isDev(S.me));
+  if (!gate()) {
+    await Promise.all([meP, loadReleased()]).catch(() => {});
+    if (seq !== playSeq) return;
+    if (!gate()) { toast('아직 열리지 않은 게임이에요'); return; }
+  }
+  try { quitGame?.(); } catch (e) { console.error(e); }
+  quitGame = null; curGame = 'judge'; ticket = null; reQuick = false;
+  const area = stage(ic('judge') + ' 복도의 심판', '<p class="empty">불러오는 중…</p>');
+  try {
+    if (!JDG) JDG = await import('./judge.js').catch(() => import('./judge.js?r=' + Date.now()));
+    if (seq !== playSeq || !area.isConnected) return;
+    area.innerHTML = '<div id="jdBox"></div>';
+    const wide = on => { area.classList.toggle('wide', on); $('#gamePlay .ptop')?.classList.toggle('wide', on); };
+    wide(true);
+    const M = JDG.createJudge($('#jdBox'), {}); M.start();
+    quitGame = () => { M.destroy(); wide(false); };
+  } catch (e) { if (seq === playSeq && curGame === 'judge') gameFail(e); else console.error(e); }
 }
 /* 캐주얼 게임(2026-10-29 하율 "구글 플레이 게임즈 미니 게임처럼 캐주얼로 — 내 화면에만"): js/casual.js가 판을 그림
    랭킹·티어·뽑기권·업적·미션 없음(서버 안 거침) → 위 줄엔 나가기만. 2048은 판이 이어지는 게임이라 R/다시 시작 대신 판 안 '새 게임' */
