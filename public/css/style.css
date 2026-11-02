@@ -6904,3 +6904,19 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 /* 2026-11-02 하율: 먼저 보이는 잘한 3개는 한 줄에 3칸 */
 .tr-games.tr-g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:620px){.tr-games.tr-g3{grid-template-columns:1fr}}
+
+/* 체육 창고 정리!(2026-11-02, 깃발 ball-game · js/ball.js) */
+.apps .gapp.g-ball .ai{--c:#ffe2c6}
+.bl{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.bl-wrap{position:relative;line-height:0}
+.bl-cv{display:block;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}
+.bl-ov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(238,245,255,.55);backdrop-filter:blur(2px);line-height:1.4}
+.bl-ov[hidden]{display:none}
+.bl-card{background:var(--card,#fff);border:2.5px solid var(--ink,#2a2846);border-radius:20px;box-shadow:4px 5px 0 var(--ink,#2a2846);padding:20px 26px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:86%}
+.bl-t{font:400 24px Jua,var(--font,sans-serif)}
+.bl-sc{font:400 38px Jua,var(--font,sans-serif);color:#3d7bff;margin:0}
+.bl-sub{margin:0 0 6px;font-size:13px;color:var(--sub,#6a6a88)}
+.bl-sub em{font-style:normal;color:#e0463c;font-weight:800}
+.bl-note{margin:4px 0 0;font-size:11px;color:var(--sub,#8a8aa8)}
+.bl-bar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub,#6a6a88)}
+@media (max-width:520px){.bl-help{font-size:11px}}
