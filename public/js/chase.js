@@ -8,13 +8,13 @@ import * as C from './chase-score.js';
 const INK = '#2a2846';
 const TRAFFIC = ['#eef0f3', '#2a2d36', '#a7afba', '#646d7a', '#c8322f', '#2d5bb0', '#3b6e52', '#d9c9a3', '#7c2a36', '#e2e5ea'];   // 실제 도로에 많은 색(흰색·검정·은색·회색 많이)
 const FONT = '"Jua", "Pretendard Variable", system-ui, sans-serif';
-const fmt = n => Math.floor(n).toLocaleString('ko-KR');
+const NF = new Intl.NumberFormat('ko-KR'), fmt = n => NF.format(Math.floor(n));   // toLocaleString은 부를 때마다 포맷터를 새로 만들어 느림(2026-11-02)
 // 속도 표시(2026-11-01 하율 "300km 즈음"): 화면 숫자만 — 기본 속도 약 245~335, 슬립·부스터면 400대(예전 v×0.36 = 330~790)
 const kmhOf = v => v > 0 ? 180 + v * 0.07 : 0;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const TOUCHY = () => matchMedia('(pointer:coarse)').matches;
-const RM = () => matchMedia('(prefers-reduced-motion:reduce)').matches;
+const RM_Q = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion:reduce)') : null, RM = () => !!RM_Q?.matches;   // 한 번 만든 쿼리를 재사용(매 프레임 수십 번 불려서)
 const PORTRAIT = '(orientation:portrait) and (pointer:coarse)';
 
 /* ===== 화면 크기·시점 =====
@@ -310,12 +310,13 @@ export function createChase(root, opts = {}) {
 
   /* --- 크기: 논리 960×540을 화면 픽셀에 맞춰 선명하게 --- */
   let resQ = 1, lagT = 0;
+  const spr = new Map(), bgs = new Map();   // 차 그림 캐시(drawCarCached) · 길 종류별 바닥 그림(bgOf) — 크기가 바뀌면 비움
   const fit = () => {
     const w = cv.clientWidth; if (!w) return;
     // 2026-11-01 최적화(하율 "랙이 좀 걸린다"): 느려지는 건 거의 다 픽셀 칠하기 → 그림판 가로를 1440px(× resQ)까지만. 렉이 이어지면 resQ를 더 낮춤
     dpr = Math.min(2.5, window.devicePixelRatio || 1, 1440 * resQ / w); k = w / VW;
     const pw = Math.round(w * dpr), ph = Math.round(w * VH / VW * dpr);
-    if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; art.clear(); }
+    if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; art.clear(); spr.clear(); bgs.clear(); }
   };
   const ro = new ResizeObserver(() => { fit(); draw(); }); ro.observe(cv);
   const portMQ = matchMedia(PORTRAIT);
@@ -341,7 +342,7 @@ export function createChase(root, opts = {}) {
   const models = new Map();
   const carModel = (kind, col, hw, hh) => {
     const c2 = typeof col === 'number' ? TRAFFIC[col % TRAFFIC.length] : col, key = kind + c2 + hw + ':' + hh;
-    let M = models.get(key); if (!M) { M = buildCar(kind, c2, hw, hh); models.set(key, M); }
+    let M = models.get(key); if (!M) { M = buildCar(kind, c2, hw, hh); M.key = key; M.anim = M.glow.length > 0 || M.D.some(d => d.blink !== undefined); models.set(key, M); }
     return M;
   };
   let edgeOn = true; const SH3 = [[1.22, 0.07], [1.1, 0.1], [0.98, 0.16]], SH1 = [[1.1, 0.26]];
@@ -390,6 +391,31 @@ export function createChase(root, opts = {}) {
       for (const [x, y, z, ph, rgb] of M.glow) { if (((t >> 3) + ph) % 2) continue; proj(x, y, z, PX, PYs, 0); const r = 20 * ps(cy) * PK; const gl = g.createRadialGradient(PX[0], PYs[0], 0, PX[0], PYs[0], r); gl.addColorStop(0, `rgba(${rgb},.9)`); gl.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gl; g.beginPath(); g.arc(PX[0], PYs[0], r, 0, 7); g.fill(); }
       g.globalCompositeOperation = 'source-over';
     }
+  }
+  // 2026-11-02 저사양 최적화(하율 "훨씬 더 낮은 사양에서도"): 똑바로 달리는 차는 '그 깊이·옆 위치에서 본 모습'을 그림 한 장으로 만들어 두고 찍음
+  //   (차 하나 = 면 30~50개 칠하기 → drawImage 1번). 열쇠 = 차 모델 · 카메라 기준 옆 위치(12 단위) · 깊이(배율 약 7%씩) · 경광등 깜빡임 · 저사양 여부
+  //   그림은 실제 깊이 배율로 늘려 찍으므로 위치는 정확하고, 모양(어느 옆면이 보이는지)만 칸 단위로 바뀜. 600장 넘으면 비움
+  function drawCarCached(M, x, yc, detail, t) {
+    const q = ps(yc), u = x - RX - CAM, ub = Math.round(u / 12), qb = Math.round(Math.log(q) * 14);
+    const key = M.key + '|' + ub + '|' + qb + '|' + (M.anim ? (t >> 3) & 1 : 0) + (detail ? 'd' : 'f') + (lowFx ? 'l' : '');
+    let sp = spr.get(key);
+    if (!sp) {
+      if (spr.size > 600) spr.clear();
+      const qr = Math.exp(qb / 14), yr = PY0 + PF - PF / qr, xr = RX + CAM + ub * 12;   // 기준 깊이·옆 위치(ps의 역)
+      if (!(PY0 - yr > -PF * 0.6)) { drawCar(M, x, yc, 0, 0, 0, detail, t); return; }   // 화면 바로 아래쪽(원근 꺾이는 곳)은 직접
+      // 그림 범위: 차 상자 꼭짓점을 화면에 투영
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const zt = M.W * 1.7 + 6;
+      for (const bx of [-M.W * 0.75, M.W * 0.75]) for (const by of [M.y0 - 8, M.y1 + 8]) for (const bz of [0, zt]) { const [X, Y] = projPt(M, xr, yr, 0, 0, bx, by, bz); x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); }
+      x0 -= 3; y0 -= 3; x1 += 3; y1 += 3;
+      const sc = k * dpr, c = document.createElement('canvas');
+      c.width = Math.max(1, Math.ceil((x1 - x0) * sc)); c.height = Math.max(1, Math.ceil((y1 - y0) * sc));
+      const g0 = g, gx = c.getContext('2d'); gx.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc);
+      g = gx; try { drawCar(M, xr, yr, 0, 0, 0, detail, t); } finally { g = g0; }
+      const ax = CX + ub * 12 * qr * PK, ay = syOf(qr);   // 기준 그림에서 차 가운데 바닥점
+      sp = { c, dx: x0 - ax, dy: y0 - ay, w: x1 - x0, h: y1 - y0, qr }; spr.set(key, sp);
+    }
+    const f = q / sp.qr, X = sxOf(x, q), Y = syOf(q);
+    g.drawImage(sp.c, X + sp.dx * f, Y + sp.dy * f, sp.w * f, sp.h * f);
   }
   const projPt = (M, cx, cy, yaw, lift, x, y, z) => { pcx = cx; pcy = cy; pco = Math.cos(yaw); psi = Math.sin(yaw); plift = lift; proj(x, y, z, PX, PYs, 0); return [PX[0], PYs[0]]; };
   const itemArt = t => sheet('i:' + t, 34, 38, x => {
@@ -569,7 +595,7 @@ export function createChase(root, opts = {}) {
     s = C.newSim(sd, true); evs = []; lq.length = 0; acc = 0; st.scene = 'play'; tStart = performance.now(); topV = 0;
     opts.onStart?.(saved);
   }
-  function resetFx() { nbShown = false; lastSP = 0; topK = 0; parts = []; pops = []; streaks = []; shake = 0; flash = 0; warnShown = -1; hs = 0; slowT = 0; punch = 0; flies = []; crack = null; rflash = 0; wz = 0; wvz = 0; wroll = 0; }
+  function resetFx() { nbShown = false; lastSP = 0; lastSPf = -99; hudAt = 0; topK = 0; parts = []; pops = []; streaks = []; shake = 0; flash = 0; warnShown = -1; hs = 0; slowT = 0; punch = 0; flies = []; crack = null; rflash = 0; wz = 0; wvz = 0; wroll = 0; }
   function again() {
     if (st.scene !== 'over' || performance.now() - st.shownAt < 500) return;
     st.scene = 'ready'; s = null; resetFx(); opts.onReady?.(); start();
@@ -675,8 +701,6 @@ export function createChase(root, opts = {}) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
     const dt = Math.min(100, now - (last || now)); last = now;
-    avgDt = avgDt * 0.97 + dt * 0.03; lowFx = avgDt > 22;   // 저사양(약 45fps 밑)이면 입자·빛 효과 줄임
-    if (st.scene === 'play' && avgDt > 21 && resQ > 0.56) { lagT += dt; if (lagT > 1500) { lagT = 0; resQ *= 0.8; fit(); avgDt = 16; } } else lagT = 0;   // 계속 느리면 해상도 한 단계 낮춤
     if (st.scene === 'count' || st.scene === 'resume') {
       countT += dt;
       const total = st.scene === 'resume' ? 1000 : 3000, prevN = Math.ceil((total - (countT - dt)) / 1000), n = Math.ceil((total - countT) / 1000);
@@ -737,8 +761,25 @@ export function createChase(root, opts = {}) {
     if (parts.length > (lowFx ? 300 : 700)) parts.splice(0, parts.length - (lowFx ? 300 : 700));
     shake = Math.max(0, shake - ds0 * 1.2); flash = Math.max(0, flash - ds0 * 1.6); rflash = Math.max(0, rflash - ds0 * 0.8); punch = Math.max(0, punch - ds0 * 0.35);
     if (crack) crack.t += ds0;
-    draw(ds);
+    // 그리기 속도 조절(2026-11-02 하율 "훨씬 더 낮은 사양에서도"): 판 진행은 매 프레임, 그리기는 drawMin 간격으로만
+    //   · 120Hz 화면(갤럭시탭 S9 등)도 60번까지만 그림 · 계속 느리면 효과 줄임(lowFx) → 해상도 낮춤(resQ, 최저 약 0.45) → 그래도 느리면 30번(drawMin 33)
+    //   · 30번으로 내린 뒤 그리기 자체가 가벼우면(4초 동안 평균 6ms 밑) 다시 60번
+    dsAcc += ds;
+    if (now - lastDraw >= drawMin - 1.5) {
+      const dd = Math.min(100, now - (lastDraw || now)); lastDraw = now;
+      avgDt = avgDt * 0.95 + dd * 0.05; lowFx = lowLv > 0 || drawMin > 20 || (lowFx ? avgDt > 19 : avgDt > 22);
+      // 계속 느리면 한 단계씩: ① 효과 줄임 고정 ② 30번 그리기 ③④ 해상도 0.8·0.64배(느린 원인이 대부분 칠하는 횟수라 해상도는 마지막에·조금만)
+      if (st.scene === 'play' && avgDt > (drawMin > 20 ? 36 : 21)) {
+        lagT += dd;
+        if (lagT > 1500) { lagT = 0; avgDt = drawMin > 20 ? 33 : 16; if (!lowLv) lowLv = 1; else if (drawMin < 20) { drawMin = 33; okT = 0; } else if (resQ > 0.65) { resQ *= 0.8; fit(); } }
+      } else lagT = 0;
+      const t0 = performance.now();
+      draw(dsAcc); dsAcc = 0; drawN++;
+      drawCost = drawCost * 0.9 + (performance.now() - t0) * 0.1;
+      if (drawMin > 20 && st.scene === 'play') { okT = drawCost < 6 ? okT + dd : 0; if (okT > 4000) { drawMin = 15; okT = 0; avgDt = 16; } }
+    }
   }
+  let lastDraw = 0, drawMin = 15, dsAcc = 0, drawCost = 0, okT = 0, drawN = 0, lowLv = 0;
   let lastRes = null;
   function finish() {
     const r = { score: C.scoreOf(s), m: C.metersOf(s), f: s.overF, why: s.over, near: s.near, ramps: s.ramps, slipPts: s.slipPts, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, top: Math.round(topK), rounds: [s.overF, ...evs], saved, realMs: performance.now() - tStart };
@@ -826,7 +867,7 @@ export function createChase(root, opts = {}) {
     if (crack) drawCrack();
     if (rflash > 0) { const rg = g.createRadialGradient(CX, VH / 2, VH * 0.2, CX, VH / 2, VW * 0.7); rg.addColorStop(0, 'rgba(255,40,30,0)'); rg.addColorStop(1, `rgba(255,40,30,${(rflash * 0.55).toFixed(3)})`); g.fillStyle = rg; g.fillRect(0, 0, VW, VH); }
     if (flash > 0) { g.fillStyle = `rgba(255,255,255,${Math.min(0.9, flash * 1.4).toFixed(3)})`; g.fillRect(0, 0, VW, VH); }
-    if (s) drawHud();
+    if (s) hudLayer();
     if (st.scene === 'count' || st.scene === 'resume') drawCount();
     if (touchSeen && (st.scene === 'play' || st.scene === 'count' || st.scene === 'resume')) drawPads();
   }
@@ -902,29 +943,58 @@ export function createChase(root, opts = {}) {
     return segs;
   }
   const vgrad = (c0, c1) => { const x = g.createLinearGradient(0, HZ, 0, VH); x.addColorStop(0, shade(c0, 0.18)); x.addColorStop(0.35, c0); x.addColorStop(1, c1); return x; };
+  // 2026-11-02 저사양 최적화: 움직이지 않는 바닥(하늘·땅 색·모래·인도·갓길·아스팔트·차선 그늘·가장자리 흰 선·가드레일/방음벽/난간)은
+  //   길 종류마다 카메라 가운데(CAM 0) 기준 그림 한 장으로 만들어 두고 찍음. 카메라가 옆으로 움직이면 바닥 원근이 '지평선 기준 가로 기울이기'와
+  //   똑같아서(sxOf의 CAM 항 = 화면 y에 비례) 기울이기 변환으로 찍으면 정확히 맞음. 길이 바뀌는 곳은 화면 줄(y) 단위로 잘라 두 장을 이어 찍음
+  //   (예전: 매 프레임 그라데이션 사다리꼴 십수 개를 화면 전체에 겹쳐 칠함)
+  const BGM = 150;
+  function bgOf(z) {
+    let b = bgs.get(z.k); if (b) return b;
+    const sc = k * dpr, c = document.createElement('canvas');
+    c.width = Math.ceil((VW + BGM * 2) * sc); c.height = Math.ceil(VH * sc);
+    const x = c.getContext('2d', { alpha: false }), g0 = g, cam0 = CAM;
+    x.setTransform(sc, 0, 0, sc, BGM * sc, 0); g = x; CAM = 0;
+    try {
+      g.fillStyle = '#dcefff'; g.fillRect(-BGM, 0, VW + BGM * 2, VH);
+      const gL = vgrad(...(z.gl || z.g)), gR = z.gl ? vgrad(...z.g) : gL;
+      trap(-6000, LG, Y_FAR, Y_BOT, gL); trap(RG, 6375, Y_FAR, Y_BOT, gR);
+      if (z.k === 'coast') { trap(LG - 70, LG, Y_FAR, Y_BOT, '#f1dfae'); trap(LG - 82, LG - 70, Y_FAR, Y_BOT, 'rgba(255,255,255,.7)'); }   // 모래사장·파도 거품
+      if (z.k === 'city') { trap(LG - 46, LG, Y_FAR, Y_BOT, '#d6d2ca'); trap(RG, RG + 46, Y_FAR, Y_BOT, '#d6d2ca'); }   // 인도
+      trap(LG, C.ROAD_L, Y_FAR, Y_BOT, z.sh); trap(C.ROAD_R, RG, Y_FAR, Y_BOT, z.sh);
+      const rg = g.createLinearGradient(0, HZ, 0, VH); rg.addColorStop(0, '#8d93a0'); rg.addColorStop(0.15, '#5d6270'); rg.addColorStop(1, '#3a3e4a');
+      trap(C.ROAD_L, C.ROAD_R, Y_FAR, Y_BOT, rg);
+      for (let l = 0; l < C.LANES; l++) { const cx = C.laneX(l); trap(cx - 22, cx - 13, Y_FAR, Y_BOT, 'rgba(0,0,0,.09)'); trap(cx + 13, cx + 22, Y_FAR, Y_BOT, 'rgba(0,0,0,.09)'); }
+      trap(C.ROAD_L + 3, C.ROAD_L + 6.5, Y_FAR, Y_BOT, '#f2f2ec'); trap(C.ROAD_R - 6.5, C.ROAD_R - 3, Y_FAR, Y_BOT, '#f2f2ec');
+      for (const xr of [LG + 2, RG - 2]) {   // 가장자리 시설: 가드레일 · 방음벽 · 다리 난간
+        if (z.rail === 'guard') { ribbon(xr, 12, 20, Y_FAR, Y_BOT, '#c3c8d2'); ribbon(xr, 15, 17, Y_FAR, Y_BOT, 'rgba(255,255,255,.6)'); ribbon(xr, 12, 13.2, Y_FAR, Y_BOT, 'rgba(60,64,80,.4)'); }
+        else if (z.rail === 'wall') { ribbon(xr, 0, 40, Y_FAR, Y_BOT, '#aab4c0'); ribbon(xr, 32, 40, Y_FAR, Y_BOT, '#8fd0c8'); ribbon(xr, 0, 4, Y_FAR, Y_BOT, '#7d8592'); }
+        else if (z.rail === 'bridge') { ribbon(xr, 0, 18, Y_FAR, Y_BOT, 'rgba(240,243,248,.95)'); ribbon(xr, 6, 8, Y_FAR, Y_BOT, '#aab2c0'); ribbon(xr, 16, 18, Y_FAR, Y_BOT, '#e05050'); }
+      }
+    } finally { g = g0; CAM = cam0; }
+    b = { c }; bgs.set(z.k, b); return b;
+  }
   function drawGround(dist) {
-    g.fillStyle = '#dcefff'; g.fillRect(0, 0, VW, HZ + 2);
-    for (const sg of zoneSegs(dist)) {
-      const z = sg.z, gL = vgrad(...(z.gl || z.g)), gR = z.gl ? vgrad(...z.g) : gL, water = z.k === 'bridge' || z.k === 'coast';
-      trap(-6000, LG, sg.y1, sg.y2, gL); trap(RG, 6375, sg.y1, sg.y2, gR);
-      bands(dist, water ? 110 : 240, water ? 10 : 120, Math.max(sg.y1, -14000), (y1, y2, n) => {   // 잔디 줄무늬 · 물결
-        const a1 = Math.max(y1, sg.y1), a2 = Math.min(y2, sg.y2); if (a1 >= a2) return;
-        if (water) { const o = (n * 97) % 180; trap(-900 + o, -500 + o, a1, a2, z.st); trap(-420 + o * 0.6, -180 + o * 0.6, a1, a2, z.st); if (z.k === 'bridge') { trap(560 - o * 0.6, 820 - o * 0.6, a1, a2, z.st); trap(900 - o, 1300 - o, a1, a2, z.st); } }
-        else { trap(-6000, LG, a1, a2, z.st); trap(RG, 6375, a1, a2, z.st); }
-      });
-      if (z.k === 'coast') { trap(LG - 70, LG, sg.y1, sg.y2, '#f1dfae'); trap(LG - 82, LG - 70, sg.y1, sg.y2, 'rgba(255,255,255,.7)'); }   // 모래사장·파도 거품
-      if (z.k === 'city') { trap(LG - 46, LG, sg.y1, sg.y2, '#d6d2ca'); trap(RG, RG + 46, sg.y1, sg.y2, '#d6d2ca'); }   // 인도
-      trap(LG, C.ROAD_L, sg.y1, sg.y2, z.sh); trap(C.ROAD_R, RG, sg.y1, sg.y2, z.sh);
+    const sg0 = zoneSegs(dist), sc = k * dpr, shx = -CAM * PK / PB;
+    g.save(); g.transform(1, 0, shx, 1, -shx * HZ, 0);
+    for (let i = 0; i < sg0.length; i++) {
+      const sg = sg0[i], b = bgOf(sg.z);
+      const t0 = i === sg0.length - 1 ? 0 : Math.max(0, syOf(ps(sg.y1)) - 0.5), t1 = i === 0 ? VH : Math.min(VH, syOf(ps(sg.y2)) + 0.5);   // 가장 먼 칸은 하늘까지, 가장 가까운 칸은 화면 끝까지
+      if (t1 - t0 > 0.05) g.drawImage(b.c, 0, t0 * sc, b.c.width, (t1 - t0) * sc, -BGM, t0, VW + BGM * 2, t1 - t0);
     }
-    const rg = g.createLinearGradient(0, HZ, 0, VH); rg.addColorStop(0, '#8d93a0'); rg.addColorStop(0.15, '#5d6270'); rg.addColorStop(1, '#3a3e4a');
-    trap(C.ROAD_L, C.ROAD_R, Y_FAR, Y_BOT, rg);
+    g.restore();
+    for (const sg of sg0) {   // 잔디 줄무늬 · 물결(흘러감)
+      const z = sg.z, water = z.k === 'bridge' || z.k === 'coast';
+      bands(dist, water ? 110 : 240, water ? 10 : 120, Math.max(sg.y1, -14000), (y1, y2, n) => {
+        const a1 = Math.max(y1, sg.y1), a2 = Math.min(y2, sg.y2); if (a1 >= a2) return;
+        if (water) { const o = (n * 97) % 180; trap(-900 + o, -500 + o, a1, a2, z.st); trap(-420 + o * 0.6, Math.min(-180 + o * 0.6, z.k === 'coast' ? LG - 82 : 1e9), a1, a2, z.st); if (z.k === 'bridge') { trap(560 - o * 0.6, 820 - o * 0.6, a1, a2, z.st); trap(900 - o, 1300 - o, a1, a2, z.st); } }
+        else { trap(-6000, z.k === 'city' ? LG - 46 : LG, a1, a2, z.st); trap(z.k === 'city' ? RG + 46 : RG, 6375, a1, a2, z.st); }
+      }, lowFx ? 8 : 4);   // 먼 줄무늬는 생략(지평선 근처는 대기 원근으로 흐림)
+    }
     // 아스팔트 결(보수 자국·얼룩)이 흘러감 — 속도감의 핵심
-    bands(dist, 150, 26, -9000, (y1, y2, n) => { const x = ((n * 131) % 330 + 330) % 330; trap(x, x + 40 + (n % 3) * 20, y1, y2, n % 2 ? 'rgba(0,0,0,.09)' : 'rgba(255,255,255,.05)'); });
-    for (let l = 0; l < C.LANES; l++) { const cx = C.laneX(l); trap(cx - 22, cx - 13, Y_FAR, Y_BOT, 'rgba(0,0,0,.09)'); trap(cx + 13, cx + 22, Y_FAR, Y_BOT, 'rgba(0,0,0,.09)'); }
-    trap(C.ROAD_L + 3, C.ROAD_L + 6.5, Y_FAR, Y_BOT, '#f2f2ec'); trap(C.ROAD_R - 6.5, C.ROAD_R - 3, Y_FAR, Y_BOT, '#f2f2ec');
-    const dashEnd = bands(dist, 80, 40, -16000, (y1, y2) => { for (let l = 1; l < C.LANES; l++) { const x = C.ROAD_L + l * C.LANE_W; trap(x - 1.8, x + 1.8, y1, y2, 'rgba(245,245,238,.94)'); } }, 2.5);
+    bands(dist, 150, 26, -9000, (y1, y2, n) => { const x = ((n * 131) % 330 + 330) % 330; trap(x, x + 40 + (n % 3) * 20, y1, y2, n % 2 ? 'rgba(0,0,0,.09)' : 'rgba(255,255,255,.05)'); }, lowFx ? 8 : 4);
+    const dashEnd = bands(dist, 80, 40, -16000, (y1, y2) => { for (let l = 1; l < C.LANES; l++) { const x = C.ROAD_L + l * C.LANE_W; trap(x - 1.8, x + 1.8, y1, y2, 'rgba(245,245,238,.94)'); } }, lowFx ? 5 : 3);
     if (dashEnd != null) for (let l = 1; l < C.LANES; l++) { const x = C.ROAD_L + l * C.LANE_W; trap(x - 1.8, x + 1.8, Math.max(-16000, Y_FAR), dashEnd, 'rgba(245,245,238,.47)'); }   // 먼 점선은 한 줄로(점선 반 길이라 반투명)
-    bands(dist, 100, 5, -6000, (y1, y2) => { trap(C.ROAD_L + 1, C.ROAD_L + 3, y1, y2, '#ffd34d'); trap(C.ROAD_R - 3, C.ROAD_R - 1, y1, y2, '#ffd34d'); });
+    bands(dist, 100, 5, -6000, (y1, y2) => { trap(C.ROAD_L + 1, C.ROAD_L + 3, y1, y2, '#ffd34d'); trap(C.ROAD_R - 3, C.ROAD_R - 1, y1, y2, '#ffd34d'); }, lowFx ? 8 : 4);
     const y0 = NEARY + dist;   // 출발선
     if (y0 > -9000 && y0 - 18 < Y_BOT) for (let i = 0; i < 25; i++) for (let j = 0; j < 2; j++) trap(C.ROAD_L + i * 15, C.ROAD_L + i * 15 + 15, y0 - 18 + j * 9, y0 - 9 + j * 9, (i + j) % 2 ? '#f4f4f4' : '#22242c');
     const km = Math.floor(dist / 10000) * 10000;   // 1km마다 바닥 글씨
@@ -937,18 +1007,11 @@ export function createChase(root, opts = {}) {
   const hsh = n => { let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); return (x ^ (x >>> 16)) >>> 0; };
   const side = [];
   function drawRoadside(dist) {
-    for (const sg of segs) {   // 가장자리 시설: 가드레일 · 방음벽 · 다리 난간
-      const z = sg.z;
-      for (const x of [LG + 2, RG - 2]) {
-        if (z.rail === 'guard') { ribbon(x, 12, 20, sg.y1, sg.y2, '#c3c8d2'); ribbon(x, 15, 17, sg.y1, sg.y2, 'rgba(255,255,255,.6)'); ribbon(x, 12, 13.2, sg.y1, sg.y2, 'rgba(60,64,80,.4)'); }
-        else if (z.rail === 'wall') { ribbon(x, 0, 40, sg.y1, sg.y2, '#aab4c0'); ribbon(x, 32, 40, sg.y1, sg.y2, '#8fd0c8'); ribbon(x, 0, 4, sg.y1, sg.y2, '#7d8592'); }
-        else if (z.rail === 'bridge') { ribbon(x, 0, 18, sg.y1, sg.y2, 'rgba(240,243,248,.95)'); ribbon(x, 6, 8, sg.y1, sg.y2, '#aab2c0'); ribbon(x, 16, 18, sg.y1, sg.y2, '#e05050'); }
-      }
-    }
+    // 가드레일·방음벽·난간은 바닥 그림(bgOf)에 들어감
     side.length = 0;
-    const wn = wOfY(Y_BOT + 120, dist), wf = wOfY(-9000, dist);
+    const wn = wOfY(Y_BOT + 120, dist), wf = wOfY(lowFx ? -4500 : -9000, dist);   // 저사양이면 길가 물건은 가까운 절반만
     for (let i = Math.floor(wn / 80); i * 80 < wf; i++) {   // 길가 물건(80칸마다 · 양쪽)
-      const w = i * 80, z = zoneAt(w); if (!z.deco.length) continue;
+      const w = i * 80, z = zoneAt(w); if (!z.deco.length || (lowFx && i % 2)) continue;   // 저사양이면 길가 물건 절반
       for (let sd = 0; sd < 2; sd++) {
         const h = hsh(i * 2 + sd); if (h % 7 === 0) continue;
         let t = z.deco[h % z.deco.length], off = 46 + ((h >>> 4) % 6) * 34;
@@ -957,8 +1020,8 @@ export function createChase(root, opts = {}) {
         side.push([yOfW(w, dist), sd ? RG + off : LG - off, t, h]);
       }
     }
-    for (let i = Math.floor(wn / 300); i * 300 < wf; i++) { const w = i * 300; if (!zoneAt(w).lamp) continue; side.push([yOfW(w, dist), LG - 6, 'lamp', 0]); side.push([yOfW(w, dist), RG + 6, 'lamp', 1]); }
-    for (let i = Math.floor(wn / 40); i * 40 < wOfY(-3200, dist); i++) { const w = i * 40; if (lowFx && i % 2) continue; if (zoneAt(w).rail !== 'guard') continue; side.push([yOfW(w, dist), LG + 2, 'post', 0]); side.push([yOfW(w, dist), RG - 2, 'post', 0]); }
+    for (let i = Math.floor(wn / 300); i * 300 < wf; i++) { const w = i * 300; if (!zoneAt(w).lamp || (lowFx && i % 2)) continue; side.push([yOfW(w, dist), LG - 6, 'lamp', 0]); side.push([yOfW(w, dist), RG + 6, 'lamp', 1]); }
+    for (let i = Math.floor(wn / 40); i * 40 < wOfY(lowFx ? -1400 : -3200, dist); i++) { const w = i * 40; if (lowFx && i % 2) continue; if (zoneAt(w).rail !== 'guard') continue; side.push([yOfW(w, dist), LG + 2, 'post', 0]); side.push([yOfW(w, dist), RG - 2, 'post', 0]); }
     for (let i = Math.floor(wn / 500); i * 500 < wf; i++) { const w = i * 500; if (zoneAt(w).k !== 'bridge') continue; side.push([yOfW(w, dist), LG + 2, 'bpost', 0]); side.push([yOfW(w, dist), RG - 2, 'bpost', 0]); }
     side.sort((p, q) => p[0] - q[0]);
     for (const [y, x, t, h] of side) {
@@ -1010,7 +1073,7 @@ export function createChase(root, opts = {}) {
         o._yaw = lerp(o._yaw || 0, want, 0.25);
         if (al < 1) g.globalAlpha = al;
         if (o.k === 'ramp') rampGlow(M, x, yc, o._yaw, false);
-        drawCar(M, x, yc, o._yaw, o._yaw * 1.4, 0, !far, s.f);
+        if (Math.abs(o._yaw) < 0.004) drawCarCached(M, x, yc, !far, s.f); else drawCar(M, x, yc, o._yaw, o._yaw * 1.4, 0, !far, s.f);
         if (o.k === 'ramp') rampGlow(M, x, yc, o._yaw, true);
         tails(M, x, yc, o._yaw, Math.abs(x - px) < C.LANE_W * 0.7 && yc < C.PY && C.PY - yc < 800 ? 1 - (C.PY - yc) / 800 : 0);
         if ((o.blink || o.mv) && (s.f >> 3) % 2 === 0 && !far) {   // 깜빡이(뒤 모서리)
@@ -1183,6 +1246,18 @@ export function createChase(root, opts = {}) {
   }
   const pumpIcon = (x, y) => { g.fillStyle = '#ff7a6b'; rr(g, x - 8, y - 9, 11, 18, 2); g.fill(); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(x - 6, y - 7, 7, 5); g.strokeStyle = '#ff7a6b'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 3, y - 5); g.lineTo(x + 7, y - 2); g.lineTo(x + 7, y + 6); g.stroke(); };
   const boltIcon = (x, y) => { g.fillStyle = '#7fd4ff'; g.beginPath(); g.moveTo(x + 2, y - 10); g.lineTo(x - 6, y + 2); g.lineTo(x - 1, y + 2); g.lineTo(x - 3, y + 10); g.lineTo(x + 6, y - 2); g.lineTo(x + 1, y - 2); g.closePath(); g.fill(); };
+  // 2026-11-02 저사양 최적화: 위쪽 계기판(점수·연료·부스터·최고 기록·콤보, 화면 y 0~112)은 따로 그려 두고 1초에 20번(저사양 10번)만 새로 그림 → 매 프레임은 한 장 찍기
+  const HUD_H = 112; let hudC = null, hudAt = 0, lastSPf = -99;
+  function hudLayer() {
+    const now = performance.now(), sc = k * dpr, w = cv.width, h = Math.ceil(HUD_H * sc);
+    if (!hudC || hudC.width !== w || hudC.height !== h) { hudC = document.createElement('canvas'); hudC.width = w; hudC.height = h; hudAt = 0; }
+    if (now - hudAt >= (lowFx ? 100 : 50) || st.scene !== 'play') {
+      hudAt = now; const x = hudC.getContext('2d'), g0 = g;
+      x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, w, h); x.setTransform(sc, 0, 0, sc, 0, 0);
+      g = x; try { drawHud(); } finally { g = g0; }
+    }
+    g.drawImage(hudC, 0, 0, w, h, 0, 0, VW, h / sc);
+  }
   let nbShown = false, topK = 0, lastSP = 0, scoreTxt = '', scoreV = -1, mTxt = '', mV = -1, kmh = 0;
   function drawHud() {
     const scv = C.scoreOf(s), m = C.metersOf(s);
@@ -1196,7 +1271,7 @@ export function createChase(root, opts = {}) {
     if (s.slip > 0.05) {   // 슬립스트림 띠(점수판 아래)
       panel(VW / 2 - 110, 80, 220, 28, 14); g.font = `15px ${FONT}`; g.fillStyle = s.slip > 0.7 ? '#ffe36b' : '#7ff0ff'; g.fillText('슬립스트림 +' + Math.round(C.SLIP_K * s.slip * 100) + '% · 점수 x' + (1 + s.slip).toFixed(1), VW / 2, 93);
       g.fillStyle = s.slip > 0.7 ? 'rgba(255,227,107,.9)' : 'rgba(127,240,255,.85)'; g.fillRect(VW / 2 - 98, 103, 196 * s.slip, 2.5);
-      if (s.f % 30 === 0 && s.slipPts > lastSP) { pW(s.p.x, C.PY + C.P_HH, 52, '+' + (s.slipPts - lastSP), s.slip > 0.7 ? '#ffe36b' : '#7ff0ff'); lastSP = s.slipPts; }
+      if (s.f - lastSPf >= 30 && s.slipPts > lastSP) { lastSPf = s.f; pW(s.p.x, C.PY + C.P_HH, 52, '+' + (s.slipPts - lastSP), s.slip > 0.7 ? '#ffe36b' : '#7ff0ff'); lastSP = s.slipPts; }
     }
     // 내 최고 기록(2026-11-01 하율 "최고 점수가 플레이할 때 잘 보이게"): 연료 아래 띠 + 넘으면 금색 '신기록!'
     if (best > 0) {
@@ -1262,7 +1337,7 @@ export function createChase(root, opts = {}) {
   document.fonts?.load?.(`20px ${FONT}`, '카체이싱 점프 연료 부스터 발동 아슬아슬 콤보 출발 연결 중 바리케이드 지금 공사중 부족 0123456789,m+x!?…km/h').then(() => { art.clear(); }).catch(() => {});
 
   return {
-    st, get sim() { return s; }, get best() { return best; },
+    st, get sim() { return s; }, get best() { return best; }, get perf() { return { drawN, drawMin, resQ, lowFx, avgDt: Math.round(avgDt), drawCost: +drawCost.toFixed(1) }; },   // 성능 검사용
     setBest(b) { best = Math.max(best, b || 0); },
     msg(html) { msgNow = html; const m = ov.querySelector('.cs-msg'); if (m && st.scene === 'over') m.innerHTML = html; },
     setSound(on) { sfx.set(on); paintSnd(); },
