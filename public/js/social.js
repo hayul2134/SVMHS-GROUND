@@ -163,8 +163,10 @@ document.addEventListener('click', e => {
 function applyFx() {
   const fx = S.me?.gc?.fx || {}, h = document.documentElement;
   const ck = fx.clock === 'r:fxneon' ? 'neon' : '', mf = wearOf(fx.masc) ? fx.masc : '';   // 착용 소품 값 그대로(wear.js)
+  if (S.meErr && !S.me) return;   // 연결 문제로 내 정보를 못 받았으면 theme.js가 미리 붙인 시계 효과를 그대로 둠
   if (ck) h.dataset.ckfx = ck; else delete h.dataset.ckfx;
   h.dataset.neon = neonC();
+  try { if (ck) localStorage.setItem('sg_ckfx', ck); else localStorage.removeItem('sg_ckfx'); } catch {}   // 2026-11-02 하율 "네온이 기본 시계 보였다가 적용": 다음 접속 땐 theme.js가 첫 화면 전에 붙임
   if ((h.dataset.mfx || '') !== mf) { if (mf) h.dataset.mfx = mf; else delete h.dataset.mfx; document.dispatchEvent(new Event('sg:mfx')); }
 }
 // 뽑기 상태 받기(뽑기 화면·꾸미기 효과 탭 공용)
