@@ -6863,15 +6863,15 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .cm-rt b{font-weight:800}.cm-rt small{color:var(--sub);font-size:12px}
 .cm-sum{background:var(--ink);color:#fff;border-radius:999px;padding:4px 12px;white-space:nowrap}
 .cm-ln{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 4px;border-radius:999px;color:#fff;font:800 12px/1 var(--num);font-style:normal;border:2px solid var(--ink);vertical-align:middle}
-.cm-map{position:relative;height:118px;background:var(--card);border:var(--bd);border-radius:22px;box-shadow:var(--sh);overflow:hidden}
+.cm-map{position:relative;height:clamp(240px,44vh,420px);background:var(--card);border:var(--bd);border-radius:22px;box-shadow:var(--sh);overflow:hidden}
 .cm-map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.cm-st{background:var(--card);border:var(--bd);border-radius:24px;box-shadow:var(--sh);min-height:min(46vh,330px);display:grid;overflow:hidden}
+.cm-st{background:var(--card);border:var(--bd);border-radius:24px;box-shadow:var(--sh);min-height:200px;display:grid;overflow:hidden}
 .cm-intro,.cm-end{display:grid;place-content:center;justify-items:center;gap:10px;text-align:center;padding:26px}
 .cm-intro>b,.cm-end>b{font:400 clamp(30px,6vw,44px) Jua,var(--num);color:var(--ink)}
 .cm-intro p{font-size:17px;line-height:1.55;color:var(--text)}.cm-intro em{font-style:normal;font-weight:800;color:#996cac}
 .cm-intro small,.cm-end p{color:var(--sub);font-size:13px}.cm-intro .btn{min-width:170px;margin-top:6px}
 .cm-end{animation:pop .4s cubic-bezier(.2,1.5,.4,1)}
-.cm-ride{display:grid;align-content:center;justify-items:center;gap:12px;padding:20px 16px}
+.cm-ride{display:grid;align-content:center;justify-items:center;gap:10px;padding:14px 16px}
 .cm-ann{font-size:15px;color:var(--text);text-align:center;line-height:1.7}.cm-ann .cm-ln{margin:0 2px}
 .cm-box{position:relative;display:grid;justify-items:center;gap:10px;width:min(520px,100%);padding:18px 16px;border:3px solid var(--ink);border-radius:20px;background:var(--bg,#f4f9fe);cursor:text}
 .cm-box:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}

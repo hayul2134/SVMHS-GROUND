@@ -6,8 +6,8 @@
 //   그 전엔 앞 역에서 친 만큼(base)을 잘라 보고 지금 역 글자만 비교함. 입력칸은 투명하게 판 위에 깔고 친 글자는 직접 그림
 import { LINES, GOAL, ROUTES, stopsOf, keysOf, tpmOf } from './commute-score.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';
+import { createMap, keyFrac } from './commute-map.js';
 
-const SP = 112, LY = 64;   // 역 간격(px) · 선 높이
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const norm = s => s.replace(/\s+/g, '');
 const chip = l => `<i class="cm-ln" data-l="${l}">${l}</i>`;
@@ -27,65 +27,24 @@ export function createCommute(el, O = {}) {
   paintChips(el);
   let alive = true, raf = 0, phase = 'intro', cur = 1, offs = [], base = 0, comp = false, t0 = 0, hidAt = 0, miss = 0, wrongNow = false, keys = 0;
   const times = [], ff = getComputedStyle(document.body).fontFamily;
-  let camX = 0, trX = 0, trFrom = 0, trAt = 0, shake = 0, done = false;
+  let done = false;
   const on = (t, ev, f, o) => { t.addEventListener(ev, f, o); offs.push(() => t.removeEventListener(ev, f, o)); };
 
-  // ---------- 노선도 ----------
-  const lc = l => LINES[l]?.[1] || '#888';
+  // ---------- 지도(commute-map.js) — 열차 위치 p = 역 번호(소수), 목표 pT로 부드럽게 ----------
+  const map = createMap(stops);
+  let p = 0, pT = 0, last = 0;
   const draw = now => {
     if (!alive) return;
     const r = cv.parentElement.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1), W = r.width, H = r.height;
-    if (cv.width !== Math.round(W * d) || cv.height !== Math.round(H * d)) { cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
-    const c = cv.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, W, H);
-    // 열차 위치: 0.45초 동안 부드럽게
-    const k = Math.min(1, (now - trAt) / 450), e = 1 - (1 - k) ** 3, tx = trFrom + (trX - trFrom) * e;
-    const goal = Math.max(0, tx - W * .3); camX += (goal - camX) * .18; if (Math.abs(goal - camX) < .3) camX = goal;
-    const X = i => 40 + i * SP - camX;
-    // 선(구간마다 그 역의 호선 색)
-    c.lineCap = 'round';
-    for (let i = 1; i < stops.length; i++) {
-      const a = X(i - 1), b = X(i); if (b < -20 || a > W + 20) continue;
-      c.strokeStyle = lc(stops[i - 1].x || stops[i - 1].l); c.lineWidth = 8;
-      c.globalAlpha = i <= cur - 1 + (done ? 1 : 0) ? .35 : 1;
-      c.beginPath(); c.moveTo(a, LY); c.lineTo(b, LY); c.stroke();
+    if (W && H) {
+      if (cv.width !== Math.round(W * d) || cv.height !== Math.round(H * d)) { cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
+      const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now;
+      p += (pT - p) * Math.min(1, dt * 7); if (Math.abs(pT - p) < .001) p = pT;
+      const c = cv.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, W, H);
+      map.draw(c, W, H, p, cur, now, done);
     }
-    c.globalAlpha = 1;
-    // 역
-    c.textAlign = 'center'; c.textBaseline = 'top';
-    stops.forEach((s, i) => {
-      const x = X(i); if (x < -80 || x > W + 80) return;
-      const past = i < cur && !(done && i === N), tgt = i === cur && !done, isX = !!s.x, isG = i === N;
-      c.lineWidth = 4; c.fillStyle = '#fff'; c.strokeStyle = isX ? '#2a2846' : lc(s.l);
-      c.globalAlpha = past ? .45 : 1;
-      c.beginPath(); c.arc(x, LY, isX || isG ? 10 : 7.5, 0, 7); c.fill(); c.stroke();
-      if (isX) { c.lineWidth = 3; c.strokeStyle = lc(s.x); c.beginPath(); c.arc(x, LY, 5, 0, 7); c.stroke(); }
-      if (isG) { c.fillStyle = lc(5); c.beginPath(); c.arc(x, LY, 4.5, 0, 7); c.fill(); }
-      c.font = `${tgt ? 800 : 700} ${tgt ? 17 : 14}px ${ff}`;
-      c.fillStyle = past ? '#8a93a6' : tgt ? '#1d5fd6' : '#2a2846';
-      c.fillText(s.n, x, LY + 18);
-      if (tgt) {   // 다음 역 표시
-        const w = c.measureText(s.n).width + 16;
-        c.strokeStyle = '#1d5fd6'; c.lineWidth = 2.5; c.globalAlpha = .9;
-        rr(c, x - w / 2, LY + 13, w, 26, 9); c.stroke();
-      }
-      if (isG) {   // 학교 깃발
-        c.globalAlpha = 1; c.strokeStyle = '#2a2846'; c.lineWidth = 2;
-        c.beginPath(); c.moveTo(x, LY - 12); c.lineTo(x, LY - 44); c.stroke();
-        c.fillStyle = '#ffcf3a'; c.beginPath(); c.moveTo(x, LY - 44); c.lineTo(x + 30, LY - 37); c.lineTo(x, LY - 30); c.closePath(); c.fill(); c.stroke();
-        c.font = `800 11px ${ff}`; c.fillStyle = '#2a2846'; c.textAlign = 'left'; c.fillText('영상고', x + 4, LY - 58); c.textAlign = 'center';
-      }
-      c.globalAlpha = 1;
-    });
-    // 열차
-    const sx = shake > now ? Math.sin(now / 18) * 3 : 0, x = tx + 40 - camX + sx, y = LY - 30, L = stops[Math.max(0, cur - 1)], col = lc(L.x || L.l);
-    c.fillStyle = col; c.strokeStyle = '#2a2846'; c.lineWidth = 2.5;
-    rr(c, x - 30, y, 60, 22, 8); c.fill(); c.stroke();
-    c.fillStyle = '#eaf5fd'; for (let w = 0; w < 3; w++) { rr(c, x - 24 + w * 16, y + 5, 12, 8, 2.5); c.fill(); }
-    c.fillStyle = '#2a2846'; c.beginPath(); c.arc(x - 18, y + 24, 3, 0, 7); c.arc(x + 18, y + 24, 3, 0, 7); c.fill();
-    if (k < 1) { c.strokeStyle = 'rgba(42,40,70,.35)'; c.lineWidth = 2; for (let j = 0; j < 3; j++) { c.beginPath(); c.moveTo(x - 38 - j * 7, y + 6 + j * 5); c.lineTo(x - 50 - j * 7, y + 6 + j * 5); c.stroke(); } }
     raf = requestAnimationFrame(draw);
   };
-  const rr = (c, x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
 
   // ---------- 화면 ----------
   const intro = () => {
@@ -138,9 +97,10 @@ export function createCommute(el, O = {}) {
     const ok = ty === tg || ty === tg + '역';
     // 확정된 글자(조합 중인 마지막 글자 빼고) 중 틀린 게 있으면 오타 한 번
     const fixed = comp ? [...ty].slice(0, -1) : [...ty], tc = [...tg], wrong = !ok && fixed.some((x, i) => x !== tc[i]);
-    if (wrong && !wrongNow) { miss++; $('#cmMiss').textContent = '오타 ' + miss; sfx.tone(196, .12, 'square', .03); shake = now + 260; }
+    if (wrong && !wrongNow) { miss++; $('#cmMiss').textContent = '오타 ' + miss; sfx.tone(196, .12, 'square', .03); }
     wrongNow = wrong;
     if (ok) return arrive(now);
+    pT = Math.max(pT, cur - 1 + Math.min(.92, keyFrac(raw.replace(/\s+/g, ''), tg)));   // 한 타 칠 때마다 열차가 다음 역 쪽으로(맞은 만큼만, 뒤로는 안 감)
     paintTyped(raw.replace(/\s+/g, ''));
   };
   const arrive = now => {
@@ -149,7 +109,7 @@ export function createCommute(el, O = {}) {
     const inp = $('#cmIn');
     if (comp) base = inp.value.length; else { inp.value = ''; base = 0; }
     wrongNow = false;
-    trFrom = trX; trX = cur * SP; trAt = performance.now();
+    pT = cur;
     sumEl.textContent = tpmOf(Math.round(times.reduce((a, b) => a + b, 0) * 100 / keys)) + '타';
     if (cur >= N) return finish();
     sfx.tone(988, .09, 'triangle', .045); sfx.tone(784, .14, 'triangle', .045, .1);
