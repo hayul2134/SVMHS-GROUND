@@ -6924,21 +6924,50 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .bl-note{margin:4px 0 0;font-size:11px;color:var(--sub,#8a8aa8)}
 .bl-bar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub,#6a6a88)}
 @media (max-width:520px){.bl-help{font-size:11px}}
-/* 방송실 리듬 배틀(rhythm.js, 깃발 rhythm-game) */
+/* 방송실 리듬 배틀(rhythm.js, 깃발 rhythm-game) — 2차: FNF식 메뉴·전체 화면 */
 .rb{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
-.rb-wrap{position:relative;line-height:0;border:2.5px solid var(--ink,#2a2846);border-radius:18px;overflow:hidden;box-shadow:4px 5px 0 var(--ink,#2a2846)}
+.rb-wrap{position:relative;line-height:0;border:2.5px solid var(--ink,#2a2846);border-radius:18px;overflow:hidden;box-shadow:4px 5px 0 var(--ink,#2a2846);background:#1a2150}
+.rb-wrap:fullscreen{border:0;border-radius:0;box-shadow:none;width:100vw;height:100vh;display:grid;place-items:center}
 .rb-cv{display:block;touch-action:none;user-select:none;-webkit-user-select:none}
-.rb-ov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,14,40,.55);line-height:1.4}
+.rb-ov{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(90deg,rgba(12,16,44,.88),rgba(12,16,44,.55) 60%,rgba(12,16,44,.25));line-height:1.35;overflow:auto;padding:14px 0}
 .rb-ov[hidden]{display:none}
-.rb-card{gap:8px;max-height:94%;overflow:auto}
-.rb-card .btn{width:100%;justify-content:center}
-.rb-p{margin:2px 0 6px;font-size:14px}
-.rb-res{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;margin:4px 0 6px;font-size:13px}
-.rb-res span{display:flex;justify-content:space-between;gap:8px;border:2px solid var(--ink,#2a2846);border-radius:10px;padding:4px 10px;background:#f2f6ff}
-.rb-tap{width:130px;height:130px;margin:6px auto 2px;border-radius:50%;border:3px solid var(--ink,#2a2846);background:#ffd84a;box-shadow:3px 4px 0 var(--ink,#2a2846);display:grid;place-items:center;font:400 22px Jua,var(--font,sans-serif);touch-action:none;cursor:pointer;user-select:none}
+.rb-m{display:flex;flex-direction:column;align-items:center;gap:8px;width:min(440px,90%);color:#fff;text-align:center}
+.rb-logo{font:400 clamp(34px,6vw,58px)/1.02 Jua,var(--font,sans-serif);color:#ffd84a;text-shadow:3px 3px 0 #2a2846,-2px -2px 0 #2a2846,2px -2px 0 #2a2846,-2px 2px 0 #2a2846,5px 6px 0 #ff5d72;transform:rotate(-3deg);margin:4px 0}
+.rb-mt{font:400 clamp(26px,4.4vw,38px)/1.1 Jua,var(--font,sans-serif);color:#fff;text-shadow:2px 2px 0 #2a2846,-2px -2px 0 #2a2846,2px -2px 0 #2a2846,-2px 2px 0 #2a2846,4px 5px 0 #3d7bff}
+.rb-ms{margin:0;font-size:13px;color:#cfd6ff}
+.rb-mf{margin:4px 0 0;font-size:11px;color:#8f98d0}
+.rb-mi{display:flex;flex-direction:column;gap:6px;width:100%}
+.rb-it{display:flex;flex-direction:column;align-items:center;gap:1px;width:100%;padding:9px 12px;border:2.5px solid #2a2846;border-radius:14px;background:rgba(255,255,255,.08);color:#fff;font:400 22px Jua,var(--font,sans-serif);cursor:pointer;transition:transform .12s,background .12s}
+.rb-it small{font:600 11.5px var(--font,sans-serif);color:#b9c2f0}
+.rb-it em{font-style:normal;color:#ffd84a}
+.rb-it.on,.rb-it:hover{background:#ffd84a;color:#2a2846;transform:scale(1.04);box-shadow:3px 4px 0 #2a2846}
+.rb-it.on small,.rb-it:hover small{color:#4a4870}
+.rb-it.on em,.rb-it:hover em{color:#d0306a}
+.rb-m.free .rb-it{padding:7px 12px;font-size:20px}
+.rb-df{display:flex;align-items:center;gap:12px}
+.rb-da{width:38px;height:38px;border:2.5px solid #2a2846;border-radius:12px;background:#fff;color:#2a2846;font-size:15px;cursor:pointer;box-shadow:2px 3px 0 #2a2846}
+.rb-dn{min-width:96px;font:400 26px Jua,var(--font,sans-serif);text-shadow:2px 2px 0 #2a2846,-2px -2px 0 #2a2846,2px -2px 0 #2a2846,-2px 2px 0 #2a2846}
+.rb-dn.d0{color:#3ed27a}.rb-dn.d1{color:#ffd84a}.rb-dn.d2{color:#ff5d72}
+.rb-wk{margin:0;padding:0;list-style:none;display:flex;gap:6px;width:100%}
+.rb-wk li{flex:1;display:flex;flex-direction:column;gap:2px;padding:7px 4px;border:2px solid rgba(255,255,255,.25);border-radius:12px;background:rgba(255,255,255,.06);font-size:13px}
+.rb-wk small{font-size:11px;color:#b9c2f0}
+.rb-gr{font:400 64px/1 Jua,var(--font,sans-serif);text-shadow:3px 3px 0 #2a2846,-3px -3px 0 #2a2846,3px -3px 0 #2a2846,-3px 3px 0 #2a2846;animation:rbgr .5s cubic-bezier(.2,1.6,.4,1)}
+.rb-gr.g5{color:#ffd84a}.rb-gr.g4{color:#7ee0ff}.rb-gr.g3{color:#3ed27a}.rb-gr.g2{color:#ffb27a}.rb-gr.g1{color:#c0c6e8}
+@keyframes rbgr{from{transform:scale(1.8);opacity:0}}
+.rb-tag{margin:0;font:400 18px Jua,var(--font,sans-serif);color:#ffd84a}
+.rb-sc{margin:0;font:400 30px Jua,var(--font,sans-serif)}
+.rb-sc em{font-style:normal;font-size:16px;color:#2a2846;background:#ffd84a;border-radius:8px;padding:1px 7px;vertical-align:middle}
+.rb-res{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;width:100%;margin:2px 0 4px;font-size:15px}
+.rb-res span{display:flex;flex-direction:column;border:2px solid #2a2846;border-radius:10px;padding:4px 2px;background:#f2f6ff;color:#2a2846}
+.rb-res b{font-size:11px;font-weight:700}
+.rb-res .j0 b{color:#c08a00}.rb-res .j4 b{color:#d0304a}
+.rb-m.over .rb-mt{text-shadow:2px 2px 0 #2a2846,-2px -2px 0 #2a2846,2px -2px 0 #2a2846,-2px 2px 0 #2a2846,4px 5px 0 #ff5d72}
+.rb-tap{width:130px;height:130px;margin:6px auto 2px;border-radius:50%;border:3px solid #2a2846;background:#ffd84a;box-shadow:3px 4px 0 #2a2846;display:grid;place-items:center;font:400 24px Jua,var(--font,sans-serif);color:#2a2846;touch-action:none;cursor:pointer;user-select:none}
 .rb-tap.hit{background:#3d7bff;color:#fff;transform:scale(.94)}
-.rb-pz{position:absolute;top:8px;left:8px;width:38px;height:38px;border:2.5px solid var(--ink,#2a2846);border-radius:11px;background:#fff;font-weight:800;line-height:1;cursor:pointer}
-.rb-pz[hidden]{display:none}
+.rb-ib{position:absolute;top:8px;width:38px;height:38px;padding:7px;border:2.5px solid #2a2846;border-radius:11px;background:#fff;color:#2a2846;cursor:pointer;line-height:0;z-index:2}
+.rb-ib svg{width:100%;height:100%}
+.rb-pz{left:8px}.rb-fs{right:8px}
+.rb-ib[hidden]{display:none}
 .rb-bar{font-size:12px;color:var(--sub,#6a6a88);text-align:center}
 
 /* 등교하기! 4차: 노선 고르기 · 칸 포커스 */
