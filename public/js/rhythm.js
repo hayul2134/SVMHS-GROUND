@@ -128,8 +128,8 @@ export function createRhythm(el, O = {}) {
     if (isFs()) { w = innerWidth; h = innerHeight; }
     else {
       w = Math.min(el.clientWidth || 360, 1600); const top = Math.max(8, wrap.getBoundingClientRect().top);
-      h = Math.max(360, Math.min(1000, innerHeight - top - 128));   // 아래 안내 줄 + 사이트 공통 '다시 시작' 버튼 자리
-      if (w >= h * 1.05) { if (w / h > 2.1) w = h * 2.1; }   // 화면에 남은 높이를 다 씀(가로가 아주 넓을 때만 폭 줄임)
+      h = Math.max(340, Math.min(900, (innerHeight - top - 128) * 0.85));   // 아래 안내 줄 + 사이트 공통 '다시 시작' 버튼 자리, 2026-11-02 22:00 하율 "더 줄여도" → 남은 높이의 85%
+      if (w >= h * 1.05) { if (w / h > 1.75) w = h * 1.75; }   // 화면에 남은 높이를 다 씀(가로가 아주 넓을 때만 폭 줄임)
       else h = Math.min(h, w * 1.75);
     }
     DPR = Math.min(2, devicePixelRatio || 1); W = Math.round(w); H = Math.round(h);
