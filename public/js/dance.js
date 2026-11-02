@@ -416,7 +416,7 @@ export function createDance(root, opts = {}) {
     { hc: '#2c2a3c', hs: 'short', c: '#34407a', p: '#2f3550', ds: 8, me: true },
   ];
   // 자리: [x, 바닥 y, 크기]
-  const SEATS = [[70, 410, 0.58], [180, 410, 0.58], [290, 410, 0.58], [56, 506, 0.76], [180, 506, 0.76], [304, 506, 0.76], [40, 630, 0.98], [320, 630, 0.98], [180, 630, 0.98]];
+  const SEATS = [[70, 410, 0.58], [180, 410, 0.58], [290, 410, 0.58], [56, 506, 0.76], [180, 506, 0.76], [304, 506, 0.76], [40, 630, 0.98], [320, 630, 0.98], [180, 652, 1.24]];   // 마지막 = '나': 카메라에 더 가까이 → 더 크게(2026-11-02 하율 "나 표시가 잘 안 보여", 전엔 [180, 630, 0.98])
   function deskArt() {   // 책상(먼 쪽) — 나무 상판·쇠 다리
     ctx.beginPath(); ctx.moveTo(-42, -86); ctx.lineTo(42, -86); ctx.lineTo(48, -76); ctx.lineTo(-48, -76); ctx.closePath(); fillInk('#e7b97f', 2.6);
     ctx.fillStyle = '#c99358'; ctx.fillRect(-46, -76, 92, 6); ctx.beginPath(); ctx.rect(-46, -76, 92, 6); ink(2.2);
@@ -429,6 +429,7 @@ export function createDance(root, opts = {}) {
   }
   // 머리 뒷모습(모양별) — 춤출 땐 머리카락이 크게 휘날림(fly)
   function kidHead(o, x, y, r, fly, tilt) {
+    if (o.me) { const m = ctx.getTransform(), S0 = k * dpr || 1, py = y - r; V.meHead = { x: (m.a * x + m.c * py + m.e) / S0, y: (m.b * x + m.d * py + m.f) / S0 }; }   // '나' 표시가 내 머리 위를 따라다니게
     ctx.save(); ctx.translate(x, y); ctx.rotate(tilt);
     const hc = o.hc, hd = shade(hc, -0.3);
     if (o.hs === 'long') { ctx.beginPath(); ctx.moveTo(-r * 0.95, 0); ctx.quadraticCurveTo(-r * 1.15 - fly * 8, r * 1.1, -r * 0.8 - fly * 12, r * 1.9); ctx.quadraticCurveTo(0, r * 2.1 + Math.abs(fly) * 4, r * 0.8 - fly * 12, r * 1.9); ctx.quadraticCurveTo(r * 1.15 - fly * 8, r * 1.1, r * 0.95, 0); ctx.closePath(); fillInk(hc); }
@@ -619,9 +620,10 @@ export function createDance(root, opts = {}) {
     for (const q of V.parts) { ctx.globalAlpha = Math.min(1, q.life * 2); if (q.kind === 'note') outlined('♪', q.x, q.y, 18, q.c); else partArt(q); } ctx.globalAlpha = 1;
     ctx.restore();
     // '나' 표시 · 졸음 Zz
-    const ax = 180, ay = (party ? 430 : 486) + (RM() ? 0 : Math.sin(V.t * 4) * 3);
-    ctx.beginPath(); ctx.moveTo(ax - 9, ay); ctx.lineTo(ax + 9, ay); ctx.lineTo(ax, ay + 10); ctx.closePath(); ctx.fillStyle = '#ffe08a'; ctx.fill(); ctx.lineWidth = 2.2; ctx.strokeStyle = K; ctx.stroke();
-    ctx.font = `13px ${FONT}`; ctx.textAlign = 'center'; ctx.fillStyle = K; ctx.fillText('나', ax, ay - 4);
+    { const h = V.meHead || { x: 180, y: 520 }, f = V.meM ? 0.25 : 1; V.meM = { x: (V.meM?.x ?? h.x) + (h.x - (V.meM?.x ?? h.x)) * f, y: (V.meM?.y ?? h.y) + (h.y - (V.meM?.y ?? h.y)) * f }; }   // 춤으로 출렁여도 부드럽게 따라감
+    const ax = clamp(V.meM.x, 30, W - 30), ay = V.meM.y - 8 + (RM() ? 0 : Math.sin(V.t * 4) * 3);   // 커진 '나' 머리 바로 위
+    ctx.beginPath(); ctx.moveTo(ax - 13, ay); ctx.lineTo(ax + 13, ay); ctx.lineTo(ax, ay + 14); ctx.closePath(); ctx.fillStyle = '#ffe08a'; ctx.fill(); ctx.lineWidth = 2.6; ctx.strokeStyle = K; ctx.stroke();
+    outlined('나', ax, ay - 5, 19, '#ffe08a');
     if (kd2.slept || (!party && kd2.zzz > 0.75)) for (let i = 0; i < 2; i++) { const a = (V.t * 0.8 + i * 0.5) % 1; ctx.globalAlpha = 1 - a; outlined(i ? 'Z' : 'z', ax + 26 + a * 10, ay + 30 - a * 22, 16 + a * 6, '#e9e4ff'); } ctx.globalAlpha = 1;
     for (const q of V.pops) { ctx.globalAlpha = Math.min(1, q.life * 2); outlined(q.t, q.x, q.y, q.size, q.c); } ctx.globalAlpha = 1;
     if (V.bubT > 0 && V.bub) bubble(V.headX + 8, V.headY, V.bub, V.bubAngry && s && s.st === 'caught');
