@@ -9,7 +9,7 @@ import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gea
 import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
 import { BLAST_MAX, SCALE as BLAST_SCALE, seedOf as blastSeed, replay as blastReplay } from '../../../public/js/blast-score.js';
 import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim, simCheck as chaseCheck, simBegin as chaseBegin, simRun as chaseStep, CHUNK_F as CHASE_CHUNK, RULE_V as CHASE_RV } from '../../../public/js/chase-score.js';
-import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim } from '../../../public/js/dance-score.js';
+import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim, GRACE_OLD as DANCE_GRACE_OLD } from '../../../public/js/dance-score.js';
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { COLOR_MAX, scoreOf as colorScore } from '../../../public/js/color-score.js';   // 색감의 신(2026-11-02)
@@ -78,9 +78,14 @@ async function chasePre(db, me, ticket, n) {
 }
 // 선생님 몰래 춤추기도 같은 방식(판 길이만큼 다시 돌림)
 let danceLast = null;
-function danceRun(ticket, n) {
+function danceRun(ticket, n, v = null) {
   const key = ticket + ':' + n.length + ':' + n[0] + ':' + n[n.length - 1];
-  if (danceLast?.key !== key) danceLast = { key, x: danceSim(danceSeed(ticket), n) };
+  if (danceLast?.key !== key) {
+    let x = danceSim(danceSeed(ticket), n);
+    // 2026-11-02 판정 여유 0.15→0.117초: 바뀌기 전에 시작한 판·옛 파일이 남은 기기 기록은 옛 값으로 맞으면 인정
+    if (x.err || (v != null && DANCE_MAX - x.score !== v)) { const o = danceSim(danceSeed(ticket), n, DANCE_GRACE_OLD); if (!o.err && (v == null || DANCE_MAX - o.score === v)) x = o; }
+    danceLast = { key, x };
+  }
   return danceLast.x;
 }
 function checkRounds(game, v, r, elapsed, ticket = '') {
@@ -165,7 +170,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     const ms = Math.round(x.f * 1000 / CHASE_FPS);
     if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
   } else if (game === 'dance') {   // [끝난 프레임, ...누름/뗌] — 선생님이 돌아보는 때는 이 시작 티켓 씨앗으로 정해짐(dance-score.js) → 입력대로 판을 처음부터 다시 돌려 점수 계산
-    const x = danceRun(ticket, n);
+    const x = danceRun(ticket, n, v);
     if (x.err) return H(`다시 돌려 보니 안 맞음: ${x.err}`, `${x.err}. 판과 조작 기록이 서로 맞지 않아요.`);
     if (DANCE_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${DANCE_MAX - v})이 다름`, `조작 기록대로 다시 해 보면 ${x.score.toLocaleString('ko-KR')}점인데 ${(DANCE_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
     const ms = Math.round(x.f * 1000 / DANCE_FPS);
@@ -1934,7 +1939,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
     const mis = (!isCas(g) || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
     // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
-    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : game === 'chase' ? chaseRun(ticket, body.rounds.map(x => Math.round(+x))) : game === 'dance' ? danceRun(ticket, body.rounds.map(x => Math.round(+x))) : null, rank: isCas(g) ? null : rank, ...kstNowParts() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
+    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : game === 'chase' ? chaseRun(ticket, body.rounds.map(x => Math.round(+x))) : game === 'dance' ? danceRun(ticket, body.rounds.map(x => Math.round(+x)), v) : null, rank: isCas(g) ? null : rank, ...kstNowParts() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
     const achF = ffOn(ACH_FF, isAdm(me));
     const ach = achGot.length && achF ? achGot : undefined;
     // 게임 숙련도(깃발 mastery, 2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌"): 판 등급(S+~D, 내 최고 기록 대비)별 XP — 업적·최고 기록 보너스와 따로

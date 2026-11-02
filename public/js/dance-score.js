@@ -17,7 +17,8 @@ export const seedOf = ticket => /^[0-9a-f]{16}/.test(ticket || '') ? parseInt(ti
 export const TURN_F = 12;        // 다시 칠판으로 돌아서기 0.2초
 export const WHIP_F = 7;         // 휙 돌아서기 0.12초
 export const PEEK_IN = 8;        // 곁눈질: 고개 돌리는 0.13초
-export const GRACE_F = 9;        // 2026-10-31 23:16 하율 "판정 약간 널널하게 — 돌아보는 걸 보고 피할 수 있게" → 23:48 "너무 널널, 아주 조금만 줄여": 0.2초 → 0.15초. 다 돌아본 뒤 이 안에 멈추면 안 걸림
+export const GRACE_F = 7;        // 2026-10-31 23:16 하율 "판정 약간 널널하게 — 돌아보는 걸 보고 피할 수 있게" → 23:48 "너무 널널, 아주 조금만 줄여": 0.2초 → 0.15초 → 2026-11-02 "걸리는 판정이 좋은데 조금만 더 줄여": 0.117초(7프레임). 다 돌아본 뒤 이 안에 멈추면 안 걸림
+export const GRACE_OLD = 9;      // 11-02 전 규칙(판정 바뀌기 전에 시작한 판·옛 파일이 남은 기기의 기록을 서버가 이 값으로 한 번 더 확인)
 export const CAUGHT_F = 96;      // 걸린 뒤 1.6초 혼남
 export const SAFE_F = 27;        // 멈추고 0.45초 안에 선생님이 돌아보면 '세이프'
 const COMBO_UP = 10, COMBO_DN = 7, COMBO_STEP = 10 * FPS * 3;   // 콤보(1/10프레임 단위): 춤 +10 · 쉼 -7 · 3초마다 배율 +0.5
@@ -26,8 +27,8 @@ const lerp = (a, b, k) => a + (b - a) * k;
 export const m2Of = s => Math.min(8, 2 + Math.floor(s.combo / COMBO_STEP));   // 배율 × 2 (2 = x1 … 8 = x4)
 export const scoreOf = s => Math.floor(s.sc12 / 12) + s.bonus;
 
-export function newSim(seed, fx = false) {
-  const s = { a: seed >>> 0, f: 0, st: 'write', tm: 150, dur: 150, tf: TURN_F, plan: [], pat: '', warnStart: -999, lives: LIVES,
+export function newSim(seed, fx = false, gr = GRACE_F) {
+  const s = { gr, a: seed >>> 0, f: 0, st: 'write', tm: 150, dur: 150, tf: TURN_F, plan: [], pat: '', warnStart: -999, lives: LIVES,
     held: 0, dancing: false, combo: 0, m2: 2, sleep: 0, deep: false, lastStop: -999, lastM2: 2,
     sc12: 0, bonus: 0, over: '', overF: 0,
     safes: 0, wakes: 0, caught: 0, why: '', firstCaught: -1, maxM2: 2, danceF: 0, looks: 0,
@@ -111,16 +112,16 @@ export function step(s) {
   s.tm--;
   if (s.st === 'look') {
     const seen = s.dur - s.tm;   // 다 돌아본 뒤 지난 프레임
-    if (seen === GRACE_F && !s.dancing && s.lastStop >= s.warnStart && s.f - s.lastStop < SAFE_F + GRACE_F) { const b = Math.round(25 * s.lastM2 / 2); s.bonus += b; s.safes++; ev(s, 'safe', { b }); }   // 세이프: 신호 뒤 아슬아슬하게 멈춤
-    if (seen >= GRACE_F && s.dancing) { caught(s); s.f++; return; }
+    if (seen === s.gr && !s.dancing && s.lastStop >= s.warnStart && s.f - s.lastStop < SAFE_F + s.gr) { const b = Math.round(25 * s.lastM2 / 2); s.bonus += b; s.safes++; ev(s, 'safe', { b }); }   // 세이프: 신호 뒤 아슬아슬하게 멈춤
+    if (seen >= s.gr && s.dancing) { caught(s); s.f++; return; }
     if (s.tm <= 0) setT(s, 'turnback', TURN_F);
   } else if (s.st === 'peek') {
-    if (s.dur - s.tm >= PEEK_IN + GRACE_F && s.dancing) { caught(s); s.f++; return; }
+    if (s.dur - s.tm >= PEEK_IN + s.gr && s.dancing) { caught(s); s.f++; return; }
     if (s.tm <= 0) nextT(s);
   } else if (s.st === 'turn') {
     if (s.tm <= 0) {
       const k = dk(s), L = late(s);
-      setT(s, 'look', GRACE_F + Math.round(FPS * (0.9 + rnd(s) * lerp(1, 1.7, k))) + Math.round(30 * Math.min(L, 2)) - (rnd(s) < 0.2 ? 30 : 0));   // 가끔 짧게 보고 마는 것도
+      setT(s, 'look', s.gr + Math.round(FPS * (0.9 + rnd(s) * lerp(1, 1.7, k))) + Math.round(30 * Math.min(L, 2)) - (rnd(s) < 0.2 ? 30 : 0));   // 가끔 짧게 보고 마는 것도
       s.looks++;
     }
   } else if (s.st === 'caught') {
@@ -141,13 +142,13 @@ export function step(s) {
 }
 
 // 서버 검사: 입력 기록대로 판을 처음부터 다시 돌림
-export function simulate(seed, rounds) {
+export function simulate(seed, rounds, gr = GRACE_F) {
   const end = rounds[0], evs = rounds.slice(1);
   if (!(end >= 1 && end <= MAX_F)) return { err: '끝난 시각이 이상해요' };
   if (evs.length > MAX_EV) return { err: '입력이 너무 많아요' };
   let k = 0, prev = 0;
   for (const x of evs) { const e = dec(x); if (!(e.f >= 0) || e.f < prev || e.f > end) return { err: `${k + 1}번째 입력이 맞지 않아요`, k }; prev = e.f; k++; }
-  const s = newSim(seed);
+  const s = newSim(seed, false, gr);
   k = 0;
   while (!s.over && s.f < end + 2) {
     while (k < evs.length && dec(evs[k]).f <= s.f) input(s, dec(evs[k++]).c);

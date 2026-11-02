@@ -135,7 +135,9 @@ export function createDance(root, opts = {}) {
 
   /* --- 효과 --- */
   const pop = (x, y, t, c = '#fff', size = 20) => V.pops.push({ x, y, t, c, size, life: 1.1 });
-  const part = (x, y, kind, c) => { if (V.parts.length > 90 || RM()) return; V.parts.push({ x, y, vx: (Math.random() - 0.5) * 70, vy: -30 - Math.random() * 50, life: 1.1, kind, c, r: Math.random() * 6 }); };
+  const part = (x, y, kind, c) => { if (V.parts.length > 90 || RM()) return; const heavy = kind === 'book' || kind === 'pencil';
+    V.parts.push({ x, y, vx: (Math.random() - 0.5) * (heavy ? 150 : 110), vy: heavy ? -150 - Math.random() * 90 : -70 - Math.random() * 70, g: kind === 'note' ? 20 : kind === 'paper' ? 70 : 330, life: kind === 'note' ? 1.1 : 1.4, kind, c, rot: Math.random() * 6, vr: (Math.random() - 0.5) * (heavy ? 14 : 6) }); };
+  const SHOUT = ['예~!', '파티다!', '흔들어!', '와아아!', '둠칫!', '가즈아!', '소리 질러!', '오예!'];
   function handle(e) {
     switch (e.t) {
       case 'warn': V.bub = e.w > 80 ? '흐음…' : '흠…'; V.bubT = e.w / D.FPS + 0.1; V.bubAngry = false; V.twitch = 0.25; sfx.tap(); break;
@@ -184,7 +186,11 @@ export function createDance(root, opts = {}) {
         acc -= STEP; n++;
       }
       if (n >= 6) acc = 0;
-      if (s.dancing && Math.random() < ds * (1 + s.m2 / 2)) part(180 + (Math.random() - 0.5) * 60, 500, Math.random() < 0.5 ? 'note' : 'spark', ['#ffd84a', '#7dd3ff', '#ff8fc7', '#9dff8a'][Math.floor(Math.random() * 4)]);
+      if (s.dancing) {   // 2026-11-02 하율 "반짝 거리는 느낌 없이 · 광란의 파티처럼 난리나게": 책상 위 공책·책·연필이 날아다니고 친구들이 소리 지름
+        if (Math.random() < ds * (3 + s.m2 * 1.5)) { const i = Math.floor(Math.random() * 8), [sx0, sy0, sc0] = SEATS[i], r = Math.random();
+          part(sx0 + (Math.random() - 0.5) * 50 * sc0, sy0 - 86 * sc0, r < 0.4 ? 'paper' : r < 0.6 ? 'book' : r < 0.8 ? 'pencil' : 'note', ['#6fc6f4', '#ff8f8f', '#8fe8cf', '#ffe08a', '#a9c4ff'][Math.floor(Math.random() * 5)]); }
+        if (!RM() && Math.random() < ds * (0.6 + s.m2 * 0.25) && V.pops.length < 4) { const i = Math.floor(Math.random() * 8), [sx0, sy0, sc0] = SEATS[i]; if (!V.pops.some(q => Math.abs(q.x - clamp(sx0, 40, 320)) < 70 && Math.abs(q.y - (sy0 - 175 * sc0)) < 60)) pop(clamp(sx0, 40, 320), sy0 - 175 * sc0, SHOUT[Math.floor(Math.random() * SHOUT.length)], ['#ffe08a', '#ffffff', '#8fe8cf', '#ffb3c7'][i % 4], 15 + sc0 * 5); }
+      }
       sfx.beat(s.dancing, V.t, s.m2);
       if (s.over) { st.scene = 'end'; endT = 0; sfx.beat(false); finish(); }
     } else if (st.scene === 'end') { endT += dt; if (endT > 500 && ov.hidden) showOver(lastRes); }
@@ -195,7 +201,7 @@ export function createDance(root, opts = {}) {
       if (tst === 'write' || !s) writeStep(ds);
       V.bubT = Math.max(0, V.bubT - ds); V.twitch = Math.max(0, V.twitch - ds); V.whip = Math.max(0, V.whip - ds); V.alert = Math.max(0, V.alert - ds); V.wflash = Math.max(0, V.wflash - ds); if (V.stamp > 0) V.stamp += ds;
       { const want = s && s.dancing && st.scene === 'play' ? 1 : 0; V.pv += clamp(want - V.pv, -ds / 0.15, ds / 0.08); }
-      for (let i = V.parts.length - 1; i >= 0; i--) { const q = V.parts[i]; q.x += q.vx * ds; q.y += q.vy * ds; q.vy += 20 * ds; q.life -= ds; if (q.life <= 0) V.parts.splice(i, 1); }
+      for (let i = V.parts.length - 1; i >= 0; i--) { const q = V.parts[i]; q.x += q.vx * ds; q.y += q.vy * ds; q.vy += q.g * ds; q.rot += q.vr * ds; if (q.kind === 'paper') q.vx *= 1 - ds * 1.5; q.life -= ds; if (q.life <= 0) V.parts.splice(i, 1); }
       for (let i = V.pops.length - 1; i >= 0; i--) { const q = V.pops[i]; q.y -= 28 * ds; q.life -= ds; if (q.life <= 0) V.pops.splice(i, 1); }
       V.shake = Math.max(0, V.shake - ds); V.flash = Math.max(0, V.flash - ds);
     }
@@ -447,9 +453,15 @@ export function createDance(root, opts = {}) {
       default: { const f = Math.tanh(S * 2.5); return { dx: f * 12, up: A2 * 16, tilt: f * 0.3, L: [-48 - Math.max(0, f) * 14, -110 - Math.max(0, f) * 60, 20], R: [48 + Math.max(0, -f) * 14, -110 - Math.max(0, -f) * 60, -20], fL: [-18 + f * 8, -Math.max(0, f) * 16], fR: [18 + f * 8, -Math.max(0, -f) * 16] }; }   // 나: 미친 듯이 흔들기
     }
   }
+  const mixP = (A, B, w) => { if (w <= 0) return A; if (w >= 1) return B; const o = { robot: w < 0.5 ? A.robot : B.robot };
+    for (const k2 of ['dx', 'up', 'tilt']) o[k2] = A[k2] + (B[k2] - A[k2]) * w;
+    for (const k2 of ['L', 'R', 'fL', 'fR']) o[k2] = A[k2].map((v, i) => v + (B[k2][i] - v) * w); return o; };
+  // 친구들은 4박마다 다른 춤으로 바뀜(0.6박 동안 부드럽게 섞어서 — 팔다리가 툭 끊기지 않게), '나'는 미친 듯이 흔들기 그대로
+  function kidPose(o, T, b) { if (o.me) return hosePose(o.ds, b); const seg = Math.floor(T / 4), fr = T / 4 - seg, w = clamp((fr - 0.85) / 0.15, 0, 1), d0 = (o.ds + seg * 3) % 8, d1 = (o.ds + seg * 3 + 3) % 8; return mixP(hosePose(d0, b), hosePose(d1, b), w); }
   function drawKid(o, x, y, sc, party, extra) {
     ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
-    deskArt();
+    if (party && !RM()) { const bt = V.t * extra.tempo * o.tp * Math.PI + o.ph; ctx.save(); ctx.translate(0, -Math.abs(Math.sin(bt)) * 6 * Math.min(extra.amp, 1.6)); ctx.rotate(Math.sin(bt * 0.5) * 0.06); deskArt(); ctx.restore(); }   // 책상도 들썩
+    else deskArt();
     if (!party) {   // 앉아서 공부하는 척(숨쉬기·가끔 고개 갸웃·필기) / 졸기 / 엎드려 자기
       const br = RM() ? 0 : Math.sin(V.t * 1.6 + o.ph) * 1.2, sleep = o.sleep || extra.slept;
       const nod = extra.nod || 0, look = RM() || o.me ? 0 : Math.max(0, Math.sin(V.t * 0.4 + o.ph * 2) - 0.85) * 2 * (o.ph > 2 ? 1 : -1);
@@ -464,15 +476,16 @@ export function createDance(root, opts = {}) {
       return;
     }
     // 춤: 일어나 의자 앞(카메라 쪽)으로 나와 미친 듯이
-    const T = V.t * extra.tempo * o.tp + o.ph, b = T * Math.PI, P = hosePose(o.ds, b), amp = extra.amp;
-    const P0 = hosePose(o.ds, b - 0.5);   // 잔상용(조금 전 자세)
-    const up = P.up * amp, sq = (RM() ? 0 : Math.sin(b * 2) * 0.12 * amp), sx2 = 1 + sq, sy2 = 1 - sq;
+    const T = V.t * extra.tempo * o.tp + o.ph, b = T * Math.PI, P = kidPose(o, T, b), amp = extra.amp;
+    const P0 = kidPose(o, T - 0.5 / Math.PI, b - 0.5);   // 잔상용(조금 전 자세)
+    const up = P.up * Math.min(amp, 1.7), sq = (RM() ? 0 : Math.sin(b * 2) * 0.12 * amp), sx2 = 1 + sq, sy2 = 1 - sq;
     const fy = 22, dx = P.dx * amp;
     ell(dx * 0.4, fy, 34, 7); ctx.fillStyle = 'rgba(23,48,72,.25)'; ctx.fill();
     // 발밑 색 조명
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5 * V.pv; ell(0, fy, 52, 13); ctx.fillStyle = GLOW[(o.ci + Math.floor(V.t * 4)) % GLOW.length]; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5 * V.pv; ell(0, fy, 52, 13); ctx.fillStyle = GLOW[o.ci % GLOW.length]; ctx.fill(); ctx.restore();
     chairArt();
     ctx.save(); ctx.translate(0, fy);
+    { const sp = (T + o.ph * 3) % 14; if (sp < 1 && !RM()) { const c = Math.cos(sp * Math.PI * 2); ctx.scale(Math.sign(c || 1) * Math.max(0.45, Math.abs(c)), 1); } }   // 가끔 제자리 한 바퀴(친구마다 다른 때)
     const hipY = -46 - up, top = hipY - 54 * sy2, cx = dx;
     // 다리(고무호스) · 큰 신발
     const legC = o.sk ? SKIN0 : o.p, sockC = '#ffffff';
@@ -508,8 +521,15 @@ export function createDance(root, opts = {}) {
     else { ctx.beginPath(); ctx.moveTo(cx, top + 8); ctx.lineTo(cx, bot - 4); ctx.lineWidth = 2; ctx.strokeStyle = shade(o.c, -0.35); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 9, top + 1); ctx.quadraticCurveTo(cx, top + 8, cx + 9, top + 1); fillInk('#ffffff', 2.2); }
   }
   const GLOW = ['#6fc6f4', '#ffe08a', '#8fe8cf', '#a9c4ff', '#ff8f8f'];
+  function partArt(q) {   // 날아다니는 공책 종이·책·연필(반짝이 대신)
+    ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot);
+    if (q.kind === 'paper') { const fl = Math.cos(q.rot * 1.7); ctx.scale(Math.max(0.2, Math.abs(fl)), 1); rr(-8, -10, 16, 20, 2); fs('#ffffff', 1.8); ctx.strokeStyle = '#9cc8ea'; ctx.lineWidth = 1.2; ctx.beginPath(); for (const y of [-4, 1, 6]) { ctx.moveTo(-5, y); ctx.lineTo(5, y); } ctx.stroke(); }
+    else if (q.kind === 'book') { rr(-11, -8, 22, 16, 2.5); fs(q.c, 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(7, -6, 3, 12); ctx.beginPath(); ctx.moveTo(-6, -8); ctx.lineTo(-6, 8); ctx.lineWidth = 1.6; ctx.strokeStyle = K; ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(-12, -2.5); ctx.lineTo(8, -2.5); ctx.lineTo(13, 0); ctx.lineTo(8, 2.5); ctx.lineTo(-12, 2.5); ctx.closePath(); fs('#ffd25e', 1.8); ctx.fillStyle = '#ff8f8f'; ctx.fillRect(-12, -2.5, 4, 5); }
+    ctx.restore();
+  }
   function drawKids(party) {
-    const m = s ? s.m2 / 2 : 1, amp = 1.15 + (m - 1) * 0.3, tempo = 3.2 + (m - 1) * 1.3;   // 박자/초 — 배율 오를수록 더 빠르고 크게
+    const m = s ? s.m2 / 2 : 1, amp = 1.35 + (m - 1) * 0.35, tempo = 4 + (m - 1) * 1.4;   // 박자/초 — 배율 오를수록 더 빠르고 크게(11-02 더 난리나게: 1.15→1.35, 3.2→4)
     const zzz = s ? s.sleep / D.SLEEP_FULL : 0, slept = !!(s && s.st === 'caught' && s.why === 'sleep');
     KIDS.forEach((o, i) => {
       const [x, y, sc] = SEATS[i], me = !!o.me;
@@ -536,10 +556,9 @@ export function createDance(root, opts = {}) {
   }
   function drawAlert() {
     const tst = s ? s.st : '', looking = tst === 'look' || (tst === 'peek' && s.dur - s.tm >= D.PEEK_IN);
-    if (looking && st.scene === 'play') { ctx.strokeStyle = `rgba(255,95,110,${0.55 + (RM() ? 0 : 0.25 * Math.sin(V.t * 14))})`; ctx.lineWidth = 9; ctx.strokeRect(4.5, 4.5, W - 9, H - 9); }   // 보는 동안: 화면 테두리
+    if (looking && st.scene === 'play') { ctx.strokeStyle = 'rgba(255,95,110,.75)'; ctx.lineWidth = 9; ctx.strokeRect(4.5, 4.5, W - 9, H - 9); }   // 보는 동안: 화면 테두리
     if (V.alert > 0) { const sz = 44 * (V.alert > 0.5 ? 0.6 + (0.6 - V.alert) * 4 : 1); ctx.globalAlpha = Math.min(1, V.alert * 4); outlined('!', V.tx + 30, 126, sz, '#ff5f6e'); ctx.globalAlpha = 1; }
     if (V.whip > 0 && !RM()) { ctx.globalAlpha = Math.min(1, V.whip * 4); outlined('휙!', V.tx - 44, 150, 22, '#fff'); ctx.globalAlpha = 1; }
-    if (V.wflash > 0) { ctx.fillStyle = `rgba(255,255,255,${V.wflash * 2.5})`; ctx.fillRect(0, 0, W, H); }
     if (V.stamp > 0) {
       const p = Math.min(1, V.stamp / 0.16), sc2 = 1.8 - 0.8 * p;
       ctx.save(); ctx.translate(180, 400); ctx.rotate(-0.1); ctx.scale(sc2, sc2); ctx.globalAlpha = Math.min(1, p * 1.5);
@@ -558,7 +577,7 @@ export function createDance(root, opts = {}) {
     chip(272, 8, 80, 30, '#ffffff'); num(Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'), 312, 29.5);
     const zv = s ? s.sleep / D.SLEEP_FULL : 0;
     chip(52, 614, 296, 18, '#ffffff');
-    if (zv > 0) { rr(56, 618, Math.max(10, 288 * zv), 10, 5); ctx.fillStyle = zv > 0.75 ? (Math.floor(V.t * 6) % 2 ? '#ff8f8f' : '#ff6b6b') : zv > 0.5 ? '#9bb8ff' : '#6fc6f4'; ctx.fill(); }
+    if (zv > 0) { rr(56, 618, Math.max(10, 288 * zv), 10, 5); ctx.fillStyle = zv > 0.75 ? '#ff6b6b' : zv > 0.5 ? '#9bb8ff' : '#6fc6f4'; ctx.fill(); }
     chip(8, 610, 40, 26, zv > 0.75 ? '#ff8f8f' : '#ffe08a'); text('졸음', 28, 628, 13, 'center', K);
     if (s && s.f < D.FPS * 6) { ctx.globalAlpha = Math.min(1, (D.FPS * 6 - s.f) / D.FPS); outlined(touchSeen ? '화면을 꾹 누르면 춤!' : '꾹 누르면 춤!', 180, 598, 17, '#fff'); ctx.globalAlpha = 1; }
   }
@@ -577,8 +596,9 @@ export function createDance(root, opts = {}) {
     boardInk();
     drawTeacher();
     drawPartyDim();
+    if (party && !RM()) { ctx.translate(0, Math.abs(Math.sin(V.t * Math.PI * (4 + (s.m2 / 2 - 1) * 1.4))) * 2.5 * V.pv); }   // 박자에 맞춰 교실 아래쪽이 쿵쿵
     const kd2 = drawKids(party);
-    for (const q of V.parts) { ctx.globalAlpha = Math.min(1, q.life * 1.5); if (q.kind === 'note') outlined('♪', q.x, q.y, 18, q.c); else { ctx.fillStyle = q.c; ctx.fillRect(q.x - 2.5, q.y - 2.5, 5, 5); } } ctx.globalAlpha = 1;
+    for (const q of V.parts) { ctx.globalAlpha = Math.min(1, q.life * 2); if (q.kind === 'note') outlined('♪', q.x, q.y, 18, q.c); else partArt(q); } ctx.globalAlpha = 1;
     ctx.restore();
     // '나' 표시 · 졸음 Zz
     const ax = 180, ay = (party ? 430 : 486) + (RM() ? 0 : Math.sin(V.t * 4) * 3);
