@@ -6850,6 +6850,27 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .cg-log li i,.cg-det i{display:block;width:20px;height:24px}
 .cg-log li b{padding:0 8px}.cg-det span{padding-right:8px;gap:0}.cg-det i+i{margin-right:6px}
 .cg-det{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.cg-mask{display:grid;place-content:center;background:#7f7f7f;color:#f2f2f2;font-weight:700}
+.cg-keys{font-size:11.5px!important;line-height:1.5;opacity:.85}
+@media (hover:none){.cg-keys{display:none}}
+.cg-ax{display:grid;gap:7px;width:min(340px,86vw)}
+.cg-ab{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:8px;font-weight:800;font-size:12.5px;color:var(--sub)}
+.cg-ab.dim .cg-gr{opacity:.35}
+.cg-gr{position:relative;display:block;height:12px;border-radius:99px;border:2px solid var(--ink);margin:7px 8px}
+.cg-gr .cg-mt,.cg-gr .cg-mp{position:absolute;width:16px;height:16px;margin-left:-8px;border:2.5px solid #fff;box-shadow:0 0 0 2px var(--ink)}
+.cg-gr .cg-mt{top:-13px;border-radius:3px;transform:rotate(45deg) scale(.8)}
+.cg-gr .cg-mp{bottom:-13px;border-radius:50%}
+.cg-lg{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--sub)}
+.cg-lg i{display:inline-block;width:11px;height:11px;border:2px solid var(--ink);background:var(--card)}
+.cg-lg .cg-mt{border-radius:2px;transform:rotate(45deg) scale(.85);margin-left:6px}.cg-lg .cg-mp{border-radius:50%;margin-left:8px}
+.cg-hint{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:420px}
+.cg-hint li{border:2px solid var(--ink);border-radius:99px;padding:3px 10px;font-size:13px;font-weight:700;background:var(--card)}
+.cg-hint li b{margin-right:6px;color:var(--accent)}.cg-hint li.ok{color:#1f9d55}
+.cg-ttl{font:400 clamp(24px,5vw,32px) Jua,var(--num);margin:2px 0 8px}
+.cg-ttl.g5{background:linear-gradient(90deg,#ff6b6b,#ffb347,#5fd38a,#3d9bff,#b07cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cg-ttl.g4{color:#1f9d55}.cg-ttl.g3{color:var(--accent)}.cg-ttl.g2{color:#d9822b}.cg-ttl.g1{color:var(--sub)}
+.cg-bias{list-style:none;margin:10px auto 4px;padding:0;display:grid;gap:4px;font-size:14px;color:var(--text);text-align:center}
+.cg-bias b{color:var(--accent)}
 @media (max-width:620px){
   .cg-pick{grid-template-columns:minmax(0,1fr) 38px;grid-template-rows:auto auto;padding:12px;gap:12px}
   .cg-sv,.cg-hue{min-height:min(52vw,300px)}

@@ -63,8 +63,8 @@ const PLAY = {
 };
 // 색감의 신(2026-11-02): v = 놓친 합 → 판마다 그만큼 다른 색을 찾아 [목표, 고른 색]×5 (값이 다시 계산과 안 맞으면 보류 200이어야 함)
 const CO = await import(pathToFileURL(resolve('public/js/color-score.js')).href);
-PLAY.color = v => {
-  const t = [0x3080e0, 0xe05040, 0x40c070, 0xd0a020, 0x9050d0], r = [];
+PLAY.color = (v, tk) => {   // 문제 색은 티켓 씨앗으로(2026-11-02 디벨롭)
+  const t = CO.pickTargets(CO.rng(CO.seedOf(tk) ?? 0)), r = [];
   for (const c of t) { let best = c, bd = 1e9; for (let k = 0; k < 4000; k++) { const q = (c + k * 0x010203) & 0xffffff, d = Math.abs(1000 - CO.accOf(c, q) - v / 5); if (d < bd) { bd = d; best = q; } } r.push(c, best); }
   return { value: CO.scoreOf(r).v, rounds: r };
 };

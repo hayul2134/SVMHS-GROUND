@@ -12,7 +12,7 @@ import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim,
 import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim, GRACE_OLD as DANCE_GRACE_OLD } from '../../../public/js/dance-score.js';
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
-import { COLOR_MAX, scoreOf as colorScore } from '../../../public/js/color-score.js';   // 색감의 신(2026-11-02)
+import { COLOR_MAX, scoreOf as colorScore, seedOf as colorSeed } from '../../../public/js/color-score.js';   // 색감의 신(2026-11-02)
 import { scoreOf as commuteScore, tpmOf } from '../../../public/js/commute-score.js';   // 등교하기!(2026-11-02)
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
 import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, ACH_TITLES, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
@@ -190,8 +190,9 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (x.err) return x.fast ? H(`너무 빠르게 밂 — 매크로 의심`, x.err) : H(`다시 밀어 보니 안 맞음: ${x.err}`, `${x.err}. 판과 민 기록이 서로 맞지 않아요.`);
     if (N2_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${N2_MAX - v})이 다름`, `민 기록으로는 ${x.score.toLocaleString('ko-KR')}점인데 ${(N2_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
     if (n[0] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
-  } else if (game === 'color') {   // [목표, 고른 색]×5(0xRRGGBB) → 정확도를 다시 계산해 놓친 합 = v
-    const x = colorScore(n);
+  } else if (game === 'color') {   // [목표, 고른 색]×5(0xRRGGBB) → 정확도를 다시 계산해 놓친 합 = v · 목표 색은 이 티켓 씨앗으로 다시 뽑아 확인(2026-11-02 디벨롭)
+    const x = colorScore(n, colorSeed(ticket) ?? -1);
+    if (x.bad) return H(`문제 색이 티켓 씨앗과 다름(${x.bad.map(i => i + 1).join('·')}번째) — 조작 또는 예전 화면`, '이 판에서 나온 문제 색과 기록된 색이 달라요. 새로 고침한 뒤 다시 해 주세요.', x.bad);
     if (x.err) return H('판 기록 형식이 다름', x.err + '.');
     if (x.v !== v) return H(`다시 계산한 값(${x.v})과 기록(${v})이 다름`, `고른 색으로 다시 계산하면 평균 ${((COLOR_MAX - x.v) / 50).toFixed(1)}%인데 ${((COLOR_MAX - v) / 50).toFixed(1)}%로 기록됐어요.`);
     const same = [0, 1, 2, 3, 4].filter(i => n[i * 2] === n[i * 2 + 1]).length;

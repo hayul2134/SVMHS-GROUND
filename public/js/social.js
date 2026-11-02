@@ -2208,7 +2208,7 @@ async function play(game) {
   try { quitGame?.(); } catch (e) { console.error(e); }
   quitGame = null; curGame = game;
   if (document.activeElement && document.activeElement !== document.body && !document.activeElement.closest?.('#gamePlay')) document.activeElement.blur?.();   // 목록 버튼 포커스 빼기(엔터로 다른 게임이 켜지던 버그)
-  ticket = S.me && game !== 'gear' && game !== 'stair' && game !== 'film' && game !== 'blast' && game !== 'chase' && game !== 'dance' ? playTicket(game) : null;
+  ticket = S.me && game !== 'gear' && game !== 'stair' && game !== 'film' && game !== 'blast' && game !== 'chase' && game !== 'dance' && game !== 'color' ? playTicket(game) : null;   // 색감의 신: 판마다 새 티켓 = 새 문제 색(playColor)
   try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
 
@@ -2832,7 +2832,17 @@ async function playColor() {
   if (!COLOR) { try { COLOR = await import('./color.js').catch(() => import('./color.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || curGame !== 'color') return;
   area.innerHTML = '<div id="cgBox"></div>' + RE_ROW;
-  const M = COLOR.createColor($('#cgBox'), { quick, onDone: (v, det, rounds) => { M.destroy(); finish('color', v, det, rounds); } });
+  // 판마다 새 티켓 → 그 씨앗으로 문제 색(2026-11-02 디벨롭, 서버가 같은 씨앗으로 확인). 안 쓴 티켓을 다시 쓰면 이미 본 정답 색이 또 나오므로 재사용 안 함
+  let runTk = null;
+  const M = COLOR.createColor($('#cgBox'), {
+    quick,
+    async seed() {
+      if (!S.me) return null;
+      runTk = await tkGet('color');   // 실패하면 2초 뒤 한 번 더 · 그래도 못 받으면 알림
+      return runTk ? COLOR.seedOf(runTk) : null;
+    },
+    onDone: (v, det, rounds) => { M.destroy(); ticket = S.me ? Promise.resolve(runTk || '') : null; finish('color', v, det, rounds); },
+  });
   M.start();
   quitGame = () => M.destroy();
 }
