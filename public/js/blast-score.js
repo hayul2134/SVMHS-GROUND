@@ -52,8 +52,59 @@ export function fits(b, s, r, c) {
   return true;
 }
 export function canPlace(b, s) { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (fits(b, s, r, c)) return true; return false; }
-// 다음 묶음 3개(조각 번호). n = 지금까지 놓은 장비 수(난이도). 셋 다 못 놓는 묶음은 최대 30번 다시 뽑음
-export function nextSet(rand, b, n = 0) {
+// 다음 묶음 3개(조각 번호). n = 지금까지 놓은 장비 수(난이도). ver 1 = 2026-11-02 전 방식(옛 판 다시 두기용), 2 = 상황 맞춤(기본)
+export const GEN_VER = 2;
+export function nextSet(rand, b, n = 0, ver = GEN_VER) { return ver === 1 ? nextSet1(rand, b, n) : nextSet2(rand, b, n); }
+// 2026-11-02 하율 "블럭을 더 잘 깰 수 있게 상황마다 확률 좋게": 판 상황을 보고 칸마다 후보를 1~3개 뽑아 가장 쓸모 있는 것을 줌
+//   - 평소(판이 비어 있고 거의 찬 줄 없음): 후보 1개 = 예전과 같은 순수 무작위
+//   - 기회(6칸 이상 찬 줄이 있음): 후보 2개 중 줄을 더 많이 지울 수 있는 것
+//   - 위기(판 55% 이상 참): 후보 3개 중 놓을 수 있고 줄을 지우는 것, 같으면 작은 것
+//   - 묶음 3개는 앞 장비를 가장 좋은 자리에 놓았다고 치고 다음 장비를 고름 → 셋이 서로 이어지게(같은 줄을 두고 겹치지 않게)
+//   - 도움은 처음에 가장 크고 놓은 50→300개 사이에 점점 줄어듦(못하는 학생은 더 오래, 잘하는 학생 판 길이는 크게 안 늘게)
+//   난이도 램프(큰 장비 비율)는 그대로라 판은 반드시 끝남. 계산은 후보 × 64칸뿐이라 서버 다시 두기도 가벼움
+function weights(n) {
+  const p = rampOf(n), x2 = Math.max(0, n - RAMP.to) / RAMP.to;
+  return P.map(x => x.w * (1 + RAMP.mul[x.d] * (p + (x.d === 2 ? x2 : 0))));
+}
+function pick(rand, w, T) { let x = rand() * T, i = 0; while (i < P.length - 1 && (x -= w[i]) >= 0) i++; return i; }
+// 빠른 계산용 비트판: 줄마다 8비트(칸) · 칸마다 8비트(줄). 장비도 줄 비트·칸 비트로 미리 만들어 둠
+const BIT = P.map(({ s }) => { const h = Math.max(...s.map(x => x[0])) + 1, w = Math.max(...s.map(x => x[1])) + 1, sr = new Array(h).fill(0), sc = new Array(w).fill(0); for (const [r, c] of s) { sr[r] |= 1 << c; sc[c] |= 1 << r; } return { h, w, sr, sc }; });
+function bits(b) { const R = new Array(N).fill(0), C = new Array(N).fill(0); for (let i = 0; i < N * N; i++) if (b[i]) { R[i / N | 0] |= 1 << i % N; C[i % N] |= 1 << (i / N | 0); } return [R, C]; }
+// 이 장비를 놓을 수 있는 자리 중 줄을 가장 많이 지우는 자리 → [지우는 줄 수, 줄, 칸] (못 놓으면 null)
+function best(pi, R, C) {
+  const { h, w, sr, sc } = BIT[pi]; let top = null;
+  for (let r = 0; r + h <= N; r++) for (let c = 0; c + w <= N; c++) {
+    let ok = true; for (let i = 0; i < h; i++) if (R[r + i] & sr[i] << c) { ok = false; break; }
+    if (!ok) continue;
+    let k = 0; for (let i = 0; i < h; i++) if ((R[r + i] | sr[i] << c) === 255) k++; for (let j = 0; j < w; j++) if ((C[c + j] | sc[j] << r) === 255) k++;
+    if (!top || k > top[0]) top = [k, r, c];
+  }
+  return top;
+}
+function nextSet2(rand, b0, n) {
+  const w = weights(n), T = w.reduce((a, x) => a + x, 0), fade = rampOf(n) * .8;   // 도움은 놓은 50개부터 300개까지 점점 줄어 20%만 남음 → 잘하는 학생 판이 쉬는 시간보다 길어지지 않게
+  let set;
+  for (let t = 0; t < 30; t++) {
+    const b = b0.slice(); set = [];
+    for (let slot = 0; slot < 3; slot++) {
+      const [R, C] = bits(b); let full = 0, near = false;
+      for (let i = 0; i < N; i++) { const a = popc(R[i]), c = popc(C[i]); full += a; if ((a >= N - 2 && a < N) || (c >= N - 2 && c < N)) near = true; }
+      const fill = full / (N * N), k = rand() < fade ? 1 : fill >= .55 ? 3 : near ? 2 : 1;
+      let pi = -1, top = null, sc = -Infinity;
+      for (let j = 0; j < k; j++) {
+        const q = pick(rand, w, T), bt = best(q, R, C);
+        const v = bt ? bt[0] * 10 + (fill >= .55 ? 6 - P[q].s.length : 0) : -100;
+        if (v > sc) { sc = v; pi = q; top = bt; }
+      }
+      set.push(pi);
+      if (top && slot < 2) place(b, { score: 0, combo: 0, miss: 0 }, P[pi].s, top[1], top[2]);
+    }
+    if (set.some(i => canPlace(b0, P[i].s))) break;
+  }
+  return set;
+}
+const popc = x => { let k = 0; while (x) { x &= x - 1; k++; } return k; };
+function nextSet1(rand, b, n = 0) {
   // 2026-10-30(하율 '끝이 정해진 기록만' 원칙): 300개 뒤에도 큰 장비 비율이 계속 늘어남(300개마다 +100%) → 판이 반드시 끝남. 300개 전 판은 전과 똑같음
   const p = rampOf(n), x2 = Math.max(0, n - RAMP.to) / RAMP.to, w = P.map(x => x.w * (1 + RAMP.mul[x.d] * (p + (x.d === 2 ? x2 : 0)))), T = w.reduce((a, x) => a + x, 0);
   let set;
@@ -90,12 +141,19 @@ export const enc = (t, slot, r, c) => Math.round(t) * 1024 + slot * 64 + r * 8 +
 export const dec = x => { const t = Math.floor(x / 1024), b = x - t * 1024; return { t, slot: b >> 6 & 3, r: b >> 3 & 7, c: b & 7 }; };
 
 // 판 기록 [끝난 ms, ...놓기]를 처음부터 다시 둬 봄 → { score, n: 놓은 수, lines, combo: 가장 높은 연속, wipe: 싹 비운 횟수 } 또는 { err, k, fast }
+// 2026-11-02 묶음 방식 2로 바뀜: 바뀌기 전에 시작한 판(옛 화면)은 방식 1로 맞음 → 지금 방식으로 안 맞으면 옛 방식으로 한 번 더
 export function replay(seed, rounds) {
+  const x = replayV(seed, rounds, GEN_VER);
+  if (!x.err || x.fast) return x;
+  const y = replayV(seed, rounds, 1);
+  return y.err ? x : y;
+}
+function replayV(seed, rounds, ver) {
   const end = rounds[0], mv = rounds.slice(1);
   if (!(end >= 0 && end < 6 * 3600e3)) return { err: '끝난 시각이 이상해요' };
   if (mv.length > MAX_MOVES) return { err: '놓은 수가 너무 많아요' };
   const rand = rng(seed), b = newBoard(), st = { score: 0, combo: 0, miss: 0 };
-  let set = nextSet(rand, b, 0), used = [false, false, false], prev = -Infinity, lines = 0, combo = 0, wipe = 0;
+  let set = nextSet(rand, b, 0, ver), used = [false, false, false], prev = -Infinity, lines = 0, combo = 0, wipe = 0;
   for (let k = 0; k < mv.length; k++) {
     const m = dec(mv[k]);
     if (m.t < prev || m.t > end + 50) return { err: `${k + 1}번째 놓기의 시각이 맞지 않아요`, k };
@@ -105,7 +163,7 @@ export function replay(seed, rounds) {
     const s = P[set[m.slot]].s;
     if (!fits(b, s, m.r, m.c)) return { err: `${k + 1}번째 장비를 놓을 수 없는 자리예요`, k };
     const x = place(b, st, s, m.r, m.c, kindV(set[m.slot])); lines += x.n; used[m.slot] = true; combo = Math.max(combo, st.combo); if (x.clear) wipe++;
-    if (used.every(Boolean)) { set = nextSet(rand, b, k + 1); used = [false, false, false]; }
+    if (used.every(Boolean)) { set = nextSet(rand, b, k + 1, ver); used = [false, false, false]; }
   }
   return { score: st.score, n: mv.length, lines, combo, wipe };
 }
