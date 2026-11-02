@@ -2834,6 +2834,7 @@ async function playChase() {
   if (!area.isConnected || !$('#csMain')) return;
   let runTk = null, run = 0, tkWhy = '', best = store.get('chase_best', 0);
   const M = CHASE.createChase($('#csMain'), {
+    fpsMeter: isDev(S.me),   // 2026-11-02: 개발자 화면에 실제 프레임 표시(실기기 확인)
     quick, best, sound: store.get('chase_snd', false), trophy: ic('trophy'),
     keys: e => KM.actOf('chase', e),
     keyText: () => { const k = KM.keysOf('chase'), n = a => esc(KM.keyName(k[a]?.[0] || '')); return `${n('left')} ${n('right')} 이동 · ${n('jump')} 점프`; },

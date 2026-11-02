@@ -700,6 +700,7 @@ export function createChase(root, opts = {}) {
   function frame(now) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
+    fT0 = performance.now();
     const dt = Math.min(100, now - (last || now)); last = now;
     if (st.scene === 'count' || st.scene === 'resume') {
       countT += dt;
@@ -761,25 +762,44 @@ export function createChase(root, opts = {}) {
     if (parts.length > (lowFx ? 300 : 700)) parts.splice(0, parts.length - (lowFx ? 300 : 700));
     shake = Math.max(0, shake - ds0 * 1.2); flash = Math.max(0, flash - ds0 * 1.6); rflash = Math.max(0, rflash - ds0 * 0.8); punch = Math.max(0, punch - ds0 * 0.35);
     if (crack) crack.t += ds0;
-    // 그리기 속도 조절(2026-11-02 하율 "훨씬 더 낮은 사양에서도"): 판 진행은 매 프레임, 그리기는 drawMin 간격으로만
-    //   · 120Hz 화면(갤럭시탭 S9 등)도 60번까지만 그림 · 계속 느리면 효과 줄임(lowFx) → 해상도 낮춤(resQ, 최저 약 0.45) → 그래도 느리면 30번(drawMin 33)
-    //   · 30번으로 내린 뒤 그리기 자체가 가벼우면(4초 동안 평균 6ms 밑) 다시 60번
+    // 프레임 유지(2026-11-02 하율 "플레이할 때 가장 높은 프레임으로 계속 유지"): 판 진행은 매 프레임(1/60초 고정 스텝), 그리기는 화면 주사율(vsync)의 정수배 간격
+    //   · 화면이 120Hz면 120번부터, 60Hz면 60번부터 — 버틸 수 있는 가장 높은 '고른' 프레임(120·60·40·30)을 찾아 유지(들쭉날쭉한 100/70보다 고른 60이 덜 끊겨 보임)
+    //   · 늦은 프레임이 많아지면(1.5초에 12%↑) 한 단계씩: ① 효과 줄임 ② 해상도 0.8배 ③ 프레임 한 단계(30 밑으로는 안 내림) ④ 해상도 0.64배
+    //   · 4초 넘게 매끄럽고 할 일(판 진행+그리기 JS)이 한 단계 위 간격의 45% 밑이면 다시 올림. 올렸다 바로 떨어지면 다음 올리기는 2배 늦게(최대 32초)
+    //   · 출발 카운트다운 동안 주사율을 재고, 길 종류 바닥 그림 5장을 한 프레임에 한 장씩 미리 만들어 둠(판 도중 처음 만들 때 멈칫 방지)
+    if (st.scene === 'count' || st.scene === 'resume' || (st.scene === 'play' && dt < 25)) { vsS.push(dt); if (vsS.length > 40) vsS.shift(); if (vsS.length >= 10 && (drawN & 15) === 0) { const so = vsS.slice().sort((p, q) => p - q); vsync = clamp(so[so.length >> 1], 6.5, 17.5); } }
+    if (st.scene === 'count' && warmI < ZONES.length && dt < 40) bgOf(ZONES[warmI++]);
     dsAcc += ds;
-    if (now - lastDraw >= drawMin - 1.5) {
+    const tgt = vsync * div;
+    if (now - lastDraw >= tgt - vsync * 0.5) {
       const dd = Math.min(100, now - (lastDraw || now)); lastDraw = now;
-      avgDt = avgDt * 0.95 + dd * 0.05; lowFx = lowLv > 0 || drawMin > 20 || (lowFx ? avgDt > 19 : avgDt > 22);
-      // 계속 느리면 한 단계씩: ① 효과 줄임 고정 ② 30번 그리기 ③④ 해상도 0.8·0.64배(느린 원인이 대부분 칠하는 횟수라 해상도는 마지막에·조금만)
-      if (st.scene === 'play' && avgDt > (drawMin > 20 ? 36 : 21)) {
-        lagT += dd;
-        if (lagT > 1500) { lagT = 0; avgDt = drawMin > 20 ? 33 : 16; if (!lowLv) lowLv = 1; else if (drawMin < 20) { drawMin = 33; okT = 0; } else if (resQ > 0.65) { resQ *= 0.8; fit(); } }
-      } else lagT = 0;
-      const t0 = performance.now();
+      avgDt = avgDt * 0.95 + dd * 0.05;
+      const play = st.scene === 'play', late = play && dd > tgt * 1.45 ? 1 : 0; lateAvg = lateAvg * 0.97 + late * 0.03;
+      lowFx = lowLv > 0;
       draw(dsAcc); dsAcc = 0; drawN++;
-      drawCost = drawCost * 0.9 + (performance.now() - t0) * 0.1;
-      if (drawMin > 20 && st.scene === 'play') { okT = drawCost < 6 ? okT + dd : 0; if (okT > 4000) { drawMin = 15; okT = 0; avgDt = 16; } }
+      const work = performance.now() - fT0; workAvg = workAvg * 0.9 + work * 0.1; drawCost = workAvg;
+      if (play) {
+        // 1.5초마다 실제로 그린 횟수(mf)로 판단: 목표의 90%를 못 채우면 ① 효과 줄임 → 한 단계 아래 고른 프레임으로도 mf가 비슷하게 나오면(아래×1.12 밑) 내림(같은 프레임이면 고른 쪽이 매끄러움)
+        //   → 30에서도 못 채우면 해상도 0.8·0.64배. 할 일이 위 단계 간격의 60% 밑으로 4초(실패하면 2배씩 최대 32초) 넘게 여유 있으면 올려 봄
+        winN++;
+        if (!winAt) winAt = now;
+        if (now - winAt >= 1500) {
+          const mf = winN * 1000 / (now - winAt), cur = 1000 / (vsync * div), lower = 1000 / (vsync * (div + 1)), higher = div > 1 ? 1000 / (vsync * (div - 1)) : 0;
+          winN = 0; winAt = now; mfLast = mf;
+          if (mf < cur * 0.9) {
+            if (now - upAt < 6000) { upWait = Math.min(32000, upWait * 2); div++; upAt = -1e9; }   // 방금 올린 게 안 버텨짐 → 되돌리고 다음엔 늦게
+            else if (!lowLv) lowLv = 1;
+            else if (lower >= 29 && mf < lower * 1.12) div++;
+            else if (lower < 29 && resQ > 0.65) { resQ = resQ > 0.81 ? 0.8 : 0.64; fit(); }
+            lvAt = now;
+          } else if (higher && mf >= cur * 0.97 && workAvg < 1000 / higher * 0.6 && now - lvAt > upWait) { div--; lvAt = upAt = now; }
+        }
+      } else { winN = 0; winAt = 0; }
     }
   }
-  let lastDraw = 0, drawMin = 15, dsAcc = 0, drawCost = 0, okT = 0, drawN = 0, lowLv = 0;
+  let lastDraw = 0, dsAcc = 0, drawCost = 0, drawN = 0, lowLv = 0, vsync = 1000 / 60, div = 1, lateAvg = 0, workAvg = 0, lvAt = 0, upAt = -1e9, upWait = 4000, warmI = 0, fT0 = 0, winN = 0, winAt = 0, mfLast = 0;
+  const vsS = [];
+  const fpsNow = () => Math.round(1000 / (vsync * div));
   let lastRes = null;
   function finish() {
     const r = { score: C.scoreOf(s), m: C.metersOf(s), f: s.overF, why: s.over, near: s.near, ramps: s.ramps, slipPts: s.slipPts, maxCombo: s.maxCombo, boosts: s.boosts, smash: s.smash, coins: s.coins, cans: s.cans, top: Math.round(topK), rounds: [s.overF, ...evs], saved, realMs: performance.now() - tStart };
@@ -870,7 +890,13 @@ export function createChase(root, opts = {}) {
     if (s) hudLayer();
     if (st.scene === 'count' || st.scene === 'resume') drawCount();
     if (touchSeen && (st.scene === 'play' || st.scene === 'count' || st.scene === 'resume')) drawPads();
+    if (opts.fpsMeter) {   // 개발자 계정: 실제 그린 횟수/초 · 목표 · 단계(실기기 확인용)
+      const tn2 = performance.now(); fmN++; if (tn2 - fmAt >= 500) { fmV = Math.round(fmN * 1000 / (tn2 - fmAt)); fmN = 0; fmAt = tn2; }
+      g.font = '12px monospace'; g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(6, VH - 22, 232, 18);
+      g.fillStyle = fmV >= fpsNow() - 3 ? '#7dffa0' : '#ffd25e'; g.fillText(`${fmV} fps / 목표 ${fpsNow()} (${Math.round(1000 / vsync)}Hz) fx${lowLv}${lowFx ? '*' : ''} ×${resQ.toFixed(2)}`, 10, VH - 6);
+    }
   }
+  let fmN = 0, fmAt = 0, fmV = 0;
   // 둥근 빛·연기·불 그림을 한 번만 만들어 두고 찍음(매 프레임 그라데이션 만들기 → drawImage, 최적화)
   const blobs = new Map();
   const blob = (key, stops) => { let c = blobs.get(key); if (!c) { c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); stops.forEach(([o, col]) => gr.addColorStop(o, col)); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); blobs.set(key, c); } return c; };
@@ -1247,12 +1273,12 @@ export function createChase(root, opts = {}) {
   const pumpIcon = (x, y) => { g.fillStyle = '#ff7a6b'; rr(g, x - 8, y - 9, 11, 18, 2); g.fill(); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(x - 6, y - 7, 7, 5); g.strokeStyle = '#ff7a6b'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 3, y - 5); g.lineTo(x + 7, y - 2); g.lineTo(x + 7, y + 6); g.stroke(); };
   const boltIcon = (x, y) => { g.fillStyle = '#7fd4ff'; g.beginPath(); g.moveTo(x + 2, y - 10); g.lineTo(x - 6, y + 2); g.lineTo(x - 1, y + 2); g.lineTo(x - 3, y + 10); g.lineTo(x + 6, y - 2); g.lineTo(x + 1, y - 2); g.closePath(); g.fill(); };
   // 2026-11-02 저사양 최적화: 위쪽 계기판(점수·연료·부스터·최고 기록·콤보, 화면 y 0~112)은 따로 그려 두고 1초에 20번(저사양 10번)만 새로 그림 → 매 프레임은 한 장 찍기
-  const HUD_H = 112; let hudC = null, hudAt = 0, lastSPf = -99;
+  const HUD_H = 112; let hudC = null, hudX = null, hudAt = 0, lastSPf = -99;
   function hudLayer() {
     const now = performance.now(), sc = k * dpr, w = cv.width, h = Math.ceil(HUD_H * sc);
-    if (!hudC || hudC.width !== w || hudC.height !== h) { hudC = document.createElement('canvas'); hudC.width = w; hudC.height = h; hudAt = 0; }
+    if (!hudC || hudC.width !== w || hudC.height !== h) { hudC = document.createElement('canvas'); hudC.width = w; hudC.height = h; hudX = hudC.getContext('2d'); hudAt = 0; }
     if (now - hudAt >= (lowFx ? 100 : 50) || st.scene !== 'play') {
-      hudAt = now; const x = hudC.getContext('2d'), g0 = g;
+      hudAt = now; const x = hudX, g0 = g;
       x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, w, h); x.setTransform(sc, 0, 0, sc, 0, 0);
       g = x; try { drawHud(); } finally { g = g0; }
     }
@@ -1337,7 +1363,7 @@ export function createChase(root, opts = {}) {
   document.fonts?.load?.(`20px ${FONT}`, '카체이싱 점프 연료 부스터 발동 아슬아슬 콤보 출발 연결 중 바리케이드 지금 공사중 부족 0123456789,m+x!?…km/h').then(() => { art.clear(); }).catch(() => {});
 
   return {
-    st, get sim() { return s; }, get best() { return best; }, get perf() { return { drawN, drawMin, resQ, lowFx, avgDt: Math.round(avgDt), drawCost: +drawCost.toFixed(1) }; },   // 성능 검사용
+    st, get sim() { return s; }, get best() { return best; }, get perf() { return { drawN, fps: fpsNow(), vsync: +vsync.toFixed(2), div, resQ, lowFx, lowLv, mf: Math.round(mfLast), avgDt: Math.round(avgDt), work: +workAvg.toFixed(1) }; },   // 성능 검사용
     setBest(b) { best = Math.max(best, b || 0); },
     msg(html) { msgNow = html; const m = ov.querySelector('.cs-msg'); if (m && st.scene === 'over') m.innerHTML = html; },
     setSound(on) { sfx.set(on); paintSnd(); },
