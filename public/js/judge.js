@@ -21,7 +21,7 @@ const ITEMS0 = [['돈가스', 99, '급식 돈가스'], ['컵라면', 90, '컵라
 const P1 = ['intro', 'bonegap1', 'bluebone', 'bonegap2', 'platforms1', 'platforms2', 'platforms3', 'platforms4', 'platformblaster', 'platforms4hard', 'bonegap1fast', 'boneslideh', 'bonegap2', 'platformblasterfast'];
 const P2 = ['multi1', 'randomblaster1', 'multi2', 'bonestab1', 'bonestab2', 'randomblaster2', 'boneslidev', 'multi3', 'bonestab3'];
 /* ── 대사(전부 새로 씀) ── */
-const INTRO = [['오늘 날씨 진짜 좋다.', 'closed'], ['창밖엔 새가 울고, 운동장엔 꽃이 폈고…', 'closed'], ['이런 날엔 너 같은 애가…', 'closed'], ['복도에서 벌점 받고 반성문 써야 되는데.', 'noeyes']];
+const INTRO = [['오늘 날씨 진짜 좋다.', 'closed'], ['창밖엔 새가 울고, 운동장엔 꽃이 폈고…', 'closed'], ['이런 날엔 너 같은 애가…', 'closed'], ['복도에서 벌점 받고 반성문 써야 되는데.', 'noeyes', 'slow']];
 const LINES = {
   1: ['너, 오늘 하루 종일 뭐 했는지 알아?'], 2: ['급식 줄 맨 앞부터 맨 뒤까지 전부 새치기했잖아.'], 3: ['매점 빵도 싹 쓸어 갔고.'], 4: ['애들이 다 배고프다고 울더라.'],
   5: ['솔직히 나도 귀찮아. 선도부 일 같은 거.'], 6: ['근데 말이야… 누군가는 해야 되잖아.'], 7: ['그게 하필 나라서 좀 억울하긴 한데.'], 8: ['너 지금까지 몇 번 다시 해 봤어?'],
@@ -555,7 +555,7 @@ export function createJudge(el, O = {}) {
   function talk(lines, cb, face) {
     G.mode = 'talk'; heart.on = false; sans.head = face || sans.head;
     const q = lines.map(l => Array.isArray(l) ? l : [l, null]); let i = 0;
-    const next = () => { if (i >= q.length) { bubble = null; cb?.(); return; } const [txt, f] = q[i++]; if (f) sans.head = f; bubble = { text: txt, n: 0, cb: next }; };
+    const next = () => { if (i >= q.length) { bubble = null; cb?.(); return; } const [txt, f, fx] = q[i++]; if (f) sans.head = f; bubble = { text: txt, n: 0, cb: next, rate: fx === 'slow' ? 5 : 22, shake: fx === 'slow' }; };
     next();
   }
   function saveRec() { store.set('jd_rec', rec); }
@@ -684,7 +684,7 @@ export function createJudge(el, O = {}) {
       else if (sans.dodge === 2) { if (sans.dodgeT >= 1.1) { sans.dodge = 3; sans.dodgeT = 0; } }
       else if (sans.dodge === 3) { sans.x = 320 - Math.cos(sans.dodgeT * 225 * D2R) * 100; if (sans.dodgeT >= .4) { sans.x = 320; sans.dodge = 0; if (!ending) afterDodge(); } }
     }
-    if (bubble) { const L = bubble.text.length; if (bubble.n < L) { const o = Math.floor(bubble.n); bubble.n = Math.min(L, bubble.n + dt * 22); if (Math.floor(bubble.n) > o && bubble.text[o] !== ' ') play('talk'); } else if (bubble.auto != null) { bubble.auto -= dt; if (bubble.auto <= 0) { const cb = bubble.cb; bubble = null; cb?.(); } } }
+    if (bubble) { const L = bubble.text.length; if (bubble.n < L) { const o = Math.floor(bubble.n); bubble.n = Math.min(L, bubble.n + dt * (bubble.rate || 22)); if (Math.floor(bubble.n) > o && bubble.text[o] !== ' ') play('talk'); } else if (bubble.auto != null) { bubble.auto -= dt; if (bubble.auto <= 0) { const cb = bubble.cb; bubble = null; cb?.(); } } }
     if (info) { const L = info.text.length; if (info.n < L) { const o = Math.floor(info.n); info.n = Math.min(L, info.n + dt * 30); if (Math.floor(info.n) > o && info.text[o] !== ' ' && info.text[o] !== '\n') play('txt'); } }
     for (const p of popTexts) { if (p.delay > 0) p.delay -= dt; else p.t += dt; }
     popTexts = popTexts.filter(p => p.t < p.life);
@@ -704,7 +704,7 @@ export function createJudge(el, O = {}) {
     }
     else if (m === 'talk' || m === 'endtalk') {
       krTick(dt);
-      if (bubble && (pr.has('Z') || pr.has('X'))) { if (bubble.n < bubble.text.length) { bubble.n = bubble.text.length; } else if (bubble.auto == null) { const cb = bubble.cb; bubble = null; cb?.(); } }
+      if (bubble && (pr.has('Z') || pr.has('X'))) { if (bubble.n < bubble.text.length) { bubble.n = bubble.text.length; bubble.shake = false; } else if (bubble.auto == null) { const cb = bubble.cb; bubble = null; cb?.(); } }
     } else if (m === 'attack') {
       tlTick(dt); if (heart.on) moveHeart(dt); objTick(dt); checkHits(); krTick(dt);
       if (TL?.name === 'trap') { G.trapT += dt; if (G.trapT >= .09 && G.trapK < 60) { G.trapT = 0; boneStab(1, 30 + (G.trapK % 4) * 25, .02, 30); G.trapK++; } }
@@ -865,7 +865,10 @@ export function createJudge(el, O = {}) {
     const h = Math.max(104, 24 + lines.length * 24);
     X.fillStyle = '#fff'; X.fillRect(x + 14, y, 223, h); X.fillRect(x + 12, y + 2, 2, h - 4); X.fillRect(x + 237, y + 2, 2, h - 4);
     for (let k = 0; k < 12; k++) X.fillRect(x + 14 - k, y + 34 + k / 2, 1, Math.max(1, 12 - k));   // 꼬리
-    lines.forEach((l, i) => txt(l, x + 30, y + 14 + i * 24, 18, '#000', 'left', F9));
+    if (b.shake) {   // 글자마다 따로 덜덜 떨림
+      X.font = `18px ${F9}`;
+      lines.forEach((l, i) => { let cx = x + 30; for (const ch of l) { const jx = Math.round((Math.random() - .5) * 2.4), jy = Math.round((Math.random() - .5) * 2.4); txt(ch, cx + jx, y + 14 + i * 24 + jy, 18, '#000', 'left', F9); X.font = `18px ${F9}`; cx += X.measureText(ch).width; } });
+    } else lines.forEach((l, i) => txt(l, x + 30, y + 14 + i * 24, 18, '#000', 'left', F9));
   }
   function wrapLines(s, w, size, font) {
     X.font = `${size}px ${font}`; const out = [];
