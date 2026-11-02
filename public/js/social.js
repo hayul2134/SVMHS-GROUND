@@ -2149,7 +2149,7 @@ function restartGame() {
 // R 키로 다시 시작(2026-10-27 하율) — 게임 키보다 먼저 받아서(capture) 기자재 정리!의 '아무 키나 누르면 시작'과 겹치지 않게. 한글 입력 상태(ㄱ)도 e.code로 잡힘
 addEventListener('keydown', e => {
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || $('#gamePlay').hidden || KM.actOf(curGame, e) !== 'restart') return;   // 다시 시작 키도 키 설정대로(기본 R)
-  if (curGame === 'stair' || curGame === 'c_n2048') return;   // 영상고 계단 오르기는 다시 시작 버튼·R 키 없음(2026-10-28 하율: 열심히 하다 잘못 눌릴까 봐) — 끝나면 아무 키로 새 판
+  if (curGame === 'stair' || curGame === 'c_n2048' || curGame === 'commute') return;   // 등교하기!는 R(ㄱ)이 역 이름 글자라 다시 시작 키 없음(버튼만)   // 영상고 계단 오르기는 다시 시작 버튼·R 키 없음(2026-10-28 하율: 열심히 하다 잘못 눌릴까 봐) — 끝나면 아무 키로 새 판
   if (e.target.closest?.('input,textarea,select,[contenteditable]') || document.querySelector('.modal.open')) return;
   e.preventDefault(); e.stopImmediatePropagation(); restartGame();
 }, true);

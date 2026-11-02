@@ -269,3 +269,21 @@ function train(c, x, y, a, col, now) {
   const p0 = R(-L2 + 10, 0), p1 = R(-L2 + 4, 0, TH + 7), p2 = R(-L2 + 16, 0, TH + 7);
   c.strokeStyle = '#2a2846'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(p0[0], p0[1]); c.lineTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]); c.closePath(); c.stroke();
 }
+// 목표 이름의 앞 n타까지 친 모습 → [다 친 글자들, 치는 중인 글자(없으면 '')] — 화면에 보여 줄 글자는 IME가 아니라 이걸로 만듦
+export function partial(target, n) {
+  let out = '';
+  for (const ch of target) {
+    const c = ch.charCodeAt(0) - 0xac00;
+    if (c < 0 || c > 11171) { if (n <= 0) return [out, '']; out += ch; n--; continue; }
+    const ci = Math.floor(c / 588), ji = Math.floor(c % 588 / 28), ti = c % 28, J = JUNG[ji], Tj = JONG[ti], len = 1 + J.length + Tj.length;
+    if (n >= len) { out += ch; n -= len; continue; }
+    if (n <= 0) return [out, ''];
+    if (n === 1) return [out, CHO[ci]];
+    const jn = Math.min(J.length, n - 1), j2 = JUNG.indexOf(J.slice(0, jn)), t2 = n - 1 - jn > 0 ? JONG.indexOf(Tj.slice(0, n - 1 - jn)) : 0;
+    return [out, String.fromCharCode(0xac00 + ci * 588 + j2 * 28 + Math.max(0, t2))];
+  }
+  return [out, ''];
+}
+// 두벌식 자판(e.code → 자모). Shift는 쌍자음·ㅒㅖ
+export const KEYMAP = { KeyQ: 'ㅂ', KeyW: 'ㅈ', KeyE: 'ㄷ', KeyR: 'ㄱ', KeyT: 'ㅅ', KeyY: 'ㅛ', KeyU: 'ㅕ', KeyI: 'ㅑ', KeyO: 'ㅐ', KeyP: 'ㅔ', KeyA: 'ㅁ', KeyS: 'ㄴ', KeyD: 'ㅇ', KeyF: 'ㄹ', KeyG: 'ㅎ', KeyH: 'ㅗ', KeyJ: 'ㅓ', KeyK: 'ㅏ', KeyL: 'ㅣ', KeyZ: 'ㅋ', KeyX: 'ㅌ', KeyC: 'ㅊ', KeyV: 'ㅍ', KeyB: 'ㅠ', KeyN: 'ㅜ', KeyM: 'ㅡ' };
+export const KEYMAP_S = { KeyQ: 'ㅃ', KeyW: 'ㅉ', KeyE: 'ㄸ', KeyR: 'ㄲ', KeyT: 'ㅆ', KeyO: 'ㅒ', KeyP: 'ㅖ' };

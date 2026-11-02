@@ -6875,8 +6875,8 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .cm-ann{font-size:15px;color:var(--text);text-align:center;line-height:1.7}.cm-ann .cm-ln{margin:0 2px}
 .cm-box{position:relative;display:grid;justify-items:center;gap:10px;width:min(520px,100%);padding:18px 16px;border:3px solid var(--ink);border-radius:20px;background:var(--bg,#f4f9fe);cursor:text}
 .cm-box:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
-.cm-box.bad{border-color:#e5484d;animation:cmShake .26s}
-@keyframes cmShake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.cm-box.bad{border-color:#e5484d;animation:cmShake .32s}
+@keyframes cmShake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
 .cm-tg{display:flex;align-items:center;gap:10px}.cm-tg b{font:400 clamp(30px,7vw,46px)/1.1 Jua,var(--num);color:var(--ink)}
 .cm-tg .cm-ln{min-width:30px;height:30px;font-size:15px}
 .cm-ty{min-height:38px;display:flex;align-items:center;font:800 clamp(22px,5vw,30px)/1 var(--num);letter-spacing:.02em}
@@ -6920,3 +6920,15 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .bl-note{margin:4px 0 0;font-size:11px;color:var(--sub,#8a8aa8)}
 .bl-bar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub,#6a6a88)}
 @media (max-width:520px){.bl-help{font-size:11px}}
+/* 등교하기! 4차: 노선 고르기 · 칸 포커스 */
+.cm-rts{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px;width:min(700px,100%);max-height:136px;overflow:auto;padding:4px}
+.cm-rc{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:6px 9px;border:2px solid var(--ink);border-radius:14px;background:var(--card);font:inherit;cursor:pointer;text-align:left}
+.cm-rc b{font-weight:800;font-size:14px}.cm-rc small{color:var(--sub);font-size:11px;width:100%}
+.cm-rc .cm-ln{min-width:18px;height:18px;font-size:10px;border-width:1.5px}
+.cm-rc.on{background:#e9f2ff;box-shadow:0 0 0 3px var(--accent)}
+.cm-rc.rand b{color:var(--accent)}
+.cm-box{outline:none}
+.cm-box:focus,.cm-box:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
+.cm-box.bad{border-color:#e5484d;background:#fff0f0}
+.cm-box.bad .cm-tg b{color:#e5484d}
+.cm-intro:has(.cm-rts){padding:16px;gap:8px}.cm-intro:has(.cm-rts)>b{font-size:clamp(26px,5vw,36px)}
