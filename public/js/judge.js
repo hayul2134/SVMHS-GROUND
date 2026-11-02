@@ -764,19 +764,17 @@ export function createJudge(el, O = {}) {
     if (sans.sweat) img(ART.sweat[Math.min(3, sans.sweat)], sx - 32 + hx, headY + 2);
     X.globalAlpha = 1;
   }
-  function drawRuler(x, y, w, h, col) {   // 자(원작의 뼈 자리) — 양 끝이 살짝 넓은 흰 자 + 눈금
-    const fill = col === 1 ? BLUECOL : col === 2 ? ORANGECOL : '#ffffff', tick = col ? 'rgba(0,0,0,.35)' : '#7c7c8c';
-    X.fillStyle = fill;
-    if (h >= w) {   // 세로
-      const cx = x + w / 2;
-      X.fillRect(Math.round(cx - 3), Math.round(y + 3), 6, Math.max(0, Math.round(h - 6)));
-      X.fillRect(Math.round(x), Math.round(y), w, Math.min(5, h)); X.fillRect(Math.round(x), Math.round(y + h - Math.min(5, h)), w, Math.min(5, h));
-      X.fillStyle = tick; for (let yy = y + 8, i = 0; yy < y + h - 8; yy += 4, i++) X.fillRect(Math.round(cx - 3), Math.round(yy), i % 2 ? 2 : 3, 1);
-    } else {
-      const cy = y + h / 2;
-      X.fillRect(Math.round(x + 3), Math.round(cy - 3), Math.max(0, Math.round(w - 6)), 6);
-      X.fillRect(Math.round(x), Math.round(y), Math.min(5, w), h); X.fillRect(Math.round(x + w - Math.min(5, w)), Math.round(y), Math.min(5, w), h);
-      X.fillStyle = tick; for (let xx = x + 8, i = 0; xx < x + w - 8; xx += 4, i++) X.fillRect(Math.round(xx), Math.round(cy - 3), 1, i % 2 ? 2 : 3);
+  function drawRuler(x, y, w, h, col) {   // 자 — 굵기가 일정한 납작한 자 + 한쪽 가장자리 눈금(5칸마다 긴 눈금)
+    const fill = col === 1 ? BLUECOL : col === 2 ? ORANGECOL : '#f4f6ff', edge = col === 1 ? '#0e7fc4' : col === 2 ? '#c06a10' : '#aab2cf', tick = col === 1 ? '#064a75' : col === 2 ? '#6e3a00' : '#3a3f55';
+    x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h); if (w <= 0 || h <= 0) return;
+    X.fillStyle = fill; X.fillRect(x, y, w, h);
+    X.fillStyle = edge;
+    if (h >= w) {   // 세로 자
+      X.fillRect(x + w - 1, y, 1, h); X.fillRect(x, y, w, 1); X.fillRect(x, y + h - 1, w, 1);
+      X.fillStyle = tick; for (let yy = 3, i = 0; yy < h - 2; yy += 3, i++) X.fillRect(x, y + yy, i % 5 === 0 ? Math.ceil(w * .6) : Math.ceil(w * .3), 1);
+    } else {        // 가로 자
+      X.fillRect(x, y + h - 1, w, 1); X.fillRect(x, y, 1, h); X.fillRect(x + w - 1, y, 1, h);
+      X.fillStyle = tick; for (let xx = 3, i = 0; xx < w - 2; xx += 3, i++) X.fillRect(x + xx, y, 1, i % 5 === 0 ? Math.ceil(h * .6) : Math.ceil(h * .3));
     }
   }
   function drawGb(g) {
