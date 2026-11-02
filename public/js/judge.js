@@ -37,6 +37,7 @@ const CK_LINES = ['…또 왔네?', '이번엔 바로 진짜부터 하자.'];
 const STALL = [['헉… 헉…', 'tired2', 2], ['…', 'tired2', 1.5], ['그래. 사실 필살기 같은 건 없어.', 'tired1', 3], ['그냥 여기서 계속 버틸 거야.', 'tired1', 3], ['네가 지겨워서 포기할 때까지.', 'closed', 3], ['…', 'tired2', 2.5], ['…진짜로.', 'tired2', 2.5], ['…', 'sleep', 2.5], ['…', 'sleep', 2]];
 const DEATH = ['…아. 결국 이렇게 됐네.', '벌점은… 내일 줄게.', '…매점 갈 거면, 빵 하나만 남겨 둬.'];
 
+const josa = w => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c < 11172 && c % 28 ? '을' : '를'; };
 const rnd = n => Math.floor(Math.random() * n);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const D2R = Math.PI / 180;
@@ -45,7 +46,7 @@ export function createJudge(el, O = {}) {
   el.innerHTML = `<div class="jd"><div class="jd-wrap"><canvas class="jd-cv"></canvas>
     <div class="jd-pad" hidden><div class="jd-dp"><button type="button" data-k="U">▲</button><button type="button" data-k="L">◀</button><button type="button" data-k="R">▶</button><button type="button" data-k="D">▼</button></div>
     <div class="jd-ab"><button type="button" data-k="X">X</button><button type="button" data-k="Z">Z</button></div></div>
-    <button type="button" class="jd-ib jd-snd" aria-label="소리"></button><button type="button" class="jd-ib jd-fs" aria-label="전체 화면">⛶</button></div>
+    <button type="button" class="jd-ib jd-snd" aria-label="소리"></button><button type="button" class="jd-ib jd-fs" aria-label="전체 화면"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <p class="jd-bar">방향키 이동 · Z/Enter 확인 · X/Shift 취소(누르고 있으면 천천히) · Esc 멈춤 · 파란 별: ↑ 점프 · 파란 자: 가만히 있으면 안 아픔</p></div>`;
   const wrap = el.querySelector('.jd-wrap'), cv = el.querySelector('.jd-cv'), X = cv.getContext('2d'), pad = el.querySelector('.jd-pad');
   const sndB = el.querySelector('.jd-snd'), fsB = el.querySelector('.jd-fs');
@@ -72,7 +73,7 @@ export function createJudge(el, O = {}) {
     cv.width = Math.round(VW * k * D); cv.height = Math.round(VH * k * D); cv.style.width = Math.round(VW * k) + 'px'; cv.style.height = Math.round(VH * k) + 'px';
     S = k * D;
   }
-  fsB.onclick = () => { try { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else (wrap.requestFullscreen || wrap.webkitRequestFullscreen).call(wrap)?.catch?.(() => {}); } catch {} };
+  fsB.onclick = () => { fsB.blur(); try { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else (wrap.requestFullscreen || wrap.webkitRequestFullscreen).call(wrap)?.catch?.(() => {}); } catch {} };
   const onFs = () => { fit(); setTimeout(fit, 120); setTimeout(fit, 400); };
   document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
 
@@ -146,7 +147,8 @@ export function createJudge(el, O = {}) {
   function musStart() { if (!ac()) return; musOn = true; musPause = false; musT = AC.currentTime + .08; musStep = 0; }
   function musSetPause(p) { if (p === musPause) return; musPause = p; if (!p && AC) musT = AC.currentTime + .05; }
   function setSnd(v) { snd = v; store.set('jd_snd', v); if (master) master.gain.value = v ? .55 : 0; sndB.textContent = v ? '소리 켬' : '소리 끔'; }
-  sndB.onclick = () => { ac(); setSnd(!snd); };
+  sndB.onclick = () => { ac(); setSnd(!snd); sndB.blur(); };
+  [sndB, fsB].forEach(b => { b.tabIndex = -1; b.addEventListener('pointerdown', e => e.preventDefault()); });
   setSnd(snd);
 
   /* ── 입력 ── */
@@ -156,11 +158,15 @@ export function createJudge(el, O = {}) {
   const release = k => { if (held[k]) rel.add(k); held[k] = 0; };
   function kd(e) {
     if (!alive || e.target?.closest?.('input,textarea')) return;
-    if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
+    if (!el.isConnected) return;
+    if (e.code === 'Escape' || e.code === 'KeyP') {   // 결투 중 Esc = 멈춤(사이트의 'Esc = 게임 닫기'보다 먼저 받음) · 처음 화면에선 사이트에 넘김
+      if (['title', 'help', 'win', 'dead'].includes(G.mode) && !paused) return;
+      e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) togglePause(); return;
+    }
     const k = KM[e.code]; if (!k) return; e.preventDefault(); if (e.repeat) return; press(k);
   }
-  function ku(e) { const k = KM[e.code]; if (k) release(k); }
-  document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
+  function ku(e) { const k = KM[e.code]; if (k) { e.preventDefault(); release(k); } }
+  addEventListener('keydown', kd, true); addEventListener('keyup', ku, true);
   pad.querySelectorAll('button').forEach(b => {
     const k = b.dataset.k;
     b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); press(k); b.classList.add('on'); });
@@ -302,7 +308,7 @@ export function createJudge(el, O = {}) {
   function gaster(size, sx, sy, ex, ey, eang, spin, blast) {
     const hS = size === 0 ? 1 : size === 1 ? 2 : 3, wS = size === 2 ? 3 : 2;
     gbs.push({ x: sx, y: sy, ex, ey, eang, ang: 90, st: 0, timer: spin, blastT: blast, hS, wS, scale: hS / 2, base: 0, bt: 0, op: 100, leave: 0, fireT: 0, karma: 10, hit: false, dead: false });
-    play('GasterBlaster', 1.2);
+    if (T - (G.gbSnd || -9) > .05) { play('GasterBlaster', 1.2); G.gbSnd = T; }
   }
 
   /* ── 별(영혼) ── */
@@ -457,7 +463,7 @@ export function createJudge(el, O = {}) {
         if (Math.abs(g.ang - g.eang) >= 3) g.ang += (g.eang - g.ang) * k; else g.ang = g.eang;
         if (g.x === g.ex && g.y === g.ey && g.ang === g.eang) g.st = 1;
       } else if (g.st === 1) { g.timer -= Math.min(dt, g.timer); if (g.timer <= 0) { g.st = 2; g.timer = .1; g.fireT = 0; } }
-      else if (g.st === 2) { g.timer -= Math.min(dt, g.timer); g.fireT += dt; if (g.timer <= 0) { g.st = 3; g.beam = true; g.hit = true; g.bt = 0; play('GasterBlast'); play('GasterBlast2'); if (g.hS > 1) doShake(5); } }
+      else if (g.st === 2) { g.timer -= Math.min(dt, g.timer); g.fireT += dt; if (g.timer <= 0) { g.st = 3; g.beam = true; g.hit = true; g.bt = 0; if (T - (G.gbFire || -9) > .05) { play('GasterBlast'); play('GasterBlast2'); G.gbFire = T; } if (g.hS > 1) doShake(5); } }
       else if (g.st === 3) { g.fireT += dt; g.leave += 30 * (dt * 60); g.x -= Math.cos(g.ang * D2R) * dt * g.leave; g.y -= Math.sin(g.ang * D2R) * dt * g.leave; }
       if (g.beam) {
         g.bt += dt;
@@ -568,7 +574,7 @@ export function createJudge(el, O = {}) {
     } else if (m.what === 'item') {
       const idx = m.page * 4 + m.sel, it = items.splice(idx, 1)[0]; menu = null;
       const before = hp; hp = Math.min(MAXHP, hp + it[1]); play('Heal');
-      showText(`* ${it[2]}을(를) 먹었다.\n* ${hp >= MAXHP ? 'HP가 가득 찼다.' : `HP가 ${hp - before} 회복됐다.`}`, () => enemyTurn(false));
+      showText(`* ${it[2]}${josa(it[2])} 먹었다.\n* ${hp >= MAXHP ? 'HP가 가득 찼다.' : `HP가 ${hp - before} 회복됐다.`}`, () => enemyTurn(false));
     } else if (m.what === 'mercy') {
       menu = null;
       if (hits === 13) { trapped = true; talk(TRAP, () => trapAttack(), 'noeyes'); }
@@ -580,8 +586,7 @@ export function createJudge(el, O = {}) {
     G.mode = 'attack'; heart.on = true; menu = null; info = null;
     zoneResize(133, 251, 508, 391, null); setMode(1); heart.x = 320; heart.y = 376; heart.slamDmg = false;
     TL = { lines: [], labels: {}, vars: {}, line: 1, t: 0, run: false, cur: null, name: 'trap' };
-    let k = 0; const fill = () => { if (G.mode !== 'attack' || TL?.name !== 'trap') return; boneStab(1, 40 + (k % 3) * 20, .02, 9); k++; if (k < 40) setTimeout(fill, 90); };
-    setTimeout(fill, 600);
+    G.trapT = -.6; G.trapK = 0;
   }
 
   /* ── 공격 막대 ── */
@@ -590,9 +595,9 @@ export function createJudge(el, O = {}) {
     const dir = final ? 0 : rnd(2) ? 2 : 0;
     target = { st: 0, x: dir ? zone.r : zone.l, dir, w: 548, op: 1, final, blink: 0 };
   }
-  function targetTick(dt) {
+  function targetTick(dt, active) {
     const t = target; if (!t) return;
-    if (t.st === 0) {
+    if (t.st === 0) { if (!active) { t.st = 2; return; }
       t.x += (t.dir ? -1 : 1) * dt * 360;
       if ((t.dir === 0 && t.x > zone.r) || (t.dir === 2 && t.x < zone.l)) { t.st = 2; popTexts.push({ text: '빗나감', x: 272, y: 76, t: 0, life: 1 }); if (!t.final) enemyTurn(false); else t.x = zone.l, t.st = 0; }   // 안 누르면 빗나감(진행 안 됨) · 마지막 한 방은 다시
       else if (pr.has('Z')) {
@@ -668,7 +673,7 @@ export function createJudge(el, O = {}) {
     popTexts = popTexts.filter(p => p.t < p.life);
     if (strike) { strike.t += dt; if (strike.t > .5) strike = null; }
     if (dmgText) dmgText.t += dt;
-    zoneTick(dt);
+    zoneTick(dt); targetTick(dt, G.mode === 'target');
     const m = G.mode;
     if (m === 'title') {
       const o = titleOpts(); if (pr.has('U')) { G.sel = (G.sel + o.length - 1) % o.length; play('move'); } if (pr.has('D')) { G.sel = (G.sel + 1) % o.length; play('move'); }
@@ -676,10 +681,10 @@ export function createJudge(el, O = {}) {
     } else if (m === 'help') { if (pr.has('Z') || pr.has('X')) { G.mode = 'title'; play('move'); } }
     else if (m === 'talk' || m === 'endtalk') {
       krTick(dt);
-      if (bubble && (pr.has('Z') || pr.has('X'))) { if (bubble.n < bubble.text.length) { if (pr.has('X')) bubble.n = bubble.text.length; } else if (bubble.auto == null) { const cb = bubble.cb; bubble = null; cb?.(); } }
+      if (bubble && (pr.has('Z') || pr.has('X'))) { if (bubble.n < bubble.text.length) { bubble.n = bubble.text.length; } else if (bubble.auto == null) { const cb = bubble.cb; bubble = null; cb?.(); } }
     } else if (m === 'attack') {
       tlTick(dt); if (heart.on) moveHeart(dt); objTick(dt); checkHits(); krTick(dt);
-      if (TL?.name === 'trap' && hp > 0 && T - lastDmg < .05) { hp -= 1; }
+      if (TL?.name === 'trap') { G.trapT += dt; if (G.trapT >= .09 && G.trapK < 60) { G.trapT = 0; boneStab(1, 30 + (G.trapK % 4) * 25, .02, 30); G.trapK++; } }
     } else if (m === 'menu') {
       krTick(dt); menuBonesTick(dt); checkMenuHit();
       if (menu?.kind === 'main') {
@@ -689,11 +694,9 @@ export function createJudge(el, O = {}) {
       } else if (menu?.kind === 'list') {
         const n = menu.what === 'item' ? Math.min(4, menu.items.length - menu.page * 4) : menu.items.length;
         if (menu.what === 'item') {
-          if (pr.has('L') || pr.has('R')) { const col = menu.sel % 2, row = menu.sel >> 1; let ns = row * 2 + (1 - col);
-            if (ns >= n) { const pages = Math.ceil(menu.items.length / 4); if (pr.has('R') && menu.page < pages - 1) { menu.page++; menu.sel = Math.min(row * 2, Math.min(4, menu.items.length - menu.page * 4) - 1); } else if (pr.has('L') && menu.page > 0) { menu.page--; menu.sel = row * 2 + 1; } }
-            else if (pr.has('R') && col === 1) { const pages = Math.ceil(menu.items.length / 4); if (menu.page < pages - 1) { menu.page++; menu.sel = Math.min(row * 2, Math.min(4, menu.items.length - menu.page * 4) - 1); } }
-            else if (pr.has('L') && col === 0) { if (menu.page > 0) { menu.page--; menu.sel = row * 2 + 1; } }
-            else menu.sel = ns; play('move'); }
+          const pages = Math.ceil(menu.items.length / 4), col = menu.sel % 2, row = menu.sel >> 1, cnt = pg => Math.min(4, menu.items.length - pg * 4);
+          if (pr.has('R')) { if (col === 0 && menu.sel + 1 < n) menu.sel++; else if (menu.page < pages - 1) { menu.page++; menu.sel = Math.min(row * 2, cnt(menu.page) - 1); } play('move'); }
+          if (pr.has('L')) { if (col === 1) menu.sel--; else if (menu.page > 0) { menu.page--; menu.sel = Math.min(row * 2 + 1, cnt(menu.page) - 1); } play('move'); }
           if (pr.has('U') && menu.sel >= 2) { menu.sel -= 2; play('move'); } if (pr.has('D') && menu.sel + 2 < n) { menu.sel += 2; play('move'); }
         } else { if (pr.has('U')) { menu.sel = (menu.sel + n - 1) % n; play('move'); } if (pr.has('D')) { menu.sel = (menu.sel + 1) % n; play('move'); } }
         if (pr.has('X')) { play('move'); const back = { act: 'actEnemy' }[menu.what]; if (back) menu = { kind: 'list', what: back, items: ['선도부장'], sel: 0 }; else openMain(); }
@@ -702,8 +705,8 @@ export function createJudge(el, O = {}) {
       if (hp <= 0) die();
     } else if (m === 'text') {
       krTick(dt);
-      if (pr.has('Z') || pr.has('X')) { if (info.n < info.text.length) { if (pr.has('X')) info.n = info.text.length; } else { const cb = info.cb; info = null; cb?.(); } }
-    } else if (m === 'target') { krTick(dt); targetTick(dt); if (ending) endingTick(dt); }
+      if (pr.has('Z') || pr.has('X')) { if (info.n < info.text.length) { info.n = info.text.length; } else { const cb = info.cb; info = null; cb?.(); } }
+    } else if (m === 'target') { krTick(dt); if (ending) endingTick(dt); }
     else if (m === 'stall') { stallTick(dt); krTick(dt); }
     else if (m === 'final' || m === 'toMenu') { krTick(dt); if (m === 'toMenu') { menuBonesTick(dt); } }
     else if (m === 'dead') {
@@ -824,7 +827,7 @@ export function createJudge(el, O = {}) {
     else { for (let k = 0; k < 7; k++) { R(-7 + k * 2, -7 + k * 2, 3, 3); R(5 - k * 2, -7 + k * 2, 3, 3); } }
   }
   function drawHeart(x, y, split) {
-    const im = heart.mode === 1 ? ART.star.blue : ART.star.red;
+    const im = heart.mode === 1 && G.mode !== 'menu' ? ART.star.blue : ART.star.red;
     img(split ? ART.star.split : im, x - 8, y - (split ? 10 : 8), 1);
   }
   function drawBubble(b) {
@@ -958,7 +961,7 @@ export function createJudge(el, O = {}) {
     start() { fit(); last = performance.now(); raf = requestAnimationFrame(loop); },
     destroy() {
       alive = false; cancelAnimationFrame(raf); musOn = false;
-      document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku);
+      removeEventListener('keydown', kd, true); removeEventListener('keyup', ku, true);
       document.removeEventListener('visibilitychange', vis); removeEventListener('blur', blur); removeEventListener('resize', fit);
       document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs);
       try { AC?.close(); } catch {}
