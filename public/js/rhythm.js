@@ -455,7 +455,6 @@ export function createRhythm(el, O = {}) {
   const setOpt = k => { opt[k] = !opt[k]; store.set('rb_opt', opt); paintMenu(); };
   const mOpt = () => ({ title: '설정', items: [
     { lbl: '아래로 스크롤 ' + onOff(opt.down), sub: '화살표가 위에서 내려와요', go: () => setOpt('down') },
-    { lbl: '가운데 보기 ' + onOff(opt.mid), sub: '내 화살표 줄만 가운데에(세로 화면은 항상)', go: () => setOpt('mid') },
     { lbl: '빈 누르기 허용 ' + onOff(opt.ghost), sub: '끄면 원작처럼 화살표가 올 때 막 누르면 헛누름(기본 꺼짐)', go: () => setOpt('ghost') },
     { lbl: '타격음 ' + onOff(opt.hits), sub: '맞힐 때마다 딸깍', go: () => setOpt('hits') },
     { lbl: '메뉴 음악 ' + onOff(opt.music), sub: '첫 화면·게임 오버 배경 음악', go: () => setOpt('music') },
@@ -833,7 +832,7 @@ export function createRhythm(el, O = {}) {
 
   /* ── 화면 그리기 ── */
   function layout() {
-    const land = W >= H * 1.05, mid = opt.mid || !land;
+    const land = W >= H * 1.05, mid = W < 640;   // 2026-11-03 하율 "모바일이 아니면 상대 화살표 무조건" → 좁은 화면(폭 640 미만)만 내 줄 하나
     const lw = mid ? Math.min(W * 0.2, 112, H * 0.15) : Math.min(W * 0.105, 104, H * 0.15);
     return { land, mid, lw, pcx: mid ? W / 2 : W * 0.75, ocx: W * 0.25, ry: opt.down ? H - lw * 0.95 : lw * 0.9, dir: opt.down ? -1 : 1 };
   }
