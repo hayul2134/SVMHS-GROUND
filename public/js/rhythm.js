@@ -103,11 +103,12 @@ export function createRhythm(el, O = {}) {
   const svgF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   el.innerHTML = `<div class="rb"><div class="rb-wrap"><canvas class="rb-cv"></canvas><div class="rb-ov" hidden></div>
     <button type="button" class="rb-ib rb-pz" hidden aria-label="일시정지">${svgP}</button><button type="button" class="rb-ib rb-fs" aria-label="전체 화면">${svgF}</button></div>
-    <div class="rb-bot"><button type="button" class="btn rb-re" hidden>다시 하기</button><span class="rb-bar"></span></div></div>`;
+    <div class="rb-bar"></div></div>`;
   const wrap = el.querySelector('.rb-wrap'), cv = el.querySelector('.rb-cv'), cx = cv.getContext('2d'), ov = el.querySelector('.rb-ov');
-  const pz = el.querySelector('.rb-pz'), fsb = el.querySelector('.rb-fs'), reb = el.querySelector('.rb-re'), barT = el.querySelector('.rb-bar');
+  const pz = el.querySelector('.rb-pz'), fsb = el.querySelector('.rb-fs'), reb = { hidden: true }, barT = el.querySelector('.rb-bar');
   let W = 0, H = 0, DPR = 1, alive = true, raf = 0, lastF = 0, touchUI = false, bgC = null, bgK = 0;
   const opt = Object.assign({ down: false, mid: false, ghost: true, hits: false, music: true }, store.get('rb_opt', {}) || {});
+  if (!opt.g2) { opt.ghost = false; opt.g2 = 1; }   // 2026-11-02 하율 "잘못 누르면 점수 깎고 상대 게이지가 차야 막 안 누름" → 빈 누르기 기본 꺼짐(예전 저장값도 한 번 끔)
   if (!Array.isArray(opt.keys) || opt.keys.length !== 4) opt.keys = KEY_DEF.map(a => a.slice());
   let KEYS = {}, waitKey = null;
   function rebuildKeys() {
@@ -126,7 +127,7 @@ export function createRhythm(el, O = {}) {
     if (isFs()) { w = innerWidth; h = innerHeight; }
     else {
       w = Math.min(el.clientWidth || 360, 1600); const top = Math.max(8, wrap.getBoundingClientRect().top);
-      h = Math.max(380, Math.min(1100, innerHeight - top - 64));
+      h = Math.max(360, Math.min(1000, innerHeight - top - 128));   // 아래 안내 줄 + 사이트 공통 '다시 시작' 버튼 자리
       if (w >= h * 1.05) { if (w / h > 2.1) w = h * 2.1; }   // 화면에 남은 높이를 다 씀(가로가 아주 넓을 때만 폭 줄임)
       else h = Math.min(h, w * 1.75);
     }
@@ -302,18 +303,18 @@ export function createRhythm(el, O = {}) {
     if (i === 0) G.spl.push({ l: n.lane, t: performance.now() });
     hitSnd();
   }
-  function judgeMiss(T, lane) {
+  function judgeMiss(T, lane, wrong) {
     if (G.combo >= 10) G.fan = { m: 2, until: T + 1.5 };
     G.pbus.gain.setTargetAtTime(0, AC.currentTime, 0.006);
     G.cnt[4]++; G.score -= 10; G.wN++; G.combo = 0; G.hp -= DIFFS[G.d].miss;
     G.pose[1] = { l: lane, end: T + 0.4, miss: T + 0.4 }; missSnd();
-    G.pops.push({ i: 4, t: performance.now(), vy: -120, y: 0, c: 0 }); if (G.pops.length > 4) G.pops.shift();
+    G.pops.push({ i: wrong ? 5 : 4, t: performance.now(), vy: -120, y: 0, c: 0 }); if (G.pops.length > 4) G.pops.shift();
     if (G.hp <= 0) { G.hp = 0; gameOver(); }
   }
   function down(l) {
     if (state !== 'play') return; G.held[l] = 1; const T = songT();
     let best = null; for (const n of G.byLane[l]) { if (n.st !== 0) continue; if (n.t - T > 0.166) break; if (Math.abs(T - n.t) <= 0.166) { best = n; break; } }
-    if (!best) { if (!opt.ghost && T > -0.2) judgeMiss(T, l); return; }
+    if (!best) { if (!opt.ghost && T > -0.2) judgeMiss(T, l, true); return; }   // 헛누름 = 놓침과 같은 벌점(점수 −10·체력 깎임·콤보 끊김)
     const ms = Math.abs(T - best.t) * 1000; let i = 0; while (ms > RATE[i].ms) i++;
     judgeHit(best, i, T); if (state !== 'play') return;
     if (best.d > 0) { best.st = 1; G.holdN[l] = best; } else best.st = 2;
@@ -380,7 +381,7 @@ export function createRhythm(el, O = {}) {
   const mOpt = () => ({ title: '설정', items: [
     { lbl: '아래로 스크롤 ' + onOff(opt.down), sub: '화살표가 위에서 내려와요', go: () => setOpt('down') },
     { lbl: '가운데 보기 ' + onOff(opt.mid), sub: '내 화살표 줄만 가운데에(세로 화면은 항상)', go: () => setOpt('mid') },
-    { lbl: '빈 누르기 허용 ' + onOff(opt.ghost), sub: '끄면 화살표 없을 때 눌러도 놓침', go: () => setOpt('ghost') },
+    { lbl: '빈 누르기 허용 ' + onOff(opt.ghost), sub: '켜면 화살표 없을 때 눌러도 벌점 없음(기본 꺼짐)', go: () => setOpt('ghost') },
     { lbl: '타격음 ' + onOff(opt.hits), sub: '맞힐 때마다 딸깍', go: () => setOpt('hits') },
     { lbl: '메뉴 음악 ' + onOff(opt.music), sub: '첫 화면·게임 오버 배경 음악', go: () => setOpt('music') },
     { lbl: '키 바꾸기', sub: opt.keys.map((a, l) => ARW[l] + ' ' + a.filter(Boolean).map(keyName).join('/')).join('  '), go: () => pushMenu(mKeys) },
@@ -403,7 +404,6 @@ export function createRhythm(el, O = {}) {
   ], back: resume });
   const mOver = () => ({ title: '체력이 바닥났어요', sub: G.S.name + ' · ' + DIFFS[G.d].n + ' · ' + CH[G.S.opp].name + '에게 졌어요', cls: 'over', items: [{ lbl: '다시 하기', go: restart }, { lbl: quitTxt(), go: toSelect }] });
   function restart() { if (!G) return; if (G.add && story) { story.score -= G.add.score; story.wSum -= G.add.wSum; story.wN -= G.add.wN; story.miss -= G.add.miss; } loadSong(G.idx, G.d); }
-  reb.onclick = () => { reb.blur(); initAudio(); restart(); };
 
   function pause() {
     if (state !== 'play') return; state = 'pause'; for (let l = 0; l < 4; l++) { const n = G.holdN[l]; if (n) { n.st = 2; G.holdN[l] = null; } } G.held.fill(0); ptr.clear(); AC.suspend(); showMenu(mPause);
@@ -488,6 +488,7 @@ export function createRhythm(el, O = {}) {
     if (!alive || !el.isConnected) return; const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
     if (waitKey) { e.preventDefault(); e.stopPropagation(); if (e.code === 'Escape') { waitKey = null; paintMenu(); } else setKey(e.code); return; }
+    if (e.code === 'KeyR' && !KEYS.KeyR && G && (state === 'play' || state === 'over' || state === 'result') && !e.repeat) { e.preventDefault(); e.stopPropagation(); initAudio(); restart(); return; }   // 사이트 공통 R = 이 곡 처음부터
     if (state === 'play') {
       if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyP') { e.preventDefault(); e.stopPropagation(); pause(); return; }
       const l = KEYS[e.code]; if (l === undefined) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) down(l); return;
@@ -756,7 +757,7 @@ export function createRhythm(el, O = {}) {
     for (const p of G.pops) {
       const a = (now - p.t) / 1000; if (a > 0.8) continue; p.y = p.vy * a + 380 * a * a;
       cx.globalAlpha = a < 0.45 ? 1 : 1 - (a - 0.45) / 0.35;
-      txt(p.i < 4 ? RATE[p.i].n : '놓침', px, py + p.y, Math.min(46, lw * 0.5), p.i < 4 ? RATE[p.i].c : '#ff6b7a');
+      txt(p.i < 4 ? RATE[p.i].n : p.i === 5 ? '헛누름' : '놓침', px, py + p.y, Math.min(46, lw * 0.5), p.i < 4 ? RATE[p.i].c : '#ff6b7a');
       if (p.c >= 5) txt(String(p.c), px, py + p.y + lw * 0.48, Math.min(34, lw * 0.36), '#fff');
       cx.globalAlpha = 1;
     }
@@ -794,6 +795,7 @@ export function createRhythm(el, O = {}) {
 
   return {
     start() { fit(); showMenu(mTitle); raf = requestAnimationFrame(frame); },
+    restart() { if (!G) return false; initAudio(); restart(); return true; },   // 사이트 공통 '다시 시작' 버튼 → 지금 곡 처음부터(곡이 없으면 false → 사이트가 게임을 새로 엶)
     get _g() { return { G, state, AC, songT: () => G && AC ? songT() : null }; },   // 검사용
     destroy() {
       alive = false; cancelAnimationFrame(raf);

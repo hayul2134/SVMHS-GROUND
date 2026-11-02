@@ -2247,10 +2247,11 @@ async function playRhythm() {
   try {
     if (!RHY) RHY = await import('./rhythm.js').catch(() => import('./rhythm.js?r=' + Date.now()));
     if (seq !== playSeq || !area.isConnected) return;
-    area.innerHTML = '<div id="rbBox"></div>';
+    area.innerHTML = '<div id="rbBox"></div>' + RE_ROW;
     const wide = on => { area.classList.toggle('wide', on); $('#gamePlay .ptop')?.classList.toggle('wide', on); };
     wide(true);   // 2026-11-02 하율 "화면 더 키워줘" — 넓은 칸(1240px)
     const M = RHY.createRhythm($('#rbBox'), {}); M.start();
+    area.querySelector('[data-restart]')?.addEventListener('click', e => { if (M.restart()) { e.stopPropagation(); e.currentTarget.blur(); } }, true);   // 다시 시작 = 지금 곡 처음부터
     quitGame = () => { M.destroy(); wide(false); };
   } catch (e) { if (seq === playSeq && curGame === 'rhythm') gameFail(e); else console.error(e); }
 }
