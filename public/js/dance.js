@@ -245,7 +245,7 @@ export function createDance(root, opts = {}) {
   }
 
   /* --- 교실 배경(한 장 캐시) --- */
-  let bgC = null, bgS = 0;
+  let bgC = null, bgS = 0, fontWait = false;
   function bgArt() {
     const sc = k * dpr; if (bgC && bgS === sc) return bgC;
     const c = document.createElement('canvas'); c.width = Math.ceil(W * sc); c.height = Math.ceil(H * sc);
@@ -275,7 +275,9 @@ export function createDance(root, opts = {}) {
     ctx.beginPath(); ctx.moveTo(48, 226); ctx.lineTo(60, 226); ctx.lineTo(59, 240); ctx.lineTo(49, 240); ctx.closePath(); fillInk('#ffffff', 2.2); ctx.beginPath(); ctx.arc(61, 232, 4, -1.2, 1.2); ink(2.2);
     // 시계 · 급훈
     ell(332, 222, 16, 16); fillInk('#ffffff', 3); ctx.beginPath(); ctx.moveTo(332, 222); ctx.lineTo(332, 212); ctx.moveTo(332, 222); ctx.lineTo(339, 225); ink(2.5);
-    rr(232, 208, 76, 22, 7); fillInk('#ffffff', 2.5); ctx.fillStyle = K; ctx.font = `11px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('급훈 · 정직과 성실', 270, 223);
+    rr(220, 207, 92, 24, 8); fillInk('#ffffff', 2.5); ctx.fillStyle = K; ctx.font = `11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText('급훈 · 정직과 성실', 266, 223, 80);
+    // 글꼴(Jua)이 아직 안 받아진 채 그려졌으면, 받아진 뒤 배경을 한 번 다시 그림(대체 글꼴로 굳어 글자 깨짐 방지)
+    if (!fontWait && document.fonts && !document.fonts.check(`11px "Jua"`)) { fontWait = true; document.fonts.load(`11px "Jua"`).then(() => { bgS = 0; }, () => {}); }
     ctx = keep; bgC = c; bgS = sc; return c;
   }
   const LINE_Y = [86, 112, 138, 162], LINE_X = 42;
@@ -482,7 +484,7 @@ export function createDance(root, opts = {}) {
     const fy = 22, dx = P.dx * amp;
     ell(dx * 0.4, fy, 34, 7); ctx.fillStyle = 'rgba(23,48,72,.25)'; ctx.fill();
     // 발밑 색 조명
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5 * V.pv; ell(0, fy, 52, 13); ctx.fillStyle = GLOW[o.ci % GLOW.length]; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.globalAlpha = 0.35 * V.pv; ell(0, fy, 52, 13); ctx.fillStyle = GLOW[o.ci % GLOW.length]; ctx.fill(); ctx.restore();
     chairArt();
     ctx.save(); ctx.translate(0, fy);
     { const sp = (T + o.ph * 3) % 14; if (sp < 1 && !RM()) { const c = Math.cos(sp * Math.PI * 2); ctx.scale(Math.sign(c || 1) * Math.max(0.45, Math.abs(c)), 1); } }   // 가끔 제자리 한 바퀴(친구마다 다른 때)
@@ -538,8 +540,8 @@ export function createDance(root, opts = {}) {
     });
     return { zzz, slept, me: SEATS[8] };
   }
-  // 파티: 교실이 살짝 어두워지고(선생님은 그대로) 바닥만 은은하게
-  function drawPartyDim() { if (V.pv <= 0) return; ctx.fillStyle = `rgba(23,48,72,${0.24 * V.pv})`; ctx.fillRect(0, 300, W, H - 300); }
+  // 파티: 바닥만 따뜻하게 살짝 밝아짐(선생님은 그대로)
+  function drawPartyDim() { if (V.pv <= 0) return; ctx.fillStyle = `rgba(255,214,150,${0.12 * V.pv})`; ctx.fillRect(0, 300, W, H - 300); }   // 2026-11-02 하율 "바닥이 까매짐" → 어둡게 대신 따뜻하게 살짝 밝힘
 
   // ----- 화면 위(또렷한 UI): 말풍선·점수 팝업·경고·도장·HUD -----
   const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
