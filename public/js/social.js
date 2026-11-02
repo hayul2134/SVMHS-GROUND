@@ -1677,7 +1677,7 @@ async function openAch(h = '', g = '') {
 }
 function achRow(a) {
   const d = achD, at = d.own[a.k], fst = d.first?.[a.k], hide = a.hid && !at, pr = !at && achProg(a, d.st), pct = d.rare[a.k] ?? 0;
-  const fmt = n => n.toLocaleString('ko-KR');
+  const fmt = n => a.g === 'color' ? (n / 10).toFixed(1) + '%' : n.toLocaleString('ko-KR');   // 색감의 신: 평균 정확도(0.1% 단위)
   const tag = a.hid && at ? '<em class="ach-tag hf">숨겨진 업적 발견</em>' : a.ch ? '<em class="ach-tag ch">도전</em>' : '';
   return `<li class="${at ? 'got' : ''}${hide ? ' hid' : ''}${a.hid && at ? ' hfound' : ''}">${medal(a.lv, !!at)}<div class="ach-tx"><b>${hide ? '???' : esc(a.n)}${tag}</b><small>${hide ? '숨겨진 업적 — 직접 찾아보세요' : esc(a.d)}</small>${pr ? `<span class="ach-pg"><i data-w="${Math.round(pr[0] / pr[1] * 20) * 5}"></i><em>${fmt(pr[0])} / ${fmt(pr[1])}</em></span>` : ''}</div>
     <div class="ach-rt"><span class="ach-pc${pct < 5 ? ' rare' : ''}">${d.players ? `학생 ${pct}%` : '-'}</span>${at ? `<small>${new Date(at).getMonth() + 1}/${new Date(at).getDate()} 달성</small>` : ''}${fst && !hide ? `<small class="ach-1st${fst.me ? ' me' : ''}">${fst.me ? '전교 최초!' : `최초 ${esc(fst.n)}`}</small>` : ''}</div></li>`;

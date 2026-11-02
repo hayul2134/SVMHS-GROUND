@@ -13,11 +13,12 @@ import { BLAST_MAX } from './blast-score.js';
 import { CHASE_MAX } from './chase-score.js';
 import { DANCE_MAX } from './dance-score.js';
 import { SNAKE_MAX, N2_MAX } from './cz-score.js';
+import { COLOR_MAX, accOf, rgb2hsv } from './color-score.js';
 
 export const ACH_FF = 'achv';
-export const ACH_GAMES = ['dance', 'chase', 'film', 'home', 'stair', 'cut', 'reaction', 'num25', 'gear', 'blast'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
+export const ACH_GAMES = ['color', 'dance','chase', 'film', 'home', 'stair', 'cut', 'reaction', 'num25', 'gear', 'blast'];   // 게임 화면 순서와 같게(gearn 기록은 gear로 셈)
 // 저장값(작을수록 좋음) → 화면 단위
-export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : g === 'film' ? FILM_MAX - v : g === 'blast' ? BLAST_MAX - v : g === 'chase' ? CHASE_MAX - v : g === 'dance' ? DANCE_MAX - v : g === 'snake' ? SNAKE_MAX - v : g === 'n2048' ? N2_MAX - v : v;
+export const nat = (g, v) => g === 'home' ? HOME_MAX - v : g === 'gear' || g === 'gearn' ? GEAR_MAX - v : g === 'stair' ? STAIR_MAX - v : g === 'film' ? FILM_MAX - v : g === 'blast' ? BLAST_MAX - v : g === 'chase' ? CHASE_MAX - v : g === 'dance' ? DANCE_MAX - v : g === 'snake' ? SNAKE_MAX - v : g === 'n2048' ? N2_MAX - v : g === 'color' ? Math.round((COLOR_MAX - v) / 5) : v;   // 색감의 신: 평균 정확도(0.1% 단위, 0~1000)
 
 const A = (k, g, lv, n, d, x = {}) => ({ k, g, lv, n, d, ...x });
 // lv: 1 브론즈 · 2 실버 · 3 골드 · 4 무지개(최상)
@@ -159,10 +160,22 @@ export const ACH = [
   A('dc_x', 'dance', 1, '첫 수업부터 교무실', '시작 10초 안에 걸리기', { t: 'live', hid: 1 }),
   A('dc_y', 'dance', 2, '꿈나라 직행', '졸다가 걸리기', { t: 'live', hid: 1 }),
   A('dc_z', 'dance', 2, '번쩍 기상', '졸음이 거의 다 찼다가 춤추고 다시 깨기', { t: 'live', hid: 1 }),
+  // 색감의 신(2026-11-02 23:25 하율 "업적이랑 숙련도 만들어서 넣어") — 기록 단위 = 평균 정확도(nat, 0.1%)
+  A('co_1', 'color', 1, '첫 스포이트', '첫 판 색 맞히기', { t: 'first' }),
+  A('co_2', 'color', 1, '팔레트 입문', '평균 70% 넘게 맞히기', { t: 'hi', v: 700 }),
+  A('co_3', 'color', 2, '색보정 수습', '평균 85% 넘게 맞히기', { t: 'hi', v: 850 }),
+  A('co_4', 'color', 3, '컬러리스트', '평균 90% 넘게 맞히기', { t: 'hi', v: 900 }),
+  A('co_5', 'color', 4, '인간 스포이트', '평균 95% 넘게 맞히기', { t: 'hi', v: 950 }),
+  A('co_6', 'color', 2, '매일 색 보는 눈', '서로 다른 5일 동안 색 맞히기', { t: 'days', v: 5 }),
+  A('co_7', 'color', 2, '한 끗 차이', '한 판 5번 중 한 색이라도 98% 넘게 맞히기', { t: 'live' }),
+  A('co_8', 'color', 3, '흔들림 없는 눈', '한 판 5번 모두 90% 넘게 맞히기', { t: 'live', ch: 1 }),
+  A('co_x', 'color', 1, '보색 대마왕', '정답과 정반대 색 고르기', { t: 'live', hid: 1 }),
+  A('co_y', 'color', 2, '흑백 영화 감독', '한 판 5번 모두 무채색(회색 계열) 고르기', { t: 'live', hid: 1 }),
+  A('co_z', 'color', 2, '딱 80점', '평균 정확히 80.0% 맞히기', { t: 'live', hid: 1 }),
 ];
 export const ACH_BY = Object.fromEntries(ACH.map(a => [a.k, a]));
 // 게임 하나의 일반 업적을 다 모으면 받는 칭호(프로필 꾸미기 칭호 목록)
-export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신', blast: '정리정돈 끝판왕', chase: '카체이싱 스턴트맨', dance: '몰래 댄스왕' };
+export const ACH_TITLE = { film: '편집실 터줏대감', home: '하교의 달인', stair: '계단 정복자', cut: '컷의 장인', reaction: '반사신경 끝판왕', num25: '숫자 탐정', gear: '정리의 신', blast: '정리정돈 끝판왕', chase: '카체이싱 스턴트맨', dance: '몰래 댄스왕', color: '걸어 다니는 팔레트' };
 export const achOf = g => ACH.filter(a => a.g === g);
 // ch = 도전 업적(최상위 기록) — 칭호 조건에서 뺌(2026-10-30, 칭호가 사실상 불가능해지지 않게)
 export const titleDone = (g, own) => achOf(g).filter(a => !a.hid && !a.ch).every(a => own[a.k]);
@@ -170,6 +183,7 @@ export const achTitles = own => Object.keys(ACH_TITLE).filter(g => titleDone(g, 
 export const ACH_TITLES = Object.values(ACH_TITLE);
 export const parseAch = s => { try { const o = JSON.parse(s || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch { return {}; } };
 
+const cAcc = n => [0, 2, 4, 6, 8].map(i => accOf(n[i], n[i + 1]));   // 색감의 신 판별 정확도(0~1000)
 // 한 판 업적: r = 판 기록(서버 checkRounds를 통과한 형식), v = 저장값
 function liveOk(k, g, v, r, x) {
   const n = (r || []).map(x => Math.round(+x));
@@ -201,6 +215,12 @@ function liveOk(k, g, v, r, x) {
     case 'n_y': return g === 'num25' && n.length === 26 && n[25] >= 10;
     case 'n_z': return g === 'num25' && v >= 25000 && v < 26000;
     case 'g_y': return (g === 'gear' || g === 'gearn') && n.length === 4 && n[1] === 1 && n[2] >= 30;
+    // 색감의 신: n = [목표, 고른 색]×5(0xRRGGBB) — 서버 checkRounds 통과한 판
+    case 'co_7': return g === 'color' && n.length === 10 && cAcc(n).some(a => a >= 980);
+    case 'co_8': return g === 'color' && n.length === 10 && cAcc(n).every(a => a >= 900);
+    case 'co_x': return g === 'color' && n.length === 10 && [0, 2, 4, 6, 8].some(i => { const [th, ts] = rgb2hsv(n[i]), [ph, ps] = rgb2hsv(n[i + 1]); return ts > 0.3 && ps > 0.3 && Math.abs(((th - ph + 540) % 360) - 180) >= 160; });   // 색상 차이 160° 이상
+    case 'co_y': return g === 'color' && n.length === 10 && [1, 3, 5, 7, 9].every(i => rgb2hsv(n[i])[1] < 0.08);
+    case 'co_z': return g === 'color' && v === 1000;   // 놓친 합 1000(0.1% 단위) = 평균 80.0%
     case 'b_8': return g === 'blast' && !x?.err && (x?.combo || 0) >= 25;
     case 'b_y': return g === 'blast' && !x?.err && (x?.n || 0) > 0 && x.n < 6;
     case 'dc_7': return g === 'dance' && !x?.err && (x?.maxMult || 0) >= 4;
@@ -304,6 +324,7 @@ export const MST_BANDS = {
   chase: { b: [25000, 15000, 8000, 3000], u: '점', min: 500 },
   dance: { b: [2500, 1500, 800, 300], u: '점', min: 50 },   // 2026-11-02 23:24 사람 기록 기준으로 낮춤(전: 5000·3000·1500·500, min 100)
   // 선생님 몰래 춤추기(2026-10-31, 반응 속도별 봇 시뮬레이션 기준 — 공개 뒤 실제 기록 분포로 다시 맞출 것)   // 카체이싱!(2026-10-31, 봇 시뮬레이션 기준 — 공개 뒤 실제 기록 분포로 다시 맞출 것)
+  color: { b: [930, 880, 800, 650], u: '%', s: 10, min: 300 },   // 색감의 신(2026-11-02, 평균 정확도 0.1% 단위 — 오차 시뮬레이션 기준: 색상 5°·채도/밝기 5% ≈ 95%, 10°·10% ≈ 90%, 20°·15% ≈ 83%. 공개 뒤 실제 분포로 다시 맞출 것) · 30% 밑(아무 데나 누른 판)은 1판으로 안 침
   mine: { lo: 1, b: [60000, 90000, 150000, 240000], u: '초', s: 1000 },
   snake: { b: [60, 40, 25, 12], u: '개' },
   n2048: { b: [6000, 4000, 2500, 1200], u: '점' },
