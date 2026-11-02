@@ -15,6 +15,7 @@ import { CHASE_MAX, seedOf as chaseSeed } from './chase-score.js';
 import { DANCE_MAX, seedOf as danceSeed } from './dance-score.js';
 import { SNAKE_MAX, N2_MAX } from './cz-score.js';
 import { pctOf as colorPct } from './color-score.js';   // 색감의 신(2026-11-02)
+import { tpmOf } from './commute-score.js';   // 등교하기!(2026-11-02)
 import { ffOn, RELEASED } from './flags.js';
 import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
@@ -54,6 +55,8 @@ const GAMES = {
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
   // 색감의 신(2026-11-02 하율 "5초 동안 색을 보여 주고 팔레트에서 골라 얼마나 가까운지 %로", 미리보기 깃발 color-game — 개발자만): 서버엔 5판 놓친 %(0.1%) 합 → 작을수록 1등
   color: { ff: 'color-game', name: '색감의 신', ic: 'color', desc: '5초 동안 본 색을 팔레트에서 똑같이! 5번 평균 정확도(%)', fmt: v => '평균 ' + colorPct(v) },
+  // 등교하기!(2026-11-02 하율 "지하철 노선도로 타자연습", 미리보기 깃발 commute-game — 개발자만): 서버엔 100타에 걸린 ms → 작을수록 1등, 화면엔 타수
+  commute: { ff: 'commute-game', name: '등교하기!', ic: 'commute', desc: '지하철 노선도를 따라 역 이름을 쳐서 학교 앞 신정역까지! 평균 타수', fmt: v => '평균 ' + tpmOf(v).toLocaleString('ko-KR') + '타' },
   cut: { beta: true, name: '컷 타이밍', ic: 'clap', desc: '플레이헤드가 컷 지점에 오면 CUT! 5번 오차 합', fmt: v => '오차 ' + v + 'ms' },
   reaction: { beta: true, name: '반응속도', ic: 'bolt', desc: '초록색으로 바뀌는 순간 탭! 5번 평균 · 미리 찍으면 벌점', fmt: v => v + 'ms' },
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에, 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 게임 안 '랭크전'만 순위·티어 · '자유'는 이 기기 기록
@@ -1519,6 +1522,7 @@ const G_GROUPS = [
   ['action', '달리기·액션', '피하고 오르며 버티는 게임', ['chase', 'home', 'stair', 'snake']],
   ['timing', '순발력·타이밍', '눈과 손이 빠를수록 잘하는 게임', ['dance', 'reaction', 'cut', 'num25']],
   ['sense', '감각', '눈썰미로 맞히는 게임', ['color']],
+  ['typing', '타자', '손가락이 빠를수록 잘하는 게임', ['commute']],
 ];
 const gGroups = () => {
   const on = gamesOn(), used = new Set(G_GROUPS.flatMap(x => x[3]));
@@ -2165,7 +2169,7 @@ function playTicket(game) {
    ② 하던 게임 정리(quitGame)가 오류를 내면 다음 게임이 영영 안 열렸음 → 오류를 삼키고 계속
    ③ 학교 와이파이가 느려 서비스 워커가 옛 social.js를 준 경우(버튼은 새 index.html, 게임 목록은 옛 파일) → 옛 파일을 지우고 새로 고침
    ④ 게임을 여는 중 오류 → 빈 화면 대신 안내 + 새로 고침 버튼 */
-const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm, blast: playBlast, chase: playChase, dance: playDance, color: playColor };
+const PLAYERS = { reaction: playReaction, num25: playNum25, cut: playCut, home: playHome, gear: playGear, stair: playStair, film: playFilm, blast: playBlast, chase: playChase, dance: playDance, color: playColor, commute: playCommute };
 function staleReload() {
   try { if (Date.now() - (+sessionStorage.getItem('sg_rl') || 0) < 60e3) { toast('게임을 불러오지 못했어요. 앱을 완전히 닫았다가 다시 열어 주세요'); return; } sessionStorage.setItem('sg_rl', Date.now()); } catch {}
   toast('새 버전을 받는 중이에요…');
@@ -2746,6 +2750,19 @@ async function playColor() {
   if (!area.isConnected || curGame !== 'color') return;
   area.innerHTML = '<div id="cgBox"></div>' + RE_ROW;
   const M = COLOR.createColor($('#cgBox'), { quick, onDone: (v, det, rounds) => { M.destroy(); finish('color', v, det, rounds); } });
+  M.start();
+  quitGame = () => M.destroy();
+}
+/* 등교하기!(2026-11-02 하율 "지하철 노선도로 타자연습하는 게임, 이름은 등교하기!", 미리보기 commute-game — 개발자만)
+   js/commute.js(화면) + commute-score.js(노선·타수 — 서버와 같음). 신정역 도착하면 finish('commute', 100타 ms, …, [노선, 역마다 ms…, 오타]) → 서버가 다시 계산 */
+let COMMUTE = null;
+async function playCommute() {
+  const quick = reQuick; reQuick = false;
+  const area = stage(ic('commute') + ' 등교하기!', '<p class="empty">불러오는 중…</p>');
+  if (!COMMUTE) { try { COMMUTE = await import('./commute.js').catch(() => import('./commute.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
+  if (!area.isConnected || curGame !== 'commute') return;
+  area.innerHTML = '<div id="cmBoxW"></div>' + RE_ROW;
+  const M = COMMUTE.createCommute($('#cmBoxW'), { quick, onDone: (v, det, rounds) => { M.destroy(); finish('commute', v, det, rounds); } });
   M.start();
   quitGame = () => M.destroy();
 }

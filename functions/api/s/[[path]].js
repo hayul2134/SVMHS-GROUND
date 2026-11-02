@@ -13,6 +13,7 @@ import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim 
 import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay } from '../../../public/js/cz-score.js';   // 지뢰찾기·뱀·2048 랭크전(2026-10-29)
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { COLOR_MAX, scoreOf as colorScore } from '../../../public/js/color-score.js';   // 색감의 신(2026-11-02)
+import { scoreOf as commuteScore, tpmOf } from '../../../public/js/commute-score.js';   // 등교하기!(2026-11-02)
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
 import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, ACH_TITLES, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
@@ -32,6 +33,7 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   num25: { min: 4000, max: 600000, play: 2000 },      // 1→25 순서대로 누르기 · 하한 5000 → 4000 (2026-10-27 하율: 모바일은 훨씬 쉬움)
   cut: { min: 15, max: 6000, play: 5000 },
   color: { min: 0, max: COLOR_MAX, play: 20000, ff: 'color-game', tierOn: true },   // 색감의 신(2026-11-02 미리보기): 5판 '놓친 %' 합(0.1% 단위, 0~5000) — 판마다 5초 보기라 25초보다 빨리 끝날 수 없음(여유 두고 20초). 서버가 [목표, 고른 색]×5로 다시 계산(color-score.js)            // 컷 타이밍 5번 오차 합 (매번 0.5초 대기 + 이동)
+  commute: { min: 3000, max: 600000, play: 3000, ff: 'commute-game', tierOn: true },   // 등교하기!(2026-11-02 미리보기): 100타에 걸린 ms(작을수록 빠름) · 3000 = 2,000타(사람 한계 밖) · 600000 = 10타. 역 6~13개라 3초보다 빨리 끝날 수 없음
   home: { min: 1, max: HOME_MAX - 1, play: 0 },   // (2026-10-29 '11/9부터 캐주얼'은 같은 날 하율 "모두 랭크에"로 취소)        // 집에 가고 싶어!: HOME_MAX - 달린 거리(m) (멀리 갈수록 작음) · 최소 플레이 시간 없음(2026-10-27 하율: 바로 죽는 판도 정상) — 대신 판 기록의 달린 시간이 실제 흐른 시간을 넘는지로 검사
   gear: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game' },   // 기자재 정리!(장비 테트리스, 2026-10-27 미리보기): GEAR_MAX - 점수 (높을수록 작음)
   // 기자재 정리! 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 시간 제한 없는 판의 점수로 따로 순위만.
@@ -177,6 +179,11 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (x.v !== v) return H(`다시 계산한 값(${x.v})과 기록(${v})이 다름`, `고른 색으로 다시 계산하면 평균 ${((COLOR_MAX - x.v) / 50).toFixed(1)}%인데 ${((COLOR_MAX - v) / 50).toFixed(1)}%로 기록됐어요.`);
     const same = [0, 1, 2, 3, 4].filter(i => n[i * 2] === n[i * 2 + 1]).length;
     if (same >= 3) return H(`5판 중 ${same}판이 정답 색과 완전히 같음(1,600만 색 중) — 조작 의심`, `5판 중 ${same}판에서 정답과 완전히 같은 색을 골랐어요. 팔레트로는 거의 나올 수 없는 일이라 확인이 필요해요.`);
+  } else if (game === 'commute') {   // [노선 번호, 역마다 ms…, 오타 수] → 노선으로 타 수를 다시 세서 100타 ms = v
+    const x = commuteScore(n);
+    if (x.err) return x.fast ? H(`역 이름을 너무 빨리 침 — 매크로 의심`, x.err + '.') : H('판 기록 형식이 다름', x.err + '.');
+    if (Math.abs(x.v - v) > 1) return H(`다시 계산한 값(${x.v})과 기록(${v})이 다름`, `역마다 걸린 시간으로 다시 계산하면 평균 ${tpmOf(x.v)}타인데 ${tpmOf(v)}타로 기록됐어요.`);
+    if (x.ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 침`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 친 걸로 기록됐어요.`);
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
     const off = idx(x => x < 0 || x > 1000);
@@ -1825,7 +1832,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     // 2026-10-31 LED 월 켜기! 점수 ×10(blast-score.js SCALE): 새로 고침 전 예전 화면은 1배 점수를 보냄 → 다시 둬 본 점수의 1/10과 같으면 10배로 고쳐 받음
     if (game === 'blast') { const x = blastReplay(blastSeed(ticket), body.rounds.map(y => Math.round(+y))); if (!x.err && x.score % BLAST_SCALE === 0 && BLAST_MAX - v === x.score / BLAST_SCALE) v = BLAST_MAX - x.score; }
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
-    const fv = { dance: x => (DANCE_MAX - x).toLocaleString('ko-KR') + '점', chase: x => (CHASE_MAX - x).toLocaleString('ko-KR') + '점', mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '개' }[gk];
+    const fv = { dance: x => (DANCE_MAX - x).toLocaleString('ko-KR') + '점', chase: x => (CHASE_MAX - x).toLocaleString('ko-KR') + '점', mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '개', commute: x => '평균 ' + tpmOf(x).toLocaleString('ko-KR') + '타' }[gk] || (x => String(x));   // 목록에 없는 게임도 오류 없이(2026-11-02 등교하기!)
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)

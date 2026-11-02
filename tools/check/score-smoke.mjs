@@ -68,6 +68,13 @@ PLAY.color = v => {
   for (const c of t) { let best = c, bd = 1e9; for (let k = 0; k < 4000; k++) { const q = (c + k * 0x010203) & 0xffffff, d = Math.abs(1000 - CO.accOf(c, q) - v / 5); if (d < bd) { bd = d; best = q; } } r.push(c, best); }
   return { value: CO.scoreOf(r).v, rounds: r };
 };
+// 등교하기!(2026-11-02): v = 100타 ms → 노선 0의 역마다 타 수에 맞춰 시간을 나눔(v = 1이면 너무 빠름 → 보류)
+const CM = await import(pathToFileURL(resolve('public/js/commute-score.js')).href);
+PLAY.commute = v => {
+  if (v > 1) v *= 50;   // 400·300·500 → 300·400·240타(정상 범위) — 진짜 저장 길을 지나게
+  const st = CM.stopsOf(0).slice(1), ms = st.map(s => Math.round(CM.keysOf(s.n) * v / 100));
+  return { value: CM.scoreOf([0, ...ms, 2]).v ?? v, rounds: [0, ...ms, 2] };
+};
 const BL = await import(pathToFileURL(resolve('public/js/blast-score.js')).href);
 // 카체이싱!(2026-10-31): 티켓 씨앗으로 진짜 판을 돌림 — 왼쪽·오른쪽을 번갈아 누르다 부딪히거나 연료가 떨어질 때까지(입력 기록 = 서버가 다시 돌릴 것). v = 1이면 하한 밑 그대로
 const CH = await import(pathToFileURL(resolve('public/js/chase-score.js')).href);
@@ -91,7 +98,7 @@ PLAY.dance = (v, tk) => {
 // 두 번 돈다: ① 지금 학생 화면(미리보기 깃발 꺼짐) ② 미리보기 깃발이 전부 공개된 뒤의 학생 화면
 //   (2026-10-29 버그는 깃발 rx-season이 공개된 뒤에만 타는 길이라 ①만으로는 못 잡았음)
 const { PREVIEW, RELEASED } = await import(pathToFileURL(resolve('public/js/flags.js')).href);
-const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'blast', 'chase', 'dance', 'color', 'mine', 'snake', 'n2048'];
+const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'blast', 'chase', 'dance', 'color', 'commute', 'mine', 'snake', 'n2048'];
 let opened = 0;
 for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공개', 'smoke_b1']]) {
   if (mode === '깃발 전부 공개') for (const f of PREVIEW) RELEASED.add(f);

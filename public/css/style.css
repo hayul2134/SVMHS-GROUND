@@ -6856,3 +6856,39 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 /* 2026-11-02 최적화(하율 "사이트 랙"): 뽑기 화면 아래쪽 조각 상점·도감은 스티커 복제본(<use>)이 수천 개 노드라 화면을 열 때 스타일 계산이 가장 무거웠음
    → 화면 밖에 있는 동안은 브라우저가 계산을 건너뜀(보이면 그때 계산). 자리 높이는 한 번 그려진 실제 높이를 기억(auto) */
 #gcBox > .gc-shop,#gcBox > .gc-col{content-visibility:auto;contain-intrinsic-size:auto 900px}
+/* 등교하기!(2026-11-02 하율 "지하철 노선도로 타자연습", 미리보기 commute-game) — js/commute.js */
+.cm{display:grid;gap:12px;width:min(820px,100%);margin:0 auto}
+.cm-top{display:flex;align-items:center;gap:10px;font:800 15px var(--num)}
+.cm-rt{display:flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:wrap}
+.cm-rt b{font-weight:800}.cm-rt small{color:var(--sub);font-size:12px}
+.cm-sum{background:var(--ink);color:#fff;border-radius:999px;padding:4px 12px;white-space:nowrap}
+.cm-ln{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 4px;border-radius:999px;color:#fff;font:800 12px/1 var(--num);font-style:normal;border:2px solid var(--ink);vertical-align:middle}
+.cm-map{position:relative;height:118px;background:var(--card);border:var(--bd);border-radius:22px;box-shadow:var(--sh);overflow:hidden}
+.cm-map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cm-st{background:var(--card);border:var(--bd);border-radius:24px;box-shadow:var(--sh);min-height:min(46vh,330px);display:grid;overflow:hidden}
+.cm-intro,.cm-end{display:grid;place-content:center;justify-items:center;gap:10px;text-align:center;padding:26px}
+.cm-intro>b,.cm-end>b{font:400 clamp(30px,6vw,44px) Jua,var(--num);color:var(--ink)}
+.cm-intro p{font-size:17px;line-height:1.55;color:var(--text)}.cm-intro em{font-style:normal;font-weight:800;color:#996cac}
+.cm-intro small,.cm-end p{color:var(--sub);font-size:13px}.cm-intro .btn{min-width:170px;margin-top:6px}
+.cm-end{animation:pop .4s cubic-bezier(.2,1.5,.4,1)}
+.cm-ride{display:grid;align-content:center;justify-items:center;gap:12px;padding:20px 16px}
+.cm-ann{font-size:15px;color:var(--text);text-align:center;line-height:1.7}.cm-ann .cm-ln{margin:0 2px}
+.cm-box{position:relative;display:grid;justify-items:center;gap:10px;width:min(520px,100%);padding:18px 16px;border:3px solid var(--ink);border-radius:20px;background:var(--bg,#f4f9fe);cursor:text}
+.cm-box:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
+.cm-box.bad{border-color:#e5484d;animation:cmShake .26s}
+@keyframes cmShake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.cm-tg{display:flex;align-items:center;gap:10px}.cm-tg b{font:400 clamp(30px,7vw,46px)/1.1 Jua,var(--num);color:var(--ink)}
+.cm-tg .cm-ln{min-width:30px;height:30px;font-size:15px}
+.cm-ty{min-height:38px;display:flex;align-items:center;font:800 clamp(22px,5vw,30px)/1 var(--num);letter-spacing:.02em}
+.cm-ty .ok{color:#1d5fd6}.cm-ty .no{color:#e5484d;text-decoration:underline wavy}.cm-ty .lv{color:var(--sub)}
+.cm-cr{display:inline-block;width:3px;height:1.1em;margin-left:2px;background:var(--ink);border-radius:2px;animation:cmBlink 1s steps(1) infinite}
+.cm-box:not(:focus-within) .cm-cr{opacity:.25;animation:none}
+@keyframes cmBlink{50%{opacity:0}}
+.cm-in{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;padding:0;margin:0;caret-color:transparent;color:transparent;background:transparent}
+.cm-meta{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.cm-meta span{border:2px solid var(--ink);border-radius:999px;padding:3px 12px;font:800 13px var(--num);background:var(--card)}
+.cm-hint{color:var(--sub);font-size:12px;text-align:center}
+.cm-det{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.cm-det span{border:2px solid var(--ink);border-radius:10px;padding:3px 10px;background:var(--card);font:800 12px var(--num)}
+@media (prefers-reduced-motion:reduce){.cm-box.bad,.cm-end{animation:none}.cm-cr{animation:none}}
+.apps .gapp.g-commute .ai{--c:#efe3fb}.ggrid .g-commute{--c:#efe3fb}

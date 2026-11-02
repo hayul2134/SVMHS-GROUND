@@ -29,6 +29,7 @@ const GAMES = {
   dance: `const M = (await import('/js/dance.js')).createDance(el, O); M?.start?.(); return M;`,
   gear: `const M = (await import('/js/gear.js')).createGear(cv, O); M?.start?.(); return M;`,
   color: `const M = (await import('/js/color.js')).createColor(el, O); M?.start?.(); return M;`,
+  commute: `const M = (await import('/js/commute.js')).createCommute(el, O); M?.start?.(); return M;`,
   mine: `return (await import('/js/casual.js')).mount('mine', el);`,
   snake: `return (await import('/js/casual.js')).mount('snake', el);`,
   n2048: `return (await import('/js/casual.js')).mount('2048', el);`,
