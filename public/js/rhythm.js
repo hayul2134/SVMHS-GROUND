@@ -70,7 +70,14 @@ const SONGS = [
   { id: 's8', name: '편집실 야근', opp: 'ed', stage: 'studio', bpm: 126, root: 65, sc: MINS, prog: [0, -4, 3, -2], q: [0, 1, 1, 1], drum: 'basic', pad: 1, arp: 1, rhy: 'pop', sec: 'I Oa Pa Ob Pb Oc Pc Xd Od Pd E' },
   { id: 's9', name: '축제 리허설', opp: 'dc', stage: 'hall', bpm: 145, root: 66, sc: MAJ, prog: [0, 5, -3, 7], q: [1, 1, 0, 1], drum: 'synco', pad: 1, arp: 1, rhy: 'funk', sec: 'I Oa Pa Ob Pb Xc Oc Pc Od Pd Xa E' },
 ];
-const FREE = [0, 1, 3, 4, 5, 6, 7, 8, 2];   // 자유 플레이 순서 — 보스는 맨 끝, 스토리는 SONGS 0·1·2
+// 자유 플레이 순서 = 난이도 순(22:21 하율) — 어려움 기준 내 화살표 수 ÷ 곡 길이로 줄 세움, 보스는 맨 끝. 별 1~5 = 그 사이 비율. 스토리는 SONGS 0·1·2
+let FREE = null, STARS = null;
+function rankSongs() {
+  if (FREE) return; const d = SONGS.map((S, i) => { const B = buildSong(S, 2); return [i, B.notes.filter(n => n.who === 1).length / (B.beats * B.spb)]; });
+  const nb = d.filter(([i]) => !SONGS[i].boss), lo = Math.min(...nb.map(x => x[1])), hi = Math.max(...nb.map(x => x[1]));
+  FREE = nb.sort((a, b) => a[1] - b[1]).map(x => x[0]).concat(d.filter(([i]) => SONGS[i].boss).map(x => x[0]));
+  STARS = {}; for (const [i, v] of d) STARS[i] = SONGS[i].boss ? 6 : 1 + Math.round(4 * (v - lo) / (hi - lo || 1));
+}
 
 // ── 채보 만들기 ──
 // 노트 밀도 단계(2026-11-02 하율 "화살표를 더 많이"): 0 = 정박만 · 1 = 8분 솎기 · 2 = 쓴 그대로 · 3 = 빈 박에 8분 채우기 + 동시 누르기 · 4(보스 어려움) = 16분 붙이기 + 동시 누르기 많이
@@ -160,11 +167,12 @@ function buildSong(S, diff) {
 export function createRhythm(el, O = {}) {
   const svgP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg>';
   const svgF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const svgM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>';
   el.innerHTML = `<div class="rb"><div class="rb-wrap"><canvas class="rb-cv"></canvas><div class="rb-ov" hidden></div>
-    <button type="button" class="rb-ib rb-pz" hidden aria-label="일시정지">${svgP}</button><button type="button" class="rb-ib rb-fs" aria-label="전체 화면">${svgF}</button></div>
+    <button type="button" class="rb-ib rb-pz" hidden aria-label="일시정지">${svgP}</button><button type="button" class="rb-ib rb-fs" aria-label="전체 화면">${svgF}</button><button type="button" class="rb-ib rb-mn" hidden aria-label="메뉴로">${svgM}</button></div>
     <div class="rb-bar"></div></div>`;
   const wrap = el.querySelector('.rb-wrap'), cv = el.querySelector('.rb-cv'), cx = cv.getContext('2d'), ov = el.querySelector('.rb-ov');
-  const pz = el.querySelector('.rb-pz'), fsb = el.querySelector('.rb-fs'), reb = { hidden: true }, barT = el.querySelector('.rb-bar');
+  const mnb = el.querySelector('.rb-mn'), pz = el.querySelector('.rb-pz'), fsb = el.querySelector('.rb-fs'), reb = { hidden: true }, barT = el.querySelector('.rb-bar');
   let W = 0, H = 0, DPR = 1, alive = true, raf = 0, lastF = 0, touchUI = false, bgC = null, bgK = 0;
   const opt = Object.assign({ down: false, mid: false, ghost: true, hits: false, music: true }, store.get('rb_opt', {}) || {});
   if (!opt.g2) { opt.ghost = false; opt.g2 = 1; }   // 2026-11-02 하율 "잘못 누르면 점수 깎고 상대 게이지가 차야 막 안 누름" → 빈 누르기 기본 꺼짐(예전 저장값도 한 번 끔)
@@ -351,7 +359,7 @@ export function createRhythm(el, O = {}) {
       conf: [-9, -9, -9, -9], oconf: [-9, -9, -9, -9], lastBar: -1, failed: false, firstP: PN.length ? PN[0].t : 0, pbus: B.pbus, fan: { m: 0, until: 0 }, add: null, conf2: [],
     };
     G.t0 = AC.currentTime + 0.35 + 4 * G.spb;
-    state = 'play'; closeMenu(); pz.hidden = false; reb.hidden = false; cam.x = 640; setBgm(null); bgC = null;
+    state = 'play'; closeMenu(); pz.hidden = false; reb.hidden = false; mnb.hidden = false; cam.x = 640; setBgm(null); bgC = null;
   }
   function judgeHit(n, i, T) {
     const R = RATE[i]; G.cnt[i]++; G.score += R.sc; G.wSum += R.w; G.wN++; G.combo++; if (G.combo > G.maxCombo) G.maxCombo = G.combo;
@@ -434,7 +442,7 @@ export function createRhythm(el, O = {}) {
     extra: `<ol class="rb-wk">${SONGS.slice(0, 3).map(s => `<li><b>${s.name}</b><small>${CH[s.opp].name} · ${STAGE_N[s.stage]}</small></li>`).join('')}</ol><p class="rb-ms">${week[diff] ? '이 난이도 최고 ' + fmt(week[diff]) + '점' : '아직 완주 기록 없음'}</p>`,
     items: [{ lbl: '시작', go: () => { story = { i: 0, d: diff, score: 0, wSum: 0, wN: 0, miss: 0 }; loadSong(0, diff); } }, { lbl: '뒤로', go: popMenu }], back: popMenu });
   const mFree = () => ({ title: '자유 플레이', diff: 1, cls: 'free',
-    items: FREE.map(i => [SONGS[i], i]).map(([s, i]) => ({ lbl: (s.boss ? '[보스] ' : '') + s.name, sub: `${CH[s.opp].name} · ${STAGE_N[s.stage]} · BPM ${s.bpm} · ${bestTxt(s, diff)}`, go: () => { story = null; loadSong(i, diff); } })).concat([{ lbl: '뒤로', go: popMenu }]), back: popMenu });
+    items: (rankSongs(), FREE).map(i => [SONGS[i], i]).map(([s, i]) => ({ lbl: (s.boss ? '[보스] ' : '') + s.name + ` <em class="rb-st">${s.boss ? '★★★★★+' : '★'.repeat(STARS[i]) + '☆'.repeat(5 - STARS[i])}</em>`, sub: `${CH[s.opp].name} · ${STAGE_N[s.stage]} · BPM ${s.bpm} · ${bestTxt(s, diff)}`, go: () => { story = null; loadSong(i, diff); } })).concat([{ lbl: '뒤로', go: popMenu }]), back: popMenu });
   const onOff = v => v ? '<em>켬</em>' : '끔';
   const setOpt = k => { opt[k] = !opt[k]; store.set('rb_opt', opt); paintMenu(); };
   const mOpt = () => ({ title: '설정', items: [
@@ -457,7 +465,7 @@ export function createRhythm(el, O = {}) {
     opt.keys[l][k] = code; store.set('rb_opt', opt); rebuildKeys(); paintMenu();
   }
   const quitTxt = () => story ? '주간 그만두기' : '곡 고르기';
-  const toSelect = () => { const s = story; story = null; G = null; state = 'title'; pz.hidden = true; reb.hidden = true; bgC = null; AC?.resume?.(); menuStack = []; M = null; showMenu(mTitle); if (s) pushMenu(mStory); else pushMenu(mFree); };
+  const toSelect = () => { const s = story; story = null; G = null; state = 'title'; pz.hidden = true; reb.hidden = true; mnb.hidden = true; bgC = null; if (AC) { AC.resume(); newMaster(); } menuStack = []; M = null; showMenu(mTitle); if (s) pushMenu(mStory); else pushMenu(mFree); };
   const mPause = () => ({ title: '잠깐 멈춤', sub: G.S.name + ' · ' + DIFFS[G.d].n, items: [
     { lbl: '계속하기', go: resume }, { lbl: '처음부터', go: restart }, { lbl: '설정', go: () => pushMenu(mOpt) }, { lbl: quitTxt(), go: toSelect },
   ], back: resume });
@@ -512,7 +520,7 @@ export function createRhythm(el, O = {}) {
     const s = story, a = s.wN ? s.wSum / s.wN * 100 : 100, nb = !week[s.d] || s.score > week[s.d];
     if (nb) { week[s.d] = Math.round(s.score); store.set('rb_week', week); }
     const extra = `<p class="rb-sc">${fmt(s.score)}점${nb ? ' <em>최고 기록!</em>' : ''}</p><p class="rb-ms">${DIFFS[s.d].n} · 평균 정확도 ${a.toFixed(2)}% · 놓침 ${s.miss}</p>`;
-    story = null; G = null; state = 'title'; reb.hidden = true; bgC = null; jingle(true);
+    story = null; G = null; state = 'title'; reb.hidden = true; mnb.hidden = true; bgC = null; jingle(true);
     showMenu(() => ({ title: '영상고의 하루 완주!', cls: 'res', extra, items: [{ lbl: '처음 화면', go: () => { menuStack = []; showMenu(mTitle); } }] }));
   }
 
@@ -569,6 +577,7 @@ export function createRhythm(el, O = {}) {
   const blur = () => pause();
   cv.addEventListener('pointerdown', pDown); cv.addEventListener('pointerup', pEnd); cv.addEventListener('pointercancel', pEnd);
   pz.onclick = pause;
+  mnb.onclick = () => { mnb.blur(); initAudio(); story = null; G = null; state = 'title'; pz.hidden = true; mnb.hidden = true; bgC = null; if (AC) { AC.resume(); newMaster(); } menuStack = []; M = null; showMenu(mTitle); };   // 22:21 하율 "메뉴로 바로 나가는 버튼"
   wrap.addEventListener('pointerdown', () => initAudio());   // 첫 터치에 소리 깨우기(메뉴 음악)
   document.addEventListener('keydown', kDown, true); document.addEventListener('keyup', kUp, true);
   document.addEventListener('visibilitychange', vis); addEventListener('blur', blur); addEventListener('resize', fit);
@@ -602,12 +611,12 @@ export function createRhythm(el, O = {}) {
     if (c.hs === 'bob') { rr(-78, -60, 156, 112, 46); inkFill(pal.hair); }
     cx.beginPath(); if (c.jaw && cx.roundRect) cx.roundRect(-70, -66, 140, 146, [66, 66, 26, 26]); else cx.arc(0, 0, 66, 0, 7); inkFill(pal.skin);
     if (c.hs === 'curly') {   // 곱슬머리: 동그란 털 뭉치 여러 개(바깥 윤곽만 잉크 — 선을 먼저 다 긋고 위에 칠함)
-      const bl = []; for (let i = -1; i <= 9; i++) { const a = Math.PI + i * Math.PI / 8; bl.push([Math.cos(a) * 64, Math.sin(a) * 64 - 10, i % 2 ? 22 : 26]); }
-      bl.push([-30, -66, 26], [8, -74, 28], [40, -64, 24]);
+      const bl = []; for (let i = 0; i <= 6; i++) { const a = Math.PI + i * Math.PI / 6; bl.push([Math.cos(a) * 52, Math.sin(a) * 52 - 18, 30]); }   // 22:21 하율 "너무 뽀글" → 큰 뭉치 몇 개만(살짝 곱슬)
+      bl.push([-18, -70, 32], [20, -72, 32]);
       cx.strokeStyle = INK; cx.lineWidth = 9; for (const [x, y, r] of bl) { cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.stroke(); }
       cx.fillStyle = pal.hair; for (const [x, y, r] of bl) { cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.fill(); }
       cx.beginPath(); cx.arc(0, -8, 62, Math.PI, Math.PI * 2); cx.fill();
-      cx.strokeStyle = 'rgba(255,255,255,.12)'; cx.lineWidth = 3; for (const [x, y, r] of bl) { cx.beginPath(); cx.arc(x - 3, y - 3, r * 0.5, Math.PI * 1.1, Math.PI * 1.6); cx.stroke(); }
+      cx.strokeStyle = 'rgba(255,255,255,.13)'; cx.lineWidth = 3; cx.beginPath(); cx.arc(-14, -64, 16, Math.PI * 1.1, Math.PI * 1.7); cx.stroke(); cx.beginPath(); cx.arc(30, -60, 14, Math.PI * 1.1, Math.PI * 1.7); cx.stroke();
     }
     cx.beginPath();
     if (c.hs === 'curly') { /* 위에서 그림 */ }
@@ -659,11 +668,12 @@ export function createRhythm(el, O = {}) {
     for (const s of [-1, 1]) { rr(s * 30 - 28, -24, 56, 24, 12); inkFill(c.chain ? '#e8e8f0' : '#f3f3f7', 4); }
     cx.scale(1, sq); cx.translate(lx * 0.6, ly * 0.5 - tl);
     const tx = c.torso || 0;   // 긴 몸통: 아래 몸통 + 벨트를 먼저 그리고 윗몸 전체를 tx만큼 올림
-    if (tx) { rr(-66, -176, 132, 96, 30); inkFill(pal.body); rr(-62, -104, 124, 22, 8); inkFill(pal.body2, 4); dot(0, -93, 9, pal === GREY ? '#b8c0e0' : '#ffd23a', 3); cx.translate(0, -tx); }
+    if (tx) cx.translate(0, -tx);   // 22:21 하율 "몸통이 왜 2개" → 몸통은 아래에서 한 덩어리로 그림
     const bs = [-face * 50, -188];
     const hb = dead ? [-face * 84, -96] : l === 0 ? [-150, -225] : l === 3 ? [150, -225] : l === 2 ? [-face * 55, -345] : l === 1 ? [-face * 105, -112] : [-face * 72, -108 + bop * 5];
     lim(bs[0], bs[1], hb[0], hb[1], 24, pal.body2); dot(hb[0], hb[1], 13, pal.skin);
-    rr(-64, -212, 128, 128, 42); inkFill(pal.body);
+    rr(-64, -212, 128, 128 + tx, 42); inkFill(pal.body);
+    if (tx) { rr(-60, -104 + tx, 120, 20, 8); inkFill(pal.body2, 4); dot(0, -94 + tx, 8, pal === GREY ? '#b8c0e0' : '#ffd23a', 3); }
     if (!tx) { rr(-58, -110, 116, 20, 10); cx.fillStyle = pal.body2; cx.fill(); }
     if (c.apron) { rr(-46, -192, 92, 108, 18); inkFill(pal === GREY ? '#c9d0ea' : '#ffffff', 4); rr(-24, -140, 48, 26, 8); inkFill(pal === GREY ? '#b8c0e0' : '#e8f6ef', 3); }
     if (c.chain) { cx.beginPath(); cx.moveTo(-40, -206); cx.quadraticCurveTo(0, -130, 40, -206); cx.strokeStyle = INK; cx.lineWidth = 11; cx.stroke(); cx.strokeStyle = pal === GREY ? '#b8c0e0' : '#ffd23a'; cx.lineWidth = 6; cx.stroke(); dot(0, -160, 12, pal === GREY ? '#b8c0e0' : '#ffd23a', 4); }

@@ -6984,6 +6984,7 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .rb-m.free .rb-mi{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .rb-m.free{width:min(640px,94%)}
 .rb-m.free .rb-it:last-child{grid-column:1/-1}
+.rb-st{font-size:13px;letter-spacing:-1px;margin-left:4px}
 @media (max-width:560px){.rb-m.free .rb-mi{grid-template-columns:1fr}}
 .rb-df{display:flex;align-items:center;gap:12px}
 .rb-da{width:38px;height:38px;border:2.5px solid #2a2846;border-radius:12px;background:#fff;color:#2a2846;font-size:15px;cursor:pointer;box-shadow:2px 3px 0 #2a2846}
@@ -7007,7 +7008,7 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .rb-tap.hit{background:#3d7bff;color:#fff;transform:scale(.94)}
 .rb-ib{position:absolute;top:8px;width:38px;height:38px;padding:7px;border:2.5px solid #2a2846;border-radius:11px;background:#fff;color:#2a2846;cursor:pointer;line-height:0;z-index:2}
 .rb-ib svg{width:100%;height:100%}
-.rb-pz{left:8px}.rb-fs{right:8px}
+.rb-pz{left:8px}.rb-fs{right:8px}.rb-mn{left:52px}
 .rb-ib[hidden]{display:none}
 .rb-bar{font-size:12px;color:var(--sub,#6a6a88);text-align:center}
 .rb-m.keys .rb-mi{display:grid;grid-template-columns:1fr 1fr;gap:6px}
