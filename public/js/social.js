@@ -1802,12 +1802,18 @@ async function loadTier() {
   const ladder = TT.map(x => `<li class="t-${x.k}${m && x.k === m.tier ? ' on' : ''}">${tierIc(x.k)}<b>${x.n}</b><small>${lbOf(x)}</small></li>`).join('');
   // gear-tier 미리보기: 개발자는 티어 밖 → 1위 학생 점수 내역으로 보여 줌
   const pm = m || (d.g && isDev(S.me) ? d.top?.[0] : null);
-  const per = pm ? gamesOn().map(([k, g]) => { const x = pm.games[k];
+  // 2026-11-02 하율 '먼저 3개만, 펼치면 다': 합산된 잘한 3개(점수 높은 순)를 먼저, 나머지는 펼치기 안에
+  const perL = pm ? gamesOn().map(([k, g], i) => { const x = pm.games[k];
+    const o = { i, rec: !!x, inn: !!(x && !x.x && !(k === 'gear' && d.g && !d.g.on)), p: x ? x.p : 0 };
     if (k === 'gear' && d.g) {   // 기자재 정리!: 반영된 모드 + 다른 모드
-      if (!d.g.on) return `<li>${ic(g.ic)}<span>${g.name}</span><b><i>${GT_FROM}부터 티어에 들어가요</i></b></li>`;
-      return `<li class="tg-gear">${ic(g.ic)}<span>${g.name}</span><b>${x ? `<span class="tg-m">${gtMode(x.m)} ✓</span>${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b>${x?.o ? `<small class="tg-o">${gtMode(x.m === 'n' ? 'r' : 'n')} ${x.o.r}위 / ${x.o.n}명 · +${x.o.p} (미반영)</small>` : x ? '' : '<small class="tg-o">타임어택·일반 중 순위가 더 좋은 쪽이 들어가요</small>'}</li>`;
+      if (!d.g.on) return { ...o, h: `<li>${ic(g.ic)}<span>${g.name}</span><b><i>${GT_FROM}부터 티어에 들어가요</i></b></li>` };
+      return { ...o, h: `<li class="tg-gear">${ic(g.ic)}<span>${g.name}</span><b>${x ? `<span class="tg-m">${gtMode(x.m)} ✓</span>${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b>${x?.o ? `<small class="tg-o">${gtMode(x.m === 'n' ? 'r' : 'n')} ${x.o.r}위 / ${x.o.n}명 · +${x.o.p} (미반영)</small>` : x ? '' : '<small class="tg-o">타임어택·일반 중 순위가 더 좋은 쪽이 들어가요</small>'}</li>` };
     }
-    return `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>`; }).join('') : '';
+    return { ...o, h: `<li>${ic(g.ic)}<span>${g.name}</span><b>${x ? `${x.r}위 / ${x.n}명 · ${x.x ? `<i>+${x.p} · 합산 제외</i>` : `<em>+${x.p}</em>`}` : '<i>기록 없음 · 하면 점수!</i>'}</b></li>` }; }) : [];
+  // 순서: 합산된 것(점수 높은 순) → 기록 있는 나머지(점수 높은 순) → 기록 없음(게임 순)
+  perL.sort((a, b) => (b.inn - a.inn) || (b.rec - a.rec) || (b.p - a.p) || (a.i - b.i));
+  const perHd = perL.slice(BEST_N);
+  const per = perL.length ? `<ul class="tr-games">${perL.slice(0, BEST_N).map(o => o.h).join('')}</ul>${perHd.length ? `<details class="tr-gmore"><summary><span class="tgm-o">나머지 ${perHd.length}개 게임 펼치기</span><span class="tgm-c">접기</span><i aria-hidden="true"></i></summary><ul class="tr-games">${perHd.map(o => o.h).join('')}</ul></details>` : ''}` : '';
   const perPv = !m && pm ? '<p class="tr-pv">미리보기 · 1위 학생 기준 점수 내역(개발자는 티어 밖)</p>' : '';
   // 총점(2026-10-28 하율 "총 몇점인지 보이게"): 점수 내역 아래 합산 = 잘한 BEST_N개 점수 더하기
   const sumIn = pm ? Object.values(pm.games || {}).filter(x => !x.x).map(x => x.p).sort((a, b) => b - a) : [];
@@ -1835,7 +1841,7 @@ async function loadTier() {
     <ol class="tr-stairs">${stairs}</ol>
     <div class="tr-who" hidden></div>
     ${CH ? chBlock(CH) : ''}
-    ${per ? `${perPv}<ul class="tr-games">${per}</ul>${perSum}` : ''}
+    ${per ? `${perPv}${per}${perSum}` : ''}
     <details class="tr-top"${opn}><summary>${ic('trophy')}<span>티어 순위 TOP 10</span><i class="trt-go" aria-hidden="true"></i></summary><ol>${top}</ol>${more}</details>`;
     tierWho(box); trAll(box, top);
     const sl = box.querySelector('.tr-stairs'), on = sl?.querySelector('li.on');   // 폰: 가로로 넘기는 계단을 내 티어 쪽으로
@@ -1845,7 +1851,7 @@ async function loadTier() {
   box.innerHTML = `<div class="tr-head"><div class="tr-me ${t ? 't-' + t.k : ''}">${t ? `${tierIc(t.k)}<div><small>이번 라운드 내 티어</small><b>${t.n}</b><span>${m.rank}위 / ${d.players}명 · ${m.pts}점</span></div>` : `${tierIc('iron')}<div><small>이번 라운드 내 티어</small><b>-</b><span>게임을 한 판 하면 티어가 생겨요</span></div>`}</div>
       <p class="tr-how">게임마다 이번 라운드 순위로 점수를 받아요(1등 100점, 참가만 해도 점수). 잘한 ${BEST_N}개 게임 점수를 합쳐 순위를 매기고, ${byPts ? `참가자가 ${TIER_PCT}명보다 적을 땐 점수 구간으로, 그 뒤엔 상위 몇 %인지로` : '상위 몇 %인지로'} 티어가 정해져요. 라운드가 끝나면 새로 시작하고 지난 티어는 프로필에 배지로 남아요.</p></div>
     <ol class="tr-ladder">${ladder}</ol>
-    ${per ? `<ul class="tr-games">${per}</ul>` : ''}
+    ${per}
     <details class="tr-top"${opn}><summary>티어 순위 TOP 10</summary><ol>${top}</ol>${more}</details>`;
   trAll(box, top);
 }

@@ -6892,3 +6892,12 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .cm-det span{border:2px solid var(--ink);border-radius:10px;padding:3px 10px;background:var(--card);font:800 12px var(--num)}
 @media (prefers-reduced-motion:reduce){.cm-box.bad,.cm-end{animation:none}.cm-cr{animation:none}}
 .apps .gapp.g-commute .ai{--c:#efe3fb}.ggrid .g-commute{--c:#efe3fb}
+/* 2026-11-02 티어 점수 내역: 먼저 3개, 나머지는 펼치기 */
+.tr-gmore{margin-top:8px}
+.tr-gmore>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:12px;border:2px dashed var(--line);font-size:13px;font-weight:900;color:var(--sub,#5b6477)}
+.tr-gmore>summary::-webkit-details-marker{display:none}
+.tr-gmore>summary i{width:8px;height:8px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .2s}
+.tr-gmore[open]>summary i{transform:translateY(2px) rotate(-135deg)}
+.tr-gmore .tgm-c,.tr-gmore[open] .tgm-o{display:none}
+.tr-gmore[open] .tgm-c{display:inline}
+.tr-gmore>.tr-games{margin-top:8px}
