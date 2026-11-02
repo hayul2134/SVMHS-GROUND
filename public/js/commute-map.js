@@ -3,7 +3,7 @@
 // 노선·역·열차는 매 프레임 벡터로 그림. createMap(stops) → { draw(c, W, H, p, cur, now, done), keyFrac }
 import { LINES, ROUTES, stopsOf } from './commute-score.js';
 
-const K = 150;   // 1km = 150px
+const K = 210;   // 1km = 210px
 // 역 위도·경도(대략, 노선 모양용) — 새 노선을 넣으면 여기도
 const LL = {
   방화: [37.5775, 126.8128], 개화산: [37.5725, 126.8066], 김포공항: [37.5624, 126.8013], 송정: [37.5612, 126.8114], 마곡: [37.5602, 126.8254],
@@ -74,77 +74,93 @@ export function keyFrac(typed, target) {
   return b.length ? i / b.length : 0;
 }
 
-// 배경: 노선 둘레(+여백)만 그림
-function buildBg(box, all) {
-  const d = Math.min(2, devicePixelRatio || 1), sc = Math.min(d, Math.sqrt(12e6 / (box.w * box.h)));
-  const cv = document.createElement('canvas'); cv.width = Math.round(box.w * sc); cv.height = Math.round(box.h * sc);
-  const c = cv.getContext('2d'); c.scale(sc, sc); c.translate(-box.x, -box.y);
+// 비스듬히 위에서 본 시점(fake 3D): 땅은 세로를 T배로 눌러 그리고(c.scale(1, T)), 건물·나무·학교는 높이만큼 위로 세워 그림(남쪽 벽 + 지붕).
+// 화면 좌표 = [x, y × T]. 배경은 노선 둘레만 판마다 한 번 캔버스에 캐시 — 위로 솟는 높이만큼(HMAX) 위쪽 여백을 더 둠
+export const T = .62, HMAX = 60;
+function buildBg(box, all, lines) {
+  const d = Math.min(2, devicePixelRatio || 1), BW = box.w, BH = box.h * T + HMAX, sc = Math.min(d, Math.sqrt(12e6 / (BW * BH)));
+  const cv = document.createElement('canvas'); cv.width = Math.round(BW * sc); cv.height = Math.round(BH * sc);
+  const c = cv.getContext('2d'); c.scale(sc, sc); c.translate(-box.x, -box.y * T + HMAX);
   const water = (x, y, pad) => dSeg(x, y, HAN) < 70 + pad || dSeg(x, y, ANY) < 12 + pad || dSeg(x, y, SAET) < 10 + pad;
   const inPark = (x, y, pad) => PARKS.some(([px, py, r]) => Math.hypot(x - px, y - py) < r + pad);
-  c.fillStyle = '#f1eee6'; c.fillRect(box.x, box.y, box.w, box.h);
-  // 동네 바닥(블록마다 살짝 다른 색)
+  const onLine = (x, y, pad) => lines.some(L => dSeg(x, y, L) < pad);
   const G = 96, x0 = Math.floor(box.x / G) * G, y0 = Math.floor(box.y / G) * G;
+  // ---- 땅(눌러 그림) ----
+  c.save(); c.scale(1, T);
+  c.fillStyle = '#efece3'; c.fillRect(box.x, box.y, box.w, box.h);
   for (let gx = x0; gx < box.x + box.w; gx += G) for (let gy = y0; gy < box.y + box.h; gy += G) {
     const r = rnd(gx * 7919 + gy * 104729);
-    c.fillStyle = ['#efebe2', '#ece9e3', '#f2efe7', '#ebe7dc'][Math.floor(r() * 4)]; c.fillRect(gx + 5, gy + 5, G - 10, G - 10);
+    c.fillStyle = ['#ebe8de', '#e8e6df', '#eeebe2', '#e7e3d8'][Math.floor(r() * 4)]; c.fillRect(gx + 5, gy + 5, G - 10, G - 10);
   }
-  // 길: 작은 길 → 큰 길(세 블록마다)
   const road = (big, w, col) => {
     c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'butt';
     for (let gx = x0; gx < box.x + box.w; gx += G) { if (((gx / G) % 3 === 0) !== big) continue; c.beginPath(); c.moveTo(gx, box.y); c.lineTo(gx + 14, box.y + box.h); c.stroke(); }
     for (let gy = y0; gy < box.y + box.h; gy += G) { if (((gy / G) % 3 === 0) !== big) continue; c.beginPath(); c.moveTo(box.x, gy); c.lineTo(box.x + box.w, gy - 10); c.stroke(); }
   };
-  road(false, 8, '#ddd8cc'); road(false, 6, '#fffdf8'); road(true, 15, '#d4cebf'); road(true, 13, '#fffdf8');
-  // 큰 길 가운데 노란 줄
-  c.strokeStyle = '#f2cf6b'; c.lineWidth = 1; c.setLineDash([8, 8]);
+  road(false, 8, '#d6d1c4'); road(false, 6, '#fbf9f3'); road(true, 15, '#cdc6b6'); road(true, 13, '#fbf9f3');
+  c.strokeStyle = '#f2cf6b'; c.lineWidth = 1.2; c.setLineDash([8, 8]);
   for (let gx = x0; gx < box.x + box.w; gx += G * 3) { c.beginPath(); c.moveTo(gx, box.y); c.lineTo(gx + 14, box.y + box.h); c.stroke(); }
   for (let gy = y0; gy < box.y + box.h; gy += G * 3) { c.beginPath(); c.moveTo(box.x, gy); c.lineTo(box.x + box.w, gy - 10); c.stroke(); }
   c.setLineDash([]);
-  // 공원
-  PARKS.forEach(([px, py, r, n]) => {
-    if (px + r < box.x || px - r > box.x + box.w || py + r < box.y || py - r > box.y + box.h) return;
-    c.fillStyle = '#cfe8b4'; c.strokeStyle = '#b3d796'; c.lineWidth = 3;
-    c.beginPath(); c.ellipse(px, py, r, r * .78, -.3, 0, 7); c.fill(); c.stroke();
-    const t = rnd(px * 31 + py); for (let k = 0; k < r * r / 160; k++) { const a = t() * 7, q = Math.sqrt(t()) * r * .85; c.fillStyle = t() < .5 ? '#8cc46a' : '#a6d27f'; c.beginPath(); c.arc(px + Math.cos(a) * q, py + Math.sin(a) * q * .78, 4 + t() * 4, 0, 7); c.fill(); }
-    if (n) label(c, n, px, py + 4, 11, '#4f7d33');
-  });
-  // 건물: 블록마다 1~4채(물·공원·역 가까이는 비움)
-  const near = (x, y) => all.some(([sx, sy]) => Math.hypot(x - sx, y - sy) < 22);
-  for (let gx = x0; gx < box.x + box.w; gx += G) for (let gy = y0; gy < box.y + box.h; gy += G) {
-    const r = rnd(gx * 131 + gy * 977 + 5), n = 1 + Math.floor(r() * 4), tower = r() < .18;
-    for (let k = 0; k < n; k++) {
-      const w = tower ? 18 + r() * 14 : 14 + r() * 26, h = tower ? 18 + r() * 14 : 10 + r() * 20;
-      const x = gx + 10 + r() * (G - 20 - w), y = gy + 10 + r() * (G - 20 - h), cx = x + w / 2, cy = y + h / 2;
-      if (water(cx, cy, 30) || inPark(cx, cy, 14) || near(cx, cy)) continue;
-      const ht = tower ? 9 + r() * 8 : 3 + r() * 4, pal = tower ? ['#bcd0ea', '#a9c1e3', '#c9d3e6'] : ['#e9d6c4', '#dfe3ee', '#f0dccb', '#d9e6dc', '#e8e0f0', '#f3e3c3'];
-      const col = pal[Math.floor(r() * pal.length)];
-      c.fillStyle = 'rgba(60,60,80,.13)'; c.fillRect(x + ht * .7, y + ht, w, h);   // 그림자
-      c.fillStyle = shade(col, -.12); c.fillRect(x, y + h - 2, w, ht);   // 벽
-      c.fillStyle = col; c.fillRect(x, y - ht + ht, w, h - 2);
-      c.strokeStyle = shade(col, -.25); c.lineWidth = 1; c.strokeRect(x + .5, y + .5, w - 1, h - 3);
-      if (tower) { c.fillStyle = 'rgba(255,255,255,.55)'; for (let yy = y + 3; yy < y + h - 5; yy += 4) c.fillRect(x + 3, yy, w - 6, 1.5); }
-      else if (r() < .5) { c.fillStyle = shade(col, -.2); c.fillRect(x + w * .3, y + h * .3, 4, 4); }
-    }
-  }
-  // 학교
-  { const [sx, sy] = SCHOOL;
-    c.fillStyle = 'rgba(60,60,80,.15)'; c.fillRect(sx - 26 + 5, sy - 12 + 6, 52, 26);
-    c.fillStyle = '#ffe9a8'; c.strokeStyle = '#2a2846'; c.lineWidth = 2; c.fillRect(sx - 26, sy - 12, 52, 26); c.strokeRect(sx - 26, sy - 12, 52, 26);
-    c.fillStyle = '#8fd0f5'; for (let k = 0; k < 5; k++) c.fillRect(sx - 21 + k * 9, sy - 6, 6, 5), c.fillRect(sx - 21 + k * 9, sy + 3, 6, 5);
-    c.fillStyle = '#cfe8b4'; c.fillRect(sx - 26, sy + 16, 52, 16); c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.strokeRect(sx - 20, sy + 19, 40, 10);
-    c.strokeStyle = '#2a2846'; c.lineWidth = 2; c.beginPath(); c.moveTo(sx, sy - 12); c.lineTo(sx, sy - 34); c.stroke();
-    c.fillStyle = '#ffcf3a'; c.beginPath(); c.moveTo(sx, sy - 34); c.lineTo(sx + 18, sy - 29); c.lineTo(sx, sy - 24); c.closePath(); c.fill(); c.stroke();
-    label(c, '서울영상고', sx, sy + 42, 13, '#2a2846'); }
-  // 물: 둔치 → 물 → 반짝임
+  PARKS.forEach(([px, py, r]) => { c.fillStyle = '#cbe6ae'; c.strokeStyle = '#addb8c'; c.lineWidth = 3; c.beginPath(); c.ellipse(px, py, r, r * .78, -.3, 0, 7); c.fill(); c.stroke(); });
+  { const [sx, sy] = SCHOOL; c.fillStyle = '#cfe8b4'; c.fillRect(sx - 34, sy + 4, 68, 40); c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(sx - 26, sy + 10, 52, 28); }   // 운동장
   const river = (L, w, bank) => {
     c.lineJoin = c.lineCap = 'round';
-    c.strokeStyle = '#c8e6a4'; c.lineWidth = w + bank; c.beginPath(); L.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+    c.strokeStyle = '#c3e3a0'; c.lineWidth = w + bank; c.beginPath(); L.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+    c.strokeStyle = '#7fc2ea'; c.lineWidth = w + 6; c.stroke();   // 물가 그늘(제방 높이)
     c.strokeStyle = '#8fcdf0'; c.lineWidth = w; c.stroke();
     c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.5; c.setLineDash([10, 22]); c.stroke(); c.setLineDash([]);
   };
   river(ANY, 22, 14); river(SAET, 18, 12); river(HAN, 140, 40);
-  label(c, '한강', ...mid(HAN, box), 16, '#3f87b8');
-  return { cv, sc };
+  c.restore();
+  // ---- 세운 것들(뒤 → 앞 순서) ----
+  const items = [];
+  PARKS.forEach(([px, py, r]) => { if (px + r < box.x || px - r > box.x + box.w || py + r < box.y || py - r > box.y + box.h) return; const t = rnd(px * 31 + py); for (let k = 0; k < r * r / 150; k++) { const a = t() * 7, q = Math.sqrt(t()) * r * .85, x = px + Math.cos(a) * q, y = py + Math.sin(a) * q * .78; if (!onLine(x, y, 26)) items.push({ y, f: () => tree(c, x, y * T, 4 + t() * 3, t() < .5 ? '#7fbf5a' : '#97cf6f') }); } });
+  for (let gx = x0; gx < box.x + box.w; gx += G) for (let gy = y0; gy < box.y + box.h; gy += G) {
+    const r = rnd(gx * 131 + gy * 977 + 5), n = 1 + Math.floor(r() * 4), tower = r() < .2;
+    for (let k = 0; k < n; k++) {
+      const w = tower ? 18 + r() * 14 : 14 + r() * 26, h = tower ? 16 + r() * 12 : 10 + r() * 20;
+      const x = gx + 10 + r() * (G - 20 - w), y = gy + 10 + r() * (G - 20 - h), cx = x + w / 2, cy = y + h / 2;
+      const ht = tower ? 26 + r() * 30 : 7 + r() * 9, pal = tower ? ['#c7d7ee', '#b5cbe8', '#d3dbea'] : ['#f0dcc8', '#e3e7f1', '#f4e2d1', '#dcebdf', '#ece3f3', '#f6e8c9'];
+      const col = pal[Math.floor(r() * pal.length)], win = r() < .6;
+      if (water(cx, cy, 30) || inPark(cx, cy, 14) || onLine(cx, cy, 34 + Math.max(w, h) / 2)) continue;
+      items.push({ y: y + h, f: () => box3(c, x, y, w, h, ht, col, tower, win) });
+    }
+  }
+  items.push({ y: SCHOOL[1], f: () => school(c, ...SCHOOL) });
+  items.sort((a, b) => a.y - b.y).forEach(it => it.f());
+  // 땅 위 글자
+  PARKS.forEach(([px, py, r, n]) => n && label(c, n, px, py * T + 4, 11, '#4f7d33'));
+  const [hx, hy] = mid(HAN, box); label(c, '한강', hx, hy * T, 16, '#3f87b8');
+  return { cv, sc, BW, BH };
+}
+// 상자 건물: 그림자 → 앞(남쪽) 벽 → 지붕
+function box3(c, x, y, w, h, ht, col, tower, win) {
+  const sy = y * T, sh = h * T, top = sy - ht;
+  c.fillStyle = 'rgba(70,70,90,.14)'; c.beginPath(); c.moveTo(x + w, sy + sh); c.lineTo(x + w + ht * .55, sy + sh - ht * .25); c.lineTo(x + w + ht * .55, sy - ht * .25); c.lineTo(x + w, sy); c.fill();
+  const wall = shade(col, -.14);
+  c.fillStyle = wall; c.fillRect(x, top + sh, w, ht);
+  c.fillStyle = col; c.fillRect(x, top, w, sh);
+  c.strokeStyle = shade(col, -.32); c.lineWidth = 1; c.strokeRect(x + .5, top + .5, w - 1, sh + ht - 1); c.beginPath(); c.moveTo(x, top + sh + .5); c.lineTo(x + w, top + sh + .5); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.55)';
+  if (tower) { for (let yy = top + sh + 4; yy < sy + sh - 4; yy += 6) for (let xx = x + 3; xx < x + w - 4; xx += 5) c.fillRect(xx, yy, 3, 3); }
+  else if (win) { for (let xx = x + 3; xx < x + w - 5; xx += 7) c.fillRect(xx, top + sh + ht * .35, 4, Math.max(2, ht * .35)); }
+  if (tower) { c.fillStyle = shade(col, -.2); c.fillRect(x + w * .3, top + sh * .3, w * .4, sh * .4); }
+}
+function tree(c, x, y, r, col) {
+  c.fillStyle = 'rgba(60,80,40,.18)'; c.beginPath(); c.ellipse(x + 3, y + 1, r, r * .45, 0, 0, 7); c.fill();
+  c.fillStyle = '#8a6a4a'; c.fillRect(x - 1, y - r * 1.2, 2, r * 1.2);
+  c.fillStyle = col; c.beginPath(); c.arc(x, y - r * 1.6, r, 0, 7); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(x - r * .35, y - r * 1.95, r * .4, 0, 7); c.fill();
+}
+function school(c, sx, sy0) {
+  const sy = sy0 * T;
+  box3(c, sx - 28, sy0 - 14, 56, 16, 22, '#ffe7a3', false, false);
+  c.fillStyle = '#8fd0f5'; for (let k = 0; k < 6; k++) { c.fillRect(sx - 24 + k * 8.5, sy - 14 * T - 22 + 16 * T + 4, 5, 5); c.fillRect(sx - 24 + k * 8.5, sy - 14 * T - 22 + 16 * T + 12, 5, 5); }
+  const fx = sx, fy = sy - 14 * T - 22 + 4;
+  c.strokeStyle = '#2a2846'; c.lineWidth = 2; c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx, fy - 24); c.stroke();
+  c.fillStyle = '#ffcf3a'; c.beginPath(); c.moveTo(fx, fy - 24); c.lineTo(fx + 17, fy - 19); c.lineTo(fx, fy - 14); c.closePath(); c.fill(); c.stroke();
+  label(c, '서울영상고', sx, sy + 34, 13, '#2a2846');
 }
 const mid = (L, box) => { const v = L.filter(([x, y]) => x > box.x + 60 && x < box.x + box.w - 60 && y > box.y + 30 && y < box.y + box.h - 30); const p = v[Math.floor(v.length / 2)] || [-1e4, -1e4]; return [p[0], p[1] + 5]; };
 function shade(hex, a) { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v + (a < 0 ? v : 255 - v) * a))); return '#' + [n >> 16, n >> 8 & 255, n & 255].map(f).map(v => v.toString(16).padStart(2, '0')).join(''); }
@@ -157,70 +173,99 @@ const rr = (c, x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x 
 
 export function createMap(stops) {
   const pts = stops.map(s => P(LL[s.n] || [37.53, 126.88])), path = smooth(pts);
-  // 다른 노선(흐리게) — 지도 느낌
-  const others = ROUTES.map((R, i) => stopsOf(i)).map(st => smooth(st.map(s => P(LL[s.n] || [37.53, 126.88]))));
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), M = 520;
-  const box = { x: Math.min(...xs) - M, y: Math.min(...ys) - M * .7, w: Math.max(...xs) - Math.min(...xs) + M * 2, h: Math.max(...ys) - Math.min(...ys) + M * 1.4 };
-  const allSt = Object.values(LL).map(P);
+  const others = ROUTES.map((R, i) => [stopsOf(i), null]).map(([st]) => [st, smooth(st.map(s => P(LL[s.n] || [37.53, 126.88])))]);
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), M = 560;
+  const box = { x: Math.min(...xs) - M, y: Math.min(...ys) - M, w: Math.max(...xs) - Math.min(...xs) + M * 2, h: Math.max(...ys) - Math.min(...ys) + M * 2 };
   let bg = null, cam = null;
-  // 경로 위 s(길이)의 점·방향
+  const S = (x, y) => [x, y * T];   // 땅 → 화면
   const at = s => {
-    const S = path.S, n = S.length; s = Math.max(0, Math.min(S[n - 1], s));
-    let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (S[m] <= s) lo = m; else hi = m; }
-    const a = path.pts[lo], b = path.pts[hi], t = S[hi] > S[lo] ? (s - S[lo]) / (S[hi] - S[lo]) : 0;
+    const L = path.S, n = L.length; s = Math.max(0, Math.min(L[n - 1], s));
+    let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (L[m] <= s) lo = m; else hi = m; }
+    const a = path.pts[lo], b = path.pts[hi], t = L[hi] > L[lo] ? (s - L[lo]) / (L[hi] - L[lo]) : 0;
     return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, Math.atan2(b[1] - a[1], b[0] - a[0])];
   };
   const sOf = p => { const i = Math.min(stops.length - 2, Math.floor(p)), f = p - i; return path.S[path.at[i]] + (path.S[path.at[i + 1]] - path.S[path.at[i]]) * f; };
   const segCol = i => lineColor(stops[i].x || stops[i].l);
+  const seg = (c, o, i) => { c.beginPath(); for (let k = o.at[i]; k <= o.at[i + 1]; k++) { const [x, y] = o.pts[k]; k === o.at[i] ? c.moveTo(x, y * T) : c.lineTo(x, y * T); } };
 
   function draw(c, W, H, p, cur, now, done) {
-    bg ||= buildBg(box, allSt);
-    const s = sOf(p), [tx, ty] = at(s), [nx, ny] = pts[Math.min(stops.length - 1, cur)];
-    // 카메라: 열차 + 다음 역 쪽으로 조금, 부드럽게 따라감(배경 밖은 안 보이게)
-    let gx = tx + (nx - tx) * .35, gy = ty + (ny - ty) * .35;
-    gx = Math.max(box.x + W / 2, Math.min(box.x + box.w - W / 2, gx)); gy = Math.max(box.y + H / 2, Math.min(box.y + box.h - H / 2, gy));
+    bg ||= buildBg(box, Object.values(LL).map(P), others.map(([, o]) => o.pts));
+    const s = sOf(p), [tx, ty, ang] = at(s), [nx, ny] = pts[Math.min(stops.length - 1, cur)];
+    let gx = tx + (nx - tx) * .35, gy = (ty + (ny - ty) * .35) * T - 10;
+    gx = Math.max(box.x + W / 2, Math.min(box.x + box.w - W / 2, gx)); gy = Math.max(box.y * T - HMAX + H / 2, Math.min(box.y * T + box.h * T - H / 2, gy));
     if (!cam) cam = [gx, gy]; else { cam[0] += (gx - cam[0]) * .08; cam[1] += (gy - cam[1]) * .08; }
     c.save(); c.translate(Math.round(W / 2 - cam[0]), Math.round(H / 2 - cam[1]));
-    c.drawImage(bg.cv, box.x, box.y, box.w, box.h);
+    c.drawImage(bg.cv, box.x, box.y * T - HMAX, bg.BW, bg.BH);
+    c.lineCap = c.lineJoin = 'round';
     // 다른 노선(흐리게)
-    c.lineCap = c.lineJoin = 'round'; c.globalAlpha = .28;
-    others.forEach((o, ri) => { const st = stopsOf(ri); for (let i = 0; i < st.length - 1; i++) { c.strokeStyle = lineColor(st[i].x || st[i].l); c.lineWidth = 5; c.beginPath(); for (let k = o.at[i]; k <= o.at[i + 1]; k++) { const [x, y] = o.pts[k]; k === o.at[i] ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); } });
-    c.globalAlpha = 1;
-    // 내 노선: 흰 테두리 + 호선 색 + 지나온 구간은 진하게 칠한 선로 무늬
-    for (let pass = 0; pass < 2; pass++) for (let i = 0; i < stops.length - 1; i++) {
-      c.beginPath(); for (let k = path.at[i]; k <= path.at[i + 1]; k++) { const [x, y] = path.pts[k]; k === path.at[i] ? c.moveTo(x, y) : c.lineTo(x, y); }
-      if (!pass) { c.strokeStyle = '#fff'; c.lineWidth = 15; c.stroke(); c.strokeStyle = 'rgba(42,40,70,.55)'; c.lineWidth = 17; c.globalCompositeOperation = 'destination-over'; c.stroke(); c.globalCompositeOperation = 'source-over'; }
-      else { c.strokeStyle = segCol(i); c.lineWidth = 9; c.stroke(); c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.5; c.setLineDash([3, 6]); c.stroke(); c.setLineDash([]); }
-    }
-    // 역
-    stops.forEach((st, i) => {
-      const [x, y] = pts[i], past = i < cur && !(done && i === stops.length - 1), tgt = i === cur && !done, isX = !!st.x, isG = i === stops.length - 1;
-      if (tgt) { const k = (now % 1200) / 1200; c.strokeStyle = `rgba(29,95,214,${.6 * (1 - k)})`; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 12 + k * 18, 0, 7); c.stroke(); }
-      c.fillStyle = '#fff'; c.strokeStyle = isX || isG ? '#2a2846' : segCol(Math.min(i, stops.length - 2)); c.lineWidth = 3.5;
-      c.beginPath(); c.arc(x, y, isX || isG ? 10 : 7, 0, 7); c.fill(); c.stroke();
-      if (isX) { c.strokeStyle = lineColor(st.x); c.lineWidth = 3; c.beginPath(); c.arc(x, y, 5, 0, 7); c.stroke(); }
-      if (isG) { c.fillStyle = lineColor(5); c.beginPath(); c.arc(x, y, 4.5, 0, 7); c.fill(); }
-    });
-    // 열차: 3칸이 선로를 따라 굽어 감 + 그림자 + 달릴 때 바람
-    const L = stops[Math.max(0, Math.min(stops.length - 2, Math.floor(p)))], col = lineColor(L.x || L.l), CAR = 31, GAP = 3;
-    for (let k = 2; k >= 0; k--) {
-      const [x, y, a] = at(s - k * (CAR + GAP));
-      c.save(); c.translate(x, y); c.rotate(a);
-      c.fillStyle = 'rgba(30,30,50,.22)'; rr(c, -CAR / 2 + 3, -7.5 + 4, CAR, 15, 5); c.fill();
-      c.fillStyle = col; c.strokeStyle = '#2a2846'; c.lineWidth = 1.8; rr(c, -CAR / 2, -7.5, CAR, 15, 5); c.fill(); c.stroke();
-      c.fillStyle = '#f4fbff'; for (let w = 0; w < 4; w++) { rr(c, -CAR / 2 + 3.5 + w * 6.3, -4, 4.5, 8, 1.2); c.fill(); }
-      if (!k) { c.fillStyle = '#2a2846'; rr(c, CAR / 2 - 4.5, -6, 3.5, 12, 1.2); c.fill(); c.fillStyle = '#ffe58a'; c.beginPath(); c.arc(CAR / 2 + 1, -3.5, 1.6, 0, 7); c.arc(CAR / 2 + 1, 3.5, 1.6, 0, 7); c.fill(); }
-      c.restore();
-    }
-    // 역 이름은 열차 위에(가리지 않게)
+    c.globalAlpha = .3; others.forEach(([st, o]) => { for (let i = 0; i < st.length - 1; i++) { c.strokeStyle = lineColor(st[i].x || st[i].l); c.lineWidth = 5; seg(c, o, i); c.stroke(); } }); c.globalAlpha = 1;
+    // 내 노선: 선로 둑(아래 두께) → 흰 테두리 → 호선 색 → 침목 무늬
+    for (let i = 0; i < stops.length - 1; i++) { c.save(); c.translate(0, 4); c.strokeStyle = 'rgba(42,40,70,.35)'; c.lineWidth = 16; seg(c, path, i); c.stroke(); c.restore(); }
+    for (let i = 0; i < stops.length - 1; i++) { c.strokeStyle = '#2a2846'; c.lineWidth = 16; seg(c, path, i); c.stroke(); }
+    for (let i = 0; i < stops.length - 1; i++) { c.strokeStyle = '#fff'; c.lineWidth = 13; seg(c, path, i); c.stroke(); }
+    for (let i = 0; i < stops.length - 1; i++) { seg(c, path, i); c.strokeStyle = segCol(i); c.lineWidth = 8; c.stroke(); c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 1.5; c.setLineDash([2, 5]); c.stroke(); c.setLineDash([]); }
+    // 역 승강장(두께 있는 납작한 원) — 열차보다 뒤에 있는 역은 먼저, 앞에 있는 역은 열차 뒤에
+    const stDraw = (st, i) => {
+      const [x, y0] = pts[i], y = y0 * T, isX = !!st.x, isG = i === stops.length - 1, tgt = i === cur && !done, R = isX || isG ? 12 : 9;
+      if (tgt) { const k = (now % 1200) / 1200; c.strokeStyle = `rgba(29,95,214,${.65 * (1 - k)})`; c.lineWidth = 3; c.beginPath(); c.ellipse(x, y, 14 + k * 20, (14 + k * 20) * T, 0, 0, 7); c.stroke(); }
+      c.fillStyle = '#9aa3b5'; c.beginPath(); c.ellipse(x, y + 3, R, R * T, 0, 0, 7); c.fill();
+      c.fillStyle = '#fff'; c.strokeStyle = isX || isG ? '#2a2846' : segCol(Math.min(i, stops.length - 2)); c.lineWidth = 3;
+      c.beginPath(); c.ellipse(x, y, R, R * T, 0, 0, 7); c.fill(); c.stroke();
+      if (isX) { c.strokeStyle = lineColor(st.x); c.lineWidth = 2.5; c.beginPath(); c.ellipse(x, y, R * .5, R * .5 * T, 0, 0, 7); c.stroke(); }
+      if (isG) { c.fillStyle = lineColor(5); c.beginPath(); c.ellipse(x, y, 5, 5 * T, 0, 0, 7); c.fill(); }
+    };
+    stops.forEach((st, i) => { if (pts[i][1] <= ty) stDraw(st, i); });
+    train(c, tx, ty, ang, segCol(Math.max(0, Math.min(stops.length - 2, Math.floor(p)))), now);
+    stops.forEach((st, i) => { if (pts[i][1] > ty) stDraw(st, i); });
+    // 역 이름(맨 위)
     stops.forEach((st, i) => {
       const [x, y] = pts[i], past = i < cur && !(done && i === stops.length - 1), tgt = i === cur && !done;
       c.globalAlpha = past ? .55 : 1;
-      label(c, st.n, x, y - 21, tgt ? 17 : 13, tgt ? '#1d5fd6' : '#2a2846', tgt ? 900 : 800);
+      label(c, st.n, x, y * T - 22, tgt ? 17 : 13, tgt ? '#1d5fd6' : '#2a2846', tgt ? 900 : 800);
     });
     c.globalAlpha = 1;
     c.restore();
-    return [tx, ty];
   }
   return { draw };
+}
+// 열차 한 칸(흰 차체 + 호선 색 띠, 지붕 에어컨·판토그래프) — 땅 위 네모(길이·폭)를 화면으로 눌러 옮기고 높이만큼 세움
+const TL = 64, TW = 19, TH = 16;
+function train(c, x, y, a, col, now) {
+  const d = [Math.cos(a), Math.sin(a)], q = [-Math.sin(a), Math.cos(a)];
+  const G = (u, v) => [x + d[0] * u + q[0] * v, (y + d[1] * u + q[1] * v) * T];   // 땅 위 (앞뒤 u, 좌우 v) → 화면
+  const up = ([X, Y], h) => [X, Y - h];
+  const poly = (ps, fill, stroke) => { c.beginPath(); ps.forEach(([X, Y], i) => i ? c.lineTo(X, Y) : c.moveTo(X, Y)); c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1.4; c.stroke(); } };
+  const L2 = TL / 2, W2 = TW / 2, nose = 5;
+  // 바닥 모양(앞쪽 모서리를 깎은 팔각) — 시계 방향
+  const base = [[-L2, -W2], [L2 - nose, -W2], [L2, -W2 + nose], [L2, W2 - nose], [L2 - nose, W2], [-L2, W2], [-L2 - 1, W2 - 2], [-L2 - 1, -W2 + 2]];
+  // 그림자
+  c.save(); c.translate(6, 3); poly(base.map(([u, v]) => G(u * 1.02, v * 1.1)), 'rgba(30,30,60,.22)'); c.restore();
+  // 옆면: 바깥 법선이 화면 아래(보는 사람 쪽)를 향하는 면만, 먼 것부터
+  const faces = base.map((b, i) => { const e = base[(i + 1) % base.length], nx = (e[1] - b[1]), ny = -(e[0] - b[0]), wn = [d[0] * nx + q[0] * ny, d[1] * nx + q[1] * ny], l = Math.hypot(...wn) || 1; return { b, e, ny: wn[1] / l, nx: wn[0] / l, i }; })
+    .filter(f => f.ny > .02).sort((f, g) => f.ny - g.ny);
+  faces.forEach(f => {
+    const A = G(...f.b), B = G(...f.e), lit = .9 + f.nx * -.06 + f.ny * .08, side = Math.abs(f.b[1]) === W2 && Math.abs(f.e[1]) === W2;
+    poly([A, B, up(B, TH), up(A, TH)], shade('#ffffff', -Math.max(0, 1 - lit) * 1.2), '#2a2846');
+    const P2 = (u, v) => [A[0] + (B[0] - A[0]) * u, A[1] + (B[1] - A[1]) * u - TH * v];
+    poly([P2(0, .16), P2(1, .16), P2(1, .32), P2(0, .32)], col);   // 호선 색 띠
+    if (side) { const n = 5; for (let k = 0; k < n; k++) { const u0 = .08 + k * .18, u1 = u0 + .11; poly([P2(u0, .45), P2(u1, .45), P2(u1, .82), P2(u0, .82)], '#2b3a55'); poly([P2(u0, .7), P2(u0 + .04, .82), P2(u0 + .02, .82)], 'rgba(255,255,255,.35)'); } }
+    else if (f.b[0] === L2 && f.e[0] === L2) {   // 앞면: 큰 창 + 전조등
+      poly([P2(.12, .45), P2(.88, .45), P2(.82, .86), P2(.18, .86)], '#2b3a55');
+      const l1 = P2(.2, .22), l2 = P2(.8, .22); c.fillStyle = '#fff3a8'; c.beginPath(); c.arc(l1[0], l1[1], 1.8, 0, 7); c.arc(l2[0], l2[1], 1.8, 0, 7); c.fill();
+    }
+  });
+  // 지붕: 흰 판 + 가장자리 호선 색 줄 + 가운데 회색 판 + 에어컨 2개 + 판토그래프
+  const R = (u, v, h = TH) => up(G(u, v), h);
+  poly(base.map(([u, v]) => R(u, v)), '#fbfcfe', '#2a2846');
+  poly(base.map(([u, v]) => R(u * .94, v * .8)), null); c.strokeStyle = col; c.lineWidth = 1.6; c.stroke();
+  poly([R(-L2 + 6, -W2 * .45), R(L2 - 9, -W2 * .45), R(L2 - 9, W2 * .45), R(-L2 + 6, W2 * .45)], '#e6ebf3');
+  [-.22, .2].forEach(t => {
+    const u = t * TL, h2 = TH + 3, bx = [[u - 5, -3.2], [u + 5, -3.2], [u + 5, 3.2], [u - 5, 3.2]];
+    poly([R(u - 5, 3.2), R(u + 5, 3.2), R(u + 5, 3.2, h2), R(u - 5, 3.2, h2)], '#cfd6e3', '#2a2846');
+    poly(bx.map(([uu, vv]) => R(uu, vv, h2)), '#eef2f8', '#2a2846');
+    const g = R(u, 0, h2); c.fillStyle = '#9aa6bb'; c.beginPath(); c.ellipse(g[0], g[1], 2.6, 2.6 * T, 0, 0, 7); c.fill();
+  });
+  // 판토그래프(마름모 선)
+  const p0 = R(-L2 + 10, 0), p1 = R(-L2 + 4, 0, TH + 7), p2 = R(-L2 + 16, 0, TH + 7);
+  c.strokeStyle = '#2a2846'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(p0[0], p0[1]); c.lineTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]); c.closePath(); c.stroke();
 }
