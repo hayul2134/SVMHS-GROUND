@@ -2193,7 +2193,7 @@ async function play(game) {
   if (game === 'ball') return playBall();
   if (game === 'commute') return playCommute();   // 등교하기!(2026-11-02 하율 "랭킹에서 제외, 게임이 아니라 서비스로") — GAMES·랭킹·티켓·키 설정과 따로
   if (game === 'judge') return playJudge();   // 복도의 심판(2026-11-02 시험판, 깃발 judge-game) — GAMES·랭킹·티켓과 따로
-  if (game === 'rhythm') return playRhythm();   // 방송실 리듬 배틀(2026-11-02 시험판, 깃발 rhythm-game) — GAMES·랭킹·티켓과 따로   // 체육 창고 정리!(2026-11-02 시험판, 깃발 ball-game) — GAMES·랭킹·티켓과 따로
+  if (game === 'rhythm') return playRhythm();   // 영상고 랩 배틀(2026-11-02 시험판, 깃발 rhythm-game) — GAMES·랭킹·티켓과 따로   // 체육 창고 정리!(2026-11-02 시험판, 깃발 ball-game) — GAMES·랭킹·티켓과 따로
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
   const fn = PLAYERS[game];
   if (!fn || !GAMES[game]) { staleReload(); return; }
@@ -2232,7 +2232,7 @@ async function playBall() {
     quitGame = () => M.destroy();
   } catch (e) { if (seq === playSeq && curGame === 'ball') gameFail(e); else console.error(e); }
 }
-/* 방송실 리듬 배틀(2026-11-02 하율 "프라이데이 나이트 펌킨 방식 — 내 화면에만", 미리보기 깃발 rhythm-game)
+/* 영상고 랩 배틀(2026-11-02 하율 "프라이데이 나이트 펌킨 방식 — 내 화면에만", 미리보기 깃발 rhythm-game)
    js/rhythm.js가 판·노래·판정을 다 함. 시험판이라 서버·랭킹 없이 이 기기 최고 정확도만 */
 let RHY = null;
 async function playRhythm() {
@@ -2244,7 +2244,7 @@ async function playRhythm() {
   }
   try { quitGame?.(); } catch (e) { console.error(e); }
   quitGame = null; curGame = 'rhythm'; ticket = null; reQuick = false;
-  const area = stage(ic('rhythm') + ' 방송실 리듬 배틀', '<p class="empty">불러오는 중…</p>');
+  const area = stage(ic('rhythm') + ' 영상고 랩 배틀', '<p class="empty">불러오는 중…</p>');
   try {
     if (!RHY) RHY = await import('./rhythm.js').catch(() => import('./rhythm.js?r=' + Date.now()));
     if (seq !== playSeq || !area.isConnected) return;

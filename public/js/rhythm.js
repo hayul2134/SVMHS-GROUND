@@ -1,4 +1,4 @@
-// SVMHS GROUND — 방송실 리듬 배틀(2026-11-02 하율: "프라이데이 나이트 펌킨 방식", 미리보기 깃발 rhythm-game)
+// SVMHS GROUND — 영상고 랩 배틀(옛 이름 방송실 리듬 배틀 → 2026-11-02 22:24 하율 "영상고 랩 배틀로", 처음 2026-11-02 하율: "프라이데이 나이트 펌킨 방식", 미리보기 깃발 rhythm-game)
 // 2차(같은 날 하율 "디벨롭 — 바로 출시해도 될 정도로, FNF를 많이 참고"): FNF의 구조를 따름 —
 //   스토리 모드(방송부 주간 3곡 연속)·자유 플레이·난이도 3단(노트 수·속도)·상대/내 화살표 줄·카메라가 부르는 사람 쪽으로·마디마다 줌 쿵
 //   아래 체력 바 + 얼굴 아이콘(박자마다 통통, 지면 울상)·판정 4단(완벽/좋아/아쉬워/별로)+콤보 숫자·완벽 판정 물보라·놓치면 내 캐릭터가 파랗게
@@ -34,7 +34,7 @@ const CH = {
   stu: { name: '전교 1등', body: '#f4f4f8', body2: '#c8ccd8', pants: '#3a4270', hair: '#222230', skin: '#ffdcbc', hs: 'short', acc: 'glasses', capC: '#fff', wave: 'square', lp: 2000 },
   ed: { name: '편집부 선배', body: '#4a4e6e', body2: '#363a56', pants: '#22263e', hair: '#7a5cff', skin: '#f7d2b0', hs: 'spike', acc: 'headset', capC: '#3a3d5c', wave: 'sawtooth', lp: 1800 },
   dc: { name: '댄스부 에이스', body: '#ff4fa0', body2: '#d93583', pants: '#2a2846', hair: '#ffd84a', skin: '#ffdcbc', hs: 'bob', acc: 'cap', capC: '#2a2846', wave: 'square', lp: 2400 },
-  lee: { name: 'MR.LEE', body: '#24242e', body2: '#3a3a48', pants: '#1c1c26', hair: '#141418', skin: '#f2c9a4', hs: 'curly', acc: 'shades', capC: '#141418', jaw: 1, tall: 80, torso: 70, chain: 1, wave: 'sawtooth', lp: 1300, oct: -12 },
+  lee: { name: 'MR.LEE', body: '#24242e', body2: '#3a3a48', pants: '#1c1c26', hair: '#141418', skin: '#f2c9a4', hs: 'wavy', acc: 'shades', capC: '#141418', jaw: 1, tall: 80, torso: 70, chain: 1, wave: 'sawtooth', lp: 1300, oct: -12 },
   fr: { name: '친구', body: '#ffb84d', body2: '#e8962a', pants: '#33406e', hair: '#5a3a2a', skin: '#ffdcbc', hs: 'bob', acc: 'none', capC: '#fff' },
 };
 const GREY = { body: '#6d7fbd', body2: '#56669f', pants: '#3a4270', hair: '#2d3460', skin: '#c7cfee', capC: '#8d9ad0' };
@@ -413,7 +413,7 @@ export function createRhythm(el, O = {}) {
   function paintMenu() {
     const m = M.build(); M.cfg = m; if (M.sel >= m.items.length) M.sel = 0;
     let h = `<div class="rb-m${m.cls ? ' ' + m.cls : ''}">`;
-    if (m.logo) h += '<b class="rb-logo">방송실<br>리듬 배틀</b><p class="rb-ms">쉬는 시간, 방송실에서 한 판!</p>';
+    if (m.logo) h += '<b class="rb-logo">영상고<br>랩 배틀</b><p class="rb-ms">방송실부터 대강당까지, 랩으로 한 판!</p>';
     if (m.title) h += `<b class="rb-mt">${m.title}</b>`;
     if (m.sub) h += `<p class="rb-ms">${m.sub}</p>`;
     if (m.extra) h += m.extra;
@@ -620,12 +620,17 @@ export function createRhythm(el, O = {}) {
     }
     cx.beginPath();
     if (c.hs === 'curly') { /* 위에서 그림 */ }
+    else if (c.hs === 'wavy') {   // 반곱슬(22:24 하율): 볼륨 있는 둥근 윗머리 + 물결 앞머리
+      cx.moveTo(-74, 16); cx.lineTo(-76, -16); cx.arc(0, -16, 76, Math.PI, Math.PI * 2); cx.lineTo(74, 16);
+      cx.quadraticCurveTo(66, -12, 50, -22); cx.quadraticCurveTo(38, -40, 25, -27); cx.quadraticCurveTo(12, -42, 0, -29); cx.quadraticCurveTo(-12, -44, -25, -27); cx.quadraticCurveTo(-38, -40, -50, -22); cx.quadraticCurveTo(-66, -12, -74, 16); cx.closePath();
+    }
     else if (c.hs === 'flat') { if (cx.roundRect) cx.roundRect(-72, -96, 144, 66, [18, 18, 6, 6]); else cx.rect(-72, -96, 144, 66); }
     else if (c.hs === 'spike') {
       cx.moveTo(-67, -2); for (let i = 1; i < 8; i++) { const a = Math.PI + i * Math.PI / 8, r = i % 2 ? 90 : 62; cx.lineTo(Math.cos(a) * r, Math.sin(a) * r - 4); }
       cx.lineTo(67, -2); cx.lineTo(50, -18); cx.quadraticCurveTo(0, -36, -50, -18); cx.closePath();
     } else if (c.hs !== 'curly') { const a0 = Math.PI * 1.04, a1 = Math.PI * 1.96; cx.arc(0, -2, 69, a0, a1); cx.quadraticCurveTo(face * 14, -42, Math.cos(a0) * 69, Math.sin(a0) * 69 - 2); cx.closePath(); }
     if (c.hs !== 'curly') inkFill(pal.hair);
+    if (c.hs === 'wavy') { cx.strokeStyle = 'rgba(255,255,255,.14)'; cx.lineWidth = 4; for (const [x, y] of [[-34, -66], [6, -76], [42, -64]]) { cx.beginPath(); cx.arc(x, y, 16, Math.PI * 1.05, Math.PI * 1.75); cx.stroke(); } }
     const ex = face * 12 + lx, ey = 2 + ly;
     if (mood === 3) { cx.strokeStyle = INK; cx.lineWidth = 5; for (const s of [-1, 1]) { const x = ex + s * 22; cx.beginPath(); cx.moveTo(x - 7, ey - 7); cx.lineTo(x + 7, ey + 7); cx.moveTo(x + 7, ey - 7); cx.lineTo(x - 7, ey + 7); cx.stroke(); } }
     else for (const s of [-1, 1]) { cx.beginPath(); cx.ellipse(ex + s * 22, ey, 7.5, mood === 2 ? 5 : 10, 0, 0, 7); cx.fillStyle = INK; cx.fill(); cx.beginPath(); cx.arc(ex + s * 22 + 2.5, ey - 3.5, 2.6, 0, 7); cx.fillStyle = '#fff'; cx.fill(); }
@@ -928,7 +933,7 @@ export function createRhythm(el, O = {}) {
     ic(G.opp, split - 26, G.hp > 0.8 ? 2 : 0, 1); ic(CH.me, split + 26, G.hp < 0.2 ? 2 : 0, -1);
     const a = accP(G), [gn] = grade(a, G.cnt[4], !G.cnt[4] && !G.cnt[1] && !G.cnt[2] && !G.cnt[3]);
     txt(`점수 ${fmt(G.score)}  ·  놓침 ${G.cnt[4]}  ·  ${G.wN ? a.toFixed(2) + '% (' + gn + ')' : '-'}`, W / 2, opt.down ? by + 36 : by - 22, Math.min(18, W * 0.032), '#fff');
-    txt(G.S.name + ' · ' + DIFFS[G.d].n, opt.down ? 60 : 22, opt.down ? 24 : H - 16, 14, 'rgba(255,255,255,.75)', 'left');
+    txt(G.S.name + ' · ' + DIFFS[G.d].n, opt.down ? 104 : 22, opt.down ? 24 : H - 16, 14, 'rgba(255,255,255,.75)', 'left');
     cx.restore();
     if (touchUI) {   // 터치 칸 표시(FNF 모바일 히트박스처럼)
       for (let l = 0; l < 4; l++) { const x = l * W / 4; cx.fillStyle = G.held[l] ? COL[l] + '30' : 'rgba(255,255,255,.025)'; cx.fillRect(x + 1, 0, W / 4 - 2, H); cx.fillStyle = COL[l] + (G.held[l] ? 'cc' : '55'); cx.fillRect(x + 6, opt.down ? 0 : H - 5, W / 4 - 12, 5); }
