@@ -300,17 +300,26 @@ export function createDance(root, opts = {}) {
   /* --- 선생님(고무호스): 60대, 숱 많은 은발, 네모 안경, 니트 조끼·넥타이, 나무 막대기 --- */
   const TS = 1.0, TF = 334;   // 크기 · 발 높이
   function teacherHair(x, y, r, back, turn = 0) {
-    // 구름처럼 부푼 은발(물결 덩어리 여러 개)
-    const puffs = back ? [[-0.72, -0.05, 0.42], [-0.45, -0.55, 0.48], [0.05, -0.72, 0.5], [0.5, -0.5, 0.46], [0.75, 0, 0.4], [-0.42, 0.42, 0.42], [0.42, 0.42, 0.42], [0, 0.3, 0.55]]
-      : [[-0.95, 0.05, 0.45], [-0.6, -0.6, 0.55], [0, -0.85, 0.6], [0.6, -0.65, 0.55], [0.95, -0.05, 0.45]];
+    // 반곱슬 은발(2026-11-02 하율 "동글동글 말고 아예 모양을 바꿔"): 동그란 덩어리 대신 한 덩어리 머리 + 낮은 물결 윤곽 + 길게 흐르는 S자 결
     ctx.save(); ctx.translate(x - turn * r * 0.15, y);
-    ctx.beginPath(); for (const [px, py, pr] of puffs) { ctx.moveTo(px * r + pr * r, py * r); ctx.arc(px * r, py * r, pr * r, 0, Math.PI * 2); }
-    ctx.lineWidth = LW * 2; ctx.strokeStyle = K; ctx.stroke(); ctx.fillStyle = '#e3e6ec'; ctx.fill();
-    ctx.fillStyle = '#c3c8d2'; for (const [px, py, pr] of puffs) { ell(px * r + pr * r * 0.25, py * r + pr * r * 0.3, pr * r * 0.55, pr * r * 0.4); ctx.fill(); }
-    // 반곱슬(2026-11-02 하율 "약간 곱슬" → "너무 뽀글, 약간 반곱슬"): 덩어리마다 부드러운 물결 한 줄
-    ctx.strokeStyle = '#b3b9c5'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-    puffs.forEach(([px, py, pr], i) => { const cx = px * r, cy = py * r + pr * r * 0.05, w = pr * r * 0.55, d = (i % 2 ? 1 : -1) * pr * r * 0.18; ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.quadraticCurveTo(cx - w / 2, cy - d, cx, cy); ctx.quadraticCurveTo(cx + w / 2, cy + d, cx + w, cy); ctx.stroke(); });
-    ctx.fillStyle = '#ffffff'; ell(-r * 0.35, -r * 0.75, r * 0.28, r * 0.12, -0.4); ctx.fill();
+    const wav = (a, rx, ry, cy, amp = 0.045, n = 9) => { const q = 1 + amp * Math.sin(a * n); return [Math.cos(a) * rx * q, cy + Math.sin(a) * ry * q]; };
+    ctx.beginPath();
+    if (back) {   // 뒤통수 전체를 덮고 목덜미에서 물결치며 끝남
+      for (let a = Math.PI * 0.82; a <= Math.PI * 2.18; a += 0.05) { const [px, py] = wav(a, r * 1.1, r * 1.02, -r * 0.12); a <= Math.PI * 0.83 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+      ctx.quadraticCurveTo(r * 0.55, r * 0.95, r * 0.15, r * 0.78); ctx.quadraticCurveTo(-r * 0.2, r * 0.98, -r * 0.6, r * 0.82); ctx.closePath();
+    } else {   // 정수리·옆머리, 이마 위 가르마와 살짝 내려온 앞머리 물결
+      for (let a = Math.PI * 0.94; a <= Math.PI * 2.06; a += 0.05) { const [px, py] = wav(a, r * 1.12, r * 0.98, -r * 0.08); a <= Math.PI * 0.95 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+      ctx.quadraticCurveTo(r * 0.98, r * 0.3, r * 0.82, r * 0.05);
+      ctx.quadraticCurveTo(r * 0.78, -r * 0.42, r * 0.3, -r * 0.5); ctx.quadraticCurveTo(r * 0.05, -r * 0.38, -r * 0.2, -r * 0.55);
+      ctx.quadraticCurveTo(-r * 0.62, -r * 0.62, -r * 0.8, -r * 0.3); ctx.quadraticCurveTo(-r * 0.9, r * 0.05, -r * 0.85, r * 0.25); ctx.closePath();
+    }
+    ctx.fillStyle = '#e3e6ec'; ctx.fill(); ctx.lineWidth = LW * 1.6; ctx.strokeStyle = K; ctx.lineJoin = 'round'; ctx.stroke();
+    // 그늘(아래쪽) · 결(S자) · 윤기
+    ctx.save(); ctx.clip(); ctx.fillStyle = '#c9ced8'; ctx.beginPath(); ctx.ellipse(r * 0.25, back ? r * 0.55 : r * 0.1, r * 1.1, r * 0.55, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = '#a9afbc'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    const strands = back ? [[-0.6, -0.75, -0.7, 0.55], [-0.15, -0.95, -0.2, 0.7], [0.3, -0.9, 0.35, 0.65], [0.7, -0.6, 0.75, 0.45]] : [[-0.55, -0.85, -0.85, -0.05], [0.1, -1.0, -0.15, -0.55], [0.55, -0.85, 0.85, -0.05]];
+    for (const [x0, y0, x1, y1] of strands) { const mx = (x0 + x1) / 2 * r, my = (y0 + y1) / 2 * r; ctx.beginPath(); ctx.moveTo(x0 * r, y0 * r); ctx.quadraticCurveTo(mx + r * 0.16, (y0 * r + my) / 2, mx, my); ctx.quadraticCurveTo(mx - r * 0.16, (my + y1 * r) / 2, x1 * r, y1 * r); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.2, r * 0.75, Math.PI * 1.2, Math.PI * 1.45); ctx.stroke();
     ctx.restore();
   }
   function drawTeacher() {
