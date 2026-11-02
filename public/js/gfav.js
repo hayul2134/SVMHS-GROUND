@@ -5,7 +5,7 @@ import { $, store } from './util.js';
 
 const KEY = 'gfav';
 const grid = $('#apps .catgrid.gm5');
-const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.75 5.6 6.15.9-4.45 4.35 1.05 6.12L12 16.9l-5.5 2.87 1.05-6.12L3.1 9.3l6.15-.9z"/></svg>';
+const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.46 4.00Q12.00 2.70 12.54 4.00L14.38 8.40Q14.70 9.18 15.54 9.25L20.30 9.63Q21.70 9.75 20.64 10.66L17.01 13.77Q16.37 14.32 16.57 15.14L17.67 19.79Q18.00 21.15 16.80 20.42L12.72 17.94Q12.00 17.50 11.28 17.94L7.20 20.42Q6.00 21.15 6.33 19.79L7.43 15.14Q7.63 14.32 6.99 13.77L3.36 10.66Q2.30 9.75 3.70 9.63L8.46 9.25Q9.30 9.18 9.62 8.40Z"/></svg>';
 
 if (grid) {
   const apps = [...grid.querySelectorAll('.gapp[data-play]')];
