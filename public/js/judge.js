@@ -834,13 +834,13 @@ export function createJudge(el, O = {}) {
     X.fillRect(zone.l, zone.t, w, 5); X.fillRect(zone.l, zone.b - 5, w, 5); X.fillRect(zone.l, zone.t, 5, h); X.fillRect(zone.r - 5, zone.t, 5, h);
   }
   function drawHud() {
-    txt(`${pname()}   3학년`, 32, 402, 22);
-    txt('체력', 250, 406, 18, '#fff', 'right', F9);
+    txt(`${pname()}   3학년`, 32, 401, 22);
+    txt('체력', 248, 403, 18, '#fff', 'right', F9);
     const bw = Math.floor(MAXHP * 1.2);
     X.fillStyle = '#c00000'; X.fillRect(256, 400, bw, 21);
     X.fillStyle = '#ff00ff'; X.fillRect(256, 400, bw * Math.max(0, hp) / MAXHP, 21);
     X.fillStyle = '#ffff00'; X.fillRect(256, 400, bw * Math.max(0, hp - kr) / MAXHP, 21);
-    txt(`${String(Math.max(0, hp)).padStart(2, '0')} / ${MAXHP}`, 256 + bw + 18, 402, 22, kr > 0 ? '#ff00ff' : '#fff');
+    txt(`${String(Math.max(0, hp)).padStart(2, '0')} / ${MAXHP}`, 256 + bw + 18, 401, 22, kr > 0 ? '#ff00ff' : '#fff');
     for (let i = 0; i < 4; i++) {
       const b = BTNS[i], on = menu?.kind === 'main' ? menu.sel === i : (menu && G.lastBtn === i), col = on ? YELLOW : ORANGE;
       X.fillStyle = col; X.fillRect(b.x, 432, 110, 3); X.fillRect(b.x, 471, 110, 3); X.fillRect(b.x, 432, 3, 42); X.fillRect(b.x + 107, 432, 3, 42);
