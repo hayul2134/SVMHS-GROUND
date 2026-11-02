@@ -3,7 +3,7 @@
 //   원작 보스전의 수치를 그대로 옮김 — 별(영혼) 속도 150(X 누르면 75)px/초, 파란 별 점프 180·손 떼면 −30으로 끊김·속도 구간별 중력(540/180/450/180)·최대 낙하 750,
 //   내려꽂기(330 이상이면 쿵+흔들림), 맞는 판정 = 별 가운데 점이 공격 안에 있을 때 1/30초마다 HP 1 + 벌점(자 6→2, 확성기 10→2, 최대 40, HP−1까지),
 //   벌점은 40/30/20/10/그 아래일 때 1/30·2/30·5/30·15/30·1초마다 HP 1, 상자 크기 480px/초, 확성기(날아와 자리 잡기 → 대기 → 쏘기 → 물러나며 가속).
-//   공격 순서·타이밍·위치 = judge-data.js 스크립트(원작 공격 24종을 줄 단위로 재현), 공격은 '공격'을 해야만 다음으로 넘어감(다른 행동은 같은 공격 반복).
+//   공격 순서·타이밍·위치 = judge-data.js 스크립트(원작 공격 24종을 줄 단위로 재현), 공격은 '반항'(원작의 FIGHT)을 해야만 다음으로 넘어감(다른 행동은 같은 공격 반복).
 //   1막 12턴 → 13번째에 쉬면서 봐주기 제안(누르면 함정) → 2막(메뉴에도 자가 찌름, 중간 지점 저장) → 필살기 → 선도부장이 졸면 상자를 밀어 '공격'까지 → 마지막 한 방.
 // 캐릭터·대사·그림·음악·효과음은 전부 새로 만듦(원작 파일·문구 안 씀). 그림 = judge-art.js(도트), 글꼴 = 갈무리(OFL, /fonts).
 // 서버·랭킹 없음 → 이 기기 기록만(sg_jd_rec · sg_jd_ck 중간 지점 · sg_jd_snd)
@@ -15,7 +15,7 @@ const VW = 640, VH = 480, DT = 1 / 60, MAXHP = 92;
 const F11 = '"JdGalmuri11", "Galmuri11", Jua, monospace', F9 = '"JdGalmuri9", "Galmuri9", Jua, monospace';
 const ORANGE = '#ff7f27', YELLOW = '#ffff00', BLUECOL = '#14a9ff', ORANGECOL = '#ffa040';
 const MENU_ZONE = [33, 251, 608, 391];
-const BTNS = [{ n: '공격', x: 32 }, { n: '행동', x: 184 }, { n: '가방', x: 344 }, { n: '자비', x: 496 }];
+const BTNS = [{ n: '반항', x: 32 }, { n: '행동', x: 184 }, { n: '가방', x: 344 }, { n: '자비', x: 496 }];
 const ITEMS0 = [['돈가스', 99, '급식 돈가스'], ['컵라면', 90, '컵라면'], ['떡볶이', 60, '떡볶이'], ['소시지빵', 40, '소시지빵'], ['소시지빵', 40, '소시지빵'], ['소시지빵', 40, '소시지빵'], ['소시지빵', 40, '소시지빵'], ['소시지빵', 40, '소시지빵']];
 // 공격 순서(원작과 같은 자리): 0 = 선공, 1~13 1막, 14~22 2막, 23 필살기
 const P1 = ['intro', 'bonegap1', 'bluebone', 'bonegap2', 'platforms1', 'platforms2', 'platforms3', 'platforms4', 'platformblaster', 'platforms4hard', 'bonegap1fast', 'boneslideh', 'bonegap2', 'platformblasterfast'];
@@ -648,7 +648,7 @@ export function createJudge(el, O = {}) {
     }
     if (heart.x <= I.l + .01 && held.L && zone.l > 20) { const d = Math.min(60 * dt, zone.l - 20); zone.l -= d; zone.r -= d; zone.tl = zone.l; zone.tr = zone.r; heart.x -= d; }
     if (zone.l <= 30 && heart.y >= I.b - .01 && held.D) { const d = 60 * dt; zone.t += d; zone.b += d; zone.tt = zone.t; zone.tb = zone.b; heart.y += d; }
-    // 별이 '공격' 버튼에 닿으면
+    // 별이 '반항' 버튼에 닿으면
     if (heart.x >= BTNS[0].x && heart.x <= BTNS[0].x + 110 && heart.y >= 432 && heart.y <= 474) {
       G.mode = 'final'; stall = null; zoneResize(...MENU_ZONE, () => startTarget(true)); zone.speed = 900; heart.vis = false;
     }
@@ -960,7 +960,7 @@ export function createJudge(el, O = {}) {
     txt('복도의 심판', 320, 258, 44, '#fff', 'center');
     if (G.mode === 'help') {
       ['방향키·화면 패드: 별 움직이기 (X 누르고 있으면 천천히)', 'Z/Enter 확인 · X 취소 · Esc 멈춤', '빨간 별: 자유롭게 · 파란 별: 중력! 점프는 ↑(길게 누르면 높이)',
-        '흰 자: 무조건 피하기 · 파란 자: 가만히 있으면 안 아픔', "'공격'을 해야 결투가 진행됨 · 맞은 뒤에도 체력이 천천히 더 깎임"].forEach((l, i) => txt(l, 320, 318 + i * 26, 18, '#c8c8c8', 'center', F9));
+        '흰 자: 무조건 피하기 · 파란 자: 가만히 있으면 안 아픔', "'반항'을 해야 결투가 진행됨 · 맞은 뒤에도 체력이 천천히 더 깎임"].forEach((l, i) => txt(l, 320, 318 + i * 26, 18, '#c8c8c8', 'center', F9));
       txt('Z: 돌아가기', 320, 454, 18, '#808080', 'center', F9); return;
     }
     titleOpts().forEach((o, i) => { const on = i === G.sel; txt(o.n, 320, 312 + i * 32, 22, on ? YELLOW : '#fff', 'center'); if (on) { X.font = `22px ${F11}`; img(ART.star.red, 320 - X.measureText(o.n).width / 2 - 26, 315 + i * 32, 1); } });
