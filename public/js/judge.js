@@ -48,8 +48,10 @@ export function createJudge(el, O = {}) {
     <div class="jd-pad" hidden><div class="jd-dp"><button type="button" data-k="U">▲</button><button type="button" data-k="L">◀</button><button type="button" data-k="R">▶</button><button type="button" data-k="D">▼</button></div>
     <div class="jd-ab"><button type="button" data-k="X">X</button><button type="button" data-k="Z">Z</button></div></div>
     <input class="jd-name" type="text" maxlength="6" autocomplete="off" spellcheck="false" aria-label="이름" hidden><button type="button" class="jd-ib jd-snd" aria-label="소리"></button><button type="button" class="jd-ib jd-fs" aria-label="전체 화면"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    <button type="button" class="btn jd-re">↻ 다시 하기</button>
     <p class="jd-bar">방향키 이동 · Z/Enter 확인 · X/Shift 취소(누르고 있으면 천천히) · Esc 멈춤 · 파란 별: ↑ 점프 · 파란 자: 가만히 있으면 안 아픔</p></div>`;
   const wrap = el.querySelector('.jd-wrap'), cv = el.querySelector('.jd-cv'), X = cv.getContext('2d'), pad = el.querySelector('.jd-pad');
+  const reB = el.querySelector('.jd-re'), barP = el.querySelector('.jd-bar');
   const sndB = el.querySelector('.jd-snd'), fsB = el.querySelector('.jd-fs'), nameIn = el.querySelector('.jd-name');
   const ART = buildArt();
   let S = 1, alive = true, raf = 0, last = 0, acc = 0, paused = false;
@@ -68,7 +70,16 @@ export function createJudge(el, O = {}) {
   function fit() {
     let w, h;
     if (isFs()) { w = innerWidth; h = innerHeight; }
-    else { w = Math.min(el.clientWidth || 640, 1280); const top = Math.max(8, wrap.getBoundingClientRect().top); h = Math.max(300, innerHeight - top - 46); }
+    else {
+      // 2026-11-03 하율: 아래 '다시 하기' 버튼까지 스크롤 없이 한 화면에(아래 여백 24px) — 넘치면 넘친 만큼 게임 화면을 줄임
+      w = Math.min(el.clientWidth || 640, 1280); const top = Math.max(8, wrap.getBoundingClientRect().top);
+      const below = reB.offsetHeight + barP.offsetHeight + 6 * 2 + 5 + 24;
+      h = Math.max(240, innerHeight - top - below);
+    }
+    apply(w, h);
+    if (!isFs()) { const over = document.documentElement.scrollHeight - innerHeight; if (over > 0) apply(w, Math.max(240, h - over)); }
+  }
+  function apply(w, h) {
     let k = Math.min(w / VW, h / VH); if (k >= 1) k = Math.floor(k * 2) / 2;   // 큰 화면은 0.5배 단위로(도트 균일)
     const D = Math.min(2, window.SG_DPR || devicePixelRatio || 1);
     cv.width = Math.round(VW * k * D); cv.height = Math.round(VH * k * D); cv.style.width = Math.round(VW * k) + 'px'; cv.style.height = Math.round(VH * k) + 'px';
@@ -1003,6 +1014,14 @@ export function createJudge(el, O = {}) {
   }
 
   /* ── 루프 ── */
+  // 다시 하기: 언제 눌러도 처음부터 새 판(멈춤·이름 입력 정리)
+  reB.onclick = () => {
+    reB.blur(); nameClose();
+    if (paused) { paused = false; AC?.resume?.(); }
+    for (const k in held) held[k] = 0;
+    menu = null; bubble = null; target = null; strike = null; dmgText = null; popTexts = []; winT = 0; pr.clear(); rel.clear();
+    if (pname(true)) newRun(false); else nameOpen(() => newRun(false));
+  };
   function togglePause() { if (['title', 'help', 'win', 'dead', 'name', 'nameok'].includes(G.mode)) return; paused = !paused; for (const k in held) held[k] = 0; if (AC) { paused ? AC.suspend?.() : AC.resume?.(); } }
   const vis = () => { if (document.hidden && !paused) togglePause(); };
   const blur = () => { clearKeys(); if (!paused && ['attack', 'stall'].includes(G.mode)) togglePause(); };
