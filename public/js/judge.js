@@ -77,7 +77,12 @@ export function createJudge(el, O = {}) {
       h = Math.max(240, innerHeight - top - below);
     }
     apply(w, h);
-    if (!isFs()) { const over = document.documentElement.scrollHeight - innerHeight; if (over > 0) apply(w, Math.max(240, h - over)); }
+    // 게임은 position:fixed인 .play 안에서 스크롤됨 — 문서(홈 화면) 높이가 아니라 .play와 이 게임 상자 아래끝으로 넘침을 잼
+    if (!isFs()) {
+      const sc = el.closest('.play'), bot = el.getBoundingClientRect().bottom + 24 - innerHeight;
+      const over = Math.ceil(Math.max(bot, sc ? sc.scrollHeight - sc.clientHeight : 0));
+      if (over > 0) apply(w, Math.max(240, h - over));
+    }
   }
   function apply(w, h) {
     let k = Math.min(w / VW, h / VH); if (k >= 1) k = Math.floor(k * 2) / 2;   // 큰 화면은 0.5배 단위로(도트 균일)
