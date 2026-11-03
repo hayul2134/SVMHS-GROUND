@@ -91,7 +91,8 @@ export function createJudge(el, O = {}) {
     S = k * D;
   }
   fsB.onclick = () => { fsB.blur(); try { if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else (wrap.requestFullscreen || wrap.webkitRequestFullscreen).call(wrap)?.catch?.(() => {}); } catch {} };
-  const onFs = () => { fit(); setTimeout(fit, 120); setTimeout(fit, 400); };
+  const fitAll = () => { fit(); placeName(); };
+  const onFs = () => { fitAll(); setTimeout(fitAll, 120); setTimeout(fitAll, 400); };
   document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
 
   /* ── 소리(Web Audio로 직접 합성) ── */
@@ -778,7 +779,7 @@ export function createJudge(el, O = {}) {
     G.mode = 'name'; G.nameAfter = after; nameIn.value = pname(true); nameIn.hidden = false; placeName();
     setTimeout(() => { try { nameIn.focus(); nameIn.select(); } catch {} }, 0);
   }
-  function placeName() { const k = cv.clientWidth / VW || 1; nameIn.style.fontSize = Math.round(30 * k) + 'px'; nameIn.style.top = Math.round(214 * k) + 'px'; }
+  function placeName() { const k = cv.clientWidth / VW || 1; nameIn.style.fontSize = Math.round(30 * k) + 'px'; nameIn.style.top = Math.round(cv.offsetTop + 214 * k) + 'px'; }   // 전체 화면이면 캔버스가 가운데로 내려가므로 offsetTop 더함
   function nameClose() { nameIn.hidden = true; nameIn.blur(); }
   function nameDone() { const v = cleanName(nameIn.value); if (!v) { play('move'); return; } G.nameVal = v; G.nameT = 0; G.nameSel = 1; nameClose(); G.mode = 'nameok'; play('select'); }
   function titleOpts() {
