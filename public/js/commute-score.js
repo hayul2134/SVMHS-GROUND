@@ -105,3 +105,9 @@ export function scoreOf(r) {
   }
   return { v: Math.max(1, Math.round(sum * 100 / keys)), keys, ms: sum, miss };
 }
+// 가장 긴 길·가장 짧은 길(2026-11-03 3차 하율, keysOf를 쓰므로 파일 끝에): 역 수 → 칠 타 수로 비교, [역 이름, 역 수]
+export const EXTREMES = (() => {
+  const L = [...new Set(PICK.flatMap(([, G]) => G.flatMap(([, a]) => a)))].map(n => [n, stopsOfRoute(routeFrom(n))]).filter(([, s]) => s)
+    .map(([n, s]) => [n, s.length - 1, s.slice(1).reduce((k, x) => k + keysOf(x.n), 0)]).sort((a, b) => a[1] - b[1] || a[2] - b[2]);
+  return { short: L[0].slice(0, 2), long: L[L.length - 1].slice(0, 2) };
+})();

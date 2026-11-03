@@ -7,7 +7,7 @@
 //   ② 화면 자판(터치): 투명 입력칸 + IME → 입력칸 값을 자모로 풀어 판정, 틀리면 칸을 비우고 다시 포커스(조합 초기화)
 // 노선 고르기(같은 날 하율 "노선도를 자기가 설정"): 안내 화면에서 10개 중 고르거나 무작위 — 이 기기에 기억(sg_commute_rt)
 //   출발역 직접 고르기(2026-11-03 하율 "출발 지점을 마음대로 설정"): 역 이름(문자열)을 저장 → routeFrom이 신정까지 가장 빠른 길을 만듦
-import { LINES, GOAL, ROUTES, PICK, linesAt, stopsOfRoute, routeFrom, keysOf, tpmOf } from './commute-score.js';
+import { LINES, GOAL, ROUTES, PICK, EXTREMES, linesAt, stopsOfRoute, routeFrom, keysOf, tpmOf } from './commute-score.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';
 import { createMap, seqOf, partial, KEYMAP, KEYMAP_S } from './commute-map.js';
 import { store } from './util.js';
@@ -57,30 +57,51 @@ export function createCommute(el, O = {}) {
     phase = 'intro';
     const cur0 = typeof pref === 'string' ? pref : '';
     let tab = cur0 ? (PICK.find(([, G]) => G.some(([, a]) => a.includes(cur0))) || PICK[0])[0] : 5;
+    const qb = (q, t, sub) => `<button type="button" class="cm-q ${q}" data-q="${q}"><b>${t}</b><small>${sub}</small></button>`;
     st.innerHTML = `<div class="cm-intro"><b>등교하기!</b><p>지하철을 타고 학교 앞 <em>신정역</em>까지!<br>다음 역 이름을 한 타씩 치면 열차가 달려요</p>
-      <div class="cm-pick"><div class="cm-tabs" role="tablist"><button type="button" class="cm-rand" id="cmRand">무작위</button>${PICK.map(([l]) => `<button type="button" class="cm-tab" role="tab" data-tab="${l}">${chip(l)}<span>${esc(LINES[l][0])}</span></button>`).join('')}</div>
+      <div class="cm-pick"><div class="cm-qs">${qb('rand', '무작위', '매번 다른 역에서')}${qb('long', '가장 긴 길', `${esc(EXTREMES.long[0])} · ${EXTREMES.long[1]}역`)}${qb('short', '가장 짧은 길', `${esc(EXTREMES.short[0])} · ${EXTREMES.short[1]}역`)}</div>
+        <div class="cm-or"><span>또는 출발역 직접 고르기</span></div>
+        <div class="cm-tabs" role="tablist">${PICK.map(([l]) => `<button type="button" class="cm-tab" role="tab" data-tab="${l}">${chip(l)}<span>${esc(LINES[l][0])}</span></button>`).join('')}</div>
         <div class="cm-sts" id="cmSts"></div><div class="cm-sel" id="cmSel"></div></div>
       <small>틀린 타는 안 써지고 오타로 세요 · 평균 타수가 기록</small><button type="button" class="btn big" id="cmGo">탑승하기</button></div>`;
     const sts = $('#cmSts'), sel = $('#cmSel');
+    // 역 줄: 실제 노선도처럼 한 줄로 이어지게 — 줄 끝에서 U자로 꺾여 다음 줄로(지그재그), 칸 수는 폭에 맞춤
+    const node = n => n === GOAL
+      ? `<span class="cm-nd goal" data-col><i></i><b>${esc(n)}</b><small>학교</small></span>`
+      : `<button type="button" class="cm-nd${n === pref ? ' on' : ''}${linesAt(n).length > 1 ? ' x' : ''}" data-st="${esc(n)}" data-col><i></i><b>${esc(n)}</b>${linesAt(n).length > 1 ? `<span>${linesAt(n).filter(x => x !== tab).map(chip).join('')}</span>` : ''}</button>`;
+    const snake = (a, cols) => {
+      const rows = []; for (let i = 0; i < a.length; i += cols) rows.push(a.slice(i, i + cols));
+      return `<div class="cm-snake" data-cols="${cols}">${rows.map((r, ri) => {
+        const rev = ri % 2, last = ri === rows.length - 1, pos = k => ((rev ? cols - 1 - k : k) + .5) / cols * 100;
+        const x1 = ri ? (rev ? 100 : 0) : pos(0), x2 = last ? pos(r.length - 1) : (rev ? 0 : 100);
+        return `<div class="cm-lr" data-a="${Math.min(x1, x2)}" data-b="${Math.max(x1, x2)}">${last ? '' : `<i class="cm-turn ${rev ? 'l' : 'r'}"></i>`}<em class="cm-bar"></em>${r.map((n, k) => node(n).replace('data-col', `data-col="${rev ? cols - k : k + 1}"`)).join('')}</div>`;
+      }).join('')}</div>`;
+    };
     const paintPick = () => {
       st.querySelectorAll('.cm-tab').forEach(b => { const o = +b.dataset.tab === tab; b.classList.toggle('on', o); b.setAttribute('aria-selected', o); });
-      $('#cmRand').classList.toggle('on', typeof pref !== 'string');
-      const G = PICK.find(([l]) => l === tab)[1];
-      sts.innerHTML = G.map(([t, a]) => `${t ? `<div class="cm-sub">${esc(t)}</div>` : ''}<div class="cm-row">${a.map(n => n === GOAL
-        ? `<span class="cm-stn goal"><i></i>${esc(n)}<small>학교</small></span>`
-        : `<button type="button" class="cm-stn${n === pref ? ' on' : ''}" data-st="${esc(n)}"><i></i>${esc(n)}${linesAt(n).filter(x => x !== tab).map(chip).join('')}</button>`).join('')}</div>`).join('');
-      sts.style.setProperty('--c', LINES[tab][1]); paintChips(sts);
+      const q = typeof pref !== 'string' ? 'rand' : pref === EXTREMES.long[0] ? 'long' : pref === EXTREMES.short[0] ? 'short' : '';
+      st.querySelectorAll('.cm-q').forEach(b => b.classList.toggle('on', b.dataset.q === q));
+      const G = PICK.find(([l]) => l === tab)[1], cols = Math.max(3, Math.min(9, Math.floor((sts.clientWidth - 56) / 86)));
+      sts.innerHTML = G.map(([t, a]) => `${t ? `<div class="cm-sub">${esc(t)}</div>` : ''}${snake(a, cols)}`).join('');
+      sts.style.setProperty('--c', LINES[tab][1]);
+      sts.querySelectorAll('.cm-snake').forEach(x => x.style.setProperty('--cols', x.dataset.cols));
+      sts.querySelectorAll('.cm-lr').forEach(r => { const b = r.querySelector('.cm-bar'); b.style.left = r.dataset.a + '%'; b.style.width = (r.dataset.b - r.dataset.a) + '%'; });
+      sts.querySelectorAll('[data-col]').forEach(x => { x.style.gridColumn = x.dataset.col; });
+      paintChips(sts);
       sel.innerHTML = typeof pref === 'string'
         ? `${stops.filter((s, i) => !i || s.x).map(s => chip(s.x || s.l)).join('')}<b>${esc(stops[0].n)} → ${esc(GOAL)}</b><span>${N}개 역 · 갈아타기 ${stops.filter(s => s.x).length}번</span>`
-        : '<b>무작위</b><span>탈 때마다 다른 역에서 출발해요 · 역을 누르면 거기서 출발</span>';
+        : '<b>무작위</b><span>탈 때마다 다른 역에서 출발해요</span>';
       paintChips(sel);
     };
     const setPref = v => { pref = v; store.set('commute_rt', pref); pickRoute(); p = pT = 0; paintHead(); paintPick(); sfx.tone(660, .05, 'triangle', .035); };
     paintChips(st); paintPick();
-    st.querySelector('.cm-tabs').onclick = e => {
-      if (e.target.closest('#cmRand')) return setPref(-1);
-      const b = e.target.closest('[data-tab]'); if (b) { tab = +b.dataset.tab; paintPick(); }
+    on(window, 'resize', () => { if (phase === 'intro') paintPick(); });
+    $('.cm-qs').onclick = e => {
+      const b = e.target.closest('[data-q]'); if (!b) return;
+      const q = b.dataset.q; if (q === 'rand') return setPref(-1);
+      const n = EXTREMES[q][0]; tab = (PICK.find(([, G]) => G.some(([, a]) => a.includes(n))) || PICK[0])[0]; setPref(n);
     };
+    $('.cm-tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) { tab = +b.dataset.tab; paintPick(); } };
     sts.onclick = e => { const b = e.target.closest('[data-st]'); if (b && routeFrom(b.dataset.st)) setPref(b.dataset.st); };
     $('#cmGo').onclick = () => ride();
   };
