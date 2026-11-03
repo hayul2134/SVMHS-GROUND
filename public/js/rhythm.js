@@ -189,6 +189,10 @@ export function createRhythm(el, O = {}) {
     barT.textContent = `키 ${opt.keys.map(a => a.filter(Boolean).map(keyName).join('/')).join(' · ')} · 터치는 화면을 세로 4칸으로 나눠 누르기 · Enter·Esc 멈춤`;
   }
   rebuildKeys();
+  const SPD_MIN = 0.5, SPD_MAX = 2.5;   // 2026-11-03 하율 "노트 속도 슬라이더" — 난이도 속도에 곱하는 배율(판정·노래는 그대로, 보이는 속도만)
+  const spdOf = v => Math.round(Math.min(SPD_MAX, Math.max(SPD_MIN, +v || 1)) * 10) / 10;
+  opt.spd = spdOf(opt.spd);
+  const spdTxt = () => opt.spd.toFixed(1) + '배' + (opt.spd === 1 ? ' (기본)' : '');
   let off = +store.get('rb_off', 0) || 0, diff = +store.get('rb_diff', 1);
   if (!(diff >= 0 && diff <= 2)) diff = 1;
   const rec = store.get('rb_rec', {}) || {}, week = store.get('rb_week', {}) || {};
@@ -426,15 +430,24 @@ export function createRhythm(el, O = {}) {
     if (m.sub) h += `<p class="rb-ms">${m.sub}</p>`;
     if (m.extra) h += m.extra;
     if (m.diff) h += `<div class="rb-df"><button type="button" class="rb-da" data-d="-1" aria-label="쉽게">◀</button><b class="rb-dn d${diff}">${DIFFS[diff].n}</b><button type="button" class="rb-da" data-d="1" aria-label="어렵게">▶</button></div>`;
-    h += '<div class="rb-mi">' + m.items.map((it, i) => `<button type="button" class="rb-it${i === M.sel ? ' on' : ''}" data-i="${i}"><span>${it.lbl}</span>${it.sub ? `<small>${it.sub}</small>` : ''}</button>`).join('') + '</div>';
+    h += '<div class="rb-mi">' + m.items.map((it, i) => it.sl ? `<div class="rb-it rb-sl${i === M.sel ? ' on' : ''}" data-i="${i}"><span>${it.lbl} <em class="rb-sv">${spdTxt()}</em></span><div class="rb-slr"><button type="button" class="rb-da" data-s="-1" aria-label="느리게">◀</button><input type="range" class="rb-rng" min="${SPD_MIN}" max="${SPD_MAX}" step="0.1" value="${opt.spd}" aria-label="노트 속도"><button type="button" class="rb-da" data-s="1" aria-label="빠르게">▶</button></div><small>${it.sub}</small></div>` : `<button type="button" class="rb-it${i === M.sel ? ' on' : ''}" data-i="${i}"><span>${it.lbl}</span>${it.sub ? `<small>${it.sub}</small>` : ''}</button>`).join('') + '</div>';
     if (m.foot) h += `<p class="rb-mf">${m.foot}</p>`;
     ov.innerHTML = h + '</div>'; ov.hidden = false; pz.hidden = true;
     ov.querySelector('.rb-it.on')?.scrollIntoView?.({ block: 'nearest' });
   }
   function menuGo(i) { const it = M?.cfg?.items[i]; if (!it) return; M.sel = i; document.activeElement?.blur?.(); initAudio(); it.go(); }
+  function setSpd(v, save) {
+    opt.spd = spdOf(v); const sv = ov.querySelector('.rb-sv'), rg = ov.querySelector('.rb-rng');
+    if (sv) sv.textContent = spdTxt(); if (rg && +rg.value !== opt.spd) rg.value = opt.spd;
+    if (save) store.set('rb_opt', opt);
+  }
+  ov.addEventListener('input', e => { if (e.target.classList?.contains('rb-rng')) setSpd(e.target.value); });
+  ov.addEventListener('change', e => { if (e.target.classList?.contains('rb-rng')) { setSpd(e.target.value, 1); e.target.blur(); } });
   function setDiff(dd) { diff = (diff + dd + 3) % 3; store.set('rb_diff', diff); paintMenu(); }
   ov.addEventListener('click', e => {
     const d = e.target.closest('[data-d]'); if (d) { setDiff(+d.dataset.d); return; }
+    const sb = e.target.closest('[data-s]'); if (sb) { setSpd(opt.spd + 0.1 * sb.dataset.s, 1); return; }
+    if (e.target.closest('.rb-sl')) return;
     const b = e.target.closest('.rb-it'); if (b) menuGo(+b.dataset.i);
   });
   ov.addEventListener('pointerdown', e => { if (e.target.closest('.rb-tap')) { e.preventDefault(); calTap(); } });
@@ -455,6 +468,7 @@ export function createRhythm(el, O = {}) {
   const setOpt = k => { opt[k] = !opt[k]; store.set('rb_opt', opt); paintMenu(); };
   const mOpt = () => ({ title: '설정', items: [
     { lbl: '아래로 스크롤 ' + onOff(opt.down), sub: '화살표가 위에서 내려와요', go: () => setOpt('down') },
+    { sl: 1, lbl: '노트 속도', sub: '화살표가 오는 속도만 바뀌어요 · 판정·노래는 그대로', go: () => {} },
     { lbl: '빈 누르기 허용 ' + onOff(opt.ghost), sub: '끄면 원작처럼 화살표가 올 때 막 누르면 헛누름(기본 꺼짐)', go: () => setOpt('ghost') },
     { lbl: '타격음 ' + onOff(opt.hits), sub: '맞힐 때마다 딸깍', go: () => setOpt('hits') },
     { lbl: '메뉴 음악 ' + onOff(opt.music), sub: '첫 화면·게임 오버 배경 음악', go: () => setOpt('music') },
@@ -575,6 +589,7 @@ export function createRhythm(el, O = {}) {
     const n = m.items.length;
     if (e.code === 'ArrowUp' || e.code === 'KeyW') { M.sel = (M.sel - 1 + n) % n; paintMenu(); }
     else if (e.code === 'ArrowDown' || e.code === 'KeyS') { M.sel = (M.sel + 1) % n; paintMenu(); }
+    else if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && m.items[M.sel]?.sl) setSpd(opt.spd + (e.code === 'ArrowLeft' ? -0.1 : 0.1), 1);
     else if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && m.diff) setDiff(e.code === 'ArrowLeft' ? -1 : 1);
     else if (e.code === 'Enter' || e.code === 'Space') menuGo(M.sel);
     else if (e.code === 'Escape' || e.code === 'Backspace') m.back();
@@ -912,7 +927,7 @@ export function createRhythm(el, O = {}) {
     if (!playing || state === 'over' || state === 'result') return;
     // HUD(마디마다 쿵)
     const hz = 1 + cam.hz; cx.save(); cx.translate(W / 2, H / 2); cx.scale(hz, hz); cx.translate(-W / 2, -H / 2);
-    const spd = (H * 0.82) / G.appr, lw = L.lw;
+    const apr = G.appr / opt.spd, spd = (H * 0.82) / apr, lw = L.lw;
     const strum = (ccx, who) => {
       for (let l = 0; l < 4; l++) {
         const x = ccx + (l - 1.5) * lw;
@@ -921,7 +936,7 @@ export function createRhythm(el, O = {}) {
       }
       const list = who ? G.PN : G.ON;
       for (const n of list) {
-        const dtn = n.t - T; if (dtn > G.appr + 0.2) break; if (n.st === 2) continue;
+        const dtn = n.t - T; if (dtn > apr + 0.2) break; if (n.st === 2) continue;
         if (n.st === 3 && -(dtn + n.d) > 0.4) continue;
         const x = ccx + (n.lane - 1.5) * lw, yh = n.st === 1 ? L.ry : L.ry + L.dir * dtn * spd, al = n.st === 3 ? 0.3 : 1;
         if (n.d > 0) { const ye = L.ry + L.dir * (dtn + n.d) * spd; const y0 = Math.min(yh, ye), y1 = Math.max(yh, ye); if (y1 - y0 > 2) { cx.globalAlpha = al * 0.85; rr(x - lw * 0.12, y0, lw * 0.24, y1 - y0, lw * 0.12); inkFill(COL[n.lane], 3); cx.globalAlpha = 1; } }

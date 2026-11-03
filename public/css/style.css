@@ -6991,6 +6991,10 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .rb-st{font-size:13px;letter-spacing:-1px;margin-left:4px}
 @media (max-width:560px){.rb-m.free .rb-mi{grid-template-columns:1fr}}
 .rb-df{display:flex;align-items:center;gap:12px}
+.rb-sl{cursor:default}
+.rb-slr{display:flex;align-items:center;gap:10px;width:min(320px,100%);margin:3px 0}
+.rb-slr .rb-da{width:32px;height:32px;flex:none;font-size:13px}
+.rb-rng{flex:1;min-width:0;height:28px;accent-color:#ff5d72;cursor:pointer}
 .rb-da{width:38px;height:38px;border:2.5px solid #2a2846;border-radius:12px;background:#fff;color:#2a2846;font-size:15px;cursor:pointer;box-shadow:2px 3px 0 #2a2846}
 .rb-dn{min-width:96px;font:400 26px Jua,var(--font,sans-serif);text-shadow:2px 2px 0 #2a2846,-2px -2px 0 #2a2846,2px -2px 0 #2a2846,-2px 2px 0 #2a2846}
 .rb-dn.d0{color:#3ed27a}.rb-dn.d1{color:#ffd84a}.rb-dn.d2{color:#ff5d72}
