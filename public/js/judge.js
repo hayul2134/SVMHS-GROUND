@@ -662,7 +662,7 @@ export function createJudge(el, O = {}) {
     if (e.ph === 5) { e.t2 += dt; sans.walk += dt; sans.x -= 22 * dt; sans.alpha = Math.max(0, 1 - e.t2 / 4); if (e.t2 > 4.5) win(); }
   }
   function win() {
-    G.mode = 'win'; winT = 0; musOn = false; rec.clear++; const tm = Math.round((T - runT0) * 1000); if (!ck && (!rec.fast || tm < rec.fast)) rec.fast = tm; rec.best = 24; G.winMs = tm; saveRec(); store.set('jd_ck', 0);
+    G.mode = 'win'; winT = 0; musOn = false; rec.clear++; const tm = Math.round((T - runT0) * 1000); if (!ck && (!rec.fast || tm < rec.fast)) rec.fast = tm; rec.best = 24; G.winMs = tm; G.winHp = Math.max(1, Math.ceil(hp)); saveRec(); store.set('jd_ck', 0);
   }
   function die() {
     G.mode = 'dead'; over = { t: 0, x: heart.x, y: heart.y, sh: [] }; TL = null; musOn = false; rec.deaths++; saveRec();
@@ -730,6 +730,7 @@ export function createJudge(el, O = {}) {
       krTick(dt);
       if (pr.has('Z') || pr.has('X')) { if (info.n < info.text.length) { info.n = info.text.length; } else { const cb = info.cb; info = null; cb?.(); } }
     } else if (m === 'target') { krTick(dt); if (ending) endingTick(dt); }
+    if (m === 'text' || m === 'target' || m === 'talk') menuBonesTick(dt);   // 2026-11-03 하율: 행동을 고르면 자가 멈추던 문제 — 공격이 시작될 때까지 계속 움직임
     else if (m === 'stall') { stallTick(dt); krTick(dt); }
     else if (m === 'final' || m === 'toMenu') { krTick(dt); if (m === 'toMenu') { menuBonesTick(dt); } }
     else if (m === 'dead') {
@@ -787,9 +788,25 @@ export function createJudge(el, O = {}) {
     const legsY = sy - 46 + walkBob;
     img(ART.legs, sx - 44, legsY);
     const torso = sans.pose ? ART.torso.base : ART.torso[sans.torso] || ART.torso.default;
+    if (sans.pose && sans.poseT < .3) {   // 팔을 휘두른 쪽으로 몸이 툭 쏠렸다 돌아옴
+      const j = Math.exp(-sans.poseT * 14) * Math.sin(Math.min(1, sans.poseT / .05) * Math.PI / 2) * 5, d = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] }[sans.pose];
+      tx += d[0] * j; ty += d[1] * j * .7;
+    }
     const tW = torso.width * 2, torsoY = legsY - 50 + 4 + ty;
     img(torso, sx - tW / 2 + tx, torsoY);
-    if (sans.pose) { const f = Math.min(4, Math.floor(sans.poseT * 20)); img(ART.arm[sans.pose][f], sx + 34 - 64 + tx, torsoY + 12 - 64); }
+    if (sans.pose) {   // 2026-11-03 하율 "더 역동적으로 빠르게": 0.1초 만에 휘두르고(지나쳤다 되돌아옴) 잔상·바람 줄 + 몸 반동
+      const pt = sans.poseT, f = pt < .025 ? 0 : pt < .05 ? 2 : pt < .1 ? 3 : 4, ax = sx + 34 - 64 + tx, ay = torsoY + 12 - 64;
+      if (pt < .18) {
+        const k = 1 - pt / .18, S = sans.pose === 'down' ? -100 : 80, Tg = { right: 0, down: 90, left: 180, up: -90 }[sans.pose];
+        const a0 = Math.min(S, Tg) * D2R, a1 = Math.max(S, Tg) * D2R, cx = ax + 64, cy = ay + 64;
+        X.save(); X.strokeStyle = '#ffffff'; X.lineCap = 'round';
+        for (const [r, w, al] of [[50, 5, .55], [40, 3, .35], [58, 2, .25]]) { X.globalAlpha = sans.alpha * al * k; X.lineWidth = w; X.beginPath(); X.arc(cx, cy, r, a0, a1); X.stroke(); }
+        X.restore(); X.globalAlpha = sans.alpha;
+        for (const [g, al] of [[0, .22], [1, .32], [2, .45]]) if (g < f) { X.globalAlpha = sans.alpha * al * k; img(ART.arm[sans.pose][g], ax, ay); }
+        X.globalAlpha = sans.alpha;
+      }
+      img(ART.arm[sans.pose][f], ax, ay);
+    }
     let hk = sans.head; if (hk === 'blue') hk = Math.floor(T * 12) % 2 ? 'blue0' : 'blue1';
     const headY = torsoY - 60 + 4 + hy;
     img(ART.head[hk] || ART.head.default, sx - 32 + hx + tx * .5, headY);
@@ -949,7 +966,7 @@ export function createJudge(el, O = {}) {
     drawHud();
     for (const mb of mbones) drawRuler(mb.x - 7, mb.y - 22, 14, 44, 0);
     if (heart.vis && (m === 'attack' || m === 'stall' || (m === 'menu' && menu))) drawHeart(heart.x, heart.y);
-    if (black) { X.fillStyle = '#000'; X.fillRect(-10, -10, VW + 20, VH + 20); if (heart.vis) drawHeart(heart.x, heart.y); }
+    if (black) { X.fillStyle = '#000'; X.fillRect(-10, -10, VW + 20, VH + 20); }   // 2026-11-03 하율: 암전 땐 별도 안 보이게
     if (strike) drawStrike();
     for (const p of popTexts) if (!(p.delay > 0)) txt(p.text, p.x, p.y - Math.min(10, p.t * 40), 30, '#c0c0c0');
     if (dmgText) {
@@ -980,7 +997,7 @@ export function createJudge(el, O = {}) {
     if (o.t > 3.6) txt('Z · 화면 탭: 처음 화면', 320, 440, 18, '#808080', 'center', F9);
   }
   function renderWin() {
-    txt('* 이겼다!', 120, 150, 22); txt('* 상점 0점, 벌점 0점을 얻었다.', 120, 190, 22); txt(`* ${pname()}${pname().length ? '은(는)' : ''} 졸업장을 받았다.`, 120, 230, 22);
+    txt('* 이겼다!', 120, 150, 22); txt(`* 남은 체력만큼 상점 ${G.winHp || 1}점을 받았다.`, 120, 190, 22); txt(`* ${pname()}${pname().length ? '은(는)' : ''} 졸업장을 받았다.`, 120, 230, 22);
     txt(`걸린 시간 ${fmtT(G.winMs)}${ck ? ' (중간 지점부터)' : ''} · 지금까지 쓰러진 횟수 ${rec.deaths}`, 320, 320, 18, '#c8c8c8', 'center', F9);
     if (winT > 1.5) txt('Z · 화면 탭: 처음 화면', 320, 440, 18, '#808080', 'center', F9);
   }

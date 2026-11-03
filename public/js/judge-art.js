@@ -169,7 +169,7 @@ function arm(dir, f) {
   const P = painter(64, 64), sx = 32, sy = 32;
   const T = { right: 0, down: 90, left: 180, up: -90 }[dir];
   const S = dir === 'down' ? -100 : 80;          // 시작 각도(down은 위에서 내리침)
-  const a = (S + (T - S) * Math.min(1, f / 3)) * Math.PI / 180, L1 = 11, L2 = 11;
+  const a = (S + (T - S) * [0, .45, .85, 1.15, 1][f]) * Math.PI / 180, L1 = 11, L2 = 11;
   const ex = sx + Math.cos(a) * L1, ey = sy + Math.sin(a) * L1, hx = ex + Math.cos(a) * L2, hy = ey + Math.sin(a) * L2;
   P.line(sx, sy, ex, ey, C.jk, 7); P.line(ex, ey, hx, hy, C.jk, 6);
   const nx = -Math.sin(a), ny = Math.cos(a);
