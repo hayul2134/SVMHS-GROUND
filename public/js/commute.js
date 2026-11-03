@@ -6,7 +6,8 @@
 //   ① 키보드(노트북·키보드 커버): 글자를 못 쓰는 칸(.cm-box, tabindex)에 포커스 → IME 없이 e.code를 두벌식 자모로 바꿔 한 타씩 판정(한/영 상태 상관없음)
 //   ② 화면 자판(터치): 투명 입력칸 + IME → 입력칸 값을 자모로 풀어 판정, 틀리면 칸을 비우고 다시 포커스(조합 초기화)
 // 노선 고르기(같은 날 하율 "노선도를 자기가 설정"): 안내 화면에서 10개 중 고르거나 무작위 — 이 기기에 기억(sg_commute_rt)
-import { LINES, GOAL, ROUTES, stopsOf, keysOf, tpmOf } from './commute-score.js';
+//   출발역 직접 고르기(2026-11-03 하율 "출발 지점을 마음대로 설정"): 역 이름(문자열)을 저장 → routeFrom이 신정까지 가장 빠른 길을 만듦
+import { LINES, GOAL, ROUTES, STATIONS, stopsOf, stopsOfRoute, routeFrom, keysOf, tpmOf } from './commute-score.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';
 import { createMap, seqOf, partial, KEYMAP, KEYMAP_S } from './commute-map.js';
 import { store } from './util.js';
@@ -18,9 +19,9 @@ const TOUCH = matchMedia('(pointer:coarse)').matches;
 
 export function createCommute(el, O = {}) {
   const sfx = makeSfx('commute_snd');
-  let pref = store.get('commute_rt', -1); if (!(pref >= -1 && pref < ROUTES.length)) pref = -1;
+  let pref = store.get('commute_rt', -1); if (typeof pref === 'string' ? !routeFrom(pref) : !(pref >= -1 && pref < ROUTES.length)) pref = -1;
   let ri = 0, stops = null, N = 0, map = null;
-  const pickRoute = () => { ri = pref >= 0 ? pref : Math.floor(Math.random() * ROUTES.length); stops = stopsOf(ri); N = stops.length - 1; map = createMap(stops); };
+  const pickRoute = () => { ri = typeof pref === 'string' ? pref : pref >= 0 ? pref : Math.floor(Math.random() * ROUTES.length); stops = typeof ri === 'string' ? stopsOfRoute(routeFrom(ri)) : stopsOf(ri); N = stops.length - 1; map = createMap(stops); };
   pickRoute();
   el.innerHTML = `<div class="cm" id="cm">
     <div class="cm-top"><span class="cm-rt" id="cmRt"></span><span class="cm-sum" id="cmSum">0타</span>${sndBtnHtml('cmSnd')}</div>
@@ -56,15 +57,19 @@ export function createCommute(el, O = {}) {
     phase = 'intro';
     const card = (i, on) => { const s = stopsOf(i); return `<button type="button" class="cm-rc${on ? ' on' : ''}" data-ri="${i}" aria-pressed="${on}">${s.filter((x, k) => !k || x.x).map(x => chip(x.x || x.l)).join('')}<b>${esc(s[0].n)}</b><small>${s.length - 1}역</small></button>`; };
     st.innerHTML = `<div class="cm-intro"><b>등교하기!</b><p>지하철을 타고 학교 앞 <em>신정역</em>까지!<br>다음 역 이름을 한 타씩 치면 열차가 달려요</p>
+      <label class="cm-from${typeof pref === 'string' ? ' on' : ''}">출발역 <select id="cmFrom"><option value="">직접 고르기</option>${STATIONS.map(([l, a]) => `<optgroup label="${esc(LINES[l][0])}">${a.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}</optgroup>`).join('')}</select></label>
       <div class="cm-rts" id="cmRts"><button type="button" class="cm-rc rand${pref < 0 ? ' on' : ''}" data-ri="-1" aria-pressed="${pref < 0}"><b>무작위</b><small>매번 다른 노선</small></button>${ROUTES.map((_, i) => card(i, pref === i)).join('')}</div>
       <small>틀린 타는 안 써지고 오타로 세요 · 평균 타수가 기록</small><button type="button" class="btn big" id="cmGo">탑승하기</button></div>`;
     paintChips(st);
-    $('#cmRts').onclick = e => {
-      const b = e.target.closest('[data-ri]'); if (!b) return;
-      pref = +b.dataset.ri; store.set('commute_rt', pref);
-      st.querySelectorAll('.cm-rc').forEach(x => { const o = x === b; x.classList.toggle('on', o); x.setAttribute('aria-pressed', o); });
+    const from = $('#cmFrom'); if (typeof pref === 'string') from.value = pref;
+    const setPref = v => {
+      pref = v; store.set('commute_rt', pref);
+      st.querySelectorAll('.cm-rc').forEach(x => { const o = +x.dataset.ri === pref; x.classList.toggle('on', o); x.setAttribute('aria-pressed', o); });
+      from.parentElement.classList.toggle('on', typeof pref === 'string'); if (typeof pref !== 'string') from.value = '';
       pickRoute(); p = pT = 0; paintHead(); sfx.tone(660, .05, 'triangle', .035);
     };
+    $('#cmRts').onclick = e => { const b = e.target.closest('[data-ri]'); if (b) setPref(+b.dataset.ri); };
+    from.onchange = () => setPref(from.value && routeFrom(from.value) ? from.value : -1);
     $('#cmGo').onclick = () => ride();
   };
 

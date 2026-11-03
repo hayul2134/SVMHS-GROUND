@@ -7042,6 +7042,10 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .cm-rc .cm-ln{min-width:18px;height:18px;font-size:10px;border-width:1.5px}
 .cm-rc.on{background:#e9f2ff;box-shadow:0 0 0 3px var(--accent)}
 .cm-rc.rand b{color:var(--accent)}
+/* 등교하기!: 출발역 직접 고르기(2026-11-03) */
+.cm-from{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px}
+.cm-from select{font:inherit;font-weight:700;padding:6px 10px;border:2px solid var(--ink);border-radius:12px;background:var(--card);color:var(--ink);min-width:150px;cursor:pointer}
+.cm-from.on select{background:#e9f2ff;box-shadow:0 0 0 3px var(--accent)}
 .cm-box{outline:none}
 .cm-box:focus,.cm-box:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
 .cm-box.bad{border-color:#e5484d;background:#fff0f0}

@@ -21,9 +21,43 @@ export const ROUTES = [
   [[5, ['애오개', '공덕', '마포', '여의나루', '여의도', '신길', '영등포시장', '영등포구청', '양평', '오목교', '목동', '신정']]],
   [[9, ['흑석', '노들', '노량진', '샛강', '여의도']], [5, ['여의도', '신길', '영등포시장', '영등포구청', '양평', '오목교', '목동', '신정']]],
 ];
+// 출발역 마음대로(2026-11-03 하율 "등교하기!에서 출발 지점을 마음대로 설정"): ROUTES 구간들로 지하철 그물(NET)을 만들고
+// 아무 역에서나 신정까지 가장 빠른 길(역 하나 1 · 갈아타기 +3)을 ROUTES와 같은 모양으로 만듦. 화면 전용(기록은 이 기기에만).
+//   같은 호선이 이어 나오는 구간(2호선 신도림 → 까치산)은 신정지선 = 다른 줄('2b')로 봄
+const NET = (() => {
+  const g = {}, add = (a, b, k) => (g[a] ||= []).push([b, k]);
+  ROUTES.forEach(R => R.forEach(([l, st], k) => {
+    const key = k && R[k - 1][0] === l ? l + 'b' : String(l);
+    for (let i = 1; i < st.length; i++) { add(st[i - 1], st[i], key); add(st[i], st[i - 1], key); }
+  }));
+  return g;
+})();
+// 고를 수 있는 출발역: 호선별 [[호선, [역…]]] (갈아타는 역은 여러 호선에 나옴, 신정 제외)
+export const STATIONS = Object.keys(LINES).map(l => [+l, Object.keys(NET).filter(n => n !== GOAL && NET[n].some(([, k]) => parseInt(k) === +l))]).filter(([, a]) => a.length);
+export function routeFrom(from) {
+  if (!NET[from] || from === GOAL) return null;
+  const seen = new Set(), Q = [[0, from, '', null]];
+  let end = null;
+  while (Q.length) {
+    Q.sort((a, b) => a[0] - b[0]);
+    const cur = Q.shift(), [c, n, k] = cur, id = n + '|' + k;
+    if (seen.has(id)) continue; seen.add(id);
+    if (n === GOAL) { end = cur; break; }
+    for (const [m, mk] of NET[n]) if (!seen.has(m + '|' + mk)) Q.push([c + 1 + (k && k !== mk ? 3 : 0), m, mk, cur]);
+  }
+  if (!end) return null;
+  const path = []; for (let x = end; x; x = x[3]) path.unshift(x);
+  const R = [];
+  for (let i = 1; i < path.length; i++) {
+    const k = path[i][2], last = R[R.length - 1];
+    if (last && last.k === k) last.st.push(path[i][1]); else R.push({ k, st: [path[i - 1][1], path[i][1]] });
+  }
+  return R.map(s => [parseInt(s.k), s.st]);
+}
 // 노선 펼치기: [{ n: 역 이름, l: 호선, x: 갈아타는 역이면 다음 호선 }] — 0번은 출발역(치지 않음)
-export function stopsOf(ri) {
-  const R = ROUTES[ri]; if (!R) return null;
+export const stopsOf = ri => stopsOfRoute(ROUTES[ri]);
+export function stopsOfRoute(R) {
+  if (!R) return null;
   const out = [];
   R.forEach(([l, st], k) => st.forEach((n, i) => {
     if (k && !i) { out[out.length - 1].x = l; return; }   // 갈아타는 역은 한 번만
