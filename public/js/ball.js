@@ -102,7 +102,7 @@ export function createBall(el, O = {}) {
     const wrap = el.querySelector('.bl-wrap'); if (!wrap) return;
     const top = wrap.getBoundingClientRect().top, bar = el.querySelector('.bl-bar')?.offsetHeight || 0;
     const avH = Math.max(320, innerHeight - top - bar - 90), avW = Math.max(240, el.clientWidth || 360);
-    const ns = Math.min(avW / W, avH / H, 1.6), nd = Math.min(2, devicePixelRatio || 1);
+    const ns = Math.min(avW / W, avH / H, 1.6), nd = Math.min(2, window.SG_DPR || devicePixelRatio || 1);
     if (Math.abs(ns - scale) < .001 && nd === dpr && cv.width) return;
     scale = ns; dpr = nd; sprites.clear();
     cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);

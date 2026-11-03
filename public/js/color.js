@@ -76,7 +76,7 @@ export function createColor(el, O = {}) {
     </div>`;
     const sv = st.querySelector('#cgSv'), hu = st.querySelector('#cgHue'), svC = st.querySelector('#cgSvC'), huC = st.querySelector('#cgHueC');
     const dot = st.querySelector('#cgDot'), hk = st.querySelector('#cgHk'), now = st.querySelector('#cgNow');
-    const fit = (cv, box) => { const r = box.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d)); return cv.getContext('2d'); };
+    const fit = (cv, box) => { const r = box.getBoundingClientRect(), d = Math.min(2, window.SG_DPR || devicePixelRatio || 1); cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d)); return cv.getContext('2d'); };
     const drawHue = () => { const c = fit(huC, hu), g = c.createLinearGradient(0, 0, 0, huC.height); for (let i = 0; i <= 6; i++) g.addColorStop(i / 6, hex(hsv2rgb(i * 60 % 360, 1, 1))); c.fillStyle = g; c.fillRect(0, 0, huC.width, huC.height); };
     const drawSv = () => {
       const c = fit(svC, sv), w = svC.width, h = svC.height;

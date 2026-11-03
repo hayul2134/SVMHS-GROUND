@@ -106,7 +106,7 @@ export function createBlast(root, opt = {}) {
      아래 배치가 기본, 세로가 아주 짧을 때만 옆 배치(받침 반대쪽에 같은 폭 빈자리를 둬서 판이 가운데) ----- */
   function fit() {
     if (dead || !cv.isConnected) return;
-    dpr = Math.min(devicePixelRatio || 1, 2);
+    dpr = Math.min(window.SG_DPR || devicePixelRatio || 1, 2);
     // 버튼 자리(2026-10-29 하율 "위에 버튼을 옆으로 빼"): 판 왼쪽에 150px 넘게 빈 곳이 있으면 버튼을 판 왼쪽에 세로로, 없으면 점수판 오른쪽 위
     const wide = innerWidth >= 901, top0 = root.querySelector('.bl-top'), tools = root.querySelector('.bl-tools');
     const sideOk = cw => (root.clientWidth - cw) / 2 + (wide ? 254 : 0) >= 150;

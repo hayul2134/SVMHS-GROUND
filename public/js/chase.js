@@ -314,7 +314,7 @@ export function createChase(root, opts = {}) {
   const fit = () => {
     const w = cv.clientWidth; if (!w) return;
     // 2026-11-01 최적화(하율 "랙이 좀 걸린다"): 느려지는 건 거의 다 픽셀 칠하기 → 그림판 가로를 1440px(× resQ)까지만. 렉이 이어지면 resQ를 더 낮춤
-    dpr = Math.min(2.5, window.devicePixelRatio || 1, 1440 * resQ / w); k = w / VW;
+    dpr = Math.min(2.5, window.SG_DPR || devicePixelRatio || 1, 1440 * resQ / w); k = w / VW;
     const pw = Math.round(w * dpr), ph = Math.round(w * VH / VW * dpr);
     if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; art.clear(); spr.clear(); bgs.clear(); }
   };

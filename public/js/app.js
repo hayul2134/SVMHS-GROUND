@@ -1964,9 +1964,35 @@ $('#mSkin').addEventListener('click', e => {
   if (h.classList.contains('hw')) { h.classList.add('hwx'); store.set('hwc', 'off'); }
   const k = b.dataset.skin;
   const go = () => { applySkin(k); store.set('skin', k || null); syncMascot(true); };
-  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
+  if (document.startViewTransition && !document.hidden && !HTML.classList.contains('lite') && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
 });
-$('#btnSkin').onclick = () => { applySkin(document.documentElement.dataset.skin || ''); myArtUi(); openModal('#mSkin'); };
+$('#btnSkin').onclick = () => { applySkin(document.documentElement.dataset.skin || ''); myArtUi(); liteUi(); openModal('#mSkin'); };
+
+// 가벼운 모드(2026-11-03 하율 "삼성 보급형 패드에서도"): 판단·적용은 theme.js sgLite, 효과는 style.css '가벼운 모드'
+const LITE = window.sgLite;
+function liteUi() {
+  if (!LITE) return;
+  $('#skLite').checked = document.documentElement.classList.contains('lite');
+  $('#skLiteNote').hidden = !(LITE.pick() == null && LITE.auto());
+}
+$('#skLite').addEventListener('change', e => {
+  try { localStorage.setItem('sg_lite', e.target.checked ? 'on' : 'off'); } catch {}
+  LITE?.apply(); liteUi(); dispatchEvent(new Event('resize'));   // 게임 캔버스가 새 배율로 다시 맞춤
+});
+// 첫 화면이 뜨고 6초 뒤, 가만히 있는 홈에서 프레임 120개를 재서 중간값이 24ms(약 42fps)보다 느리면 이 기기는 자동으로 가벼운 모드(sg_lite_a)
+// 직접 고른 적이 있거나 이미 켜져 있으면 재지 않음. 탭이 숨겨지거나 게임 중이면 그 측정은 버림
+if (LITE && LITE.pick() == null && !document.documentElement.classList.contains('lite')) setTimeout(function probe() {
+  if (document.hidden || document.body.classList.contains('playing') || $('.modal.open')) return setTimeout(probe, 10000);
+  const d = []; let last = 0;
+  const f = t => {
+    if (document.hidden) return;
+    if (last) d.push(t - last); last = t;
+    if (d.length < 120) return requestAnimationFrame(f);
+    d.sort((a, b) => a - b);
+    if (d[60] > 24) { try { localStorage.setItem('sg_lite_a', '1'); } catch {} LITE.apply(); dispatchEvent(new Event('resize')); }
+  };
+  requestAnimationFrame(f);
+}, 6000);
 
 // 내 캐릭터: 사용자가 고른 그림을 이 기기 안에서만 줄여(최대 320px) localStorage에 저장 → 왼쪽 아래 스티커(--art) + 옅은 배경 무늬(--pat)
 // 서버로 올리지 않음. 첫 화면 적용은 theme.js. (CSP img-src에 data: 허용돼 있음)
@@ -2041,7 +2067,7 @@ $('#btnTheme').onclick = () => {
   const go = () => { applyTheme(t); store.set('theme', t); if (themeWant === t) themeWant = null; };
   // 화면 전체를 한 장으로 찍어 부드럽게 겹쳐 바꿈(View Transition, GPU) — 예전처럼 모든 요소의 색을 하나하나 애니메이션하면 태블릿에서 끊김.
   // 지원 안 하는 브라우저나 '동작 줄이기' 설정이면 바로 바꿈
-  if (document.startViewTransition && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
+  if (document.startViewTransition && !document.hidden && !HTML.classList.contains('lite') && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
 };
 
 /* ===== 관리자 공지 + 새 패치 공지 (띠) ===== */

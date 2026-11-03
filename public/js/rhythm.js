@@ -204,7 +204,7 @@ export function createRhythm(el, O = {}) {
       if (w >= h * 1.05) { if (w / h > 1.75) w = h * 1.75; }   // 화면에 남은 높이를 다 씀(가로가 아주 넓을 때만 폭 줄임)
       else h = Math.min(h, w * 1.75);
     }
-    DPR = Math.min(2, devicePixelRatio || 1); W = Math.round(w); H = Math.round(h);
+    DPR = Math.min(2, window.SG_DPR || devicePixelRatio || 1); W = Math.round(w); H = Math.round(h);
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cv.style.width = W + 'px'; cv.style.height = H + 'px';
     bgC = null;
   }
@@ -608,9 +608,28 @@ export function createRhythm(el, O = {}) {
     if (outline) { cx.beginPath(); cx.moveTo(-s * 0.48, -s * 0.22); cx.quadraticCurveTo(-s * 0.3, -s * 0.5, -s * 0.05, -s * 0.66); cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = w * 0.9; cx.stroke(); }
     cx.restore();
   }
-  function txt(t, x, y, size, fill, al = 'center') {
-    cx.font = size + 'px ' + FONT; cx.textAlign = al; cx.textBaseline = 'middle'; cx.lineJoin = 'round';
-    cx.strokeStyle = INK; cx.lineWidth = Math.max(3, size * 0.2); cx.strokeText(t, x, y); cx.fillStyle = fill; cx.fillText(t, x, y); cx.textBaseline = 'alphabetic';
+  // 테두리 글자는 매 프레임 strokeText가 가장 비쌈(보급형 패드 2026-11-03) → 글자·크기·색·배율별로 작은 캔버스에 한 번 그려 두고 붙임(최대 240개, 오래된 것부터 버림)
+  // 글꼴이 늦게 도착하면 기본 글꼴로 구운 게 남지 않게 비움
+  const TXC = new Map();
+  document.fonts?.addEventListener?.('loadingdone', () => TXC.clear());
+  function txt(t, x, y, size0, fill, al = 'center') {
+    const size = Math.max(2, Math.round(size0 / 2) * 2), r = size0 / size;   // 크기가 움직이는 글자(카운트다운 등)는 2px 단위로 구워 두고 그만큼 늘이고 줄여 붙임
+    const k = t + '\u0001' + size + '\u0001' + fill + '\u0001' + DPR;
+    let c = TXC.get(k);
+    if (!c) {
+      const lw = Math.max(3, size * 0.2), pad = Math.ceil(lw / 2 + 2);
+      cx.save(); cx.font = size + 'px ' + FONT; cx.textBaseline = 'middle'; const m = cx.measureText(t); cx.restore();
+      const up = Math.ceil(Math.max(m.actualBoundingBoxAscent || 0, size * 0.6)), dn = Math.ceil(Math.max(m.actualBoundingBoxDescent || 0, size * 0.6));
+      const w = Math.ceil(m.width) + pad * 2, h = up + dn + pad * 2, cv2 = document.createElement('canvas');
+      cv2.width = Math.max(1, Math.ceil(w * DPR)); cv2.height = Math.max(1, Math.ceil(h * DPR));
+      const g = cv2.getContext('2d'); g.scale(DPR, DPR);
+      g.font = size + 'px ' + FONT; g.textAlign = 'left'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+      g.strokeStyle = INK; g.lineWidth = lw; g.strokeText(t, pad, pad + up); g.fillStyle = fill; g.fillText(t, pad, pad + up);
+      c = { cv: cv2, w, h, tw: m.width, pad, up };
+      TXC.set(k, c); if (TXC.size > 240) TXC.delete(TXC.keys().next().value);
+    } else { TXC.delete(k); TXC.set(k, c); }
+    const tw = c.tw * r, ax = al === 'left' ? x : al === 'right' ? x - tw : x - tw / 2;
+    cx.drawImage(c.cv, ax - c.pad * r, y - (c.up + c.pad) * r, c.w * r, c.h * r);
   }
 
   /* ── 캐릭터(머리 = 체력 아이콘과 공용) ── */

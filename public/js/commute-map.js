@@ -78,7 +78,7 @@ export function keyFrac(typed, target) {
 // 화면 좌표 = [x, y × T]. 배경은 노선 둘레만 판마다 한 번 캔버스에 캐시 — 위로 솟는 높이만큼(HMAX) 위쪽 여백을 더 둠
 export const T = .62, HMAX = 60;
 function buildBg(box, all, lines) {
-  const d = Math.min(2, devicePixelRatio || 1), BW = box.w, BH = box.h * T + HMAX, sc = Math.min(d, Math.sqrt(12e6 / (BW * BH)));
+  const d = Math.min(2, window.SG_DPR || devicePixelRatio || 1), BW = box.w, BH = box.h * T + HMAX, sc = Math.min(d, Math.sqrt(12e6 / (BW * BH)));
   const cv = document.createElement('canvas'); cv.width = Math.round(BW * sc); cv.height = Math.round(BH * sc);
   const c = cv.getContext('2d'); c.scale(sc, sc); c.translate(-box.x, -box.y * T + HMAX);
   const water = (x, y, pad) => dSeg(x, y, HAN) < 70 + pad || dSeg(x, y, ANY) < 12 + pad || dSeg(x, y, SAET) < 10 + pad;

@@ -40,7 +40,7 @@ export function createCommute(el, O = {}) {
   let p = 0, pT = 0, last = 0;
   const draw = now => {
     if (!alive) return;
-    const r = cv.parentElement.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1), W = r.width, H = r.height;
+    const r = cv.parentElement.getBoundingClientRect(), d = Math.min(2, window.SG_DPR || devicePixelRatio || 1), W = r.width, H = r.height;
     if (W && H) {
       if (cv.width !== Math.round(W * d) || cv.height !== Math.round(H * d)) { cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
       const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now;

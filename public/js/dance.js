@@ -36,7 +36,7 @@ export function createDance(root, opts = {}) {
   /* --- 크기: 논리 360×640을 화면 픽셀에 맞춰 선명하게 --- */
   const fit = () => {
     const w = cv.clientWidth; if (!w) return;
-    dpr = Math.min(3, window.devicePixelRatio || 1); k = w / W;
+    dpr = Math.min(3, window.SG_DPR || devicePixelRatio || 1); k = w / W;
     const pw = Math.round(w * dpr), ph = Math.round(w * H / W * dpr);
     if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
   };

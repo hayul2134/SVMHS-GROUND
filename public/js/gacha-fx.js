@@ -71,7 +71,7 @@ const SFX = {
 function particles(cv) {
   const cx = cv.getContext('2d'), list = [], cache = new Map();
   let raf = 0, W = 0, H = 0, dpr = 1, motes = false, alive = true;
-  const fit = () => { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+  const fit = () => { dpr = Math.min(2, window.SG_DPR || devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
   fit(); addEventListener('resize', fit);
   const glow = c => {   // 색마다 빛 방울 한 장을 미리 그려 두고 drawImage
     if (cache.has(c)) return cache.get(c);

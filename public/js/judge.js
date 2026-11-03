@@ -70,7 +70,7 @@ export function createJudge(el, O = {}) {
     if (isFs()) { w = innerWidth; h = innerHeight; }
     else { w = Math.min(el.clientWidth || 640, 1280); const top = Math.max(8, wrap.getBoundingClientRect().top); h = Math.max(300, innerHeight - top - 46); }
     let k = Math.min(w / VW, h / VH); if (k >= 1) k = Math.floor(k * 2) / 2;   // 큰 화면은 0.5배 단위로(도트 균일)
-    const D = Math.min(2, devicePixelRatio || 1);
+    const D = Math.min(2, window.SG_DPR || devicePixelRatio || 1);
     cv.width = Math.round(VW * k * D); cv.height = Math.round(VH * k * D); cv.style.width = Math.round(VW * k) + 'px'; cv.style.height = Math.round(VH * k) + 'px';
     S = k * D;
   }

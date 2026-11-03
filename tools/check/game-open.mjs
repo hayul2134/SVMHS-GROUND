@@ -47,9 +47,11 @@ const srv = http.createServer((q, s) => {
 }).listen(0);
 const base = `http://localhost:${srv.address().port}`;
 const browser = await pw.chromium.launch();
-let bad = 0;
+let bad = 0; const PERF = !!process.env.PERF, perf = [];
 for (const [name, code] of Object.entries(GAMES)) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  // PERF=1: 보급형 패드 흉내(배율 1.5 · CPU 4배 느리게)로 3초 동안 프레임 수도 잼 (LITE=1이면 가벼운 모드)
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: PERF ? 1.5 : 1 });
+  if (PERF) { await (await page.context().newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: 4 }); if (process.env.LITE) await page.addInitScript(() => { addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('lite')); window.SG_DPR = Math.min(devicePixelRatio || 1, 1.25); }); }
   const errs = [];
   page.on('pageerror', e => errs.push(e.message));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|404|net::/.test(m.text())) errs.push(m.text()); });
@@ -69,6 +71,11 @@ for (const [name, code] of Object.entries(GAMES)) {
     await page.mouse.move(500, 350); await page.mouse.down(); await page.mouse.move(620, 420, { steps: 5 }); await page.mouse.up();
     for (const k of ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'Enter']) await page.keyboard.press(k).catch(() => {});
     await page.waitForTimeout(800);
+    if (PERF) {
+      const f = page.evaluate(() => new Promise(r => { let n = 0, slow = 0, last = performance.now(); const t0 = last; const k = t => { n++; if (t - last > 25) slow++; last = t; if (t - t0 < 3000) requestAnimationFrame(k); else r(`${Math.round(n * 1000 / (t - t0))}fps 느린 프레임 ${slow}`); }; requestAnimationFrame(k); }));
+      for (let i = 0; i < 6; i++) { await page.keyboard.press(['ArrowLeft', 'ArrowRight', 'Space'][i % 3]).catch(() => {}); await page.mouse.click(500 + i * 20, 350).catch(() => {}); await page.waitForTimeout(400); }
+      perf.push(name + ' ' + await f);
+    }
     await page.evaluate(() => { try { window.__M?.destroy?.(); } catch (e) { throw e; } }).catch(e => errs.push('destroy: ' + e.message));
   }
   console.log((errs.length ? '❌ ' : '✅ ') + name + (errs.length ? '\n   ' + errs.slice(0, 3).join('\n   ') : ''));
@@ -76,5 +83,6 @@ for (const [name, code] of Object.entries(GAMES)) {
   await page.close();
 }
 await browser.close(); srv.close();
+if (PERF) console.log(perf.join('\n'));
 if (bad) { console.log(`\n❌ 게임 열기 검사 실패 ${bad}개 — push 금지`); process.exit(1); }
 console.log('\n✅ 게임 열기 검사 통과 (' + Object.keys(GAMES).length + '개)');

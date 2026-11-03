@@ -72,7 +72,7 @@ export function createFilm(root, opt = {}) {
   }
   function fit() {
     if (dead || !cv.isConnected) return;
-    dpr = Math.min(devicePixelRatio || 1, 2);
+    dpr = Math.min(window.SG_DPR || devicePixelRatio || 1, 2);
     // 높이(2026-10-30 21:10 하율 "정 중앙"): 판이 화면 세로 가운데로 움직여도 크기가 흔들리지 않게 판 위치 대신 게임 칸(.parea) 위 + 판 위 점수 줄 높이로 잼
     const pa = root.closest('.parea'), paTop = pa ? pa.getBoundingClientRect().top : 0, off = board.getBoundingClientRect().top - root.getBoundingClientRect().top;
     const pb = pa ? parseFloat(getComputedStyle(pa).paddingBottom) || 0 : 0;   // 칸 아래 여백(6vh)도 빼야 판이 화면 안에 들어옴(2026-10-30 점검: 낮은 화면에서 넘침)

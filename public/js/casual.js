@@ -218,7 +218,7 @@ function snake(el, rk, quick = false) {
   function fit() {
     const side = padSide(), r = roomOf(el, matchMedia('(pointer:fine)').matches || side ? 110 : 220);   // 가로 패드(깃발 pad-ctl): 방향 버튼이 판 오른쪽이라 아래 자리를 비우지 않음
     cs = Math.max(14, Math.min(34, Math.floor(r.w / W), side ? Math.floor((innerWidth - 2 * 250) / W) : 99, Math.floor(r.h / H)));
-    const d = devicePixelRatio || 1; cv.width = W * cs * d; cv.height = H * cs * d; cv.style.width = W * cs + 'px'; cv.style.height = H * cs + 'px'; el.style.setProperty('--bw', W * cs + 'px');
+    const d = window.SG_DPR || devicePixelRatio || 1; cv.width = W * cs * d; cv.height = H * cs * d; cv.style.width = W * cs + 'px'; cv.style.height = H * cs + 'px'; el.style.setProperty('--bw', W * cs + 'px');
     cx.setTransform(d, 0, 0, d, 0, 0); draw(1);
   }
   function reset() {

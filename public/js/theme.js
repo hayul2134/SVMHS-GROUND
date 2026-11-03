@@ -42,6 +42,26 @@
   try { sessionStorage.removeItem('sg_peek'); if (!localStorage.getItem('sg_in')) document.documentElement.classList.add('prelogin'); } catch (e) { document.documentElement.classList.add('prelogin'); }
 })();
 
+// 가벼운 모드(2026-11-03 하율 "삼성 보급형 패드에서도 돌아가게"): html.lite + 게임 캔버스 배율 상한 window.SG_DPR(1.25)
+// 자동 = 메모리 4GB 이하·코어 4개 이하, 또는 app.js가 첫 화면에서 프레임이 느리다고 잰 기기(sg_lite_a). sg_lite 'on'/'off'는 테마 바꾸기에서 직접 고른 값(자동보다 우선)
+(function () {
+  var de = document.documentElement;
+  function auto() {
+    try { if (localStorage.getItem('sg_lite_a') === '1') return true; } catch (e) {}
+    var m = navigator.deviceMemory, c = navigator.hardwareConcurrency;
+    return (m > 0 && m <= 4) || (c > 0 && c <= 4);
+  }
+  function pick() { try { return localStorage.getItem('sg_lite'); } catch (e) { return null; } }
+  function apply() {
+    var v = pick(), on = v === 'on' || (v !== 'off' && auto());
+    de.classList.toggle('lite', on);
+    window.SG_DPR = on ? Math.min(window.devicePixelRatio || 1, 1.25) : 0;
+    return on;
+  }
+  window.sgLite = { auto: auto, pick: pick, apply: apply };
+  apply();
+})();
+
 // 눌림 애니메이션 통일: 트랙패드 '탭하여 클릭'·터치스크린은 누름→뗌이 순식간이라 :active가 거의 안 보인다.
 // 누르는 순간 .is-pressed를 붙이고 최소 MIN ms 유지해, 물리 클릭과 같은 눌림 모션이 보이게 한다.
 (function () {

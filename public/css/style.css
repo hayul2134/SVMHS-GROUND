@@ -7051,3 +7051,17 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .sv5 [data-go="meal"] .ai{--c:var(--sky)}.sv5 [data-go="tt"] .ai{--c:var(--lime)}.sv5 [data-go="cal"] .ai{--c:var(--yellow)}.sv5 [data-go="dday"] .ai{--c:var(--pink)}
 @media (max-width:560px){.appgrid.catgrid.sv5{gap:12px 6px}.catgrid.sv5 .app{padding-left:0;padding-right:0;font-size:11.5px}.apps .sv5 .app .ai{width:46px;height:46px;border-radius:13px}.apps .sv5 .app .ai svg:not(.sic){width:22px;height:22px}.apps .sv5 .gapp .ai .sic{width:28px;height:28px}}
 @media (max-width:380px){.appgrid.catgrid.sv5{gap:10px 4px}.catgrid.sv5 .app{font-size:10.5px}.apps .sv5 .app .ai{width:40px;height:40px;border-radius:12px}.apps .sv5 .gapp .ai .sic{width:25px;height:25px}}
+
+/* ===== 가벼운 모드 html.lite (2026-11-03 하율 "삼성 보급형 패드에서도 돌아가게") =====
+   켜지는 때: theme.js sgLite — 메모리 4GB 이하·코어 4개 이하 기기, 첫 화면에서 프레임이 느리게 나온 기기(app.js 측정, sg_lite_a), 테마 바꾸기 › 가벼운 모드(sg_lite on/off)
+   하는 일: ① 화면 전체 흐림(backdrop blur) 끔 — 스크롤마다 다시 계산돼 보급형 GPU에서 가장 비쌈 ② 매 프레임 다시 칠하는 끝없는 효과(배경 위치·그림자·필터 애니메이션)를 멈춤
+   ③ 게임 캔버스 해상도 배율 1.25까지(window.SG_DPR, 각 게임이 devicePixelRatio 대신 씀). transform·opacity 움직임은 GPU가 처리해 그대로 둠 */
+html.lite header::before{-webkit-backdrop-filter:none;backdrop-filter:none;background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 97%,transparent) 0%,color-mix(in srgb,var(--bg) 92%,transparent) 60%,transparent 100%)}
+html.lite .cheer{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(8,10,22,.86)}
+html.lite .bl-ov{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(238,245,255,.8)}
+html.lite .skel,html.lite .hl-card.ghost,html.lite .hl-one::after,
+html.lite .pcard.c-xaurora .pban,html.lite .pcard.c-xholo .pban,
+html.lite .pcard.dev,html.lite .pcard.dev .pban,html.lite .av.avdev::before,html.lite .pcard.dev .pname,html.lite .pcard.dev .chip.dev,html.lite .ptitle.dev span,html.lite .pcard.dev .pact .btn.lime,html.lite .pcard.dev .pside .pstreak,
+html.lite .bd-live .dot,html.lite .s-fr.on .sf-l .dot,html.lite .nw-d,html.lite .nw-p,html.lite .gn-dot,html.lite #trBox.tr-need label[for="selT"]::after,
+html.lite .tri-rd,html.lite .tp-em .tri-rd,html.lite .tm-em .tri.tri-rd,
+html.lite .t-challenger.tierb,html.lite .tplate.t-challenger,html.lite .t-grandmaster.tierb,html.lite .tplate.t-radiant,html.lite .tplate.t-radiant .tp-tx b,html.lite .tr2 .tm.t-radiant .tm-tx b{animation:none!important}
