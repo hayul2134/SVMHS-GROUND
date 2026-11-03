@@ -464,6 +464,8 @@ const myBest = async (db, uid, game, rx) => (await (rx ? db.prepare('SELECT best
 const BESTS = rx => rx ? `SELECT uid, best, at FROM bests WHERE game = ?1 AND ${NOT_DEV}` : `SELECT uid, MIN(best) AS best, at FROM scores WHERE game = ?1 AND ${ND(rx)} GROUP BY uid`;
 const RXQ = (rx, p = '') => rx ? ` AND (${p}game <> 'reaction' OR ${p}day >= '${RX_FROM}')` : '';
 const ND = rx => NOT_DEV + RXQ(rx);
+// 지금 정지 중인 계정 빼기(2026-11-03 하율 "정지 먹은 계정은 기록실이랑 티어에 표기되지 않게") — 기록은 지우지 않아 정지가 풀리면 다시 보임
+const NOT_BAN = `uid NOT IN (SELECT uid FROM bans WHERE until = 0 OR until > CAST(strftime('%s','now') AS INTEGER) * 1000)`;
 const effBest = u => isAdm(u) ? ALL_OPEN : u.st_best || 0, effTotal = u => isAdm(u) ? ALL_OPEN : u.st_total || 0;
 const jsonArr = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 // 뽑기: 가진 스티커 {값: 나온 횟수}. 개발자는 전부 가진 것으로
@@ -873,7 +875,7 @@ const ROUTES = {
     const mo = mstF && achRow ? parseAch(achRow.mst) : null, mOpen = mstOpen(me);   // 프로필 숙련도(롤 프로필처럼 대표 3개 + 숙련도 점수)
     return json({
       user: pub(u), me: u.id === me.id, rel: r, canDm: dmAllowed(u, r) || (isAdm(me) && !r.blocked && !r.blockedMe), counts: { following: fo.n, followers: fb.n },
-      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, ach: achF && achRow ? await achSum(db, parseAch(achRow.ach)) : undefined, mst: mo ? { score: mstScore(mo, mOpen), top: mOpen.map(g => ({ g, x: mstXp(mo, g) })).filter(x => x.x > 0).sort((a, b) => b.x - a.x).slice(0, 3) } : undefined, tier: isAdm(u) ? null : await tierOfUser(db, u, tierV2(me), rx, gtFor(me)),
+      bests: Object.fromEntries(bests.results.map(x => [x.game, x.best])), crowns, ach: achF && achRow ? await achSum(db, parseAch(achRow.ach)) : undefined, mst: mo ? { score: mstScore(mo, mOpen), top: mOpen.map(g => ({ g, x: mstXp(mo, g) })).filter(x => x.x > 0).sort((a, b) => b.x - a.x).slice(0, 3) } : undefined, tier: isAdm(u) || await db.prepare('SELECT 1 FROM bans WHERE uid = ?1 AND (until = 0 OR until > ?2)').bind(u.id, Date.now()).first() ? null : await tierOfUser(db, u, tierV2(me), rx, gtFor(me)),   // 정지 중이면 프로필 티어(이번·지난 라운드)도 숨김
       streak: isAdm(u) ? { cur: ALL_OPEN, best: ALL_OPEN, total: u.st_total || 0, pf: true } : { cur: (await liveMany(env, db, [u]))[0], best: u.st_best || 0, total: u.st_total || 0, pf: !!u.st_pf },
     });
   }),
@@ -1512,12 +1514,12 @@ const ROUTES = {
     const U = 'u.handle, u.name, u.avatar, u.color, u.mood, u.seen, u.st_rep, u.gc_fx, u.gc_own';
     const pub = await cached(`hall:${dev ? 'd' : 's'}:${rx ? 1 : 0}:${gs.join(',')}`, 60, async () => Object.fromEntries(await Promise.all(gs.map(async g => {
       const [top, cnt] = await Promise.all([
-        db.prepare(`SELECT ${U}, t.best AS v, t.at, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid ORDER BY t.best, t.at LIMIT 3`).bind(g).all(),
-        db.prepare(`SELECT COUNT(*) AS n FROM (${BEST})`).bind(g).first(),
+        db.prepare(`SELECT ${U}, t.best AS v, t.at, t.uid FROM (${BEST}) t JOIN users u ON u.id = t.uid WHERE t.${NOT_BAN} ORDER BY t.best, t.at LIMIT 3`).bind(g).all(),
+        db.prepare(`SELECT COUNT(*) AS n FROM (${BEST}) t WHERE t.${NOT_BAN}`).bind(g).first(),
       ]);
       return [g, { n: cnt?.n || 0, top: top.results.map(r => ({ ...card(r), v: r.v, at: r.at, uid: r.uid })) }];
     }))));
-    const mine = await Promise.all(gs.map(async g => { const m = await myBest(db, me.id, g, rx); return m?.b != null ? { v: m.b, r: await rankOfC(db, g, m.b, rx) } : null; }));
+    const mine = await Promise.all(gs.map(async g => { const m = await myBest(db, me.id, g, rx); return m?.b != null ? { v: m.b, r: (await db.prepare(`SELECT COUNT(*) + 1 AS r FROM (${BEST}) t WHERE t.best < ?2 AND t.${NOT_BAN}`).bind(g, m.b).first()).r } : null; }));   // 순위도 정지 계정 빼고
     return json({ games: gs.map((g, i) => ({ g, n: pub[g].n, top: pub[g].top.map(({ uid, ...x }) => ({ ...x, isMe: uid === me.id })), me: mine[i] })) });
   }),
 
@@ -1738,7 +1740,7 @@ async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), u
   if (v2) { const b = await cached('tb2:' + mk + ':' + from + to, to !== end || cur < rd.n ? 1800 : 45, () => tierBoard2(db, cur, from, to, rx, gt)); tierMemo.set(mk, { at: Date.now(), b }); return b; }   // '어제까지' 판(to < end)·끝난 라운드는 지난 기록이라 30분   // 데이터센터 공용 캐시 45초(2026-10-29 읽기 절약)
   const acc = new Map();
   await Promise.all(RANKED().map(async game => {
-    const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
+    const rows = (await db.prepare(`SELECT uid, MIN(best) AS b, MIN(at) AS at FROM scores WHERE game = ?1 AND day BETWEEN ?2 AND ?3 AND ${ND(rx)} AND ${NOT_BAN} GROUP BY uid ORDER BY b, at`).bind(game, from, to).all()).results;
     let rk = 0;
     rows.forEach((r, i) => { rk = i > 0 && rows[i - 1].b === r.b ? rk : i + 1;   // 같은 기록 = 같은 순위·같은 점수 (2026-10-26 핫픽스)
       const a = acc.get(r.uid) || { uid: r.uid, pts: 0, games: {} }; const p = gamePts(rk, rows.length); a.pts += p; a.games[game] = { r: rk, n: rows.length, p }; acc.set(r.uid, a); });
@@ -1761,8 +1763,8 @@ async function tierBoard(db, n, v2 = false, rx = rxOn(null), gt = gtFor(null), u
 // 티어 2차 계산 — 게임별 '개인 최고 기록 + 그 기록을 처음 낸 시각' → 순위 점수(gamePts2) → 잘한 3개 합
 async function tierBoard2(db, cur, from, to, rx = false, gt = 0) {
   const startMs = Date.UTC(+from.slice(0, 4), +from.slice(4, 6) - 1, +from.slice(6, 8)) - 9 * 36e5;   // 라운드 첫날 0시(KST)
-  const bans = (await db.prepare('SELECT uid, reason FROM bans WHERE until = 0 OR until > ?1').bind(startMs).all()).results;
-  const out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '')).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 = 제외
+  const bans = (await db.prepare('SELECT uid, reason, until FROM bans WHERE until = 0 OR until > ?1').bind(startMs).all()).results;
+  const now = Date.now(), out = new Set(bans.filter(b => GAME_FRAUD.test(b.reason || '') || b.until === 0 || b.until > now).map(b => b.uid));   // 이 라운드 중 게임 부정 정지 + 지금 정지 중(사유 무관, 2026-11-03 하율) = 제외
   const games = Object.entries(GAMES).filter(([, g]) => !isCas(g, from) && !g.noTier).filter(([, g]) => !g.ff || (ffOn(g.ff, gt === 2) && (g.tierOn || (g.tierFrom && from >= g.tierFrom.replace(/-/g, '')))));   // gt 2 = 개발자 미리보기: 아직 안 연 게임도 같이 계산
   const gOn = gt === 2 || (gt === 1 && (from >= GEAR_TIER_FROM || to >= GEAR_TIER_FROM && kstYmd() >= GEAR_TIER_FROM));
   const rOnly = gtrOn(gt);   // 일반(gearn) 빼고 타임어택만

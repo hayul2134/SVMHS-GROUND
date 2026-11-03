@@ -181,6 +181,21 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
   const r = await call('POST', 'score', { game: 'reaction', ticket: st.j?.ticket, ...PLAY.reaction(300) });
   if (!r.j?.ok) fails.push(`오래 한 판 검사: 티켓 만료 뒤 저장 거절 → ${r.s} ${JSON.stringify(r.j)}`);
 }
+// 정지 계정 검사(2026-11-03 하율 "정지 먹은 계정은 기록실이랑 티어에 표기되지 않게"): 정지 전엔 보이고, 정지 뒤엔 기록실·티어에서 빠져야 함
+{
+  skew += 3600e3;
+  const see = async () => { const h = JSON.stringify((await call('GET', 'hall')).j), t = JSON.stringify((await call('GET', 'tier')).j); return { h: h.includes('연기검사r1'), t: t.includes('연기검사r1') }; };
+  const a = await see();
+  const uid = sq.prepare("SELECT id FROM users WHERE handle = 'smoke_r1'").get().id;
+  sq.prepare('INSERT OR REPLACE INTO bans (uid, until, reason, at) VALUES (?, 0, ?, ?)').run(uid, '연기검사 정지', realNow());
+  skew += 3600e3;
+  const b = await see();
+  if (!a.h) fails.push('정지 검사: 정지 전인데 기록실에 안 보임(검사 데이터 확인)');
+  if (b.h) fails.push('정지 검사: 정지된 계정이 기록실에 보임');
+  if (b.t) fails.push('정지 검사: 정지된 계정이 티어에 보임');
+  if (a.t) console.log('정지 검사: 티어 정지 전 보임 → 정지 뒤 ' + (b.t ? '보임' : '빠짐'));
+  sq.prepare('DELETE FROM bans WHERE uid = ?').run(uid);
+}
 const saved = sq.prepare('SELECT COUNT(*) AS n FROM scores').get().n;
 if (!saved) fails.push('정상 기록이 하나도 저장되지 않음 — 검사 데이터(PLAY)를 확인할 것');
 const errs = sq.prepare('SELECT route, msg FROM errs').all();
