@@ -313,7 +313,7 @@ function menu(on) {
 }
 $('#btnMenu').onclick = () => menu(!$('#hMenu').classList.contains('open'));
 // 항목을 누르면 닫힘 · 바깥을 누르거나 Esc면 닫힘
-$('#hList').addEventListener('click', e => { if (e.target.closest('button')) menu(false); });
+$('#hList').addEventListener('click', e => { if (e.target.closest('button:not([data-keep])')) menu(false); });   // data-keep(가벼운 모드 스위치)은 메뉴를 닫지 않음
 document.addEventListener('click', e => { if (!e.target.closest('#hMenu')) menu(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#hMenu').classList.contains('open')) { menu(false); $('#btnMenu').focus(); } });
 // 첫 화면에서 내려가거나 다른 화면이면 왼쪽 위 로고 대신 '처음으로' 버튼
@@ -1974,11 +1974,15 @@ function liteUi() {
   if (!LITE) return;
   $('#skLite').checked = document.documentElement.classList.contains('lite');
   $('#skLiteNote').hidden = !(LITE.pick() == null && LITE.auto());
+  const on = document.documentElement.classList.contains('lite'), b = $('#btnLite');
+  b.setAttribute('aria-checked', on); $('#liteSub').textContent = on && LITE.pick() == null ? '자동으로 켜짐' : '느린 기기용';
 }
-$('#skLite').addEventListener('change', e => {
-  try { localStorage.setItem('sg_lite', e.target.checked ? 'on' : 'off'); } catch {}
-  LITE?.apply(); liteUi(); dispatchEvent(new Event('resize'));   // 게임 캔버스가 새 배율로 다시 맞춤
-});
+function setLite(on) { try { localStorage.setItem('sg_lite', on ? 'on' : 'off'); } catch {} LITE?.apply(); liteUi(); dispatchEvent(new Event('resize')); }   // 게임 캔버스가 새 배율로 다시 맞춤
+// 메뉴(목록)에서 바로 켜고 끄기(2026-11-03 하율 "목록 열면 바로 나올 수 있게") — 테마 바꾸기 안 체크와 같은 값
+$('#btnLite').onclick = () => setLite(!document.documentElement.classList.contains('lite'));
+$('#btnMenu').addEventListener('click', liteUi);
+$('#skLite').addEventListener('change', e => setLite(e.target.checked));
+liteUi();
 // 첫 화면이 뜨고 6초 뒤, 가만히 있는 홈에서 프레임 120개를 재서 중간값이 24ms(약 42fps)보다 느리면 이 기기는 자동으로 가벼운 모드(sg_lite_a)
 // 직접 고른 적이 있거나 이미 켜져 있으면 재지 않음. 탭이 숨겨지거나 게임 중이면 그 측정은 버림
 if (LITE && LITE.pick() == null && !document.documentElement.classList.contains('lite')) setTimeout(function probe() {
@@ -1989,7 +1993,7 @@ if (LITE && LITE.pick() == null && !document.documentElement.classList.contains(
     if (last) d.push(t - last); last = t;
     if (d.length < 120) return requestAnimationFrame(f);
     d.sort((a, b) => a - b);
-    if (d[60] > 24) { try { localStorage.setItem('sg_lite_a', '1'); } catch {} LITE.apply(); dispatchEvent(new Event('resize')); }
+    if (d[60] > 24) { try { localStorage.setItem('sg_lite_a', '1'); } catch {} LITE.apply(); liteUi(); dispatchEvent(new Event('resize')); }
   };
   requestAnimationFrame(f);
 }, 6000);

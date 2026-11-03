@@ -132,7 +132,7 @@ console.log(`가벼운 모드 ${await page.evaluate(() => document.documentEleme
 console.log(`CPU ${CPU}x | 로드 ${tLoad}ms · 홈 표시 ${tHome}ms | 로딩 긴 작업 ${ltLoad.n}개 합 ${ltLoad.sum}ms 최대 ${ltLoad.max}ms`);
 console.log(`DOM ${mem.dom}개 · JS 힙 ${mem.heap}MB · 도는 애니메이션 ${mem.anim}개`);
 console.log(`가만히 ${idle.fps}fps(최악 ${idle.worst}ms) 긴 작업 ${ltIdle.sum}ms | 스크롤 ${scr.fps}fps(최악 ${scr.worst}ms) 긴 작업 ${ltScr.sum}ms`);
-if (process.env.CLICK) { await page.evaluate(s => document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open')), 0); await page.evaluate(q => document.querySelector(q)?.click(), process.env.CLICK); await page.waitForTimeout(800); if (process.env.SCROLLTO) await page.evaluate(q => document.querySelector(q)?.scrollIntoView(), process.env.SCROLLTO); await page.waitForTimeout(300); }
+if (process.env.CLICK) { await page.evaluate(s => document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open')), 0); await page.evaluate(q => document.querySelector(q)?.click(), process.env.CLICK); await page.waitForTimeout(800); if (process.env.CLICK2) { await page.evaluate(q => document.querySelector(q)?.click(), process.env.CLICK2); await page.waitForTimeout(500); } if (process.env.SCROLLTO) await page.evaluate(q => document.querySelector(q)?.scrollIntoView(), process.env.SCROLLTO); await page.waitForTimeout(300); }
 if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
 if (errs.length) console.log('오류:', errs.slice(0, 5));
 await browser.close(); srv.close();
