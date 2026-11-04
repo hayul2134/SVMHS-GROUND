@@ -37,6 +37,20 @@ const CK_LINES = ['…또 왔네?', '이번엔 바로 진짜부터 하자.'];
 const STALL = [['헉… 헉…', 'tired2', 2], ['…', 'tired2', 1.5], ['그래. 사실 필살기 같은 건 없어.', 'tired1', 3], ['그냥 여기서 계속 버틸 거야.', 'tired1', 3], ['네가 지겨워서 포기할 때까지.', 'closed', 3], ['…', 'tired2', 2.5], ['…진짜로.', 'tired2', 2.5], ['…', 'sleep', 2.5], ['…', 'sleep', 2]];
 const DEATH = ['…아. 결국 이렇게 됐네.', '벌점은… 내일 줄게.', '…매점 갈 거면, 빵 하나만 남겨 둬.'];
 
+/* ── 업적(2026-11-04 하율) — 이 기기에만 저장(sg_jd_ach), 랭킹·보상 없음. h = 달성 전엔 이름·설명 숨김 ── */
+const ACH = [
+  ['start', '첫 등교', '결투를 처음 시작했다'], ['hit1', '첫 반항', "처음으로 '반항'에 성공했다"], ['act', '관찰력', '선도부장을 살펴봤다'],
+  ['p1', '1막 끝', '1막을 끝까지 버텼다'], ['trap', '선배 말 믿어 봐', '봐주기를 눌렀다', 1], ['p2', '진짜 시작', '2막에 들어갔다'],
+  ['p1clean', '1막 무사고', '1막을 한 대도 안 맞고 끝냈다'], ['eat', '매점 털이', '한 판에서 음식을 전부 먹었다'], ['final', '필살기', '필살기까지 버텼다'],
+  ['push', '졸 때를 노려라', '조는 사이에 상자를 밀었다', 1], ['win', '졸업', '처음으로 이겼다'], ['winfull', '정주행', '중간 지점 없이 처음부터 이겼다'],
+  ['win10', '10분 컷', '처음부터 10분 안에 이겼다'], ['win7', '7분 컷', '처음부터 7분 안에 이겼다'], ['winhalf', '여유만만', '체력 46 이상 남기고 이겼다'],
+  ['nofood', '공복 투혼', '음식을 하나도 안 먹고 이겼다'], ['nohit', '모범생', '처음부터 한 대도 안 맞고 이겼다', 1], ['d1', '반성문 1장', '처음으로 쓰러졌다'],
+  ['d10', '반성문 10장', '10번 쓰러졌다'], ['d50', '반성문 50장', '50번 쓰러졌다'], ['d100', '반성문 100장', '100번 쓰러졌다'],
+  ['w5', '개근상', '5번 이겼다'], ['w10', '명예의 전당', '10번 이겼다'],
+];
+// 시간 표기: 분·초·밀리초(1/60초 고정 스텝이라 밀리초는 16~17ms 단위)
+const fmtMs = ms => { if (!ms && ms !== 0) return '—'; ms = Math.round(ms); return `${Math.floor(ms / 60000)}분 ${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}초`; };
+const fmtDay = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 const josa = w => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c < 11172 && c % 28 ? '을' : '를'; };
 const cleanName = v => String(v || '').replace(/[<>\n\r\t]/g, '').trim().slice(0, 6);
 const rnd = n => Math.floor(Math.random() * n);
@@ -56,6 +70,22 @@ export function createJudge(el, O = {}) {
   const ART = buildArt();
   let S = 1, alive = true, raf = 0, last = 0, acc = 0, paused = false;
   const rec = Object.assign({ best: 0, clear: 0, deaths: 0, fast: 0 }, store.get('jd_rec', {}) || {});
+  // 기록실(2026-11-04): top = 처음부터 이긴 판 빠른 순 10개, ckTop = 중간 지점부터 5개, recent = 최근 도전 10판, playMs = 결투한 시간 합
+  const runs = Object.assign({ top: [], ckTop: [], recent: [], playMs: 0 }, store.get('jd_runs', {}) || {});
+  if (rec.fast && !runs.top.length) runs.top.push({ ms: rec.fast, hp: 0, t: 0 });   // 기록실 전 승리 기록(체력·날짜 모름)
+  const ach = Object.assign({}, store.get('jd_ach', {}) || {}); let achQ = [], achB = null;
+  function unlock(id, t) {
+    if (ach[id]) return; ach[id] = t || Date.now(); store.set('jd_ach', ach);
+    const a = ACH.find(x => x[0] === id); if (a) achQ.push(a);
+  }
+  function achCounts(t) {   // 누적 횟수 업적(예전 기록에도 바로 적용 — 그땐 날짜 모름 t=1)
+    const u = id => unlock(id, t);
+    if (rec.deaths >= 1) u('d1'); if (rec.deaths >= 10) u('d10'); if (rec.deaths >= 50) u('d50'); if (rec.deaths >= 100) u('d100');
+    if (rec.clear >= 1) u('win'); if (rec.clear >= 5) u('w5'); if (rec.clear >= 10) u('w10');
+    if (rec.best >= 1) u('hit1'); if (rec.best >= 13) u('p1'); if (rec.best >= 14) u('p2'); if (rec.best >= 23) u('final');
+    if (rec.fast) { u('winfull'); if (rec.fast <= 600000) u('win10'); if (rec.fast <= 420000) u('win7'); }
+  }
+  achCounts(1); achQ = [];   // 처음 열 때 예전 기록으로 채운 것은 알림 없이
   let snd = store.get('jd_snd', true) !== false;
 
   /* ── 글꼴(갈무리, OFL) — 실패하면 기본 글꼴 ── */
@@ -67,6 +97,16 @@ export function createJudge(el, O = {}) {
 
   /* ── 크기 ── */
   const isFs = () => (document.fullscreenElement || document.webkitFullscreenElement) === wrap;
+  // 터치 버튼(2026-11-04 하율): 게임 화면을 가리지 않게 화면 밖에 — 옆(tp-s, 왼쪽 방향·오른쪽 Z/X) / 아래(tp-b) 중 화면이 더 커지는 쪽
+  const PS = 176, PB = 178;
+  function layout(w, h) {
+    let md = '';
+    if (!pad.hidden) { const kb = Math.min(w / VW, (h - PB) / VH), ks = Math.min((w - 2 * PS) / VW, h / VH); md = ks >= kb ? 's' : 'b'; if (md === 's') w -= 2 * PS; else h -= PB; }
+    wrap.classList.toggle('tp-s', md === 's'); wrap.classList.toggle('tp-b', md === 'b');
+    const rot = md === 'b' && innerHeight > innerWidth && innerWidth < 700;
+    if (!pad.hidden) barP.textContent = '▲▼◀▶ 이동 · Z 확인 · X 취소(누르고 있으면 천천히) · 게임 화면 탭: 멈춤' + (rot ? ' · 가로로 돌리면 화면이 더 커져요' : '');
+    apply(w, Math.max(120, h));
+  }
   function fit() {
     let w, h;
     if (isFs()) { w = innerWidth; h = innerHeight; }
@@ -76,12 +116,12 @@ export function createJudge(el, O = {}) {
       const below = reB.offsetHeight + barP.offsetHeight + 6 * 2 + 5 + 24;
       h = Math.max(240, innerHeight - top - below);
     }
-    apply(w, h);
+    layout(w, h);
     // 게임은 position:fixed인 .play 안에서 스크롤됨 — 문서(홈 화면) 높이가 아니라 .play와 이 게임 상자 아래끝으로 넘침을 잼
     if (!isFs()) {
       const sc = el.closest('.play'), bot = el.getBoundingClientRect().bottom + 24 - innerHeight;
       const over = Math.ceil(Math.max(bot, sc ? sc.scrollHeight - sc.clientHeight : 0));
-      if (over > 0) apply(w, Math.max(240, h - over));
+      if (over > 0) layout(w, Math.max(240, h - over));
     }
   }
   function apply(w, h) {
@@ -186,7 +226,7 @@ export function createJudge(el, O = {}) {
     if (!alive || e.target?.closest?.('input,textarea')) return;
     if (!el.isConnected) return;
     if (e.code === 'Escape' || e.code === 'KeyP') {   // 결투 중 Esc = 멈춤(사이트의 'Esc = 게임 닫기'보다 먼저 받음) · 처음 화면에선 사이트에 넘김
-      if (['title', 'help', 'win', 'dead', 'nameok'].includes(G.mode) && !paused) return;
+      if (['title', 'help', 'rec', 'win', 'dead', 'nameok'].includes(G.mode) && !paused) return;
       e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) togglePause(); return;
     }
     syncMods(e);
@@ -210,8 +250,13 @@ export function createJudge(el, O = {}) {
     const up = () => { if (k === 'X') { xSrc.delete('pad'); if (xSrc.size) { b.classList.remove('on'); return; } } release(k); b.classList.remove('on'); };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
   });
-  cv.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') pad.hidden = false; ac(); if (paused) togglePause(); else if (['title', 'over', 'win', 'help'].includes(G.mode)) { press('Z'); setTimeout(() => release('Z'), 50); } });
-  if (matchMedia?.('(pointer:coarse)').matches) pad.hidden = false;
+  const showPad = () => { if (!pad.hidden) return; pad.hidden = false; barP.textContent = '▲▼◀▶ 이동 · Z 확인 · X 취소(누르고 있으면 천천히) · 게임 화면 탭: 멈춤'; fitAll(); };
+  cv.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') showPad(); ac();
+    if (paused) togglePause(); else if (['title', 'over', 'win', 'help', 'rec'].includes(G.mode)) { press('Z'); setTimeout(() => release('Z'), 50); }
+    else if (e.pointerType === 'touch') togglePause();   // 2026-11-04: 버튼이 화면 밖으로 빠져서 터치로도 멈출 수 있게
+  });
+  if (matchMedia?.('(pointer:coarse)').matches) setTimeout(showPad);
 
   /* ═════════ 게임 상태 ═════════ */
   const G = { mode: 'title', sel: 0 };
@@ -421,7 +466,7 @@ export function createJudge(el, O = {}) {
   function doShake(n) { shake = n; shakeT = 0; }
 
   /* ── 피해·벌점 ── */
-  function damage(d, k) { lastDmg = T; if (O._god) return; hp -= d; kr += k; play('PlayerDamaged'); }
+  function damage(d, k) { lastDmg = T; G.runHit = true; if (hits < 13) G.p1Hit = true; if (O._god) return; hp -= d; kr += k; play('PlayerDamaged'); }
   function checkHits() {
     if (!heart.vis || T - lastDmg < .033) return;
     const hx = heart.x, hy = heart.y, moving = heart.vx !== 0 || heart.vy !== 0;
@@ -568,7 +613,7 @@ export function createJudge(el, O = {}) {
     const n = hits, lines = LINES[n];
     const name = n <= 12 ? P1[Math.min(n, 13)] : n === 13 ? 'spare' : n <= 22 ? P2[n - 14] : 'final';
     if (n === 14) { musSetPause(false); store.set('jd_ck', 1); }
-    rec.best = Math.max(rec.best, n); saveRec();
+    rec.best = Math.max(rec.best, n); saveRec(); achCounts(); if (n === 13 && !ck && !G.p1Hit) unlock('p1clean');
     if (lines) { talk(lines, () => startAttack(name), FACE[n] || 'default'); }
     else startAttack(name);
   }
@@ -579,9 +624,10 @@ export function createJudge(el, O = {}) {
     next();
   }
   function saveRec() { store.set('jd_rec', rec); }
+  function logRun(r, at, ms) { runs.recent.unshift({ r, at, ms, ck, t: Date.now() }); runs.recent.splice(10); runs.playMs += ms; store.set('jd_runs', runs); }
 
   function newRun(fromCk) {
-    hp = MAXHP; kr = 0; krT = 0; items = ITEMS0.map(a => a.slice()); trapped = false; ck = fromCk; runT0 = T;
+    hp = MAXHP; kr = 0; krT = 0; items = ITEMS0.map(a => a.slice()); trapped = false; ck = fromCk; runT0 = T; G.runHit = false; G.p1Hit = false; G.ate = 0; G.newBest = false; unlock('start');
     bones = []; stabs = []; warns = []; gbs = []; plats = []; mbones = []; mbBottom = false; TL = null; black = false; stall = null; ending = null; over = null;
     sans.x = 320; sans.alpha = 1; sans.walk = 0; sans.sweat = 0; sans.pose = null; sans.anim = 'Idle'; sans.torso = 'default';
     zone.l = zone.tl = MENU_ZONE[0]; zone.t = zone.tt = MENU_ZONE[1]; zone.r = zone.tr = MENU_ZONE[2]; zone.b = zone.tb = MENU_ZONE[3]; zone.vis = true;
@@ -605,16 +651,16 @@ export function createJudge(el, O = {}) {
     if (m.what === 'fight') { menu = null; startTarget(false); }
     else if (m.what === 'actEnemy') menu = { kind: 'list', what: 'act', items: ['살펴보기'], sel: 0 };
     else if (m.what === 'act') {
-      menu = null;
+      menu = null; unlock('act');
       const t = hits > 0 ? ['* 선도부장 - 공격 1 방어 1', '* 전교에서 제일 만만한 선배.', '* 한 번에 1밖에 못 깎는다.'] : ['* 선도부장 - 공격 1 방어 1', '* 전교에서 제일 만만한 선배.', '* 한 번에 1밖에 못 깎는다.'];
       showText(t.join('\n'), () => hits > 0 ? showText('* 언젠가는 지칠 거다.\n* 계속 몰아붙이자.', () => enemyTurn(false)) : enemyTurn(false));
     } else if (m.what === 'item') {
-      const idx = m.page * 4 + m.sel, it = items.splice(idx, 1)[0]; menu = null;
+      const idx = m.page * 4 + m.sel, it = items.splice(idx, 1)[0]; menu = null; G.ate = (G.ate || 0) + 1; if (!items.length) unlock('eat');
       const before = hp; hp = Math.min(MAXHP, hp + it[1]); play('Heal');
       showText(`* ${it[2]}${josa(it[2])} 먹었다.\n* ${hp >= MAXHP ? '체력이 가득 찼다.' : `체력이 ${hp - before} 회복됐다.`}`, () => enemyTurn(false));
     } else if (m.what === 'mercy') {
       menu = null;
-      if (hits === 13) { trapped = true; talk(TRAP, () => trapAttack(), 'noeyes'); }
+      if (hits === 13) { trapped = true; unlock('trap'); talk(TRAP, () => trapAttack(), 'noeyes'); }
       else enemyTurn(false);
     }
   }
@@ -666,7 +712,7 @@ export function createJudge(el, O = {}) {
       }
       return;
     }
-    if (heart.x <= I.l + .01 && held.L && zone.l > 20) { const d = Math.min(60 * dt, zone.l - 20); zone.l -= d; zone.r -= d; zone.tl = zone.l; zone.tr = zone.r; heart.x -= d; }
+    if (heart.x <= I.l + .01 && held.L && zone.l > 20) { unlock('push'); const d = Math.min(60 * dt, zone.l - 20); zone.l -= d; zone.r -= d; zone.tl = zone.l; zone.tr = zone.r; heart.x -= d; }
     if (zone.l <= 30 && heart.y >= I.b - .01 && held.D) { const d = 60 * dt; zone.t += d; zone.b += d; zone.tt = zone.t; zone.tb = zone.b; heart.y += d; }
     // 별이 '반항' 버튼에 닿으면
     if (heart.x >= BTNS[0].x && heart.x <= BTNS[0].x + 110 && heart.y >= 432 && heart.y <= 474) {
@@ -683,9 +729,13 @@ export function createJudge(el, O = {}) {
   }
   function win() {
     G.mode = 'win'; winT = 0; musOn = false; rec.clear++; const tm = Math.round((T - runT0) * 1000); if (!ck && (!rec.fast || tm < rec.fast)) rec.fast = tm; rec.best = 24; G.winMs = tm; G.winHp = Math.max(1, Math.ceil(hp)); saveRec(); store.set('jd_ck', 0);
+    const L = ck ? runs.ckTop : runs.top, n = ck ? 5 : 10; G.newBest = !L.length || tm < L[0].ms;
+    L.push({ ms: tm, hp: G.winHp, t: Date.now() }); L.sort((a, b) => a.ms - b.ms); L.splice(n);
+    logRun('win', 24, tm);
+    achCounts(); if (!ck) { if (hp >= 46) unlock('winhalf'); if (!G.ate) unlock('nofood'); if (!G.runHit) unlock('nohit'); } else { if (hp >= 46) unlock('winhalf'); if (!G.ate) unlock('nofood'); }
   }
   function die() {
-    G.mode = 'dead'; over = { t: 0, x: heart.x, y: heart.y, sh: [] }; TL = null; musOn = false; rec.deaths++; saveRec();
+    G.mode = 'dead'; over = { t: 0, x: heart.x, y: heart.y, sh: [] }; TL = null; musOn = false; rec.deaths++; saveRec(); logRun('dead', hits, Math.round((T - runT0) * 1000)); achCounts();
     if (hits >= 14 && !trapped) store.set('jd_ck', 1);
   }
 
@@ -714,8 +764,13 @@ export function createJudge(el, O = {}) {
     const m = G.mode;
     if (m === 'title') {
       const o = titleOpts(); if (pr.has('U')) { G.sel = (G.sel + o.length - 1) % o.length; play('move'); } if (pr.has('D')) { G.sel = (G.sel + 1) % o.length; play('move'); }
-      if (pr.has('Z')) { play('select'); const id = o[G.sel].id; if (id === 'new') { if (pname(true)) newRun(false); else nameOpen(() => newRun(false)); } else if (id === 'ck') newRun(true); else if (id === 'name') nameOpen(() => { G.mode = 'title'; }); else G.mode = 'help'; }
+      if (pr.has('Z')) { play('select'); const id = o[G.sel].id; if (id === 'new') { if (pname(true)) newRun(false); else nameOpen(() => newRun(false)); } else if (id === 'ck') newRun(true); else if (id === 'name') nameOpen(() => { G.mode = 'title'; }); else if (id === 'rec') { G.mode = 'rec'; G.tab = G.tab || 0; G.pg = 0; } else G.mode = 'help'; }
     } else if (m === 'help') { if (pr.has('Z') || pr.has('X')) { G.mode = 'title'; play('move'); } }
+    else if (m === 'rec') {
+      if (pr.has('L') || pr.has('R')) { G.tab = 1 - G.tab; G.pg = 0; play('move'); }
+      if (G.tab === 1 && (pr.has('U') || pr.has('D'))) { G.pg = 1 - G.pg; play('move'); }
+      if (pr.has('Z') || pr.has('X')) { G.mode = 'title'; play('move'); }
+    }
     else if (m === 'nameok') {
       G.nameT += dt;
       if (pr.has('L') || pr.has('R')) { G.nameSel = 1 - G.nameSel; play('move'); }
@@ -788,7 +843,7 @@ export function createJudge(el, O = {}) {
   function titleOpts() {
     const o = [{ id: 'new', n: '처음부터 결투' }];
     if (store.get('jd_ck', 0)) o.push({ id: 'ck', n: '중간 지점부터' });
-    o.push({ id: 'name', n: '이름 바꾸기' }, { id: 'help', n: '조작법' });
+    o.push({ id: 'rec', n: '기록실 · 업적' }, { id: 'name', n: '이름 바꾸기' }, { id: 'help', n: '조작법' });
     if (G.sel >= o.length) G.sel = 0;
     return o;
   }
@@ -948,11 +1003,14 @@ export function createJudge(el, O = {}) {
     X.save(); X.translate(s.x, s.y); X.rotate(-0.9);
     X.fillRect(-wdt / 2, -len / 2, wdt, len); X.restore();
   }
-  function render() {
+  let rT = 0;
+  function render() { const n = performance.now(), dt = rT ? Math.min(.1, (n - rT) / 1000) : 0; rT = n; drawScene(); drawAch(paused ? 0 : dt); }
+  function drawScene() {
     X.setTransform(S, 0, 0, S, 0, 0); X.imageSmoothingEnabled = false;
     X.fillStyle = '#000'; X.fillRect(0, 0, VW, VH);
     const m = G.mode;
     if (m === 'title' || m === 'help') return renderTitle();
+    if (m === 'rec') return renderRec();
     if (m === 'name') { txt('이름을 정해 주세요.', 320, 130, 30, '#fff', 'center'); X.fillStyle = '#fff'; X.fillRect(200, 262, 240, 3); txt('최대 6글자 · Enter 확정 · Esc 돌아가기', 320, 300, 18, '#c8c8c8', 'center', F9); return; }
     if (m === 'nameok') {
       const k = Math.min(1, G.nameT / 2.4), sz = 30 + k * 60, j = () => (Math.random() - .5) * 2 * k;
@@ -1001,13 +1059,51 @@ export function createJudge(el, O = {}) {
     if (G.mode === 'help') {
       ['방향키·화면 패드: 별 움직이기 (X 누르고 있으면 천천히)', 'Z/Enter 확인 · X 취소 · Esc 멈춤', '빨간 별: 자유롭게 · 파란 별: 중력! 점프는 ↑(길게 누르면 높이)',
         '흰 자: 무조건 피하기 · 파란 자: 가만히 있으면 안 아픔', "'반항'을 해야 결투가 진행됨 · 맞은 뒤에도 체력이 천천히 더 깎임"].forEach((l, i) => txt(l, 320, 318 + i * 26, 18, '#c8c8c8', 'center', F9));
-      txt('Z: 돌아가기', 320, 454, 18, '#808080', 'center', F9); return;
+      txt('원작: UNDERTALE(Toby Fox) 샌즈전 오마주 · 공격 패턴 참고: c2-sans-fight(jcw87)', 320, 436, 13, '#808080', 'center');
+      txt('Z: 돌아가기', 320, 458, 16, '#808080', 'center'); return;
     }
-    titleOpts().forEach((o, i) => { const on = i === G.sel; txt(o.n, 320, 312 + i * 32, 22, on ? YELLOW : '#fff', 'center'); if (on) { X.font = `22px ${F11}`; img(ART.star.red, 320 - X.measureText(o.n).width / 2 - 26, 315 + i * 32, 1); } });
-    const best = rec.clear ? `승리 ${rec.clear}번 · 가장 빠른 승리 ${fmtT(rec.fast)}` : `가장 멀리 간 곳 ${rec.best ? (rec.best >= 23 ? '필살기' : rec.best >= 14 ? `2막 ${rec.best - 13}턴` : `1막 ${rec.best}턴`) : '—'}`;
+    const to = titleOpts(), gap = to.length > 4 ? 27 : 32;
+    to.forEach((o, i) => { const on = i === G.sel; txt(o.n, 320, 310 + i * gap, 22, on ? YELLOW : '#fff', 'center'); if (on) { X.font = `22px ${F11}`; img(ART.star.red, 320 - X.measureText(o.n).width / 2 - 26, 313 + i * gap, 1); } });
+    const best = rec.clear ? `승리 ${rec.clear}번 · 가장 빠른 승리 ${fmtMs(runs.top[0]?.ms ?? rec.fast)}` : `가장 멀리 간 곳 ${rec.best ? (rec.best >= 23 ? '필살기' : rec.best >= 14 ? `2막 ${rec.best - 13}턴` : `1막 ${rec.best}턴`) : '—'}`;
     txt(`${pname(true) ? pname() + ' · ' : ''}${best} · 쓰러진 횟수 ${rec.deaths}`, 320, 452, 18, '#808080', 'center', F9);
   }
-  const fmtT = ms => ms ? `${Math.floor(ms / 60000)}분 ${Math.floor(ms / 1000) % 60}초` : '—';
+  const stageName = n => n >= 24 ? '승리' : n >= 23 ? '필살기' : n >= 14 ? `2막 ${n - 13}턴` : n ? `1막 ${n}턴` : '첫 공격';
+  function renderRec() {
+    ['기록실', '업적'].forEach((t, i) => { const on = G.tab === i, x = i ? 400 : 240; txt(t, x, 22, 26, on ? YELLOW : '#808080', 'center'); if (on) { X.fillStyle = YELLOW; X.fillRect(x - 40, 54, 80, 3); } });
+    txt('<', 150, 24, 22, '#606060', 'center'); txt('>', 490, 24, 22, '#606060', 'center');
+    if (G.tab === 0) {
+      const b = runs.top[0];
+      txt('처음부터 가장 빠른 승리', 320, 74, 16, '#c8c8c8', 'center');
+      txt(b ? fmtMs(b.ms) : '아직 없음', 320, 96, 34, b ? YELLOW : '#808080', 'center');
+      txt(`승리 ${rec.clear}번 · 쓰러짐 ${rec.deaths}번 · 가장 멀리 간 곳 ${rec.best ? stageName(rec.best) : '—'} · 결투한 시간 ${fmtMs(runs.playMs).replace(/\.\d+초$/, '초')}`, 320, 140, 14, '#a0a0a0', 'center');
+      X.fillStyle = '#404040'; X.fillRect(40, 168, 560, 2); X.fillRect(319, 178, 2, 230);
+      txt('빠른 승리 TOP 10', 180, 180, 17, '#fff', 'center'); txt('최근 도전', 460, 180, 17, '#fff', 'center');
+      if (!runs.top.length) txt('아직 승리 기록이 없어요', 180, 280, 15, '#808080', 'center');
+      runs.top.forEach((r, i) => { const y = 208 + i * 20, c = i ? '#e0e0e0' : YELLOW; txt(`${i + 1}.`, 64, y, 15, c, 'right'); txt(fmtMs(r.ms), 72, y, 15, c); txt(r.hp ? `체력 ${r.hp}` : '', 250, y, 13, '#909090'); txt(r.t ? fmtDay(r.t).split(' ')[0] : '', 300, y, 13, '#707070', 'right'); });
+      if (!runs.recent.length) txt('아직 도전 기록이 없어요', 460, 280, 15, '#808080', 'center');
+      runs.recent.forEach((r, i) => { const y = 208 + i * 20, w = r.r === 'win'; txt(fmtDay(r.t), 340, y, 13, '#707070'); txt(w ? '승리' : stageName(r.at), 440, y, 14, w ? YELLOW : '#e0e0e0'); txt(fmtMs(r.ms), 600, y, 13, '#a0a0a0', 'right'); });
+      const c = runs.ckTop[0]; txt(`중간 지점부터 가장 빠른 승리 ${c ? fmtMs(c.ms) : '—'}`, 320, 422, 14, '#a0a0a0', 'center');
+    } else {
+      const got = ACH.filter(a => ach[a[0]]).length; txt(`${got} / ${ACH.length}`, 320, 70, 18, '#c8c8c8', 'center');
+      const list = ACH.slice(G.pg * 12, G.pg * 12 + 12);
+      list.forEach((a, i) => {
+        const x = i % 2 ? 330 : 30, y = 100 + (i >> 1) * 52, on = !!ach[a[0]], hid = a[3] && !on;
+        X.fillStyle = on ? '#2a2a10' : '#141414'; X.fillRect(x, y, 280, 46); X.strokeStyle = on ? YELLOW : '#404040'; X.lineWidth = 1.5; X.strokeRect(x + .75, y + .75, 278.5, 44.5);
+        if (on) img(ART.star.red, x + 10, y + 15, 1); else { X.globalAlpha = .25; img(ART.star.red, x + 10, y + 15, 1); X.globalAlpha = 1; }
+        txt(hid ? '???' : a[1], x + 36, y + 6, 17, on ? '#fff' : '#9a9a9a'); txt(hid ? '숨겨진 업적' : a[2], x + 36, y + 27, 12, on ? '#c8c8c8' : '#6a6a6a');
+        if (on && ach[a[0]] > 1) txt(fmtDay(ach[a[0]]).split(' ')[0], x + 272, y + 7, 11, '#808070', 'right');
+      });
+      txt(`${G.pg + 1} / 2 · 위·아래로 넘기기`, 320, 418, 14, '#808080', 'center');
+    }
+    txt('왼쪽·오른쪽: 기록실·업적 · Z/X: 돌아가기 · 이 기기에만 저장돼요', 320, 452, 14, '#707070', 'center');
+  }
+  function drawAch(dt) {   // 업적 달성 알림 — 공격 중엔 미뤘다가 보여 줌
+    if (!achB && achQ.length && !['attack', 'stall', 'target', 'final', 'name', 'nameok'].includes(G.mode)) { achB = { a: achQ.shift(), t: 0 }; play('select'); }
+    if (!achB) return; achB.t += dt; if (achB.t > 2.8) { achB = null; return; }
+    const k = Math.min(1, achB.t / .2, (2.8 - achB.t) / .3), y = -50 + 58 * k;
+    X.setTransform(S, 0, 0, S, 0, 0); X.fillStyle = '#000'; X.fillRect(170, y, 300, 44); X.strokeStyle = YELLOW; X.lineWidth = 2; X.strokeRect(171, y + 1, 298, 42);
+    txt('업적 달성', 320, y + 5, 13, YELLOW, 'center'); img(ART.star.red, 186, y + 14, 1); txt(achB.a[1], 320, y + 21, 18, '#fff', 'center');
+  }
   function renderDead() {
     const o = over;
     if (o.t < 1.6) { if (o.split || o.t > 20 / 30) drawHeart(o.x, o.y, true); else drawHeart(o.x, o.y); }
@@ -1018,7 +1114,8 @@ export function createJudge(el, O = {}) {
   }
   function renderWin() {
     txt('* 이겼다!', 120, 150, 22); txt(`* 남은 체력만큼 상점 ${G.winHp || 1}점을 받았다.`, 120, 190, 22); txt(`* ${pname()}${pname().length ? '은(는)' : ''} 졸업장을 받았다.`, 120, 230, 22);
-    txt(`걸린 시간 ${fmtT(G.winMs)}${ck ? ' (중간 지점부터)' : ''} · 지금까지 쓰러진 횟수 ${rec.deaths}`, 320, 320, 18, '#c8c8c8', 'center', F9);
+    txt(`걸린 시간 ${fmtMs(G.winMs)}${ck ? ' (중간 지점부터)' : ''}`, 320, 300, 22, G.newBest ? YELLOW : '#fff', 'center');
+    txt(`${G.newBest ? '새 기록! · ' : ''}지금까지 쓰러진 횟수 ${rec.deaths}`, 320, 336, 16, '#c8c8c8', 'center');
     if (winT > 1.5) txt('Z · 화면 탭: 처음 화면', 320, 440, 18, '#808080', 'center', F9);
   }
 
@@ -1031,7 +1128,7 @@ export function createJudge(el, O = {}) {
     menu = null; bubble = null; target = null; strike = null; dmgText = null; popTexts = []; winT = 0; pr.clear(); rel.clear();
     if (pname(true)) newRun(false); else nameOpen(() => newRun(false));
   };
-  function togglePause() { if (['title', 'help', 'win', 'dead', 'name', 'nameok'].includes(G.mode)) return; paused = !paused; for (const k in held) held[k] = 0; if (AC) { paused ? AC.suspend?.() : AC.resume?.(); } }
+  function togglePause() { if (['title', 'help', 'rec', 'win', 'dead', 'name', 'nameok'].includes(G.mode)) return; paused = !paused; for (const k in held) held[k] = 0; if (AC) { paused ? AC.suspend?.() : AC.resume?.(); } }
   const vis = () => { if (document.hidden && !paused) togglePause(); };
   const blur = () => { clearKeys(); if (!paused && ['attack', 'stall'].includes(G.mode)) togglePause(); };
   document.addEventListener('visibilitychange', vis); addEventListener('blur', blur); addEventListener('resize', fit); addEventListener('resize', placeName);

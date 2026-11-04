@@ -6955,6 +6955,16 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .jd-dp [data-k=U]{grid-area:1/2}.jd-dp [data-k=L]{grid-area:2/1}.jd-dp [data-k=R]{grid-area:2/3}.jd-dp [data-k=D]{grid-area:3/2}
 .jd-ab{display:flex;gap:8px}
 .jd-ab [data-k=Z]{width:64px;height:64px;border-radius:50%}
+/* 2026-11-04 하율: 터치 버튼을 게임 화면 밖으로(judge.js layout) — 옆 tp-s / 아래 tp-b */
+.jd-wrap.tp-b{display:flex;flex-direction:column;align-items:center}
+.jd-wrap.tp-b .jd-pad{position:static;width:100%;box-sizing:border-box;padding:9px 12px 9px}
+.jd-wrap.tp-s{display:grid;grid-template-columns:176px auto 176px;align-items:end}
+.jd-wrap.tp-s .jd-pad{display:contents}
+.jd-wrap.tp-s .jd-cv{grid-column:2;grid-row:1}
+.jd-wrap.tp-s .jd-dp{grid-column:1;grid-row:1;justify-self:center;margin-bottom:12px}
+.jd-wrap.tp-s .jd-ab{grid-column:3;grid-row:1;justify-self:center;align-items:flex-end;margin-bottom:12px}
+.jd-wrap:fullscreen.tp-b{justify-content:center}
+.jd-wrap:fullscreen.tp-s{place-content:center}
 .bl{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
 .bl-wrap{position:relative;line-height:0}
 .bl-cv{display:block;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}
