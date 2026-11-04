@@ -1752,7 +1752,12 @@ let lastFocus = null;
 // 창이 하나라도 열려 있으면 뒤 화면 스크롤을 잠금(html.modal-lock) — 창 안(.sheet)만 스크롤됨
 const syncModalLock = () => document.documentElement.classList.toggle('modal-lock', !!document.querySelector('.modal.open'));
 // 닫을 때: 창(.sheet)이 아래로 내려가며 사라진 뒤 닫힘(.out, 0.26초). 그 사이 다시 열면 닫기를 취소
-const openModal = SOC.openModal = id => { lastFocus = document.activeElement; const m = $(id); clearTimeout(m._out); m.classList.remove('out'); m.classList.add('open'); syncModalLock(); [...m.querySelectorAll('button, select')].find(el => !el.hidden)?.focus(); };
+/* 모든 올라오는 창 오른쪽 위 X(2026-11-05 하율) — 닫기 X가 없는 창엔 .sheet-x를 넣고, 내용을 다시 그려도(innerHTML) 다시 붙임 */
+const X_SEL = '.sheet-x, .all-x, .ed-x';
+const X_HTML = '<button class="sheet-x" type="button" data-close aria-label="닫기" data-tip="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>';
+const ensureX = m => { const s = m.querySelector(':scope > .sheet'); if (!s || s.querySelector(X_SEL)) return; s.insertAdjacentHTML('afterbegin', X_HTML); };
+$$('.modal').forEach(m => { const s = m.querySelector(':scope > .sheet'); if (s) new MutationObserver(() => { if (m.classList.contains('open')) ensureX(m); }).observe(s, { childList: true }); });
+const openModal = SOC.openModal = id => { lastFocus = document.activeElement; const m = $(id); ensureX(m); clearTimeout(m._out); m.classList.remove('out'); m.classList.add('open'); syncModalLock(); [...m.querySelectorAll('button, select')].find(el => !el.hidden && !el.matches('.sheet-x'))?.focus(); };
 const closeModal = SOC.closeModal = m => {
   if (!m.classList.contains('open') || m.classList.contains('out')) return;
   const done = () => { m.classList.remove('open', 'out'); syncModalLock(); };
