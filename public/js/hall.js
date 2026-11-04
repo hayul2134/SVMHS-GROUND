@@ -7,6 +7,14 @@ let D = null;   // social.js가 넘겨줌: { call, GAMES, ic, av, nameOf, devTag
 const NAME = { stair200: ['영상고 계단 오르기', '200칸 타임어택'], gear: ['기자재 정리!', '타임어택'], gearn: ['기자재 정리!', '일반 · 오래 버티기'], home: ['집에 가고 싶어!', '끝까지 달린 거리'], mine: ['지뢰찾기', '랭크 · 중급'], snake: ['뱀 게임', '랭크'], n2048: ['2048', '랭크 · 3분'] };
 const ORDER = ['dance', 'chase', 'home', 'cut', 'film', 'stair', 'stair200', 'gear', 'gearn', 'blast', 'reaction', 'num25', 'color', 'mine', 'snake', 'n2048'];
 const CZ = ['mine', 'snake', 'n2048'];   // 게임 칸에서 c_ 로 여는 게임
+// 시간 기록(ms로 저장되는 게임)은 기록실에서만 밀리초까지(2026-11-04 하율 "있어 보이게 밀리초까지"): 12.345초 · 1분 02.345초, 밀리초 자리는 살짝 작게
+const MS = new Set(['stair200', 'mine', 'num25']);
+function fmtMs(v) {
+  v = Math.max(0, Math.round(+v || 0));
+  const m = Math.floor(v / 60000), s = Math.floor(v / 1000) % 60, ms = String(v % 1000).padStart(3, '0');
+  return `${m ? `${m}분 ${String(s).padStart(2, '0')}` : s}<i class="hl-ms">.${ms}</i>초`;
+}
+const val = (g, k, v) => MS.has(k) ? fmtMs(v) : D.esc(g.fmt(v));
 const dayN = at => Math.max(1, Math.floor((Date.now() - at) / 864e5) + 1);
 
 export function init(deps) { D = deps; }
@@ -27,11 +35,11 @@ const head = () => `<p class="hl-lead"><b>역대 최고 기록만 모아 둔 곳
 function cardHtml(x) {
   const g = D.GAMES[x.g], [nm, md] = NAME[x.g] || [g.name, ''], e = D.esc;
   const [a, ...rest] = x.top;
-  const one = a ? `<a class="hl-one${a.isMe ? ' me' : ''}" href="#u/${e(a.handle)}" data-u="1"><span class="hl-badge">${D.ic('trophy')}1위</span>${D.av(a, 'lg')}<span class="hl-who"><b>${e(D.nameOf(a))}${D.devTag(a)}</b><small>${dayN(a.at)}일째 1위 자리 지키는 중</small></span><em class="hl-v">${e(g.fmt(a.v))}</em></a>`
+  const one = a ? `<a class="hl-one${a.isMe ? ' me' : ''}" href="#u/${e(a.handle)}" data-u="1"><span class="hl-badge">${D.ic('trophy')}1위</span>${D.av(a, 'lg')}<span class="hl-who"><b>${e(D.nameOf(a))}${D.devTag(a)}</b><small>${dayN(a.at)}일째 1위 자리 지키는 중</small></span><em class="hl-v">${val(g, x.g, a.v)}</em></a>`
     : '<p class="hl-none">아직 기록이 없어요 — 첫 기록이 곧 1위!</p>';
-  const more = rest.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="hl-rk">${i + 2}</span><a href="#u/${e(u.handle)}" data-u="1">${D.av(u)}<b>${e(D.nameOf(u))}</b></a><em>${e(g.fmt(u.v))}</em></li>`).join('');
-  const my = x.me && D.isDev(D.me()) ? `<p class="hl-my">내 기록 <b>${e(g.fmt(x.me.v))}</b> · 개발자는 순위에서 빠져요</p>`
-    : x.me ? `<p class="hl-my">내 기록 <b>${e(g.fmt(x.me.v))}</b> · ${x.n}명 중 <b>${x.me.r}위</b></p>` : `<p class="hl-my no">아직 내 기록이 없어요</p>`;
+  const more = rest.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="hl-rk">${i + 2}</span><a href="#u/${e(u.handle)}" data-u="1">${D.av(u)}<b>${e(D.nameOf(u))}</b></a><em>${val(g, x.g, u.v)}</em></li>`).join('');
+  const my = x.me && D.isDev(D.me()) ? `<p class="hl-my">내 기록 <b>${val(g, x.g, x.me.v)}</b> · 개발자는 순위에서 빠져요</p>`
+    : x.me ? `<p class="hl-my">내 기록 <b>${val(g, x.g, x.me.v)}</b> · ${x.n}명 중 <b>${x.me.r}위</b></p>` : `<p class="hl-my no">아직 내 기록이 없어요</p>`;
   return `<article class="hl-card g-${e(x.g)}"><div class="hl-h">${D.ic(g.ic)}<span><b>${e(nm)}</b>${md ? `<small>${e(md)}</small>` : ''}</span></div>
     ${one}${more ? `<ol class="hl-more">${more}</ol>` : ''}${my}
     <div class="hl-btns"><button type="button" class="btn ghost" data-rank="${e(x.g)}" data-scope="all">전체 기록</button><button type="button" class="btn" data-play="${x.g === 'gearn' ? 'gear' : x.g === 'stair200' ? 'stair' : CZ.includes(x.g) ? 'c_' + x.g : e(x.g)}">${D.ic('play')}도전</button></div></article>`;
