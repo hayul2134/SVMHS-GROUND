@@ -5,7 +5,9 @@ let D = null;   // social.js가 넘겨줌: { call, GAMES, ic, av, nameOf, devTag
 
 // 기록실에서 쓰는 이름(모드가 둘인 게임은 모드까지)
 const NAME = { stair200: ['영상고 계단 오르기', '200칸 타임어택'], gear: ['기자재 정리!', '타임어택'], gearn: ['기자재 정리!', '일반 · 오래 버티기'], home: ['집에 가고 싶어!', '끝까지 달린 거리'], mine: ['지뢰찾기', '랭크 · 중급'], snake: ['뱀 게임', '랭크'], n2048: ['2048', '랭크 · 3분'] };
-const ORDER = ['dance', 'chase', 'home', 'cut', 'film', 'stair', 'stair200', 'gear', 'gearn', 'blast', 'reaction', 'num25', 'color', 'mine', 'snake', 'n2048'];
+// 2026-11-04 하율 "한 줄에 4개씩, 두 개씩 표기되기 쉽게": 모드가 둘인 게임(계단 오르기·기자재 정리!)은 두 칸을 한 묶음(.hl-pair)으로 붙여 같은 줄에 나란히
+const PAIR = { stair: 'stair200', gear: 'gearn' };
+const ORDER = ['dance', 'chase', 'home', 'cut', 'stair', 'stair200', 'gear', 'gearn', 'film', 'blast', 'reaction', 'num25', 'color', 'mine', 'snake', 'n2048'];
 const CZ = ['mine', 'snake', 'n2048'];   // 게임 칸에서 c_ 로 여는 게임
 // 시간 기록(ms로 저장되는 게임)은 기록실에서만 밀리초까지(2026-11-04 하율 "있어 보이게 밀리초까지"): 12.345초 · 1분 02.345초, 밀리초 자리는 살짝 작게
 const MS = new Set(['stair200', 'mine', 'num25']);
@@ -27,7 +29,12 @@ export async function render() {
   try { r = await D.call('hall'); } catch (e) { box.innerHTML = `${head()}<p class="empty">${D.esc(e.message || '기록실을 불러오지 못했어요')}</p>`; return; }
   const by = new Map(r.games.map(x => [x.g, x]));
   const list = ORDER.filter(g => by.has(g) && D.GAMES[g]).map(g => by.get(g)).concat(r.games.filter(x => !ORDER.includes(x.g) && D.GAMES[x.g]));
-  box.innerHTML = `${head()}<div class="hl-grid">${list.map(cardHtml).join('')}</div>`;
+  let h = '';
+  for (let i = 0; i < list.length; i++) {
+    const x = list[i], y = list[i + 1];
+    if (PAIR[x.g] && y?.g === PAIR[x.g]) { h += `<div class="hl-pair">${cardHtml(x)}${cardHtml(y)}</div>`; i++; } else h += cardHtml(x);
+  }
+  box.innerHTML = `${head()}<div class="hl-grid">${h}</div>`;
 }
 
 const head = () => `<p class="hl-lead"><b>역대 최고 기록만 모아 둔 곳</b><span>티어와 상관없이, 지금까지 나온 가장 좋은 기록이 그대로 남아요. 시간 제한 없는 일반 모드 기록도 여기선 인정!</span></p>`;

@@ -6610,7 +6610,10 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .hl-lead{display:flex;flex-direction:column;gap:3px;margin:0 0 14px;padding:12px 16px;border:var(--bd);border-radius:16px;background:var(--card);box-shadow:var(--sh-s);color:var(--text)}
 .hl-lead b{font:400 19px/1.2 var(--disp)}
 .hl-lead span{font-size:13.5px;font-weight:700;color:var(--sub);word-break:keep-all}
-.hl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:28px}
+.hl-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:28px;grid-auto-flow:row dense}
+.hl-pair{display:contents}
+@media (min-width:640px){.hl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hl-pair{display:grid;grid-column:span 2;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
+@media (min-width:1100px){#v-hall{width:min(1240px,calc(100vw - 40px));margin-left:calc((100% - min(1240px,calc(100vw - 40px))) / 2)}.hl-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .hl-card{display:flex;flex-direction:column;gap:9px;min-width:0;padding:13px 14px 12px;border:var(--bd);border-radius:18px;background:var(--card);box-shadow:var(--sh-s);color:var(--text);animation:hlIn .4s cubic-bezier(.2,.9,.3,1.2) both}
 .hl-card:nth-child(2){animation-delay:.04s}.hl-card:nth-child(3){animation-delay:.08s}.hl-card:nth-child(4){animation-delay:.12s}.hl-card:nth-child(n+5){animation-delay:.16s}
 @keyframes hlIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
