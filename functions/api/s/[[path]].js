@@ -6,7 +6,7 @@ import { balanceOf, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../
 import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD, TIER3, TIERS3 } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
-import { STAIR_MAX, MIN_STEP_MS, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
+import { STAIR_MAX, MIN_STEP_MS, T200, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
 import { BLAST_MAX, SCALE as BLAST_SCALE, seedOf as blastSeed, replay as blastReplay } from '../../../public/js/blast-score.js';
 import { CHASE_MAX, FPS as CHASE_FPS, seedOf as chaseSeed, simulate as chaseSim, simCheck as chaseCheck, simBegin as chaseBegin, simRun as chaseStep, CHUNK_F as CHASE_CHUNK, RULE_V as CHASE_RV } from '../../../public/js/chase-score.js';
 import { DANCE_MAX, FPS as DANCE_FPS, seedOf as danceSeed, simulate as danceSim, GRACE_OLD as DANCE_GRACE_OLD } from '../../../public/js/dance-score.js';
@@ -39,6 +39,9 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   gearn: { min: 1, max: GEAR_MAX - 1, play: 0, ff: 'gear-game', casual: true },
   film: { min: FILM_MAX - FILM_CELLS * 12, max: FILM_MAX - 1, play: 0, ff: 'film-game', tierOn: true },   // 필름 10(2026-10-29 미리보기): FILM_MAX - 지운 컷. 2026-10-30 막히면 새 판 → 2분 동안 여러 판(상한 120×12). 티어는 공개되는 순간부터(계단 오르기와 같게)
   stair: { min: 1, max: STAIR_MAX - 1, play: 0, ff: 'stair-game', tierOn: true },
+  // 계단 오르기 200칸 타임어택(2026-11-04 하율 "기록실에 200 계단 타임어택 추가"): 판 도중 200칸째에 닿은 시간(ms, 작을수록 1등).
+  //   따로 하는 판이 아니라 계단 오르기 판 기록(4번째 값)에서 서버가 같이 저장(derived — 직접 시작·저장 불가) · casual = 기록실·순위만(티어·미션·1등 왕관 X)
+  stair200: { min: (T200 - 1) * MIN_STEP_MS, max: stairMaxMs(T200), play: 0, ff: 'stair-game', casual: true, derived: true },
   blast: { min: 1, max: BLAST_MAX - 1, play: 0, ff: 'blast-game', tierOn: true },
   dance: { min: 1, max: DANCE_MAX - 1, play: 0, ff: 'dance-game', tierOn: true, noTier: true },   // 11/2 22:54 하율 "티어에 포함시키지 마" — 개인 기록·랭킹·기록실만(점수 기준이 사람 기록과 안 맞음)
   // 선생님 몰래 춤추기(2026-10-31 미리보기): DANCE_MAX - 점수. 서버가 누름/뗌 기록으로 판을 다시 돌려 점수 확인(dance-score.js). 난이도가 계속 올라 판이 끝남 → 티어
@@ -145,8 +148,10 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (game === 'gear' && ms > GEAR_TIME + 1000) return H(`타임어택 2분보다 오래 함(${sec(ms)})`, `타임어택은 2분 동안만 할 수 있는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);   // 2026-10-27: 랭킹 기록은 랭킹전(2분)만
     if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'stair') {   // [오른 칸, 플레이 ms, 방향 바꾼 횟수] — stair-score.js 규칙: 1칸에 최소 55ms · 종 게이지로 버틸 수 있는 시간 안 · 실제 흐른 시간 안
-    if (n.length !== 3) return H('판 기록 형식이 다름', '오른 칸 수와 시간이 제대로 오지 않았어요.');
-    const [st, ms, tu] = n;
+    if (n.length !== 3 && n.length !== 4) return H('판 기록 형식이 다름', '오른 칸 수와 시간이 제대로 오지 않았어요.');
+    const [st, ms, tu, t2 = 0] = n;
+    if (t2 && (st < T200 || t2 < (T200 - 1) * MIN_STEP_MS || t2 > ms || t2 > stairMaxMs(T200))) return H(`200칸 시간 이상(${sec(t2)} · ${st}칸 · 전체 ${sec(ms)})`, `200칸에 닿은 시간(${sec(t2)})이 판 기록과 맞지 않아요.`);
+    if (!t2 && n.length === 4 && st >= T200) return H('200칸 시간 빠짐', '200칸을 넘었는데 200칸에 닿은 시간이 오지 않았어요.');
     if (STAIR_MAX - st !== v || st < 1) return H(`칸 수(${st})와 기록(${v})이 다름`, '오른 칸 수와 최종 기록이 서로 달라요.');
     if (tu < 0 || tu > st) return H(`방향 바꾼 횟수 이상(${tu}/${st})`, `방향을 ${tu}번 바꿨다고 기록됐는데 오른 칸(${st}칸)보다 많을 수 없어요.`);
     if (ms < (st - 1) * MIN_STEP_MS) return H(`너무 빠름: ${st}칸을 ${sec(ms)}`, `${st.toLocaleString('ko-KR')}칸을 ${sec(ms)} 만에 올랐어요. 1초에 18칸 넘게 누르기는 어려워서 자동 입력으로 보일 수 있어요.`);
@@ -371,10 +376,10 @@ async function achStats(db, uid, me) {
   await achReset(db, me && me.id === uid ? me : null);
   const since = achSince || '0';   // 공개(새 출발) 뒤엔 그 날부터의 기록만(예전 기록으로 다시 채우지 않음)
   const [b, d, D, T] = await db.batch([
-    db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game <> 'gearn' AND day >= ?2 GROUP BY game").bind(uid, since),
-    db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 AND day >= ?2 GROUP BY g").bind(uid, since),
+    db.prepare("SELECT game, MIN(best) AS b FROM scores WHERE uid = ?1 AND game NOT IN ('gearn', 'stair200') AND day >= ?2 GROUP BY game").bind(uid, since),
+    db.prepare("SELECT CASE game WHEN 'gearn' THEN 'gear' WHEN 'stair200' THEN 'stair' ELSE game END AS g, COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 AND day >= ?2 GROUP BY g").bind(uid, since),
     db.prepare('SELECT COUNT(DISTINCT day) AS n FROM scores WHERE uid = ?1 AND day >= ?2').bind(uid, since),
-    db.prepare("SELECT DISTINCT CASE game WHEN 'gearn' THEN 'gear' ELSE game END AS g FROM scores WHERE uid = ?1 AND day = ?2").bind(uid, kstYmd()),   // 오늘 한 게임(하루 종일 오락실)
+    db.prepare("SELECT DISTINCT CASE game WHEN 'gearn' THEN 'gear' WHEN 'stair200' THEN 'stair' ELSE game END AS g FROM scores WHERE uid = ?1 AND day = ?2").bind(uid, kstYmd()),   // 오늘 한 게임(하루 종일 오락실)
   ]);
   return { best: Object.fromEntries(b.results.map(x => [x.game, achNat(x.game, x.b)])), days: Object.fromEntries(d.results.map(x => [x.g, x.n])), D: D.results[0]?.n || 0, T: T.results.map(x => x.g), open: achOpen(me) };
 }
@@ -1244,7 +1249,7 @@ const ROUTES = {
   // → 게임을 안 하고 기록만 바로 보내거나, 같은 기록을 여러 번 보내는 것을 막음 (완전한 조작 방지는 아님)
   'POST start': needMe(async ({ db, me, body }) => {
     const game = String(body.game || '');
-    if (!GAMES[game] || (GAMES[game].ff && !ffOn(GAMES[game].ff, isAdm(me)))) return err('bad game');   // 미리보기 게임은 개발자만
+    if (!GAMES[game] || GAMES[game].derived || (GAMES[game].ff && !ffOn(GAMES[game].ff, isAdm(me)))) return err('bad game');   // 미리보기 게임은 개발자만 · derived(200칸)는 판 기록에서만
     // 시작 횟수 제한(6시간 티켓도 처음 1시간만 셈 — 2026-10-29 기자재 정리! 일반을 자주 다시 시작하면 60장에 걸리던 것 방지): 아직 안 쓴(살아 있는) 티켓이 60장 넘으면 잠깐 막음 — 예전 rl 카운터(시작마다 쓰기 3행) 대신 읽기로 셈(2026-10-29 쓰기 절약)
     if (!isAdm(me) && (await db.prepare(`SELECT COUNT(*) AS n FROM rl WHERE k >= ?1 AND k < ?2 AND reset - (CASE WHEN ${[...LONG_TK].map(g => `k LIKE '%:${g}:%'`).join(' OR ')} THEN ${6 * 3600e3 - TICKET_TTL} ELSE 0 END) > ?3`).bind(`tk:${me.id}:`, `tk:${me.id};`, Date.now()).first()).n >= 60) return err('잠깐 쉬었다가 해요', 429);
     const ticket = randHex(16);
@@ -1274,7 +1279,7 @@ const ROUTES = {
   'POST score': needMe(async ({ db, me, body }) => {
     let game = String(body.game || ''), v = Math.round(+body.value), ticket = String(body.ticket || '');
     const g = GAMES[game];
-    if (!g || (g.ff && !ffOn(g.ff, isAdm(me))) || !Number.isFinite(v) || v < 0 || v > Math.max(1e7, g.max)) return err('기록이 이상해요');   // 카메라 가방 정리!은 BLAST_MAX(약 1억) − 점수라 1e7을 넘음(2026-10-29: 이 검사에 막혀 블록 기록이 하나도 저장 안 되던 버그)
+    if (!g || g.derived || (g.ff && !ffOn(g.ff, isAdm(me))) || !Number.isFinite(v) || v < 0 || v > Math.max(1e7, g.max)) return err('기록이 이상해요');   // 카메라 가방 정리!은 BLAST_MAX(약 1억) − 점수라 1e7을 넘음(2026-10-29: 이 검사에 막혀 블록 기록이 하나도 저장 안 되던 버그)
     if (!isAdm(me) && await limited(db, 'sc:' + me.id, 40, 60)) return err('잠깐 쉬었다가 해요', 429);
     // 만료된 티켓도 24시간까지는 받음(2026-10-29 하율 "이런 변수도 생각해서"): 만료는 '새 판 시작' 개수 제한용일 뿐, 이미 시작한 판을 버릴 이유가 아님 — 기록 검사(scoreIn)는 그대로
     const tk = TICKET_RE.test(ticket) && await db.prepare('DELETE FROM rl WHERE k = ?1 AND reset > ?2 RETURNING reset, n').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() - TK_GRACE).first();
@@ -1900,6 +1905,19 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const best = allPrev.b == null ? v : Math.min(allPrev.b, v);
     const rank = await rankOf(db, game, best, rx);
     const newBest = allPrev.b == null || v < allPrev.b;
+    // 200칸 타임어택(2026-11-04): 검사를 통과한 계단 오르기 판에 200칸 시간이 있으면 'stair200'에도 저장 — 200칸 못 간 판은 쓰기 0
+    let t200;
+    if (game === 'stair' && body.rounds.length === 4 && Math.round(+body.rounds[3]) > 0) {
+      const tv = Math.round(+body.rounds[3]), G2 = 'stair200';
+      const [p2, b2] = await Promise.all([
+        db.prepare('SELECT best FROM scores WHERE uid = ?1 AND game = ?2 AND day = ?3').bind(me.id, G2, day).first(),
+        myBest(db, me.id, G2, rx).then(x => x || { b: null }),
+      ]);
+      if (!p2 || tv < p2.best) await db.prepare(`INSERT INTO scores (uid, game, day, best, at, meta) VALUES (?1, ?2, ?3, ?4, ?5, NULL)
+        ON CONFLICT (uid, game, day) DO UPDATE SET best = excluded.best, at = excluded.at`).bind(me.id, G2, day, tv, Date.now()).run();
+      const bb = b2.b == null ? tv : Math.min(b2.b, tv);
+      t200 = { v: tv, best: bb, newBest: b2.b == null || tv < b2.b, rank: await rankOf(db, G2, bb, rx) };
+    }
     tierMemo.clear();
     // 히든 보상(2026-10-25 하율): 집(50,000m, home-score.js GOAL)에 '처음' 도착한 한 사람 → 집 열쇠 + 칭호. settings 'home_first'를 먼저 넣은 쪽만 성공(동시 도착도 한 명). 개발자 제외
     let first = false, arrived = false;
@@ -1949,7 +1967,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const mst = mstF && mstR ? { g: mstR.g, a: mstR.a, b: mstR.b, gr: mgr, fb: mFirst ? 1 : 0, r: isAdm(me) ? null : mstRank(await achRarity(db), mstR.g, mstR.b) } : undefined;
     const achX = ach ? await achInfo(db, me, ach).catch(() => undefined) : undefined;
     // 전체 1~3등 축하(2026-10-25): 새 최고 기록으로 1~3등에 처음 들었거나 순위가 올랐을 때만
-    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, achX, mst, cheer: !isCas(g) && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
+    return json({ ok: true, best, newBest, rank, first, arrived, next, mis, ach, achX, mst, t200, cheer: !isCas(g) && newBest && rank <= 3 && (prevRank == null || rank < prevRank) });
 }
 async function rankOfC(db, game, best, rx = rxOn(null)) {
   if (rx) return rankOf(db, game, best, rx);   // bests 인덱스(game, best)로 나보다 좋은 사람만 셈 — 캐시 없이도 싸고 정확

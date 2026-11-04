@@ -28,6 +28,7 @@ const DB = {
 let skew = 0; const realNow = Date.now; Date.now = () => realNow() + skew;
 
 const api = await import(pathToFileURL(resolve('functions/api/s/[[path]].js')).href);
+const ST = await import(pathToFileURL(resolve('public/js/stair-score.js')).href);
 const ORIGIN = 'https://svmhs-ground.pages.dev';
 let cookie = '';
 const fails = [];
@@ -48,6 +49,8 @@ const PLAY = {
   reaction: v => ({ value: v, rounds: [v - 10, v + 10, v - 5, v + 5, v, 0] }),
   num25: v => ({ value: v, rounds: Array.from({ length: 25 }, (_, i) => Math.round(i * v / 24)) }),
   cut: v => ({ value: v, rounds: [v / 5, v / 5, v / 5, v / 5, v / 5].map(Math.round) }),
+  // 계단 오르기: 250·350칸 판은 200칸 시간(4번째 값)까지 → stair200(기록실 200칸 타임어택)도 같이 저장되는지 아래에서 확인. 150칸은 200칸 시간 없음
+  stair: v => { if (v === 1) return { value: 1, rounds: [] }; const st = 650 - v; return { value: ST.STAIR_MAX - st, rounds: st >= ST.T200 ? [st, st * 60, 3, ST.T200 * 60] : [st, st * 60, 3] }; },
   // 카메라 가방 정리!: 티켓 씨앗으로 진짜 판을 둬서(첫 자리부터 채우기, 400ms마다 최대 40개) 정상 기록 → 업적(live.x 다시 두기)까지 탐. v = 1이면 하한 밑 그대로
   blast: (v, tk) => {
     if (v === 1) return { value: 1, rounds: [] };
@@ -91,7 +94,7 @@ PLAY.dance = (v, tk) => {
 // 두 번 돈다: ① 지금 학생 화면(미리보기 깃발 꺼짐) ② 미리보기 깃발이 전부 공개된 뒤의 학생 화면
 //   (2026-10-29 버그는 깃발 rx-season이 공개된 뒤에만 타는 길이라 ①만으로는 못 잡았음)
 const { PREVIEW, RELEASED } = await import(pathToFileURL(resolve('public/js/flags.js')).href);
-const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'blast', 'chase', 'dance', 'color', 'mine', 'snake', 'n2048'];
+const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'stair200', 'blast', 'chase', 'dance', 'color', 'mine', 'snake', 'n2048'];
 let opened = 0;
 for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공개', 'smoke_b1']]) {
   if (mode === '깃발 전부 공개') for (const f of PREVIEW) RELEASED.add(f);
@@ -113,6 +116,9 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
     await call('GET', `myrec?game=${g}`);
   }
   for (const p of ['games', 'tier', 'mission', 'me', 'user/' + handle, 'att', 'ach', 'mastery', 'hall']) await call('GET', p);
+  { const h = (await call('GET', 'hall')).j, x = h?.games?.find(y => y.g === 'stair200');   // 200칸 타임어택(2026-11-04): 계단 오르기 판에서 같이 저장됐는지
+    if (h?.games?.some(y => y.g === 'stair') && x?.me?.v !== ST.T200 * 60) fails.push(`[${mode}] 기록실 200칸 타임어택이 안 쌓임 → ${JSON.stringify(x).slice(0, 200)}`);
+    if ((await call('POST', 'start', { game: 'stair200' })).j?.ticket) fails.push(`[${mode}] stair200을 직접 시작할 수 있음`); }
   // 숙련도(깃발 mastery, 2026-10-30): 공개 상태에선 판을 한 게임에 XP·등급이 쌓여야 함
   if (mode === '깃발 전부 공개') {
     const m = (await call('GET', 'mastery')).j, u = (await call('GET', 'user/' + handle)).j;

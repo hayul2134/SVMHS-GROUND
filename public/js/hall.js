@@ -4,8 +4,8 @@
 let D = null;   // social.js가 넘겨줌: { call, GAMES, ic, av, nameOf, devTag, esc, openRank, me }
 
 // 기록실에서 쓰는 이름(모드가 둘인 게임은 모드까지)
-const NAME = { gear: ['기자재 정리!', '타임어택'], gearn: ['기자재 정리!', '일반 · 오래 버티기'], home: ['집에 가고 싶어!', '끝까지 달린 거리'], mine: ['지뢰찾기', '랭크 · 중급'], snake: ['뱀 게임', '랭크'], n2048: ['2048', '랭크 · 3분'] };
-const ORDER = ['dance', 'chase', 'home', 'cut', 'film', 'stair', 'gear', 'gearn', 'blast', 'reaction', 'num25', 'color', 'mine', 'snake', 'n2048'];
+const NAME = { stair200: ['영상고 계단 오르기', '200칸 타임어택'], gear: ['기자재 정리!', '타임어택'], gearn: ['기자재 정리!', '일반 · 오래 버티기'], home: ['집에 가고 싶어!', '끝까지 달린 거리'], mine: ['지뢰찾기', '랭크 · 중급'], snake: ['뱀 게임', '랭크'], n2048: ['2048', '랭크 · 3분'] };
+const ORDER = ['dance', 'chase', 'home', 'cut', 'film', 'stair', 'stair200', 'gear', 'gearn', 'blast', 'reaction', 'num25', 'color', 'mine', 'snake', 'n2048'];
 const CZ = ['mine', 'snake', 'n2048'];   // 게임 칸에서 c_ 로 여는 게임
 const dayN = at => Math.max(1, Math.floor((Date.now() - at) / 864e5) + 1);
 
@@ -34,5 +34,5 @@ function cardHtml(x) {
     : x.me ? `<p class="hl-my">내 기록 <b>${e(g.fmt(x.me.v))}</b> · ${x.n}명 중 <b>${x.me.r}위</b></p>` : `<p class="hl-my no">아직 내 기록이 없어요</p>`;
   return `<article class="hl-card g-${e(x.g)}"><div class="hl-h">${D.ic(g.ic)}<span><b>${e(nm)}</b>${md ? `<small>${e(md)}</small>` : ''}</span></div>
     ${one}${more ? `<ol class="hl-more">${more}</ol>` : ''}${my}
-    <div class="hl-btns"><button type="button" class="btn ghost" data-rank="${e(x.g)}" data-scope="all">전체 기록</button><button type="button" class="btn" data-play="${x.g === 'gearn' ? 'gear' : CZ.includes(x.g) ? 'c_' + x.g : e(x.g)}">${D.ic('play')}도전</button></div></article>`;
+    <div class="hl-btns"><button type="button" class="btn ghost" data-rank="${e(x.g)}" data-scope="all">전체 기록</button><button type="button" class="btn" data-play="${x.g === 'gearn' ? 'gear' : x.g === 'stair200' ? 'stair' : CZ.includes(x.g) ? 'c_' + x.g : e(x.g)}">${D.ic('play')}도전</button></div></article>`;
 }

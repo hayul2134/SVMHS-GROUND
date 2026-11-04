@@ -50,6 +50,8 @@ const GAMES = {
   blast: { ff: 'blast-game', name: 'LED 월 켜기!', ic: 'blast', desc: 'LED 패널을 벽에 붙여 켜요! 가로·세로 줄을 채우면 송출 · 시간 제한 없음', fmt: v => (BLAST_MAX - v).toLocaleString('ko-KR') + '점' },
   // 영상고 계단 오르기(2026-10-28 하율, 미리보기 깃발 stair-game — 개발자만): 무한 계단식. 높을수록 좋음 → 서버엔 STAIR_MAX - 오른 칸
   stair: { ff: 'stair-game', name: '영상고 계단 오르기', ic: 'stair', desc: '종 치기 전에 교실까지! 방향을 바꾸며 끝없는 계단 오르기', fmt: v => (STAIR_MAX - v).toLocaleString('ko-KR') + '칸' },
+  // 200칸 타임어택(2026-11-04 하율): 계단 오르기 판 도중 200칸에 닿은 시간 — 서버가 계단 오르기 기록에서 같이 저장. 기록실·순위만(티어·뽑기권 X)
+  stair200: { ff: 'stair-game', casual: true, name: '계단 오르기 200칸', ic: 'stair', desc: '200칸까지 가장 빨리 오른 시간', note: '200칸에 닿은 시간 순위예요 · 계단 오르기 한 판에서 200칸을 넘으면 자동으로 기록 · 티어·뽑기권과는 상관없어요', fmt: v => (v / 1000).toFixed(2) + '초' },
   // 필름 10(2026-10-29 하율 "사과 게임" → "필름으로, 출시해도 될 정도로" — 미리보기 깃발 film-game, 개발자만): 합 10 필름 컷 자르기. 높을수록 좋음 → 서버엔 FILM_MAX - 지운 컷
   film: { ff: 'film-game', name: '게퍼 10', ic: 'film', desc: '드래그로 숫자 테이프를 묶어 합이 10이면 싹둑! 막히면 새 판, 2분 동안 많이 자르기', fmt: v => (FILM_MAX - v).toLocaleString('ko-KR') + '개' },
   home: { name: '집에 가고 싶어!', ic: 'run', desc: '하교 달리기! 장애물을 점프·숙이기로 피해 집까지 달려요', fmt: v => (HOME_MAX - v).toLocaleString('ko-KR') + 'm' },
@@ -1985,7 +1987,7 @@ async function openRank(game, scope = 'week') {
     } else {
       $('#rankList').innerHTML = r.list.length ? r.list.map((u, i) => `<li class="${u.isMe ? 'me' : ''}"><span class="rk">${medal(i)}</span><a href="#u/${esc(u.handle)}" data-u="1">${av(u)}<span class="pi"><b>${esc(nameOf(u))}${devTag(u)}</b><small>${esc(classTxt(u) || atOf(u))}</small></span></a><b class="rv">${esc(g.fmt(u.value))}</b></li>`).join('')
         : '<li class="empty">아직 기록이 없어요. 첫 1등을 노려 보세요!</li>';
-      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.casual ? (gt ? `일반 모드 점수 순위예요${scope === 'week' ? ' (이번 주 기록)' : scope === 'round' ? ' (이번 라운드 기록)' : ''}` : `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}`) : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? (g.noTier ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 재미용 순위라 티어와는 상관없어요' : '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요') : '각자 최고 기록으로 순위를 매겨요';
+      $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.note ? g.note + (scope === 'week' ? ' (이번 주 기록)' : '') : g.casual ? (gt ? `일반 모드 점수 순위예요${scope === 'week' ? ' (이번 주 기록)' : scope === 'round' ? ' (이번 라운드 기록)' : ''}` : `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}`) : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? (g.noTier ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 재미용 순위라 티어와는 상관없어요' : '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요') : '각자 최고 기록으로 순위를 매겨요';
       if (!g.casual && (scope === 'week' || scope === 'round')) {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
         const wk = scope === 'week', k = rkInfo(wk);
         $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${g.noTier ? (wk ? '이번 주 기록 순위 (재미용 · 티어 X)' : '이번 라운드 기록 순위 (재미용 · 티어 X)') : wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
@@ -2195,6 +2197,7 @@ async function play(game) {
   if (game === 'judge') return playJudge();   // 복도의 심판(2026-11-02 시험판, 깃발 judge-game) — GAMES·랭킹·티켓과 따로
   if (game === 'rhythm') return playRhythm();   // 영상고 랩 배틀(2026-11-02 시험판, 깃발 rhythm-game) — GAMES·랭킹·티켓과 따로   // 체육 창고 정리!(2026-11-02 시험판, 깃발 ball-game) — GAMES·랭킹·티켓과 따로
   if (game === 'gearn') game = 'gear';   // 일반 모드 순위에서 '도전하기' → 같은 게임 화면
+  if (game === 'stair200') game = 'stair';   // 200칸 타임어택은 계단 오르기 판에서
   const fn = PLAYERS[game];
   if (!fn || !GAMES[game]) { staleReload(); return; }
   const seq = ++playSeq;
@@ -2661,13 +2664,14 @@ async function playStair() {
       scr.classList.remove('low'); scr.classList.add('end');
       ov.hidden = false; ov.className = 'hr-ov dead';
       const msg = !S.me ? '로그인하면 랭킹에 올라가요' : res.steps < 1 ? '0칸은 기록하지 않아요' : '기록 저장 중…';
-      ov.innerHTML = `<b>${res.why === 'time' ? '종 쳤다… 지각!' : '발을 헛디뎠어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.steps.toLocaleString('ko-KR')}칸</em><span>${esc(stairFloor(res.floor))}까지 · ${(res.ms / 1000).toFixed(1)}초${res.ms > 1500 ? ` · 1초에 ${(res.steps / (res.ms / 1000)).toFixed(1)}칸` : ''}</span>${nb && res.steps ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
+      ov.innerHTML = `<b>${res.why === 'time' ? '종 쳤다… 지각!' : '발을 헛디뎠어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.steps.toLocaleString('ko-KR')}칸</em><span>${esc(stairFloor(res.floor))}까지 · ${(res.ms / 1000).toFixed(1)}초${res.ms > 1500 ? ` · 1초에 ${(res.steps / (res.ms / 1000)).toFixed(1)}칸` : ''}</span>${nb && res.steps ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>${res.t200 ? `<p class="hr-t2" id="srT2">200칸 타임어택 <b>${(res.t200 / 1000).toFixed(2)}초</b></p>` : ''}
         <small class="hr-msg" id="srMsg">${msg}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
       if (!S.me || res.steps < 1) return;
       ticket = tk;   // 이 판의 티켓으로만 저장
-      saveScore('stair', STAIR_MAX - res.steps, [res.steps, res.ms, res.turns]).then(r => {
+      saveScore('stair', STAIR_MAX - res.steps, res.t200 ? [res.steps, res.ms, res.turns, res.t200] : [res.steps, res.ms, res.turns]).then(r => {
         if (no !== run || !$('#srMsg')) return;
         if (r.held) { $('#srMsg').innerHTML = heldLine(r); return; }
+        if (r.t200 && $('#srT2')) $('#srT2').innerHTML = `200칸 타임어택 <b>${(r.t200.v / 1000).toFixed(2)}초</b>${r.t200.newBest ? ' · <b>최고 기록!</b>' : ` · 내 최고 ${(r.t200.best / 1000).toFixed(2)}초`}${isDev(S.me) ? '' : ` · ${r.t200.rank}위`}`;
         const b = r.best != null ? STAIR_MAX - r.best : best; if (b > best) { best = b; store.set('stair_best', b); }
         $('#srMsg').innerHTML = r.newBest ? '<b>최고 기록 경신!</b> 지금까지 중 가장 높이 올랐어요' : `내 최고 ${b.toLocaleString('ko-KR')}칸`;   // 응답에 best가 없으면 이 기기 최고(NaN 방지)
         myRecInto($('#srRec'), 'stair', null, { open: true });

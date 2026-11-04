@@ -19,6 +19,7 @@ const GAMES = {
   chase: { name: '카체이싱!', em: '🚗', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 200000 },   // 서버가 입력 기록으로 판을 다시 돌려 검사
   blast: { name: 'LED 월 켜기!', em: '📺', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 3000000 },   // 서버가 놓기를 다시 둬 보고 검사
   film: { name: '게퍼 10', em: '🎞️', fmt: v => (9999999 - v) + '개', sus: 9999999 - 165 },   // 저장값 = 9999999 - 지운 컷(최대 170). 165컷 넘으면 의심 — 서버가 판을 다시 둬 보고 검사함
+  stair200: { name: '계단 오르기 200칸', em: '🪜', fmt: v => (v / 1000).toFixed(2) + '초', sus: 15000 },   // 200칸 타임어택(계단 오르기 판에서 서버가 같이 저장). 15초 밑이면 의심
   stair: { name: '영상고 계단 오르기', em: '🪜', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '칸', sus: 9999999 - 3000 },   // 저장값 = 9999999 - 오른 칸. 3천 칸 넘으면 의심
   reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 160 },
   num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 7000 },
@@ -453,7 +454,7 @@ const heldRounds = (game, raw) => {
   if (game === 'chase') return `${((+r[0] || 0) / 60).toFixed(1)}초 · 입력 ${Math.max(0, r.length - 1)}번`;
   if (game === 'blast') return `${((+r[0] || 0) / 1000).toFixed(0)}초 · 놓기 ${Math.max(0, r.length - 1)}번${r.length === 30 ? '+' : ''}`;
   if (game === 'film') return `${r[0] === 10 ? '세로' : '가로'} 판 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 묶음 ${Math.max(0, r.length - 2)}번${r.length === 30 ? '+' : ''}`;   // 2026-10-29 전 보류 기록은 앞 30개만 남음(+)
-  if (game === 'stair') return `${(+r[0]).toLocaleString('ko-KR')}칸 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 방향 ${r[2]}번`;
+  if (game === 'stair') return `${(+r[0]).toLocaleString('ko-KR')}칸 · ${((+r[1] || 0) / 1000).toFixed(1)}초 · 방향 ${r[2]}번${+r[3] ? ` · 200칸 ${(+r[3] / 1000).toFixed(2)}초` : ''}`;
   if (game === 'num25') return `마지막 탭 ${((+r[24] || 0) / 1000).toFixed(2)}초 · 벌점 ${((+r[25] || 0) / 1000)}초`;
   return esc(raw).slice(0, 80);
 };

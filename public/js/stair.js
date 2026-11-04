@@ -5,7 +5,7 @@
 //   '종 게이지'는 계속 줄고 한 칸마다 조금 참(stair-score.js) — 다 떨어지면 종이 쳐서 지각, 끝.
 // 캐릭터는 '집에 가고 싶어!'에서 꾸민 캐릭터 그대로(runner.js buildSprites). 글자(점수·층·안내)는 social.js playStair가 DOM으로.
 // 배경: 학교 1~5층(복도 벽·창문·게시판·교실 문·소화기·시계) → 옥상(난간·물탱크) → 하늘(구름·새) → 구름 위(노을) → 우주(별·행성·별똥별)
-import { GAIN, FLOOR, drain, floorName, zoneOf, ROOF } from './stair-score.js';
+import { GAIN, FLOOR, drain, floorName, zoneOf, ROOF, T200 } from './stair-score.js';
 import { buildSprites, loadChar, SPR_W, SPR_H } from './runner.js';
 
 export const W = 160, H = 240;
@@ -180,7 +180,7 @@ export function createStair(cv, o = {}) {
   const loadSpr = () => { spr = buildSprites(o.char || loadChar()); sprF = {}; for (const k of ['run1', 'run2', 'jump', 'dead']) { sprF[k] = flipCv(spr[k]); sprF[k + '_rim'] = flipCv(spr[k + '_rim']); } };
   loadSpr();
   let raf = 0, last = 0, alive = true, sound = !!o.sound, ac = null, rnd = rng(o.seed ?? (Date.now() & 0xffff));
-  const st = { scene: 'ready', steps: 0, turns: 0, ms: 0, gauge: 1, floor: 0, face: 1, why: '', shown: false, fast: 0, endAt: 0 };
+  const st = { scene: 'ready', steps: 0, turns: 0, ms: 0, t200: 0, gauge: 1, floor: 0, face: 1, why: '', shown: false, fast: 0, endAt: 0 };
   let skyQ = null, skyBands = [], skyTop = '#7cc8ff', winSky = '#9fd8ff', winQ = null, lastStepAt = 0, overT = 0, lowT = 0, recent = [], xs = [], run = 0, runDir = 1, px = 0, py = 0, fromX = 0, fromY = 0, moveT = 1, fall = null, shake = 0, parts = [], camX = 0, camY = 0, t = 0, flash = 0, stepN = 0, shoot = null;
   const stars = Array.from({ length: 60 }, (_, i) => [hash(i * 3 + 1) * W, hash(i * 3 + 2) * 400, hash(i * 3 + 3)]);
 
@@ -202,7 +202,7 @@ export function createStair(cv, o = {}) {
   }
   function reset() {
     clearTimeout(overT); recent = [];   // 끝난 판의 결과 알림이 새 판 시작 뒤에 뒤늦게 와서 새 판의 시작 티켓을 써 버리던 버그(2026-10-28 하율 화면 '게임을 다시 시작해 주세요')
-    xs = []; more(60); Object.assign(st, { scene: 'ready', steps: 0, turns: 0, ms: 0, gauge: 1, floor: 0, face: 1, why: '', shown: false, fast: 0, endAt: 0 });
+    xs = []; more(60); Object.assign(st, { scene: 'ready', steps: 0, turns: 0, ms: 0, t200: 0, gauge: 1, floor: 0, face: 1, why: '', shown: false, fast: 0, endAt: 0 });
     px = fromX = 0; py = fromY = 0; moveT = 1; fall = null; shake = 0; parts = []; camX = 0; camY = 0; flash = 0; stepN = 0;
   }
 
@@ -235,6 +235,7 @@ export function createStair(cv, o = {}) {
       shake = 4; beep(300, .35, 'sawtooth', .07, 70); end('miss'); return;
     }
     st.steps++; px = nx; py = st.steps; moveT = 0; stepN++; lastStepAt = performance.now();
+    if (st.steps === T200 && !st.t200) st.t200 = Math.max(1, Math.round(st.ms));   // 200칸 타임어택 기록(stair-score.js T200)
     const now = performance.now(); recent.push(now); if (recent.length > 8) recent.shift();
     st.fast = recent.length === 8 && now - recent[0] < 1000 ? 1 : 0;   // 1초에 8칸 넘게 = 달리는 중(등 뒤 속도선)
     st.gauge = Math.min(1, st.gauge + GAIN);
@@ -252,7 +253,7 @@ export function createStair(cv, o = {}) {
     if (st.scene === 'over') return;
     st.scene = 'over'; st.why = why; st.endAt = performance.now();
     if (why === 'time') { shake = 3; [880, 660, 880, 660].forEach((f, i) => setTimeout(() => beep(f, .16, 'triangle', .06), i * 170)); }
-    overT = setTimeout(() => { if (!alive) return; st.shown = true; st.shownAt = performance.now(); o.onOver?.({ steps: st.steps, turns: st.turns, ms: Math.round(st.ms), why, floor: st.floor }); }, why === 'time' ? 900 : 750);
+    overT = setTimeout(() => { if (!alive) return; st.shown = true; st.shownAt = performance.now(); o.onOver?.({ steps: st.steps, turns: st.turns, ms: Math.round(st.ms), why, floor: st.floor, t200: st.t200 }); }, why === 'time' ? 900 : 750);
   }
   function pause() { if (st.scene === 'play') { st.scene = 'pause'; o.onPause?.(true); } }
 
