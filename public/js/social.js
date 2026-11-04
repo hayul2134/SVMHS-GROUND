@@ -176,7 +176,8 @@ function setGc(g) { if (S.me && g) { S.me.gc = { ...S.me.gc, tix: g.tix ?? S.me.
 let relP = null, relAt = 0;
 // NEW 배지(2026-10-28 하율 "NEW는 출시되고 2일 지나면 없애줘"): 깃발이 공지로 처음 공개된 시각(at)부터 48시간만 · 공개 전(개발자 미리보기)엔 계속
 const REL_AT = {}, NEW_MS = 2 * 864e5;
-const newOn = (ff, dev) => { if (!ffOn(ff, false)) return !!dev; const t = REL_AT[ff]; return t > 0 && Date.now() - t < NEW_MS; };
+// NEW 배지는 모두에게 공개된 때부터 2일(2026-11-05 하율 — 개발자 미리보기 중엔 안 붙임)
+const newOn = (ff, dev) => { if (!ffOn(ff, false)) return false; const t = REL_AT[ff]; return t > 0 && Date.now() - t < NEW_MS; };
 const loadReleased = () => {
   if (relP && Date.now() - relAt < 5 * 60e3) return relP;
   relAt = Date.now();
