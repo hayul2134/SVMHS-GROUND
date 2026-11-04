@@ -7,24 +7,24 @@ const $ = s => document.querySelector(s);
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ESC[c]);
 const GAMES = {
-  // sus: 사람이 내기 어려운 기록(이 값 이하) → 게임 기록 화면에 '의심' 표시
+  // sus(의심 기준값)는 서버(lib/sus.js)에만 두고, 관리자 로그인 뒤 GET status로 받음 (2026-11-05 — 공개 파일에 기준이 보이면 기준 바로 밑으로 맞춰 피할 수 있음)
   // 순서는 사이트 게임 목록과 같게 (2026-10-25)
-  home: { name: '집에 가고 싶어!', em: '🏠', fmt: v => (1000000 - v).toLocaleString('ko-KR') + 'm', sus: 1000000 - 30000 },   // 저장값 = 1000000 - 거리. 3만m(약 13분 무사고) 넘으면 의심
-  gear: { name: '기자재 정리!', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점', sus: 9999999 - 200000 },   // 저장값 = 9999999 - 점수. 20만 점 넘으면 의심
-  gearn: { name: '기자재 정리! 일반', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점', sus: 9999999 - 500000 },   // 일반 모드(시간 제한 없음, 순위만·티어 제외)
-  mine: { name: '지뢰찾기', em: '💣', fmt: v => (v / 1000).toFixed(2) + '초', sus: 5000 },   // 랭크전 중급(서버가 연 칸을 다시 열어 봄)
-  snake: { name: '뱀 게임', em: '🐍', fmt: v => '별 ' + (9999 - v) + '개', sus: 9999 - 252 },
-  n2048: { name: '2048', em: '🔢', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 1 },
-  dance: { name: '선생님 몰래 춤추기', em: '💃', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 15000 },   // 서버가 누름/뗌 기록으로 판을 다시 돌려 검사
-  chase: { name: '카체이싱!', em: '🚗', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 200000 },   // 서버가 입력 기록으로 판을 다시 돌려 검사
-  blast: { name: 'LED 월 켜기!', em: '📺', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점', sus: 99999999 - 3000000 },   // 서버가 놓기를 다시 둬 보고 검사
-  film: { name: '게퍼 10', em: '🎞️', fmt: v => (9999999 - v) + '개', sus: 9999999 - 165 },   // 저장값 = 9999999 - 지운 컷(최대 170). 165컷 넘으면 의심 — 서버가 판을 다시 둬 보고 검사함
-  stair200: { name: '계단 오르기 200칸', em: '🪜', fmt: v => (v / 1000).toFixed(2) + '초', sus: 15000 },   // 200칸 타임어택(계단 오르기 판에서 서버가 같이 저장). 15초 밑이면 의심
-  stair: { name: '영상고 계단 오르기', em: '🪜', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '칸', sus: 9999999 - 3000 },   // 저장값 = 9999999 - 오른 칸. 3천 칸 넘으면 의심
-  reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms', sus: 160 },
-  num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초', sus: 7000 },
-  color: { name: '색감의 신', em: '🎨', fmt: v => ((5000 - v) / 50).toFixed(1) + '%', sus: 100 },   // 저장값 = 5판 놓친 %(0.1%) 합. 평균 98% 넘으면 의심
-  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms', sus: 20 },   // 2026-10-26 하율: 학생들이 잘해서 40 → 20 (한 판 평균 4ms 이하만 의심)
+  home: { name: '집에 가고 싶어!', em: '🏠', fmt: v => (1000000 - v).toLocaleString('ko-KR') + 'm' },
+  gear: { name: '기자재 정리!', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점' },
+  gearn: { name: '기자재 정리! 일반', em: '🎥', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '점' },
+  mine: { name: '지뢰찾기', em: '💣', fmt: v => (v / 1000).toFixed(2) + '초' },
+  snake: { name: '뱀 게임', em: '🐍', fmt: v => '별 ' + (9999 - v) + '개' },
+  n2048: { name: '2048', em: '🔢', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점' },
+  dance: { name: '선생님 몰래 춤추기', em: '💃', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점' },
+  chase: { name: '카체이싱!', em: '🚗', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점' },
+  blast: { name: 'LED 월 켜기!', em: '📺', fmt: v => (99999999 - v).toLocaleString('ko-KR') + '점' },
+  film: { name: '게퍼 10', em: '🎞️', fmt: v => (9999999 - v) + '개' },
+  stair200: { name: '계단 오르기 200칸', em: '🪜', fmt: v => (v / 1000).toFixed(2) + '초' },
+  stair: { name: '영상고 계단 오르기', em: '🪜', fmt: v => (9999999 - v).toLocaleString('ko-KR') + '칸' },
+  reaction: { name: '반응속도', em: '⚡', fmt: v => v + 'ms' },
+  num25: { name: '1 to 25', em: '🔢', fmt: v => (v / 1000).toFixed(2) + '초' },
+  color: { name: '색감의 신', em: '🎨', fmt: v => ((5000 - v) / 50).toFixed(1) + '%' },
+  cut: { name: '컷 타이밍', em: '🎬', fmt: v => '오차 ' + v + 'ms' },
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const pad = n => String(n).padStart(2, '0');
@@ -126,7 +126,11 @@ function route() {
   VIEWS[name](decodeURIComponent(rest.join('/'))).catch(e => { if (cur === name) $('#main').innerHTML = `<p class="empty">불러오지 못했어요: ${esc(e.message)}</p>`; });
 }
 let started = false;
-function start() {
+// 의심 기준값: 로그인 뒤 서버에서 받아 GAMES[g].sus에 채움 (못 받으면 -1 = 의심 표시 없음)
+for (const g of Object.values(GAMES)) g.sus = -1;
+async function loadSus() { try { const st = await call('status'); for (const [k, v] of Object.entries(st.sus || {})) if (GAMES[k]) GAMES[k].sus = v; } catch {} }
+async function start() {
+  await loadSus();
   $('#gate').hidden = true; $('#app').hidden = false;
   if (!started) { started = true; window.addEventListener('hashchange', route); refreshBadge(); setInterval(refreshBadge, 60e3); }
   route();

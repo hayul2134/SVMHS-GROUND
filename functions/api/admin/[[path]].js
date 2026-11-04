@@ -5,6 +5,7 @@ import { cached } from '../../../lib/cache.js';
 import { randHex, sha256, hashPw, cookieOf as readCookie, clean } from '../../../lib/sec.js';
 import { ONLINE_MS, setup, getSettings, setSetting, joinCodeOf, signupOpen, dmOpen, kstYmd, isWriteLimit, LIMIT_MSG, ADMIN_HANDLE, logErr } from '../../../lib/db.js';
 import { previewBalance, balDay, isBalDay } from '../../../lib/balance.js';
+import { SUS } from '../../../lib/sus.js';
 
 const COOKIE = 'sg_a';
 const GAMES = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'stair', 'stair200', 'film', 'blast', 'chase', 'dance', 'color'];   // gearn = 기자재 정리! 일반 모드(순위만, 티어 제외)
@@ -87,7 +88,9 @@ export async function onRequest({ request: req, env, params }) {
 
 /* 로그인 없이 되는 것 */
 const OPEN = {
-  'GET status': async ({ req, db }) => json({ db: true, admin: ADMIN_HANDLE, authed: await isAdmin(req, db), usage: await db.prepare('SELECT day, r, w FROM usage ORDER BY day DESC LIMIT 3').all().then(x => x.results).catch(() => []), routes: await db.prepare('SELECT day, j FROM usage_rt ORDER BY day DESC LIMIT 2').all().then(x => x.results.map(y => ({ day: y.day, rt: Object.entries(JSON.parse(y.j)).sort((a, b) => b[1][1] - a[1][1]) }))).catch(() => []) }),
+  // 로그인 전엔 db·admin·authed만 (2026-11-05: 사용량·경로·의심 기준은 관리자 세션에서만 — 저장소·관리자 파일 공개 대비)
+  'GET status': async ({ req, db }) => { const authed = await isAdmin(req, db); if (!authed) return json({ db: true, admin: ADMIN_HANDLE, authed });
+    return json({ db: true, admin: ADMIN_HANDLE, authed, sus: SUS, usage: await db.prepare('SELECT day, r, w FROM usage ORDER BY day DESC LIMIT 3').all().then(x => x.results).catch(() => []), routes: await db.prepare('SELECT day, j FROM usage_rt ORDER BY day DESC LIMIT 2').all().then(x => x.results.map(y => ({ day: y.day, rt: Object.entries(JSON.parse(y.j)).sort((a, b) => b[1][1] - a[1][1]) }))).catch(() => [])  }); },
 
   'POST logout': async ({ req, db }) => {
     const t = cookieOf(req);
