@@ -72,7 +72,7 @@ export function createJudge(el, O = {}) {
     if (isFs()) { w = innerWidth; h = innerHeight; }
     else {
       // 2026-11-03 하율: 아래 '다시 하기' 버튼까지 스크롤 없이 한 화면에(아래 여백 24px) — 넘치면 넘친 만큼 게임 화면을 줄임
-      w = Math.min(el.clientWidth || 640, 1280); const top = Math.max(8, wrap.getBoundingClientRect().top);
+      w = el.clientWidth || 640; const top = Math.max(8, wrap.getBoundingClientRect().top);
       const below = reB.offsetHeight + barP.offsetHeight + 6 * 2 + 5 + 24;
       h = Math.max(240, innerHeight - top - below);
     }
@@ -85,7 +85,10 @@ export function createJudge(el, O = {}) {
     }
   }
   function apply(w, h) {
-    let k = Math.min(w / VW, h / VH); if (k >= 1) k = Math.floor(k * 2) / 2;   // 큰 화면은 0.5배 단위로(도트 균일)
+    let k = Math.min(w / VW, h / VH);
+    // 2026-11-04 하율 "화면 너무 남음": 예전엔 0.5배 단위로 내림해 최대 1/3이 비었음 → 기기 화소 기준 정수배가 6% 안으로 손해면 그것(도트 균일), 아니면 화면을 꽉 채움
+    const D0 = Math.min(2, window.SG_DPR || devicePixelRatio || 1), kd = Math.floor(k * D0) / D0;
+    if (kd >= 1 && kd >= k * 0.94) k = kd;
     const D = Math.min(2, window.SG_DPR || devicePixelRatio || 1);
     cv.width = Math.round(VW * k * D); cv.height = Math.round(VH * k * D); cv.style.width = Math.round(VW * k) + 'px'; cv.style.height = Math.round(VH * k) + 'px';
     S = k * D;
