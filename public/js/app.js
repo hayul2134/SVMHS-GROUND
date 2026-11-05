@@ -2865,6 +2865,11 @@ fitSoon();
 // 그 칸의 아이콘이 왼쪽부터 차례로 톡톡 나타남. 2026-10-30 하율 "위에서부터 차례대로": 보이는 아이콘 순서(왼→오, 위→아래)대로 0.05초씩 늦춤 → 2026-10-31 하율 "왼쪽 위부터 쭉, 첫 줄 끝나면 아래 왼쪽부터": 실제 화면 위치(줄→칸)로 정렬하고 0.08초 간격으로 늘려 줄 순서가 보이게(숨은 깃발 아이콘은 건너뜀, 6번째부터 같이 나오던 것 수정). html.svrv일 때만 숨겨 두므로 스크립트가 안 돌아도 아이콘은 보임.
 if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
   document.documentElement.classList.add('svrv');
-  const sio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { [...e.target.children].filter(a => a.offsetParent).sort((a, b) => (a.offsetTop - b.offsetTop) || (a.offsetLeft - b.offsetLeft)).forEach((a, i) => a.style.animationDelay = (i * .08).toFixed(2) + 's'); e.target.classList.add('in'); sio.unobserve(e.target); } }), { threshold: .15 });
-  document.querySelectorAll('.apps .catgrid').forEach(g => sio.observe(g));
+  // 보이는 아이콘을 화면 위치(줄→칸) 순서로 정렬해 0.08초씩. 등장 뒤에 깃발로 새로 보이게 된 아이콘(2026-11-06)은 이미 지난 시간만큼 당겨 제자리 순서에 맞춤
+  const order = g => [...g.children].filter(a => a.offsetParent).sort((a, b) => (a.offsetTop - b.offsetTop) || (a.offsetLeft - b.offsetLeft));
+  const sio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { const g = e.target; order(g).forEach((a, i) => { a.style.animationDelay = (i * .08).toFixed(2) + 's'; a.dataset.svd = 1; }); g.svAt = performance.now(); g.classList.add('in'); sio.unobserve(g); } }), { threshold: .15 });
+  document.querySelectorAll('.apps .catgrid').forEach(g => {
+    sio.observe(g);
+    new MutationObserver(() => { if (!g.svAt) return; const t = (performance.now() - g.svAt) / 1000; order(g).forEach((a, i) => { if (a.dataset.svd) return; a.dataset.svd = 1; a.style.animationDelay = Math.max(0, i * .08 - t).toFixed(2) + 's'; }); }).observe(g, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ffon'] });
+  });
 }

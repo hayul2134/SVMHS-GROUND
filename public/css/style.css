@@ -5436,7 +5436,9 @@ html.cut2 .nm-b{display:inline}
 
 /* 서비스 아이콘 차례 등장 (2026-10-28) — app.js가 칸이 보일 때 .in을 붙임. 깃발 아이콘도 같은 줄에 섞여 함께 나옴 */
 html.svrv .apps .catgrid:not(.in) > .app{opacity:0}
-html.svrv .apps .catgrid.in > .app{animation:popIn .45s cubic-bezier(.2,1.3,.4,1) backwards}
+html.svrv .apps .catgrid.in > .app{animation:svIn .45s cubic-bezier(.2,1.3,.4,1) backwards}
+/* 2026-11-06 하율 "새로 생긴 것들은 애니메이션이 안 맞아": 깃발 아이콘([data-ff])은 처음 그려질 때 이미 popIn을 한 번 돌려서, 같은 이름(popIn)을 다시 걸면 재생이 안 되고 바로 나타났음 → 이름이 다른 svIn으로 걸어 모든 아이콘이 차례 지연대로 다시 돎 */
+@keyframes svIn{from{opacity:0;transform:translateY(8px) scale(.95)}}
 /* 지연은 app.js가 보이는 순서대로 0.05초씩 */
 
 /* 게임 카테고리 한 줄에 5개 (2026-10-28 하율) — 순서: 기자재 정리! · 집에 가고 싶어! · 편집의 신 · 반응속도 · 1 to 25 */
