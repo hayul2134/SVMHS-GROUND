@@ -528,10 +528,10 @@ export function createChase(root, opts = {}) {
     a = { c }; art.set('vig', a); return a;
   };
 
-  /* --- 입력: ←→ 한 번 누를 때마다 한 차선 · 화면 왼쪽 1/4 ◀ · 오른쪽 1/4 ▶ · 가운데 점프 --- */
+  /* --- 입력: ←→ 한 번 누를 때마다 한 차선 · 터치는 왼쪽 절반에 이동(0~1/4 ◀ · 1/4~1/2 ▶), 오른쪽 절반 점프 --- */
   const KM = opts.keys || (() => '');
   let touchSeen = TOUCHY(), padHit = { L: 0, R: 0, J: 0 };
-  const zoneOf = e => { const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; return x < 0.25 ? 'L' : x > 0.75 ? 'R' : 'J'; };
+  const zoneOf = e => { const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; return x < 0.25 ? 'L' : x < 0.5 ? 'R' : 'J'; };
   const press = z => { if (z === 'J') lq.push(4); else lq.push(z === 'L' ? 0 : 2); padHit[z] = performance.now(); };
   const onDown = e => {
     if (e.button > 0) return; e.preventDefault(); sfx.unlock(); if (e.pointerType === 'touch') touchSeen = true;
@@ -567,7 +567,7 @@ export function createChase(root, opts = {}) {
     ov.hidden = false; ov.className = 'hr-ov cs-ov cs-ready';
     ov.innerHTML = `<b>카체이싱!</b><span>앞차에 바짝 붙었다가 옆 차선으로 쏙! 아슬아슬 칼치기로 부스터를 모아요</span>${best ? `<em class="sr-best cs-best">${opts.trophy || ''}내 최고 ${fmt(best)}점</em>` : ''}
       <ul class="cs-how"><li><i class="cs-i1"></i>←→를 누를 때마다 <b>한 차선씩</b> · 앞차 꽁무니에서 빠질수록 점수 두 배</li><li><i class="cs-i2"></i>게이지가 꽉 차면 <b>부스터</b> — 앞차를 날려 버려요</li><li><i class="cs-i3"></i><b>연료통</b>을 먹어야 계속 달려요 · 바리케이드는 점프!</li></ul>
-      <small>${touchSeen ? '왼쪽 ◀ · 오른쪽 ▶ · 가운데 점프 — 화면을 눌러 출발' : keyTxt() + ' — 아무 키나 눌러 출발'}</small>`;
+      <small>${touchSeen ? '왼쪽 ◀ ▶ 이동 · 오른쪽 점프 — 화면을 눌러 출발' : keyTxt() + ' — 아무 키나 눌러 출발'}</small>`;
   };
   const WHY = { crash: '쾅! 부딪혔어요', wall: '바리케이드에 쾅!', cone: '고깔에 걸렸어요!', fuel: '기름이 다 떨어졌어요…', cap: '끝까지 달렸어요!' };
   const showOver = res => {
@@ -1333,7 +1333,7 @@ export function createChase(root, opts = {}) {
     const sz = (t.length > 2 ? 52 : 110) * (ph < 0.15 ? 0.6 + ph * 3 : 1);
     g.save(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round'; g.font = `${sz}px ${FONT}`;
     g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 14; g.lineWidth = 9; g.strokeStyle = 'rgba(20,18,40,.85)'; g.strokeText(t, VW / 2, 250); g.shadowBlur = 0; g.fillStyle = left > 0 ? '#fff' : '#ffd25e'; g.fillText(t, VW / 2, 250);
-    if (st.scene === 'count' && !s) { g.font = `19px ${FONT}`; g.lineWidth = 4; const m = touchSeen ? '왼쪽 ◀ · 오른쪽 ▶ 한 차선씩 · 가운데 점프' : keyTxt(); g.strokeText(m, VW / 2, 322); g.fillStyle = '#fff'; g.fillText(m, VW / 2, 322); }
+    if (st.scene === 'count' && !s) { g.font = `19px ${FONT}`; g.lineWidth = 4; const m = touchSeen ? '왼쪽 ◀ ▶ 한 차선씩 · 오른쪽 점프' : keyTxt(); g.strokeText(m, VW / 2, 322); g.fillStyle = '#fff'; g.fillText(m, VW / 2, 322); }
     g.restore();
   }
   function drawPads() {
@@ -1344,11 +1344,12 @@ export function createChase(root, opts = {}) {
       g.beginPath(); g.arc(x, y, r * (on ? 0.94 : 1), 0, 7); g.fill(); g.stroke(); paint(); g.restore();
     };
     const tri = (x, y, d) => { g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.moveTo(x + d * 13, y); g.lineTo(x - d * 9, y - 15); g.lineTo(x - d * 9, y + 15); g.closePath(); g.fill(); };
+    const JX = VW - 84, JY = VH - 80;   // 왼쪽 아래 ◀ ▶ 이동 · 오른쪽 아래 점프
     pad(70, VH - 76, 44, 'L', () => tri(70, VH - 76, -1));
-    pad(VW - 70, VH - 76, 44, 'R', () => tri(VW - 70, VH - 76, 1));
-    pad(VW / 2, VH - 30, 26, 'J', () => {
-      if (!ready && P) { const f = P.air ? 0 : 1 - P.cd / C.JUMP_CD; g.strokeStyle = '#7fd4ff'; g.lineWidth = 3.5; g.beginPath(); g.arc(VW / 2, VH - 30, 22, -Math.PI / 2, -Math.PI / 2 + f * 6.283); g.stroke(); }
-      g.font = `15px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText('점프', VW / 2, VH - 29);
+    pad(176, VH - 76, 44, 'R', () => tri(176, VH - 76, 1));
+    pad(JX, JY, 50, 'J', () => {
+      if (!ready && P) { const f = P.air ? 0 : 1 - P.cd / C.JUMP_CD; g.strokeStyle = '#7fd4ff'; g.lineWidth = 4; g.beginPath(); g.arc(JX, JY, 45, -Math.PI / 2, -Math.PI / 2 + f * 6.283); g.stroke(); }
+      g.font = `20px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText('점프', JX, JY + 1);
     });
   }
 
