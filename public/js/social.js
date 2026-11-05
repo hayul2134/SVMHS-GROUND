@@ -2037,13 +2037,42 @@ document.addEventListener('click', e => {
 let quitGame = null;
 function stage(title, html, wide = false) {
   const el = $('#gamePlay');
-  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b>${mstChip(curGame)}<span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
+  el.innerHTML = `<div class="ptop${wide ? ' wide' : ''}"><b>${title}</b>${mstChip(curGame)}<span class="pbtns">${GAMES[curGame] ? `<button class="pquit prank" type="button" data-rank="${curGame}" aria-label="${esc(GAMES[curGame].name)} 랭킹 보기">${ic('trophy')}<span>랭킹</span></button>` : ''}${KM.defsOf(curGame).length && GAMES[curGame] ? `<button class="pquit pkeys" type="button" id="pKeys" aria-label="키 설정" data-tip="키 설정"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"/></svg><span>키 설정</span></button>` : ''}${fsBtn()}<button class="pquit" type="button" id="pQuit" aria-label="게임 나가기"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logout"/></svg>나가기</button></span></div><div class="parea${wide ? ' wide' : ''}" id="parea">${html}</div>`;
   el.hidden = false; document.body.classList.add('playing');
   $('#pQuit').onclick = endPlay;
+  const fb = $('#pFs'); if (fb) fb.onclick = () => { fb.blur(); fsToggle(); };
   const kb = $('#pKeys'); if (kb) kb.onclick = () => openKeys(curGame);
   homeRO?.disconnect(); homeRO = null; requestAnimationFrame(fitHome);
   return $('#parea');
 }
+// 전체 화면(2026-11-06 하율 "모든 게임에 전체 화면 기능") — 위 줄 나가기 왼쪽. 사이트 전체(문서)를 전체 화면으로 → 랭킹·키 설정 창도 그대로 보이고,
+//   게임 칸은 원래 창 크기에 맞춰 그리던 대로 resize 때 다시 맞춤. 지원 안 하는 기기(아이폰 사파리)는 버튼 없음.
+//   복도의 심판·영상고 랩 배틀은 게임 화면 안에 자체 전체 화면 버튼이 있어 뺌. 게임을 나가면 전체 화면도 끝냄
+const FS_OWN = new Set(['judge', 'rhythm']);
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const fsCan = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+const fsMine = () => fsEl() === document.documentElement;
+function fsBtn() {
+  if (!fsCan() || FS_OWN.has(curGame)) return '';
+  const on = fsMine();
+  return `<button class="pquit pfs${on ? ' on' : ''}" type="button" id="pFs" aria-label="${on ? '전체 화면 끝내기' : '전체 화면'}" aria-pressed="${on}" data-tip="${on ? '전체 화면 끝내기' : '전체 화면'}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-fs${on ? '-x' : ''}"/></svg><span>${on ? '창 모드' : '전체 화면'}</span></button>`;
+}
+function fsExit() { try { if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document)?.catch?.(() => {}); } catch {} }
+function fsToggle() {
+  if (fsEl()) return fsExit();
+  const r = document.documentElement;
+  try { const p = (r.requestFullscreen || r.webkitRequestFullscreen).call(r, { navigationUI: 'hide' }); p?.catch?.(() => toast('이 기기에서는 전체 화면을 쓸 수 없어요')); } catch { toast('이 기기에서는 전체 화면을 쓸 수 없어요'); }
+}
+function fsPaint() {
+  const b = $('#pFs'); if (!b) return;
+  const on = fsMine(), t = on ? '전체 화면 끝내기' : '전체 화면';
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', t); b.dataset.tip = t;
+  b.querySelector('use')?.setAttribute('href', on ? '#i-fs-x' : '#i-fs'); const sp = b.querySelector('span'); if (sp) sp.textContent = on ? '창 모드' : '전체 화면';
+}
+['fullscreenchange', 'webkitfullscreenchange'].forEach(t => document.addEventListener(t, () => {
+  fsPaint();
+  if (document.body.classList.contains('playing')) { requestAnimationFrame(fitHome); setTimeout(() => dispatchEvent(new Event('resize')), 350); }   // 전환 직후 크기가 늦게 바뀌는 기기 대비
+}));
 // 게임 키 안내 칸 채우기: <span data-ka="동작" [data-one]> → 지금 설정된 키(keymap.js). 게임이 화면을 그릴 때마다 자동으로(MutationObserver)
 function paintKA(all = false) {
   const g = curGame; if (!g) return;
@@ -2116,7 +2145,7 @@ addEventListener('resize', () => { if (document.body.classList.contains('playing
 // 게임 중 집 버튼을 누르면 게임을 닫고 처음 화면으로 (이동 자체는 app.js의 [data-go] 처리)
 document.addEventListener('click', e => { if (e.target.closest('[data-go]') && document.body.classList.contains('playing')) endPlay(); });
 // 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
-function endPlay() { try { unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
+function endPlay() { if (fsMine()) fsExit(); try { unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
 // 2026-11-01 하율 "카체이싱에서 엔터 눌렀는데 계단 오르기가 켜졌다": 게임 화면이 떠 있어도 뒤의 게임 목록 버튼에 포커스가 남아 있어
 //   엔터·스페이스가 그 버튼(다른 게임)을 눌렀음 → 게임 중엔 게임 화면 밖 요소로 가는 엔터·스페이스의 기본 동작을 막고, 게임을 열 때 포커스를 뺌

@@ -5893,6 +5893,9 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 
 /* 게임 키 설정 창(2026-10-28) */
 .pkeys svg{width:1.1em;height:1.1em}
+.pfs svg{width:1.1em;height:1.1em}
+.pfs.on{background:var(--accent);color:#fff}
+@media (max-width:560px){.pfs span{display:none}}
 @media (max-width:560px){.pkeys span{display:none}}
 @media (hover:none) and (pointer:coarse){.pkeys{display:none}}   /* 키보드 없는 터치 기기 */
 .km-sheet{max-width:480px;width:100%}
