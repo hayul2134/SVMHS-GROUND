@@ -7155,7 +7155,7 @@ html.lite .t-challenger.tierb,html.lite .tplate.t-challenger,html.lite .t-grandm
    스티커 보드 그대로: 굵은 테두리·딱딱한 그림자 카드, 위험도 색 r1~r5(빨강→하늘) ===== */
 .ec{display:grid;gap:18px;max-width:760px;margin:0 auto}
 .ec .card h3{font-weight:400}
-.ec-hero{text-align:center;transform:rotate(-.4deg)}
+.ec-hero{text-align:center;transform:rotate(-.4deg);position:relative;z-index:6}
 .ec-brand{display:inline-flex;align-items:center;gap:8px;background:var(--yellow);color:var(--ink);border:var(--bd);border-radius:999px;padding:5px 14px 5px 8px;box-shadow:var(--sh-s);transform:rotate(-2deg)}
 .ec-brand svg{width:30px;height:30px}.ec-brand b{font-size:19px}
 .ec-hero h3{font-size:clamp(25px,5.4vw,36px);line-height:1.3;margin-top:16px}
