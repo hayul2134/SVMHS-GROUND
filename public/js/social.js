@@ -4,7 +4,7 @@ import * as ATT from './attend.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';   // 효과음(반응속도, 2026-10-30)
 import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시(2026-10-25)
 import { wearOf, wearSvg } from './wear.js';
-import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, wkOf } from './att-rewards.js';
+import { ATT_COLORS, COLOR_NAME, rwOn, decoSlots, objName, rwDay, FLAME_AT, GACHA, GACHA_OLD, RAR, FX, NEON, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_FIRST, HOME_MARK, gcDone, SHN, RK, rkOf, rkRange, wkOf } from './att-rewards.js';
 import { emo, artOf, ui, stkOf, stkMsg, repTag, kavName } from './att-art.js';
 import { HOME_MAX, GOAL } from './home-score.js';
 import { GEAR_MAX, GEAR_TIME } from './gear-score.js';
@@ -1957,13 +1957,17 @@ function rkInfo(wk = false) {   // wk: 뽑기권 주(1주) · 아니면 점수·
   if (!RK.start) return { started: false, open: false, from: '', to: '', left: 0, md: '' };
   const day = y => Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8)) / 864e5;
   const left = day(cur.to) - day(kstNow());   // 마지막 날(이 날 밤 12시에 마감)까지 남은 날
-  return { started, from: cur.from, to: cur.to, left, md: `${+cur.to.slice(4, 6)}/${+cur.to.slice(6, 8)}` };
+  const nx = wk ? null : rkRange(cur.n + 1), mdOf = y => `${+y.slice(4, 6)}/${+y.slice(6, 8)}`;
+  return { started, from: cur.from, to: cur.to, left, md: mdOf(cur.to), pre: !wk && !!cur.pre, nxPre: !!nx?.pre, nxMd: nx ? mdOf(nx.from) : '', nx2Md: nx?.pre ? mdOf(rkRange(cur.n + 2).from) : '' };
 }
+// 프리시즌(2026-11-06 하율 "월요일부터 다시 티어 랭크가 시작된다고 표기"): 다음 정식 라운드 첫날 'M/D(요일)'
+const rkNextTxt = k => { const md = k.pre ? k.nxMd : k.nx2Md; if (!md) return ''; const [m, d] = md.split('/'), y = new Date(Date.UTC(+kstNow().slice(0, 4), m - 1, +d)); return `${md}(${'일월화수목금토'[y.getUTCDay()]})`; };
 const ddl = k => k.left ? 'D-' + k.left : '오늘 밤 12시';
 function rkBand() {   // 두 주기 안내: 1주 = 뽑기권 · 2주 = 점수·티어 (2026-10-25)
   const w = rkInfo(true), r = rkInfo();
   if (!w.open && w.open !== undefined) return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>주간 랭킹·티어는 정식 업데이트 주부터 시작해요</b><small>시작하면 ${RK.days}일마다 점수·티어를 새로 매기고, 라운드가 끝나면 챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장. 지금 기록은 '역대' 랭킹에 쌓여요</small></p></div>`;
-  return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${w.started ? `라운드 마감 ${ddl(r)}` : `${+w.from.slice(4, 6)}/${+w.from.slice(6, 8)} 첫 주·첫 라운드 시작`}</b><small>라운드(${RK.days}일)가 끝나면 티어로 뽑기권 — 챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장 (${r.md} 밤 12시 마감, 그 뒤 기록·티어 새로 시작) · 매주 모두에게 뽑기권 ${RK.week}장</small></p></div>`;
+  if (r.pre) return `<div class="rk-band card rk-pre"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>프리시즌 · ${rkNextTxt(r)}부터 티어 랭크 다시 시작!</b><small>지난 라운드 티어는 마감됐어요. 주말 동안은 프리시즌 — 마음껏 연습해도 기록은 '역대' 랭킹에만 쌓이고 티어·뽑기권 정산은 없어요. ${rkNextTxt(r)}부터 ${RK.days}일 동안 새 라운드 · 매주 모두에게 뽑기권 ${RK.week}장</small></p></div>`;
+  return `<div class="rk-band card"><span class="rk-tk" aria-hidden="true">${ic('trophy')}</span><p><b>${w.started ? `라운드 마감 ${ddl(r)}` : `${+w.from.slice(4, 6)}/${+w.from.slice(6, 8)} 첫 주·첫 라운드 시작`}</b><small>라운드(${RK.days}일)가 끝나면 티어로 뽑기권 — 챌린저 ${RK.tierTix.challenger}장 · 그랜드마스터 ${RK.tierTix.grandmaster}장 · 마스터 ${RK.tierTix.master}장 (${r.md} 밤 12시 마감, ${r.nxPre ? `주말은 프리시즌 → ${rkNextTxt(r)}부터 티어 랭크 다시 시작` : '그 뒤 기록·티어 새로 시작'}) · 매주 모두에게 뽑기권 ${RK.week}장</small></p></div>`;
 }
 async function openRank(game, scope = 'week') {
   if (S.enabled === false) { toast('랭킹을 준비하고 있어요'); return; }
@@ -2002,7 +2006,7 @@ async function openRank(game, scope = 'week') {
       $('#rankNote').textContent = r.mine && !r.list.some(x => x.isMe) ? `내 순위: ${r.mine}위 (${g.fmt(r.myValue)})` : g.note ? g.note + (scope === 'week' ? ' (이번 주 기록)' : '') : g.casual ? (gt ? `일반 모드 점수 순위예요${scope === 'week' ? ' (이번 주 기록)' : scope === 'round' ? ' (이번 라운드 기록)' : ''}` : `일반 모드 점수 순위예요 · 티어·뽑기권과는 상관없어요${scope === 'week' ? ' (이번 주 기록)' : ''}`) : scope === 'week' ? '이번 주에 낸 기록 중 각자 최고 기록으로 매겨요' : scope === 'round' ? (g.noTier ? '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 재미용 순위라 티어와는 상관없어요' : '이번 라운드(2주)에 낸 기록 중 각자 최고 기록 — 이 순위로 티어 점수를 받아요') : '각자 최고 기록으로 순위를 매겨요';
       if (!g.casual && (scope === 'week' || scope === 'round')) {   // 주(뽑기권)·라운드(티어) 안내 + 지난주 1~3등
         const wk = scope === 'week', k = rkInfo(wk);
-        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${g.noTier ? (wk ? '이번 주 기록 순위 (재미용 · 티어 X)' : '이번 라운드 기록 순위 (재미용 · 티어 X)') : wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
+        $('#rankList').insertAdjacentHTML('beforebegin', `<div class="rk-rd"><p><b>${k.pre ? `프리시즌 · ${rkNextTxt(k)}부터 티어 랭크 다시 시작` : k.started ? `마감 ${ddl(k)}` : !RK.start ? '정식 업데이트 주부터 시작' : wk ? '첫 주 준비 중' : '첫 라운드 준비 중'}</b> · ${g.noTier ? (wk ? '이번 주 기록 순위 (재미용 · 티어 X)' : '이번 라운드 기록 순위 (재미용 · 티어 X)') : wk ? '이번 주 기록 순위 (보상은 라운드 티어로)' : '이 순위로 티어 점수를 받아요'}</p>${r.last?.length ? `<p class="rk-last"><small>지난주</small>${r.last.map(u => `<a href="#u/${esc(u.handle)}" data-u="1"><i class="mdl m${u.place}">${u.place}</i>${av(u, 'xs')}${esc(nameOf(u))}</a>`).join('')}</p>` : ''}</div>`);
         if (!r.list.length) $('#rankList').innerHTML = `<li class="empty">${wk ? '이번 주' : '이번 라운드'} 기록이 아직 없어요. 지금 하면 1등!</li>`;
       }
       // 내 자리(2026-10-28 하율 "랭킹 누르면 자신이 어디 위치에 있는지 바로"): 50등 밖이면 목록 끝에 ⋯ + 내 줄, 기록이 없으면 '기록 없음' 줄

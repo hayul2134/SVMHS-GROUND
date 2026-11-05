@@ -3,7 +3,7 @@ import { cached } from '../../../lib/cache.js';
 // D1 바인딩 이름 DB가 필요하다(없으면 { enabled:false }). 테이블은 첫 요청 때 자동으로 만든다.
 // 선택: 가입 코드는 관리자 페이지(/admin) 설정 → 없으면 비밀 변수 JOIN_CODE. 정지된 계정은 로그인 불가.
 import { balanceOf, balDay, openAt, closeAt, nextOpen, lastPeriod } from '../../../lib/balance.js';
-import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD, TIER3, TIERS3 } from '../../../public/js/att-rewards.js';
+import { rwNorm, GACHA, GACHA_ALL, RAR, GC, gcHave, gcEarn, gcItem, gcDone, fxOk, GC_TITLE, HIDDEN, HOME_TITLE, HOME_TITLE2, HOME_MARK, isHidden, FX, objName, SHN, RK, rkOf, rkRange, rkPre, wkOf, wkRange, TIERS, tierAt, tierMode, BEST_N, tierOfK, gamePts, joinBonus, TIER2, gamePts2, tierAt2, GAME_FRAUD, TIER3, TIERS3 } from '../../../public/js/att-rewards.js';
 import { HOME_MAX, GOAL, scoreAt } from '../../../public/js/home-score.js';
 import { GEAR_MAX, GEAR_TIME, maxScore as gearMax } from '../../../public/js/gear-score.js';
 import { STAIR_MAX, MIN_STEP_MS, T200, maxMs as stairMaxMs } from '../../../public/js/stair-score.js';
@@ -1692,6 +1692,7 @@ async function settleRounds(db) {
   if (cur >= 1 && rkChecked < cur - 1) {
     for (let n = Math.max(0, cur - 2); n < cur; n++) {
       if (await db.prepare("SELECT 1 AS x FROM rank_rewards WHERE round = ?1 AND game = '*'").bind(n).first()) continue;
+      if (rkPre(n)) { await db.prepare("INSERT OR IGNORE INTO rank_rewards (round, game, place, uid, tix, seen, at) VALUES (?1, '*', 0, 0, 0, 1, ?2)").bind(n, Date.now()).run(); continue; }   // 프리시즌(2026-11-06 하율): 티어 배지·뽑기권 없음
       const tb = await tierBoard(db, n, tierV2(null));
       for (let i = 0; i < tb.list.length; i += 50) await db.batch(tb.list.slice(i, i + 50).map(x => db.prepare('UPDATE users SET tier_last = ?1 WHERE id = ?2').bind(n + ':' + x.tier, x.uid)));
       // 2026-10-27 하율: 라운드 최종 티어로 뽑기권 — 챌린저 3 · 그랜드마스터 2 · 마스터 1 (game 't:티어', place = uid, 한 번만)

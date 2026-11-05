@@ -146,13 +146,31 @@ export const baseOf = v => isShn(v) ? v.slice(0, -SHN.length) : v;
 //   비어 있으면 아직 시작 전(모든 주기 n = -1, 기록·보상·티어 없음)
 // 2026-10-27 하율: 보상 바꿈 — 게임 랭킹 1~3등 뽑기권은 없앰. 대신 ① 매주(wdays) 모두에게 뽑기권 week장 ② 라운드(2주)가 끝나면 최종 티어로 tierTix장
 //   (챌린저 3 · 그랜드마스터 2 · 마스터 1). 라운드가 끝나면 라운드 기록·티어는 새로 시작(역대 기록은 그대로)
-export const RK = { start: '2026-10-26', days: 14, wdays: 7, week: 1, tierTix: { challenger: 3, grandmaster: 2, master: 1 } };
+// 2026-11-06 하율 "오늘 티어 마감으로 하고, 내일은 프리시즌처럼 열자" + "월요일부터 다시 티어 랭크가 시작": 라운드 경계를 직접 지정(cuts).
+//   라운드 0 = 10/26~11/6 · 라운드 1 = 프리시즌 11/7~11/8(pre — 기록은 남지만 티어 배지·뽑기권 정산 없음) · 라운드 2 = 11/9(월)부터, 그 뒤 days일마다.
+//   주(뽑기권 1주)는 cuts와 상관없이 start부터 7일씩 그대로. 서버 SQL(lib/db.js RK_SQL)도 같은 경계 — cuts를 바꾸면 SCHEMA_V를 올려 트리거를 다시 만들 것
+export const RK = { start: '2026-10-26', days: 14, cuts: ['2026-11-07', '2026-11-09'], pre: [1], wdays: 7, week: 1, tierTix: { challenger: 3, grandmaster: 2, master: 1 } };
+export const rkPre = n => (RK.pre || []).includes(n);
 const RK_START = () => (RK.start || '2099-01-05').replace(/-/g, '');   // 시작 전엔 먼 미래 월요일로 계산(항상 '시작 전')
 const dnum = ymd => Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)) / 864e5;
 const ymdOf = n => new Date(n * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
 // 라운드 번호(시작 전이면 -1)와 그 라운드의 첫날·마지막 날(YYYYMMDD) — today도 YYYYMMDD(KST)
-export const rkOf = today => { const s = dnum(RK_START()), n = Math.floor((dnum(today) - s) / RK.days); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
-export const rkRange = n => { const s = dnum(RK_START()); return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; };
+// 라운드 시작일 목록(일 번호): start + cuts. 마지막 시작일부터는 days일마다
+const rkStarts = () => [dnum(RK_START()), ...(RK.start ? (RK.cuts || []).map(c => dnum(c.replace(/-/g, ''))) : [])];
+// 라운드 시작 오프셋(start 기준 일수) — 서버 SQL이 같은 경계를 쓰게 내보냄
+export const rkCutOffs = () => { const st = rkStarts(); return st.slice(1).map(x => x - st[0]); };
+export const rkRange = n => {
+  const st = rkStarts(), L = st.length - 1;
+  if (n < 0) { const s = st[0]; return { n, from: ymdOf(s + n * RK.days), to: ymdOf(s + n * RK.days + RK.days - 1) }; }
+  if (n < L) return { n, from: ymdOf(st[n]), to: ymdOf(st[n + 1] - 1), pre: rkPre(n) };
+  const f = st[L] + (n - L) * RK.days; return { n, from: ymdOf(f), to: ymdOf(f + RK.days - 1), pre: rkPre(n) };
+};
+export const rkOf = today => {
+  const st = rkStarts(), L = st.length - 1, d = dnum(today);
+  if (d < st[0]) return rkRange(Math.floor((d - st[0]) / RK.days));
+  let i = 0; while (i < L && d >= st[i + 1]) i++;
+  return rkRange(i < L ? i : L + Math.floor((d - st[L]) / RK.days));
+};
 // 뽑기권 주(1주) 번호·기간 — 라운드와 같은 시작일, 라운드 n = 주 2n·2n+1
 export const wkOf = today => { const s = dnum(RK_START()), n = Math.floor((dnum(today) - s) / RK.wdays); return { n, from: ymdOf(s + n * RK.wdays), to: ymdOf(s + n * RK.wdays + RK.wdays - 1) }; };
 // 신규 가입 선물(2026-10-25 하율: "배포한다고 한 주 업데이트 날부터 2주 동안 가입하면 뽑기권 5개"):

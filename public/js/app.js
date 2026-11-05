@@ -10,7 +10,7 @@ import './seg.js';   // 전환 버튼 묶음 → 스위치처럼 미끄러지는
 import { initInstall } from './install.js';
 import { clubLogo } from './clubs.js';
 import { ffOn } from './flags.js';   // 앱으로 설치하기 (2026-10-25)
-import { rkOf } from './att-rewards.js';   // 티어 마감 띠 (2026-11-06)
+import { rkOf, rkRange } from './att-rewards.js';   // 티어 마감 띠 (2026-11-06)
 import { wearG, wearSvg, spotPref, resolveSpot, anchorOf } from './wear.js';
 
 /* ===== 설정 ===== */
@@ -2107,11 +2107,12 @@ function tierCloseCand() {
   const dev = document.documentElement.classList.contains('dev-pv');
   if (!ffOn('tier-close', dev)) return null;
   const t = ymd(now()), r = rkOf(t);
-  const last = r.n >= 0 && r.to === t;
+  const last = r.n >= 0 && !r.pre && r.to === t;   // 프리시즌(라운드 pre)은 마감 띠 없음
   const id = last ? 'r' + r.n : dev ? 'pv1' : '';
   if (!id || store.get(noticeKey('tierclose_x')) === id) return null;
   const md = y => `${+y.slice(4, 6)}/${+y.slice(6, 8)}`;
-  return { id, key: 'tierclose_x', at: Date.now() * 2, tone: 'tier', text: '오늘 밤 12시, 티어 마감!', link: '#game', range: `${md(r.from)}~${md(r.to)}` };
+  const nx = rkRange(r.n + 1), nx2 = nx.pre ? rkRange(r.n + 2) : nx, dw = y => '일월화수목금토'[new Date(Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8))).getUTCDay()];
+  return { id, key: 'tierclose_x', at: Date.now() * 2, tone: 'tier', text: '오늘 밤 12시, 티어 마감!', link: '#game', range: `${md(r.from)}~${md(r.to)}`, next: `${nx.pre ? '주말은 프리시즌, ' : ''}${md(nx2.from)}(${dw(nx2.from)})부터 티어 랭크 다시 시작` };
 }
 async function loadNotice() {
   const box0 = $('#notice');
@@ -2138,7 +2139,7 @@ async function loadNotice() {
   a.textContent = c.text;
   if (c.tone === 'tier') {   // 티어 마감 띠: 엠블럼 + 큰 제목 + 남은 시간
     $('#noticeIc').innerHTML = '<svg class="tc-em" viewBox="0 0 48 44" aria-hidden="true"><use href="#tr2-challenger"/></svg>';
-    a.innerHTML = `<b class="tc-t">오늘 밤 12시, 티어 마감!</b><span class="tc-s">이번 라운드(${c.range}) 기록은 오늘까지만 티어에 들어가요 · 마지막 한 판으로 한 칸 더 (ง •̀_•́)ง</span><span class="tc-c" id="tcLeft"></span>`;
+    a.innerHTML = `<b class="tc-t">오늘 밤 12시, 티어 마감!</b><span class="tc-s">이번 라운드(${c.range}) 기록은 오늘까지만 티어에 들어가요 · ${c.next} · 마지막 한 판으로 한 칸 더 (ง •̀_•́)ง</span><span class="tc-c" id="tcLeft"></span>`;
     const tick = () => { const el = $('#tcLeft'); if (!el) return; const n = now(), end = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1), s = Math.max(0, Math.floor((end - n) / 1e3)); el.textContent = `남은 시간 ${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
     tick(); tcTimer = setInterval(tick, 1000);
   }
