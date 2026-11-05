@@ -2967,9 +2967,9 @@ async function playDance() {
   const area = stage(ic('dance') + ' 선생님 몰래 춤추기', '<div class="dn" id="dn"><div class="dn-main" id="dnMain"></div><aside class="sr-side" id="dnRec"></aside></div>', true);
   if (!DANCE) { try { DANCE = await import('./dance.js').catch(() => import('./dance.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#dnMain')) return;
-  let runTk = null, run = 0, tkSeq = 0, tkWhy = '', best = store.get('dance_best', 0);   // run = 판 번호(저장 응답이 다음 판 화면을 덮지 않게) · tkSeq = 미리 받는 티켓 순번
+  let runTk = null, run = 0, tkSeq = 0, tkWhy = '', best = S.me ? 0 : store.get('dance_best', 0);   // 로그인 중엔 서버 최고만(이 기기에 남은 저장 안 된 점수는 안 씀, 2026-11-05) · run = 판 번호(저장 응답이 다음 판 화면을 덮지 않게) · tkSeq = 미리 받는 티켓 순번
   const M = DANCE.createDance($('#dnMain'), {
-    quick, best, sound: store.get('dance_snd', false), trophy: ic('trophy'),
+    quick, best, sound: store.get('dance_snd', false), trophy: ic('trophy'), savedOnly: () => !!S.me,
     keys: e => KM.actOf('dance', e),
     keyText: () => { const k = KM.keysOf('dance'); return `${esc(KM.keyName(k.dance?.[0] || ''))} 꾹 누르기`; },
     onSound: on => store.set('dance_snd', on),
@@ -2986,7 +2986,7 @@ async function playDance() {
     saveLine: res => !S.me ? '로그인하면 랭킹에 올라가요' : !res.saved ? '이번 판은 서버에 등록되지 않아 저장 못 했어요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…',
     onOver(res) {
       const no = run, tk = runTk; runTk = null;
-      if (res.score > best) { best = res.score; if (!S.me || !res.saved) store.set('dance_best', best); }
+      if (res.score > best && (!S.me || res.saved)) { best = res.score; if (!S.me) store.set('dance_best', best); }
       if (!S.me || !res.saved || !tk || res.score < 1) return;
       ticket = tk;   // 이 판의 티켓으로만 저장
       saveScore('dance', DANCE_MAX - res.score, res.rounds).then(r => {
@@ -3007,7 +3007,7 @@ async function playDance() {
     else if (pd) store.set('dance_pend', null); }
   $('#dnMain .dn-snd')?.insertAdjacentHTML('beforebegin', RE_BTN);   // 다시 시작(R)
   window.__dance = M;   // 테스트용
-  myRecInto($('#dnRec'), 'dance', best ? DANCE_MAX - best : null, { open: true });
+  myRecInto($('#dnRec'), 'dance', best ? DANCE_MAX - best : null, { open: true }).then(r => { if (S.me && r && 'best' in r) { const b = r.best ? DANCE_MAX - r.best.v : 0; M.setBest(b); best = Math.max(best, b); store.set('dance_best', b); } });
   quitGame = () => { run++; M.destroy(); if (window.__dance === M) window.__dance = null; };
 }
 

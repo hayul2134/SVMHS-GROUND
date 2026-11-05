@@ -86,7 +86,7 @@ export function createDance(root, opts = {}) {
   };
   const showOver = res => {
     st.scene = 'over'; st.shownAt = performance.now();
-    const nb = res.score > best && res.score > 0; if (nb) best = res.score;
+    const nb = res.score > best && res.score > 0 && (res.saved || !opts.savedOnly?.()); if (nb) best = res.score;   // 로그인 중 저장 안 된 판은 '내 최고'에 안 넣음(2026-11-05 — 화면엔 1,288점인데 기록은 906점이던 일)
     ov.hidden = false; ov.className = 'hr-ov dead dn-over';
     ov.innerHTML = `<b>${res.why === 'sleep' ? '수업 시간에 졸아?!' : '교무실로 따라와.'}</b><div class="hr-card"><p class="hr-sc"><em>${fmt(res.score)}점</em>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
       <p class="dn-stat"><span>버틴 시간 <b>${Math.floor(res.f / D.FPS)}</b>초</span><span>세이프 <b>${res.safes}</b>번</span><span>최고 배율 <b>x${res.maxMult}</b></span></p>
@@ -106,7 +106,7 @@ export function createDance(root, opts = {}) {
   }
   function start() {
     if (st.scene !== 'ready') return;
-    if (!pre || (pre.done && pre.v != null && performance.now() - pre.at > 40 * 60e3)) prefetch();
+    if (!pre || (pre.done && (pre.v == null || performance.now() - pre.at > 40 * 60e3))) prefetch();   // 못 받은 티켓은 판 시작 때 다시 받기(2026-11-05 — 예전엔 그대로 연습 판)
     ov.hidden = true; s = null; resetFx(); evRun++;
     const my = evRun, p = pre;
     if (p.done) { seed = p.v; saved = p.v != null; pre = null; begin(); return; }

@@ -1251,7 +1251,15 @@ const ROUTES = {
     const game = String(body.game || '');
     if (!GAMES[game] || GAMES[game].derived || (GAMES[game].ff && !ffOn(GAMES[game].ff, isAdm(me)))) return err('bad game');   // 미리보기 게임은 개발자만 · derived(200칸)는 판 기록에서만
     // 시작 횟수 제한(6시간 티켓도 처음 1시간만 셈 — 2026-10-29 기자재 정리! 일반을 자주 다시 시작하면 60장에 걸리던 것 방지): 아직 안 쓴(살아 있는) 티켓이 60장 넘으면 잠깐 막음 — 예전 rl 카운터(시작마다 쓰기 3행) 대신 읽기로 셈(2026-10-29 쓰기 절약)
-    if (!isAdm(me) && (await db.prepare(`SELECT COUNT(*) AS n FROM rl WHERE k >= ?1 AND k < ?2 AND reset - (CASE WHEN ${[...LONG_TK].map(g => `k LIKE '%:${g}:%'`).join(' OR ')} THEN ${6 * 3600e3 - TICKET_TTL} ELSE 0 END) > ?3`).bind(`tk:${me.id}:`, `tk:${me.id};`, Date.now()).first()).n >= 60) return err('잠깐 쉬었다가 해요', 429);
+    // 2026-11-05 '선생님 몰래 춤추기 기록 반영 안 됨': 씨앗 게임(춤추기·카체이싱·카메라 가방·게퍼)은 다시 시작·판 끝 미리 받기마다 안 쓴 티켓이 남아
+    //   30분쯤 열심히 하면 60장에 걸림 → 그 뒤 판은 티켓 없이 '연습 판'이 되어 기록이 조용히 사라졌음.
+    //   이제 60장이 넘으면 막지 않고 그 학생의 가장 오래된 짧은 티켓부터 지움(6시간 티켓은 둠). 막는 건 1분에 30장 넘게 받는 연타만.
+    if (!isAdm(me)) {
+      const lk = [...LONG_TK].map(g => `k LIKE '%:${g}:%'`).join(' OR '), now = Date.now(), a = `tk:${me.id}:`, b = `tk:${me.id};`;
+      const c = await db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN NOT (${lk}) AND reset > ?4 THEN 1 ELSE 0 END) AS fresh FROM rl WHERE k >= ?1 AND k < ?2 AND reset - (CASE WHEN ${lk} THEN ${6 * 3600e3 - TICKET_TTL} ELSE 0 END) > ?3`).bind(a, b, now, now + TICKET_TTL - 60e3).first();
+      if ((c?.fresh || 0) >= 30) return err('잠깐 쉬었다가 해요', 429);
+      if ((c?.n || 0) >= 60) await db.prepare(`DELETE FROM rl WHERE k IN (SELECT k FROM rl WHERE k >= ?1 AND k < ?2 AND NOT (${lk}) AND reset > ?3 ORDER BY reset LIMIT ?4)`).bind(a, b, now, c.n - 59).run();
+    }
     const ticket = randHex(16);
     await db.prepare('INSERT INTO rl (k, n, reset) VALUES (?1, 0, ?2)').bind(`tk:${me.id}:${game}:${ticket}`, Date.now() + ttlOf(game)).run();
     await rescueReplay(db, me);
