@@ -4,6 +4,7 @@
 //   + "디자인 싹다 디벨롭 — 도형 느낌 없게": 하늘(해·구름·산·도시)·대기 원근·가드레일·가로등·아스팔트 결·차 그림자·반사, 유리 느낌 HUD.
 // 판 좌표(도로 x 0~375, 세로 y)는 그대로 두고 그릴 때만 바꿈 → 규칙·점수·서버 검사와 무관. 세로 화면 터치 기기는 '가로로 돌려 주세요'.
 import * as C from './chase-score.js';
+import { pauseBudget, pauseOutMsg } from './util.js';
 
 const INK = '#2a2846';
 const TRAFFIC = ['#eef0f3', '#2a2d36', '#a7afba', '#646d7a', '#c8322f', '#2d5bb0', '#3b6e52', '#d9c9a3', '#7c2a36', '#e2e5ea'];   // 실제 도로에 많은 색(흰색·검정·은색·회색 많이)
@@ -578,12 +579,14 @@ export function createChase(root, opts = {}) {
       <p class="cs-stat"><span><b>${fmt(res.m)}</b>m</span><span>최고 <b>${res.top}</b>km/h</span><span>아슬아슬 <b>${res.near}</b>번</span>${res.slipPts ? `<span>슬립 점수 <b>${fmt(res.slipPts)}</b></span>` : ''}${res.ramps ? `<span>점프대 <b>${res.ramps}</b>번</span>` : ''}<span>최대 콤보 <b>x${res.maxCombo}</b></span><span>부스터 <b>${res.boosts}</b>번</span>${res.smash ? `<span>날려 버린 차 <b>${res.smash}</b>대</span>` : ''}</p>
       <small class="hr-msg cs-msg">${msgNow ?? (opts.saveLine ? opts.saveLine(res) : '')}</small></div><small class="hr-go">${touchSeen ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
   };
-  const showPause = () => { ov.hidden = false; ov.className = 'hr-ov cs-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>차도 연료도 같이 멈췄어요</span><small>${touchSeen ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; };
+  const PB = pauseBudget();
+  const showPause = () => { ov.hidden = false; ov.className = 'hr-ov cs-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>차도 연료도 같이 멈췄어요</span><small>${touchSeen ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>${pauseFrom === 'play' ? PB.html() : ''}`; };
 
   /* --- 판 흐름 --- */
   let topV = 0;
   function start() {
     if (st.scene !== 'ready' || portMQ.matches) return;
+    PB.reset();
     ov.hidden = true; st.scene = 'count'; countT = 0; evRun++;
     const my = evRun; seed = null; saved = false;
     Promise.resolve(opts.seed ? opts.seed() : null).catch(() => null).then(x => { if (my === evRun) { seed = x; saved = x != null; } return x; });
@@ -600,8 +603,8 @@ export function createChase(root, opts = {}) {
     if (st.scene !== 'over' || performance.now() - st.shownAt < 500) return;
     st.scene = 'ready'; s = null; resetFx(); opts.onReady?.(); start();
   }
-  function pause() { if (st.scene !== 'play' && st.scene !== 'count') return; pauseFrom = st.scene; st.scene = 'pause'; sfx.engine(0); showPause(); }
-  function resume() { if (st.scene !== 'pause' || portMQ.matches) return; ov.hidden = true; lq.length = 0; st.scene = pauseFrom === 'count' ? 'count' : 'resume'; countT = 0; last = performance.now(); }
+  function pause() { if (st.scene !== 'play' && st.scene !== 'count') return; pauseFrom = st.scene; if (pauseFrom === 'play') PB.on(); st.scene = 'pause'; sfx.engine(0); showPause(); }
+  function resume() { if (st.scene !== 'pause' || portMQ.matches) return; PB.off(); ov.hidden = true; lq.length = 0; st.scene = pauseFrom === 'count' ? 'count' : 'resume'; countT = 0; last = performance.now(); }
 
   /* --- 효과 --- */
   // 입자 종류 k: 없음 = 네모 · sp = 불꽃 줄(빛남) · sh = 유리 조각(돌며 반짝) · db = 금속·나무 파편 · sm = 연기 · fi = 불덩이(빛남) · st = 반짝 별
@@ -701,6 +704,7 @@ export function createChase(root, opts = {}) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
     fT0 = performance.now();
+    if (st.scene === 'pause' && pauseFrom === 'play' && !document.hidden) { if (PB.out()) { pauseOutMsg(true); resume(); } else PB.paint(); }   // 멈춤 한도(util.js) — 다시 둬 보는 게임이라 끊지 않고 이어 감
     const dt = Math.min(100, now - (last || now)); last = now;
     if (st.scene === 'count' || st.scene === 'resume') {
       countT += dt;

@@ -7,6 +7,7 @@
 // 배경: 학교 1~5층(복도 벽·창문·게시판·교실 문·소화기·시계) → 옥상(난간·물탱크) → 하늘(구름·새) → 구름 위(노을) → 우주(별·행성·별똥별)
 import { GAIN, FLOOR, drain, floorName, zoneOf, ROOF, T200 } from './stair-score.js';
 import { buildSprites, loadChar, SPR_W, SPR_H } from './runner.js';
+import { pauseBudget, pauseOutMsg } from './util.js';
 
 export const W = 160, H = 240;
 const DX = 22, DY = 10, SW = 22, ST = DY;   // 캐릭터 발 높이(화면 y)는 createStair 안 FOOT(깃발 stair-center면 137, 아니면 168)
@@ -224,7 +225,7 @@ export function createStair(cv, o = {}) {
   /* ----- 입력: 'climb' 오르기 · 'turn' 방향 바꾸기 ----- */
   function input(kind) {
     if (!alive || st.scene === 'over') return;
-    if (st.scene === 'pause') { st.scene = 'play'; last = 0; o.onPause?.(false); return; }   // 멈춤을 푸는 입력은 오르지 않음
+    if (st.scene === 'pause') { if (PB.out()) { PB.off(); pauseOutMsg(); end('pause'); return; } PB.off(); st.scene = 'play'; last = 0; o.onPause?.(false); return; }   // 멈춤을 푸는 입력은 오르지 않음 · 멈춤 한도 넘으면 판 끝(util.js)
     // 시작 입력도 원작(무한의 계단)처럼 그대로 처리 — '방향 바꾸기'로 시작하면 돌아서며 한 칸 → 계단이 없는 쪽이라 바로 떨어짐(2026-10-29 하율 "게임이 시작되면서 그냥 바로 떨어지게")
     if (st.scene === 'ready') { st.scene = 'play'; o.onStart?.(); }
     if (kind === 'turn') { st.face = -st.face; st.turns++; }
@@ -255,7 +256,8 @@ export function createStair(cv, o = {}) {
     if (why === 'time') { shake = 3; [880, 660, 880, 660].forEach((f, i) => setTimeout(() => beep(f, .16, 'triangle', .06), i * 170)); }
     overT = setTimeout(() => { if (!alive) return; st.shown = true; st.shownAt = performance.now(); o.onOver?.({ steps: st.steps, turns: st.turns, ms: Math.round(st.ms), why, floor: st.floor, t200: st.t200 }); }, why === 'time' ? 900 : 750);
   }
-  function pause() { if (st.scene === 'play') { st.scene = 'pause'; o.onPause?.(true); } }
+  const PB = pauseBudget();
+  function pause() { if (st.scene === 'play') { PB.on(); st.scene = 'pause'; o.onPause?.(true); } }
 
   /* ----- 그리기 ----- */
   const R = Math.round;
@@ -586,6 +588,7 @@ export function createStair(cv, o = {}) {
     raf = requestAnimationFrame(frame);
     if (refontLater && st.scene !== 'play') refont();
     const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now; t += dt;   // 상한 0.05 → 0.1: 느린 기기에서 시간이 덜 흐르던 것 완화
+    if (st.scene === 'pause' && !document.hidden) { if (PB.out()) { PB.off(); pauseOutMsg(); end('pause'); } else PB.paint(); }   // 멈춤 한도
     if (st.scene === 'play') {
       st.ms += dt * 1000; st.gauge -= drain(st.steps) * dt;
       if (st.gauge <= 0) { st.gauge = 0; end('time'); }
@@ -639,7 +642,7 @@ export function createStair(cv, o = {}) {
   document.addEventListener('visibilitychange', vis); window.addEventListener('blur', blur);
   reset(); warm(); raf = requestAnimationFrame(frame);
   return {
-    st, input, reset, pause, refont,
+    st, input, reset, pause, refont, pb: () => PB,
     text: () => [...TEXTS, ...FLOOR_MSG].join('') + Array.from({ length: 16 }, (_, f) => floorName(f) + floorName(f, true) + zoneOf(f)).join('') + ' 도착! 돌파!',   // 판에서 쓰는 글자(글꼴 미리 받기용)
     setChar(c) { o.char = c; loadSpr(); },
     setSound(v) { sound = !!v; if (v) beep(660, .05, 'square', .103); },

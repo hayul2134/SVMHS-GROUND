@@ -39,7 +39,7 @@ export async function onRequest({ request, env, params }) {
     return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...SECURITY_HEADERS } });
   }
 
-  if (path === 'config') return json({ hasKey: Boolean(env.NEIS_KEY) }, 200, 'public, max-age=300');
+  if (path === 'config') return json({ hasKey: Boolean(env.NEIS_KEY), t: Date.now() });   // t: 서버 시각(ms) — 화면 시계 보정용(2026-11-06, 예전 Date 헤더는 1초 단위라 3초 넘게 틀린 기기만 고쳤음)
 
   // 나이스 프록시는 이 사이트 화면에서만 (다른 사이트가 우리 인증키로 대량 조회하지 못하게)
   if (request.headers.get('sec-fetch-site') === 'cross-site') return json({ error: 'forbidden' }, 403);

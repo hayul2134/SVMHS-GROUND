@@ -13,7 +13,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== SHELL && k !== DATA).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
-const isData = p => p.startsWith('/api/neis/') || p === '/api/config';
+const isData = p => p.startsWith('/api/neis/');   // /api/config는 저장하지 않음(2026-11-06: 서버 시각 t가 들어 있어 옛 응답을 주면 시계가 틀어짐 · 키 여부는 localStorage에 따로 있음)
 const isShell = (req, p) => req.mode === 'navigate' || /^\/(css|js|icons)\//.test(p) || /^\/(logo[\w-]*\.svg|manifest\.webmanifest)$/.test(p);
 
 self.addEventListener('fetch', e => {

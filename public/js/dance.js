@@ -2,6 +2,7 @@
 // 규칙·판 진행은 dance-score.js(서버와 같음) — 여기는 그리기·입력·소리만. 판에 영향을 주는 값은 전부 시뮬레이션(s)에서 읽음.
 // 판서 글씨·선생님 걷기·친구들 반응·말풍선은 그림일 뿐(판과 무관). 입력(누름/뗌)은 1/60초 프레임 번호로 기록(rounds) → 서버가 같은 판을 다시 돌려 점수를 확인.
 import * as D from './dance-score.js';
+import { pauseBudget, pauseOutMsg } from './util.js';
 
 const W = 360, H = 640;
 const K = '#173048';   // 사이트 잉크색(--ink) — 화면 위 UI(말풍선·점수 칩)
@@ -92,7 +93,8 @@ export function createDance(root, opts = {}) {
       <p class="dn-stat"><span>버틴 시간 <b>${Math.floor(res.f / D.FPS)}</b>초</span><span>세이프 <b>${res.safes}</b>번</span><span>최고 배율 <b>x${res.maxMult}</b></span></p>
       <small class="hr-msg dn-msg">${msgNow ?? (opts.saveLine ? opts.saveLine(res) : '')}</small></div><small class="hr-go">${touchSeen ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
   };
-  const showPause = () => { ov.hidden = false; ov.className = 'hr-ov dn-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>선생님도 같이 멈췄어요</span><small>${touchSeen ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; };
+  const PB = pauseBudget();
+  const showPause = () => { ov.hidden = false; ov.className = 'hr-ov dn-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>선생님도 같이 멈췄어요</span><small>${touchSeen ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>${pauseFrom === 'play' ? PB.html() : ''}`; };
 
   /* --- 판 흐름 --- */
   // 카운트다운 없이 바로 시작(2026-10-31 23:16 하율): 시작 티켓을 미리 받아 둠(처음 열 때·판이 끝난 뒤) → 누르면 그 자리에서 시작.
@@ -106,6 +108,7 @@ export function createDance(root, opts = {}) {
   }
   function start() {
     if (st.scene !== 'ready') return;
+    PB.reset();
     if (!pre || (pre.done && (pre.v == null || performance.now() - pre.at > 40 * 60e3))) prefetch();   // 못 받은 티켓은 판 시작 때 다시 받기(2026-11-05 — 예전엔 그대로 연습 판)
     ov.hidden = true; s = null; resetFx(); evRun++;
     const my = evRun, p = pre;
@@ -125,8 +128,8 @@ export function createDance(root, opts = {}) {
     if (st.scene !== 'over' || performance.now() - st.shownAt < 600) return;
     st.scene = 'ready'; s = null; resetFx(); opts.onReady?.(); start();
   }
-  function pause() { if (st.scene !== 'play' && st.scene !== 'count') return; pauseFrom = st.scene; st.scene = 'pause'; showPause(); }
-  function resume() { if (st.scene !== 'pause') return; ov.hidden = true; kHeld = 0; ptr.clear(); sync(); st.scene = pauseFrom === 'count' ? 'count' : 'resume'; countT = 0; last = performance.now(); }
+  function pause() { if (st.scene !== 'play' && st.scene !== 'count') return; pauseFrom = st.scene; if (pauseFrom === 'play') PB.on(); st.scene = 'pause'; showPause(); }
+  function resume() { if (st.scene !== 'pause') return; PB.off(); ov.hidden = true; kHeld = 0; ptr.clear(); sync(); st.scene = pauseFrom === 'count' ? 'count' : 'resume'; countT = 0; last = performance.now(); }
   function finish() {
     const r = { ...D.resultOf(s), rounds: [s.overF, ...evs], saved, realMs: performance.now() - tStart };
     lastRes = r; msgNow = null; opts.onOver?.(r);
@@ -172,6 +175,7 @@ export function createDance(root, opts = {}) {
     raf = requestAnimationFrame(frame);
     const dt = Math.min(100, now - (last || now)); last = now; const ds = dt / 1000;
     if (st.scene !== 'pause') V.t += ds;
+    else if (pauseFrom === 'play' && !document.hidden) { if (PB.out()) { pauseOutMsg(true); resume(); } else PB.paint(); }   // 멈춤 한도(util.js) — 다시 둬 보는 게임이라 끊지 않고 이어 감
     if (st.scene === 'count' || st.scene === 'resume') {
       countT += dt;
       if (st.scene === 'resume') { const prevN = Math.ceil((1000 - (countT - dt)) / 1000), n = Math.ceil((1000 - countT) / 1000); if (n !== prevN && n > 0) sfx.beep(false); if (countT >= 1000) { st.scene = 'play'; acc = 0; } }

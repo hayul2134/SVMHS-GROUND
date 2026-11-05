@@ -175,3 +175,23 @@ export const toast = (msg, ms = 1800) => {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 };
+
+/* ----- 게임 멈춤 한도 (2026-11-06 하율 "일부러 화면을 꺼서 오래 할 수 있어서 열심히 하는 사람들이랑 격차") -----
+   멈춤 버튼·창 벗어남·화면 꺼짐·탭 숨김·랭킹 창 등으로 멈춰 있던 시간을 한 판에 모두 PAUSE_MAX까지만 허용.
+   넘으면 그 판은 그 자리에서 끝(그때까지 점수는 그대로 저장) — 쉬어 가며 끝없이 하는 판을 막음.
+   다시 둬 보는 게임(카체이싱!·선생님 몰래 춤추기)은 판을 중간에 끊으면 서버 검사와 안 맞아서 대신 3·2·1 뒤 자동으로 이어 감.
+   기기 잠자기 중에도 흐르는 Date.now 기준(performance.now는 잠자는 동안 멈추는 기기가 있음) */
+export const PAUSE_MAX = 30e3;
+export function pauseBudget(max = PAUSE_MAX) {
+  let used = 0, at = 0, shown = -1;
+  const left = () => Math.max(0, max - used - (at ? Date.now() - at : 0));
+  return {
+    on() { if (!at) at = Date.now(); },
+    off() { if (at) { used += Date.now() - at; at = 0; } },
+    left, out: () => left() <= 0,
+    reset() { used = 0; at = 0; shown = -1; },
+    html: () => `<em class="pbleft" id="pbLeft">멈춤은 한 판에 ${max / 1e3}초까지 · ${Math.ceil(left() / 1e3)}초 남음</em>`,
+    paint() { const s = Math.ceil(left() / 1e3); if (s === shown) return; const el = document.getElementById('pbLeft'); if (el) { shown = s; el.textContent = `멈춤은 한 판에 ${max / 1e3}초까지 · ${s}초 남음`; } },
+  };
+}
+export const pauseOutMsg = (auto = false) => toast(auto ? '멈춤 시간(한 판 30초)을 다 써서 다시 시작해요' : '멈춤 시간(한 판 30초)을 다 써서 이번 판은 여기서 끝났어요 · 기록은 저장돼요', 4000);

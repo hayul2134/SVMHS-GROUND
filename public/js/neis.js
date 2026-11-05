@@ -10,12 +10,17 @@ const memo = new Map();
 /** 서버에 키가 있는지 확인. 지난번 값이 있으면 바로 쓰고(대기 없음) 뒤에서 새로 확인한다 */
 export function loadConfig() {
   const t0 = Date.now();
+  let t1 = 0;
   const fresh = fetch('/api/config', { cache: 'no-store' }).then(r => {
-    // 서버 시각(Date 헤더, 초 단위)과 기기 시각 차이가 3초 넘게 나면 보정
-    const sv = Date.parse(r.headers.get('date') || ''), off = sv + 500 - (t0 + Date.now()) / 2;
+    t1 = Date.now();
+    // 예비: 서버 시각(Date 헤더, 초 단위)과 3초 넘게 차이 나면 보정
+    const sv = Date.parse(r.headers.get('date') || ''), off = sv + 500 - (t0 + t1) / 2;
     if (sv && Math.abs(off) > 3000 && Math.abs(off) < 864e5) clock.off = off;
     return r.ok ? r.json() : null;
   }).then(c => {
+    // 서버가 준 ms 시각으로 정밀 보정(2026-11-06) — 기기마다 0.x~2초씩 다른 시계 때문에 카운트다운이 기기마다 달랐던 것(BELL_LAG를 여러 번 바꾼 원인 후보)
+    //   응답 왕복이 1.5초 넘게 걸린 건 오차가 커서 안 씀 · 오차 = 왕복의 절반 이하
+    if (c && typeof c.t === 'number' && t1 && t1 - t0 < 1500) { const off = c.t - (t0 + t1) / 2; if (Math.abs(off) < 600e3) clock.off = Math.abs(off) < 40 ? 0 : off; }   // 10분 넘게 차이 = 저장된 옛 응답일 수 있어 안 씀(그땐 위 Date 헤더 방식)
     if (c) { api.hasKey = !!c.hasKey; store.set('hasKey', api.hasKey); }
   }).catch(() => {});
   // 지난번에 '키 있음'이었으면 바로 쓰고, 아니면 새 값을 기다린다 (키 등록 후에도 5교시 제한이 남지 않게)

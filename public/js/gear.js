@@ -6,6 +6,7 @@
 // 규칙: 10×20(+위 숨은 2줄) · 7개 묶음 무작위(7-bag) · SRS 회전·벽 차기 · 보관(hold) · 다음 3개 · 고스트 · 잠금 지연 0.5초(움직이면 최대 15번 연장)
 // 점수는 gear-score.js(서버와 공용). 고정 타임스텝 1/60초. 논리 해상도: 한 칸 12px → 판 120×240, CSS로 정수 배 확대(또렷한 픽셀).
 import { LINE_PTS, levelOf, SOFT_PT, HARD_PT } from './gear-score.js';
+import { pauseBudget, pauseOutMsg } from './util.js';
 
 export const C = 12, COLS = 10, ROWS = 22, HID = 2, VIS = ROWS - HID;
 export const BW = COLS * C, BH = VIS * C;
@@ -218,7 +219,7 @@ export function createGear(canvas, opt = {}) {
   const keys = { left: false, right: false, down: false };
 
   function reset(seed = (Math.random() * 1e9) | 0) {
-    rand = rng(seed);
+    rand = rng(seed); PB.reset();
     keys.left = keys.right = keys.down = false;   // 지난 판에 누르던 키가 남아 새 판에서 저절로 밀리던 문제 (2026-10-28)
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, lines: 0, level: 1, pieces: 0, b2b: false,
@@ -379,7 +380,7 @@ export function createGear(canvas, opt = {}) {
       else if (a === 'drop') { hardDrop(); break; }
     }
   }
-  function over(timeUp = false) { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms), timeUp }); }
+  function over(timeUp = false, pauseOut = false) { if (st.scene === 'over') return; st.scene = 'over'; st.cur = null; st.shake = 6; beep(300, 60, .5, 'sawtooth', .05); /* 쿵 → 슬레이트 '컷!' → 내려가는 세 음 */ [392, 330, 262].forEach((f, i) => beep(f, f * .97, .18, 'triangle', .04, .7 + i * .2)); opt.onOver?.({ score: st.score, lines: st.lines, level: st.level, pieces: st.pieces, ms: Math.round(st.ms), timeUp, pauseOut }); }
 
   function update(dt) {
     if (st.stop > 0) { st.stop--; return; }   // 히트스톱: 깨지는 순간 몇 프레임 멈칫
@@ -480,18 +481,20 @@ export function createGear(canvas, opt = {}) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
     if (document.hidden) { last = t; if (st.scene === 'play') pause(); return; }
+    if (st.scene === 'pause') { if (PB.out()) { PB.off(); pauseOutMsg(); over(false, true); } else PB.paint(); }   // 멈춤 한도(util.js) — 넘으면 판 끝
     const dt = Math.min(.1, (t - (last || t)) / 1000); last = t;
     acc += dt;
     while (acc >= STEP) { update(STEP); acc -= STEP; }
     draw();
   }
-  function pause() { if (st.scene !== 'play') return; st.scene = 'pause'; beep(660, 440, .08, 'triangle', .03); keys.left = keys.right = keys.down = false; opt.onPause?.(true); }
-  function resume() { if (st.scene !== 'pause') return; st.scene = 'play'; last = 0; beep(440, 660, .08, 'triangle', .03); opt.onPause?.(false); }
+  const PB = pauseBudget();
+  function pause() { if (st.scene !== 'play') return; PB.on(); st.scene = 'pause'; beep(660, 440, .08, 'triangle', .03); keys.left = keys.right = keys.down = false; opt.onPause?.(true); }
+  function resume() { if (st.scene !== 'pause') return; if (PB.out()) { PB.off(); pauseOutMsg(); over(false, true); return; } PB.off(); st.scene = 'play'; last = 0; beep(440, 660, .08, 'triangle', .03); opt.onPause?.(false); }
   reset(opt.seed);
   raf = requestAnimationFrame(frame);
 
   return {
-    st, reset, start, pause, resume, drawMini, hardDrop, hold,
+    st, reset, start, pause, resume, pb: () => PB, drawMini, hardDrop, hold,
     input(name, down) {
       // 키를 뗀 건 화면 상태와 상관없이 항상 반영 — 게임 끝·멈춤·준비 화면에서 뗀 키가 무시돼 '눌린 채'로 남던 버그 (2026-10-28 하율 "오른쪽 키를 눌러도 왼쪽으로")
       if (!down && name in keys) { keys[name] = false; if (st.scene !== 'play') return; }

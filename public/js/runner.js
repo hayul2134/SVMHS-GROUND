@@ -3,7 +3,7 @@
 // 점수는 home-score.js(서버와 공용): 살아남은 시간 → 거리(m). 고정 타임스텝 1/60초.
 // 캐릭터는 문자 그림(템플릿)을 부위별 색으로 칠해 프레임마다 미리 그려 둔다(바꿀 때만 다시).
 import { V0, UNIT, GOAL, speedAt, scoreAt, distAt } from './home-score.js';
-import { store } from './util.js';
+import { store, pauseBudget, pauseOutMsg } from './util.js';
 
 export const W = 320, H = 104, GROUND = 92, PX = 26;   // 화면 크기 · 땅 높이(발바닥 y) · 캐릭터 x
 const STEP = 1 / 60;
@@ -534,10 +534,11 @@ export function createRunner(canvas, char, opt = {}) {
   const A = art();
   const st = {};
   let rand, raf = 0, last = 0, acc = 0, alive = true, sound = !!opt.sound, actx = null;
+  const PB = pauseBudget();   // 멈춤 한도(2026-11-06)
   const keys = { jump: false, duck: false };
 
   function reset(seed = (Math.random() * 1e9) | 0) {
-    rand = rng(seed);
+    rand = rng(seed); PB.reset();
     keys.jump = keys.duck = false;   // 지난 판에 누르던 키가 새 판에 남지 않게 (2026-10-28, 기자재 정리! 같은 버그)
     Object.assign(st, {
       scene: 'ready', frames: 0, ms: 0, score: 0, speed: V0, scroll: 0,
@@ -1103,7 +1104,8 @@ export function createRunner(canvas, char, opt = {}) {
   function frame(t) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
-    if (document.hidden || opt.frozen?.()) { last = t; return; }
+    if (document.hidden || opt.frozen?.()) { last = t; if (st.scene === 'play') PB.on(); return; }
+    if (st.scene === 'play') { PB.off(); if (PB.out()) { pauseOutMsg(); die(); } }   // 멈춤 한도(util.js): 화면 숨김·창이 떠 있던 시간 합이 한 판 30초를 넘으면 그 자리에서 끝
     const dt = Math.min(.1, (t - (last || t)) / 1000); last = t;
     acc += dt;
     while (acc >= STEP) { update(STEP); acc -= STEP; }

@@ -224,7 +224,7 @@ function refreshMe() { return meP = refreshMe0(); }
 async function refreshMe0() {
   try {
     const [r] = await Promise.all([call('me'), loadReleased()]);
-    S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false;
+    S.me = r.me; S.unread = r.unread || 0; S.counts = r.counts || null; S.meErr = false; if (S.me) pendWho = S.me.handle;
     document.documentElement.classList.toggle('dev-pv', isDev(S.me)); document.documentElement.dataset.ffr = [...RELEASED].join(' '); paintFF(); document.documentElement.classList.toggle('rk2', ffOn('rk-split', isDev(S.me))); document.documentElement.classList.toggle('tl2', ffOn('tier-look', isDev(S.me))); document.documentElement.classList.toggle('tf', ffOn('tier-fancy', isDev(S.me))); document.documentElement.classList.toggle('tpad', ffOn('tier-pad', isDev(S.me))); document.documentElement.classList.toggle('padin', ffOn('pad-ctl', isDev(S.me)));
     { const c2 = ffOn('cut-v2', isDev(S.me)); document.documentElement.classList.toggle('cut2', c2); GAMES.cut.name = c2 ? '편집의 신' : '컷 타이밍'; GAMES.cut.beta = !c2; }
     { const h = document.documentElement, on = ffOn('halloween', isDev(S.me)) && hwDay(isDev(S.me)) && !(ffOn('pepero', isDev(S.me)) && ppDay(isDev(S.me)));   /* 빼빼로데이 미리보기 중엔 할로윈 끔(캐릭터 배경 무늬가 할로윈 쪽이 이기던 것) */ if (h.classList.contains('hw') !== on) { h.classList.toggle('hw', on); document.dispatchEvent(new Event('sg:mfx')); } if (on && !document.getElementById('hwCss')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="/css/hw-chars.css?v=2" id="hwCss">'); }   // 할로윈 디자인(2026-10-30) — 기간 밖이면 꺼짐
@@ -240,6 +240,7 @@ async function refreshMe0() {
   if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); ctx?.setClub?.(S.me?.club); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
   if (!panelOpen()) loadRecent();
   if (!S.meErr) loadBuddies();
+  if (S.me) setTimeout(pendFlush, 2500);   // 맡겨 둔 게임 기록 보내기(로그인 직후·다시 접속)
 }
 // 끝난 게임 랭킹 라운드 보상(서버 settleRounds가 이미 뽑기권을 넣음) → 한 번 알리고 봤음 표시
 // 2026-10-27: 'w:all' = 매주 모두에게 주는 뽑기권 · 't:티어' = 라운드 최종 티어 보상 · (예전) 'w:게임' = 게임 1~3등
@@ -253,7 +254,7 @@ function startPoll() {
   clearInterval(pollTimer);
   pollTimer = setInterval(pollOnce, 60000);   // 60초마다 (학생 수가 많을 때 Cloudflare 무료 요청 수 아끼기, 대화창 안은 따로 3~15초) · 5분 넘게 안 만지면 쉼(util idle)
 }
-onWake(() => { pollOnce(); if ((document.body.dataset.view || 'home') === 'home' && S.me) loadBuddies(); });
+onWake(() => { pendFlush(); pollOnce(); if ((document.body.dataset.view || 'home') === 'home' && S.me) loadBuddies(); });
 async function pollOnce() {
     if (document.hidden || idle() || !S.me || openThread) return;
     try { const r = await call('poll'); const more = r.unread > S.unread; S.unread = r.unread; paintBadges();
@@ -2258,8 +2259,17 @@ let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, �
    이제: ① 아직 안 쓴 티켓은 같은 게임 다시 시작 때 그대로 씀(50분 안, 서버 유효 1시간 — 출발 시각이 더 이르니 검사엔 불리할 것 없음)
    ② 실패하면 2초 뒤 한 번 더 ③ 그래도 못 받으면 바로 알림 + 저장 때 진짜 이유를 보여 줌 */
 let tkKeep = null;   // { game, p, at } — play()가 받은, 아직 저장에 안 쓴 티켓
-const tkGet = game => call('start', { game }).then(r => r.ticket).catch(e => wait(2000).then(() => call('start', { game })).then(r => r.ticket).catch(e2 => {
-  tkErr = e2.message || e.message; if (curGame === game && !$('#gamePlay').hidden) toast('지금 판은 기록이 저장되지 않아요 · ' + tkErr);
+/* ④ (2026-11-06) 두 번 다 못 받아도 그 게임 화면이 열려 있는 동안 뒤에서 계속 다시 받음(8·15·30초… 최대 1분 간격) → 받으면 '이제 저장돼요'
+   (늦게 받은 티켓은 서버가 아는 시작 시각이 늦어서 긴 판은 '확인 대기'로 맡겨질 수 있음 — 사라지진 않음) */
+const tkGet = game => call('start', { game }).then(r => r.ticket).catch(e => wait(2000).then(() => call('start', { game })).then(r => r.ticket).catch(async e2 => {
+  tkErr = e2.message || e.message;
+  const here = () => curGame === game && !$('#gamePlay').hidden;
+  if (!here()) return '';
+  toast('지금 판은 아직 서버에 등록되지 않았어요 · 다시 연결하는 중… (' + tkErr + ')', 5000);
+  for (let i = 0, gap = 8e3; i < 400 && here(); i++, gap = Math.min(60e3, gap * 1.6)) {
+    await wait(gap); if (!here()) break;
+    try { const t = (await call('start', { game })).ticket; if (t) { tkErr = ''; toast('다시 연결됐어요 · 이번 판 기록도 저장돼요'); return t; } } catch (e3) { tkErr = e3.message || tkErr; }
+  }
   return '';
 }));
 let tkErr = '';
@@ -2490,16 +2500,49 @@ async function myRecInto(el, game, local = null, fold = null) {
 async function saveScore(game, value, rounds, extra) {
   const t = ticket; ticket = null;   // 저장 중에 새 판을 시작해도 새 티켓을 지우지 않게 (먼저 비움)
   if (tkKeep?.p === t) tkKeep = null;   // 이 티켓은 이제 씀 → 다음 판은 새로 받기
-  const tk = await t;
+  const tk = await Promise.race([t, wait(t ? 6000 : 0).then(() => '')]);   // 아직 다시 받는 중이면 6초만 더 기다림
   if (t && !tk) throw new Error(`게임을 시작할 때 서버에 등록되지 않아 이번 기록은 저장 못 했어요${tkErr ? ` (${tkErr})` : ''}. 다시 하기를 눌러 주세요`);
   // 서버 오류(5xx)·연결 끊김이면 같은 티켓으로 한 번 더 — 서버가 오류 때 티켓을 되돌려 둠(2026-10-29 첫 기록 null.b로 기록이 사라지던 일 재발 방지)
   const send = () => call('score', { ...extra, game, value, rounds, ticket: tk });
+  const who = S.me?.handle || pendWho;
   let r;
   try { r = await send(); }
-  catch (e) { if (e.status && (e.status < 500 || e.status === 503)) throw e; await wait(1500); r = await send(); }
+  catch (e) {
+    if (e.status && e.status < 500 && e.status !== 401) throw e;
+    let e2 = e;
+    if (e.status !== 401 && e.status !== 503) { await wait(1500); try { r = await send(); } catch (x) { e2 = x; } }
+    if (!r) {
+      // 연결 끊김·로그인 풀림(401)·DB 하루 한도(503) → 이 기기에 맡겨 두고 다시 연결·로그인되면 자동 전송(2026-11-06, 티켓 유예 24시간 안)
+      //   그 밖의 서버 오류(5xx)는 서버가 이미 '서버 오류 보관'(held_scores)으로 맡아 둬서 여기서 또 보내지 않음(중복 방지)
+      if (e2.status && e2.status !== 401 && e2.status !== 503) throw e2;
+      pendPut({ game, value, rounds, extra, tk, who, at: Date.now() });
+      const x = new Error(e2.status === 401 ? '로그인이 풀려서 이 기기에 맡겨 뒀어요 · 다시 로그인하면 자동으로 저장돼요' : '지금 저장이 안 돼서 이 기기에 맡겨 뒀어요 · 다시 연결되면 자동으로 저장돼요'); x.pend = true; throw x;
+    }
+  }
   if ($('#v-game').classList.contains('on')) renderGame();
   return r;
 }
+/* 맡겨 둔 기록(sg_pend_sc) — 서버 티켓 유예(만료 뒤 24시간) 안에서만 다시 보냄. 다른 계정으로 로그인하면 그 계정 것만 */
+let pendWho = '', pendBusy = false;
+const PEND_K = 'pend_sc', PEND_AGE = 20 * 3600e3;
+const pendGet = () => { const a = store.get(PEND_K, []); return Array.isArray(a) ? a.filter(p => p && p.tk && Date.now() - p.at < PEND_AGE) : []; };
+function pendPut(p) { try { store.set(PEND_K, [...pendGet(), p].slice(-12)); } catch {} }
+async function pendFlush() {
+  if (pendBusy || !S.me) return;
+  const a = pendGet(); if (!a.length) { if (store.get(PEND_K, null)) store.set(PEND_K, []); return; }
+  pendBusy = true; store.set(PEND_K, []);
+  const keep = []; let ok = 0, held = 0, lost = 0;
+  for (const p of a) {
+    if (p.who && p.who !== S.me.handle) { keep.push(p); continue; }
+    try { const r = await call('score', { ...p.extra, game: p.game, value: p.value, rounds: p.rounds, ticket: p.tk }); r.held ? held++ : ok++; }
+    catch (e) { if (!e.status || e.status === 401 || e.status >= 500) keep.push(p); else lost++; if (!S.me || !e.status) { keep.push(...a.slice(a.indexOf(p) + 1)); break; } }
+  }
+  if (keep.length) store.set(PEND_K, [...keep, ...pendGet()].slice(-12));
+  pendBusy = false;
+  if (ok || held) { toast(`맡겨 둔 게임 기록 ${ok + held}개를 보냈어요${held ? ` (${held}개는 확인 대기)` : ''}`, 5000); if ($('#v-game').classList.contains('on')) renderGame(); }
+  else if (lost) toast(`맡겨 둔 게임 기록 ${lost}개는 너무 오래돼서 저장하지 못했어요`, 5000);
+}
+addEventListener('online', () => setTimeout(pendFlush, 1500));
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 /* 1) 반응속도: 5번 평균
@@ -2735,7 +2778,7 @@ async function playStair() {
   const R = STAIR.createStair(cv, {
     sound, center: ffOn('stair-center', isDev(S.me)),
     onStart() { ov.hidden = true; scr.classList.remove('rdy'); runTk = S.me ? tkGet('stair') : null; },   // 실패하면 2초 뒤 한 번 더(tkGet)
-    onPause(on) { if (on) { ov.hidden = false; ov.className = 'hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>종 게이지도 같이 멈췄어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
+    onPause(on) { if (on) { ov.hidden = false; ov.className = 'hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>종 게이지도 같이 멈췄어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>${R.pb().html()}`; } else ov.hidden = true; },
     onFrame(st) {
       // 최적화(2026-10-28): 바뀐 것만 DOM에 씀(매 프레임 class·style을 다시 쓰면 스타일 재계산)
       const gv = st.gauge.toFixed(3); if (gv !== shownG) { shownG = gv; gEl.style.setProperty('--g', gv); }   // CSP: style 속성 대신 CSSOM
@@ -2762,7 +2805,7 @@ async function playStair() {
       scr.classList.remove('low'); scr.classList.add('end');
       ov.hidden = false; ov.className = 'hr-ov dead';
       const msg = !S.me ? '로그인하면 랭킹에 올라가요' : res.steps < 1 ? '0칸은 기록하지 않아요' : '기록 저장 중…';
-      ov.innerHTML = `<b>${res.why === 'time' ? '종 쳤다… 지각!' : '발을 헛디뎠어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.steps.toLocaleString('ko-KR')}칸</em><span>${esc(stairFloor(res.floor))}까지 · ${(res.ms / 1000).toFixed(1)}초${res.ms > 1500 ? ` · 1초에 ${(res.steps / (res.ms / 1000)).toFixed(1)}칸` : ''}</span>${nb && res.steps ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>${res.t200 ? `<p class="hr-t2" id="srT2">200칸 타임어택 <b>${(res.t200 / 1000).toFixed(2)}초</b></p>` : ''}
+      ov.innerHTML = `<b>${res.why === 'time' ? '종 쳤다… 지각!' : res.why === 'pause' ? '멈춤 시간 끝!' : '발을 헛디뎠어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.steps.toLocaleString('ko-KR')}칸</em><span>${esc(stairFloor(res.floor))}까지 · ${(res.ms / 1000).toFixed(1)}초${res.ms > 1500 ? ` · 1초에 ${(res.steps / (res.ms / 1000)).toFixed(1)}칸` : ''}</span>${nb && res.steps ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>${res.t200 ? `<p class="hr-t2" id="srT2">200칸 타임어택 <b>${(res.t200 / 1000).toFixed(2)}초</b></p>` : ''}
         <small class="hr-msg" id="srMsg">${msg}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
       if (!S.me || res.steps < 1) return;
       ticket = tk;   // 이 판의 티켓으로만 저장
@@ -3172,7 +3215,7 @@ async function playGear() {
     onStart() { ov.hidden = true; over = false; gearLast = mode; paintQ(); ticket = S.me ? tkGet(mode === 'rank' ? 'gear' : 'gearn') : null; },
     onQueue: paintQ,
     onScore: floatPt,
-    onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>`; } else ov.hidden = true; },
+    onPause(on) { if (on) { ov.hidden = false; ov.className = 'gr-ov hr-ov'; ov.innerHTML = `<b>잠깐 멈춤</b><span>정리하던 장비는 그대로 있어요</span><small>${touchy ? '화면을 누르면 계속' : '아무 키나 누르면 계속'}</small>${R.pb().html()}`; } else ov.hidden = true; },
     onClear(n, name, pts, up) {
       // 2026-10-27 하율 "위에 뜨는 효과는 더 크고 화려하게": 글자가 하나씩 튀어 오르고, 뒤에 빛살이 돌며 별가루가 터짐 (4줄은 무지개)
       clearTimeout(popT); pop.className = 'gr-pop on n' + n;
@@ -3191,7 +3234,7 @@ async function playGear() {
       if (nb && rk) { best = res.score; store.set('gear_best', best); } else if (nb) { bestN = res.score; store.set('gear_best_n', bestN); }
       ov.hidden = false; ov.className = 'gr-ov hr-ov dead';
       const msg = !S.me ? (rk ? '로그인하면 랭킹에 올라가요' : '로그인하면 일반 모드 순위에 올라가요') : !rk && res.score >= 1 ? '일반 순위 확인 중…' : !rk ? '0점은 기록하지 않아요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…';
-      ov.innerHTML = `<b>${res.timeUp ? '시간 끝! 반납 완료' : '장비실이 꽉 찼어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${rk ? '타임어택 · ' : '일반 · '}${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
+      ov.innerHTML = `<b>${res.timeUp ? '시간 끝! 반납 완료' : res.pauseOut ? '멈춤 시간 끝!' : '장비실이 꽉 찼어요!'}</b><div class="hr-card"><p class="hr-sc"><em>${res.score.toLocaleString('ko-KR')}점</em><span>${rk ? '타임어택 · ' : '일반 · '}${res.lines}줄 · 레벨 ${res.level}</span>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
         <small class="hr-msg" id="grMsg">${msg}</small></div><small class="hr-go">${touchy ? '화면을 눌러 다시' : '스페이스 · 엔터 · 클릭으로 다시'}</small>`;
       if (!S.me || res.score < 1) return;
       // 일반 모드(2026-10-28 하율 "랭크에는 포함되지 않아도 순위는 나오게"): 'gearn'으로 저장 → 따로 순위만(티어·보상·미션 제외)
