@@ -2094,19 +2094,25 @@ const gfsOn = () => document.documentElement.classList.contains('gfs');
 //   → 게임의 크기 계산·판 진행은 평소와 같음. 화면 좌표로 입력을 받는 게임(LED 월 켜기!·게퍼 10)은 배율을 나눠서 받음(blast.js·film.js pos)
 const GFS_SCR = ['.cs-scr', '#srScr', '.dn-scr', '#hrScr', '.ctd-scr', '#rx', '#n2', '.gr-main', '#blBox .bl', '#ml', '#bl', '#cg', '#czBox', '#cm', '#parea > *'];
 let gfsRO = null, gfsQ = 0, gfsEl = null;
-function gfsClear() { if (gfsEl) { gfsEl.style.transform = gfsEl.style.transformOrigin = ''; gfsEl.classList.remove('gfs-scr'); } gfsEl = null; }
+// 화면 요소를 잠깐 제자리(배치 흐름)로 돌려놓음 — 크기를 재거나 창 크기가 바뀌어 게임이 다시 맞출 때
+function gfsUnfix() { const e = gfsEl; if (!e) return; e.classList.remove('gfs-fix'); for (const k of ['transform', 'transform-origin', 'width', 'height']) e.style.removeProperty(k); }
+function gfsClear() { gfsUnfix(); gfsEl?.classList.remove('gfs-scr'); gfsEl = null; }
 function gfsFit() {
   gfsQ = 0;
   const pa = $('#parea'); if (!pa) return;
-  if (gfsEl) gfsEl.style.transform = '';
+  gfsUnfix();
   if (!gfsOn()) return gfsClear();
-  let el = null; for (const q of GFS_SCR) { el = pa.querySelector(q); if (el && el.getBoundingClientRect().width) break; el = null; }
+  let el = null; for (const q of GFS_SCR) { el = pa.querySelector(q); if (el && el.offsetWidth) break; el = null; }
   if (el !== gfsEl) { gfsClear(); gfsEl = el; el?.classList.add('gfs-scr'); }
   if (!el) return;
-  const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;   // transform을 뺀 평소 자리·크기
-  const M = 8, s = Math.min((innerWidth - M * 2) / r.width, (innerHeight - M * 2) / r.height);
-  const tx = (innerWidth - r.width * s) / 2 - r.left, ty = (innerHeight - r.height * s) / 2 - r.top;
-  el.style.transformOrigin = '0 0'; el.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) scale(${s.toFixed(4)})`;
+  // 평소 배치 크기 그대로 고정(position:fixed — 조상 칸의 넘침 자르기·숨김과 무관) → 배율만 키워 화면 가운데. 잘리지 않게 가로·세로 중 작은 배율, 남는 곳은 빈 공간
+  const w = el.offsetWidth, h = el.offsetHeight; if (!w || !h) return;
+  const M = 10, sc = Math.min((innerWidth - M * 2) / w, (innerHeight - M * 2) / h);
+  // 가로만 고정(내용이 바뀌면 높이가 따라 변해 ResizeObserver가 다시 맞춤) — 고정하자 높이가 무너지는 칸(반응속도처럼 부모 높이를 채우던 것)만 세로도 고정
+  el.style.setProperty('width', w + 'px', 'important'); el.classList.add('gfs-fix');
+  if (Math.abs(el.offsetHeight - h) > 2) el.style.setProperty('height', h + 'px', 'important');
+  el.style.setProperty('transform-origin', '0 0', 'important');
+  el.style.setProperty('transform', `translate(${((innerWidth - w * sc) / 2).toFixed(1)}px,${((innerHeight - h * sc) / 2).toFixed(1)}px) scale(${sc.toFixed(4)})`, 'important');
 }
 const gfsQueue = () => { if (!gfsQ) gfsQ = requestAnimationFrame(gfsFit); };
 window.__gfsTest = () => gfsSync(true);
@@ -2131,7 +2137,7 @@ function gfsSync(test = false) {   // test: 전체 화면 API 없이 같은 화�
   }
 }));
 // 창 크기가 바뀌면 게임들의 크기 계산보다 먼저(이 줄이 먼저 등록됨) transform을 빼서 평소 자리로 재게 함
-addEventListener('resize', () => { if (gfsEl) gfsEl.style.transform = ''; if (gfsOn()) gfsQueue(); });
+addEventListener('resize', () => { gfsUnfix(); if (gfsOn()) gfsQueue(); });
 // 게임 키 안내 칸 채우기: <span data-ka="동작" [data-one]> → 지금 설정된 키(keymap.js). 게임이 화면을 그릴 때마다 자동으로(MutationObserver)
 function paintKA(all = false) {
   const g = curGame; if (!g) return;

@@ -5904,6 +5904,7 @@ html.gfs .play{overflow:hidden}   /* 배경은 평소 사이트 배경 그대로
 html.gfs .play .ptop,html.gfs header #btnHome{display:none}
 html.gfs #parea{visibility:hidden}   /* 게임 화면 요소(.gfs-scr, social.js gfsFit)만 보임 — 자리는 그대로, transform으로 화면 가득 */
 html.gfs #parea .gfs-scr{visibility:visible}
+html.gfs #parea .gfs-scr.gfs-fix{position:fixed!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;margin:0!important;max-width:none!important;max-height:none!important;z-index:4;translate:none!important;rotate:none!important;scale:none!important}
 html.gfs .pfs-x{display:grid;place-items:center;position:fixed;top:12px;right:12px;z-index:5;width:40px;height:40px;border-radius:12px;border:var(--bd);background:var(--card);color:var(--text);box-shadow:var(--sh-s);opacity:.55;cursor:pointer;transition:opacity .15s}
 html.gfs .pfs-x:hover,html.gfs .pfs-x:focus-visible{opacity:1}
 html.gfs .pfs-x svg{width:20px;height:20px}
