@@ -438,3 +438,75 @@ def _hw(name, v):
 
 
 MASCOT_HW = {k[2:]: _wrap(_hw(k[2:], v())) for k, v in list(globals().items()) if k.startswith('M_')}
+
+
+# ===== 빼빼로데이 (2026-11-06 하율 "11월 11일에 맞춰서 빼빼로 컨셉" — 11/11 하루만) =====
+# 원래 그림(M_*)은 그대로, 모든 캐릭터가 막대 과자 하나를 손에 듦(손 → 오른쪽 위로 비스듬히, 머리에 가리지 않게)
+# 과자 맛은 캐릭터마다 돌려 가며: 초코 · 딸기 · 화이트(알록달록 토핑) · 아몬드. 상표 그림·글자는 쓰지 않음(일반 막대 과자)
+PB, PBL = '#f0c487', '#b5793f'       # 과자(손잡이)
+PCOAT = {
+    'choco':  ('#6b3d26', '#3f2216', '#9a6446'),
+    'straw':  ('#ff9dbd', '#d9608f', '#ffd0e0'),
+    'white':  ('#fff6ea', '#cdb89a', '#ffffff'),
+    'almond': ('#7a4630', '#47261a', '#a9714f'),
+}
+
+
+def _stick(x1, y1, x2, y2, kind='choco', grip=.24):
+    # x1,y1 = 손잡이 끝(손), x2,y2 = 과자 끝. 손잡이(과자)는 앞쪽 grip 비율만 드러나고 나머지는 코팅
+    c, l, hi = PCOAT[kind]
+    gx, gy = x1 + (x2 - x1) * grip, y1 + (y2 - y1) * grip
+    o = (f"<path d='M{x1} {y1} L{gx:.1f} {gy:.1f}' stroke='{PBL}' stroke-width='5.6' stroke-linecap='round'/>"
+         f"<path d='M{x1} {y1} L{gx:.1f} {gy:.1f}' stroke='{PB}' stroke-width='3' stroke-linecap='round'/>"
+         f"<path d='M{gx:.1f} {gy:.1f} L{x2} {y2}' stroke='{l}' stroke-width='7.4' stroke-linecap='round'/>"
+         f"<path d='M{gx:.1f} {gy:.1f} L{x2} {y2}' stroke='{c}' stroke-width='4.8' stroke-linecap='round'/>")
+    # 윗면 반짝 줄(코팅 광택)
+    dx, dy = x2 - gx, y2 - gy
+    L = (dx * dx + dy * dy) ** .5
+    nx, ny = -dy / L, dx / L
+    if ny > 0: nx, ny = -nx, -ny   # 위쪽(빛 받는 쪽)
+    o += (f"<path d='M{gx + dx*.15 + nx*1.1:.1f} {gy + dy*.15 + ny*1.1:.1f} L{gx + dx*.8 + nx*1.1:.1f} {gy + dy*.8 + ny*1.1:.1f}' "
+          f"stroke='{hi}' stroke-width='1.2' stroke-linecap='round' opacity='.85'/>")
+    if kind == 'white':
+        for t, col, s in ((.25, '#ff8fbf', 1), (.42, '#8fd7ff', -1), (.58, '#ffd34d', 1), (.74, '#a8e07a', -1), (.9, '#ff8fbf', -1)):
+            px, py = gx + dx * t + nx * s * .9, gy + dy * t + ny * s * .9
+            o += f"<path d='M{px-.9:.1f} {py+.5:.1f} l1.8 -1' stroke='{col}' stroke-width='1.2' stroke-linecap='round'/>"
+    if kind == 'almond':
+        for t, s in ((.22, 1), (.38, -1), (.55, 1), (.7, -1), (.86, .5)):
+            px, py = gx + dx * t + nx * s * 1, gy + dy * t + ny * s * 1
+            o += f"<circle cx='{px:.1f}' cy='{py:.1f}' r='.95' fill='#e2b37c'/>"
+    if kind == 'straw':
+        for t, s in ((.3, -1), (.5, 1), (.72, -1)):
+            px, py = gx + dx * t + nx * s * .9, gy + dy * t + ny * s * .9
+            o += f"<circle cx='{px:.1f}' cy='{py:.1f}' r='.7' fill='#ff5c8a'/>"
+    return o
+
+
+P_KIND = {'cat': 'choco', 'dog': 'straw', 'bear': 'almond', 'bunny': 'straw', 'frog': 'white', 'chick': 'choco',
+          'hamster': 'almond', 'penguin': 'white', 'fox': 'choco', 'panda': 'straw', 'dino': 'almond', 'ghost': 'straw',
+          'slime': 'white', 'sheep': 'choco', 'whale': 'white', 'axolotl': 'choco', 'shark': 'straw'}
+_ARM_R = _re.compile(r"<ellipse cx='66\.5' cy='81'[^>]*/>")
+_ARM_W = _re.compile(r"(<g class='ma'>)(<ellipse cx='72' cy='66'[^>]*/>)(</g>)")
+# 팔 없는 캐릭터: 몸 오른쪽 아래에 기대 세움(손잡이 끝, 과자 끝)
+P_LEAN = {'ghost': (70, 95, 92, 70), 'slime': (74, 95, 95, 71), 'sheep': (70, 95, 93, 71), 'whale': (74, 96, 96, 73)}
+
+
+def _pp(name, v):
+    assert v.startswith(SHADOW)
+    rest = v[len(SHADOW):]
+    k = P_KIND[name]
+    m = _ARM_W.search(rest)
+    if m:   # 흔드는 손은 머리 뒤라 과자가 가림 → 머리 위 층에 손(같은 색) + 과자를 머리 오른쪽 밖으로(할로윈 공룡 막대사탕과 같은 자리)
+        a = m.group(2)
+        hand = _re.sub(r"cx='72' cy='66'", "cx='84.5' cy='66'", a).replace('rotate(-30 72 66)', 'rotate(-30 84.5 66)')
+        add = _stick(85, 68, 95.5, 42, k, .2) + hand
+        rest = rest + add
+    elif (m := _ARM_R.search(rest)):
+        rest = rest[:m.start()] + _stick(68, 86, 93, 66, k) + m.group(0) + rest[m.end():]
+    else:
+        x1, y1, x2, y2 = P_LEAN[name]
+        rest = rest.replace(HEAD, HEAD + _stick(x1, y1, x2, y2, k, .2), 1) if HEAD in rest else rest + _stick(x1, y1, x2, y2, k, .2)
+    return SHADOW + rest
+
+
+MASCOT_PP = {k[2:]: _wrap(_pp(k[2:], v())) for k, v in list(globals().items()) if k.startswith('M_')}

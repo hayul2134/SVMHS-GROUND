@@ -7221,3 +7221,44 @@ html.lite .t-challenger.tierb,html.lite .tplate.t-challenger,html.lite .t-grandm
 .ec-modal p{color:#eaf5fd;font-size:13px;font-weight:700;text-align:center}
 .ec-mrow{display:flex;gap:8px}.ec-mrow .btn{text-decoration:none}.ec-mrow .btn.ghost{background:var(--card)}
 @media (max-width:560px){.ec-split{grid-template-columns:1fr}.ec-acts{grid-template-columns:1fr 1fr}.ec-acts .btn:first-child{grid-column:span 2}.ec-rh h3{width:100%}}
+/* ===== 빼빼로데이 (2026-11-06 하율 "11월 11일에 맞춰서 빼빼로 컨셉, 딱 11월 11일에만") — html.pp: 깃발 pepero + 기간(KST 11/11 00:00 ~ 11/12 00:00, social.js PP_S·PP_E·theme.js)
+   할로윈과 같은 구조: 색 토큰은 html.ppx(다른 색 고름)면 끄고, 그림(막대 무늬·시계 스티커·로고 리본·구석 막대 묶음)은 그대로. 그림 /pp/*.svg */
+:root.pp:not(.ppx){
+  --bg:#fff3ef; --dot:rgba(107,61,38,.12);
+  --chip:#ffe6e0; --line:#f2cdc2;
+  --ink:#3a2218; --text:#3a2218; --sub:#7a5a4c; --on-bg:#3a2218; --onc:#3a2218;
+  --accent:#d9487a; --hero:#ff7aa5; --sky:#ffb3c9; --next:#ffd0de; --pink:#ffb3c9; --violet:#c99a7e; --lime:#b6e86a; --yellow:#ffd34d;
+}
+:root.pp:not(.ppx)[data-theme="dark"]{
+  --bg:#1f1411; --dot:rgba(255,255,255,.06);
+  --card:#2c1d18; --chip:#3a2620; --line:#553a2e;
+  --ink:#000; --text:#fff2ec; --sub:#d9bcae; --on-bg:#fff2ec;
+  --accent:#ff7aa5; --hero:#ff7aa5;
+}
+:root.pp{--pat:url("/pp/pat.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px); --pat-size:260px 260px,22px 22px}
+:root.pp[data-theme="dark"]{--pat:url("/pp/pat-d.svg"),radial-gradient(var(--dot) 1.6px,transparent 1.7px)}
+.sk-ppc{display:none;--p1:#fff3ef;--p2:#6b3d26;--p3:#ff7aa5}html.pp .sk-ppc{display:grid}
+html.pp:not(.ppx) .k-meal{--k:#b8336a;--ks:#ffe0ea}
+html.pp:not(.ppx)[data-theme="dark"] .k-meal{--k:#ffb3c9}
+/* 시계 옆 별 스티커 → 초코 막대·하트·선물 상자 (자리·크기·애니메이션 그대로) */
+html.pp .clock .dk.k1,html.pp .clock .dk.k3,html.pp .clock .dk.k4{background:center/contain no-repeat;filter:none}
+html.pp .clock .dk.k1 path,html.pp .clock .dk.k3 path,html.pp .clock .dk.k4 path{display:none}
+html.pp .clock .dk.k1{background-image:url("/pp/stick.svg")}
+html.pp .clock .dk.k4{background-image:url("/pp/heart.svg")}
+html.pp .clock .dk.k3{background-image:url("/pp/gift.svg")}
+html.pp .clock .dk.k2,html.pp .clock .dk.k5{fill:#ff7aa5}
+/* 로고 리본(로고에 왕관을 씌웠으면 왕관 우선) — 할로윈 모자와 같은 자리·같이 돌아감 */
+html.pp .logo:not(:has(> .wear-lg))::before{content:"";position:absolute;left:2px;top:-8px;width:26px;height:19px;background:url("/pp/bow.svg") center/contain no-repeat;transform-origin:24px 34px;transform:rotate(-14deg);transition:transform .2s;z-index:2;pointer-events:none}
+@media (hover:hover){html.pp .logo:not(:has(> .wear-lg)):hover::before{transform:rotate(-2deg) scale(1.05)}}
+/* 오른쪽 위 구석: 리본으로 묶은 막대 과자 3개(초코·딸기·화이트) — 살랑 흔들림, 헤더 버튼 뒤·클릭 통과 */
+html.pp:not(.prelogin) body::after{content:"";position:fixed;right:0;top:0;width:clamp(90px,11vw,140px);height:clamp(90px,11vw,140px);background:url("/pp/corner.svg") top right/contain no-repeat;pointer-events:none;z-index:-1;transform-origin:100% 0;animation:ppSway 5s ease-in-out infinite}
+@keyframes ppSway{0%,100%{transform:none}50%{transform:rotate(-2.5deg)}}
+html.away.pp body::after{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){html.pp body::after{animation:none}}
+/* 파란색을 직접 박아 둔 곳: 홈 전체 랭킹 카드 · 전광판 → 초콜릿 */
+html.pp:not(.ppx).rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.5) 0 1.5px,transparent 2.5px),radial-gradient(circle at 76% 6%,rgba(255,179,201,.6) 0 1px,transparent 2px),radial-gradient(circle at 95% 34%,rgba(255,122,165,.7) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#5a3222 0%,#7a4630 55%,#a8705a 100%)}
+:root.pp:not(.ppx)[data-theme="dark"].rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(255,255,255,.4) 0 1.5px,transparent 2.5px),radial-gradient(circle at 95% 34%,rgba(255,122,165,.5) 0 1.5px,transparent 2.5px),linear-gradient(155deg,#2e1a12 0%,#4a2c1f 55%,#6b3d26 100%)}
+html.pp:not(.ppx).rk2 .s-rk::before{background:rgba(255,122,165,.92)}
+html.pp:not(.ppx) .ticker{background:#5a3222;color:#ffe6e0}
+html.pp .sk-h:first-of-type::after{content:" · 빼빼로데이 색은 11/11 하루만 · 다른 색을 골라도 막대 과자 그림은 그대로";font-size:12px;font-weight:600;color:var(--accent)}
+/* ===== 빼빼로데이 끝 ===== */

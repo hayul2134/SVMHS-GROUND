@@ -101,10 +101,18 @@ const HW_SAY = {
   '등교 전': ['좋은 아침! 유령도 일어났어 👻', '오늘도 가보자, 호박 기운 받아서 🎃'],
   '점심시간': ['점심시간! 급식에 호박죽 나오려나 🎃'],
 };
+// 빼빼로데이(html.pp, 11/11 하루) — 같은 방식
+const PP_SAY = {
+  '주말': ['오늘은 빼빼로데이! 🍫 하나 나눠 먹자', '11월 11일, 막대 과자처럼 쭉 쉬자 🍫'],
+  '쉬는 시간': ['쉬는 시간! 친구한테 빼빼로 하나 건네 볼까? 🍫', '빼빼로 하나 먹고 다시 힘내자 💝', '오늘 받은 빼빼로 몇 개야? 🎁'],
+  '방과 후': ['오늘도 수고했어! 남은 빼빼로는 집에서 🍫', '빼빼로데이 끝까지 달콤하게 💝'],
+  '등교 전': ['좋은 아침! 오늘은 빼빼로데이 🍫', '가방에 빼빼로 챙겼어? 🎁'],
+  '점심시간': ['점심 먹고 디저트는 빼빼로 🍫'],
+};
 function sayLine(b) {
-  const t = sayLine0(b);
-  if (!document.documentElement.classList.contains('hw') || t === SAY.today || t === SAY.tmr) return t;
-  const L = HW_SAY[b.state === '쉬는 날' ? '주말' : b.state === '방과 후' && b.free ? '주말' : b.state], hr = bellNow().getHours();
+  const t = sayLine0(b), cl = document.documentElement.classList, SP = cl.contains('pp') ? PP_SAY : cl.contains('hw') ? HW_SAY : null;
+  if (!SP || t === SAY.today || t === SAY.tmr) return t;
+  const L = SP[b.state === '쉬는 날' ? '주말' : b.state === '방과 후' && b.free ? '주말' : b.state], hr = bellNow().getHours();
   if (!L || hr >= 23 || hr < 5) return t;
   return L[Math.floor(bellNow().getMinutes() / 10 + hr * 6) % L.length];
 }
@@ -1876,7 +1884,8 @@ function applySkin(k) {
   if (k) h.dataset.skin = k; else delete h.dataset.skin;
   syncBarColor();
   const hwc = h.classList.contains('hw') && !h.classList.contains('hwx');   // 할로윈 색을 쓰는 중이면 '할로윈'만 눌린 상태
-  document.querySelectorAll('#mSkin .sk').forEach(b => b.setAttribute('aria-pressed', b.hasAttribute('data-hwc') ? hwc : !hwc && b.dataset.skin === k));
+  const ppc = h.classList.contains('pp') && !h.classList.contains('ppx');   // 빼빼로데이도 같은 방식
+  document.querySelectorAll('#mSkin .sk').forEach(b => b.setAttribute('aria-pressed', b.hasAttribute('data-hwc') ? hwc : b.hasAttribute('data-ppc') ? ppc : !hwc && !ppc && b.dataset.skin === k));
 }
 // 왼쪽 아래 캐릭터(#mascot): '내 캐릭터' 그림이 있으면 그 그림을 가만히, 없고 캐릭터 테마면 움직이는 마스코트(인라인 SVG, CSS 애니메이션).
 // 마스코트 그림은 js/mascots.js(tools/skins/gen.py가 생성)를 캐릭터 테마일 때만 불러옴. hi=true면 고른 순간 깡충 인사 한 번.
@@ -1930,7 +1939,8 @@ async function syncMascot(hi) {
   const spot = wearSpot(), mfx = spot === 'mascot' ? mfxV() : '';
   syncWear(spot);
   const hw = document.documentElement.classList.contains('hw');   // 할로윈 기간엔 의상 입은 캐릭터(mascots.js MASCOT_HW)
-  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) + (mfx ? ':' + mfx : '') : CHAR_SET.has(k) ? k + (hw ? ':hw' : '') + (mfx ? ':' + mfx : '') : '';
+  const pp = document.documentElement.classList.contains('pp');   // 빼빼로데이엔 막대 과자 든 캐릭터(MASCOT_PP)
+  const key = art ? 'mine:' + art.length + ':' + art.slice(-24) + (mfx ? ':' + mfx : '') : CHAR_SET.has(k) ? k + (pp ? ':pp' : hw ? ':hw' : '') + (mfx ? ':' + mfx : '') : '';
   if (!key) { if (el) el.remove(); return; }
   if (!art) {
     try { mascotMod = mascotMod || await import('./mascots.js'); } catch { return; }
@@ -1940,7 +1950,7 @@ async function syncMascot(hi) {
   if (el.dataset.key !== key) {
     el.dataset.key = key; el.dataset.k = art ? '' : k;
     if (art) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.src = art; el.replaceChildren(im); if (mfx) el.insertAdjacentHTML('beforeend', `<i class="m-wear">${wearSvg(mfx)}</i>`); }
-    else { el.innerHTML = (hw && mascotMod.MASCOT_HW?.[k]) || mascotMod.MASCOT[k] || ''; if (mfx) (el.querySelector('.mh') || el.querySelector('.mb'))?.insertAdjacentHTML('beforeend', wearG(mfx)); }   // 머리(.mh)에 넣어 고개 짓을 같이 탐(머리 묶음이 없는 캐릭터는 몸)
+    else { el.innerHTML = (pp && mascotMod.MASCOT_PP?.[k]) || (hw && mascotMod.MASCOT_HW?.[k]) || mascotMod.MASCOT[k] || ''; if (mfx) (el.querySelector('.mh') || el.querySelector('.mb'))?.insertAdjacentHTML('beforeend', wearG(mfx)); }   // 머리(.mh)에 넣어 고개 짓을 같이 탐(머리 묶음이 없는 캐릭터는 몸)
   }
   if (art && mfx) placeArtWear(el, art);   // 손으로 맞춘 위치가 바뀌어도 다시 그리지 않고 자리만
   if (hi && !art) { el.classList.remove('m-hello'); void el.offsetWidth; el.classList.add('m-hello'); }  // .hi는 메뉴 항목 클래스라 쓰면 안 됨
@@ -1960,13 +1970,15 @@ function skinBtns(list, face) {
     + `<span>${n}</span></button>`).join('');
 }
 // 할로윈 기간(2026-10-30 하율 "오브젝트만 유지하고 색깔은 바꿀 수 있게"): 색깔 맨 앞 '할로윈'(기본). 다른 색·캐릭터를 고르면 html.hwx → 할로윈 색만 끄고 박쥐·거미줄·모자 같은 그림은 그대로
-$('#skColors').innerHTML = '<button class="sk sk-hwc" type="button" data-hwc aria-pressed="false"><i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i><span>할로윈</span></button>' + skinBtns(SKINS.color, false);
+$('#skColors').innerHTML = '<button class="sk sk-ppc" type="button" data-ppc aria-pressed="false"><i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i><span>빼빼로데이</span></button><button class="sk sk-hwc" type="button" data-hwc aria-pressed="false"><i class="sk-sw" aria-hidden="true"><b></b><b></b><b></b></i><span>할로윈</span></button>' + skinBtns(SKINS.color, false);
 $('#skChars').innerHTML = skinBtns(SKINS.char, true);
 $('#mSkin').addEventListener('click', e => {
   const b = e.target.closest('.sk'); if (!b) return;
   const h = document.documentElement;
   if (b.hasAttribute('data-hwc')) { h.classList.remove('hwx'); store.set('hwc', null); applySkin(h.dataset.skin || ''); syncBarColor(); return; }
+  if (b.hasAttribute('data-ppc')) { h.classList.remove('ppx'); store.set('ppc', null); applySkin(h.dataset.skin || ''); syncBarColor(); return; }
   if (h.classList.contains('hw')) { h.classList.add('hwx'); store.set('hwc', 'off'); }
+  if (h.classList.contains('pp')) { h.classList.add('ppx'); store.set('ppc', 'off'); }
   const k = b.dataset.skin;
   const go = () => { applySkin(k); store.set('skin', k || null); syncMascot(true); };
   if (document.startViewTransition && !document.hidden && !HTML.classList.contains('lite') && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();
