@@ -2130,6 +2130,7 @@ async function loadNotice() {
   const tc = tierCloseCand(); if (tc) cands.push(tc);
   const c = cands.sort((a, b) => b.at - a.at)[0];
   clearInterval(tcTimer); tcTimer = 0;
+  document.documentElement.classList.toggle('tcb', c?.tone === 'tier');   // 티어 마감 띠가 떠 있는 동안 홈 인사 말풍선 숨김(띠와 겹침)
   if (!c) { box.hidden = true; return; }
   $('#noticeIc').textContent = c.ic || { warn: '⚠️', fun: '🎉' }[c.tone] || '📢';
   box.className = 'notice ' + ({ warn: 'warn', fun: 'fun', tier: 'tier' }[c.tone] || '');
@@ -2147,7 +2148,7 @@ async function loadNotice() {
     a.href = '#'; delete a.dataset.go;
     a.onclick = e => { e.preventDefault(); if (SOC.openNotices) SOC.openNotices(c.focus || c.id); else toast('잠시 후 다시 눌러 주세요'); };
   } else { a.removeAttribute('href'); delete a.dataset.go; }
-  $('#noticeX').onclick = () => { store.set(noticeKey(c.key), c.id); box.hidden = true; loadNotice(); };   // 닫으면 남은 다른 공지가 있으면 이어서
+  $('#noticeX').onclick = () => { store.set(noticeKey(c.key), c.id); box.hidden = true; document.documentElement.classList.remove('tcb'); loadNotice(); };   // 닫으면 남은 다른 공지가 있으면 이어서
   box.hidden = false;
 }
 // 켜 둔 채로 있는 화면에도 새 공지(밤 12시 패치 등)가 뜨게 10분마다 다시 확인 (안 보이는 탭은 쉼)
