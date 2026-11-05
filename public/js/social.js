@@ -2087,12 +2087,14 @@ function fsPaint() {
 const gfsOn = () => document.documentElement.classList.contains('gfs');
 // 고정 크기 게임을 화면에 꽉 차게: zoom 1로 되돌려 게임 칸 자식들의 실제 크기를 재고(동기 — 그 사이 게임 코드가 끼지 않음) 남는 자리만큼 키움
 //   스스로 맞추는 게임은 이미 화면을 채우니 배율 ≈1 → 안 건드림(캔버스 좌표 계산이 zoom과 섞이지 않게)
+//   스스로 화면 높이에 맞추거나 화면 좌표(px)로 입력을 받는 게임은 zoom을 걸면 넘치거나 터치 위치가 어긋남 → 제외(2026-11-06 실측: 편집의 신 넘침, LED 월 좌표)
+const GFS_NOZOOM = new Set(['cut', 'blast', 'film', 'gear', 'chase', 'ball', 'commute']);
 let gfsRO = null, gfsQ = 0;
 function gfsFit() {
   gfsQ = 0;
   const pa = $('#parea'); if (!pa) return;
   pa.style.zoom = '';
-  if (!gfsOn()) return;
+  if (!gfsOn() || GFS_NOZOOM.has(curGame)) return;
   let L = 1e9, T = 1e9, R = -1e9, B = -1e9;
   for (const c of pa.children) { const r = c.getBoundingClientRect(); if (!r.width || !r.height || getComputedStyle(c).position === 'fixed') continue; L = Math.min(L, r.left); T = Math.min(T, r.top); R = Math.max(R, r.right); B = Math.max(B, r.bottom); }
   if (R <= L || B <= T) return;
