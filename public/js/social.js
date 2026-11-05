@@ -2106,8 +2106,8 @@ function gfsFit() {
   let el = null; for (const q of GFS_SCR) { el = pa.querySelector(q); if (el && el.offsetWidth) break; el = null; }
   if (el !== gfsEl) { gfsClear(); gfsEl = el; el?.classList.add('gfs-scr'); }
   if (!el) return;
-  // 조상에 transform·filter 등이 있으면 fixed가 화면이 아니라 그 조상 기준이 됨(편집의 신 .ctd) → 전체 화면 동안만 끔
-  for (let a = el.parentElement; a && a.id !== 'gamePlay'; a = a.parentElement) { const c = getComputedStyle(a); if (c.transform !== 'none' || c.filter !== 'none' || c.perspective !== 'none' || c.backdropFilter && c.backdropFilter !== 'none' || /transform|filter|perspective/.test(c.willChange)) a.classList.add('gfs-anc'); }
+  // 조상에 transform·filter·transform 애니메이션 등이 있으면 fixed가 화면이 아니라 그 조상 기준이 됨(편집의 신 .ctd) → 전체 화면 동안만 끔
+  for (let a = el.parentElement; a && a.id !== 'gamePlay'; a = a.parentElement) { const c = getComputedStyle(a); if (c.transform !== 'none' || c.animationName !== 'none' || c.filter !== 'none' || c.perspective !== 'none' || c.backdropFilter && c.backdropFilter !== 'none' || /transform|filter|perspective/.test(c.willChange)) a.classList.add('gfs-anc'); }
   // 평소 배치 크기 그대로 고정(position:fixed — 조상 칸의 넘침 자르기·숨김과 무관) → 배율만 키워 화면 가운데. 잘리지 않게 가로·세로 중 작은 배율, 남는 곳은 빈 공간
   const w = el.offsetWidth, h = el.offsetHeight; if (!w || !h) return;
   const M = 10, sc = Math.min((innerWidth - M * 2) / w, (innerHeight - M * 2) / h);
