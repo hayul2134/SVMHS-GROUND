@@ -7224,6 +7224,36 @@ html.lite .t-challenger.tierb,html.lite .tplate.t-challenger,html.lite .t-grandm
 .ec-modal img{max-width:min(400px,88vw);max-height:72vh;border-radius:18px;border:var(--bd);box-shadow:var(--sh)}
 .ec-modal p{color:#eaf5fd;font-size:13px;font-weight:700;text-align:center}
 .ec-mrow{display:flex;gap:8px}.ec-mrow .btn{text-decoration:none}.ec-mrow .btn.ghost{background:var(--card)}
+.ec-hist{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-top:12px}
+.ec-hist small{width:100%;font-size:12px;font-weight:800;color:var(--sub)}
+.ec-hist .chip{cursor:pointer;font-size:13px}
+.ec-pick h3{font-size:22px}
+.ec-plist{margin-top:14px;border:var(--bd);border-radius:16px;overflow:hidden}
+.ec-plist .ec-item{grid-template-columns:1fr auto}
+.ec-plist .ec-y{color:var(--rc)}
+.ec-self{width:100%;margin-top:12px}
+.ec-why{margin-top:12px;border:var(--bd);border-radius:16px;padding:12px 16px;background:var(--card)}
+.ec-why summary{cursor:pointer;font-weight:900;font-size:14px;list-style:none;display:flex;justify-content:space-between}
+.ec-why summary::-webkit-details-marker{display:none}
+.ec-why summary::after{content:"+";font-family:var(--disp);color:var(--accent)}.ec-why[open] summary::after{content:"−"}
+.ec-fs{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-top:12px}
+.ec-f{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:800}
+.ec-f b{display:flex;gap:3px}
+.ec-f i{width:14px;height:14px;border-radius:4px;border:2px solid var(--ink);background:var(--chip)}
+.ec-f.ecu i.on{background:#ff6b6b}.ec-f.ecd i.on{background:#5fd38a}
+:root[data-theme="dark"] .ec-f i{border-color:var(--line)}
+.ec-fn{margin-top:10px;font-size:12.5px;font-weight:700;color:var(--sub)}
+.ec-fn .ecu{color:#e2483d}.ec-fn .ecd{color:#2f9e5f}
+:root[data-theme="dark"] .ec-fn .ecu{color:#ff8f8f}:root[data-theme="dark"] .ec-fn .ecd{color:#7be0a4}
+.ec-pv,.ec-near{margin-top:14px}
+.ec-pv h4,.ec-near h4{font-size:13px;font-weight:900;color:var(--sub);margin-bottom:7px}
+.ec-pv .ec-item{grid-template-columns:1fr auto;border:var(--bd);border-radius:14px;background:var(--chip)}
+.ec-pv .ec-y{color:var(--rc)}
+.ec-near{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.ec-near h4{width:100%;margin-bottom:0}
+.ec-near .chip{cursor:pointer}.ec-near .chip small{color:var(--sub);font-weight:700;margin-left:2px}
+.ec-qnav{margin-top:12px}
+.ec-qb{font-weight:800;font-size:13.5px;color:var(--sub);padding:6px 2px}
+@media (max-width:560px){.ec-fs{grid-template-columns:1fr}}
 @media (max-width:560px){.ec-split{grid-template-columns:1fr}.ec-acts{grid-template-columns:1fr 1fr}.ec-acts .btn:first-child{grid-column:span 2}.ec-rh h3{width:100%}}
 /* ===== 빼빼로데이 (2026-11-06 하율 "11월 11일에 맞춰서 빼빼로 컨셉, 딱 11월 11일에만") — html.pp: 깃발 pepero + 기간(KST 11/11 00:00 ~ 11/12 00:00, social.js PP_S·PP_E·theme.js)
    할로윈과 같은 구조: 색 토큰은 html.ppx(다른 색 고름)면 끄고, 그림(막대 무늬·시계 스티커·로고 리본·구석 막대 묶음)은 그대로. 그림 /pp/*.svg */

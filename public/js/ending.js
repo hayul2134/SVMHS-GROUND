@@ -105,7 +105,51 @@ SNS 마케터|마|sns,소셜미디어,인스타 마케터,sns 마케터|4 5 3 1 
 배달기사|g|배달,라이더|4 2 1 4 2 1
 택시기사|g|택시|4 2 1 4 3 3
 편의점 직원|g|편의점 알바,판매원,편의점|5 2 1 3 3 1
-공장 생산직|g|생산직,공장|5 2 1 4 1 2`;
+공장 생산직|g|생산직,공장|5 2 1 4 1 2
+라디오 PD|연|라디오피디,라디오 피디,라디오|3 4 4 2 4 2
+공연 기획자|연|공연기획,콘서트 기획,페스티벌 기획|2 4 4 3 5 3
+엔터테인먼트 기획자|연|a&r,엔터 기획,아이돌 기획,기획사|3 4 4 2 5 2
+영화 평론가|연|평론가,영화평론,리뷰어|3 5 4 1 2 1
+그립 기사|촬|그립,달리,크레인,그립·달리|3 1 2 5 3 3
+특수분장사|촬|특수분장,특분|2 1 5 5 3 2
+영사기사|촬|영사,극장 영사|5 3 1 3 1 2
+게임 원화가|디|원화가,원화,컨셉아트,콘셉트 아티스트,컨셉 아티스트|3 5 5 1 2 1
+브랜드 디자이너|디|bi 디자이너,로고 디자이너,브랜딩,로고|3 5 4 1 4 2
+패키지 디자이너|디|패키지,포장 디자인|4 5 4 2 3 1
+폰트 디자이너|디|타이포그래퍼,타이포,서체 디자이너|4 5 4 1 1 1
+안무가|출|안무,코레오그래퍼|1 2 5 5 4 1
+댄서|출|백댄서,댄스|1 1 4 5 4 1
+e스포츠 해설자|출|해설자,게임 해설,캐스터,해설|2 3 4 3 5 1
+치과의사|g|치과|2 3 3 5 5 5
+한의사|g|한의원|2 3 3 5 5 5
+물리치료사|g|재활치료사,물리치료|2 1 3 5 5 4
+사회복지사|g|복지사|3 4 3 4 5 3
+유치원 교사|g|유치원 선생님,보육교사,어린이집 교사|2 1 4 5 5 4
+대학 교수|g|교수,대학교수|2 4 5 3 4 3
+연구원|g|과학자,연구자|3 5 5 3 2 3
+AI 개발자|g|ai 엔지니어,머신러닝,인공지능 개발자|3 5 5 1 2 3
+기계 엔지니어|g|공학자,기계공학,기계 설계|3 4 4 3 2 4
+전기기사|g|전기기술자,전기 기사,전기공|3 2 2 5 3 5
+자동차 정비사|g|정비사,카센터,자동차 정비|3 1 3 5 3 4
+목수|g|인테리어 목수,인테리어|2 1 4 5 3 3
+제빵사|g|파티시에,베이커,제과제빵|4 1 4 5 2 2
+웨딩플래너|g|웨딩|3 3 4 3 5 2
+호텔리어|g|호텔|3 2 2 4 5 2
+여행 가이드|g|가이드,투어 가이드,관광 가이드|2 2 3 5 5 2
+플로리스트|g|꽃집|3 1 4 5 4 1
+타투이스트|g|타투|2 1 5 5 4 2
+반려동물 미용사|g|애견미용사,펫 미용사,애견 미용|2 1 3 5 3 2
+세무사|g|세무|4 5 3 1 3 5
+보험설계사|g|보험,설계사|4 4 2 2 5 3
+주식 트레이더|g|트레이더,펀드매니저,투자자,주식|4 5 4 1 2 3
+사업가|g|ceo,창업가,사장,창업|2 4 5 2 5 4
+정치인|g|국회의원|2 3 4 3 5 4
+사서|g|도서관|4 4 2 3 3 2
+큐레이터|g|학예사|3 4 4 3 4 2
+웹소설 작가|g|웹소설|3 5 4 1 1 1
+경호원|g|보디가드|2 1 2 5 4 3
+농부|g|농업,농사|3 1 3 5 1 2
+택배기사|g|택배|4 2 1 5 2 1`;
 // [AI가 먼저 가져갈 일, 끝까지 사람이 하는 일, 엔딩을 미루는 한 수]
 const NOTE = {
 '영상 편집자':['컷 편집, 자막 넣기, 싱크 맞추기 같은 손 작업','어디서 웃기고 어디서 멈춰야 하는지 아는 리듬감과 연출','AI 편집 툴을 먼저 익혀 속도를 올리고, "기술자"가 아니라 "연출하는 편집자"로 자리 잡기'],
@@ -175,7 +219,84 @@ const NOTE = {
 '마케터':['광고 문구, 리포트, 반복 운영 업무','브랜드 전략을 세우고 결정하는 일','데이터와 사람 마음을 함께 읽는 마케터 되기'],
 '교사':['수업 자료·시험 문제 만들기, 채점, 행정 서류','학생 한 명 한 명을 살피고 성장시키는 일','AI를 수업 도구로 먼저 쓰는 선생님이 학생들과 더 가까워져요'],
 '웹툰 작가':['채색, 배경, 선 정리','캐릭터와 이야기, 연재를 이어가는 힘','AI로 작업 시간을 줄이고 이야기에 더 집중하기'],
-'일러스트레이터':['배경, 소품, 단순 일러스트','나만의 그림체와 세계관','그림체를 "브랜드"로 만드는 게 핵심']};
+'일러스트레이터':['배경, 소품, 단순 일러스트','나만의 그림체와 세계관','그림체를 "브랜드"로 만드는 게 핵심'],
+'라디오 PD':['선곡 리스트, 사연 정리, 큐시트 초안','진행자와 청취자 사이 분위기를 만드는 일','목소리 콘텐츠(팟캐스트·오디오)까지 넓게 다뤄 보기'],
+'공연 기획자':['일정표, 예산표, 홍보 문구 초안','아티스트·공간·관객을 엮어 하루짜리 경험을 만드는 일','작은 공연이라도 처음부터 끝까지 직접 기획해 보기'],
+'엔터테인먼트 기획자':['트렌드 분석, 데모곡 분류, 콘셉트 시안','아티스트의 색을 발견하고 키우는 눈','많이 듣고 많이 보는 "덕질 감각"과 사람 보는 눈 키우기'],
+'영화 평론가':['줄거리 요약, 정보 정리, 짧은 리뷰','나만의 관점으로 작품을 읽어 내는 글','"이 사람 리뷰라서 본다" 하는 나만의 목소리 만들기'],
+'그립 기사':['고정형 무빙 촬영 일부(자동 달리·로봇 암)','현장 지형과 배우 동선에 맞춰 카메라를 움직이는 손','장비 안전·특수 리그 경험을 쌓으면 현장에서 귀해져요'],
+'특수분장사':['상처·노화 분장 시안, CG 보정 일부','실제 피부 위에 손으로 만드는 질감','재료 공부와 손기술 포트폴리오가 곧 경쟁력'],
+'영사기사':['상영 시간표 운영, 디지털 상영 자동화','특별 상영·필름 상영 같은 손이 가는 상영','필름 영사·특수 상영관 기술처럼 드문 기술 익히기'],
+'게임 원화가':['배경 시안, 컬러 바리에이션 대량 생성','게임 세계관의 첫 그림을 정하는 디자인 판단','AI 시안을 고르고 다듬어 "세계관을 디자인하는" 쪽으로'],
+'브랜드 디자이너':['로고 시안, 목업, 응용 디자인','브랜드가 어떤 사람처럼 보일지 정하는 일','클라이언트와 대화하며 방향을 잡는 능력이 핵심'],
+'패키지 디자이너':['패턴·라벨 시안, 전개도 정리','손에 잡히는 실물의 소재·구조를 고르는 감각','인쇄·소재 지식을 함께 갖추면 오래가요'],
+'폰트 디자이너':['글자 확장(여러 굵기·나머지 글자 채우기)','글자 하나의 인상을 처음 설계하는 일','한글 조합 원리를 깊게 아는 사람은 드물어요. 기본기에 집중'],
+'안무가':['동작 아이디어 참고 영상, 영상 분석','음악과 사람 몸에 맞춰 춤을 만들고 가르치는 일','무대·챌린지 안무로 내 스타일을 알리기'],
+'댄서':['광고·뮤비 속 단순 군무 일부(AI 영상)','무대 위에서 몸으로 보여 주는 에너지','라이브 무대·워크숍처럼 현장에서 보여 주는 활동 늘리기'],
+'e스포츠 해설자':['경기 기록 정리, 하이라이트 자동 해설','경기 흐름을 읽고 순간의 감정을 터뜨리는 말','게임 이해도 + 나만의 말맛, 둘 다 키우기'],
+'의사':['영상 판독 보조, 진료 기록, 서류 작업','환자를 직접 진찰하고 최종 판단·책임을 지는 일','AI 진단 도구를 잘 쓰는 의사가 더 빨라져요'],
+'간호사':['기록 작성, 투약 일정 관리','환자 곁에서 상태를 살피고 돌보는 일','현장 경험과 환자 소통이 가장 큰 무기'],
+'약사':['처방 확인, 재고 관리, 조제 자동화','환자 상황에 맞춰 약을 설명하고 상담하는 일','"약 파는 사람"이 아니라 "건강 상담하는 사람"으로'],
+'수의사':['검사 결과 분석, 진료 기록','말 못 하는 동물을 직접 살피고 치료하는 손','특정 동물·분야 전문성을 키우면 오래가요'],
+'변호사':['판례 검색, 계약서 초안, 서면 정리','의뢰인을 대신해 싸우고 협상하는 일','AI로 조사 시간을 줄이고, 상담·변론 실력에 집중하기'],
+'판사':['판례 정리, 사건 요약','사람의 사정을 듣고 최종 판단을 내리는 책임','AI가 조사는 도와도 "판단"은 사람이 맡는 영역이에요'],
+'회계사':['장부 정리, 세금 계산, 감사 자료 검토','숫자 뒤의 문제를 찾아 판단하고 책임지는 일','자동화될 계산보다 "컨설팅" 쪽으로 넓히기'],
+'경찰관':['CCTV 분석, 서류·보고서 작성','현장에 출동해 사람을 지키고 판단하는 일','현장 대응 능력과 사람을 대하는 힘이 핵심'],
+'소방관':['화재 감지, 출동 경로 안내','위험한 현장에 직접 들어가 사람을 구하는 일','AI가 가장 대신하기 어려운 직업 중 하나예요'],
+'군인':['감시·정찰, 물자 관리','현장 판단과 팀을 이끄는 리더십','드론·통신 같은 첨단 장비를 다루는 능력 키우기'],
+'공무원':['민원 서류 처리, 단순 안내, 보고서 초안','주민을 직접 만나 사정을 듣고 조율하는 일','AI 행정 도구를 먼저 익히고, 정책·현장 업무로 넓히기'],
+'회사원':['문서 작성, 메일 정리, 자료 조사, 보고서','팀 사이를 조율하고 결정하는 일','"AI를 제일 잘 쓰는 사람"이 되는 게 가장 빠른 방패'],
+'은행원':['입출금·대출 서류 심사, 단순 상담','큰돈이 걸린 결정을 함께 고민해 주는 일','자산 관리·상담처럼 사람을 상대하는 쪽으로'],
+'프로그래머':['반복 코드, 테스트, 버그 찾기 일부','무엇을 만들지 정하고 구조를 설계하는 일','AI 코딩 도구를 가장 잘 쓰는 개발자가 살아남아요'],
+'데이터 분석가':['데이터 정리, 차트, 기본 리포트','어떤 질문을 던질지 정하고 결과로 사람을 설득하는 일','분석보다 "그래서 뭘 해야 하는지" 말하는 능력 키우기'],
+'프로게이머':['게임 기록 분석, 상대 전략 정리','실시간으로 판단하고 팬과 함께 이기는 경기','AI 코치로 연습하고, 팬과 소통하는 캐릭터도 키우기'],
+'운동선수':['훈련 데이터 분석, 부상 위험 예측','몸으로 기록에 도전하는 일 그 자체','AI 분석을 훈련에 쓰는 선수가 더 빨리 늘어요'],
+'요리사':['레시피 계산, 재료 발주, 반복 조리 일부','맛을 보고 새 메뉴를 만드는 혀와 손','나만의 메뉴와 손님에게 주는 경험이 무기'],
+'바리스타':['정해진 레시피 커피 추출(로봇 카페)','손님과 대화하고 가게 분위기를 만드는 일','라테아트·로스팅처럼 손기술과 가게의 색을 키우기'],
+'미용사':['스타일 시뮬레이션, 예약 관리','손님 얼굴과 머리결에 맞춰 손으로 완성하는 일','단골이 생기는 소통이 가장 큰 경쟁력'],
+'헬스 트레이너':['운동 루틴 짜기, 식단 기록','옆에서 자세를 잡아 주고 동기를 주는 일','"이 사람이랑 하면 계속하게 된다"는 신뢰 만들기'],
+'파일럿':['순항 비행, 항로 계산(자동 조종)','이착륙과 비상 상황 판단, 승객 안전 책임','자동 조종 시대에도 비상 대응 훈련은 사람 몫이에요'],
+'승무원':['기내 안내 방송, 서비스 주문 정리','비상 상황에서 승객을 지키고 돌보는 일','안전 훈련과 외국어·서비스 경험을 함께 쌓기'],
+'건축가':['도면 초안, 구조 계산, 렌더링','사람이 살 공간을 상상하고 책임지는 설계','AI 설계 도구를 쓰면서 "공간 경험" 기획에 집중하기'],
+'심리상담사':['검사 채점, 기록 정리, 간단한 상담 챗봇','사람의 마음을 듣고 곁에 있어 주는 일','공감과 신뢰는 AI가 흉내만 낼 뿐이에요. 상담 경험 쌓기'],
+'번역가':['일반 문서 번역, 초벌 번역','문화와 말맛을 살리는 문학·영상 번역','번역보다 "감수·현지화" 전문가로 자리 잡기'],
+'콜센터 상담원':['자주 묻는 질문 응대, 예약·조회','화난 고객을 달래고 복잡한 문제를 푸는 일','상담 경험을 살려 고객 경험(CX) 기획 쪽으로 넓히기'],
+'공인중개사':['매물 정보 정리, 시세 분석','현장을 보여 주고 계약을 조율하는 일','지역 네트워크와 신뢰가 가장 큰 무기'],
+'소설가':['초안 쓰기, 자료 조사, 맞춤법','나만의 경험과 시선에서 나오는 이야기','AI 글은 넘쳐요. "이 작가라서 읽는다"는 팬을 만들기'],
+'배달기사':['배달 경로 계산(드론·로봇 배달 일부)','복잡한 골목·건물에서 직접 전달하는 일','배달 데이터를 읽고 효율을 높이는 쪽으로'],
+'택시기사':['운전 자체(자율주행)','승객 응대, 짐 돕기, 돌발 상황 대처','관광·의전처럼 사람을 상대하는 운송 서비스로'],
+'편의점 직원':['계산, 재고 체크(무인 매장)','손님 응대와 매장 문제 해결','매장 관리·운영 경험을 쌓아 점장·창업으로'],
+'공장 생산직':['반복 조립, 품질 검사(로봇·비전 검사)','기계를 관리하고 문제를 고치는 일','로봇을 다루고 고치는 기술자가 되기'],
+'치과의사':['엑스레이 판독 보조, 보철 설계','환자 입안에서 손으로 하는 정밀한 치료','디지털 치과 장비를 먼저 익히기'],
+'한의사':['진료 기록, 체질 분석 보조','환자를 직접 진맥하고 치료하는 손','AI 진단 보조를 쓰면서 상담 시간을 늘리기'],
+'물리치료사':['운동 처방 계획, 기록','환자 몸을 직접 만지며 회복시키는 손','스포츠·재활 같은 전문 분야를 정하기'],
+'사회복지사':['서류 작업, 대상자 정보 정리','어려운 사람을 직접 만나 돕고 연결하는 일','현장 경험과 지역 네트워크가 가장 큰 힘'],
+'유치원 교사':['알림장, 행사 자료, 기록 정리','아이들 곁에서 돌보고 함께 노는 일','AI가 가장 대신하기 어려운 일 중 하나예요'],
+'대학 교수':['강의 자료, 채점, 논문 자료 조사','새로운 연구 질문을 만들고 제자를 키우는 일','AI를 연구 도구로 쓰는 연구자가 앞서가요'],
+'연구원':['실험 데이터 분석, 논문 정리, 시뮬레이션','무엇을 연구할지 정하고 결과를 해석하는 일','AI로 실험 속도를 올리고 "좋은 질문"에 집중하기'],
+'AI 개발자':['반복 코드, 데이터 정리, 기본 모델 학습','어떤 AI를 왜 만들지 정하고 책임지는 일','AI를 만드는 쪽은 AI 시대에 가장 바빠지는 직업이에요'],
+'기계 엔지니어':['설계 도면 초안, 시뮬레이션','실제 기계를 만들고 현장 문제를 푸는 일','AI 설계 도구 + 현장 제작 경험을 같이 쌓기'],
+'전기기사':['도면 검토, 설비 점검 데이터 분석','현장에서 전기를 다루는 위험하고 섬세한 손','자격증과 현장 경험이 단단한 방패'],
+'자동차 정비사':['고장 진단(자동 진단기)','차 밑에 들어가 직접 고치는 손','전기차·자율주행차 정비 기술을 먼저 익히기'],
+'목수':['재단 계산, 도면 정리','현장에 맞춰 나무를 다루는 손기술','나만의 마감 실력과 단골이 무기'],
+'제빵사':['반죽·굽기 같은 대량 생산','새 맛을 만들고 손으로 마무리하는 감각','나만의 시그니처 메뉴 만들기'],
+'웨딩플래너':['예산표, 업체 비교, 일정 관리','두 사람의 이야기를 하루로 만드는 일','고객과의 신뢰와 현장 진행 능력이 핵심'],
+'호텔리어':['예약·체크인 자동화, 안내','손님의 불편을 먼저 알아채는 서비스','외국어와 서비스 감각을 같이 키우기'],
+'여행 가이드':['코스 짜기, 정보 안내(AI 가이드)','현장에서 이야기를 들려주고 사람을 이끄는 일','나만의 테마 투어를 만들기'],
+'플로리스트':['꽃 조합 추천, 주문 관리','계절 꽃을 고르고 손으로 엮는 감각','공간 연출·클래스처럼 경험을 파는 쪽으로'],
+'타투이스트':['도안 시안 생성','사람 피부 위에 직접 새기는 손기술','나만의 도안 스타일이 브랜드가 돼요'],
+'반려동물 미용사':['예약 관리, 스타일 추천','움직이는 동물을 다루며 손으로 다듬는 일','동물 행동 이해까지 갖추면 단골이 생겨요'],
+'세무사':['세금 계산, 신고서 작성','복잡한 상황에 맞는 절세 판단과 책임','계산은 AI에 맡기고 상담·컨설팅에 집중하기'],
+'보험설계사':['상품 비교, 보장 분석','고객 인생 계획을 함께 고민하는 상담','신뢰를 쌓은 고객 네트워크가 가장 큰 자산'],
+'주식 트레이더':['데이터 분석, 자동 매매','위험을 판단하고 책임지는 결정','AI 매매 도구를 이해하고 관리하는 쪽으로'],
+'사업가':['시장 조사, 문서 작업, 반복 운영','무엇을 할지 정하고 사람을 모으는 일','AI를 직원처럼 쓸 줄 아는 사장이 앞서가요'],
+'정치인':['연설문 초안, 여론 데이터 분석','사람을 만나 설득하고 결정에 책임지는 일','현장에서 사람 이야기를 듣는 시간이 무기'],
+'사서':['도서 분류, 대출·반납 관리','사람에게 맞는 책과 정보를 찾아 주는 일','독서 모임·정보 교육처럼 사람을 잇는 활동으로'],
+'큐레이터':['작품 정보 정리, 전시 설명문 초안','작품을 고르고 이야기로 엮는 기획','전시 기획 경험과 나만의 관점 쌓기'],
+'웹소설 작가':['초안, 설정 정리, 맞춤법','독자를 붙잡는 캐릭터와 연재의 힘','연재 속도는 AI로, 이야기와 독자 소통은 직접'],
+'경호원':['감시 카메라 분석, 동선 계산','현장에서 몸으로 사람을 지키는 판단','무도·응급처치 같은 자격을 함께 갖추기'],
+'농부':['물 주기·온도 관리(스마트팜)','땅과 작물을 보고 판단하는 경험','스마트팜 기술을 익히면 더 크게 키울 수 있어요'],
+'택배기사':['분류, 경로 계산(자동 분류·로봇)','계단·골목까지 직접 전달하는 일','물류 관리·운영 쪽 경험을 쌓기']};
 const FIELD = { '연': '연출·기획', '촬': '촬영·현장', '후': '후반작업', '디': '디자인·그래픽', '출': '출연·크리에이터', '마': '마케팅·광고', g: '유명 직업' };
 const PICK = ['영상 편집자', '촬영감독', '유튜버', '방송 PD', '컬러리스트', 'VFX 아티스트', '시각디자이너', '숏폼 크리에이터', '교사'];
 const LOGO = '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="5" y="12" width="54" height="40" rx="9" fill="#173048" stroke="#173048" stroke-width="4.5"/><g fill="#ffe08a"><rect x="23" y="18" width="18" height="4" rx="2" opacity=".3"/><rect x="17" y="25.5" width="30" height="4" rx="2" opacity=".55"/><rect x="24" y="33" width="16" height="4" rx="2" opacity=".8"/><rect x="19" y="40.5" width="26" height="4" rx="2"/></g></svg>';
@@ -189,7 +310,17 @@ function calcYears([R, D, C, P, H, L]) {
 const JOBS = RAW.trim().split('\n').map(l => { const [n, c, a, f] = l.split('|'); const v = f.split(' ').map(Number); return { n, c, a: a ? a.split(',') : [], f: v, y: calcYears(v) }; });
 const norm = s => s.toLowerCase().replace(/\s/g, '');
 const find = q => { const k = norm(q); if (!k) return null; return JOBS.find(j => norm(j.n) === k) || JOBS.find(j => j.a.some(a => norm(a) === k)) || null; };
-const suggest = q => { const k = norm(q); if (!k) return []; return JOBS.filter(j => norm(j.n).includes(k) || j.a.some(a => norm(a).includes(k))).slice(0, 6); };
+const suggest = q => { const k = norm(q); if (!k) return []; const a = JOBS.filter(j => norm(j.n).includes(k) || j.a.some(a => norm(a).includes(k))); const b = k.length < 2 ? [] : JOBS.filter(j => j.c !== 'g' && !a.includes(j) && norm(FIELD[j.c]).includes(k)); return [...a, ...b].slice(0, 6); };
+// 오타 하나(긴 이름은 둘)까지 봐줌 — '영상편잡자' → 영상 편집자
+function lev(a, b) { if (Math.abs(a.length - b.length) > 2) return 9; let p = [...Array(b.length + 1).keys()]; for (let i = 1; i <= a.length; i++) { const c = [i]; for (let k = 1; k <= b.length; k++) c[k] = Math.min(p[k] + 1, c[k - 1] + 1, p[k - 1] + (a[i - 1] === b[k - 1] ? 0 : 1)); p = c; } return p[b.length]; }
+const fuzzy = q => { const k = norm(q); if (k.length < 2) return []; const lim = k.length >= 6 ? 2 : 1; return JOBS.map(j => [j, Math.min(...[j.n, ...j.a].map(s => lev(k, norm(s))))]).filter(x => x[1] <= lim).sort((a, b) => a[1] - b[1]).slice(0, 4).map(x => x[0]); };
+const FL = ['반복 작업', '화면 안 작업', '창의·판단', '현장·몸', '사람·신뢰', '책임·자격'];
+const dist = (a, b) => a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0);
+const near = j => JOBS.filter(k => k.n !== j.n).sort((a, b) => dist(j.f, a.f) - dist(j.f, b.f) || (a.c === j.c ? -1 : 1)).slice(0, 3);
+// 영상고 진로(목록에 없는 직업 포함)만: 2배·3년 이상 오래가는 영상고 진로 중 가장 비슷한 것(같은 분야면 조금 더 우선)
+// 계산이 어색한 것만 직접 지정('' = 안 보여 줌)
+const PV = { '자막 번역가': '방송작가', '성우': '배우', '폴리 아티스트': '', '숏폼 크리에이터': '유튜버', '영화 마케터': '광고 감독', '시나리오 작가': '영화감독', '쇼호스트': '', '스트리머': '', '유튜버': '방송 PD', 'DIT': '촬영감독', 'e스포츠 해설자': '' };
+const pivot = j => j.n in PV ? find(PV[j.n]) : j.c === 'g' ? null : JOBS.filter(k => k.c !== 'g' && k.n !== j.n && k.y >= Math.max(j.y * 2, j.y + 3)).sort((a, b) => (dist(j.f, a.f) + (a.c === j.c ? 0 : 2)) - (dist(j.f, b.f) + (b.c === j.c ? 0 : 2)))[0] || null;
 function fmtY(y) {
   if (y >= 30) return { t: '30년 이상', h: '30<small>년</small> 이상' };
   const m = Math.max(1, Math.round(y * 12)), yy = Math.floor(m / 12), mm = m % 12;
@@ -232,8 +363,9 @@ export function render(el) {
       <div class="ec-sug" id="ecSug" hidden></div>
     </form>
     <div class="ec-chips" id="ecChips">${PICK.map(n => `<button type="button" class="chip" data-ecj="${esc(n)}">${esc(n)}</button>`).join('')}<button type="button" class="chip ec-rand" data-ecr>랜덤 직업</button></div>
+    <div class="ec-hist" id="ecHist" hidden></div>
   </section>
-  <div id="ecOut"></div>
+  <div id="ecOut" aria-live="polite"></div>
   <section class="card ec-rank">
     <div class="ec-rh"><h3 class="disp">직업 순위</h3>
       <div class="ec-tabs" id="ecCat"><button type="button" data-v="v" class="on">영상고 진로</button><button type="button" data-v="g">유명 직업</button><button type="button" data-v="all">전체</button></div>
@@ -245,12 +377,27 @@ export function render(el) {
     <p>AI 대체 가능성 연구들이 공통으로 보는 기준을 6가지로 묶고, 직업마다 1~5점을 매겨 계산해요.</p>
     <ul><li><b>빨라지게 하는 것</b> · 반복성(매번 같은 순서로 하는 일) · 화면 안 작업(결과물이 디지털로 끝나는 일)</li>
     <li><b>늦어지게 하는 것</b> · 창의·판단 · 현장·몸 · 사람·신뢰 · 책임·자격</li></ul>
+    <p>기준은 옥스퍼드대 연구(2013, 직업별 자동화 가능성)와 OpenAI·펜실베이니아대 연구(2023, 생성형 AI 노출도), 한국은행 보고서(2023, 국내 일자리의 AI 노출)가 공통으로 보는 요소를 참고했어요.</p>
     <p>두 쪽 점수의 차이로 '노출도'를 구하고 남은 기간(약 4개월 ~ 30년 이상)으로 바꿔요. 목록에 없는 직업은 6가지 질문으로 같은 공식을 써요.</p>
     <p><b>재미로 보는 추정치예요.</b> 같은 직업도 어떤 일을 하느냐에 따라 완전히 달라지고, AI는 일을 없애기보다 일하는 방식을 바꾸는 경우가 더 많아요. 숫자보다 '끝까지 사람이 하는 일'을 눈여겨봐 주세요.</p>
   </details>
   <div class="ec-modal" id="ecModal" hidden><img id="ecImg" alt="엔딩 크레딧 결과 카드"><p>이미지를 길게 누르거나 우클릭해서 저장해도 돼요</p><div class="ec-mrow"><a class="btn" id="ecDl" download="ending-credit.png">이미지 저장</a><button type="button" class="btn ghost" id="ecClose">닫기</button></div></div>
 </div>`;
-  bind(); drawList();
+  bind(); drawList(); drawHist();
+}
+
+function hist() { try { return store.get('ec_hist', []).map(find).filter(Boolean).slice(0, 5); } catch { return []; } }
+function drawHist() {
+  const h = q$('#ecHist'), l = hist(); h.hidden = !l.length;
+  h.innerHTML = l.length ? '<small>최근 본 직업</small>' + l.map(j => `<button type="button" class="chip" data-ecj="${esc(j.n)}">${esc(j.n)}</button>`).join('') : '';
+}
+// 이름이 딱 맞지 않을 때: 비슷한 직업 고르기 + 목록에 없으면 6문항
+function pick(v, l, typo) {
+  q$('#ecOut').innerHTML = `<section class="card ec-pick"><h3 class="disp">${typo ? '혹시 이 직업인가요?' : `"${esc(v)}" 이 중에 있나요?`}</h3>
+    <div class="ec-plist">${l.map(j => `<button type="button" class="ec-item ${risk(j.y)[2]}" data-ecj="${esc(j.n)}"><span class="ec-nm">${esc(j.n)}<small>${FIELD[j.c]}</small></span><span class="ec-y">${fmtY(j.y).t}</span></button>`).join('')}</div>
+    <button type="button" class="btn ghost ec-self" id="ecSelf">없어요, "${esc(v)}"로 직접 계산할래요</button></section>`;
+  q$('#ecSelf').onclick = () => quiz(v);
+  q$('#ecOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function bind() {
@@ -272,7 +419,9 @@ function bind() {
     e.preventDefault(); sug.hidden = true;
     const v = q.value.trim(); if (!v) { q.focus(); return; }
     const s = suggest(v), j = find(v) || (s.length === 1 ? s[0] : null);
-    j ? run(j) : quiz(v);
+    if (j) return run(j);
+    if (s.length) return pick(v, s, false);
+    const fz = fuzzy(v); fz.length ? pick(v, fz, true) : quiz(v);
   });
   box.addEventListener('click', e => {
     const t = e.target;
@@ -290,7 +439,7 @@ function run(j) {
   if (!j) return;
   cur = j;
   const y = j.y, f = fmtY(y), [, rl, rk, rp] = risk(y);
-  const [ai, hu, tip] = NOTE[j.n] || genNote(j.f);
+  const [ai, hu, tip] = NOTE[j.n] || genNote(j.f), pv = pivot(j), nb = near(j);
   const out = q$('#ecOut');
   out.innerHTML = `<section class="card ec-res ${rk}">
     <div class="ec-top"><div>${FIELD[j.c] ? `<span class="ec-field">${FIELD[j.c]}</span>` : `<span class="ec-field">직접 계산</span>`}<h3 class="disp">${esc(j.n)}</h3></div><span class="ec-badge">대체 위험 ${rl}</span></div>
@@ -300,6 +449,11 @@ function run(j) {
     <div class="ec-meter"><i id="ecBar"></i></div><div class="ec-ml"><span>오래 살아남음</span><span>곧 대체</span></div>
     <div class="ec-split"><div class="ec-box"><h4>AI가 먼저 가져갈 일</h4><p>${esc(ai)}</p></div><div class="ec-box"><h4>끝까지 사람이 하는 일</h4><p>${esc(hu)}</p></div></div>
     <div class="ec-tip"><h4>엔딩을 미루는 한 수</h4><p>${esc(tip)}</p></div>
+    <details class="ec-why"><summary>왜 이 숫자가 나왔나요?</summary>
+      <div class="ec-fs">${j.f.map((v, i) => `<div class="ec-f ${i < 2 ? 'ecu' : 'ecd'}"><span>${FL[i]}</span><b>${'<i class="on"></i>'.repeat(v)}${'<i></i>'.repeat(5 - v)}</b></div>`).join('')}</div>
+      <p class="ec-fn"><b class="ecu">빨간 칸</b>이 많을수록 빨리, <b class="ecd">초록 칸</b>이 많을수록 늦게 대체돼요.</p></details>
+    ${pv ? `<div class="ec-pv"><h4>비슷한 능력으로 더 오래가는 진로</h4><button type="button" class="ec-item ${risk(pv.y)[2]}" data-ecj="${esc(pv.n)}"><span class="ec-nm">${esc(pv.n)}<small>${FIELD[pv.c]} · 비슷한 능력을 써요</small></span><span class="ec-y">${fmtY(pv.y).t}</span></button></div>` : ''}
+    <div class="ec-near"><h4>비슷한 직업</h4>${nb.map(k => `<button type="button" class="chip" data-ecj="${esc(k.n)}">${esc(k.n)} <small>${fmtY(k.y).t}</small></button>`).join('')}</div>
     <div class="ec-acts"><button type="button" class="btn" id="ecCard">결과 카드 만들기</button><button type="button" class="btn ghost" id="ecCopy">결과 복사</button><button type="button" class="btn ghost" id="ecAgain">다른 직업</button></div>
   </section>`;
   out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -307,7 +461,7 @@ function run(j) {
   q$('#ecCard').onclick = makeCard;
   q$('#ecCopy').onclick = () => copy(`🎬 엔딩 크레딧\n"${j.n}", AI 대체까지 ${f.t}\n${endAt(y)} 엔딩 크레딧이 올라간대요 (대체 위험 ${rl})\nSVMHS GROUND에서 같이 해 봐요 👉 ${location.origin}`);
   q$('#ecAgain').onclick = () => { const q = q$('#ecQ'); q.value = ''; q$('.ec-hero').scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => q.focus(), 350); };
-  try { const h = store.get('ec_hist', []); store.set('ec_hist', [j.n, ...h.filter(x => x !== j.n)].slice(0, 10)); } catch {}
+  if (find(j.n)) { try { const h = store.get('ec_hist', []); store.set('ec_hist', [j.n, ...h.filter(x => x !== j.n)].slice(0, 10)); } catch {} drawHist(); }
 }
 
 function quiz(name) {
@@ -316,7 +470,9 @@ function quiz(name) {
     const [t, ...o] = QS[i];
     out.innerHTML = `<section class="card ec-quiz"><h3 class="disp">"${esc(name)}"은(는) 목록에 없어요</h3><p class="ec-sub">6가지만 답하면 같은 공식으로 계산해 드려요 (${i + 1}/6)</p>
       <div class="ec-meter"><i id="ecQb"></i></div><p class="ec-qt">${t}</p>
-      <div class="ec-opts">${o.map((x, k) => `<button type="button" class="btn ghost" data-k="${k}">${x[0]}</button>`).join('')}</div></section>`;
+      <div class="ec-opts">${o.map((x, k) => `<button type="button" class="btn ghost" data-k="${k}">${x[0]}</button>`).join('')}</div>
+      <div class="ec-qnav"><button type="button" class="ec-qb" id="ecQBack">${i ? '← 이전 질문' : '← 그만두기'}</button></div></section>`;
+    q$('#ecQBack').onclick = () => { if (i) { i--; ans.pop(); draw(); } else { out.innerHTML = ''; q$('.ec-hero').scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
     q$('#ecQb').style.width = (i / 6 * 100) + '%';
     out.querySelectorAll('.ec-opts button').forEach(b => b.onclick = () => {
       ans.push(o[+b.dataset.k][1]); i++;
@@ -353,12 +509,18 @@ async function makeCard() {
   if (lg) x.drawImage(lg, lx, 92, 78, 78);
   x.fillStyle = ink; x.textAlign = 'left'; x.fillText('엔딩 크레딧', lx + 92, 152); x.textAlign = 'center';
   x.fillStyle = '#4a5f74'; x.font = '700 36px ' + sans; x.fillText('AI가 이 일을 대신하기까지', 534, 340);
-  x.fillStyle = ink; x.font = (j.n.length > 9 ? '72px ' : '88px ') + disp; x.fillText(j.n, 534, 460);
-  x.font = (f.t.length > 7 ? '150px ' : '190px ') + disp; x.lineWidth = 14; x.strokeStyle = ink; x.lineJoin = 'round'; x.strokeText(f.t, 534, 700); x.fillStyle = '#ffe08a'; x.fillText(f.t, 534, 700);
+  const fit = (t, px, max, pre = '') => { let z = px; do { x.font = pre + z + 'px ' + disp; } while (x.measureText(t).width > max && (z -= 4) > 30); };
+  x.fillStyle = ink; fit(j.n, 88, 780); x.fillText(j.n, 534, 460);
+  fit(f.t, 190, 800); x.lineWidth = 14; x.strokeStyle = ink; x.lineJoin = 'round'; x.strokeText(f.t, 534, 700); x.fillStyle = '#ffe08a'; x.fillText(f.t, 534, 700);
   x.fillStyle = ink; x.font = '700 42px ' + sans; x.fillText(endAt(y) + ' 엔딩', 534, 800);
   const bw = 440; x.fillStyle = ink; rr(534 - bw / 2 + 6, 866, bw, 88, 44); x.fill(); x.fillStyle = RCOL[rk]; rr(534 - bw / 2, 860, bw, 88, 44); x.fill(); x.lineWidth = 5; x.stroke();
   x.fillStyle = ink; x.font = '900 40px ' + sans; x.fillText('대체 위험 ' + rl, 534, 918);
-  x.fillStyle = '#4a5f74'; x.font = '700 32px ' + sans; x.fillText('당신의 엔딩은 언제일까요?', 534, 1070);
+  // 끝까지 사람이 하는 일(최대 2줄, 넘치면 …)
+  const hu = (NOTE[j.n] || genNote(j.f))[1];
+  x.fillStyle = '#4a5f74'; x.font = '800 28px ' + sans; x.fillText('끝까지 사람이 하는 일', 534, 1022);
+  x.fillStyle = ink; x.font = '700 32px ' + sans;
+  const ln = ['']; for (const w of hu.split(' ')) { const t = ln[ln.length - 1] ? ln[ln.length - 1] + ' ' + w : w; if (x.measureText(t).width > 760 && ln[ln.length - 1]) { if (ln.length === 2) { ln[1] += '…'; break; } ln.push(w); } else ln[ln.length - 1] = t; }
+  ln.forEach((t, i) => x.fillText(t, 534, 1072 + i * 44 - (ln.length - 1) * 10));
   x.fillStyle = ink; x.font = '700 30px ' + sans; x.fillText('SVMHS GROUND · 재미로 보는 추정치', 540, 1270);
   const url = c.toDataURL('image/png');
   q$('#ecImg').src = url; q$('#ecDl').href = url; q$('#ecDl').download = 'ending-credit-' + j.n.replace(/\s/g, '') + '.png';
