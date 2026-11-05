@@ -1,7 +1,7 @@
 // SVMHS GROUND — 엔딩 크레딧(2026-11-05 하율 "직업 넣으면 AI 대체 시점이 나오는 서비스, SVMHS 서비스에 넣고 싶어", 미리보기 깃발 ending-credit — 개발자만)
 // 직업을 넣으면 AI가 그 일을 대신하기까지 남은 시간(재미용 추정)을 보여 줌. 서버·DB 없음 — 계산은 전부 이 파일.
 // 점수: 직업마다 6가지(반복·화면 안 작업 / 창의·현장·사람·책임) 1~5점 → 노출도 E → 남은 해(약 4개월~30년+).
-// 목록에 없는 직업은 6문항으로 같은 공식. 결과 카드는 캔버스 PNG(길게 눌러 저장·다운로드). CSP 때문에 style="" 대신 el.style만 씀.
+// 목록에 없는 직업은 6문항으로 같은 공식. (카운트다운 연출·'상영 시작' 문구는 2026-11-05 하율 "오글거려"로 뺌) 결과 카드는 캔버스 PNG(길게 눌러 저장·다운로드). CSP 때문에 style="" 대신 el.style만 씀.
 import { esc, toast, store } from './util.js';
 
 // 이름|분야(연·촬·후·디·출·마 = 영상고 진로, g = 유명 직업)|다른 이름|반복 화면 창의 현장 사람 책임
@@ -214,7 +214,7 @@ const QS = [
   ['자격증이나 법적 책임이 필요한 일인가요?', ['자격증이 꼭 있어야 해요', 5], ['있으면 좋아요', 3], ['필요 없어요', 1]]
 ];
 
-let box = null, cur = null, cat = 'v', ord = 'asc', all = false, busy = false;
+let box = null, cur = null, cat = 'v', ord = 'asc', all = false;
 const q$ = s => box.querySelector(s);
 
 export function render(el) {
@@ -228,7 +228,7 @@ export function render(el) {
     <p class="ec-sub">지금 하는 일이나 꿈꾸는 직업을 입력하면 AI가 그 일을 대신하기까지 남은 시간을 알려 줘요</p>
     <form class="ec-search" id="ecForm" autocomplete="off">
       <input id="ecQ" maxlength="30" placeholder="예) 영상 편집자, 컬러리스트, 의사" aria-label="직업 입력">
-      <button class="btn" type="submit">상영 시작</button>
+      <button class="btn" type="submit">확인</button>
       <div class="ec-sug" id="ecSug" hidden></div>
     </form>
     <div class="ec-chips" id="ecChips">${PICK.map(n => `<button type="button" class="chip" data-ecj="${esc(n)}">${esc(n)}</button>`).join('')}<button type="button" class="chip ec-rand" data-ecr>랜덤 직업</button></div>
@@ -248,7 +248,6 @@ export function render(el) {
     <p>두 쪽 점수의 차이로 '노출도'를 구하고 남은 기간(약 4개월 ~ 30년 이상)으로 바꿔요. 목록에 없는 직업은 6가지 질문으로 같은 공식을 써요.</p>
     <p><b>재미로 보는 추정치예요.</b> 같은 직업도 어떤 일을 하느냐에 따라 완전히 달라지고, AI는 일을 없애기보다 일하는 방식을 바꾸는 경우가 더 많아요. 숫자보다 '끝까지 사람이 하는 일'을 눈여겨봐 주세요.</p>
   </details>
-  <div class="ec-leader" id="ecLead" hidden><div class="ec-ring" id="ecRing"><i></i><b id="ecNum">3</b></div></div>
   <div class="ec-modal" id="ecModal" hidden><img id="ecImg" alt="엔딩 크레딧 결과 카드"><p>이미지를 길게 누르거나 우클릭해서 저장해도 돼요</p><div class="ec-mrow"><a class="btn" id="ecDl" download="ending-credit.png">이미지 저장</a><button type="button" class="btn ghost" id="ecClose">닫기</button></div></div>
 </div>`;
   bind(); drawList();
@@ -287,24 +286,8 @@ function bind() {
   });
 }
 
-function leader() {
-  return new Promise(res => {
-    const L = q$('#ecLead'), ring = q$('#ecRing'), num = q$('#ecNum');
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { res(); return; }
-    L.hidden = false; let n = 3, st = performance.now(); num.textContent = n;
-    const f = t => {
-      const p = (t - st) / 420; ring.style.setProperty('--a', Math.min(360, p * 360) + 'deg');
-      if (p >= 1) { n--; if (!n || !L.isConnected) { L.hidden = true; res(); return; } num.textContent = n; st = t; }
-      requestAnimationFrame(f);
-    };
-    requestAnimationFrame(f);
-  });
-}
-
-async function run(j, custom) {
-  if (!j || busy) return;
-  busy = true;
-  try { await leader(); } finally { busy = false; }
+function run(j) {
+  if (!j) return;
   cur = j;
   const y = j.y, f = fmtY(y), [, rl, rk, rp] = risk(y);
   const [ai, hu, tip] = NOTE[j.n] || genNote(j.f);
@@ -337,7 +320,7 @@ function quiz(name) {
     q$('#ecQb').style.width = (i / 6 * 100) + '%';
     out.querySelectorAll('.ec-opts button').forEach(b => b.onclick = () => {
       ans.push(o[+b.dataset.k][1]); i++;
-      if (i < 6) draw(); else run({ n: name, c: 'x', a: [], f: ans, y: calcYears(ans) }, true);
+      if (i < 6) draw(); else run({ n: name, c: 'x', a: [], f: ans, y: calcYears(ans) });
     });
   };
   draw(); out.scrollIntoView({ behavior: 'smooth', block: 'start' });
