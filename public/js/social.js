@@ -2085,21 +2085,24 @@ function fsPaint() {
   b.querySelector('use')?.setAttribute('href', on ? '#i-fs-x' : '#i-fs'); const sp = b.querySelector('span'); if (sp) sp.textContent = on ? '창 모드' : '전체 화면';
 }
 const gfsOn = () => document.documentElement.classList.contains('gfs');
-// 고정 크기 게임을 화면에 꽉 차게: zoom 1로 되돌려 게임 칸 자식들의 실제 크기를 재고(동기 — 그 사이 게임 코드가 끼지 않음) 남는 자리만큼 키움
-//   스스로 맞추는 게임은 이미 화면을 채우니 배율 ≈1 → 안 건드림(캔버스 좌표 계산이 zoom과 섞이지 않게)
-//   스스로 화면 높이에 맞추거나 화면 좌표(px)로 입력을 받는 게임은 zoom을 걸면 넘치거나 터치 위치가 어긋남 → 제외(2026-11-06 실측: 편집의 신 넘침, LED 월 좌표)
-const GFS_NOZOOM = new Set(['cut', 'blast', 'film', 'gear', 'chase', 'ball', 'commute']);
-let gfsRO = null, gfsQ = 0;
+// 2026-11-06 08:40 하율 "딱 게임 화면만 편하게 볼 수 있게 화면을 채워줘": 게임 칸 전체가 아니라 '게임 화면' 요소 하나(GFS_SCR, 게임마다)만 보이고
+//   나머지(조작 안내·다시 시작·내 기록 칸·배경)는 숨김. 배치는 그대로 두고 그 요소를 transform으로 화면 가운데에 꽉 차게 옮김
+//   → 게임의 크기 계산·판 진행은 평소와 같음. 화면 좌표로 입력을 받는 게임(LED 월 켜기!·게퍼 10)은 배율을 나눠서 받음(blast.js·film.js pos)
+const GFS_SCR = ['.cs-scr', '#srScr', '.dn-scr', '#hrScr', '.ctd-scr', '#rx', '#n2', '.gr-main', '#blBox .bl', '#ml', '#bl', '#cg', '#czBox', '#cm', '#parea > *'];
+let gfsRO = null, gfsQ = 0, gfsEl = null;
+function gfsClear() { if (gfsEl) { gfsEl.style.transform = gfsEl.style.transformOrigin = ''; gfsEl.classList.remove('gfs-scr'); } gfsEl = null; }
 function gfsFit() {
   gfsQ = 0;
   const pa = $('#parea'); if (!pa) return;
-  pa.style.zoom = '';
-  if (!gfsOn() || GFS_NOZOOM.has(curGame)) return;
-  let L = 1e9, T = 1e9, R = -1e9, B = -1e9;
-  for (const c of pa.children) { const r = c.getBoundingClientRect(); if (!r.width || !r.height || getComputedStyle(c).position === 'fixed') continue; L = Math.min(L, r.left); T = Math.min(T, r.top); R = Math.max(R, r.right); B = Math.max(B, r.bottom); }
-  if (R <= L || B <= T) return;
-  const z = Math.min((innerWidth - 32) / (R - L), (innerHeight - 32) / (B - T), 3);
-  if (z > 1.04) pa.style.zoom = z.toFixed(3);
+  if (gfsEl) gfsEl.style.transform = '';
+  if (!gfsOn()) return gfsClear();
+  let el = null; for (const q of GFS_SCR) { el = pa.querySelector(q); if (el && el.getBoundingClientRect().width) break; el = null; }
+  if (el !== gfsEl) { gfsClear(); gfsEl = el; el?.classList.add('gfs-scr'); }
+  if (!el) return;
+  const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;   // transform을 뺀 평소 자리·크기
+  const M = 8, s = Math.min((innerWidth - M * 2) / r.width, (innerHeight - M * 2) / r.height);
+  const tx = (innerWidth - r.width * s) / 2 - r.left, ty = (innerHeight - r.height * s) / 2 - r.top;
+  el.style.transformOrigin = '0 0'; el.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) scale(${s.toFixed(4)})`;
 }
 const gfsQueue = () => { if (!gfsQ) gfsQ = requestAnimationFrame(gfsFit); };
 function gfsSync() {
@@ -2107,12 +2110,12 @@ function gfsSync() {
   document.documentElement.classList.toggle('gfs', on);
   gfsRO?.disconnect(); gfsRO = null;
   const pa = $('#parea');
-  if (on && pa && window.ResizeObserver) {   // 게임 화면이 바뀌면(안내 → 판 → 결과) 다시 맞춤 — zoom 변화는 게임 칸 크기를 안 바꾸니 되먹임 없음
+  if (on && pa && window.ResizeObserver) {   // 게임 화면이 바뀌면(안내 → 판 → 결과, 화면 요소 교체) 다시 맞춤 — transform은 배치를 안 바꾸니 되먹임 없음
     gfsRO = new ResizeObserver(gfsQueue); gfsRO.observe(pa);
-    const watch = () => { for (const c of pa.children) gfsRO?.observe(c); }; watch();
-    new MutationObserver(() => { if (gfsRO) { watch(); gfsQueue(); } }).observe(pa, { childList: true });
+    const watch = () => { pa.querySelectorAll(GFS_SCR.slice(0, -1).join(',')).forEach(e => gfsRO?.observe(e)); }; watch();
+    new MutationObserver(() => { if (gfsRO) { watch(); gfsQueue(); } }).observe(pa, { childList: true, subtree: true });
   }
-  if (!on && pa) pa.style.zoom = '';
+  if (!on) gfsClear();
   gfsQueue();
 }
 ['fullscreenchange', 'webkitfullscreenchange'].forEach(t => document.addEventListener(t, () => {
@@ -2122,7 +2125,8 @@ function gfsSync() {
     setTimeout(() => { dispatchEvent(new Event('resize')); gfsQueue(); }, 350);
   }
 }));
-addEventListener('resize', () => { if (gfsOn()) gfsQueue(); });
+// 창 크기가 바뀌면 게임들의 크기 계산보다 먼저(이 줄이 먼저 등록됨) transform을 빼서 평소 자리로 재게 함
+addEventListener('resize', () => { if (gfsEl) gfsEl.style.transform = ''; if (gfsOn()) gfsQueue(); });
 // 게임 키 안내 칸 채우기: <span data-ka="동작" [data-one]> → 지금 설정된 키(keymap.js). 게임이 화면을 그릴 때마다 자동으로(MutationObserver)
 function paintKA(all = false) {
   const g = curGame; if (!g) return;
@@ -2196,7 +2200,7 @@ addEventListener('resize', () => { if (document.body.classList.contains('playing
 // 게임 중 집 버튼을 누르면 게임을 닫고 처음 화면으로 (이동 자체는 app.js의 [data-go] 처리)
 document.addEventListener('click', e => { if (e.target.closest('[data-go]') && document.body.classList.contains('playing')) endPlay(); });
 // 게임 안에서 연 창(랭킹 등)은 게임과 함께 닫음 — 안 닫으면 나간 뒤에 뒤늦게 남아 보임 (2026-10-25)
-function endPlay() { if (fsMine()) fsExit(); document.documentElement.classList.remove('gfs'); gfsRO?.disconnect(); gfsRO = null; try { unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
+function endPlay() { if (fsMine()) fsExit(); document.documentElement.classList.remove('gfs'); gfsRO?.disconnect(); gfsRO = null; gfsClear(); try { unfitHome(); quitGame?.(); } catch (e) { console.error(e); } quitGame = null; closeSheet(); $('#gamePlay').hidden = true; $('#gamePlay').innerHTML = ''; document.body.classList.remove('playing'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gamePlay').hidden && !document.querySelector('.modal.open')) endPlay(); }, true);
 // 2026-11-01 하율 "카체이싱에서 엔터 눌렀는데 계단 오르기가 켜졌다": 게임 화면이 떠 있어도 뒤의 게임 목록 버튼에 포커스가 남아 있어
 //   엔터·스페이스가 그 버튼(다른 게임)을 눌렀음 → 게임 중엔 게임 화면 밖 요소로 가는 엔터·스페이스의 기본 동작을 막고, 게임을 열 때 포커스를 뺌

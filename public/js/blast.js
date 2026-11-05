@@ -326,7 +326,7 @@ export function createBlast(root, opt = {}) {
   }
 
   /* ----- 입력: 받침에서 장비를 눌러 끌기 → 판 위에서 놓기 ----- */
-  const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const pos = e => { const r = cv.getBoundingClientRect(), k = (cv.offsetWidth || r.width) / (r.width || 1); return { x: (e.clientX - r.left) * k, y: (e.clientY - r.top) * k }; };   // k: 전체 화면(transform 확대) 배율 나누기
   function slotAt(p) { for (let i = 0; i < 3; i++) { const [x, y, w, h] = slotRect(i); if (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h) return i; } return -1; }
   // 마우스 감도(2026-10-30 하율 "블럭을 잡았을 때만 마우스 감도 확 올려서 옮기기 편하게"): 잡은 동안만 블록이 마우스 이동량의 MOUSE_GAIN배로 움직임
   //   기준점 = 잡은 자리, 블록은 캔버스 밖으로 안 나가게, 잡은 동안 커서는 숨김(블록이 커서 역할). 터치·펜은 그대로(손가락 위로 띄우기만)

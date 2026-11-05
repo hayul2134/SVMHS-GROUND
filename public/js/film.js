@@ -146,7 +146,7 @@ export function createFilm(root, opt = {}) {
   }
 
   /* ----- 입력 ----- */
-  const pos = e => { const b = cv.getBoundingClientRect(); return { x: Math.max(0, Math.min(cell * cols, e.clientX - b.left)), y: Math.max(0, Math.min(cell * rows, e.clientY - b.top)) }; };
+  const pos = e => { const b = cv.getBoundingClientRect(), k = (cv.offsetWidth || b.width) / (b.width || 1); return { x: Math.max(0, Math.min(cell * cols, (e.clientX - b.left) * k)), y: Math.max(0, Math.min(cell * rows, (e.clientY - b.top) * k)) }; };   // k: 전체 화면(transform 확대) 배율 나누기
   const down = e => { if (state !== 'play' || e.button > 0 || drag) return; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch {} const p = pos(e); drag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, id: e.pointerId }; kick(); };
   const move = e => { if (!drag || e.pointerId !== drag.id) return; const p = pos(e); drag.x1 = p.x; drag.y1 = p.y; kick(); };
   const up = e => {
