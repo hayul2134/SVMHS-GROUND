@@ -10,6 +10,7 @@ import './seg.js';   // 전환 버튼 묶음 → 스위치처럼 미끄러지는
 import { initInstall } from './install.js';
 import { clubLogo } from './clubs.js';
 import { ffOn } from './flags.js';   // 앱으로 설치하기 (2026-10-25)
+import { rkOf } from './att-rewards.js';   // 티어 마감 띠 (2026-11-06)
 import { wearG, wearSvg, spotPref, resolveSpot, anchorOf } from './wear.js';
 
 /* ===== 설정 ===== */
@@ -2099,6 +2100,19 @@ $('#btnTheme').onclick = () => {
 let noticeWho = '';
 const noticeKey = (k = 'notice_x') => k + (noticeWho ? ':' + noticeWho : '');
 const PATCH_BAND_MS = 3 * 86400e3;
+// 티어 마감 띠(2026-11-06 하율 "오늘 티어 마감을 공지 처음 올렸을 때처럼, 엄청 잘 보이게"): 라운드 마지막 날(KST)에 홈 맨 위 띠로 한 번.
+// ✕를 누르면 그 라운드엔 다시 안 뜸. 다른 공지보다 먼저. 깃발 tier-close(공개 전엔 개발자만) — 개발자는 미리보기로 날짜와 상관없이 한 번 뜸(id 'pv1')
+let tcTimer = 0;
+function tierCloseCand() {
+  const dev = document.documentElement.classList.contains('dev-pv');
+  if (!ffOn('tier-close', dev)) return null;
+  const t = ymd(now()), r = rkOf(t);
+  const last = r.n >= 0 && r.to === t;
+  const id = last ? 'r' + r.n : dev ? 'pv1' : '';
+  if (!id || store.get(noticeKey('tierclose_x')) === id) return null;
+  const md = y => `${+y.slice(4, 6)}/${+y.slice(6, 8)}`;
+  return { id, key: 'tierclose_x', at: Date.now() * 2, tone: 'tier', text: '오늘 밤 12시, 티어 마감!', link: '#game', range: `${md(r.from)}~${md(r.to)}` };
+}
 async function loadNotice() {
   const box0 = $('#notice');
   if (!noticeWho) { box0.hidden = true; return; }   // 누가 로그인했는지 확인되기 전엔 안 띄움 — 기기 공통 기록으로 먼저 띄웠다가 계정 기록 보고 사라지던 깜빡임 방지
@@ -2113,12 +2127,20 @@ async function loadNotice() {
   if (n && store.get(noticeKey()) !== n.id) cands.push({ ...n, key: 'notice_x', at: n.at || 0 });
   if (p && p.at && Date.now() - p.at < PATCH_BAND_MS && store.get(noticeKey('patch_x')) !== p.id)
     cands.push({ id: p.id, key: 'patch_x', at: p.at, text: `${p.title || '업데이트 소식'} — 뭐가 바뀌었는지 확인해 보세요!`, more: true, focus: 'p:' + p.id, ic: '🛠' });
+  const tc = tierCloseCand(); if (tc) cands.push(tc);
   const c = cands.sort((a, b) => b.at - a.at)[0];
+  clearInterval(tcTimer); tcTimer = 0;
   if (!c) { box.hidden = true; return; }
   $('#noticeIc').textContent = c.ic || { warn: '⚠️', fun: '🎉' }[c.tone] || '📢';
-  box.className = 'notice ' + ({ warn: 'warn', fun: 'fun' }[c.tone] || '');
+  box.className = 'notice ' + ({ warn: 'warn', fun: 'fun', tier: 'tier' }[c.tone] || '');
   const a = $('#noticeTx');
   a.textContent = c.text;
+  if (c.tone === 'tier') {   // 티어 마감 띠: 엠블럼 + 큰 제목 + 남은 시간
+    $('#noticeIc').innerHTML = '<svg class="tc-em" viewBox="0 0 48 44" aria-hidden="true"><use href="#tr2-challenger"/></svg>';
+    a.innerHTML = `<b class="tc-t">오늘 밤 12시, 티어 마감!</b><span class="tc-s">이번 라운드(${c.range}) 기록은 오늘까지만 티어에 들어가요 · 마지막 한 판으로 한 칸 더 (ง •̀_•́)ง</span><span class="tc-c" id="tcLeft"></span>`;
+    const tick = () => { const el = $('#tcLeft'); if (!el) return; const n = now(), end = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1), s = Math.max(0, Math.floor((end - n) / 1e3)); el.textContent = `남은 시간 ${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
+    tick(); tcTimer = setInterval(tick, 1000);
+  }
   a.onclick = null; a.classList.toggle('more', !!c.more && !c.link);
   if (c.link) { a.href = c.link; a.dataset.go = c.link.slice(1); a.removeAttribute('aria-disabled'); }
   else if (c.more) {   // 자세한 내용이 있으면 띠를 눌러 긴 공지로

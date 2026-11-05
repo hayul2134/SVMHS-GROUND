@@ -7265,3 +7265,24 @@ html.pp:not(.ppx).rk2 .s-rk::before{background:rgba(255,122,165,.92)}
 html.pp:not(.ppx) .ticker{background:#5a3222;color:#ffe6e0}
 html.pp .sk-h:first-of-type::after{content:" · 빼빼로데이 색은 11/11 하루만 · 다른 색을 골라도 막대 과자 그림은 그대로";font-size:12px;font-weight:600;color:var(--accent)}
 /* ===== 빼빼로데이 끝 ===== */
+
+/* ===== 티어 마감 띠 (2026-11-06 하율 "엄청 잘 보이게") — app.js tierCloseCand, 깃발 tier-close ===== */
+.notice.tier{max-width:820px;padding:14px 14px 14px 16px;gap:14px;transform:rotate(-.6deg);color:#fff;overflow:hidden;isolation:isolate;
+  background:linear-gradient(115deg,#2a2f8f 0%,#4b2fb0 45%,#c0306a 100%);border:3px solid #ffd54a;
+  box-shadow:0 0 0 3px var(--onc),0 10px 26px rgba(80,30,160,.45),0 0 26px rgba(255,213,74,.55);animation:tcIn .7s cubic-bezier(.2,1.4,.4,1) both,tcGlow 1.6s ease-in-out .7s infinite}
+.notice.tier::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.38) 48%,transparent 66%) no-repeat;background-size:220% 100%;animation:tcShine 2.8s ease-in-out 1s infinite}
+.notice.tier .n-ic{flex:none;width:52px;height:48px;display:grid;place-items:center;animation:tcBob 1.2s ease-in-out infinite}
+.notice.tier .tc-em{width:52px;height:48px;overflow:visible;filter:drop-shadow(0 2px 0 rgba(0,0,0,.35))}
+.notice.tier .n-tx{display:grid;gap:3px;text-decoration:none!important;color:#fff}
+.notice.tier .tc-t{font-family:Jua,sans-serif;font-weight:400;font-size:clamp(20px,2.6vw,27px);line-height:1.15;letter-spacing:.2px;color:#ffe680;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.notice.tier .tc-s{font-size:13.5px;font-weight:700;opacity:.95;line-height:1.4}
+.notice.tier .tc-c{justify-self:start;margin-top:3px;padding:3px 10px;border-radius:999px;background:#ffd54a;color:#3a1d00;font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.notice.tier .n-x{background:rgba(255,255,255,.92);border-color:#3a1d00;color:#3a1d00}
+@keyframes tcIn{0%{opacity:0;transform:translateY(-18px) scale(.86) rotate(-3deg)}100%{opacity:1;transform:rotate(-.6deg)}}
+@keyframes tcGlow{50%{box-shadow:0 0 0 3px var(--onc),0 12px 30px rgba(80,30,160,.55),0 0 42px rgba(255,213,74,.95)}}
+@keyframes tcShine{0%{background-position:120% 0}60%,100%{background-position:-120% 0}}
+@keyframes tcBob{50%{transform:translateY(-3px) rotate(-4deg)}}
+@media (min-width:1000px) and (max-width:1239px){body[data-view="home"] .notice.tier{max-width:min(820px,calc(100% - 560px));padding:10px 10px 10px 12px}body[data-view="home"] .notice.tier .tc-s{font-size:12.5px}}
+@media (max-width:560px){.notice.tier{gap:10px;padding:11px}.notice.tier .n-ic,.notice.tier .tc-em{width:40px;height:37px}.notice.tier .tc-s{font-size:12.5px}}
+@media (prefers-reduced-motion:reduce){.notice.tier,.notice.tier::before,.notice.tier .n-ic{animation:none}}
