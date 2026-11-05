@@ -31,6 +31,7 @@
     if (tn >= Date.UTC(2026, 10, 6, 15) || (tn < Date.UTC(2026, 9, 30, 15) && !de.classList.contains('dev-pv'))) de.classList.remove('hw');
     // 빼빼로데이(pp)는 KST 11/11 00:00 ~ 11/12 00:00만(개발자는 미리보기) — social.js PP_S·PP_E와 같은 값
     if (tn >= Date.UTC(2026, 10, 11, 15) || (tn < Date.UTC(2026, 10, 10, 15) && !de.classList.contains('dev-pv'))) de.classList.remove('pp');
+    if (de.classList.contains('pp')) de.classList.remove('hw');   // 둘이 겹치면 빼빼로데이 우선
     if (de.classList.contains('pp')) { var pl = document.createElement('link'); pl.rel = 'stylesheet'; pl.href = '/css/pp-chars.css?v=1'; pl.id = 'ppCss'; document.head.appendChild(pl); }
     if (de.classList.contains('hw')) { var hl = document.createElement('link'); hl.rel = 'stylesheet'; hl.href = '/css/hw-chars.css?v=2'; hl.id = 'hwCss'; document.head.appendChild(hl); }   // 할로윈 의상 캐릭터(프로필 사진·배경 무늬) — 기간에만 받음
   } catch (e) {}
