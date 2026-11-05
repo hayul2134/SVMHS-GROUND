@@ -2109,8 +2109,9 @@ function gfsFit() {
   el.style.transformOrigin = '0 0'; el.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) scale(${s.toFixed(4)})`;
 }
 const gfsQueue = () => { if (!gfsQ) gfsQ = requestAnimationFrame(gfsFit); };
-function gfsSync() {
-  const on = fsMine() && document.body.classList.contains('playing');
+window.__gfsTest = () => gfsSync(true);
+function gfsSync(test = false) {   // test: 전체 화면 API 없이 같은 화면을 확인(검사용 window.__gfsTest)
+  const on = (test || fsMine()) && document.body.classList.contains('playing');
   document.documentElement.classList.toggle('gfs', on);
   gfsRO?.disconnect(); gfsRO = null;
   const pa = $('#parea');

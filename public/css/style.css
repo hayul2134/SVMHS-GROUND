@@ -5900,7 +5900,7 @@ html.rk2 .s-rk.pod .rk-v .rk-tr .tri{left:2px;width:19px;height:18px}
 @media (max-width:560px){.pfs span{display:none}}
 /* 게임 전체 화면(html.gfs, social.js gfsSync): 위 줄·집 버튼 숨기고 게임 칸이 화면 전체 */
 .pfs-x{display:none}
-html.gfs .play{overflow:hidden;background:#0e0f17}
+html.gfs .play{overflow:hidden}   /* 배경은 평소 사이트 배경 그대로 — 어두운 배경이면 게임 안 진한 글자(1 to 25 시간·안내)가 안 보임(2026-11-06 하율) */
 html.gfs .play .ptop,html.gfs header #btnHome{display:none}
 html.gfs #parea{visibility:hidden}   /* 게임 화면 요소(.gfs-scr, social.js gfsFit)만 보임 — 자리는 그대로, transform으로 화면 가득 */
 html.gfs #parea .gfs-scr{visibility:visible}
