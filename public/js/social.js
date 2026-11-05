@@ -3531,6 +3531,9 @@ export async function init(c) {
   // 기록실(2026-10-30, 깃발 hall): 처음 열 때만 hall.js를 불러옴. 깃발이 꺼진 학생이 주소로 들어오면 게임 화면으로
   let hll = null;
   c.RENDER.hall = () => { if (!ffOn('hall', isDev(S.me))) { ctx.go('game'); return; } return (hll ||= import('./hall.js').then(m => { m.init({ call, GAMES, ic, av, nameOf, devTag, esc, isDev, me: () => S.me }); return m; })).then(m => m.render()); };
+  // 엔딩 크레딧(2026-11-05, 깃발 ending-credit): 처음 열 때만 ending.js — 서버 없이 화면에서만 계산
+  let ecm = null;
+  c.RENDER.ending = () => { if (!ffOn('ending-credit', isDev(S.me))) { ctx.go('home'); return; } return (ecm ||= import('./ending.js')).then(m => m.render($('#ecBox'))); };
   c.RENDER.gacha = () => (gch ||= import('./gacha.js').then(m => { m.init({ call, refreshMe, me: () => S.me, setGc, edit: o => { if (S.me) openEdit(o); } }); return m; })).then(m => m.render());
 NW.init(() => S.me);
   c.report = openReport;
