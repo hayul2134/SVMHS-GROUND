@@ -1850,7 +1850,7 @@ html.prelogin:not(.sh-real) :is(#v-home,.mascot,.svcfab) *,html.prelogin:not(.sh
 .mascot[data-k="ghost"] .mb{animation:m-float 4.2s cubic-bezier(.45,0,.55,1) infinite}
 .mascot[data-k="ghost"] .msh{animation:m-shfloat 4.2s cubic-bezier(.45,0,.55,1) infinite}
 .mascot[data-k="slime"] .mb{animation:m-jiggle 9s infinite}
-.mascot[data-k="whale"] .mb{transform-origin:50% 80%;animation:m-sway 4.5s cubic-bezier(.45,0,.55,1) infinite}
+.mascot[data-k="whale"] .mb{transform-origin:50% 80%;animation:m-sway 4.5s linear infinite}
 .mascot[data-k="whale"] .msh,.mascot[data-k="slime"] .msh{animation:none}
 /* 테마를 고른 순간 한 번: 깡충 인사 */
 .mascot.m-hello .mb{animation:m-hi .95s cubic-bezier(.3,0,.3,1) 1}
@@ -1912,7 +1912,8 @@ html.away .mascot *{animation-play-state:paused!important}
   70%{transform:scale(1.06,.94)}
   76%{transform:scale(.97,1.03)}
   82%,100%{transform:scale(1,1)}}
-@keyframes m-sway{0%,100%{transform:rotate(-3deg) translateY(0)}50%{transform:rotate(3deg) translateY(-3px)}}
+/* 2026-11-06 하율 "고래가 점프하고 갑자기 탁 하고 기운다": 예전엔 -3도에서 시작 → 인사·등장(기울기 0)이 끝나 흔들림이 다시 시작될 때 3도 툭 꺾임. 이제 0도·제자리에서 시작하는 사인 흔들림(같은 4.5초·같은 폭) */
+@keyframes m-sway{0%{transform:rotate(-0.00deg) translateY(-0.00px)}6.25%{transform:rotate(-1.15deg) translateY(-0.11px)}12.5%{transform:rotate(-2.12deg) translateY(-0.44px)}18.75%{transform:rotate(-2.77deg) translateY(-0.93px)}25%{transform:rotate(-3.00deg) translateY(-1.50px)}31.25%{transform:rotate(-2.77deg) translateY(-2.07px)}37.5%{transform:rotate(-2.12deg) translateY(-2.56px)}43.75%{transform:rotate(-1.15deg) translateY(-2.89px)}50%{transform:rotate(-0.00deg) translateY(-3.00px)}56.25%{transform:rotate(1.15deg) translateY(-2.89px)}62.5%{transform:rotate(2.12deg) translateY(-2.56px)}68.75%{transform:rotate(2.77deg) translateY(-2.07px)}75%{transform:rotate(3.00deg) translateY(-1.50px)}81.25%{transform:rotate(2.77deg) translateY(-0.93px)}87.5%{transform:rotate(2.12deg) translateY(-0.44px)}93.75%{transform:rotate(1.15deg) translateY(-0.11px)}100%{transform:rotate(0.00deg) translateY(-0.00px)}}
 @keyframes m-hi{0%{transform:translateY(0) scale(1,1)}18%{transform:translateY(0) scale(1.12,.86)}40%{transform:translateY(-18px) scale(.92,1.1)}58%{transform:translateY(-20px) scale(1,1)}78%{transform:translateY(0) scale(1.1,.9)}90%{transform:translateY(0) scale(.97,1.03)}100%{transform:translateY(0) scale(1,1)}}
 @keyframes m-shhi{0%,18%,78%,100%{transform:scale(1);opacity:1}50%{transform:scale(.6);opacity:.5}}
 @keyframes m-headhi{0%,30%{transform:rotate(0)}55%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}100%{transform:rotate(0)}}
