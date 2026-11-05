@@ -7295,6 +7295,31 @@ html.pp:not(.ppx).rk2 .s-rk{background:radial-gradient(circle at 88% 14%,rgba(25
 html.pp:not(.ppx).rk2 .s-rk::before{background:rgba(255,122,165,.92)}
 html.pp:not(.ppx) .ticker{background:#5a3222;color:#ffe6e0}
 html.pp .sk-h:first-of-type::after{content:" · 빼빼로데이 색은 11/11 하루만 · 다른 색을 골라도 막대 과자 그림은 그대로";font-size:12px;font-weight:600;color:var(--accent)}
+/* 캐릭터가 든 과자 때문에 그림 범위(fill-box)가 오른쪽으로 넓어져 흔들림 축이 옮겨지던 것(2026-11-06 하율 "고래가 등장 애니메이션 뒤에 갑자기 위치가 바뀌어") → 원래 그림 범위로 잰 축을 그림 좌표(view-box)로 고정 */
+html.pp .mascot[data-k="cat"] .mb,html.pp .mascot[data-k="dog"] .mb,html.pp .mascot[data-k="bear"] .mb,html.pp .mascot[data-k="bunny"] .mb,html.pp .mascot[data-k="frog"] .mb,html.pp .mascot[data-k="chick"] .mb,html.pp .mascot[data-k="hamster"] .mb,html.pp .mascot[data-k="penguin"] .mb,html.pp .mascot[data-k="fox"] .mb,html.pp .mascot[data-k="panda"] .mb,html.pp .mascot[data-k="dino"] .mb,html.pp .mascot[data-k="ghost"] .mb,html.pp .mascot[data-k="slime"] .mb,html.pp .mascot[data-k="sheep"] .mb,html.pp .mascot[data-k="whale"] .mb,html.pp .mascot[data-k="axolotl"] .mb,html.pp .mascot[data-k="shark"] .mb{transform-box:view-box}
+html.pp .mascot[data-k="cat"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="dog"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="bear"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="bunny"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="frog"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="chick"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="hamster"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="penguin"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="fox"] .mb{transform-origin:50.6px 95.8px}
+html.pp .mascot[data-k="panda"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="dino"] .mb{transform-origin:51.5px 95.8px}
+html.pp .mascot[data-k="ghost"] .mb{transform-origin:50.5px 87.5px}
+html.pp .mascot[data-k="slime"] .mb{transform-origin:50px 92px}
+html.pp .mascot[data-k="sheep"] .mb{transform-origin:50px 95.5px}
+html.pp .mascot[data-k="whale"] .mb{transform-origin:51.5px 72.8px}
+html.pp .mascot[data-k="axolotl"] .mb{transform-origin:50px 95.8px}
+html.pp .mascot[data-k="shark"] .mb{transform-origin:52.5px 95.8px}
+html.pp .mascot[data-k="cat"] .mh,html.pp .mascot[data-k="frog"] .mh,html.pp .mascot[data-k="dino"] .mh,html.pp .mascot[data-k="axolotl"] .mh,html.pp .mascot[data-k="shark"] .mh{transform-box:view-box}
+html.pp .mascot[data-k="cat"] .mh{transform-origin:50px 68.6px}
+html.pp .mascot[data-k="frog"] .mh{transform-origin:50px 69.3px}
+html.pp .mascot[data-k="dino"] .mh{transform-origin:50px 68.2px}
+html.pp .mascot[data-k="axolotl"] .mh{transform-origin:50px 69.5px}
+html.pp .mascot[data-k="shark"] .mh{transform-origin:50px 68.3px}
 /* ===== 빼빼로데이 끝 ===== */
 
 /* ===== 티어 마감 띠 (2026-11-06 하율 "엄청 잘 보이게") — app.js tierCloseCand, 깃발 tier-close ===== */

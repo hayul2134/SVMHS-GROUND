@@ -488,7 +488,7 @@ P_KIND = {'cat': 'choco', 'dog': 'straw', 'bear': 'almond', 'bunny': 'straw', 'f
 _ARM_R = _re.compile(r"<ellipse cx='66\.5' cy='81'[^>]*/>")
 _ARM_W = _re.compile(r"(<g class='ma'>)(<ellipse cx='72' cy='66'[^>]*/>)(</g>)")
 # 팔 없는 캐릭터: 몸 오른쪽 아래에 기대 세움(손잡이 끝, 과자 끝)
-P_LEAN = {'ghost': (70, 95, 92, 70), 'slime': (74, 95, 95, 71), 'sheep': (70, 95, 93, 71), 'whale': (74, 96, 96, 73)}
+P_LEAN = {'ghost': (70, 95, 92, 70), 'slime': (74, 95, 95, 71), 'sheep': (63, 93, 85, 69), 'whale': (74, 96, 96, 73)}
 
 
 def _pp(name, v):
