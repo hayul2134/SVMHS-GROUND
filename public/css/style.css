@@ -897,7 +897,7 @@ footer button{color:inherit;text-decoration:underline;font-size:12.5px;font-weig
 @media (hover:hover){.pick button:hover{transform:scale(1.1)}}
 .pick button.on{border-color:var(--ink);background:var(--yellow);transform:rotate(-6deg)}
 .pick.csw button{background:var(--pc);border:2.5px solid var(--ink)}
-.pick.csw button.on{box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--accent);transform:none}   /* 고른 색: 색은 그대로{display:grid;place-items:center;padding:16px;border-radius:18px;background:var(--pc);border:var(--bd);background-image:radial-gradient(rgba(255,255,255,.35) 2px,transparent 2.5px);background-size:16px 16px}
+.pick.csw button.on{box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--accent);transform:none}   /* 고른 색: 색은 그대로 */
 /* 프로필 카드 */
 .pcard{background:var(--card);border:var(--bd);border-radius:26px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;transform:rotate(-.4deg)}
 .pban{position:relative;height:130px;background:var(--pc);border-bottom:var(--bd);background-image:radial-gradient(rgba(255,255,255,.4) 2.5px,transparent 3px);background-size:20px 20px}
@@ -3514,7 +3514,8 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .pk-use svg{flex:none;width:14px;height:14px;margin-top:2px;color:var(--fire,#e8742b)}
 .pk-sec .pick .pk-div{font-size:11.5px}
 /* 메뉴 '꾸미기': 2026-10-25 하율 요청으로 프로필에 딸린 하위 항목(들여쓰기·점선 연결) 대신 테마처럼 독립 항목 */
-/* 프로필 꾸미기 실시간 미리보기(2026-10-24 · 2차: 더 크게, 실제 시계 글씨·켜 둔 뽑기 효과까지) — 창 위에 붙어 있음(sticky){position:sticky;top:-26px;z-index:5;margin:-26px -26px 6px;padding:14px 18px 14px;background:var(--card);border-bottom:2.5px solid var(--ink);box-shadow:0 10px 16px -12px rgba(15,34,54,.4);text-align:left}
+/* 프로필 꾸미기 실시간 미리보기(2026-10-24 · 2차: 더 크게, 실제 시계 글씨·켜 둔 뽑기 효과까지) — 창 위에 붙어 있음(sticky) */
+.pv{position:sticky;top:-26px;z-index:5;margin:-26px -26px 6px;padding:14px 18px 14px;background:var(--card);border-bottom:2.5px solid var(--ink);box-shadow:0 10px 16px -12px rgba(15,34,54,.4);text-align:left}
 .pv-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .pv-top b{font-family:"Jua",sans-serif;font-weight:400;font-size:19px;flex:none}
 .pv-top small{flex:1;min-width:0;font-size:11.5px;font-weight:800;color:var(--sub);line-height:1.3}
@@ -3530,7 +3531,8 @@ svg.wear .w-halo{fill:#fff;stroke:#fff;stroke-width:5;stroke-linejoin:round}
 .pv-fold .c,.pv.fold .pv-fold .o{display:none}.pv.fold .pv-fold .c{display:inline}
 .pv.fold .pv-body,.pv.fold .pv-fxs{display:none}.pv.fold .pv-top{margin-bottom:0}
 .pv-body{display:grid;grid-template-columns:minmax(0,1fr) 138px;gap:12px;align-items:stretch}
-/* 시계: 첫 화면 큰 시계와 같은 글씨·그림자{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:130px;border:2.5px solid var(--ink);border-radius:18px;background:var(--bg,var(--chip));box-shadow:4px 4px 0 var(--ink);padding:10px 4px;overflow:visible}
+/* 시계: 첫 화면 큰 시계와 같은 글씨·그림자 */
+.pv-clk{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:130px;border:2.5px solid var(--ink);border-radius:18px;background:var(--bg,var(--chip));box-shadow:4px 4px 0 var(--ink);padding:10px 4px;overflow:visible}
 
 @media (max-width:460px){.pv-body{grid-template-columns:1fr}}
 
@@ -6809,7 +6811,7 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
    오른쪽 기록 칸은 넓혀서 3열. 높이가 넘치면 프로필은 그냥 스크롤 */
 .pcard,.pside,.pcols.slim .pside{transform:none}
 .pi-c:nth-child(odd),.pi-c:nth-child(even){rotate:none}
-.ptop{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;width:100%}   /* 자리가 모자라면 1등 패가 명판 아래로 내려감 */
+.ptop:not(.play .ptop){display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;width:100%}   /* 2026-11-06: 게임 제목 줄(.play .ptop)과 이름이 같아 폰에서 게임 버튼 줄이 흐트러지던 것 → 프로필 것만. 자리가 모자라면 1등 패가 명판 아래로 내려감 */
 .ptop-t{flex:0 1 auto;display:grid;align-content:center;gap:6px;min-width:0}
 .ptop .pcrowns{flex:1 1 260px;min-width:0}
 .ptop-t .ptier2{margin:0}
@@ -7349,3 +7351,30 @@ html.tcb body[data-view="home"] .s-greet{visibility:hidden}
 @media (prefers-reduced-motion:reduce){.notice.tier,.notice.tier::before,.notice.tier .n-ic{animation:none}}
 /* ===== 멈춤 한도 안내 (2026-11-06, util.js pauseBudget) ===== */
 .hr-ov .pbleft{font-style:normal;font-weight:900;font-size:12px;color:#fff;background:#e5484d;border:2px solid #2a2846;border-radius:999px;padding:2px 10px;margin-top:4px}
+/* ===== 모바일 헤더 (2026-11-06 하율: 폰에서 로고가 뜨면 버튼이 오른쪽으로 밀려 메뉴 버튼이 잘림) =====
+   버튼 7개 + 로고가 어떤 폰 폭에서도 한 줄에 들어가게: 버튼 크기를 화면 폭에 맞춰 33~40px로 줄이고, 글자 달린 버튼(의견·미션)은 아이콘만 가운데 */
+@media (max-width:560px){
+  .hd{--hb:clamp(30px,calc((100vw - 122px) / 7),40px);padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left));gap:4px}
+  .hmenu{gap:clamp(3px,1.1vw,6px);min-width:0}
+  .hd .iconbtn{width:var(--hb);height:var(--hb);border-radius:11px;flex:none}
+  .hd .iconbtn svg{width:18px;height:18px}
+  .hd .logo img{width:calc(var(--hb) + 4px);height:calc(var(--hb) + 4px)}
+  .hd .iconbtn.hb-fb{width:var(--hb);padding:0;justify-content:center}
+  .hd .hb-fb .hb-tx{display:none}
+  .hd .iconbtn.hb-ms{width:var(--hb);padding:0;justify-content:center;position:relative}
+  .hd .hb-ms .sic{width:19px;height:19px}
+  .hd .hb-ms b{position:absolute;right:-7px;bottom:-7px;padding:2px 4px;font-size:10px;line-height:1;background:var(--yellow,#ffe08a);color:#1d2433;border:1.6px solid var(--ink);border-radius:99px}
+  .hd .iconbtn.hb-st{width:auto;min-width:var(--hb);padding:0 7px 0 6px;gap:2px;font-size:14px}
+  .hd .hb-st .hst-f{width:15px;height:18px}
+  .hd .burger span{width:17px;margin-left:-8.5px}
+  .hlist{width:min(236px,calc(100vw - 20px))}
+}
+/* 폰 게임 제목 줄(2026-11-06): 1줄 = 제목, 2줄 = 숙련도 칩(왼쪽)·버튼(오른쪽 끝 — 모든 게임 같은 자리) */
+@media (max-width:560px){
+  .play .ptop{flex-wrap:wrap;row-gap:8px;column-gap:8px;font-size:19px}
+  .play .ptop > b{flex:1 1 100%}
+  .play .ptop .pbtns{margin-left:auto;gap:6px}
+  .play .ptop .pquit{min-height:40px}
+}
+/* 폰: 왼쪽 아래 서비스 버튼·오른쪽 아래 메시지 버튼에 마지막 내용이 가려지지 않게 바닥 여백 */
+@media (max-width:560px){.wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}}
