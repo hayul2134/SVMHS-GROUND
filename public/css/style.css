@@ -7227,9 +7227,8 @@ html.lite .t-challenger.tierb,html.lite .tplate.t-challenger,html.lite .t-grandm
 .ec-modal img{max-width:min(400px,88vw);max-height:72vh;border-radius:18px;border:var(--bd);box-shadow:var(--sh)}
 .ec-modal p{color:#eaf5fd;font-size:13px;font-weight:700;text-align:center}
 .ec-mrow{display:flex;gap:8px}.ec-mrow .btn{text-decoration:none}.ec-mrow .btn.ghost{background:var(--card)}
-.ec-hist{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-top:12px}
-.ec-hist small{width:100%;font-size:12px;font-weight:800;color:var(--sub)}
-.ec-hist .chip{cursor:pointer;font-size:13px}
+.ec-chips .ec-rc{display:inline-flex;align-items:center;gap:4px;border-style:dashed}
+.ec-chips .ec-rc svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;opacity:.7}
 .ec-pick h3{font-size:22px}
 .ec-plist{margin-top:14px;border:var(--bd);border-radius:16px;overflow:hidden}
 .ec-plist .ec-item{grid-template-columns:1fr auto}

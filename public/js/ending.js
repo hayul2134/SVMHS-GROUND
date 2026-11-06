@@ -392,7 +392,9 @@ const NOTE = {
 '연기 코치':['대본 분석, 발음 연습 앱','배우 옆에서 감정을 끌어내고 자신감을 주는 일','현장 경험과 나만의 지도 방법을 만들기'],
 '배급 담당자':['관객 수 예측, 상영관 데이터 분석','극장·플랫폼과 협상해 개봉 전략을 짜는 일','데이터를 읽고 사람을 설득하는 능력을 같이 키우기']};
 const FIELD = { '연': '연출·기획', '촬': '촬영·현장', '후': '후반작업', '디': '디자인·그래픽', '출': '출연·크리에이터', '마': '마케팅·광고', g: '유명 직업' };
-const PICK = ['영상 편집자', '촬영감독', '붐 오퍼레이터', '유튜버', '방송 PD', '컬러리스트', 'VFX 아티스트', '시각디자이너', '숏폼 크리에이터', '교사'];
+// 빠른 선택 칩: 한 줄(5개 + 랜덤)만. 처음엔 PICK, 검색하면 [최근 본 2개 + 마지막 직업과 비슷한 직업 + PICK]으로 바뀜(이 기기 기준)
+const PICK = ['영상 편집자', '촬영감독', '유튜버', '방송 PD', '교사', 'VFX 아티스트', '컬러리스트', '숏폼 크리에이터'];
+const CHIPS = 5;
 const LOGO = '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="5" y="12" width="54" height="40" rx="9" fill="#173048" stroke="#173048" stroke-width="4.5"/><g fill="#ffe08a"><rect x="23" y="18" width="18" height="4" rx="2" opacity=".3"/><rect x="17" y="25.5" width="30" height="4" rx="2" opacity=".55"/><rect x="24" y="33" width="16" height="4" rx="2" opacity=".8"/><rect x="19" y="40.5" width="26" height="4" rx="2"/></g></svg>';
 
 const TMIN = -12.5, TMAX = 8.5, YMIN = 0.35, YMAX = 32;
@@ -456,8 +458,7 @@ export function render(el) {
       <button class="btn" type="submit">확인</button>
       <div class="ec-sug" id="ecSug" hidden></div>
     </form>
-    <div class="ec-chips" id="ecChips">${PICK.map(n => `<button type="button" class="chip" data-ecj="${esc(n)}">${esc(n)}</button>`).join('')}<button type="button" class="chip ec-rand" data-ecr>랜덤 직업</button></div>
-    <div class="ec-hist" id="ecHist" hidden></div>
+    <div class="ec-chips" id="ecChips"></div>
   </section>
   <div id="ecOut" aria-live="polite"></div>
   <section class="card ec-rank">
@@ -477,13 +478,16 @@ export function render(el) {
   </details>
   <div class="ec-modal" id="ecModal" hidden><img id="ecImg" alt="엔딩 크레딧 결과 카드"><p>이미지를 길게 누르거나 우클릭해서 저장해도 돼요</p><div class="ec-mrow"><a class="btn" id="ecDl" download="ending-credit.png">이미지 저장</a><button type="button" class="btn ghost" id="ecClose">닫기</button></div></div>
 </div>`;
-  bind(); drawList(); drawHist();
+  bind(); drawList(); drawChips();
 }
 
 function hist() { try { return store.get('ec_hist', []).map(find).filter(Boolean).slice(0, 5); } catch { return []; } }
-function drawHist() {
-  const h = q$('#ecHist'), l = hist(); h.hidden = !l.length;
-  h.innerHTML = l.length ? '<small>최근 본 직업</small>' + l.map(j => `<button type="button" class="chip" data-ecj="${esc(j.n)}">${esc(j.n)}</button>`).join('') : '';
+function drawChips() {
+  const h = hist(), out = [], add = (j, rc) => { if (j && out.length < CHIPS && !out.some(x => x.j.n === j.n)) out.push({ j, rc }); };
+  h.slice(0, 2).forEach(j => add(j, 1));
+  if (h[0]) near(h[0]).forEach(j => add(j));
+  PICK.forEach(n => add(find(n)));
+  q$('#ecChips').innerHTML = out.map(({ j, rc }) => `<button type="button" class="chip${rc ? ' ec-rc' : ''}" data-ecj="${esc(j.n)}"${rc ? ' aria-label="최근 본 직업 ' + esc(j.n) + '"' : ''}>${rc ? '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8l2.3 1.5"/></svg>' : ''}${esc(j.n)}</button>`).join('') + '<button type="button" class="chip ec-rand" data-ecr>랜덤 직업</button>';
 }
 // 이름이 딱 맞지 않을 때: 비슷한 직업 고르기 + 목록에 없으면 6문항
 function pick(v, l, typo) {
@@ -555,7 +559,7 @@ function run(j) {
   q$('#ecCard').onclick = makeCard;
   q$('#ecCopy').onclick = () => copy(`🎬 엔딩 크레딧\n"${j.n}", AI 대체까지 ${f.t}\n${endAt(y)} 엔딩 크레딧이 올라간대요 (대체 위험 ${rl})\nSVMHS GROUND에서 같이 해 봐요 👉 ${location.origin}`);
   q$('#ecAgain').onclick = () => { const q = q$('#ecQ'); q.value = ''; q$('.ec-hero').scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => q.focus(), 350); };
-  if (find(j.n)) { try { const h = store.get('ec_hist', []); store.set('ec_hist', [j.n, ...h.filter(x => x !== j.n)].slice(0, 10)); } catch {} drawHist(); }
+  if (find(j.n)) { try { const h = store.get('ec_hist', []); store.set('ec_hist', [j.n, ...h.filter(x => x !== j.n)].slice(0, 10)); } catch {} drawChips(); }
 }
 
 function quiz(name) {
