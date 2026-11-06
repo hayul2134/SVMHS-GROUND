@@ -7378,3 +7378,25 @@ html.tcb body[data-view="home"] .s-greet{visibility:hidden}
 }
 /* 폰: 왼쪽 아래 서비스 버튼·오른쪽 아래 메시지 버튼에 마지막 내용이 가려지지 않게 바닥 여백 */
 @media (max-width:560px){.wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}}
+/* 폰 주간 시간표(2026-11-06): 옆으로 밀어야 보이던 표(최소 560px)를 화면 폭에 맞춰 월~금 한눈에 */
+@media (max-width:560px){
+  .week{min-width:0;border-spacing:3px 4px}
+  .week th:first-child{width:30px}
+  .week th .wd-w{font-size:16px}
+  .week th.today .wd-w{padding:1px 6px}
+  .week th.today .wd-w::after{display:none}
+  .week td{padding:4px 1px;font-size:10.5px;letter-spacing:-.04em;height:46px;line-height:1.2;border-radius:9px;word-break:keep-all;overflow-wrap:anywhere}
+  .week td .si{font-size:16px;margin-bottom:2px}
+  .week td .si .sic{width:18px;height:18px}
+  .week td.dbl .si{font-size:20px}
+  .week td.pn b{font-size:14px}
+  .week td.pn small{font-size:9px;letter-spacing:-.03em}
+}
+/* 폰 아래 동그란 버튼(서비스·메시지): 58 → 52px, 가장자리로 조금 더 — 카드 가림 줄이기 */
+@media (max-width:420px){
+  .svcfab{left:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:52px;height:52px}
+  .dmdock{right:12px;bottom:calc(12px + env(safe-area-inset-bottom))}
+  .dmpill{width:52px;height:52px}
+}
+/* 폰 D-day 입력: 이름이 잘려 보이던 두 칸 → 이름 한 줄 전체, 날짜 + 추가 버튼 아래 줄 */
+@media (max-width:420px){#dForm #dName{flex:1 1 100%}#dForm #dDate{min-width:0}#dForm .btn{flex:none}}
