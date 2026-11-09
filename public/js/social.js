@@ -2359,10 +2359,14 @@ async function playCross() {
   const area = stage(ic('cross') + ' 지각 직전!', '<p class="empty">불러오는 중…</p>');
   try {
     if (!CROSS) CROSS = await import('./cross.js').catch(() => import('./cross.js?r=' + Date.now()));
+    if (!RUN) RUN = await import('./runner.js');   // 공용 캐릭터(꾸미기)를 블록으로 그림
     if (seq !== playSeq || !area.isConnected) return;
     area.innerHTML = '<div id="cxBox"></div>' + RE_ROW;
-    const M = CROSS.createCross($('#cxBox'), {}); M.start();
-    quitGame = () => M.destroy();
+    const M = CROSS.createCross($('#cxBox'), { char: RUN.loadChar(), opts: RUN.OPTS }); M.start();
+    const dBtn = $('#cxBox .cx-dress'), dress = charDress($('#cxBox .cx-dressbox'), $('#cxBox .cx'), dBtn, c => M.setChar(c));
+    dBtn.innerHTML = ic('brush') + '캐릭터 꾸미기';
+    dBtn.onclick = () => { if (M.busy && !dress.open) { toast('판이 끝난 뒤에 꾸밀 수 있어요'); return; } dress.toggle(); };
+    quitGame = () => { dress.close(); M.destroy(); };
   } catch (e) { if (seq === playSeq && curGame === 'cross') gameFail(e); else console.error(e); }
 }
 /* 영상고 랩 배틀(2026-11-02 하율 "프라이데이 나이트 펌킨 방식 — 내 화면에만", 미리보기 깃발 rhythm-game)
