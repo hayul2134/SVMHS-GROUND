@@ -12,7 +12,7 @@
   var k = null;
   try { k = JSON.parse(localStorage.getItem('sg_skin')); } catch (e) {}
   if (/^[a-z]{2,12}$/.test(k || '')) document.documentElement.dataset.skin = k;
-  try { if (JSON.parse(localStorage.getItem('sg_ppc')) === 'off') document.documentElement.classList.add('ppx'); } catch (e) {}   // 빼빼로데이에 다른 색을 고름 → 빼빼로 색만 끔
+  try { if (JSON.parse(localStorage.getItem('sg_ppc')) === 'off1111') document.documentElement.classList.add('ppx'); } catch (e) {}   // 빼빼로데이에 다른 색을 고름 → 빼빼로 색만 끔
   try { if (JSON.parse(localStorage.getItem('sg_hwc')) === 'off') document.documentElement.classList.add('hwx'); } catch (e) {}   // 할로윈 기간에 다른 색을 고름 → 할로윈 색만 끄고 그림은 유지(2026-10-30)
   // 내 캐릭터 그림의 옅은 배경 무늬(app.js가 줄여서 저장한 data URL). 왼쪽 아래 스티커는 app.js가 #mascot으로 붙임
   try {
@@ -31,6 +31,7 @@
     if (tn >= Date.UTC(2026, 10, 6, 15) || (tn < Date.UTC(2026, 9, 30, 15) && !de.classList.contains('dev-pv'))) de.classList.remove('hw');
     // 빼빼로데이(pp)는 KST 11/11 00:00 ~ 11/12 00:00만(개발자는 미리보기) — social.js PP_S·PP_E와 같은 값
     if (tn >= Date.UTC(2026, 10, 11, 15) || (tn < Date.UTC(2026, 10, 10, 15) && !de.classList.contains('dev-pv'))) de.classList.remove('pp');
+    else if (tn >= Date.UTC(2026, 10, 10, 15) && localStorage.getItem('sg_in')) de.classList.add('pp');   // 2026-11-09 "무조건": 11/11엔 저장된 깃발 상태와 상관없이 첫 화면부터 켬
     if (de.classList.contains('pp')) de.classList.remove('hw');   // 둘이 겹치면 빼빼로데이 우선
     if (de.classList.contains('pp')) { var pl = document.createElement('link'); pl.rel = 'stylesheet'; pl.href = '/css/pp-chars.css?v=1'; pl.id = 'ppCss'; document.head.appendChild(pl); }
     if (de.classList.contains('hw')) { var hl = document.createElement('link'); hl.rel = 'stylesheet'; hl.href = '/css/hw-chars.css?v=2'; hl.id = 'hwCss'; document.head.appendChild(hl); }   // 할로윈 의상 캐릭터(프로필 사진·배경 무늬) — 기간에만 받음

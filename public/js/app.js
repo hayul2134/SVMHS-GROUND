@@ -1979,7 +1979,7 @@ $('#mSkin').addEventListener('click', e => {
   if (b.hasAttribute('data-hwc')) { h.classList.remove('hwx'); store.set('hwc', null); applySkin(h.dataset.skin || ''); syncBarColor(); return; }
   if (b.hasAttribute('data-ppc')) { h.classList.remove('ppx'); store.set('ppc', null); applySkin(h.dataset.skin || ''); syncBarColor(); return; }
   if (h.classList.contains('hw')) { h.classList.add('hwx'); store.set('hwc', 'off'); }
-  if (h.classList.contains('pp')) { h.classList.add('ppx'); store.set('ppc', 'off'); }
+  if (h.classList.contains('pp')) { h.classList.add('ppx'); store.set('ppc', 'off1111'); }   // 11/11 당일 고른 것만 인정(미리보기 때 고른 'off'는 무시)
   const k = b.dataset.skin;
   const go = () => { applySkin(k); store.set('skin', k || null); syncMascot(true); };
   if (document.startViewTransition && !document.hidden && !HTML.classList.contains('lite') && !matchMedia('(prefers-reduced-motion: reduce)').matches) skipOk(document.startViewTransition(go)); else go();

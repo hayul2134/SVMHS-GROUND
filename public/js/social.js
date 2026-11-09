@@ -1,5 +1,5 @@
 // SVMHS GROUND — 소셜: 계정 · 프로필 꾸미기 · 팔로우 · DM · 미니게임 랭킹 (서버: functions/api/s/[[path]].js)
-import { $, $$, esc, toast, store, idle, onWake, ghost, ghostIn, ghostOr } from './util.js';
+import { $, $$, esc, toast, store, idle, onWake, ghost, ghostIn, ghostOr, clock } from './util.js';
 import * as ATT from './attend.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';   // 효과음(반응속도, 2026-10-30)
 import * as NW from './gcnew.js';   // 새로 얻은 뽑기 보상 빨간 표시(2026-10-25)
@@ -210,9 +210,9 @@ const hwDay = dev => { const t = Date.now(); return t < HW_E && (dev || t >= HW_
 // 빼빼로데이(2026-11-06 하율 "딱 11월 11일에만"): KST 11/11 00:00 ~ 11/12 00:00. 개발자는 미리보기로 지금부터. theme.js에도 같은 값
 //   깃발 pepero는 RELEASED에 미리 넣어 둠 → 공지 컨펌 시각과 상관없이 날짜만으로 0시에 켜지고 꺼짐
 const PP_S = Date.UTC(2026, 10, 10, 15), PP_E = Date.UTC(2026, 10, 11, 15);
-const ppDay = dev => { const t = Date.now(); return t < PP_E && (dev || t >= PP_S); };
+const ppDay = dev => { const t = Date.now() + clock.off; return t < PP_E && (dev || t >= PP_S); };   // 2026-11-09 "무조건 11/11에": 기기 시계가 틀려도 서버 시각 기준
 function syncPP() {
-  const h = document.documentElement, on = !!S.me && ffOn('pepero', isDev(S.me)) && ppDay(isDev(S.me));
+  const h = document.documentElement, on = (!!S.me || (!!S.meErr && !!localStorage.getItem('sg_in'))) && ffOn('pepero', isDev(S.me)) && ppDay(isDev(S.me));   // 서버가 잠깐 안 돼도(로그인했던 기기) 켬
   if (h.classList.contains('pp') !== on) { h.classList.toggle('pp', on); document.dispatchEvent(new Event('sg:mfx')); }
   if (on && !document.getElementById('ppCss')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="/css/pp-chars.css?v=1" id="ppCss">');
 }
