@@ -2198,7 +2198,8 @@ html.away .mascot *{animation-play-state:paused!important}
 .rank .rk .att-ic.md{width:26px;height:26px;vertical-align:middle}
 .art{display:block;overflow:visible}
 .av .ava{width:82%;height:82%}
-.av .ava.sc,.pick button .pka.sc{width:100%;height:100%}   /* 풍경 프로필 사진은 칸을 꽉 채움 */
+.pick button .pka.sc{width:100%;height:100%}   /* 풍경 프로필 사진은 칸을 꽉 채움 */
+.av .ava.sc,.av.big .ava.sc{position:absolute;inset:0;width:100%;height:100%}   /* 2026-11-09: 그리드 칸 % 크기가 svg 기본 150px로 풀려 배지가 아래로 밀리고, .av.big .ava(80%)에 덮이던 문제 → 원 안을 절대 위치로 꽉 채움 */
 .av.big .ava{width:80%;height:80%}
 .stk .stka{width:1.15em;height:1.15em;display:inline-block}
 .pick button .pka{width:72%;height:72%;margin:auto}
