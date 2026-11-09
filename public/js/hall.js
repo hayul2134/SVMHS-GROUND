@@ -4,13 +4,13 @@
 let D = null;   // social.js가 넘겨줌: { call, GAMES, ic, av, nameOf, devTag, esc, openRank, me }
 
 // 기록실에서 쓰는 이름(모드가 둘인 게임은 모드까지)
-const NAME = { stair200: ['영상고 계단 오르기', '200칸 타임어택'], gear: ['기자재 정리!', '타임어택'], gearn: ['기자재 정리!', '일반 · 오래 버티기'], home: ['집에 가고 싶어!', '끝까지 달린 거리'], mine: ['지뢰찾기', '랭크 · 중급'], snake: ['뱀 게임', '랭크'], n2048: ['2048', '랭크 · 3분'] };
+const NAME = { stair200: ['영상고 계단 오르기', '200칸 타임어택'], gear: ['기자재 정리!', '타임어택'], gearn: ['기자재 정리!', '일반 · 오래 버티기'], home: ['집에 가고 싶어!', '끝까지 달린 거리'], mine: ['지뢰찾기', '랭크 · 중급'], snake: ['뱀 게임', '랭크'], n2048: ['2048', '랭크 · 3분'], judge: ['복도의 심판', '가장 빠른 승리'], ball: ['체육 창고 정리!', '한 판 최고 점수'], cross: ['지각 직전!', '가장 멀리 간 칸'], rhythm: ['영상고 랩 배틀', '스토리 3곡 완주 점수'] };
 // 2026-11-04 하율 "한 줄에 4개씩, 두 개씩 표기되기 쉽게": 모드가 둘인 게임(계단 오르기·기자재 정리!)은 두 칸을 한 묶음(.hl-pair)으로 붙여 같은 줄에 나란히
 const PAIR = { stair: 'stair200', gear: 'gearn' };
-const ORDER = ['dance', 'chase', 'home', 'cut', 'stair', 'stair200', 'gear', 'gearn', 'film', 'blast', 'reaction', 'num25', 'color', 'mine', 'snake', 'n2048'];
+const ORDER = ['dance', 'chase', 'home', 'cut', 'stair', 'stair200', 'gear', 'gearn', 'film', 'blast', 'reaction', 'num25', 'color', 'judge', 'rhythm', 'ball', 'cross', 'mine', 'snake', 'n2048'];   // 2026-11-09 기록실 전용 게임 4개 추가
 const CZ = ['mine', 'snake', 'n2048'];   // 게임 칸에서 c_ 로 여는 게임
 // 시간 기록(ms로 저장되는 게임)은 기록실에서만 밀리초까지(2026-11-04 하율 "있어 보이게 밀리초까지"): 12.345초 · 1분 02.345초, 밀리초 자리는 살짝 작게
-const MS = new Set(['stair200', 'mine', 'num25']);
+const MS = new Set(['stair200', 'mine', 'num25', 'judge']);
 function fmtMs(v) {
   v = Math.max(0, Math.round(+v || 0));
   const m = Math.floor(v / 60000), s = Math.floor(v / 1000) % 60, ms = String(v % 1000).padStart(3, '0');

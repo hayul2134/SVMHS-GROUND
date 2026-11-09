@@ -14,6 +14,7 @@ import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay 
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { COLOR_MAX, scoreOf as colorScore, seedOf as colorSeed } from '../../../public/js/color-score.js';   // 색감의 신(2026-11-02)
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
+import { BALL_MAX, CROSS_MAX, RHY_MAX, JUDGE_MIN, BALL_PER_DROP, BALL_COOL_MS, CROSS_HOP_MS } from '../../../public/js/rec-score.js';   // 기록실 전용 게임(2026-11-09)
 import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, ACH_TITLES, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
@@ -49,7 +50,13 @@ const GAMES = {   // 모두 '작을수록 좋음' (ms). play: 시작 티켓을 �
   // 지뢰찾기·뱀·2048 랭크전(2026-10-29 하율 "모든 게임을 랭크에 — 캐주얼이랑 랭크로 나누지 말고", 미리보기 casual-games): 시작 티켓 씨앗으로 판이 정해지고 서버가 다시 둬 봄(cz-score.js)
   mine: { min: 5000, max: 3600000, play: 0, ff: 'casual-games', tierOn: true },   // 중급 클리어 시간(ms) — 작을수록 1등
   snake: { min: SNAKE_MAX - 252, max: SNAKE_MAX - 1, play: 0, ff: 'casual-games', tierOn: true },   // SNAKE_MAX - 별 수
-  n2048: { min: 1, max: N2_MAX - 1, play: 0, ff: 'casual-games', tierOn: true },   // N2_MAX - 3분 점수   // 카메라 가방 정리!(2026-10-29 미리보기): BLAST_MAX - 점수. 티어는 공개되는 순간부터(계단 오르기·필름 10과 같게)   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
+  n2048: { min: 1, max: N2_MAX - 1, play: 0, ff: 'casual-games', tierOn: true },
+  // 기록실 전용(2026-11-09 하율 "복도의 심판 기록실 안 만들어놨어? 기록실 없는 게임들 다 추가"): casual + rec = 기록실·순위표·프로필 기록만(티어·뽑기권·주간 미션·1등 왕관·업적·숙련도 X)
+  //   판을 서버가 다시 돌려 보지 못하는 게임이라 형식·시간 검사만(checkRounds) — 색감의 신처럼 재미용 기록
+  judge: { min: JUDGE_MIN, max: 6 * 3600e3, play: 0, ff: 'judge-game', casual: true, rec: true },   // 복도의 심판: 처음부터 이긴 시간(ms, 중간 지점부터 이긴 판 제외)
+  ball: { min: 1, max: BALL_MAX - 1, play: 0, ff: 'ball-game', casual: true, rec: true },   // 체육 창고 정리!: BALL_MAX - 점수
+  cross: { min: 1, max: CROSS_MAX - 1, play: 0, ff: 'cross-game', casual: true, rec: true },   // 지각 직전!: CROSS_MAX - 칸
+  rhythm: { min: 1, max: RHY_MAX - 1, play: 60000, ff: 'rhythm-game', casual: true, rec: true },   // 영상고 랩 배틀: RHY_MAX - 주간(3곡) 완주 점수   // N2_MAX - 3분 점수   // 카메라 가방 정리!(2026-10-29 미리보기): BLAST_MAX - 점수. 티어는 공개되는 순간부터(계단 오르기·필름 10과 같게)   // tierOn: 게임이 공개되는 순간부터 티어에 들어감(2026-10-28 21:46 하율 "출시와 같이 티어에", 이전 계획: 11/9 라운드부터) ·   // 영상고 계단 오르기(2026-10-28 미리보기): STAIR_MAX - 오른 칸 (높을수록 작음) · 1칸 판도 정상이라 최소 시간 없음(판 기록으로 검사)
 };
 // 판별 기록 검사: 맞지 않으면 오류 문구, 괜찮으면 null. elapsed = 시작 티켓 이후 실제로 흐른 시간(ms)
 // 검사에 걸리면 { a: 관리자용 이유, u: 학생에게 보여 줄 설명, bad: 문제 판 번호(0부터) } — 2026-10-26 하율: '기록이 이상해요' 대신 어떻게·왜 보류됐는지 직관적으로
@@ -201,6 +208,20 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (x.v !== v) return H(`다시 계산한 값(${x.v})과 기록(${v})이 다름`, `고른 색으로 다시 계산하면 평균 ${((COLOR_MAX - x.v) / 50).toFixed(1)}%인데 ${((COLOR_MAX - v) / 50).toFixed(1)}%로 기록됐어요.`);
     const same = [0, 1, 2, 3, 4].filter(i => n[i * 2] === n[i * 2 + 1]).length;
     if (same >= 3) return H(`5판 중 ${same}판이 정답 색과 완전히 같음(1,600만 색 중) — 조작 의심`, `5판 중 ${same}판에서 정답과 완전히 같은 색을 골랐어요. 팔레트로는 거의 나올 수 없는 일이라 확인이 필요해요.`);
+  } else if (game === 'judge') {   // [승리 ms, 남은 체력, 턴] — 처음부터 이긴 판만(2026-11-09)
+    if (n.length !== 3 || n[0] !== v) return H('판 기록 형식이 다름', '승리 기록이 판 기록과 맞지 않아요.');
+    if (n[1] < 1 || n[1] > 92 || n[2] < 23) return H(`체력(${n[1]})·턴(${n[2]})이 승리한 판과 안 맞음`, '이긴 판의 체력·턴 기록이 이상해요.');
+    if (v > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(v)}) 한 걸로 기록됐어요.`);
+  } else if (game === 'ball') {   // [점수, 떨어뜨린 공 수, 가장 큰 공 단계]
+    if (n.length !== 3 || n[0] !== BALL_MAX - v) return H('판 기록 형식이 다름', '점수가 판 기록과 맞지 않아요.');
+    if (n[2] < 0 || n[2] > 10 || n[1] < 1) return H(`공 수(${n[1]})·단계(${n[2]}) 이상`, '판 기록의 공 정보가 이상해요.');
+    if (n[0] > n[1] * BALL_PER_DROP) return H(`공 ${n[1]}개로 낼 수 없는 점수(${n[0]})`, `공 ${n[1]}개로는 최대 ${n[1] * BALL_PER_DROP}점까지 나올 수 있는데 ${n[0]}점으로 기록됐어요.`);
+    if ((n[1] - 1) * BALL_COOL_MS > elapsed + 3000) return H(`공 ${n[1]}개를 ${Math.round(elapsed / 1000)}초 만에`, `실제로 게임한 시간(${sec(elapsed)}) 안에 공 ${n[1]}개를 떨어뜨릴 수 없어요.`);
+  } else if (game === 'cross') {   // [칸]
+    if (n.length !== 1 || n[0] !== CROSS_MAX - v) return H('판 기록 형식이 다름', '칸 수가 판 기록과 맞지 않아요.');
+    if (n[0] * CROSS_HOP_MS > elapsed + 3000) return H(`${n[0]}칸을 ${Math.round(elapsed / 1000)}초 만에`, `실제로 게임한 시간(${sec(elapsed)}) 안에 ${n[0]}칸을 뛸 수 없어요.`);
+  } else if (game === 'rhythm') {   // [점수, 난이도 0~2, 놓침, 평균 정확도×100]
+    if (n.length !== 4 || n[0] !== RHY_MAX - v || n[1] < 0 || n[1] > 2 || n[2] < 0 || n[3] < 0 || n[3] > 10000) return H('판 기록 형식이 다름', '주간 완주 점수가 판 기록과 맞지 않아요.');
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
     if (n.length !== 5) return H('판 기록 형식이 다름', `5판이 모두 기록돼야 하는데 ${n.length}판만 기록됐어요.`);
     const off = idx(x => x < 0 || x > 1000);
@@ -213,7 +234,7 @@ const TICKET_RE = /^[0-9a-f]{32}$/;
 const TICKET_TTL = 3600e3;
 // 시간 제한 없는 게임은 1시간 넘게 할 수 있음 → 티켓 6시간(2026-10-29 하율: 기자재 정리! 일반 100만 점 판이 '게임을 다시 시작해 주세요'로 저장 안 됨 — 1시간 지나 티켓 만료)
 const TK_GRACE = 86400e3;   // 만료 티켓 유예 — lib/db.js limited()의 rl 정리도 tk:는 이만큼 늦게 지움
-const LONG_TK = new Set(['gearn', 'blast']), ttlOf = game => LONG_TK.has(game) ? 6 * 3600e3 : TICKET_TTL;
+const LONG_TK = new Set(['gearn', 'blast', 'judge', 'ball', 'cross']), ttlOf = game => LONG_TK.has(game) ? 6 * 3600e3 : TICKET_TTL;
 
 const HANDLE_RE = /^[a-z0-9_.]{3,16}$/;
 const RESERVED = h => h.startsWith('test_') || h === ADMIN_HANDLE || OLD_ADMIN_HANDLES.includes(h);   // 테스트 계정·개발자(예전 아이디 포함) 아이디는 가입 불가
@@ -1879,7 +1900,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     // 2026-10-31 LED 월 켜기! 점수 ×10(blast-score.js SCALE): 새로 고침 전 예전 화면은 1배 점수를 보냄 → 다시 둬 본 점수의 1/10과 같으면 10배로 고쳐 받음
     if (game === 'blast') { const x = blastReplay(blastSeed(ticket), body.rounds.map(y => Math.round(+y))); if (!x.err && x.score % BLAST_SCALE === 0 && BLAST_MAX - v === x.score / BLAST_SCALE) v = BLAST_MAX - x.score; }
     const gk = game === 'gearn' ? 'gear' : game;   // 일반 모드도 기자재 정리! 문구 그대로
-    const fv = { dance: x => (DANCE_MAX - x).toLocaleString('ko-KR') + '점', chase: x => (CHASE_MAX - x).toLocaleString('ko-KR') + '점', mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '개'}[gk] || (x => String(x));   // 목록에 없는 게임도 오류 없이(2026-11-02 등교하기!)
+    const fv = { dance: x => (DANCE_MAX - x).toLocaleString('ko-KR') + '점', chase: x => (CHASE_MAX - x).toLocaleString('ko-KR') + '점', mine: x => sec(x), snake: x => '사과 ' + (SNAKE_MAX - x) + '개', n2048: x => (N2_MAX - x).toLocaleString('ko-KR') + '점', reaction: x => x + 'ms', num25: x => sec(x), cut: x => '오차 합 ' + x + 'ms', home: x => (HOME_MAX - x).toLocaleString('ko-KR') + 'm', gear: x => (GEAR_MAX - x).toLocaleString('ko-KR') + '점', stair: x => (STAIR_MAX - x).toLocaleString('ko-KR') + '칸', blast: x => (BLAST_MAX - x).toLocaleString('ko-KR') + '점', film: x => (FILM_MAX - x).toLocaleString('ko-KR') + '개', judge: x => sec(x), ball: x => (BALL_MAX - x).toLocaleString('ko-KR') + '점', cross: x => (CROSS_MAX - x).toLocaleString('ko-KR') + '칸', rhythm: x => (RHY_MAX - x).toLocaleString('ko-KR') + '점'}[gk] || (x => String(x));   // 목록에 없는 게임도 오류 없이(2026-11-02 등교하기!)
     const why = v < g.min ? H(`너무 빠른 기록(하한 ${g.min})`, game === 'home' ? `${fv(v)}는 갈 수 있는 거리보다 길어요.` : gk === 'gear' ? `${fv(v)}는 기록할 수 있는 점수를 넘었어요.` : `${fv(v)}는 사람이 내기 거의 어려운 기록이에요. 바로 랭킹에 올라가는 기준은 ${fv(g.min)} 이상이에요.`)
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
@@ -1963,13 +1984,13 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const mg = game === 'gearn' && ffOn(GEAR_TIER, isAdm(me)) ? 'gear' : game;
     const mis = (!isCas(g) || mg !== game) && playCounts(mg, v) ? await misEv(db, me, 'play', { game: mg, v, best: mg === game && allPrev.b != null && v < allPrev.b, day }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-mis', method: 'POST' }, e).then(() => null)) : null;   // 미션·업적 오류로 기록 저장이 실패하지 않게
     // 게임 업적(깃발 achv): 저장된 판으로 판정 — 응답엔 깃발이 켜진 사람에게만
-    const achGot = await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : game === 'chase' ? chaseRun(ticket, body.rounds.map(x => Math.round(+x))) : game === 'dance' ? danceRun(ticket, body.rounds.map(x => Math.round(+x)), v) : null, rank: isCas(g) ? null : rank, ...kstNowParts() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
+    const achGot = g.rec ? [] : await achRun(db, me, { game, v, r: body.rounds, x: game === 'blast' ? blastReplay(blastSeed(ticket), body.rounds.map(x => Math.round(+x))) : game === 'chase' ? chaseRun(ticket, body.rounds.map(x => Math.round(+x))) : game === 'dance' ? danceRun(ticket, body.rounds.map(x => Math.round(+x)), v) : null, rank: isCas(g) ? null : rank, ...kstNowParts() }).catch(e => logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/score-ach', method: 'POST' }, e).then(() => []));
     const achF = ffOn(ACH_FF, isAdm(me));
     const ach = achGot.length && achF ? achGot : undefined;
     // 게임 숙련도(깃발 mastery, 2026-10-30 하율 "업적이랑 숙련도 분리, 롤 느낌"): 판 등급(S+~D, 내 최고 기록 대비)별 XP — 업적·최고 기록 보너스와 따로
     // 깃발 켜진 사람만 쌓음 · 모두 Lv.1부터(소급 없음)
     // 2026-10-30 하율 "등급은 그냥 점수에 따라서": 다른 학생 기록과 비교하지 않고 게임마다 정한 점수 구간(achv.js MST_BANDS) — DB 조회 없음
-    const mstF = ffOn(MST_FF, isAdm(me)), mPlay = mstF && mstCounts(game, v);
+    const mstF = ffOn(MST_FF, isAdm(me)) && !g.rec, mPlay = mstF && mstCounts(game, v);
     const mgr = mPlay ? mstGradeOf(game, v) : '';
     const mFirst = mPlay && parseAch(me.mst)?.[game === 'gearn' ? 'gear' : game]?.[1] !== day;
     const mstR = !mPlay ? null : await mstRun(db, me, game, { play: true, gr: mgr }, day);

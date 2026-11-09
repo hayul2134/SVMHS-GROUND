@@ -15,7 +15,8 @@ import { CHASE_MAX, seedOf as chaseSeed, CHUNK_F as CHASE_CHUNK, RULE_V as CHASE
 import { DANCE_MAX, seedOf as danceSeed } from './dance-score.js';
 import { SNAKE_MAX, N2_MAX } from './cz-score.js';
 import { pctOf as colorPct } from './color-score.js';   // 색감의 신(2026-11-02)
-import { tpmOf } from './commute-score.js';   // 등교하기!(2026-11-02)
+import { tpmOf } from './commute-score.js';
+import { BALL_MAX, CROSS_MAX, RHY_MAX } from './rec-score.js';   // 기록실 전용 게임(2026-11-09)   // 등교하기!(2026-11-02)
 import { ffOn, RELEASED } from './flags.js';
 import * as KM from './keymap.js';   // 게임 키 설정(2026-10-28)
 import { KIND, weekLeft, PLAY_RULE } from './mission.js';   // 주간 미션(2026-10-27, 미리보기 깃발 week-mission)
@@ -64,6 +65,11 @@ const GAMES = {
   snake: { ff: 'casual-games', name: '뱀 게임', ic: 'snake', desc: '랭크전은 사과 위치가 정해진 판에서 사과 많이 먹기', fmt: v => '사과 ' + (SNAKE_MAX - v) + '개' },
   n2048: { ff: 'casual-games', name: '2048', ic: '2048', desc: '랭크전은 3분 동안 최고 점수 · 되돌리기 없음', fmt: v => (N2_MAX - v).toLocaleString('ko-KR') + '점' },
   num25: { name: '1 to 25', ic: 'n25', desc: '1부터 25까지 순서대로 빠르게 누르기', fmt: v => (v / 1000).toFixed(2) + '초' },
+  // 기록실 전용(2026-11-09 하율 "기록실 없는 게임들 다 추가"): casual = 게임 칸·티어엔 안 나오고 기록실·순위표·프로필 기록만 · rec = 판 시작/끝을 게임 모듈이 알려 줌(recRk)
+  judge: { ff: 'judge-game', casual: true, rec: true, name: '복도의 심판', ic: 'judge', desc: '선도부장을 처음부터 이긴 가장 빠른 시간', note: '처음부터 이긴 판만 기록돼요(중간 지점부터 이긴 판 제외) · 티어·뽑기권과는 상관없어요', fmt: v => `${Math.floor(v / 60000)}분 ${String(Math.floor(v / 1000) % 60).padStart(2, '0')}.${String(Math.floor(v % 1000 / 10)).padStart(2, '0')}초` },
+  ball: { ff: 'ball-game', casual: true, rec: true, name: '체육 창고 정리!', ic: 'ball', desc: '같은 공을 합쳐 짐볼까지! 한 판 최고 점수', note: '티어·뽑기권과는 상관없는 기록실 기록이에요', fmt: v => (BALL_MAX - v).toLocaleString('ko-KR') + '점' },
+  cross: { ff: 'cross-game', casual: true, rec: true, name: '지각 직전!', ic: 'cross', desc: '도로·하천·철길을 건너 가장 멀리 간 칸', note: '티어·뽑기권과는 상관없는 기록실 기록이에요', fmt: v => (CROSS_MAX - v).toLocaleString('ko-KR') + '칸' },
+  rhythm: { ff: 'rhythm-game', casual: true, rec: true, name: '영상고 랩 배틀', ic: 'rhythm', desc: '스토리(영상고의 하루) 3곡 완주 점수', note: '스토리 모드를 끝까지 완주한 점수예요(어려운 난이도일수록 화살표가 많아 점수가 커요) · 티어·뽑기권과는 상관없어요', fmt: v => (RHY_MAX - v).toLocaleString('ko-KR') + '점' },
 };
 
 /* ===== 상태 ===== */
@@ -2323,6 +2329,25 @@ async function play(game) {
   try { await fn(); } catch (e) { if (seq === playSeq && curGame === game) gameFail(e); else console.error(e); }
 }
 
+/* 기록실 전용 게임 저장(2026-11-09 하율 "기록실 없는 게임들 다 추가"): 게임 모듈이 판 시작에 seed(), 끝에 done(값, 판 기록)
+   판마다 시작 티켓(약속으로 들고 있다가 saveScore가 기다림) → 기록 저장. 결과는 글자로 돌려주고(카드에 표시) say면 토스트도 */
+function recRk(gm, say = false) {
+  if (!S.me) return null;
+  let tk = null;
+  const get = () => call('start', { game: gm }).catch(() => wait(2000).then(() => call('start', { game: gm }))).then(r => r.ticket || null, e => { tkErr = e.message; return null; });
+  return {
+    seed() { tk = get(); },
+    async done(v, rounds) {
+      const t = tk; tk = null; if (!t) return '';
+      ticket = t;
+      let m;
+      try { const r = await saveScore(gm, v, rounds); m = r.held ? (r.rescued ? '기록 보관 · ' : '기록 보류 · ') + (r.why || '개발자가 확인한 뒤 반영돼요') : `기록실 ${r.newBest ? '새 최고 기록! ' : ''}전체 ${r.rank}등 · 내 최고 ${GAMES[gm].fmt(r.best ?? v)}`; }
+      catch (e) { m = e.message || '기록을 저장하지 못했어요'; }
+      if (say) toast(m);
+      return m;
+    },
+  };
+}
 /* 체육 창고 정리!(2026-11-02 하율 "수박 게임 방식으로 체육 창고 정리! — 내 화면에만", 미리보기 깃발 ball-game)
    js/ball.js가 판을 그림. 시험판이라 서버·랭킹·티어 없이 이 기기 최고 기록만 → 위 줄엔 나가기만 */
 let BALL = null;
@@ -2340,7 +2365,7 @@ async function playBall() {
     if (!BALL) BALL = await import('./ball.js').catch(() => import('./ball.js?r=' + Date.now()));
     if (seq !== playSeq || !area.isConnected) return;
     area.innerHTML = '<div id="blBox"></div>' + RE_ROW;
-    const M = BALL.createBall($('#blBox'), {}); M.start();
+    const M = BALL.createBall($('#blBox'), { rk: recRk('ball') }); M.start();
     quitGame = () => M.destroy();
   } catch (e) { if (seq === playSeq && curGame === 'ball') gameFail(e); else console.error(e); }
 }
@@ -2362,7 +2387,7 @@ async function playCross() {
     if (!RUN) RUN = await import('./runner.js');   // 공용 캐릭터(꾸미기)를 블록으로 그림
     if (seq !== playSeq || !area.isConnected) return;
     area.innerHTML = '<div id="cxBox"></div>' + RE_ROW;
-    const M = CROSS.createCross($('#cxBox'), { char: RUN.loadChar(), opts: RUN.OPTS }); M.start();
+    const M = CROSS.createCross($('#cxBox'), { char: RUN.loadChar(), opts: RUN.OPTS, rk: recRk('cross') }); M.start();
     const dBtn = $('#cxBox .cx-dress'), dress = charDress($('#cxBox .cx-dressbox'), $('#cxBox .cx'), dBtn, c => M.setChar(c));
     dBtn.innerHTML = ic('brush') + '캐릭터 꾸미기';
     dBtn.onclick = () => { if (M.busy && !dress.open) { toast('판이 끝난 뒤에 꾸밀 수 있어요'); return; } dress.toggle(); };
@@ -2388,7 +2413,7 @@ async function playRhythm() {
     area.innerHTML = '<div id="rbBox"></div>' + RE_ROW;
     const wide = on => { area.classList.toggle('wide', on); $('#gamePlay .ptop')?.classList.toggle('wide', on); };
     wide(true);   // 2026-11-02 하율 "화면 더 키워줘" — 넓은 칸(1240px)
-    const M = RHY.createRhythm($('#rbBox'), {}); M.start();
+    const M = RHY.createRhythm($('#rbBox'), { rk: recRk('rhythm', true) }); M.start();
     area.querySelector('[data-restart]')?.addEventListener('click', e => { if (M.restart()) { e.stopPropagation(); e.currentTarget.blur(); } }, true);   // 다시 시작 = 지금 곡 처음부터
     quitGame = () => { M.destroy(); wide(false); };
   } catch (e) { if (seq === playSeq && curGame === 'rhythm') gameFail(e); else console.error(e); }
@@ -2412,7 +2437,7 @@ async function playJudge() {
     area.innerHTML = '<div id="jdBox"></div>';
     const wide = on => { area.classList.toggle('wide', on); $('#gamePlay .ptop')?.classList.toggle('wide', on); };
     wide(true);
-    const M = JDG.createJudge($('#jdBox'), {}); M.start();
+    const M = JDG.createJudge($('#jdBox'), { rk: recRk('judge', true) }); M.start();
     quitGame = () => { M.destroy(); wide(false); };
   } catch (e) { if (seq === playSeq && curGame === 'judge') gameFail(e); else console.error(e); }
 }

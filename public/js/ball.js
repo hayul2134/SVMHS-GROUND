@@ -3,6 +3,7 @@
 // 물리는 직접 구현(고정 스텝 1/120초, 원끼리만, 삼각함수 없음) → 나중에 '오늘의 판'·서버 검사에서 기기마다 같은 결과가 나오게.
 // createBall(el, O) → { start, destroy }
 import { store } from './util.js';
+import { BALL_MAX } from './rec-score.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';
 
 // 공 11단계(2026-11-02 하율 "수박게임 물리엔진 거의 똑같이" → 원작 과일 11종의 지름 비율 33·48·61·69·89·114·129·156·177·220·259를
@@ -27,7 +28,7 @@ export function createBall(el, O = {}) {
   const cv = el.querySelector('.bl-cv'), ctx = cv.getContext('2d'), ov = el.querySelector('.bl-ov');
   const S = makeSfx('sg_ball_snd'); bindSnd(el.querySelector('#blSnd'), S);
   let best = +store.get('ball_best', 0) || 0;
-  let balls, score, cur, next, dropX, cool, over, paused, maxLv, alive = true, raf = 0, last = 0, acc = 0, keyDir = 0, dirty = true, seq = 0;
+  let nDrop = 0, balls, score, cur, next, dropX, cool, over, paused, maxLv, alive = true, raf = 0, last = 0, acc = 0, keyDir = 0, dirty = true, seq = 0;
   let scale = 1, dpr = 1;
   const sprites = new Map();
 
@@ -113,6 +114,7 @@ export function createBall(el, O = {}) {
   // ── 판 ──
   const pick = () => { const r = Math.random(); return r < .26 ? 0 : r < .5 ? 1 : r < .72 ? 2 : r < .88 ? 3 : 4; };   // 작은 공이 조금 더 자주
   function reset() {
+    nDrop = 0; O.rk?.seed();   // 판마다 기록실 시작 티켓(2026-11-09)
     balls = []; score = 0; cur = pick(); next = pick(); dropX = (L + R) / 2; cool = 0; over = false; paused = false; maxLv = 0; acc = 0; last = 0;
     ov.hidden = true; dirty = true;
   }
@@ -122,7 +124,7 @@ export function createBall(el, O = {}) {
     const r = BALLS[cur][1];
     balls.push({ x: clampX(dropX) + ((seq * 37) % 9 - 4) * .03, y: DROP_Y,   // 같은 자리에 계속 놓아도 탑처럼 서지 않게 아주 작은 어긋남(씨앗 없이 순서로만 정해짐)
       vx: 0, vy: 0, w: 0, lv: cur, r, R: r, a: 0, age: 0, top: 0, grow: 1, id: ++seq });
-    S.tone(520, .05, 'triangle', .04);
+    S.tone(520, .05, 'triangle', .04); nDrop++;
     cur = next; next = pick(); cool = COOL; dirty = true;
   }
   function step() {
@@ -220,8 +222,9 @@ export function createBall(el, O = {}) {
     S.tone(300, .3, 'sawtooth', .04, 0, 120);
     ov.innerHTML = `<div class="bl-card"><b class="bl-t">창고가 꽉 찼어요!</b><p class="bl-sc">${score.toLocaleString()}점</p>
       <p class="bl-sub">${nb ? '<em>내 최고 기록 경신!</em>' : `내 최고 ${best.toLocaleString()}점`} · 가장 큰 공 ${BALLS[maxLv][0]}</p>
-      <button type="button" class="btn big" data-bl-again>다시 하기</button><p class="bl-note">시험판 · 기록은 이 기기에만 저장돼요</p></div>`;
+      <button type="button" class="btn big" data-bl-again>다시 하기</button><p class="bl-note">${O.rk && score > 0 ? '기록실에 저장 중…' : '기록은 이 기기에만 저장돼요'}</p></div>`;
     ov.hidden = false;
+    if (O.rk && score > 0) O.rk.done(BALL_MAX - score, [score, nDrop, maxLv]).then(m => { const n = ov.querySelector('.bl-note'); if (n && m) n.textContent = m; });
   }
   function pause(on) {
     if (over || paused === on) return; paused = on; dirty = true;

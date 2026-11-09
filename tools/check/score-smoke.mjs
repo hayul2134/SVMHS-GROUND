@@ -91,10 +91,17 @@ PLAY.dance = (v, tk) => {
   return { value: DC.DANCE_MAX - DC.scoreOf(s), rounds: [s.overF, ...ev] };
 };
 
+// 기록실 전용 게임(2026-11-09): 형식·시간 검사만 → 그럴듯한 판 기록. 복도의 심판은 3분 넘게 걸리는 판이라 시계를 더 앞당김. v = 1이면 하한 밑·형식 틀림(보류)
+const RS = await import(pathToFileURL(resolve('public/js/rec-score.js')).href);
+PLAY.judge = v => { if (v === 1) return { value: 1, rounds: [1, 50, 23] }; skew += 600000; const ms = RS.JUDGE_MIN + v * 100; return { value: ms, rounds: [ms, 40, 23] }; };
+PLAY.ball = v => v === 1 ? { value: RS.BALL_MAX - 9999, rounds: [9999, 3, 4] } : { value: RS.BALL_MAX - v, rounds: [v, Math.ceil(v / 10), 6] };
+PLAY.cross = v => v === 1 ? { value: RS.CROSS_MAX - 5000, rounds: [5000] } : { value: RS.CROSS_MAX - v / 4, rounds: [v / 4] };
+PLAY.rhythm = v => { skew += 60000; return v === 1 ? { value: RS.RHY_MAX - 10, rounds: [10, 5, 0, 9000] } : { value: RS.RHY_MAX - v * 100, rounds: [v * 100, 1, 3, 9000] }; };
+
 // 두 번 돈다: ① 지금 학생 화면(미리보기 깃발 꺼짐) ② 미리보기 깃발이 전부 공개된 뒤의 학생 화면
 //   (2026-10-29 버그는 깃발 rx-season이 공개된 뒤에만 타는 길이라 ①만으로는 못 잡았음)
 const { PREVIEW, RELEASED } = await import(pathToFileURL(resolve('public/js/flags.js')).href);
-const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'stair200', 'blast', 'chase', 'dance', 'color', 'mine', 'snake', 'n2048'];
+const list = ['reaction', 'num25', 'cut', 'home', 'gear', 'gearn', 'film', 'stair', 'stair200', 'blast', 'chase', 'dance', 'color', 'mine', 'snake', 'n2048', 'judge', 'ball', 'cross', 'rhythm'];
 let opened = 0;
 for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공개', 'smoke_b1']]) {
   if (mode === '깃발 전부 공개') for (const f of PREVIEW) RELEASED.add(f);
@@ -119,6 +126,9 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
   { const h = (await call('GET', 'hall')).j, x = h?.games?.find(y => y.g === 'stair200');   // 200칸 타임어택(2026-11-04): 계단 오르기 판에서 같이 저장됐는지
     if (h?.games?.some(y => y.g === 'stair') && x?.me?.v !== ST.T200 * 60) fails.push(`[${mode}] 기록실 200칸 타임어택이 안 쌓임 → ${JSON.stringify(x).slice(0, 200)}`);
     if ((await call('POST', 'start', { game: 'stair200' })).j?.ticket) fails.push(`[${mode}] stair200을 직접 시작할 수 있음`); }
+  { const h = (await call('GET', 'hall')).j;   // 기록실 전용 게임(2026-11-09): 열린 게임은 기록실에 내 기록이 쌓여야 함
+    for (const g of ['judge', 'ball', 'cross', 'rhythm']) { const x = h?.games?.find(y => y.g === g); if (x && x.me?.v == null) fails.push(`[${mode}] 기록실 ${g} 기록이 안 쌓임 → ${JSON.stringify(x).slice(0, 200)}`); }
+    if (mode === '깃발 꺼짐' && !h?.games?.some(y => y.g === 'judge')) fails.push(`[${mode}] 기록실에 복도의 심판 없음`); }
   // 숙련도(깃발 mastery, 2026-10-30): 공개 상태에선 판을 한 게임에 XP·등급이 쌓여야 함
   if (mode === '깃발 전부 공개') {
     const m = (await call('GET', 'mastery')).j, u = (await call('GET', 'user/' + handle)).j;

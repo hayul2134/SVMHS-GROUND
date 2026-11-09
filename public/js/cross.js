@@ -4,6 +4,7 @@
 // 시험판 — 서버·랭킹 없이 이 기기 최고 기록만(sg_cross_best). 멈춤은 한 판 30초(pauseBudget, 화면 숨김·창 벗어남 포함, 넘으면 판 끝).
 // createCross(el, O) → { start, destroy, setChar, state }   O.char = runner.js loadChar() 값, O.opts = runner.js OPTS (없으면 기본 교복)
 import { store, pauseBudget, pauseOutMsg } from './util.js';
+import { CROSS_MAX } from './rec-score.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';
 
 const T = 48, TD = 34, COLS = 11, W = COLS * T, H = 704;   // 칸 가로 48px · 줄 깊이 34px(눌러서 낮은 시점) · 가로 11칸(0·10번은 벽 밖, 1~9번에서 놂)
@@ -117,7 +118,7 @@ export function createCross(el, O = {}) {
     lanes = new Map(); genR = -6; seg = 'grass'; segLeft = 0; pathC = 5; prevT = 'grass'; prevDir = 1; cw = -1;
     P = { r: 0, px: 5.5, fx: 5.5, fr: 0, tx: 5.5, tr: 0, h: -1, face: 'up', log: null, sq: 0, bump: 0, dead: null, fly: null, z: 0 };
     cam = -ANCHOR; score = 0; started = false; over = false; paused = false; dying = 0; queue = null; msg = null; fx = []; last = 0; t0 = 0; shake = 0; teach = null;
-    pb.reset(); ov.hidden = true; ov.innerHTML = ''; pzBtn.disabled = false;
+    pb.reset(); ov.hidden = true; ov.innerHTML = ''; pzBtn.disabled = false; O.rk?.seed();   // 판마다 기록실 시작 티켓(2026-11-09)
     for (let r = -6; r < 26; r++) lane(r);
   }
 
@@ -169,8 +170,9 @@ export function createCross(el, O = {}) {
     const why = { car: '차에 치였어요', train: '열차에 치였어요', water: '물에 빠졌어요', late: '지각! 선생님한테 잡혔어요', pause: '멈춤 시간을 다 썼어요' }[P.dead] || '';
     ov.innerHTML = `<div class="bl-card"><b class="bl-t">${why}</b><p class="bl-sc">${score.toLocaleString()}칸</p>
       <p class="bl-sub">${nb ? '<em>내 최고 기록 경신!</em>' : `내 최고 ${best.toLocaleString()}칸`}</p>
-      <button type="button" class="btn big" data-cx-again>다시 하기</button><p class="bl-note">Space·Enter로도 다시 · 시험판이라 기록은 이 기기에만 저장돼요</p></div>`;
+      <button type="button" class="btn big" data-cx-again>다시 하기</button><p class="bl-note">Space·Enter로도 다시 · ${O.rk && score > 0 ? '기록실에 저장 중…' : '기록은 이 기기에만 저장돼요'}</p></div>`;
     ov.hidden = false;
+    if (O.rk && score > 0) O.rk.done(CROSS_MAX - score, [score]).then(m => { const n = ov.querySelector('.bl-note'); if (n && m) n.textContent = 'Space·Enter로도 다시 · ' + m; });   // 사이트 기록실(2026-11-09)
     if (nb) S.tone(988, .1, 'square', .04, .1), S.tone(1319, .18, 'square', .04, .2);
   }
   function pause(on) {

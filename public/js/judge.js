@@ -627,7 +627,7 @@ export function createJudge(el, O = {}) {
   function logRun(r, at, ms) { runs.recent.unshift({ r, at, ms, ck, t: Date.now() }); runs.recent.splice(10); runs.playMs += ms; store.set('jd_runs', runs); }
 
   function newRun(fromCk) {
-    hp = MAXHP; kr = 0; krT = 0; items = ITEMS0.map(a => a.slice()); trapped = false; ck = fromCk; runT0 = T; G.runHit = false; G.p1Hit = false; G.ate = 0; G.newBest = false; unlock('start');
+    hp = MAXHP; kr = 0; krT = 0; items = ITEMS0.map(a => a.slice()); trapped = false; ck = fromCk; runT0 = T; if (!fromCk && !O._god) O.rk?.seed(); G.runHit = false; G.p1Hit = false; G.ate = 0; G.newBest = false; unlock('start');
     bones = []; stabs = []; warns = []; gbs = []; plats = []; mbones = []; mbBottom = false; TL = null; black = false; stall = null; ending = null; over = null;
     sans.x = 320; sans.alpha = 1; sans.walk = 0; sans.sweat = 0; sans.pose = null; sans.anim = 'Idle'; sans.torso = 'default';
     zone.l = zone.tl = MENU_ZONE[0]; zone.t = zone.tt = MENU_ZONE[1]; zone.r = zone.tr = MENU_ZONE[2]; zone.b = zone.tb = MENU_ZONE[3]; zone.vis = true;
@@ -732,6 +732,7 @@ export function createJudge(el, O = {}) {
     const L = ck ? runs.ckTop : runs.top, n = ck ? 5 : 10; G.newBest = !L.length || tm < L[0].ms;
     L.push({ ms: tm, hp: G.winHp, t: Date.now() }); L.sort((a, b) => a.ms - b.ms); L.splice(n);
     logRun('win', 24, tm);
+    if (!ck && !O._god) O.rk?.done(tm, [tm, G.winHp, hits]);   // 처음부터 이긴 판 → 사이트 기록실(2026-11-09)
     achCounts(); if (!ck) { if (hp >= 46) unlock('winhalf'); if (!G.ate) unlock('nofood'); if (!G.runHit) unlock('nohit'); } else { if (hp >= 46) unlock('winhalf'); if (!G.ate) unlock('nofood'); }
   }
   function die() {
@@ -1095,7 +1096,7 @@ export function createJudge(el, O = {}) {
       });
       txt(`${G.pg + 1} / 2 · 위·아래로 넘기기`, 320, 418, 14, '#808080', 'center');
     }
-    txt('왼쪽·오른쪽: 기록실·업적 · Z/X: 돌아가기 · 이 기기에만 저장돼요', 320, 452, 14, '#707070', 'center');
+    txt(`왼쪽·오른쪽: 기록실·업적 · Z/X: 돌아가기 · ${O.rk ? '가장 빠른 승리는 사이트 기록실에도 올라가요' : '이 기기에만 저장돼요'}`, 320, 452, 14, '#707070', 'center');
   }
   function drawAch(dt) {   // 업적 달성 알림 — 공격 중엔 미뤘다가 보여 줌
     if (!achB && achQ.length && !['attack', 'stall', 'target', 'final', 'name', 'nameok'].includes(G.mode)) { achB = { a: achQ.shift(), t: 0 }; play('select'); }

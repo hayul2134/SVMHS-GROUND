@@ -7,6 +7,7 @@
 // 서버·랭킹 없음(랭크 규칙은 하율 결정 대기) → 이 기기 기록만: sg_rb_rec(곡_난이도 최고 점수·정확도) · sg_rb_week · sg_rb_opt · sg_rb_off(ms)
 // createRhythm(el, O) → { start, destroy }
 import { store } from './util.js';
+import { RHY_MAX } from './rec-score.js';
 
 const FONT = 'Jua, system-ui, sans-serif', INK = '#2a2846';
 const COL = ['#b07cff', '#3fc4f2', '#3ed27a', '#ff5d72'];
@@ -461,7 +462,7 @@ export function createRhythm(el, O = {}) {
   ], foot: '↑↓ 고르기 · Enter 선택 · Esc 뒤로' });
   const mStory = () => ({ title: '영상고의 하루', sub: '방송실 → 급식실 → 대강당 보스전 MR.LEE, 3곡 연속!', diff: 1,
     extra: `<ol class="rb-wk">${SONGS.slice(0, 3).map(s => `<li><b>${s.name}</b><small>${CH[s.opp].name} · ${STAGE_N[s.stage]}</small></li>`).join('')}</ol><p class="rb-ms">${week[diff] ? '이 난이도 최고 ' + fmt(week[diff]) + '점' : '아직 완주 기록 없음'}</p>`,
-    items: [{ lbl: '시작', go: () => { story = { i: 0, d: diff, score: 0, wSum: 0, wN: 0, miss: 0 }; loadSong(0, diff); } }, { lbl: '뒤로', go: popMenu }], back: popMenu });
+    items: [{ lbl: '시작', go: () => { story = { i: 0, d: diff, score: 0, wSum: 0, wN: 0, miss: 0 }; O.rk?.seed(); loadSong(0, diff); } }, { lbl: '뒤로', go: popMenu }], back: popMenu });
   const mFree = () => ({ title: '자유 플레이', diff: 1, cls: 'free',
     items: (rankSongs(), FREE).map(i => [SONGS[i], i]).map(([s, i]) => ({ lbl: (s.boss ? '[보스] ' : '') + s.name + ` <em class="rb-st">${s.boss ? '★★★★★+' : '★'.repeat(STARS[i]) + '☆'.repeat(5 - STARS[i])}</em>`, sub: `${CH[s.opp].name} · ${STAGE_N[s.stage]} · BPM ${s.bpm} · ${bestTxt(s, diff)}`, go: () => { story = null; loadSong(i, diff); } })).concat([{ lbl: '뒤로', go: popMenu }]), back: popMenu });
   const onOff = v => v ? '<em>켬</em>' : '끔';
@@ -540,6 +541,7 @@ export function createRhythm(el, O = {}) {
   function weekDone() {
     const s = story, a = s.wN ? s.wSum / s.wN * 100 : 100, nb = !week[s.d] || s.score > week[s.d];
     if (nb) { week[s.d] = Math.round(s.score); store.set('rb_week', week); }
+    if (O.rk && s.score >= 1) O.rk.done(RHY_MAX - Math.round(s.score), [Math.round(s.score), s.d, s.miss, Math.round(a * 100)]);   // 스토리 완주 → 사이트 기록실(2026-11-09)
     const extra = `<p class="rb-sc">${fmt(s.score)}점${nb ? ' <em>최고 기록!</em>' : ''}</p><p class="rb-ms">${DIFFS[s.d].n} · 평균 정확도 ${a.toFixed(2)}% · 놓침 ${s.miss}</p>`;
     story = null; G = null; state = 'title'; reb.hidden = true; mnb.hidden = true; bgC = null; jingle(true);
     showMenu(() => ({ title: '영상고의 하루 완주!', cls: 'res', extra, items: [{ lbl: '처음 화면', go: () => { menuStack = []; showMenu(mTitle); } }] }));
