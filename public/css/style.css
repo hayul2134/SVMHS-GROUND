@@ -6968,6 +6968,7 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 /* 체육 창고 정리!(2026-11-02, 깃발 ball-game · js/ball.js) */
 .apps .gapp.g-ball .ai{--c:#ffe2c6}
 .apps .gapp.g-rhythm .ai{--c:#e6ddff}
+.apps .gapp.g-cross .ai{--c:#d9f3c8}
 .apps .gapp.g-judge .ai{--c:#ffd9de}
 /* 복도의 심판(judge.js) */
 .parea.wide:has(> #jdBox){max-width:none}   /* 복도의 심판: 폭 제한 없이 높이에 맞춰 크게(2026-11-04) */
