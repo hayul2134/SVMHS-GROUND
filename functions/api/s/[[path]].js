@@ -14,7 +14,7 @@ import { SNAKE_MAX, N2_MAX, seedOf as czSeed, mineReplay, snakeReplay, n2Replay 
 import { FILM_MAX, CELLS as FILM_CELLS, seedOf as filmSeed, replay as filmReplay } from '../../../public/js/film-score.js';
 import { COLOR_MAX, scoreOf as colorScore, seedOf as colorSeed } from '../../../public/js/color-score.js';   // 색감의 신(2026-11-02)
 import { ffOn, RELEASED } from '../../../public/js/flags.js';
-import { BALL_MAX, CROSS_MAX, RHY_MAX, JUDGE_MIN, BALL_PER_DROP, BALL_COOL_MS, CROSS_HOP_MS } from '../../../public/js/rec-score.js';   // 기록실 전용 게임(2026-11-09)
+import { BALL_MAX, CROSS_MAX, RHY_MAX, JUDGE_MIN, BALL_PER_DROP, BALL_COOL_MS, BALL_LV_PTS, CROSS_HOP_MS } from '../../../public/js/rec-score.js';   // 기록실 전용 게임(2026-11-09)
 import { ACH_FF, ACH, ACH_GAMES, achCheck, achTitles, ACH_TITLES, parseAch, nat as achNat, MST_FF, MST_GAMES, mstAdd, mstXp, mstGradeOf, mstCounts, mstScore } from '../../../public/js/achv.js';
 import { MS, KIND, missionsOf, progOf, applyEv, weekKey, playCounts } from '../../../public/js/mission.js';
 import { REWARDS, MILESTONES, rwOn, SHIELD_EVERY, shieldMaxOf, decoSlots, STK_MSG, unlockedOf, kstToday, missedDays, restDay, liveCur, liveMany, weekOf } from '../../../lib/attend.js';
@@ -215,6 +215,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
   } else if (game === 'ball') {   // [점수, 떨어뜨린 공 수, 가장 큰 공 단계]
     if (n.length !== 3 || n[0] !== BALL_MAX - v) return H('판 기록 형식이 다름', '점수가 판 기록과 맞지 않아요.');
     if (n[2] < 0 || n[2] > 10 || n[1] < 1) return H(`공 수(${n[1]})·단계(${n[2]}) 이상`, '판 기록의 공 정보가 이상해요.');
+    if (n[0] < BALL_LV_PTS[n[2]]) return H(`가장 큰 공 단계(${n[2]})를 만들고도 점수(${n[0]})가 너무 낮음`, '가장 큰 공과 점수 기록이 서로 맞지 않아요.');
     if (n[0] > n[1] * BALL_PER_DROP) return H(`공 ${n[1]}개로 낼 수 없는 점수(${n[0]})`, `공 ${n[1]}개로는 최대 ${n[1] * BALL_PER_DROP}점까지 나올 수 있는데 ${n[0]}점으로 기록됐어요.`);
     if ((n[1] - 1) * BALL_COOL_MS > elapsed + 3000) return H(`공 ${n[1]}개를 ${Math.round(elapsed / 1000)}초 만에`, `실제로 게임한 시간(${sec(elapsed)}) 안에 공 ${n[1]}개를 떨어뜨릴 수 없어요.`);
   } else if (game === 'cross') {   // [칸]

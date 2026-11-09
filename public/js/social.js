@@ -2349,7 +2349,7 @@ function recRk(gm, say = false) {
   };
 }
 /* 체육 창고 정리!(2026-11-02 하율 "수박 게임 방식으로 체육 창고 정리! — 내 화면에만", 미리보기 깃발 ball-game)
-   js/ball.js가 판을 그림. 시험판이라 서버·랭킹·티어 없이 이 기기 최고 기록만 → 위 줄엔 나가기만 */
+   js/ball.js가 판을 그림. 기록실 전용(recRk — 판마다 시작 티켓, 끝나면 기록실·순위표 저장, 티어·뽑기권 X) · 2026-11-10 출시 준비(멈춤 30초·멈춤 버튼) */
 let BALL = null;
 async function playBall() {
   const seq = ++playSeq, gate = () => ffOn('ball-game', isDev(S.me));

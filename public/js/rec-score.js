@@ -6,5 +6,6 @@ export const CROSS_MAX = 1e6;    // 지각 직전!: CROSS_MAX - 칸
 export const RHY_MAX = 1e7;      // 영상고 랩 배틀: RHY_MAX - 주간(스토리 3곡) 완주 점수
 export const JUDGE_MIN = 180000; // 복도의 심판: 처음부터 이긴 시간 하한(3분) — 이보다 빠르면 보류(공격 순서가 정해져 있어 사람이 낼 수 없는 시간)
 export const BALL_PER_DROP = 22; // 공 하나 떨어뜨릴 때 최대로 얻을 수 있는 점수(야구공만 계속 떨어뜨려 끝까지 합쳐도 약 21.3점)
+export const BALL_LV_PTS = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55];   // 공 단계별로 만들어질 때 점수(ball.js BALLS 셋째 값과 같게) — 가장 큰 공을 만들었으면 최소 이만큼은 있어야 함
 export const BALL_COOL_MS = 500; // 연속 투하 간격(ball.js COOL)
 export const CROSS_HOP_MS = 120; // 한 칸 뛰는 시간(cross.js HOP)

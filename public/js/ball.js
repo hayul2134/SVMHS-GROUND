@@ -1,8 +1,10 @@
 // SVMHS GROUND — 체육 창고 정리!(2026-11-02 하율: "수박 게임 방식, 체육 창고 정리!로 — 내 화면에만", 미리보기 깃발 ball-game)
-// 같은 공 두 개가 닿으면 다음 공으로 합쳐짐. 공이 위쪽 선 위에 1.5초 머물면 끝. 지금은 시험판 — 서버·랭킹 없이 이 기기 최고 기록만(sg_ball_best).
+// 같은 공 두 개가 닿으면 다음 공으로 합쳐짐. 공이 위쪽 선 위에 1.5초 머물면 끝. 기록은 기록실(O.rk, 티어·뽑기권 X) + 이 기기 최고(sg_ball_best).
+// 2026-11-10 출시 준비: 멈춤 한 판 30초(pauseBudget — 화면 숨김·창 벗어남 포함, 넘으면 판 끝·기록 저장) · 멈춤 버튼(태블릿) · 쿨타임 중 놓으면 예약 투하
+//   · 합칠 때 +점수 글자 · 처음 안내 · 끝난 판에 넘친 공 표시와 판 기록(합친 횟수·떨어뜨린 공·짐볼 수)
 // 물리는 직접 구현(고정 스텝 1/120초, 원끼리만, 삼각함수 없음) → 나중에 '오늘의 판'·서버 검사에서 기기마다 같은 결과가 나오게.
 // createBall(el, O) → { start, destroy }
-import { store } from './util.js';
+import { store, pauseBudget, pauseOutMsg } from './util.js';
 import { BALL_MAX } from './rec-score.js';
 import { makeSfx, sndBtnHtml, bindSnd } from './sfx.js';
 
@@ -24,11 +26,12 @@ const INK = '#2a2846';
 
 export function createBall(el, O = {}) {
   el.innerHTML = `<div class="bl"><div class="bl-wrap"><canvas class="bl-cv"></canvas><div class="bl-ov" hidden></div></div>
-    <div class="bl-bar"><span class="bl-help">끌어서 위치 · 떼면 떨어뜨리기 · 키보드 ←→ / Space</span>${sndBtnHtml('blSnd')}</div></div>`;
-  const cv = el.querySelector('.bl-cv'), ctx = cv.getContext('2d'), ov = el.querySelector('.bl-ov');
+    <div class="bl-bar"><span class="bl-help">끌어서 위치 · 떼면 떨어뜨리기 · 키보드 ←→ / Space · P 멈춤</span><button type="button" class="btn ghost bl-pz">멈춤</button>${sndBtnHtml('blSnd')}</div></div>`;
+  const cv = el.querySelector('.bl-cv'), ctx = cv.getContext('2d'), ov = el.querySelector('.bl-ov'), pzBtn = el.querySelector('.bl-pz');
+  const pb = pauseBudget();
   const S = makeSfx('sg_ball_snd'); bindSnd(el.querySelector('#blSnd'), S);
   let best = +store.get('ball_best', 0) || 0;
-  let nDrop = 0, balls, score, cur, next, dropX, cool, over, paused, maxLv, alive = true, raf = 0, last = 0, acc = 0, keyDir = 0, dirty = true, seq = 0;
+  let nDrop = 0, nMerge = 0, nGym = 0, want = false, overBall = null, pops = [], balls, score, cur, next, dropX, cool, over, paused, maxLv, alive = true, raf = 0, last = 0, acc = 0, keyDir = 0, dirty = true, seq = 0;
   let scale = 1, dpr = 1;
   const sprites = new Map();
 
@@ -114,13 +117,16 @@ export function createBall(el, O = {}) {
   // ── 판 ──
   const pick = () => { const r = Math.random(); return r < .26 ? 0 : r < .5 ? 1 : r < .72 ? 2 : r < .88 ? 3 : 4; };   // 작은 공이 조금 더 자주
   function reset() {
-    nDrop = 0; O.rk?.seed();   // 판마다 기록실 시작 티켓(2026-11-09)
+    nDrop = 0; nMerge = 0; nGym = 0; want = false; overBall = null; pops = []; fx = []; msg = null; lineWarn = 0;
+    pb.reset(); pzBtn.disabled = false; O.rk?.seed();   // 판마다 기록실 시작 티켓(2026-11-09)
     balls = []; score = 0; cur = pick(); next = pick(); dropX = (L + R) / 2; cool = 0; over = false; paused = false; maxLv = 0; acc = 0; last = 0;
     ov.hidden = true; dirty = true;
   }
   const clampX = x => { const r = BALLS[cur][1]; return Math.max(L + r, Math.min(R - r, x)); };
   function drop() {
-    if (over || paused || cool > 0) return;
+    if (over || paused) return;
+    if (cool > 0) { want = true; return; }   // 쿨타임 중 놓으면 끝나는 순간 떨어뜨림(손을 뗐는데 안 떨어지던 것)
+    want = false;
     const r = BALLS[cur][1];
     balls.push({ x: clampX(dropX) + ((seq * 37) % 9 - 4) * .03, y: DROP_Y,   // 같은 자리에 계속 놓아도 탑처럼 서지 않게 아주 작은 어긋남(씨앗 없이 순서로만 정해짐)
       vx: 0, vy: 0, w: 0, lv: cur, r, R: r, a: 0, age: 0, top: 0, grow: 1, id: ++seq });
@@ -177,10 +183,11 @@ export function createBall(el, O = {}) {
     if (merges.length) {
       for (const [a, b] of merges) {
         const lv = a.lv + 1, x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
-        if (lv >= BALLS.length) { score += VANISH; burst(x, y, BALLS.length - 1, 24); S.tone(880, .25, 'triangle', .06); S.tone(1320, .3, 'triangle', .05, .08); continue; }
+        nMerge++;
+        if (lv >= BALLS.length) { nGym++; gain(x, y, VANISH); score += VANISH; burst(x, y, BALLS.length - 1, 24); S.tone(880, .25, 'triangle', .06); S.tone(1320, .3, 'triangle', .05, .08); continue; }
         const R2 = BALLS[lv][1];
         balls.push({ x: Math.max(L + R2 * .5, Math.min(R - R2 * .5, x)), y: Math.min(FLOOR - R2 * .5, y), vx: (a.vx + b.vx) / 2, vy: (a.vy + b.vy) / 2, w: (a.w + b.w) / 2, lv, r: R2 * .5, R: R2, a: (a.a + b.a) / 2, age: .4, top: 0, grow: 0, id: ++seq });
-        score += BALLS[lv][2]; if (lv > maxLv) maxLv = lv;
+        score += BALLS[lv][2]; gain(x, y, BALLS[lv][2]); if (lv > maxLv) maxLv = lv;
         burst(x, y, lv, 8 + lv); S.tone(700 - lv * 40, .09, 'sine', .07, 0, 980 - lv * 45);
         if (lv === BALLS.length - 1) pop('짐볼 완성!');
       }
@@ -189,7 +196,7 @@ export function createBall(el, O = {}) {
     // 끝 판정: 떨어진 지 1초 지난 공이 선 위에 1.5초 이상
     let warn = 0;
     for (const b of balls) {
-      if (b.age > 1 && b.y - b.r < LINE) { b.top += DT; warn = Math.max(warn, b.top); if (b.top > OVER_T) { gameOver(); return; } } else b.top = 0;
+      if (b.age > 1 && b.y - b.r < LINE) { b.top += DT; warn = Math.max(warn, b.top); if (b.top > OVER_T) { overBall = b; gameOver(); return; } } else b.top = 0;
     }
     lineWarn = warn;
   }
@@ -216,19 +223,24 @@ export function createBall(el, O = {}) {
   function burst(x, y, lv, n) { for (let i = 0; i < n; i++) { const t = i / n * 6.283, sp = 90 + (i * 37 % 60) + lv * 12; fx.push({ x, y, vx: sp * dirX(t), vy: sp * dirY(t) - 60, life: .45, c: ['#ffd25e', '#8fd3ff', '#ffffff', '#ff8aa8'][i % 4] }); } }
   const dirX = t => Math.cos(t), dirY = t => Math.sin(t);   // 화면 효과 전용(물리에는 안 씀)
   function pop(text) { msg = { text, t: 1.4 }; }
+  function gain(x, y, v) { if (v > 0) pops.push({ x, y, v, t: .8 }); }   // 합친 자리에서 떠오르는 +점수
   function gameOver() {
-    over = true; dirty = true;
+    over = true; dirty = true; pb.off(); paused = false; pzBtn.disabled = true; want = false;
     const nb = score > best; if (nb) { best = score; store.set('ball_best', best); }
     S.tone(300, .3, 'sawtooth', .04, 0, 120);
     ov.innerHTML = `<div class="bl-card"><b class="bl-t">창고가 꽉 찼어요!</b><p class="bl-sc">${score.toLocaleString()}점</p>
       <p class="bl-sub">${nb ? '<em>내 최고 기록 경신!</em>' : `내 최고 ${best.toLocaleString()}점`} · 가장 큰 공 ${BALLS[maxLv][0]}</p>
-      <button type="button" class="btn big" data-bl-again>다시 하기</button><p class="bl-note">${O.rk && score > 0 ? '기록실에 저장 중…' : '기록은 이 기기에만 저장돼요'}</p></div>`;
+      <p class="bl-sub">떨어뜨린 공 ${nDrop}개 · 합친 횟수 ${nMerge}번${nGym ? ` · 짐볼 터뜨림 ${nGym}번` : ''}</p>
+      <button type="button" class="btn big" data-bl-again>다시 하기</button><p class="bl-note">Space·Enter로 바로 다시</p><p class="bl-note">${O.rk && score > 0 ? '기록실에 저장 중…' : '기록은 이 기기에만 저장돼요'}</p></div>`;
     ov.hidden = false;
     if (O.rk && score > 0) O.rk.done(BALL_MAX - score, [score, nDrop, maxLv]).then(m => { const n = ov.querySelector('.bl-note'); if (n && m) n.textContent = m; });
   }
   function pause(on) {
-    if (over || paused === on) return; paused = on; dirty = true;
-    ov.innerHTML = on ? '<div class="bl-card"><b class="bl-t">잠깐 멈춤</b><button type="button" class="btn big" data-bl-go>계속하기</button></div>' : '';
+    if (over || paused === on) return;
+    if (!on && pb.out()) return;   // 다 쓴 판은 frame에서 끝냄
+    paused = on; dirty = true; down = false; keyDir = 0; pzBtn.textContent = on ? '계속' : '멈춤';
+    if (on) pb.on(); else pb.off();
+    ov.innerHTML = on ? `<div class="bl-card"><b class="bl-t">잠깐 멈춤</b>${pb.html()}<button type="button" class="btn big" data-bl-go>계속하기</button><p class="bl-note">Space·Enter로도 계속</p></div>` : '';
     ov.hidden = !on; if (!on) last = 0;
   }
 
@@ -249,6 +261,10 @@ export function createBall(el, O = {}) {
       ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.scale(k, k);
       ctx.drawImage(sp.c, -sp.half, -sp.half, sp.half * 2, sp.half * 2); ctx.restore();
     }
+    // 넘친 공 표시(끝난 판)
+    if (over && overBall) { ctx.lineWidth = 4; ctx.strokeStyle = '#ff4d4d'; ctx.beginPath(); ctx.arc(overBall.x, overBall.y, overBall.r + 4, 0, 7); ctx.stroke(); }
+    // 위험: 선 위에 머무는 공은 빨갛게 깜빡
+    if (!over && lineWarn > 0 && blink) { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,77,77,.85)'; for (const b of balls) if (b.top > 0) { ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 2, 0, 7); ctx.stroke(); } }
     // 효과
     for (const p of fx) { ctx.globalAlpha = Math.max(0, p.life / .45); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1;
@@ -280,6 +296,13 @@ export function createBall(el, O = {}) {
       ctx.save(); ctx.translate(cx, y0); ctx.scale(k, k); ctx.drawImage(sp.c, -sp.half, -sp.half, sp.half * 2, sp.half * 2); ctx.restore();
     });
     ctx.globalAlpha = 1;
+    // +점수
+    if (pops.length) { ctx.textAlign = 'center'; ctx.font = '400 22px Jua, Pretendard, sans-serif'; ctx.lineWidth = 5; ctx.strokeStyle = '#fff'; ctx.fillStyle = '#3d7bff';
+      for (const p of pops) { const y = p.y - (.8 - p.t) * 50; ctx.globalAlpha = Math.min(1, p.t / .3); ctx.strokeText('+' + p.v, p.x, y); ctx.fillText('+' + p.v, p.x, y); }
+      ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
+    // 처음 안내(첫 공을 떨어뜨리기 전)
+    if (!over && nDrop === 0) { ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(42,40,70,.55)'; ctx.font = '600 15px Pretendard, sans-serif';
+      ctx.fillText('같은 공끼리 닿으면 더 큰 공으로 합쳐져요', W / 2, 380); ctx.fillText('점선 위로 넘친 채 1.5초가 지나면 끝!', W / 2, 404); ctx.textAlign = 'left'; }
     // 가운데 글자(짐볼 완성 등)
     if (msg) { ctx.globalAlpha = Math.min(1, msg.t / .4); ctx.textAlign = 'center'; ctx.font = '400 34px Jua, Pretendard, sans-serif';
       ctx.lineWidth = 7; ctx.strokeStyle = '#fff'; ctx.strokeText(msg.text, W / 2, 300); ctx.fillStyle = '#7a4bff'; ctx.fillText(msg.text, W / 2, 300); ctx.textAlign = 'left'; ctx.globalAlpha = 1; }
@@ -291,13 +314,15 @@ export function createBall(el, O = {}) {
     const dt = last ? Math.min(.1, (t - last) / 1000) : 0; last = t;
     if (!over && !paused) {
       if (keyDir) dropX = clampX(dropX + keyDir * 320 * dt);
-      if (cool > 0) cool -= dt;
+      if (cool > 0) { cool -= dt; if (cool <= 0 && want) drop(); }
       acc += dt; let n = 0;
       while (acc >= DT && n < 12) { step(); acc -= DT; n++; if (over) break; }
       if (n === 12) acc = 0;
     }
     for (const p of fx) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt; }
     fx = fx.filter(p => p.life > 0); if (msg && (msg.t -= dt) <= 0) msg = null;
+    if (pops.length) { for (const p of pops) p.t -= dt; pops = pops.filter(p => p.t > 0); }
+    if (paused) { pb.paint(); if (pb.out()) { paused = false; gameOver(); pauseOutMsg(); } }
     if (!paused || dirty) { draw(); dirty = false; }
   }
 
@@ -312,7 +337,7 @@ export function createBall(el, O = {}) {
   const typing = e => e.target.closest?.('input,textarea,select,[contenteditable]') || document.querySelector('.modal.open');
   const kd = e => {
     if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (paused) { if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); pause(false); } return; }
+    if (paused) { if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyP') { e.preventDefault(); pause(false); } return; }
     if (over) { if (!e.repeat && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); reset(); } return; }
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') { keyDir = -1; e.preventDefault(); }
     else if (e.code === 'ArrowRight' || e.code === 'KeyD') { keyDir = 1; e.preventDefault(); }
@@ -322,6 +347,7 @@ export function createBall(el, O = {}) {
   const ku = e => { if ((e.code === 'ArrowLeft' || e.code === 'KeyA') && keyDir < 0) keyDir = 0; if ((e.code === 'ArrowRight' || e.code === 'KeyD') && keyDir > 0) keyDir = 0; };
   const vis = () => { if (document.hidden) pause(true); };
   const blur = () => pause(true);
+  pzBtn.addEventListener('click', () => { pzBtn.blur(); pause(!paused); });
   ov.addEventListener('click', e => { if (e.target.closest('[data-bl-again]')) reset(); else if (e.target.closest('[data-bl-go]')) pause(false); });
   addEventListener('keydown', kd); addEventListener('keyup', ku); document.addEventListener('visibilitychange', vis); addEventListener('blur', blur);
 
@@ -332,6 +358,6 @@ export function createBall(el, O = {}) {
       alive = false; cancelAnimationFrame(raf);
       removeEventListener('keydown', kd); removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis); removeEventListener('blur', blur);
     },
-    get state() { return { score, balls: balls.length, over, maxLv, spd: Math.round(Math.max(0, ...balls.map(b => Math.hypot(b.vx, b.vy)))) }; },   // 검사용
+    get state() { return { score, balls: balls.length, over, paused, nDrop, nMerge, maxLv, spd: Math.round(Math.max(0, ...balls.map(b => Math.hypot(b.vx, b.vy)))) }; },   // 검사용
   };
 }
