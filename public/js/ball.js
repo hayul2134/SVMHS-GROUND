@@ -2,6 +2,8 @@
 // 같은 공 두 개가 닿으면 다음 공으로 합쳐짐. 공이 위쪽 선 위에 1.5초 머물면 끝. 기록은 기록실(O.rk, 티어·뽑기권 X) + 이 기기 최고(sg_ball_best).
 // 2026-11-10 출시 준비: 멈춤 한 판 30초(pauseBudget — 화면 숨김·창 벗어남 포함, 넘으면 판 끝·기록 저장) · 멈춤 버튼(태블릿) · 쿨타임 중 놓으면 예약 투하
 //   · 합칠 때 +점수 글자 · 처음 안내 · 끝난 판에 넘친 공 표시와 판 기록(합친 횟수·떨어뜨린 공·짐볼 수)
+// 2026-11-10 출시 전 점검: 위 줄(점수·다음 공)이 떨어뜨릴 공과 겹치던 것(화면 위로 OY만큼 자리) · 다크 테마 글자색 · 끝난 직후 Space 연타로 결과를 건너뛰던 것(0.7초)
+//   · 기록실 저장 결과가 엉뚱한 줄에 쓰이던 것 · 합쳐진 공의 접촉이 그 스텝에 남던 것 · 스크롤하면 판 크기가 바뀌던 것 · 멈춰 있을 땐 다시 안 그림
 // 물리는 직접 구현(고정 스텝 1/120초, 원끼리만, 삼각함수 없음) → 나중에 '오늘의 판'·서버 검사에서 기기마다 같은 결과가 나오게.
 // createBall(el, O) → { start, destroy }
 import { store, pauseBudget, pauseOutMsg } from './util.js';
@@ -16,7 +18,7 @@ export const BALLS = [
   ['축구공', 63.2, 36, 'soccer'], ['농구공', 78.6, 45, 'basket'], ['짐볼', 92.5, 55, 'gym'],
 ];
 const VANISH = 66;             // 짐볼 두 개가 만나면 둘 다 사라지고 받는 점수
-const W = 440, H = 708;        // 캔버스 논리 크기
+const W = 440, OY = 24, H = 708 + OY;   // 캔버스 논리 크기(OY = 위 점수 줄 자리 — 판 좌표는 그대로 두고 그릴 때만 내림)
 const L = 20, R = 420, FLOOR = 650, LINE = 112, DROP_Y = 62;
 // 물리(원작처럼: 진짜 회전·마찰로 굴러 떨어짐, 살짝 통통 튐, 합쳐진 공이 부풀며 주변을 밀어냄, 무거운 더미는 살짝 눌림)
 // 순차 충격량 방식(속도 반복 VIT번 + 위치 보정 PIT번) — 삼각함수 없이 sqrt만 → 기기마다 같은 결과
@@ -26,13 +28,13 @@ const INK = '#2a2846';
 
 export function createBall(el, O = {}) {
   el.innerHTML = `<div class="bl"><div class="bl-wrap"><canvas class="bl-cv"></canvas><div class="bl-ov" hidden></div></div>
-    <div class="bl-bar"><span class="bl-help">끌어서 위치 · 떼면 떨어뜨리기 · 키보드 ←→ / Space · P 멈춤</span><button type="button" class="btn ghost bl-pz">멈춤</button>${sndBtnHtml('blSnd')}</div></div>`;
+    <div class="bl-bar"><span class="bl-help">끌어서 위치 · 떼면 떨어뜨리기<span class="bl-kb"> · 키보드 ←→ / Space · P 멈춤</span></span><button type="button" class="btn ghost bl-pz">멈춤</button>${sndBtnHtml('blSnd')}</div></div>`;
   const cv = el.querySelector('.bl-cv'), ctx = cv.getContext('2d'), ov = el.querySelector('.bl-ov'), pzBtn = el.querySelector('.bl-pz');
   const pb = pauseBudget();
   const S = makeSfx('sg_ball_snd'); bindSnd(el.querySelector('#blSnd'), S);
   let best = +store.get('ball_best', 0) || 0;
-  let nDrop = 0, nMerge = 0, nGym = 0, want = false, overBall = null, pops = [], balls, score, cur, next, dropX, cool, over, paused, maxLv, alive = true, raf = 0, last = 0, acc = 0, keyDir = 0, dirty = true, seq = 0;
-  let scale = 1, dpr = 1;
+  let nDrop = 0, nMerge = 0, nGym = 0, want = false, overBall = null, pops = [], balls, score, cur, next, dropX, cool, over, paused, maxLv, alive = true, raf = 0, last = 0, acc = 0, keyDir = 0, dirty = true, seq = 0, overAt = 0, saveSeq = 0, fitN = 0, nDraw = 0;
+  let scale = 1, dpr = 1, ink = INK, sub = '#7a7a99';
   const sprites = new Map();
 
   // ── 공 그림(한 번 그려서 캐시, 회전만 해서 붙임) ──
@@ -102,12 +104,16 @@ export function createBall(el, O = {}) {
   }
 
   // ── 크기 맞추기: 화면에 남은 높이 안에 통째로 ──
-  function fit() {
+  function fit(force) {
+    if (!force && cv.width && fitN++ % 20) return;   // 배치 계산은 가끔만(창 크기·테마가 바뀌면 바로)
     const wrap = el.querySelector('.bl-wrap'); if (!wrap) return;
-    const top = wrap.getBoundingClientRect().top, bar = el.querySelector('.bl-bar')?.offsetHeight || 0;
+    const cs = getComputedStyle(cv); if (cs.color && cs.color !== ink) { ink = cs.color; dirty = true; }
+    const sc = cs.getPropertyValue('--sub').trim(); if (sc && sc !== sub) { sub = sc; dirty = true; }
+    // 기준은 게임 칸(.parea) 위쪽 — 판 자신의 위치로 재면 가운데 맞춤 때문에 크기↔위치가 서로 물려 프레임마다 크기가 바뀜(공 그림을 계속 새로 그림)
+    const top = (el.closest('.parea') || el).getBoundingClientRect().top + (window.scrollY || 0), bar = el.querySelector('.bl-bar')?.offsetHeight || 0;
     const avH = Math.max(320, innerHeight - top - bar - 90), avW = Math.max(240, el.clientWidth || 360);
     const ns = Math.min(avW / W, avH / H, 1.6), nd = Math.min(2, window.SG_DPR || devicePixelRatio || 1);
-    if (Math.abs(ns - scale) < .001 && nd === dpr && cv.width) return;
+    if (Math.abs(ns - scale) < .004 && nd === dpr && cv.width) return;   // 1~2px 차이로는 다시 안 맞춤
     scale = ns; dpr = nd; sprites.clear();
     cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
     cv.style.width = Math.round(W * scale) + 'px'; cv.style.height = Math.round(H * scale) + 'px';
@@ -117,7 +123,7 @@ export function createBall(el, O = {}) {
   // ── 판 ──
   const pick = () => { const r = Math.random(); return r < .26 ? 0 : r < .5 ? 1 : r < .72 ? 2 : r < .88 ? 3 : 4; };   // 작은 공이 조금 더 자주
   function reset() {
-    nDrop = 0; nMerge = 0; nGym = 0; want = false; overBall = null; pops = []; fx = []; msg = null; lineWarn = 0;
+    nDrop = 0; nMerge = 0; nGym = 0; want = false; overBall = null; pops = []; fx = []; msg = null; lineWarn = 0; saveSeq++;
     pb.reset(); pzBtn.disabled = false; O.rk?.seed();   // 판마다 기록실 시작 티켓(2026-11-09)
     balls = []; score = 0; cur = pick(); next = pick(); dropX = (L + R) / 2; cool = 0; over = false; paused = false; maxLv = 0; acc = 0; last = 0;
     ov.hidden = true; dirty = true;
@@ -160,7 +166,8 @@ export function createBall(el, O = {}) {
       if (a.y + a.r > FLOOR - MARGIN) cs.push(contact(a, null, 0, 1, a.y + a.r - FLOOR));
     }
     // ③ 속도 풀기: 수직 충격량(반발 E) + 마찰 충격량(쿨롱 MU, 접점에서 회전을 만들어 굴러가게)
-    for (let it = 0; it < VIT; it++) for (const c of cs) solve(c);
+    const live = merges.length ? cs.filter(c => !c.a.dead && !(c.b && c.b.dead)) : cs;   // 이번 스텝에 합쳐져 사라진 공과의 접촉은 풀지 않음
+    for (let it = 0; it < VIT; it++) for (const c of live) solve(c);
     // ④ 위치·회전 적분
     for (const b of balls) { if (b.dead) continue; b.x += b.vx * DT; b.y += b.vy * DT; b.a += b.w * DT; }
     // ⑤ 겹침 보정(SLOP만큼은 남겨 무거운 더미가 살짝 눌린 느낌)
@@ -219,21 +226,28 @@ export function createBall(el, O = {}) {
     a.vx -= tx * dt * ia; a.vy -= ty * dt * ia; a.w -= 2 * ia * dt / a.r;
     if (b) { b.vx += tx * dt * ib; b.vy += ty * dt * ib; b.w -= 2 * ib * dt / b.r; }
   }
-  let lineWarn = 0, fx = [], msg = null;
+  let lineWarn = 0, wasWarn = false, drawnX = -1, fx = [], msg = null;
+  // 지난번 그린 뒤로 공이 눈에 보일 만큼 움직였는지(새 공은 px가 없어 늘 참)
+  function moved() {
+    let m = false;
+    for (const b of balls) if (!(Math.abs(b.x - b.px) <= .25 && Math.abs(b.y - b.py) <= .25 && Math.abs(b.a - b.pa) <= .01 && b.r === b.pr)) { m = true; b.px = b.x; b.py = b.y; b.pa = b.a; b.pr = b.r; }
+    return m;
+  }
   function burst(x, y, lv, n) { for (let i = 0; i < n; i++) { const t = i / n * 6.283, sp = 90 + (i * 37 % 60) + lv * 12; fx.push({ x, y, vx: sp * dirX(t), vy: sp * dirY(t) - 60, life: .45, c: ['#ffd25e', '#8fd3ff', '#ffffff', '#ff8aa8'][i % 4] }); } }
   const dirX = t => Math.cos(t), dirY = t => Math.sin(t);   // 화면 효과 전용(물리에는 안 씀)
   function pop(text) { msg = { text, t: 1.4 }; }
   function gain(x, y, v) { if (v > 0) pops.push({ x, y, v, t: .8 }); }   // 합친 자리에서 떠오르는 +점수
   function gameOver() {
-    over = true; dirty = true; pb.off(); paused = false; pzBtn.disabled = true; want = false;
+    over = true; overAt = performance.now(); dirty = true; pb.off(); paused = false; pzBtn.disabled = true; want = false;
     const nb = score > best; if (nb) { best = score; store.set('ball_best', best); }
     S.tone(300, .3, 'sawtooth', .04, 0, 120);
     ov.innerHTML = `<div class="bl-card"><b class="bl-t">창고가 꽉 찼어요!</b><p class="bl-sc">${score.toLocaleString()}점</p>
       <p class="bl-sub">${nb ? '<em>내 최고 기록 경신!</em>' : `내 최고 ${best.toLocaleString()}점`} · 가장 큰 공 ${BALLS[maxLv][0]}</p>
       <p class="bl-sub">떨어뜨린 공 ${nDrop}개 · 합친 횟수 ${nMerge}번${nGym ? ` · 짐볼 터뜨림 ${nGym}번` : ''}</p>
-      <button type="button" class="btn big" data-bl-again>다시 하기</button><p class="bl-note">Space·Enter로 바로 다시</p><p class="bl-note">${O.rk && score > 0 ? '기록실에 저장 중…' : '기록은 이 기기에만 저장돼요'}</p></div>`;
+      <button type="button" class="btn big" data-bl-again>다시 하기</button><p class="bl-note">Space·Enter로 바로 다시</p><p class="bl-note bl-save">${O.rk && score > 0 ? '기록실에 저장 중…' : score > 0 ? '기록은 이 기기에만 저장돼요' : ''}</p></div>`;
     ov.hidden = false;
-    if (O.rk && score > 0) O.rk.done(BALL_MAX - score, [score, nDrop, maxLv]).then(m => { const n = ov.querySelector('.bl-note'); if (n && m) n.textContent = m; });
+    const my = ++saveSeq;   // 저장이 끝나기 전에 새 판을 시작했으면 그 판 화면엔 쓰지 않음
+    if (O.rk && score > 0) O.rk.done(BALL_MAX - score, [score, nDrop, maxLv]).catch(() => '').then(m => { const n = ov.querySelector('.bl-save'); if (n && my === saveSeq) n.textContent = m || '기록실에 저장하지 못했어요 · 이 기기 최고 기록엔 남아요'; });
   }
   function pause(on) {
     if (over || paused === on) return;
@@ -246,7 +260,16 @@ export function createBall(el, O = {}) {
 
   // ── 그리기 ──
   function draw() {
+    nDraw++;
     const s = scale * dpr; ctx.setTransform(s, 0, 0, s, 0, 0); ctx.clearRect(0, 0, W, H);
+    // 위 줄: 점수·최고 · 다음 공 (떨어뜨릴 공과 안 겹치게 판 위 OY 자리에)
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    ctx.fillStyle = ink; ctx.font = '700 13px Pretendard, sans-serif'; ctx.fillText('점수', L, 16);
+    ctx.fillStyle = sub; ctx.font = '600 12px Pretendard, sans-serif'; ctx.fillText('최고 ' + best.toLocaleString(), L + 34, 16);
+    ctx.fillStyle = ink; ctx.font = '400 30px Jua, Pretendard, sans-serif'; ctx.fillText(score.toLocaleString(), L, 46);
+    ctx.textAlign = 'right'; ctx.font = '700 13px Pretendard, sans-serif'; ctx.fillText('다음', R - 48, 35); ctx.textAlign = 'left';
+    { const sp = sprite(next), k = 20 / BALLS[next][1], cx = R - 22, cy = 30; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.drawImage(sp.c, -sp.half, -sp.half, sp.half * 2, sp.half * 2); ctx.restore(); }
+    ctx.translate(0, OY);   // 여기부터 판 좌표
     // 창고 안 벽(나무 판자)
     ctx.fillStyle = '#eef5ff'; ctx.fillRect(L, LINE - 26, R - L, FLOOR - LINE + 26);
     ctx.strokeStyle = 'rgba(61,123,255,.08)'; ctx.lineWidth = 1;
@@ -273,13 +296,6 @@ export function createBall(el, O = {}) {
     ctx.beginPath(); ctx.moveTo(L - 5, LINE - 26); ctx.lineTo(L - 5, FLOOR + 5); ctx.lineTo(R + 5, FLOOR + 5); ctx.lineTo(R + 5, LINE - 26); ctx.stroke();
     ctx.lineWidth = 7; ctx.strokeStyle = '#c98a4b';
     ctx.beginPath(); ctx.moveTo(L - 5, LINE - 26); ctx.lineTo(L - 5, FLOOR + 5); ctx.lineTo(R + 5, FLOOR + 5); ctx.lineTo(R + 5, LINE - 26); ctx.stroke();
-    // 위 줄: 점수 · 다음 공
-    ctx.fillStyle = INK; ctx.textBaseline = 'alphabetic';
-    ctx.font = '700 13px Pretendard, sans-serif'; ctx.fillText('점수', L, 22);
-    ctx.font = '400 30px Jua, Pretendard, sans-serif'; ctx.fillText(score.toLocaleString(), L, 52);
-    ctx.font = '600 12px Pretendard, sans-serif'; ctx.fillStyle = '#7a7a99'; ctx.fillText('최고 ' + best.toLocaleString(), L, 70);
-    ctx.textAlign = 'right'; ctx.fillStyle = INK; ctx.font = '700 13px Pretendard, sans-serif'; ctx.fillText('다음', R, 22); ctx.textAlign = 'left';
-    { const sp = sprite(next), k = 22 / BALLS[next][1], cx = R - 26, cy = 50; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.drawImage(sp.c, -sp.half, -sp.half, sp.half * 2, sp.half * 2); ctx.restore(); }
     // 떨어뜨릴 공 + 안내선
     if (!over) {
       const x = clampX(dropX), r = BALLS[cur][1];
@@ -291,7 +307,7 @@ export function createBall(el, O = {}) {
     // 아래: 공 진화 순서
     const y0 = FLOOR + 32, gap = (R - L) / BALLS.length;
     BALLS.forEach((bb, i) => {
-      const sp = sprite(i), k = Math.min(1, (7 + i * 1.1) / bb[1]), cx = L + gap * (i + .5);
+      const sp = sprite(i), k = Math.min(1, (7 + i * .8) / bb[1]), cx = L + gap * (i + .5);
       ctx.globalAlpha = i <= Math.max(4, maxLv) ? 1 : .3;
       ctx.save(); ctx.translate(cx, y0); ctx.scale(k, k); ctx.drawImage(sp.c, -sp.half, -sp.half, sp.half * 2, sp.half * 2); ctx.restore();
     });
@@ -314,16 +330,17 @@ export function createBall(el, O = {}) {
     const dt = last ? Math.min(.1, (t - last) / 1000) : 0; last = t;
     if (!over && !paused) {
       if (keyDir) dropX = clampX(dropX + keyDir * 320 * dt);
-      if (cool > 0) { cool -= dt; if (cool <= 0 && want) drop(); }
+      if (cool > 0) { cool -= dt; if (cool <= 0) { dirty = true; if (want) drop(); } }
       acc += dt; let n = 0;
       while (acc >= DT && n < 12) { step(); acc -= DT; n++; if (over) break; }
       if (n === 12) acc = 0;
     }
+    const anim = fx.length || pops.length || msg || lineWarn > 0 || wasWarn || dropX !== drawnX; wasWarn = lineWarn > 0;   // 움직이는 게 없으면 다시 안 그림(가만히 둔 판에서 배터리·발열 줄이기)
     for (const p of fx) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt; }
     fx = fx.filter(p => p.life > 0); if (msg && (msg.t -= dt) <= 0) msg = null;
     if (pops.length) { for (const p of pops) p.t -= dt; pops = pops.filter(p => p.t > 0); }
     if (paused) { pb.paint(); if (pb.out()) { paused = false; gameOver(); pauseOutMsg(); } }
-    if (!paused || dirty) { draw(); dirty = false; }
+    if (moved() || anim || dirty) { draw(); dirty = false; drawnX = dropX; }
   }
 
   // ── 입력 ──
@@ -338,26 +355,30 @@ export function createBall(el, O = {}) {
   const kd = e => {
     if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
     if (paused) { if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyP') { e.preventDefault(); pause(false); } return; }
-    if (over) { if (!e.repeat && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); reset(); } return; }
+    if (over) { if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); if (!e.repeat && again()) reset(); } return; }
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') { keyDir = -1; e.preventDefault(); }
     else if (e.code === 'ArrowRight' || e.code === 'KeyD') { keyDir = 1; e.preventDefault(); }
     else if (!e.repeat && (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowDown' || e.code === 'KeyS')) { e.preventDefault(); drop(); }
     else if (e.code === 'KeyP' || e.code === 'Escape') pause(true);
   };
   const ku = e => { if ((e.code === 'ArrowLeft' || e.code === 'KeyA') && keyDir < 0) keyDir = 0; if ((e.code === 'ArrowRight' || e.code === 'KeyD') && keyDir > 0) keyDir = 0; };
-  const vis = () => { if (document.hidden) pause(true); };
-  const blur = () => pause(true);
+  const idle = () => !nDrop && !balls.length;   // 아직 아무것도 안 떨어뜨렸으면 멈출 게 없음(멈춤 30초를 쓰지 않게)
+  const vis = () => { if (document.hidden && !idle()) pause(true); };
+  const blur = () => { if (!idle()) pause(true); };
+  const rs = () => fit(true);
   pzBtn.addEventListener('click', () => { pzBtn.blur(); pause(!paused); });
-  ov.addEventListener('click', e => { if (e.target.closest('[data-bl-again]')) reset(); else if (e.target.closest('[data-bl-go]')) pause(false); });
-  addEventListener('keydown', kd); addEventListener('keyup', ku); document.addEventListener('visibilitychange', vis); addEventListener('blur', blur);
+  const again = () => performance.now() - overAt > 700;   // 떨어뜨리려고 연타하던 Space·탭이 결과 화면을 바로 넘기지 않게
+  ov.addEventListener('click', e => { if (e.target.closest('[data-bl-again]')) { if (again()) reset(); } else if (e.target.closest('[data-bl-go]')) pause(false); });
+  addEventListener('keydown', kd); addEventListener('keyup', ku); document.addEventListener('visibilitychange', vis); addEventListener('blur', blur); addEventListener('resize', rs);
+  const mo = new MutationObserver(rs); mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });   // 테마·전체 화면·가벼운 모드
 
   reset();
   return {
-    start() { fit(); raf = requestAnimationFrame(frame); },
+    start() { fit(true); raf = requestAnimationFrame(frame); },
     destroy() {
       alive = false; cancelAnimationFrame(raf);
-      removeEventListener('keydown', kd); removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis); removeEventListener('blur', blur);
+      removeEventListener('keydown', kd); removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis); removeEventListener('blur', blur); removeEventListener('resize', rs); mo.disconnect();
     },
-    get state() { return { score, balls: balls.length, over, paused, nDrop, nMerge, maxLv, spd: Math.round(Math.max(0, ...balls.map(b => Math.hypot(b.vx, b.vy)))) }; },   // 검사용
+    get state() { return { score, balls: balls.length, over, paused, nDrop, nMerge, maxLv, nDraw, spd: Math.round(Math.max(0, ...balls.map(b => Math.hypot(b.vx, b.vy)))) }; },   // 검사용
   };
 }

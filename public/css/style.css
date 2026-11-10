@@ -7008,17 +7008,19 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .jd-wrap:fullscreen.tp-s{place-content:center}
 .bl{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
 .bl-wrap{position:relative;line-height:0}
-.bl-cv{display:block;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}
+.bl-cv{display:block;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;color:var(--text,#2a2846)}   /* color = 캔버스 위 줄(점수·다음) 글자색 — ball.js fit이 읽음(다크 테마) */
 .bl-ov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(238,245,255,.55);backdrop-filter:blur(2px);line-height:1.4}
 .bl-ov[hidden]{display:none}
+:root[data-theme="dark"] .bl-ov{background:rgba(8,18,36,.6)}
+.bl-card .pbleft{font-style:normal;font-weight:800;font-size:13px;color:#e0463c}
 .bl-card{background:var(--card,#fff);border:2.5px solid var(--ink,#2a2846);border-radius:20px;box-shadow:4px 5px 0 var(--ink,#2a2846);padding:20px 26px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:86%}
 .bl-t{font:400 24px Jua,var(--font,sans-serif)}
 .bl-sc{font:400 38px Jua,var(--font,sans-serif);color:#3d7bff;margin:0}
 .bl-sub{margin:0 0 6px;font-size:13px;color:var(--sub,#6a6a88)}
 .bl-sub em{font-style:normal;color:#e0463c;font-weight:800}
 .bl-note{margin:4px 0 0;font-size:11px;color:var(--sub,#8a8aa8)}
-.bl-bar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub,#6a6a88)}
-@media (max-width:520px){.bl-help{font-size:11px}}
+.bl-bar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 10px;font-size:12px;color:var(--sub,#6a6a88)}
+@media (max-width:600px){.bl-help{font-size:11px}.bl-kb{display:none}}
 /* 영상고 랩 배틀(rhythm.js, 깃발 rhythm-game) — 2차: FNF식 메뉴·전체 화면 */
 .rb{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
 .rb-wrap{position:relative;line-height:0;border:2.5px solid var(--ink,#2a2846);border-radius:18px;overflow:hidden;box-shadow:4px 5px 0 var(--ink,#2a2846);background:#1a2150}
@@ -7150,6 +7152,7 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 html.lite header::before{-webkit-backdrop-filter:none;backdrop-filter:none;background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 97%,transparent) 0%,color-mix(in srgb,var(--bg) 92%,transparent) 60%,transparent 100%)}
 html.lite .cheer{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(8,10,22,.86)}
 html.lite .bl-ov{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(238,245,255,.8)}
+html.lite:root[data-theme="dark"] .bl-ov{background:rgba(8,18,36,.82)}
 html.lite .skel,html.lite .hl-card.ghost,html.lite .hl-one::after,
 html.lite .pcard.c-xaurora .pban,html.lite .pcard.c-xholo .pban,
 html.lite .pcard.dev,html.lite .pcard.dev .pban,html.lite .av.avdev::before,html.lite .pcard.dev .pname,html.lite .pcard.dev .chip.dev,html.lite .ptitle.dev span,html.lite .pcard.dev .pact .btn.lime,html.lite .pcard.dev .pside .pstreak,
