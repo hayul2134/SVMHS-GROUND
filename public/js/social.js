@@ -3655,7 +3655,6 @@ async function playHome() {
 
   paintRk();
   window.__home = R;   // 테스트용 (헤드리스 점검)
-  if (quick) R.jump();   // 다시 시작(버튼·R) = '집에 가고 싶어!' 안내 없이 바로 출발(2026-10-30 하율)
   fit();
   const ro = new ResizeObserver(fit); ro.observe($('#parea')); addEventListener('resize', fit);
   // 입력: 키보드 · 화면 탭(점프) · 아래 버튼(점프/숙이기)
@@ -3706,6 +3705,9 @@ async function playHome() {
     if (R.st.scene !== 'ready') return;
     dress.toggle();
   };
+  // 다시 시작(버튼·R) = '집에 가고 싶어!' 안내 없이 바로 출발(2026-10-30 하율). 2026-11-11: dress 선언 뒤로 옮김 — 앞에 있으면 onStart의 dress?.close()가
+  // 선언 전 접근 오류를 내 '게임을 여는 중에 문제가 생겼어요'가 뜨던 것
+  if (quick) R.jump();
 }
 
 /* ===== 시작 ===== */
