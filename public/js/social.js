@@ -2267,7 +2267,10 @@ let ticket = null;   // 서버 시작 티켓 (기록 저장 때 같이 보냄, �
 let tkKeep = null;   // { game, p, at } — play()가 받은, 아직 저장에 안 쓴 티켓
 /* ④ (2026-11-06) 두 번 다 못 받아도 그 게임 화면이 열려 있는 동안 뒤에서 계속 다시 받음(8·15·30초… 최대 1분 간격) → 받으면 '이제 저장돼요'
    (늦게 받은 티켓은 서버가 아는 시작 시각이 늦어서 긴 판은 '확인 대기'로 맡겨질 수 있음 — 사라지진 않음) */
-const tkGet = game => call('start', { game }).then(r => r.ticket).catch(e => wait(2000).then(() => call('start', { game })).then(r => r.ticket).catch(async e2 => {
+// 티켓 받기까지 걸린 시간(재시도·다시 연결 포함) — 저장 때 tw로 보내 서버의 '실제 흐른 시간' 검사 여유로 씀(2026-11-11 정상 판 보류)
+const tkWait = new Map();
+const tkGet = game => { const t0 = Date.now(); return tkGet0(game).then(t => { if (t) { tkWait.set(t, Date.now() - t0); if (tkWait.size > 50) tkWait.delete(tkWait.keys().next().value); } return t; }); };
+const tkGet0 = game => call('start', { game }).then(r => r.ticket).catch(e => wait(2000).then(() => call('start', { game })).then(r => r.ticket).catch(async e2 => {
   tkErr = e2.message || e.message;
   const here = () => curGame === game && !$('#gamePlay').hidden;
   if (!here()) return '';
@@ -2554,6 +2557,7 @@ async function saveScore(game, value, rounds, extra) {
   const tk = await Promise.race([t, wait(t ? 6000 : 0).then(() => '')]);   // 아직 다시 받는 중이면 6초만 더 기다림
   if (t && !tk) throw new Error(`게임을 시작할 때 서버에 등록되지 않아 이번 기록은 저장 못 했어요${tkErr ? ` (${tkErr})` : ''}. 다시 하기를 눌러 주세요`);
   // 서버 오류(5xx)·연결 끊김이면 같은 티켓으로 한 번 더 — 서버가 오류 때 티켓을 되돌려 둠(2026-10-29 첫 기록 null.b로 기록이 사라지던 일 재발 방지)
+  if (tkWait.has(tk)) extra = { ...extra, tw: tkWait.get(tk) };   // 맡겨 뒀다 다시 보낼 때도 같이 가게 extra에
   const send = () => call('score', { ...extra, game, value, rounds, ticket: tk });
   const who = S.me?.handle || pendWho;
   let r;

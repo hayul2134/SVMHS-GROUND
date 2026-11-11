@@ -97,7 +97,10 @@ function danceRun(ticket, n, v = null) {
   }
   return danceLast.x;
 }
-function checkRounds(game, v, r, elapsed, ticket = '') {
+function checkRounds(game, v, r, elapsed, ticket = '', tw = 0) {
+  // 2026-11-11 보류 35건: 화면 시계는 판 시작과 함께 돌고 시작 티켓은 그 뒤에 받음 → 첫 요청이 늦거나 실패해 2초 뒤 다시 받으면 서버가 아는 시작이 그만큼 늦음.
+  //   화면이 잰 '티켓 받기까지 걸린 시간'(tw, 최대 20초)만큼 여유를 더 줌 — '너무 짧음' 같은 하한 검사엔 안 씀
+  const late = elapsed + 3000 + tw;
   if (!Array.isArray(r)) return H('판 기록 없음(예전 화면)', '판마다의 기록이 같이 오지 않았어요.');
   const n = r.map(x => Math.round(+x));
   if (n.some(x => !Number.isFinite(x))) return H('판 기록에 숫자가 아닌 값', '판마다의 기록 중에 숫자가 아닌 값이 섞여 있어요.');
@@ -143,7 +146,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (m < 1 || ms < 300 || ms > 6 * 3600e3) return H(`달린 시간 이상(${ms}ms)`, `달린 시간(${sec(ms)})이 가능한 범위를 벗어났어요.`);
     if (HOME_MAX - m !== v || scoreAt(ms) !== m) return H(`거리(${m}m)가 달린 시간(${(ms / 1000).toFixed(1)}초)과 안 맞음`,
       `${(ms / 1000).toFixed(1)}초 동안 달리면 ${scoreAt(ms).toLocaleString('ko-KR')}m인데 ${m.toLocaleString('ko-KR')}m로 기록됐어요. 이 게임은 달린 시간으로 거리가 정해져서 둘이 맞아야 해요.`);
-    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
+    if (ms > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
   } else if (game === 'gear' || game === 'gearn') {   // [점수, 지운 줄, 놓은 블록 수, 플레이 ms] — gear-score.js 규칙으로 가능한 범위인지
     if (n.length !== 4) return H('판 기록 형식이 다름', '점수·줄·블록 수·시간이 제대로 오지 않았어요.');
     const [sc, ln, pc, ms] = n;
@@ -153,7 +156,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (pc > ms / 125 + 5) return H(`블록을 너무 빨리 놓음(${pc}개 · ${sec(ms)})`, `${sec(ms)} 동안 블록 ${pc}개를 놓았어요. 1초에 8개보다 빠르게 놓을 수는 없어서 자동 입력으로 보일 수 있어요.`);
     if (sc > gearMax(ln, pc)) return H(`점수(${sc})가 줄·블록 수로 낼 수 있는 최대(${gearMax(ln, pc)})보다 큼`, `${ln}줄 · 블록 ${pc}개로 낼 수 있는 점수는 많아야 ${gearMax(ln, pc).toLocaleString('ko-KR')}점인데 ${sc.toLocaleString('ko-KR')}점으로 기록됐어요.`);
     if (game === 'gear' && ms > GEAR_TIME + 1000) return H(`타임어택 2분보다 오래 함(${sec(ms)})`, `타임어택은 2분 동안만 할 수 있는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);   // 2026-10-27: 랭킹 기록은 랭킹전(2분)만
-    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
+    if (ms > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'stair') {   // [오른 칸, 플레이 ms, 방향 바꾼 횟수] — stair-score.js 규칙: 1칸에 최소 55ms · 종 게이지로 버틸 수 있는 시간 안 · 실제 흐른 시간 안
     if (n.length !== 3 && n.length !== 4) return H('판 기록 형식이 다름', '오른 칸 수와 시간이 제대로 오지 않았어요.');
     const [st, ms, tu, t2 = 0] = n;
@@ -163,44 +166,44 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
     if (tu < 0 || tu > st) return H(`방향 바꾼 횟수 이상(${tu}/${st})`, `방향을 ${tu}번 바꿨다고 기록됐는데 오른 칸(${st}칸)보다 많을 수 없어요.`);
     if (ms < (st - 1) * MIN_STEP_MS) return H(`너무 빠름: ${st}칸을 ${sec(ms)}`, `${st.toLocaleString('ko-KR')}칸을 ${sec(ms)} 만에 올랐어요. 1초에 18칸 넘게 누르기는 어려워서 자동 입력으로 보일 수 있어요.`);
     if (ms > stairMaxMs(st)) return H(`종 게이지로 버틸 수 없는 시간(${sec(ms)} > ${sec(stairMaxMs(st))})`, `${st.toLocaleString('ko-KR')}칸으로는 종 게이지가 ${sec(stairMaxMs(st))}까지밖에 못 버티는데 ${sec(ms)} 동안 한 걸로 기록됐어요.`);
-    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
+    if (ms > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'film') {   // [가로 칸 수, 끝난 ms, ...묶음] — 판은 이 시작 티켓으로 만들어짐(film-score.js) → 같은 판에 묶음을 처음부터 다시 둬 봄
     const x = filmReplay(filmSeed(ticket), n);
     if (x.err) return x.fast ? H(`묶음 간격이 너무 짧음(${x.k + 1}번째) — 매크로 의심`, x.err) : H(`다시 둬 보니 안 맞음: ${x.err}`, `${x.err}. 판과 묶은 기록이 서로 맞지 않아요.`);
     if (FILM_MAX - x.n !== v) return H(`지운 컷(${x.n})과 기록(${FILM_MAX - v})이 다름`, `묶음을 다시 둬 보면 ${x.n}개인데 ${FILM_MAX - v}개로 기록됐어요.`);
-    if (n[1] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[1])}) 한 걸로 기록됐어요.`);
+    if (n[1] > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[1])}) 한 걸로 기록됐어요.`);
   } else if (game === 'blast') {   // [끝난 ms, ...놓기] — 장비 순서는 이 시작 티켓으로 정해짐(blast-score.js) → 놓기를 처음부터 다시 둬 보고 점수 계산
     const x = blastReplay(blastSeed(ticket), n);
     if (x.err) return x.fast ? H(`놓기 간격이 너무 짧음(${x.k + 1}번째) — 매크로 의심`, x.err) : H(`다시 둬 보니 안 맞음: ${x.err}`, `${x.err}. 판과 놓은 기록이 서로 맞지 않아요.`);
     if (BLAST_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${BLAST_MAX - v})이 다름`, `놓은 기록을 다시 둬 보면 ${x.score.toLocaleString('ko-KR')}점인데 ${(BLAST_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
-    if (n[0] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
+    if (n[0] > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
   } else if (game === 'chase') {   // [끝난 프레임, ...입력] — 차 배치는 이 시작 티켓 씨앗으로 정해짐(chase-score.js) → 입력대로 판을 처음부터 다시 돌려 점수 계산
     const x = chaseRun(ticket, n);
     if (x.err) return H(`다시 돌려 보니 안 맞음: ${x.err}`, `${x.err}. 판과 조작 기록이 서로 맞지 않아요.`);
     if (CHASE_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${CHASE_MAX - v})이 다름`, `조작 기록대로 다시 달려 보면 ${x.score.toLocaleString('ko-KR')}점인데 ${(CHASE_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
     const ms = Math.round(x.f * 1000 / CHASE_FPS);
-    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
+    if (ms > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 달림`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 달린 걸로 기록됐어요.`);
   } else if (game === 'dance') {   // [끝난 프레임, ...누름/뗌] — 선생님이 돌아보는 때는 이 시작 티켓 씨앗으로 정해짐(dance-score.js) → 입력대로 판을 처음부터 다시 돌려 점수 계산
     const x = danceRun(ticket, n, v);
     if (x.err) return H(`다시 돌려 보니 안 맞음: ${x.err}`, `${x.err}. 판과 조작 기록이 서로 맞지 않아요.`);
     if (DANCE_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${DANCE_MAX - v})이 다름`, `조작 기록대로 다시 해 보면 ${x.score.toLocaleString('ko-KR')}점인데 ${(DANCE_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
     const ms = Math.round(x.f * 1000 / DANCE_FPS);
-    if (ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
+    if (ms > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'mine') {   // [첫 칸, ...(연 시각×1000 + 칸)] — 지뢰 배치는 이 티켓 씨앗 + 첫 칸으로 정해짐 → 연 칸을 다시 열어 봄
     const x = mineReplay(czSeed(ticket), n);
     if (x.err) return x.fast ? H(`칸을 너무 빠르게 엶 — 매크로 의심`, x.err) : H(`다시 열어 보니 안 맞음: ${x.err}`, `${x.err}. 판과 연 기록이 서로 맞지 않아요.`);
     if (Math.abs(x.ms - v) > 2) return H(`시간(${x.ms})과 기록(${v})이 다름`, `연 기록으로는 ${sec(x.ms)}인데 ${sec(v)}로 기록됐어요.`);
-    if (x.ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 한 걸로 기록됐어요.`);
+    if (x.ms > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'snake') {   // [끝난 틱, ...(틱×4 + 방향)] — 별 위치는 이 티켓 씨앗으로 정해짐 → 꺾은 기록대로 다시 움직여 봄
     const x = snakeReplay(czSeed(ticket), n);
     if (x.err) return H(`다시 움직여 보니 안 맞음: ${x.err}`, `${x.err}. 판과 움직인 기록이 서로 맞지 않아요.`);
     if (SNAKE_MAX - x.score !== v) return H(`별(${x.score})과 기록(${SNAKE_MAX - v})이 다름`, `움직인 기록으로는 사과 ${x.score}개인데 ${SNAKE_MAX - v}개로 기록됐어요.`);
-    if (x.ms > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 한 걸로 기록됐어요.`);
+    if (x.ms > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(x.ms)}) 한 걸로 기록됐어요.`);
   } else if (game === 'n2048') {   // [끝난 ms, ...(시각×4 + 방향)] — 새 칸은 이 티켓 씨앗으로 정해짐 → 민 기록대로 다시 밀어 봄 · 3분
     const x = n2Replay(czSeed(ticket), n);
     if (x.err) return x.fast ? H(`너무 빠르게 밂 — 매크로 의심`, x.err) : H(`다시 밀어 보니 안 맞음: ${x.err}`, `${x.err}. 판과 민 기록이 서로 맞지 않아요.`);
     if (N2_MAX - x.score !== v) return H(`점수(${x.score})와 기록(${N2_MAX - v})이 다름`, `민 기록으로는 ${x.score.toLocaleString('ko-KR')}점인데 ${(N2_MAX - v).toLocaleString('ko-KR')}점으로 기록됐어요.`);
-    if (n[0] > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
+    if (n[0] > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(n[0])}) 한 걸로 기록됐어요.`);
   } else if (game === 'color') {   // [목표, 고른 색]×5(0xRRGGBB) → 정확도를 다시 계산해 놓친 합 = v · 목표 색은 이 티켓 씨앗으로 다시 뽑아 확인(2026-11-02 디벨롭)
     const x = colorScore(n, colorSeed(ticket) ?? -1);
     if (x.bad) return H(`문제 색이 티켓 씨앗과 다름(${x.bad.map(i => i + 1).join('·')}번째) — 조작 또는 예전 화면`, '이 판에서 나온 문제 색과 기록된 색이 달라요. 새로 고침한 뒤 다시 해 주세요.', x.bad);
@@ -211,16 +214,16 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
   } else if (game === 'judge') {   // [승리 ms, 남은 체력, 턴] — 처음부터 이긴 판만(2026-11-09)
     if (n.length !== 3 || n[0] !== v) return H('판 기록 형식이 다름', '승리 기록이 판 기록과 맞지 않아요.');
     if (n[1] < 1 || n[1] > 92 || n[2] < 23) return H(`체력(${n[1]})·턴(${n[2]})이 승리한 판과 안 맞음`, '이긴 판의 체력·턴 기록이 이상해요.');
-    if (v > elapsed + 3000) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(v)}) 한 걸로 기록됐어요.`);
+    if (v > late) return H(`실제 흐른 시간(${Math.round(elapsed / 1000)}초)보다 오래 함`, `실제로 게임한 시간(${sec(elapsed)})보다 더 오래(${sec(v)}) 한 걸로 기록됐어요.`);
   } else if (game === 'ball') {   // [점수, 떨어뜨린 공 수, 가장 큰 공 단계]
     if (n.length !== 3 || n[0] !== BALL_MAX - v) return H('판 기록 형식이 다름', '점수가 판 기록과 맞지 않아요.');
     if (n[2] < 0 || n[2] > 10 || n[1] < 1) return H(`공 수(${n[1]})·단계(${n[2]}) 이상`, '판 기록의 공 정보가 이상해요.');
     if (n[0] < BALL_LV_PTS[n[2]]) return H(`가장 큰 공 단계(${n[2]})를 만들고도 점수(${n[0]})가 너무 낮음`, '가장 큰 공과 점수 기록이 서로 맞지 않아요.');
     if (n[0] > n[1] * BALL_PER_DROP) return H(`공 ${n[1]}개로 낼 수 없는 점수(${n[0]})`, `공 ${n[1]}개로는 최대 ${n[1] * BALL_PER_DROP}점까지 나올 수 있는데 ${n[0]}점으로 기록됐어요.`);
-    if ((n[1] - 1) * BALL_COOL_MS > elapsed + 3000) return H(`공 ${n[1]}개를 ${Math.round(elapsed / 1000)}초 만에`, `실제로 게임한 시간(${sec(elapsed)}) 안에 공 ${n[1]}개를 떨어뜨릴 수 없어요.`);
+    if ((n[1] - 1) * BALL_COOL_MS > late) return H(`공 ${n[1]}개를 ${Math.round(elapsed / 1000)}초 만에`, `실제로 게임한 시간(${sec(elapsed)}) 안에 공 ${n[1]}개를 떨어뜨릴 수 없어요.`);
   } else if (game === 'cross') {   // [칸]
     if (n.length !== 1 || n[0] !== CROSS_MAX - v) return H('판 기록 형식이 다름', '칸 수가 판 기록과 맞지 않아요.');
-    if (n[0] * CROSS_HOP_MS > elapsed + 3000) return H(`${n[0]}칸을 ${Math.round(elapsed / 1000)}초 만에`, `실제로 게임한 시간(${sec(elapsed)}) 안에 ${n[0]}칸을 뛸 수 없어요.`);
+    if (n[0] * CROSS_HOP_MS > late) return H(`${n[0]}칸을 ${Math.round(elapsed / 1000)}초 만에`, `실제로 게임한 시간(${sec(elapsed)}) 안에 ${n[0]}칸을 뛸 수 없어요.`);
   } else if (game === 'rhythm') {   // [점수, 난이도 0~2, 놓침, 평균 정확도×100]
     if (n.length !== 4 || n[0] !== RHY_MAX - v || n[1] < 0 || n[1] > 2 || n[2] < 0 || n[3] < 0 || n[3] > 10000) return H('판 기록 형식이 다름', '주간 완주 점수가 판 기록과 맞지 않아요.');
   } else if (game === 'cut') {   // 5번 오차(0~1000) 합 = v
@@ -233,6 +236,7 @@ function checkRounds(game, v, r, elapsed, ticket = '') {
 }
 const TICKET_RE = /^[0-9a-f]{32}$/;
 const TICKET_TTL = 3600e3;
+const TW_MAX = 20e3;   // 시작 티켓 늦게 받은 만큼 봐주는 최대 시간(checkRounds)
 // 시간 제한 없는 게임은 1시간 넘게 할 수 있음 → 티켓 6시간(2026-10-29 하율: 기자재 정리! 일반 100만 점 판이 '게임을 다시 시작해 주세요'로 저장 안 됨 — 1시간 지나 티켓 만료)
 const TK_GRACE = 86400e3;   // 만료 티켓 유예 — lib/db.js limited()의 rl 정리도 tk:는 이만큼 늦게 지움
 const LONG_TK = new Set(['gearn', 'blast', 'judge', 'ball', 'cross']), ttlOf = game => LONG_TK.has(game) ? 6 * 3600e3 : TICKET_TTL;
@@ -1322,7 +1326,7 @@ const ROUTES = {
       // 그래도 서버 오류면 기록을 버리지 않고 '서버 오류 보관'(held_scores st 3)으로 맡겨 둠 → 고쳐진 뒤 그 학생이 아무 게임이나 시작할 때 원래 검사를 그대로 거쳐 자동 반영(rescueReplay)
       // (2026-10-29 하율 "이런 일 다시는 없게": 같은 버그면 다시 보내도 또 실패해서 약 150판이 사라졌음). 보관마저 실패하면(DB 한도 등) 예전처럼 티켓 되돌리고 던짐
       const kept = Array.isArray(body.rounds) && await db.prepare('INSERT INTO held_scores (uid, game, value, rounds, reason, elapsed, day, at, st) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 3)')
-        .bind(me.id, game, v, heldR(body.rounds), `서버 오류로 보관 #${ticket}`, Math.min(Date.now() - (tk.n > 0 ? tk.n : tk.reset - ttlOf(game)), 2e9), kstYmd(), Date.now()).run().then(() => true, () => false);
+        .bind(me.id, game, v, heldR(body.rounds), `서버 오류로 보관 #${ticket}`, Math.min(Date.now() - (tk.n > 0 ? tk.n : tk.reset - ttlOf(game)) + Math.min(TW_MAX, Math.max(0, Math.round(+body.tw) || 0)), 2e9), kstYmd(), Date.now()).run().then(() => true, () => false);
       if (kept) { await logErr(db, 's', { url: 'https://svmhs-ground.pages.dev/api/s/score', method: 'POST' }, e); return json({ ok: true, held: true, rescued: true, why: '서버에 잠깐 문제가 있어서 기록을 안전하게 맡아 뒀어요.' }); }
       await db.prepare('INSERT OR IGNORE INTO rl (k, n, reset) VALUES (?1, ?2, ?3)').bind(`tk:${me.id}:${game}:${ticket}`, tk.n, tk.reset).run().catch(() => {}); throw e;
     }
@@ -1896,6 +1900,7 @@ async function rescueReplay(db, me) {
 }
 async function scoreIn(db, me, body, game, v, ticket, g, tk) {
     const elapsed = Date.now() - (tk.n > 0 ? tk.n : tk.reset - ttlOf(game));   // n > 0 = 이어 달리기 티켓(원래 판 출발 시각)
+    const tw = Math.min(TW_MAX, Math.max(0, Math.round(+body.tw) || 0));   // 화면이 티켓을 받기까지 걸린 시간(checkRounds 참고)
     // 검사에 걸린 기록은 버리지 않고 보류(2026-10-26 하율) → 관리자 '게임 기록'의 보류 목록에서 확인 후 반영/버림. 판 기록이 아예 없으면(예전 화면) 새로 고침 안내
     if (!Array.isArray(body.rounds)) return err('새로 고침한 뒤 다시 해 주세요');
     // 2026-10-31 LED 월 켜기! 점수 ×10(blast-score.js SCALE): 새로 고침 전 예전 화면은 1배 점수를 보냄 → 다시 둬 본 점수의 1/10과 같으면 10배로 고쳐 받음
@@ -1906,7 +1911,7 @@ async function scoreIn(db, me, body, game, v, ticket, g, tk) {
       : v > g.max ? H(`범위를 넘은 기록(상한 ${g.max})`, game === 'home' ? '달린 거리가 1m도 안 돼요.' : gk === 'gear' ? '점수가 0점이에요.' : `${fv(v)}는 기록할 수 있는 범위(${fv(g.max)})를 넘었어요.`)
       : elapsed < g.play ? H(`플레이 시간이 너무 짧음(${Math.round(elapsed / 1000)}초)`, `게임을 시작하고 기록을 내기까지 ${sec(elapsed)}밖에 안 걸렸어요. 이 게임은 최소 ${sec(g.play)}는 걸려요.`)
       : game === 'chase' && body.rv != null && +body.rv !== CHASE_RV ? H(`규칙이 바뀌기 전 판(판 ${body.rv} → 지금 ${CHASE_RV})`, '게임 규칙이 바뀌기 전에 한 판이라 개발자가 확인한 뒤 반영돼요.')
-      : checkRounds(game, v, body.rounds, elapsed, ticket);
+      : checkRounds(game, v, body.rounds, elapsed, ticket, tw);
     if (why) {
       const wait = await db.prepare('SELECT COUNT(*) AS n FROM held_scores WHERE uid = ?1 AND st = 0').bind(me.id).first();
       if (wait.n >= 30) return err('확인을 기다리는 기록이 많아요. 개발자가 확인할 때까지 조금만 기다려 주세요', 429);

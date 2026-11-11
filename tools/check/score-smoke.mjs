@@ -197,6 +197,18 @@ for (const [mode, handle] of [['깃발 꺼짐', 'smoke_a1'], ['깃발 전부 공
   const r = await call('POST', 'score', { game: 'reaction', ticket: st.j?.ticket, ...PLAY.reaction(300) });
   if (!r.j?.ok) fails.push(`오래 한 판 검사: 티켓 만료 뒤 저장 거절 → ${r.s} ${JSON.stringify(r.j)}`);
 }
+// 티켓 늦게 받은 판(2026-11-11 보류 35건): 화면 시계는 판 시작부터, 티켓은 재시도로 3~4초 늦게 → tw(티켓 받기까지 걸린 시간)만큼 봐줘야 함. tw 상한(20초)은 지킴
+{
+  const tryStair = async (st, ms, late, tw) => {
+    const s0 = await call('POST', 'start', { game: 'stair' }); skew += late;
+    return (await call('POST', 'score', { game: 'stair', ticket: s0.j?.ticket, value: ST.STAIR_MAX - st, rounds: [st, ms, 12], ...(tw != null ? { tw } : {}) })).j;
+  };
+  const a = await tryStair(61, 8200, 5000), b = await tryStair(62, 8200, 5000, 3600), c = await tryStair(300, 30000, 5000, 999999);
+  if (!a?.held) fails.push(`티켓 늦은 판: tw 없이 3초 넘게 초과했는데 보류 안 됨 → ${JSON.stringify(a)}`);
+  if (!b?.ok || b?.held) fails.push(`티켓 늦은 판: tw 3.6초면 받아야 하는데 → ${JSON.stringify(b)}`);
+  if (!c?.held || !/더 오래/.test(c?.why || '')) fails.push(`티켓 늦은 판: tw 상한(20초)을 넘겨 봐줌 → ${JSON.stringify(c)}`);
+  if (!/더 오래/.test(a?.why || '')) fails.push(`티켓 늦은 판: 다른 이유로 보류됨 → ${JSON.stringify(a)}`);
+}
 // 정지 계정 검사(2026-11-03 하율 "정지 먹은 계정은 기록실이랑 티어에 표기되지 않게"): 정지 전엔 보이고, 정지 뒤엔 기록실·티어에서 빠져야 함
 {
   skew += 3600e3;
