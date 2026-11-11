@@ -147,6 +147,9 @@ label.f small{font-weight:500;color:var(--sub)}
 .seg{display:inline-flex;flex-wrap:wrap;border:var(--bd);border-radius:10px;overflow:hidden;background:var(--card)}
 .seg button{padding:5px 12px;font-weight:700;font-size:13px;border-right:1.5px solid var(--ink);margin-right:-1.5px}
 .seg button.on{background:var(--accent);color:#fff}
+.seg.chips{display:flex;gap:6px;border:0;border-radius:0;overflow:visible;background:none}
+.seg.chips button{border:var(--bd);border-radius:10px;margin:0;background:var(--card)}
+.seg.chips button.on{background:var(--accent);color:#fff}
 .tog{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1.5px dashed var(--line)}
 .tog:last-child{border-bottom:0}
 .tog div{flex:1}

@@ -475,7 +475,7 @@ VIEWS.scores = async () => {
   $('#main').innerHTML = `
     <div class="vh"><h2>게임 기록</h2></div>
     <div class="bar">
-      <div class="seg">${Object.entries(GAMES).map(([k, x]) => `<button type="button" data-game="${k}" class="${k === d.game ? 'on' : ''}">${x.em} ${x.name}</button>`).join('')}</div>
+      <div class="seg chips">${Object.entries(GAMES).map(([k, x]) => `<button type="button" data-game="${k}" class="${k === d.game ? 'on' : ''}">${x.em} ${x.name}</button>`).join('')}</div>
       <input class="inp" type="date" id="scDay" value="${dayIso}" max="${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)}">
       <button class="btn sm${all ? ' on' : ''}" type="button" data-act="scall">전체 기간 랭킹</button>
       ${all ? '' : `<button class="btn sm bad" type="button" data-act="resetday" ${d.list.length ? '' : 'disabled'}>이 날 ${g.name} 랭킹 전부 지우기</button>`}
