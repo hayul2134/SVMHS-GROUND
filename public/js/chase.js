@@ -22,7 +22,7 @@ const PORTRAIT = '(orientation:portrait) and (pointer:coarse)';
    논리 화면 960×540. 깊이 배율 s(y) = PF / (PF + (PY0 - y)) · 화면 y = HZ + PB·s(지평선 HZ에서 s=0) · 화면 x = 가운데 + (x - 도로 가운데 - 카메라)·s·PK
    PF가 작을수록 원근이 세서 가까운 곳이 빨리 지나감(속도감). 내 차(판 y 512) ≈ 화면 450, 차가 생기는 곳(-1100) ≈ 120. 도로 폭: 내 차 근처 약 640px.
    위에서 내려다보는 각도라 차는 지붕·유리·보닛(위 모습) + 뒷면을 같이 그림
-   카메라는 내 차를 40% 따라감(차선 바꿀 때 도로가 같이 흔들려 역동적) */
+   카메라는 고정(2026-11-11: 예전엔 내 차를 따라가 배경이 같이 움직였음) */
 const VW = 960, VH = 540, HZ = 20;
 const PF = 270, PY0 = 700, PB = 729.4, PK = 2.895, CX = VW / 2, RX = (C.ROAD_L + C.ROAD_R) / 2;   // 2026-10-31 23시 하율 "좀 더 위에서": 지평선을 화면 맨 위로, 원근을 세게(가까운 곳이 휙휙)
 let CAM = 0;
@@ -818,7 +818,7 @@ export function createChase(root, opts = {}) {
     const a = alpha(), sc = k * dpr;
     g.setTransform(sc, 0, 0, sc, 0, 0);
     const dist = s ? lerp(s._pd ?? s.dist, s.dist, a) : 0, px = s ? lerp(s.p._px ?? s.p.x, s.p.x, a) : C.laneX(2);
-    CAM = (px - RX) * 0.42;
+    CAM = 0;   // 2026-11-11 학생 의견 '차 움직일 때 배경이 같이 움직여요' → 카메라 고정(예전엔 내 차를 42% 따라가 도로·배경이 같이 밀림), 차만 옆으로 움직임
     const v = s ? s.v : 0;
     g.save();
     let jx = 0, jy = 0;

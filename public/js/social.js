@@ -246,7 +246,7 @@ async function refreshMe0() {
   if (!S.meErr) { ATT.sync(S.me); ctx?.setDeco?.(S.me?.deco || []); ctx?.setClub?.(S.me?.club); }   // 하루 한 번 자동 출석 (첫 출석이면 축하 창) · 첫 화면 시계 스티커
   if (!panelOpen()) loadRecent();
   if (!S.meErr) loadBuddies();
-  if (S.me) setTimeout(pendFlush, 2500);   // 맡겨 둔 게임 기록 보내기(로그인 직후·다시 접속)
+  if (S.me) setTimeout(() => { pendFlush(); chaseResend(); }, 2500);   // 맡겨 둔 게임 기록 보내기(로그인 직후·다시 접속) — 카체이싱!도(2026-11-11: 예전엔 카체이싱!을 다시 열어야만 보냄)
 }
 // 끝난 게임 랭킹 라운드 보상(서버 settleRounds가 이미 뽑기권을 넣음) → 한 번 알리고 봤음 표시
 // 2026-10-27: 'w:all' = 매주 모두에게 주는 뽑기권 · 't:티어' = 라운드 최종 티어 보상 · (예전) 'w:게임' = 게임 1~3등
