@@ -16,7 +16,7 @@ const typing = e => e.target.closest?.('input,textarea,select,[contenteditable]'
 const DIRS = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 };
 const DV = [[0, -1], [1, 0], [0, 1], [-1, 0]];   // 위·오른쪽·아래·왼쪽 [dx, dy]
 // 가로 패드 + 깃발 pad-ctl(html.padin) → 뱀 방향 버튼을 판 오른쪽에(CSS '패드 조작 버튼')
-const PAD_SIDE = matchMedia('(pointer:coarse) and (min-width:700px) and (min-height:600px) and (orientation:landscape)');
+const PAD_SIDE = matchMedia('(pointer:coarse) and (min-width:700px) and (min-height:600px) and (orientation:landscape), (pointer:coarse) and (min-width:600px) and (max-height:500px) and (orientation:landscape)');   // 2026-11-12: 눕힌 폰도(판 아래로는 버튼 자리가 없음)
 const padSide = () => document.documentElement.classList.contains('padin') && PAD_SIDE.matches;
 const fmtS = ms => (ms / 1000).toFixed(1) + '초';
 // 화면에 남은 높이(위 제목 줄·아래 다시 시작 줄을 뺀 것) — 스크롤 없이 한 화면(2026-10-28 하율 규칙)

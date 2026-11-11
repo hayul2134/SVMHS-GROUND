@@ -109,13 +109,17 @@ export function createBlast(root, opt = {}) {
     dpr = Math.min(window.SG_DPR || devicePixelRatio || 1, 2);
     // 버튼 자리(2026-10-29 하율 "위에 버튼을 옆으로 빼"): 판 왼쪽에 150px 넘게 빈 곳이 있으면 버튼을 판 왼쪽에 세로로, 없으면 점수판 오른쪽 위
     const wide = innerWidth >= 901, top0 = root.querySelector('.bl-top'), tools = root.querySelector('.bl-tools');
-    const sideOk = cw => (root.clientWidth - cw) / 2 + (wide ? 254 : 0) >= 150;
+    const sideOk = cw => (root.clientWidth - cw) / 2 + (wide ? 254 : 0) >= 216;   // 옆 버튼 칸 폭(약 200px)+여백 — 150이면 눕힌 폰에서 버튼이 화면 왼쪽 밖으로 잘렸음(2026-11-12)
     // 판 크기(2026-10-29 하율 "아래 부분 스크롤 안 해도 되게 안 잘리게"): 판 틀(안쪽 여백·테두리·그림자)까지 뺀 높이 안에 캔버스가 다 들어가도록, 맞을 때까지 칸 크기를 줄임
     const dims2 = (c, hz) => { const p = Math.round(Math.max(8, c * .25)); return hz ? [p * 4 + c * 14.8, p * 2 + c * 8, p] : [p * 2 + c * 8, p * 3 + c * 10.75, p]; };
     const lay = () => {
-      const aw = Math.max(240, root.clientWidth - 24), top = board.getBoundingClientRect().top, ah = Math.max(260, innerHeight - Math.max(top, 0) - 40);
+      const sh = innerHeight < 500, top = board.getBoundingClientRect().top;
+      // 눕힌 폰: 옆 버튼 자리(216px)를 남긴 폭 안에서만 판을 고름 — 판이 커져 버튼이 다시 위로 가고 판이 세로로 바뀌는 순환 방지(2026-11-12)
+      const aw = Math.max(240, sh && top0.classList.contains('side') ? Math.min(root.clientWidth - 24, root.clientWidth - 448) : root.clientWidth - 24), ah = Math.max(sh ? 150 : 260, innerHeight - Math.max(top, 0) - (sh ? 14 : 40));   // 눕힌 폰(세로 500px↓): 최소 260·아래 여백 40이면 판 아래가 화면 밖이거나 가로/세로 배치가 경계에서 흔들림(2026-11-12)
       const best = hz => { let c = 64; while (c > 22) { const [w, h] = dims2(c, hz); if (w <= aw && h <= ah) break; c--; } return c; };
       const cH = best(true), cV = best(false);
+      const ok = (c, hz) => { const [w, h] = dims2(c, hz); return w <= aw && h <= ah; };
+      if (ok(cH, true) !== ok(cV, false)) return ok(cH, true) ? [cH, true] : [cV, false];   // 한쪽만 화면에 들어가면 그쪽(눕힌 폰: 세로 배치는 가장 작아도 넘침, 2026-11-12)
       return cH > cV * 1.08 ? [cH, true] : [cV, false];
     };
     let [c1, hz1] = lay();

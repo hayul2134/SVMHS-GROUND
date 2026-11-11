@@ -4225,7 +4225,7 @@ html:not(.dev-pv):not([data-ffr~="shark"]) .ff-shark{display:none!important}
 .pnrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px}
 .pnrow .pname{min-width:0}
 .pstats.ig{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0;padding:0}
-.pstats.ig button{display:inline-flex;align-items:baseline;gap:5px;padding:2px 0;border:0;border-radius:6px;background:none;font:600 15px/1.3 var(--sans);color:var(--text)}
+.pstats.ig button{display:inline-flex;align-items:baseline;gap:5px;padding:2px 0;min-height:36px;align-items:center;border:0;border-radius:6px;background:none;font:600 15px/1.3 var(--sans);color:var(--text)}
 @media (hover:hover){.pstats.ig button:hover{background:none;text-decoration:underline;text-underline-offset:3px}}
 .pstats.ig b{font:800 16px/1.3 var(--num,var(--sans));color:var(--text)}
 .pside:not(:has(> *)){display:none}   /* 팔로워 칸이 이름 아래로 옮겨가 비면 숨김 */
@@ -6105,6 +6105,8 @@ html.gfs .pfs-x svg{width:20px;height:20px}
 .ml-ov[hidden]{display:none}
 .ml-ov>b{font-family:var(--disp);font-weight:400;font-size:clamp(26px,5vw,40px);color:var(--text)}
 .ml-ov>span{font-weight:800;color:var(--sub);line-height:1.55;font-size:15px}
+/* 2026-11-12 점검: 눕힌 폰(세로 500px↓)은 판이 200px 남짓이라 안내가 판 위로 넘침 → 글자·간격 줄이고 괄호 보충 설명은 숨김 */
+@media (max-height:500px) and (orientation:landscape){.ml-ov{gap:6px;padding:8px 12px}.ml-ov>b{font-size:24px}.ml-ov>span{font-size:12.5px;line-height:1.4}.ml-ov>span small{display:none}.ml-ov .btn.big{min-height:40px;padding-block:0}}
 .ml-ov em{font-style:normal;color:#2f9a3a;font-weight:900}
 .ml-sc{font-family:var(--disp);font-size:clamp(48px,9vw,72px);line-height:1;color:var(--text)}
 .ml-sc small{font-size:.35em;margin-left:4px;color:var(--sub)}
@@ -6195,7 +6197,9 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .cz-bar .cz-stat small{font-size:13px}
 .cz-bar .cz-re{min-height:58px}
 .parea:has(> .cz){justify-content:stretch;padding-bottom:clamp(0px,7vh,72px)}
-.cz:has(> .cz-hd){flex:1;display:grid;grid-template-rows:minmax(min-content,1fr) auto minmax(min-content,1fr);justify-items:center;gap:12px}
+.parea:has(> .cz){min-height:0}
+/* 2026-11-12 점검: min-height:auto면 위·아래 칸이 '큰 쪽(아래 227px)'에 맞춰 같이 커져 폰SE에서 판 위에 빈 칸 170px·방향 버튼이 화면 밖 → 0으로(남는 만큼만 가운데) */
+.cz:has(> .cz-hd){min-height:0;flex:1;display:grid;grid-template-rows:minmax(min-content,1fr) auto minmax(min-content,1fr);justify-items:center;gap:12px}
 .cz-hd,.cz-ft{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
 .cz-hd{align-self:end}.cz-ft{align-self:start}
 .cz-ft > .prow{width:100%}
@@ -6317,7 +6321,7 @@ html.tf .tr-stairs li.apex .tl-cnt:not(.z){background:color-mix(in srgb,var(--tc
 .gr.padded .gt-l [data-gk="down"]{grid-column:1 / -1}
 .gr.padded .gt [data-gk="hold"]{font-size:15px}
 /* 뱀 게임(가로 패드): 방향 버튼을 판 아래 대신 판 오른쪽 아래 */
-@media (pointer:coarse) and (min-width:700px) and (min-height:600px) and (orientation:landscape){
+@media (pointer:coarse) and (min-width:700px) and (min-height:600px) and (orientation:landscape),(pointer:coarse) and (min-width:600px) and (max-height:500px) and (orientation:landscape){
   html.padin .cz-snake{position:relative}   /* 판 크기는 그대로 두고, 버튼은 판 오른쪽 바깥 빈자리에(casual.js fit이 --bw = 판 폭) */
   html.padin .cz-snake > .cz-pad{position:absolute;left:calc(50% + var(--bw,400px) / 2 + 22px);bottom:0;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,58px);gap:8px}
   /* 2026-10-30 점검: '판 정가운데'(casual.js center)로 방향 버튼이 .cz-ft 안으로 옮겨져 위 규칙(> .cz-pad)이 안 맞음 → 버튼이 판 아래로 내려가
@@ -6776,9 +6780,11 @@ html.hw .sk-h:first-of-type::after{content:" · 할로윈 색은 11/6까지 · �
 .apps .gapp.g-dance .ai{--c:#ffe0a8}.ggrid .g-dance{--c:#ffe0a8}
 .dn{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
 .dn-main{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
-@media (min-width:901px){.dn{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:18px}.dn>.dn-main{grid-column:2;width:auto}.dn>.sr-side{grid-column:3;width:min(300px,100%)}}
+@media (min-width:901px){.dn{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:18px}.dn>.dn-main{grid-column:2;width:calc(min(100dvh - 200px,860px) * 9 / 16)}.dn>.sr-side{grid-column:3;width:min(300px,100%)}}
 .dn-scr{position:relative;width:min(100%,calc(min(100dvh - 200px,860px) * 9 / 16));min-width:min(100%,260px);border:var(--bd);border-radius:18px;box-shadow:var(--sh);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;container-type:inline-size;background:#f4ecdc;outline:0;cursor:pointer}
 .dn-scr canvas{display:block;width:100%;height:auto;aspect-ratio:9/16;touch-action:none}
+/* 2026-11-12 점검: 태블릿 가로(901px↑)는 가운데 칸 폭이 auto라 % 폭이 무너져 판이 195px로 작았음 → 위에서 칸 폭을 화면 높이로 정함. 눕힌 폰(세로 500px↓)은 최소 260px 때문에 판이 화면보다 길었음 → 제목 줄만 빼고 화면 높이에 맞춤 */
+@media (orientation:landscape) and (max-height:500px){.dn-scr{width:calc((100dvh - 96px) * 9 / 16);min-width:0}.dn>.dn-main{width:auto}.dn-scr .hr-ov .dn-how{display:none}.dn-scr .hr-ov.dn-ready{gap:6px}}   /* 판이 160px 남짓 → 규칙 목록은 숨기고 한 줄 소개·'꾹 누르면 춤'만 */
 .dn-bar{justify-content:center}
 .dn-bar .hr-keys{flex:0 1 auto}
 @media (pointer:coarse){.dn-bar .dn-keys{display:none}}
