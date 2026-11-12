@@ -3174,7 +3174,7 @@ footer{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
 .pcols.slim .pside .pstreak{align-self:stretch;display:flex;align-items:center;justify-content:center}
 @media (max-width:720px){.pcols.slim .pmain{grid-auto-flow:row}.pcols.slim .pside{grid-template-columns:minmax(0,1fr)}}
 /* 테마 창: 스크롤해도 보이는 닫기 ✕ · 색깔 7개는 4+3 가운데 정렬 (2026-10-24) */
-.sheet-x{position:sticky;top:0;float:right;z-index:2;width:40px;height:40px;margin:-8px -8px 0 0;display:grid;place-items:center;border-radius:12px;background:var(--card);color:var(--text);border:2px solid var(--ink);box-shadow:var(--sh-s);cursor:pointer}
+.sheet-x{position:sticky;top:0;float:right;z-index:2;width:40px;height:40px;margin:-8px -8px 0 12px;display:grid;place-items:center;border-radius:12px;background:var(--card);color:var(--text);border:2px solid var(--ink);box-shadow:var(--sh-s);cursor:pointer}
 .sheet-x svg{width:18px;height:18px}
 .sheet>.sheet-x+h3{margin-bottom:22px}/* X 아래에 바로 붙던 첫 칸(공지 카드 등)과 띄우기 — 2026-11-12 하율 "여백" */
 .sheet-x:active{transform:translate(2px,2px);box-shadow:none}
