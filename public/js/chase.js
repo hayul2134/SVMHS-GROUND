@@ -573,7 +573,7 @@ export function createChase(root, opts = {}) {
   const WHY = { crash: '쾅! 부딪혔어요', wall: '바리케이드에 쾅!', cone: '고깔에 걸렸어요!', fuel: '기름이 다 떨어졌어요…', cap: '끝까지 달렸어요!' };
   const showOver = res => {
     st.scene = 'over'; st.shownAt = performance.now();
-    const nb = res.score > best && res.score > 0; if (nb) best = res.score;
+    const nb = res.score > best && res.score > 0 && (res.saved || !opts.savedOnly?.()); if (nb) best = res.score;   // 로그인 중 서버에 등록 안 된 판은 '내 최고'에 안 넣음(2026-11-12)
     ov.hidden = false; ov.className = 'hr-ov dead cs-over';
     ov.innerHTML = `<b>${WHY[res.why] || '끝!'}</b><div class="hr-card"><p class="hr-sc"><em>${fmt(res.score)}점</em>${nb ? '<i class="hr-nb">최고 기록!</i>' : ''}</p>
       <p class="cs-stat"><span><b>${fmt(res.m)}</b>m</span><span>최고 <b>${res.top}</b>km/h</span><span>아슬아슬 <b>${res.near}</b>번</span>${res.slipPts ? `<span>슬립 점수 <b>${fmt(res.slipPts)}</b></span>` : ''}${res.ramps ? `<span>점프대 <b>${res.ramps}</b>번</span>` : ''}<span>최대 콤보 <b>x${res.maxCombo}</b></span><span>부스터 <b>${res.boosts}</b>번</span>${res.smash ? `<span>날려 버린 차 <b>${res.smash}</b>대</span>` : ''}</p>
@@ -1369,7 +1369,7 @@ export function createChase(root, opts = {}) {
 
   return {
     st, get sim() { return s; }, get best() { return best; }, get perf() { return { drawN, fps: fpsNow(), vsync: +vsync.toFixed(2), div, resQ, lowFx, lowLv, mf: Math.round(mfLast), avgDt: Math.round(avgDt), work: +workAvg.toFixed(1) }; },   // 성능 검사용
-    setBest(b) { best = Math.max(best, b || 0); },
+    setBest(b) { const o = best; best = Math.max(best, b || 0); if (best !== o && st.scene === 'ready' && !ov.hidden && ov.classList.contains('cs-ready')) showReady(); },   // 서버 최고가 늦게 와도 첫 화면 '내 최고' 배지 갱신
     msg(html) { msgNow = html; const m = ov.querySelector('.cs-msg'); if (m && st.scene === 'over') m.innerHTML = html; },
     setSound(on) { sfx.set(on); paintSnd(); },
     start, pause, resume, again: () => again(),

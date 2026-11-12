@@ -3110,10 +3110,10 @@ async function playChase() {
   const area = stage(ic('chase') + ' 카체이싱!', '<div class="cs" id="cs"><div class="cs-main" id="csMain"></div><aside class="sr-side" id="csRec"></aside></div>', true);
   if (!CHASE) { try { CHASE = await import('./chase.js').catch(() => import('./chase.js?r=' + Date.now())); } catch { area.innerHTML = '<p class="empty">게임을 불러오지 못했어요. 새로 고침해 주세요</p>'; return; } }
   if (!area.isConnected || !$('#csMain')) return;
-  let runTk = null, run = 0, tkWhy = '', best = store.get('chase_best', 0);
+  let runTk = null, run = 0, tkWhy = '', best = S.me ? 0 : store.get('chase_best', 0);   // 로그인 중엔 서버 최고만(2026-11-12 학생 의견: 로그인 풀린 판 13,306점이 '내 최고'로 남는데 기록은 9,646점)
   const M = CHASE.createChase($('#csMain'), {
     fpsMeter: isDev(S.me),   // 2026-11-02: 개발자 화면에 실제 프레임 표시(실기기 확인)
-    quick, best, sound: store.get('chase_snd', false), trophy: ic('trophy'),
+    quick, best, sound: store.get('chase_snd', false), trophy: ic('trophy'), savedOnly: () => !!S.me,
     keys: e => KM.actOf('chase', e),
     keyText: () => { const k = KM.keysOf('chase'), n = a => esc(KM.keyName(k[a]?.[0] || '')); return `${n('left')} ${n('right')} 이동 · ${n('jump')} 점프`; },
     onSound: on => store.set('chase_snd', on),
@@ -3128,7 +3128,7 @@ async function playChase() {
     saveLine: res => !S.me ? '로그인하면 랭킹에 올라가요' : !res.saved ? '이번 판은 서버에 등록되지 않아 저장 못 했어요' : res.score < 1 ? '0점은 기록하지 않아요' : '기록 저장 중…',
     onOver(res) {
       const no = run, tk = runTk; runTk = null;
-      if (res.score > best) { best = res.score; if (!S.me || !res.saved) store.set('chase_best', best); }
+      if (res.score > best && (!S.me || res.saved)) { best = res.score; if (!S.me) store.set('chase_best', best); }
       if (!S.me || !res.saved || !tk || res.score < 1) return;
       ticket = tk;   // 이 판의 티켓으로만 저장
       const v = CHASE_MAX - res.score;
@@ -3149,7 +3149,7 @@ async function playChase() {
   chaseResend();
   $('#csMain .cs-snd')?.insertAdjacentHTML('beforebegin', RE_BTN);   // 다시 시작(R)
   window.__chase = M;   // 테스트용
-  myRecInto($('#csRec'), 'chase', best ? CHASE_MAX - best : null, { open: true });
+  myRecInto($('#csRec'), 'chase', best ? CHASE_MAX - best : null, { open: true }).then(r => { if (S.me && r && 'best' in r) { const b = r.best ? CHASE_MAX - r.best.v : 0; M.setBest(b); best = Math.max(best, b); store.set('chase_best', b); } });
   quitGame = () => { run++; M.destroy(); if (window.__chase === M) window.__chase = null; };
 }
 
